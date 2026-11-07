@@ -1,8 +1,8 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';

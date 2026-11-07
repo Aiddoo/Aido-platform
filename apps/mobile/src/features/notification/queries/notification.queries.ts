@@ -1,5 +1,5 @@
 import { useNotificationService, usePushDeviceService } from '@src/bootstrap/providers/di-context';
-import { unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';

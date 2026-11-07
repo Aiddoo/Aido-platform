@@ -1,4 +1,6 @@
 import '@src/shared/i18n/init';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
@@ -13,9 +15,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { err, ok } from '@src/shared/errors/result';
 import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';

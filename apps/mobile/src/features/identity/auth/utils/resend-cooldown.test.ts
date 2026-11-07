@@ -1,6 +1,6 @@
 import { VERIFICATION_CODE } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 import { getResendCooldownAfterError, getResendCooldownAfterSuccess } from './resend-cooldown';
 

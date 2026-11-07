@@ -5,6 +5,7 @@ import {
   usePushDeviceService,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import {
   getErrorMessage,
   isApiError,
@@ -12,7 +13,6 @@ import {
   ServerError,
   toError,
 } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';

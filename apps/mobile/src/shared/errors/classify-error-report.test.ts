@@ -1,6 +1,6 @@
+import { ApiError } from '@src/core/errors/api-error';
 import { ZodError } from 'zod';
 
-import { ApiError } from './api-error';
 import { classifyErrorReport, type ErrorReportKind } from './classify-error-report';
 import { NetworkError, ParseError, ServerError, TimeoutError } from './infra-error';
 import { KeychainLockedError } from './storage-error';

@@ -1,6 +1,7 @@
-import { ApiError } from './api-error';
+import { ApiError } from '@src/core/errors/api-error';
+import { isBusinessError } from '@src/core/errors/result';
+
 import { BusinessError } from './business-error';
-import { isBusinessError } from './result';
 
 describe('isBusinessError', () => {
   it('코드를 넘기면 그 코드인 오류만 통과한다', () => {

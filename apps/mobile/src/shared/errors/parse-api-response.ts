@@ -1,8 +1,8 @@
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { z } from 'zod';
 
-import type { ApiError } from './api-error';
 import { ParseError } from './infra-error';
-import { ok, type Result } from './result';
 
 /**
  * 4xx는 그대로 돌려주고, 응답이 계약과 다르면 던지고, 맞으면 앱 모델로 바꾼다.

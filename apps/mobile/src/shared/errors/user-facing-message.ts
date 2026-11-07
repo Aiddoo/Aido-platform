@@ -1,8 +1,8 @@
+import { isBusinessError } from '@src/core/errors/result';
 import { tDynamic } from '@src/shared/i18n';
 
 import { BusinessError } from './business-error';
 import { isInfraError, ParseError } from './infra-error';
-import { isBusinessError } from './result';
 
 /**
  * 오류를 그대로 사용자에게 보여 줄 수 있으면 그 메시지를 돌려준다.

@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
+import { ApiError } from '@src/core/errors/api-error';
 
-import { ApiError } from './api-error';
 import { classifyBoundaryError } from './classify-boundary-error';
 import { ServerError } from './infra-error';
 

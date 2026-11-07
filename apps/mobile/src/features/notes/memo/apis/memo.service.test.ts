@@ -1,6 +1,6 @@
+import { ApiError } from '@src/core/errors/api-error';
+import { err } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
-import { ApiError } from '@src/shared/errors/api-error';
-import { err } from '@src/shared/errors/result';
 
 import { MemoService } from './memo.service';
 

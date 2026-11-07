@@ -1,4 +1,6 @@
 import '@src/shared/i18n/init';
+import { ApiError } from '@src/core/errors/api-error';
+import { err } from '@src/core/errors/result';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
@@ -8,8 +10,6 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import { createErrorReporterStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ApiError } from '@src/shared/errors/api-error';
-import { err } from '@src/shared/errors/result';
 import { screen } from '@testing-library/react-native';
 
 import { SuggestionEntry } from './suggestion-entry';

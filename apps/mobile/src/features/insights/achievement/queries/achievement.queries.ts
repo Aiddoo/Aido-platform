@@ -1,5 +1,5 @@
 import { useAchievementService } from '@src/bootstrap/providers/di-context';
-import { unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';

@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
+import type { CodedError } from '@src/core/errors/result';
 import { isApiError } from '@src/shared/errors';
-import type { CodedError } from '@src/shared/errors/result';
 import { match, P } from 'ts-pattern';
 
 export type TodoSeriesFailure =

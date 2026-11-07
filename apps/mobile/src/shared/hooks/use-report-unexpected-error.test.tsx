@@ -1,7 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ApiError } from '@src/core/errors/api-error';
 import { createErrorReporterStub, createTestDiContainer } from '@src/shared/__tests__';
 import { NetworkError, ServerError } from '@src/shared/errors';
-import { ApiError } from '@src/shared/errors/api-error';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 

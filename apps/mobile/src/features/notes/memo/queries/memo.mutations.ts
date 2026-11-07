@@ -5,6 +5,7 @@ import {
   useIdGenerator,
   useMemoService,
 } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { isNotChargedError } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
@@ -26,7 +27,6 @@ import {
 } from '@src/features/voice/utils/voice-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';

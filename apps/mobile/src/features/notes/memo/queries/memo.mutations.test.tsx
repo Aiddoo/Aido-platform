@@ -1,4 +1,5 @@
 import type { Memo as MemoDto } from '@aido/api';
+import { ok } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
@@ -15,7 +16,6 @@ import { fromDate } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { ok } from '@src/shared/errors/result';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 

@@ -1,5 +1,5 @@
 import type { CreateNudgeResponse, NudgeCooldownInfo, NudgeLimitInfo } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 const generateNudgeLimitInfoDto = (): NudgeLimitInfo => ({
   dailyLimit: 5,

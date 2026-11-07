@@ -1,10 +1,10 @@
 import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
+import { ok } from '@src/core/errors/result';
 import {
   ACCOUNT_A_TOKENS,
   createAuthSession,
 } from '@src/features/identity/auth/__tests__/auth-session.test-utils';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { ok } from '@src/shared/errors/result';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 

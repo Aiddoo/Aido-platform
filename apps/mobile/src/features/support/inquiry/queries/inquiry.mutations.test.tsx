@@ -1,10 +1,10 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
+import { ApiError } from '@src/core/errors/api-error';
+import { ok } from '@src/core/errors/result';
 import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { ok } from '@src/shared/errors/result';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 import { router } from 'expo-router';

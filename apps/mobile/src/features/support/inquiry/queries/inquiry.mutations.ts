@@ -1,5 +1,5 @@
 import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
-import { unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';

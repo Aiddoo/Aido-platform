@@ -1,5 +1,5 @@
+import { isBusinessError } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
-import { isBusinessError } from '@src/shared/errors/result';
 
 import {
   createAcceptFriendRequestDto,

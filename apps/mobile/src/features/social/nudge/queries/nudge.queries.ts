@@ -1,6 +1,6 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/query.constants';
-import { unwrap } from '@src/shared/errors/result';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';

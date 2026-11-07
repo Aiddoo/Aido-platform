@@ -1,4 +1,6 @@
 import '@src/shared/i18n/init';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -9,8 +11,6 @@ import {
 } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ApiError } from '@src/shared/errors/api-error';
-import { err, ok } from '@src/shared/errors/result';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';

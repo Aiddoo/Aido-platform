@@ -1,8 +1,8 @@
 import '@src/shared/i18n/init';
+import { isBusinessError } from '@src/core/errors/result';
 import { createHttpClientStub, createMemoryTokenStore } from '@src/shared/__tests__';
 import { ENV } from '@src/shared/config/env';
 import { getUserFacingMessage } from '@src/shared/errors';
-import { isBusinessError } from '@src/shared/errors/result';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth.gateway';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';

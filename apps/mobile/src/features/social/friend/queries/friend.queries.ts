@@ -1,6 +1,6 @@
 import { useFriendService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { unwrap } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.types';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';

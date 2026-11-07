@@ -1,6 +1,6 @@
 import { useEntitlementService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
 import type { EntitlementService } from '../apis/entitlement.service';

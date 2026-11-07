@@ -2,6 +2,7 @@ import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { ok } from '@src/core/errors/result';
 import {
   createErrorReporterStub,
   createAnalyticsStub,
@@ -9,7 +10,6 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Button } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';

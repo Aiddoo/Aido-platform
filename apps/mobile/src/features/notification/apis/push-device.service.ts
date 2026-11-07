@@ -1,11 +1,11 @@
 import { pushDeviceResponseSchema, type ReportPushDeviceInput } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { ok, type Result } from '@src/shared/errors/result';
 import { isEqual, noop } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';

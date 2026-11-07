@@ -663,7 +663,7 @@ test('core가 shared를 import하면 거부한다', () => {
   withFixture(
     {
       'apps/mobile/src/core/ports/thing.ts': `
-        import type { Result } from '@src/shared/errors/result';
+        import type { BusinessError } from '@src/shared/errors/business-error';
       `,
     },
     (errors) => {

@@ -4,11 +4,11 @@ import {
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
 } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { err, type Result } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.types';
 
 import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';

@@ -12,10 +12,10 @@ import {
   updateTodoResponseSchema,
   type UpdateTodoScheduleInput,
 } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { err, ok, type Result } from '@src/shared/errors/result';
 
 import { isTodoSeriesNotFoundError, TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import {

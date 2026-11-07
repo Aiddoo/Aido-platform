@@ -1,14 +1,14 @@
 import { successEnvelopeSchema } from '@aido/api';
 import { ErrorCode, isErrorCode } from '@aido/api/errors';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
-import { ApiError } from '@src/shared/errors/api-error';
 import {
   NetworkError,
   ParseError,
   ServerError,
   TimeoutError,
 } from '@src/shared/errors/infra-error';
-import { err, ok, type Result } from '@src/shared/errors/result';
 import {
   HTTPError,
   isNetworkError,

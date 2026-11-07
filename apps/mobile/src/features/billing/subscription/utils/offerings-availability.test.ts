@@ -1,4 +1,4 @@
-import { err, ok } from '@src/shared/errors/result';
+import { err, ok } from '@src/core/errors/result';
 
 import { SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../schemas/subscription.schema';

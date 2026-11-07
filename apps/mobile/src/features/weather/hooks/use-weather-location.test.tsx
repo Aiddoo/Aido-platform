@@ -1,5 +1,6 @@
 import { updateWeatherLocationSchema } from '@aido/api';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ApiError } from '@src/core/errors/api-error';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
   type LocationCoordinates,
@@ -13,7 +14,6 @@ import {
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { ApiError } from '@src/shared/errors/api-error';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';

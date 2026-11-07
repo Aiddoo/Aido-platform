@@ -1,4 +1,5 @@
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
@@ -7,7 +8,6 @@ import {
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';

@@ -1,8 +1,8 @@
 import '@src/shared/i18n/init';
+import { ok } from '@src/core/errors/result';
 import type { FriendLimitInvite } from '@src/features/social/friend/domains/friend.model';
 import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { waitFor } from '@testing-library/react-native';
 
 import { createStubInviteService } from '../__tests__/create-stub-invite-service';

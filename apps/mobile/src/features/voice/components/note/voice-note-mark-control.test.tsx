@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { ok } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -9,7 +10,6 @@ import {
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 import { View } from 'react-native';

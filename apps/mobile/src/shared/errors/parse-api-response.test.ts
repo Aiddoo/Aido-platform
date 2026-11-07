@@ -1,9 +1,9 @@
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import { z } from 'zod';
 
-import { ApiError } from './api-error';
 import { ParseError } from './infra-error';
 import { parseApiResponse } from './parse-api-response';
-import { err, ok } from './result';
 
 const schema = z.object({ count: z.number() });
 

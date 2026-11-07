@@ -4,6 +4,7 @@ import type {
   PushDeviceResponse,
   UnreadCountResponse,
 } from '@aido/api';
+import { ApiError } from '@src/core/errors/api-error';
 import type {
   PushNotificationCategory,
   PushNotificationGateway,
@@ -11,7 +12,6 @@ import type {
   PushPermissionResponse,
   ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
-import { ApiError } from '@src/shared/errors/api-error';
 
 import type { PushPermission } from '../schemas/push-permission.schema';
 

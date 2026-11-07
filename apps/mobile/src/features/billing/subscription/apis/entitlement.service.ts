@@ -1,9 +1,9 @@
 import { entitlementSnapshotSchema } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import type { EntitlementSnapshot } from '../schemas/entitlement.schema';

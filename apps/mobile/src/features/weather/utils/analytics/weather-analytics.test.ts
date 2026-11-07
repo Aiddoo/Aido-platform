@@ -1,4 +1,4 @@
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 import { NetworkError, ParseError, ServerError } from '@src/shared/errors/infra-error';
 
 import {

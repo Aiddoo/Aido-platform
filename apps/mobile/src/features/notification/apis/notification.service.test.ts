@@ -1,6 +1,6 @@
+import { err, ok } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
-import { err, ok } from '@src/shared/errors/result';
 import { noop } from 'es-toolkit';
 
 import {

@@ -3,10 +3,10 @@ import {
   weatherLocationSchema,
   weatherReportSchema,
 } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
 
 import type { RegisteredLocation } from '../schemas/weather-location.schema';
 import type { WeatherReport } from '../schemas/weather-report.schema';

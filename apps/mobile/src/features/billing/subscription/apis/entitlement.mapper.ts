@@ -6,8 +6,8 @@ import {
   quotaErrorDetailsSchema,
 } from '@aido/api';
 import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { isApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
-import { isApiError } from '@src/shared/errors/api-error';
 import { mapValues, pick } from 'es-toolkit';
 
 import {

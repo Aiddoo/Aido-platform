@@ -1,6 +1,8 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok } from '@src/core/errors/result';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
@@ -24,8 +26,6 @@ import {
 } from '@src/shared/__tests__';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
-import { ApiError } from '@src/shared/errors/api-error';
-import { err, ok } from '@src/shared/errors/result';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { RETRY_MARKER_HEADER } from '@src/shared/infra/http/token-refresh-hook';

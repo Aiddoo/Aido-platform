@@ -3,13 +3,13 @@ import {
   inviteAvailabilityResponseSchema,
   invitePreviewResponseSchema,
 } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import type { Logger } from '@src/core/ports/logger';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { err, type Result } from '@src/shared/errors/result';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import type { Page } from '@src/shared/types/page.types';
 import { identity } from 'es-toolkit';

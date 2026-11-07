@@ -6,6 +6,7 @@ import {
   createQueryCacheStorage,
   type QueryCacheStorage,
 } from '@src/bootstrap/providers/query-cache-persistence';
+import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -30,7 +31,6 @@ import {
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
-import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';

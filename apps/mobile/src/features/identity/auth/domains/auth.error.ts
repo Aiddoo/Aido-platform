@@ -1,4 +1,4 @@
-import { isBusinessError } from '@src/shared/errors/result';
+import { isBusinessError } from '@src/core/errors/result';
 
 /** 앱이 직접 판단한 소셜 로그인 실패. 문구는 `errors` 카탈로그에 같은 키로 둔다 */
 export const AUTH_ERROR_CODE = {

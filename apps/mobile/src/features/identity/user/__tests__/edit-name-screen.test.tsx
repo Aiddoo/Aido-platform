@@ -1,10 +1,10 @@
 import '@src/shared/i18n/init';
+import { ok } from '@src/core/errors/result';
 import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { ok } from '@src/shared/errors/result';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 

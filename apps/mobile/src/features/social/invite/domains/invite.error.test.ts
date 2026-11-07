@@ -1,4 +1,4 @@
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { ServerError } from '@src/shared/errors/infra-error';
 

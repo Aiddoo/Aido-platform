@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { ok } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -10,7 +11,6 @@ import {
 } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen } from '@testing-library/react-native';

@@ -11,11 +11,11 @@ import {
   nudgeThanksPreviewResponseSchema,
   sendNudgeThanksResponseSchema,
 } from '@aido/api';
+import type { ApiError } from '@src/core/errors/api-error';
+import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { BusinessError } from '@src/shared/errors/business-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { err, type Result } from '@src/shared/errors/result';
 
 import { TODO_NUDGE_ERROR_CODE, type TodoNudgeErrorCode } from '../domains/todo-nudge.error';
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';

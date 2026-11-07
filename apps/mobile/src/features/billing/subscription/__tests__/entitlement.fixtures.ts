@@ -8,7 +8,7 @@ import {
   PLAN_FEATURE_KEYS,
   type PlanFeature,
 } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 import { match } from 'ts-pattern';
 
 import { toEntitlementSnapshot } from '../apis/entitlement.mapper';

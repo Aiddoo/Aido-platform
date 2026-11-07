@@ -1,5 +1,5 @@
 import type { PreferenceResponse } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 import { type Preference, preferenceSchema } from '../schemas/preference.schema';
 

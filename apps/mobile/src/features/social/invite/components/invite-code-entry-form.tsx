@@ -1,4 +1,5 @@
 import { useClipboard, useInviteService } from '@src/bootstrap/providers/di-context';
+import { isBusinessError } from '@src/core/errors/result';
 import { InviteCodeInput } from '@src/features/social/invite/components/invite-code-input';
 import {
   type InvalidCharacterSummary,
@@ -11,7 +12,6 @@ import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invi
 import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
-import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { useTranslation } from '@src/shared/i18n';

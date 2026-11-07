@@ -3,6 +3,7 @@ import {
   useHaptics,
   useTodoService,
 } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { recordTodoCompletionForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -11,7 +12,6 @@ import { invalidateTodoCategories } from '@src/features/planning/category/querie
 import { useTrack } from '@src/shared/analytics';
 import { toDate } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';

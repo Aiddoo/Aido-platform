@@ -1,6 +1,6 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
-import { unwrap } from '@src/shared/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';

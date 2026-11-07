@@ -8,15 +8,15 @@ import {
   parseMemoResponseSchema,
 } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { MEMO_LOG_EVENT } from '@src/features/notes/memo/constants/memo-log-events';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { ok, type Result } from '@src/shared/errors/result';
 import { noop } from 'es-toolkit';
 
 import type { ParsedMemoPlan } from '../domains/memo.model';

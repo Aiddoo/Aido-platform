@@ -1,6 +1,8 @@
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
-import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
+import { err, ok } from '@src/core/errors/result';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
@@ -28,8 +30,6 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
-import { ApiError } from '@src/shared/errors/api-error';
-import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { onlineManager } from '@tanstack/react-query';

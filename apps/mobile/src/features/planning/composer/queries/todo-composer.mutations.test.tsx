@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { ApiError } from '@src/core/errors/api-error';
 import {
   createAnalyticsStub,
   createHapticsStub,
@@ -6,7 +7,6 @@ import {
 } from '@src/shared/__tests__';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ApiError } from '@src/shared/errors/api-error';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 

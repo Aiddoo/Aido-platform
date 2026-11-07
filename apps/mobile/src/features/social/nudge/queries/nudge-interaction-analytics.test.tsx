@@ -1,3 +1,4 @@
+import { ok } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
   createHapticsStub,
@@ -6,7 +7,6 @@ import {
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { ok } from '@src/shared/errors/result';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 

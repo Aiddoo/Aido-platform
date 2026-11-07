@@ -1,7 +1,7 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import type { ProfileChange, User } from '@src/features/identity/user/schemas/user.schema';
 import { useTrack } from '@src/shared/analytics';
-import { unwrap } from '@src/shared/errors/result';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

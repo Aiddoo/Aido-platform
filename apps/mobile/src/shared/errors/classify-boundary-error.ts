@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-
-import { isApiError } from './api-error';
+import { isApiError } from '@src/core/errors/api-error';
 
 /**
  * ErrorBoundary가 잡은 에러의 처리 종류.

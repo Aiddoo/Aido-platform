@@ -1,5 +1,5 @@
 // Base Classes
-export { ApiError, isApiError } from './api-error';
+export { ApiError, isApiError } from '@src/core/errors/api-error';
 export { BusinessError } from './business-error';
 
 // Boundary 에러 분류 (라우트 ErrorBoundary 처리 분기)
@@ -29,7 +29,7 @@ export {
   ok,
   type Result,
   unwrap,
-} from './result';
+} from '@src/core/errors/result';
 
 // Storage Errors
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';

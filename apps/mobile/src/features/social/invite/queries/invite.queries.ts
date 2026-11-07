@@ -1,9 +1,9 @@
 import { type RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { type ClipboardGateway } from '@src/core/ports/clipboard';
 import { type Logger } from '@src/core/ports/logger';
 import { getErrorMessage } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { type Page } from '@src/shared/types/page.types';
 import {
   queryOptions,

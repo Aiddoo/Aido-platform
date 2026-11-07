@@ -1,4 +1,5 @@
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
@@ -7,7 +8,6 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { type FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';

@@ -1,4 +1,4 @@
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 import { canRetryPlanFailure, getVoicePlanFailureCause } from './voice.error';
 

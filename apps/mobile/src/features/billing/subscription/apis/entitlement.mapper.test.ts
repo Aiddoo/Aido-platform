@@ -1,7 +1,7 @@
 import { entitlementSnapshotSchema, PLAN_FEATURE_KEYS } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
+import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
-import { ApiError } from '@src/shared/errors/api-error';
 
 import {
   createEntitlementSnapshotDto,

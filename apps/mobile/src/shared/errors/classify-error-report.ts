@@ -1,8 +1,8 @@
+import { isApiError } from '@src/core/errors/api-error';
+import { isBusinessError } from '@src/core/errors/result';
 import { ZodError } from 'zod';
 
-import { isApiError } from './api-error';
 import { isConnectivityError, ParseError } from './infra-error';
-import { isBusinessError } from './result';
 import { isKeychainLockedError } from './storage-error';
 
 /**

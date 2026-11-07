@@ -1,5 +1,6 @@
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import {
   createParentTodo,
   createSubTodo,
@@ -17,7 +18,6 @@ import {
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';

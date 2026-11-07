@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-native';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 import { ServerError } from '@src/shared/errors/infra-error';
 import { createSentryErrorReporter } from '@src/shared/infra/error-reporter/sentry-error-reporter';
 import { createSentryLogger } from '@src/shared/infra/logger/sentry-logger';

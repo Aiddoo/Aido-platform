@@ -4,7 +4,7 @@ import {
   invitePreviewResponseSchema,
   type MyInviteResponse,
 } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 import type { PendingRedemption } from '../schemas/invite-redemption.schema';

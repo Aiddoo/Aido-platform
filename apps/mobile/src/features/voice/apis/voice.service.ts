@@ -1,10 +1,10 @@
 import { applyActionPlanResponseSchema } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
+import type { ApiError } from '@src/core/errors/api-error';
+import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';

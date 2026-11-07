@@ -1,5 +1,6 @@
 import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import type {
   Consent,
@@ -8,7 +9,6 @@ import type {
 import { useTrack } from '@src/shared/analytics';
 import { toInstant } from '@src/shared/date/instant';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

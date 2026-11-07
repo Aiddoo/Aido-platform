@@ -1,4 +1,5 @@
-import { ApiError } from './api-error';
+import { ApiError } from '@src/core/errors/api-error';
+
 import { BusinessError } from './business-error';
 import { NetworkError, ParseError } from './infra-error';
 import { getUserFacingMessage } from './user-facing-message';

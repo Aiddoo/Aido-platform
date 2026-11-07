@@ -1,5 +1,5 @@
 import type { CreateInquiryResponse } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 const generateCreateInquiryResponseDto = (): CreateInquiryResponse => ({
   message: '문의가 접수되었습니다.',

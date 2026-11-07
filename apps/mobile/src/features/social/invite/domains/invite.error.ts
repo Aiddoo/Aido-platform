@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
+import { isBusinessError } from '@src/core/errors/result';
 import { isApiError } from '@src/shared/errors';
-import { isBusinessError } from '@src/shared/errors/result';
 import { match } from 'ts-pattern';
 
 export const INVITE_ERROR_CODE = {

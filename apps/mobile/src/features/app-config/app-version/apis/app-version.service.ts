@@ -1,9 +1,9 @@
 import { appVersionResponseSchema } from '@aido/api';
+import { ok, unwrap } from '@src/core/errors/result';
 import type { AppStoreListingGateway } from '@src/core/ports/app-store';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { ok, unwrap } from '@src/shared/errors/result';
 
 import { toAppVersionConfig } from './app-version.mapper';
 

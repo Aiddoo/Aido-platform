@@ -5,6 +5,7 @@ import {
   useTodoService,
   useSubTodoService,
 } from '@src/bootstrap/providers/di-context';
+import { unwrap } from '@src/core/errors/result';
 import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
@@ -37,7 +38,6 @@ import type {
 import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { createOptimisticId } from '@src/shared/utils/optimistic-id';

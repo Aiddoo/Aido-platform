@@ -1,5 +1,5 @@
 import type { TodoCategory, TodoCategoryListResponse, TodoCategoryWithCount } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 const generateTodoCategoryDto = (): TodoCategory => ({
   id: 1,

@@ -1,7 +1,7 @@
+import { err, ok, type Result } from '@src/core/errors/result';
 import type { Logger } from '@src/core/ports/logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
 import { getErrorMessage } from '@src/shared/errors';
-import { err, ok, type Result } from '@src/shared/errors/result';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 

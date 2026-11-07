@@ -4,7 +4,7 @@ import type {
   TodoItemResponse,
   TodoListResponse,
 } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 const generateTodoDto = (): TodoDto => ({
   id: 1,

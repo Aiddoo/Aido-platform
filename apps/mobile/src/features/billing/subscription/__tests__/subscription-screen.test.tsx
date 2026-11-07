@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api';
+import { ok } from '@src/core/errors/result';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
@@ -16,7 +17,6 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';

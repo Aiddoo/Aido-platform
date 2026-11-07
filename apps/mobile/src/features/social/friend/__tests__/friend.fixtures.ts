@@ -7,7 +7,7 @@ import type {
   SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/api';
-import { ApiError } from '@src/shared/errors/api-error';
+import { ApiError } from '@src/core/errors/api-error';
 
 const generateSendFriendRequestDto = (): SendFriendRequestResponse => ({
   message: '친구 요청을 보냈어요.',

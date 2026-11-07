@@ -1,4 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { err, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
@@ -18,7 +19,6 @@ import { createPendingResponse } from '@src/shared/__tests__/create-pending-resp
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError, NetworkError } from '@src/shared/errors';
-import { err, ok, type Result } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
