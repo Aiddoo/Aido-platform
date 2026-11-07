@@ -22,6 +22,7 @@ import { TodoDetailSummary } from './todo-detail-summary';
 export function TodoDetailHeader() {
   const [todoId] = useTodoId();
   const [{ sort }, setCommentParams] = useCommentParams();
+  const { trackEvent } = useTrack();
   const sortChange = useSortChange();
 
   return (
@@ -48,9 +49,10 @@ export function TodoDetailHeader() {
           value={sort}
           isLoading={sortChange.isPending}
           onChange={(next) =>
-            sortChange.prefetchThenCommit(next, () =>
-              setCommentParams({ sort: next, comment: undefined }),
-            )
+            sortChange.prefetchThenCommit(next, () => {
+              setCommentParams({ sort: next, comment: undefined });
+              trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
+            })
           }
         />
       </HStack>
@@ -83,7 +85,6 @@ function CommentCount() {
 function useSortChange() {
   const [todoId] = useTodoId();
   const queryClient = useQueryClient();
-  const { trackEvent } = useTrack();
   const logger = useLogger();
   const [isPending, setIsPending] = useState(false);
   const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
@@ -104,7 +105,6 @@ function useSortChange() {
       .finally(() => {
         setIsPending(false);
         commit();
-        trackEvent('todo_comment_sorted', { todo_id: todoId, sort });
       })
       .catch((error) =>
         logger.warn(TODO_COMMENT_LOG_EVENT.SORT_CHANGE_FAILED, { error: getErrorMessage(error) }),

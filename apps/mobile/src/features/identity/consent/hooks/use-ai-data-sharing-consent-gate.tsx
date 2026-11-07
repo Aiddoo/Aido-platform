@@ -2,9 +2,7 @@ import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-cont
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
-import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { withTimeout } from 'es-toolkit';
 import { useRef } from 'react';
@@ -49,8 +47,6 @@ export async function readWithoutBlocking<T>(
  * 시트는 이 훅을 쓴 컴포넌트의 overlay에 뜨므로, 답을 기다리는 동안 마운트돼 있는 곳에서 쓴다.
  */
 export function useAiDataSharingConsentGate() {
-  const { t } = useTranslation('ai');
-  const toast = useAppToast();
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const coachmarkService = useCoachmarkService();
@@ -155,11 +151,7 @@ export function useAiDataSharingConsentGate() {
     if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
       return { hasAgreed: true, wasAsked: await promptRenewalOnce(consent, me?.id) };
     }
-    const hasAgreed = await requestAgreement();
-    if (!hasAgreed) {
-      toast.toast(t('consent.notice.voice'));
-    }
-    return { hasAgreed, wasAsked: true };
+    return { hasAgreed: await requestAgreement(), wasAsked: true };
   };
 
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */

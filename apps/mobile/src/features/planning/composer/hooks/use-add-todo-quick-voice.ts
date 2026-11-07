@@ -52,7 +52,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   const startVoiceNote = useStartVoiceNote();
   const logger = useLogger();
   const toast = useAppToast();
-  const { t } = useTranslation('voice');
+  const { t } = useTranslation(['voice', 'ai']);
   const isUnmountedRef = useRef(false);
   /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
   const [isRestarting, setIsRestarting] = useState(false);
@@ -101,6 +101,9 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
     Keyboard.dismiss();
     const consent = await aiConsent.ensureAgreedBeforeListening();
+    if (!consent.hasAgreed) {
+      toast.toast(t('ai:consent.notice.voice'));
+    }
     if (!consent.hasAgreed || isUnmountedRef.current) {
       return;
     }
