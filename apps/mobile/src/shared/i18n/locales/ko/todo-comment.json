@@ -8,7 +8,6 @@
     "heading": "댓글",
     "emptyDescription": "첫 댓글을 남겨보세요",
     "loadFailed": "댓글을 불러오지 못했어요",
-    "loadingMore": "다음 댓글을 불러오는 중",
     "loadPrevious": "이전 댓글 보기"
   },
   "replies": {

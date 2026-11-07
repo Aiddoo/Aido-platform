@@ -15,7 +15,6 @@
     "subTodoAddFailed": "하위 할 일을 추가하지 못했어요",
     "subTodoUpdateFailed": "하위 할 일을 수정하지 못했어요",
     "subTodoDeleteFailed": "하위 할 일을 삭제하지 못했어요",
-    "parseFailed": "입력한 내용으로 할 일을 만들지 못했어요. 내용을 바꿔서 다시 시도해주세요.",
     "nudgeSent": "콕 찔렀어요!",
     "remindNudgeSent": "함께 시작하자고 콕 찔렀어요!",
     "addFailedRetry": "잠시 후 다시 추가해보세요",
@@ -62,9 +61,6 @@
         "description": "할 일 하나만 저장됐어요. 잠시 후 다시 시도해주세요."
       }
     }
-  },
-  "errors": {
-    "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
   },
   "form": {
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"

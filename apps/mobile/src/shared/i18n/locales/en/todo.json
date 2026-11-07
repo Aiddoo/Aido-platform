@@ -15,7 +15,6 @@
     "subTodoAddFailed": "Couldn't add the subtask",
     "subTodoUpdateFailed": "Couldn't update the subtask",
     "subTodoDeleteFailed": "Couldn't delete the subtask",
-    "parseFailed": "We couldn't turn that into a to-do. Try rewording it.",
     "nudgeSent": "Nudge sent!",
     "remindNudgeSent": "Sent a nudge to help them get started!",
     "addFailedRetry": "Try adding again in a moment",
@@ -62,10 +61,6 @@
         "description": "Only one to-do was saved. Please try again in a moment."
       }
     }
-  },
-  "errors": {
-    "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
-    "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
   },
   "form": {
     "nudgeMessageMax_one": "Your message can be up to {{count}} character",

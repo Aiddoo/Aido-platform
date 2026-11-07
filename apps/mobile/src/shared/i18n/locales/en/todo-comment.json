@@ -8,7 +8,6 @@
     "heading": "Comments",
     "emptyDescription": "Be the first to comment",
     "loadFailed": "Couldn't load comments",
-    "loadingMore": "Loading more comments",
     "loadPrevious": "View earlier comments"
   },
   "replies": {
