@@ -1,5 +1,5 @@
+import type { UserPropertyMap } from '@src/core/observability/telemetry-keys';
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
-import type { UserPropertyMap } from '@src/shared/observability/telemetry-keys';
 
 export const createConsoleAnalytics = (): Analytics => ({
   trackEvent(eventName: string, params?: AnalyticsEventParams): void {

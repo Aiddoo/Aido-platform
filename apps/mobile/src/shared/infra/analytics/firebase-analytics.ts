@@ -7,14 +7,14 @@ import {
   setUserProperties,
   setUserProperty,
 } from '@react-native-firebase/analytics';
-import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
-import { getErrorMessage } from '@src/shared/errors';
 import {
   CLEARED_USER_PROPERTIES,
   INTERNAL_TRAFFIC_EVENT_PARAMETERS,
   type UserPropertyMap,
-} from '@src/shared/observability/telemetry-keys';
+} from '@src/core/observability/telemetry-keys';
+import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
+import type { Logger } from '@src/core/ports/logger';
+import { getErrorMessage } from '@src/shared/errors';
 
 import { FIREBASE_ANALYTICS_LOG_EVENT } from './firebase-analytics-log-events';
 

@@ -1,5 +1,5 @@
-import type { ApiError } from '@src/shared/errors/api-error';
-import type { Result } from '@src/shared/errors/result';
+import type { ApiError } from '@src/core/errors/api-error';
+import type { Result } from '@src/core/errors/result';
 
 export interface RequestConfig {
   params?: Record<string, string | number | boolean | undefined>;

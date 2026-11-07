@@ -1,7 +1,7 @@
 import type {
   PremiumSourceProperty,
   UserPropertyMap,
-} from '@src/shared/observability/telemetry-keys';
+} from '@src/core/observability/telemetry-keys';
 
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
 import { UserPolicy } from '../domains/user.model';

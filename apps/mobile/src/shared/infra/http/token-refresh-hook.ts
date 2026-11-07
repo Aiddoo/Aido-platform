@@ -1,10 +1,10 @@
+import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import ky, { type AfterResponseHook } from 'ky';
 import { match } from 'ts-pattern';
 

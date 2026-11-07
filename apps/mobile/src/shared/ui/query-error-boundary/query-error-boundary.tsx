@@ -1,3 +1,4 @@
+import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { useErrorReporter } from '@src/shared/di/shared-di-context';
 import {
   classifyBoundaryError,
@@ -7,7 +8,6 @@ import {
   toError,
 } from '@src/shared/errors';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';

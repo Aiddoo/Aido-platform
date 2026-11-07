@@ -51,7 +51,7 @@ Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다
 ## Track 1: ApiError
 
 ```typescript
-// shared/errors/api-error.ts
+// core/errors/api-error.ts
 class ApiError extends Error implements CodedError {
   constructor(
     public readonly code: string,
@@ -230,8 +230,8 @@ logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry �
 
 | 파일                                       | 설명                              |
 | ------------------------------------------ | --------------------------------- |
-| `shared/errors/result.ts`                  | Result 타입, ok/err/unwrap        |
-| `shared/errors/api-error.ts`               | ApiError (4xx)                    |
+| `core/errors/result.ts`                    | Result 타입, ok/err/unwrap        |
+| `core/errors/api-error.ts`                 | ApiError (4xx)                    |
 | `shared/errors/infra-error.ts`             | InfraError (5xx, 네트워크, 파싱)  |
 | `shared/errors/classify-boundary-error.ts` | 경계 오류 분류                    |
 | `shared/errors/user-facing-message.ts`     | 사용자에게 보여도 되는 문구 판정  |

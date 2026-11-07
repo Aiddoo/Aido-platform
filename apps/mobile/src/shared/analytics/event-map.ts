@@ -1,7 +1,5 @@
-import type {
-  GaReservedPurchaseEventName,
-  LegacyEventMap,
-} from '@src/shared/observability/telemetry-keys';
+import type { GaReservedPurchaseEventName } from '@src/core/observability/telemetry-keys';
+import type { LegacyEventMap } from '@src/shared/observability/telemetry-keys';
 
 /**
  * feature가 자기 이벤트를 `constants/{feature}.events.ts`에서 `declare module`로 채운다.

@@ -1,11 +1,11 @@
 import * as Sentry from '@sentry/react-native';
-import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
-import { captureError } from '@src/shared/infra/observability/capture-error';
 import {
   SENTRY_FEATURES,
   SENTRY_TAGS,
   type SentryFeature,
-} from '@src/shared/observability/telemetry-keys';
+} from '@src/core/observability/telemetry-keys';
+import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import { captureError } from '@src/shared/infra/observability/capture-error';
 
 /**
  * Sentry 기반 Logger 어댑터.

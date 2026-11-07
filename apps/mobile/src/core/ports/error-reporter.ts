@@ -1,6 +1,6 @@
+import type { SentryFeature, SentryMessage } from '@src/core/observability/telemetry-keys';
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { Severity } from '@src/core/ports/severity';
-import type { SentryFeature, SentryMessage } from '@src/shared/observability/telemetry-keys';
 
 export interface ErrorReporterContext {
   endpoint?: string;

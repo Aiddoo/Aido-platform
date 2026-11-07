@@ -1,4 +1,4 @@
-import type { UserPropertyMap } from '@src/shared/observability/telemetry-keys';
+import type { UserPropertyMap } from '@src/core/observability/telemetry-keys';
 
 export type AnalyticsEventParams = Record<string, unknown>;
 

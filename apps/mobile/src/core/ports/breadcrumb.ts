@@ -1,5 +1,5 @@
+import type { BreadcrumbCategory } from '@src/core/observability/telemetry-keys';
 import type { Severity } from '@src/core/ports/severity';
-import type { BreadcrumbCategory } from '@src/shared/observability/telemetry-keys';
 
 export interface Breadcrumb {
   category: BreadcrumbCategory;

@@ -3,10 +3,10 @@ import {
   useLogger,
   useSubscriptionService,
 } from '@src/bootstrap/providers/di-context';
+import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
-import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { queryOptions } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

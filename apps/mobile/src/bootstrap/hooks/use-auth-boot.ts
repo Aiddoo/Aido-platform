@@ -1,9 +1,9 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
+import { SENTRY_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
-import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 

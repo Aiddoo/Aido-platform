@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react-native';
+import { SENTRY_TAGS } from '@src/core/observability/telemetry-keys';
 import { classifyErrorReport } from '@src/shared/errors/classify-error-report';
 import { ServerError } from '@src/shared/errors/infra-error';
-import { SENTRY_TAGS } from '@src/shared/observability/telemetry-keys';
 
 interface CaptureErrorOptions {
   level?: Sentry.SeverityLevel;
