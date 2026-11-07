@@ -6,7 +6,7 @@ import {
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { TodoExistence } from '@src/features/planning/todo/schemas/todo.schema';
 import { DAY_MS } from '@src/shared/constants/time.constants';
-import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { type Instant, toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import type {
   ActivationChecklistSteps,
@@ -22,7 +22,7 @@ const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
   WHATS_NEW_CAMPAIGN_ID,
 ]);
 // 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다
-const PUSH_REGISTRATION_DEFERRED_SINCE = '2026-08-01T00:00:00.000Z';
+const PUSH_REGISTRATION_DEFERRED_SINCE = toInstant('2026-08-01T00:00:00.000Z');
 export const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
 interface PushRegistrationInput {
@@ -126,7 +126,7 @@ function shouldRegisterPushAutomatically({
   }
   const isDeferredCohort =
     config == null
-      ? toEpochMs(user.createdAt) >= Date.parse(PUSH_REGISTRATION_DEFERRED_SINCE)
+      ? toEpochMs(user.createdAt) >= toEpochMs(PUSH_REGISTRATION_DEFERRED_SINCE)
       : isNewUserCohort(config, user);
   if (!isDeferredCohort) {
     return true;

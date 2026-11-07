@@ -6,7 +6,6 @@ import {
   fromEpochMs,
   fromWallClock,
   getZonedHour,
-  toDate,
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
@@ -123,7 +122,7 @@ interface BriefingClock {
 }
 
 function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
-  const time = toDate(at).getTime();
+  const time = toEpochMs(at);
   return hourly.findIndex(
     (hour) => toEpochMs(hour.startsAt) <= time && time < toEpochMs(hour.startsAt) + HOUR_MS,
   );
