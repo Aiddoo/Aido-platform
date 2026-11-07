@@ -36,13 +36,11 @@ export function ProfileCard({ tierChip }: ProfileCardProps) {
   const clipboard = useClipboard();
 
   const handleCopyUserTag = async () => {
-    const copied = await clipboard.copy(user.userTag).then(
-      () => true,
-      () => false,
-    );
-
-    if (copied) {
+    try {
+      await clipboard.copy(user.userTag);
       toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
+    } catch {
+      toast.error(undefined, { fallback: t('profile.tagCopyFailed') });
     }
   };
 

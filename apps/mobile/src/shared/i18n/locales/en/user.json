@@ -42,6 +42,7 @@
     "avatarAlt": "{{name}}'s profile",
     "tagCopied": "Hashtag copied",
     "tagCopiedDescription": "Share your 8-character hashtag to receive friend requests",
+    "tagCopyFailed": "Could not copy the hashtag",
     "updateFailed": "Failed to update your profile",
     "imageSheet": {
       "title": "Choose profile image",
