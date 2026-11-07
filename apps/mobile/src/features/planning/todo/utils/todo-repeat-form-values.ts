@@ -1,9 +1,4 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
-import {
-  isAfterDay,
-  isBeforeDay,
-  isSameDay,
-} from '@src/features/planning/todo/utils/calendar-date';
 import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -12,6 +7,7 @@ import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { getWeekday, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
+import { isAfterDay, isBeforeDay, isSameDay } from './calendar-date';
 
 export function toTodoRepeatFormValues(
   startDate: Instant,

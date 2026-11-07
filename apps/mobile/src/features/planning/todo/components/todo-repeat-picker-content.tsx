@@ -1,7 +1,6 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
@@ -26,6 +25,7 @@ import {
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
+import { isSameDay } from '../utils/calendar-date';
 import {
   getTodoRepeatFormFirstOccurrenceKey,
   isTodoRepeatFormPreset,

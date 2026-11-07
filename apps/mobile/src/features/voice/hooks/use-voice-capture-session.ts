@@ -5,7 +5,6 @@ import type {
   SpeechMode,
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
-import type { VoiceCaptureEntry } from '@src/features/voice/constants/voice.events';
 import { noop } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -18,6 +17,7 @@ import {
   VOICE_NO_VOLUME_GAP_MS,
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
+import type { VoiceCaptureEntry } from '../constants/voice.events';
 import {
   createVoiceCaptureState,
   createVoiceRecognizerLink,

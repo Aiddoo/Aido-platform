@@ -1,10 +1,11 @@
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
+
+import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
 

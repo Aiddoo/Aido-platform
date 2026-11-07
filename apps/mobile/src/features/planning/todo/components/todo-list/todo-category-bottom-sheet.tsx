@@ -1,7 +1,4 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -18,7 +15,10 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
+import { TodoPolicy } from '../../domains/todo.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { useTodoParams } from '../../hooks/use-todo-params';
+import { useTodoSheetDateParam } from '../../hooks/use-todo-sheet-params';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 

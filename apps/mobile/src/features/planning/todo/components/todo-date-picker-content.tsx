@@ -1,4 +1,3 @@
-import { isSameDay, isSameMonth } from '@src/features/planning/todo/utils/calendar-date';
 import { getDayOfWeek } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
@@ -11,6 +10,7 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
+import { isSameDay, isSameMonth } from '../utils/calendar-date';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';

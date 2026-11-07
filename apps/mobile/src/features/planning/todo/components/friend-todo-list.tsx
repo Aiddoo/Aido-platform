@@ -1,8 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
-import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -26,9 +23,12 @@ import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { type ComponentType, useMemo, useState } from 'react';
 
+import { TodoPolicy } from '../domains/todo.model';
 import { useFeedDateKey, useFeedDateParam } from '../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
+import type { Todo } from '../schemas/todo.schema';
+import { formatTodoTime } from '../utils/format-todo-time';
 import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';

@@ -2,11 +2,6 @@ import { ReorderCoachmark } from '@src/features/device/coachmark/components/reor
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { type SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
-import { type Todo } from '@src/features/planning/todo/schemas/todo.schema';
-import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -40,6 +35,8 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
+import { SubTodoPolicy } from '../../domains/sub-todo.model';
+import { TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import {
@@ -51,6 +48,9 @@ import {
   useToggleTodoMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import { type SubTodo } from '../../schemas/sub-todo.schema';
+import { type Todo } from '../../schemas/todo.schema';
+import { formatTodoTime } from '../../utils/format-todo-time';
 import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {

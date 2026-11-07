@@ -1,6 +1,7 @@
-import { isBeforeDay } from '@src/features/planning/todo/utils/calendar-date';
 import type { Instant } from '@src/shared/date/instant';
 import { startOfLocalDay } from '@src/shared/date/local-day';
+
+import { isBeforeDay } from './calendar-date';
 
 interface TodaySchedule {
   startDate: Date;

@@ -1,6 +1,3 @@
-import { useDeleteTodoCategoryMutationOptions } from '@src/features/planning/category/queries/todo-category.mutations';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -19,6 +16,9 @@ import { Dialog, Radio, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
+import type { TodoCategoryWithCount } from '../schemas/todo-category.schema';
 
 interface CategoryDeleteDialogProps {
   categoryId: number;

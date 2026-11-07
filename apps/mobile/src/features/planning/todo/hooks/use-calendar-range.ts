@@ -1,10 +1,10 @@
-import { useFeedDateParam } from '@src/features/planning/todo/hooks/use-feed-params';
-import { getCalendarRange, getWeekRange } from '@src/features/planning/todo/utils/calendar-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
+import { getCalendarRange, getWeekRange } from '../utils/calendar-date';
 import { useCalendarViewMode } from './use-calendar-view-mode';
+import { useFeedDateParam } from './use-feed-params';
 
 /** 현재 뷰 모드(주/월)에 해당하는 캘린더 조회 범위 */
 export function useCalendarRange() {

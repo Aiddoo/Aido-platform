@@ -8,7 +8,10 @@ import { SentenceCaptionList } from './sentence-caption-list';
 const MARK_HINT_HEIGHT = 124;
 
 export function VoiceNoteRecordCaptions(
-  props: Pick<ComponentProps<typeof SentenceCaptionList>, 'sentences' | 'interimText'>,
+  props: Omit<
+    ComponentProps<typeof SentenceCaptionList>,
+    'isLive' | 'contentBottomInset' | 'className'
+  >,
 ) {
   const isCompact = useWindowSizeClass() === 'compact';
   const fontScaledSize = useFontScaledSize();

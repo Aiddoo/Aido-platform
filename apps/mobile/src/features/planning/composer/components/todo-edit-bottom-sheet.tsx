@@ -1,6 +1,5 @@
 import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-todo-edit-form-values';
 import { TodoScopeSelectContent } from '@src/features/planning/todo/components/todo-scope-select-content';
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
@@ -40,6 +39,7 @@ import { match } from 'ts-pattern';
 
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { addTodoFormSchema } from '../schemas/add-todo-form.schema';
+import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import {
   hasOnlyDateChanges,
   hasTodoUpdateChanges,

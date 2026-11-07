@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import { createVoiceNoteFixture } from '@src/features/voice/__tests__/voice-note.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
@@ -15,6 +14,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
+import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import { MemoList } from './memo-list';
 
 const ACCOUNT_ID = 'account-1';

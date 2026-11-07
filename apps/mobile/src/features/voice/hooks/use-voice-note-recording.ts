@@ -6,7 +6,6 @@ import {
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import type { VoiceCaptureEntry } from '@src/features/voice/constants/voice.events';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -17,6 +16,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
+import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { type VoiceNote } from '../schemas/voice-note.schema';
 import { useSpeechEvent } from './use-speech-event';

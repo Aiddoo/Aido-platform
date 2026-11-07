@@ -1,8 +1,4 @@
-import type {
-  VoiceDurationBucket,
-  VoicePlanAnalyticsSource,
-} from '@src/features/voice/constants/voice.events';
-
+import type { VoiceDurationBucket, VoicePlanAnalyticsSource } from '../constants/voice.events';
 import { VoicePlanPolicy } from '../domains/voice-plan.model';
 import { type VoicePlan, type VoicePlanSource } from '../schemas/voice-plan.schema';
 

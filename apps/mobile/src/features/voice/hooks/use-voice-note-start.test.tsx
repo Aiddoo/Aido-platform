@@ -11,7 +11,6 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/con
 import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
@@ -26,6 +25,7 @@ import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
+import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
 import { useVoiceNoteStart } from './use-voice-note-start';
 
 const ACCOUNT_ID = 'user-1';

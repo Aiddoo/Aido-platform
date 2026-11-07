@@ -1,3 +1,5 @@
+import type { TextTone } from '@src/shared/ui';
+
 import {
   isAfterDay,
   isBeforeDay,
@@ -6,8 +8,7 @@ import {
   isSameMonth,
   isSaturday,
   isSunday,
-} from '@src/features/planning/todo/utils/calendar-date';
-import type { TextTone } from '@src/shared/ui';
+} from './calendar-date';
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
 
