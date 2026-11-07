@@ -4,7 +4,7 @@ import { toInstant } from '@src/shared/date/instant';
 import {
   createPushPromptRepository,
   parsePushPromptDismissedAt,
-  pushPromptStorageKey,
+  createPushPromptStorageKey,
 } from './push-prompt.repository';
 
 describe('createPushPromptRepository', () => {
@@ -17,11 +17,15 @@ describe('createPushPromptRepository', () => {
     createPushPromptRepository(storage).dismiss('user-a', dismissedAt);
 
     // Then
-    expect(pushPromptStorageKey('user-a')).toBe('aido_push_permission_prompt_dismissed_v1:user-a');
-    expect(parsePushPromptDismissedAt(storage.get(pushPromptStorageKey('user-a')))).toEqual(
+    expect(createPushPromptStorageKey('user-a')).toBe(
+      'aido_push_permission_prompt_dismissed_v1:user-a',
+    );
+    expect(parsePushPromptDismissedAt(storage.get(createPushPromptStorageKey('user-a')))).toEqual(
       dismissedAt,
     );
-    expect(parsePushPromptDismissedAt(storage.get(pushPromptStorageKey('user-b')))).toBeNull();
+    expect(
+      parsePushPromptDismissedAt(storage.get(createPushPromptStorageKey('user-b'))),
+    ).toBeNull();
   });
 
   it('저장값이 날짜가 아니면 닫은 적 없는 것으로 본다', () => {

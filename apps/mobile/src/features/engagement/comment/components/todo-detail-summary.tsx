@@ -49,27 +49,27 @@ const TITLE_LINE_HEIGHT = 28;
 /** 24 크기 체크박스의 눌리는 영역을 44로 넓힌다 */
 const CHECKBOX_HIT_SLOP = 10;
 
-export function TodoDetailCard() {
+export function TodoDetailSummary() {
   return (
     <VStack gap={12}>
-      <TodoDetailCard.Owner />
+      <TodoDetailSummary.Owner />
 
-      <TodoDetailCard.Task />
+      <TodoDetailSummary.Task />
 
       <VStack gap={10} className="ms-9">
-        <TodoDetailCard.Schedule />
+        <TodoDetailSummary.Schedule />
 
-        <TodoDetailCard.SubTodos />
+        <TodoDetailSummary.SubTodos />
 
-        <TodoDetailCard.Metrics />
+        <TodoDetailSummary.Metrics />
 
-        <TodoDetailCard.Thanks />
+        <TodoDetailSummary.Thanks />
       </VStack>
     </VStack>
   );
 }
 
-TodoDetailCard.Owner = function Owner() {
+TodoDetailSummary.Owner = function Owner() {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
@@ -89,7 +89,7 @@ TodoDetailCard.Owner = function Owner() {
   );
 };
 
-TodoDetailCard.Task = function Task() {
+TodoDetailSummary.Task = function Task() {
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
@@ -133,7 +133,7 @@ TodoDetailCard.Task = function Task() {
   );
 };
 
-TodoDetailCard.Schedule = function Schedule() {
+TodoDetailSummary.Schedule = function Schedule() {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
@@ -184,7 +184,7 @@ TodoDetailCard.Schedule = function Schedule() {
   );
 };
 
-TodoDetailCard.SubTodos = function SubTodos() {
+TodoDetailSummary.SubTodos = function SubTodos() {
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
@@ -229,7 +229,7 @@ TodoDetailCard.SubTodos = function SubTodos() {
   );
 };
 
-TodoDetailCard.Metrics = function Metrics() {
+TodoDetailSummary.Metrics = function Metrics() {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
@@ -263,7 +263,7 @@ TodoDetailCard.Metrics = function Metrics() {
   );
 };
 
-TodoDetailCard.Thanks = function Thanks() {
+TodoDetailSummary.Thanks = function Thanks() {
   const { todoId } = useTodoParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
@@ -288,7 +288,7 @@ TodoDetailCard.Thanks = function Thanks() {
 };
 
 /** 자기 할 일이 대부분이라 작성자 줄 자리는 잡지 않는다. 친구 할 일은 그 한 줄만 받은 뒤 들어온다 */
-TodoDetailCard.Loading = function Loading() {
+TodoDetailSummary.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
 
   return (
@@ -316,7 +316,7 @@ TodoDetailCard.Loading = function Loading() {
 };
 
 /** 할 일을 고르지 않은 넓은 화면의 오른쪽 칸 */
-TodoDetailCard.Empty = function Empty() {
+TodoDetailSummary.Empty = function Empty() {
   const { t } = useTranslation('todo');
 
   return (
@@ -331,7 +331,7 @@ TodoDetailCard.Empty = function Empty() {
 };
 
 /** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다 */
-TodoDetailCard.Unavailable = function Unavailable({ onClose }: { onClose: () => void }) {
+TodoDetailSummary.Unavailable = function Unavailable({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (

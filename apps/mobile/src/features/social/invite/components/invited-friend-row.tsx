@@ -1,6 +1,6 @@
 import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { useGetFriendQueryOptions } from '@src/features/social/friend/queries/friend.queries';
+import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import { formatDateLabel } from '@src/shared/date/date-format';
@@ -23,7 +23,7 @@ import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import { type InvitedFriend } from '../schemas/invited-friend.schema';
+import type { InvitedFriend } from '../schemas/invited-friend.schema';
 import { invitedFriendChipVariants } from './invited-friend-row.variants';
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {
@@ -166,7 +166,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
  */
 function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   const { data: myFriend } = useInfiniteQuery(
-    useGetFriendQueryOptions({ friendId: friend.userId }),
+    useGetFriendInfiniteQueryOptions({ friendId: friend.userId }),
   );
   const { data: cooldownInfo } = useQuery({
     ...useGetRemindNudgeCooldownQueryOptions({ userId: friend.userId }),

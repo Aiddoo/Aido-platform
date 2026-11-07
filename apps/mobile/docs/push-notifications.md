@@ -50,11 +50,11 @@ PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/inf
 
 시스템 권한 창은 iOS에서 한 번만 뜬다. 그래서 먼저 앱 안 안내(`PushPermissionDialog`)로 묻고, 허용하면 시스템 창을 띄운다.
 
-| 위치               | 컴포넌트                                                                      | 동작                                                          |
-| ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 홈 피드 카드       | `PushPermissionCard` (`.Ask`·`.RequestSystem`·`.OpenSettings`·`.EnableInApp`) | 다음 단계에 맞는 카드 한 장. 닫으면 계정마다 14일 동안 숨긴다 |
-| 활성화 시점        | `ActivationPushPermissionDialog` + `usePushPermissionAskMoment`               | 아직 묻지 않은 사용자에게 계정·활성화 시점마다 한 번 안내     |
-| 설정 > 알림 > 푸시 | `PushPermissionStatusRow`                                                     | 현재 OS 권한 상태와 바로 할 행동을 항상 보여 준다             |
+| 위치               | 컴포넌트                                                                        | 동작                                                          |
+| ------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 홈 피드 카드       | `PushPermissionNotice` (`.Ask`·`.RequestSystem`·`.OpenSettings`·`.EnableInApp`) | 다음 단계에 맞는 카드 한 장. 닫으면 계정마다 14일 동안 숨긴다 |
+| 활성화 시점        | `ActivationPushPermissionDialog` + `usePushPermissionAskMoment`                 | 아직 묻지 않은 사용자에게 계정·활성화 시점마다 한 번 안내     |
+| 설정 > 알림 > 푸시 | `PushPermissionStatusRow`                                                       | 현재 OS 권한 상태와 바로 할 행동을 항상 보여 준다             |
 
 다음 단계는 `PushPermissionPolicy.nextStep(permission, { pushEnabled })`가 정한다.
 

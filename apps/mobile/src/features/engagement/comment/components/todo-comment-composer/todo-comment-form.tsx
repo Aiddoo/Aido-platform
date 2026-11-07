@@ -2,7 +2,7 @@ import { useDraftService, useIdGenerator, useLogger } from '@src/bootstrap/provi
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { getErrorMessage, isApiError } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -18,6 +18,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useFormState, useWatch } from 'react-hook-form';
@@ -31,6 +32,7 @@ import {
   type PreparedTodoCommentSubmission,
   TodoCommentComposerPolicy,
 } from '../../domains/todo-comment-composer.model';
+import { getTodoCommentErrorStatus } from '../../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import {
   useCreateTodoCommentChainMutationOptions,
@@ -44,12 +46,12 @@ import {
   toEditFormValues,
 } from '../../schemas/todo-comment-form.schema';
 import type { TodoCommentAuthor } from '../../schemas/todo-comment.schema';
-import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/comment-form-fields';
-import { getCommentFormMaxHeight } from '../../utils/comment-form-layout';
 import {
   createTodoCommentDraftKey,
   getTodoCommentDraftSourceUpdatedAt,
 } from '../../utils/todo-comment-draft';
+import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/todo-comment-form-fields';
+import { getCommentFormMaxHeight } from '../../utils/todo-comment-form-layout';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
 import { useTodoCommentForm } from '../todo-comment-form-context';
@@ -254,7 +256,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         preparedSubmissionRef.current = null;
       }
       logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {
-        status: isApiError(error) ? error.status : null,
+        status: getTodoCommentErrorStatus(error),
       });
     }
   });
@@ -340,7 +342,7 @@ function TargetBanner({
         accessibilityLabel={t('actions.closeComposer')}
         onPress={() => {
           reset(NEW_TODO_COMMENT_FORM_VALUES);
-          KeyboardController.dismiss().catch(() => undefined);
+          KeyboardController.dismiss().catch(noop);
         }}
       >
         <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
@@ -485,7 +487,7 @@ function SubmitButton({
       isDisabled={!hasContent || !isValid || isSubmitting}
       isLoading={isSubmitting}
       onPress={() => {
-        onSubmit().catch(() => undefined);
+        onSubmit().catch(noop);
       }}
       accessibilityLabel={mode.type === 'edit' ? t('actions.save') : t('form.post')}
     >

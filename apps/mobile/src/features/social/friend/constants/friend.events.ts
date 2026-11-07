@@ -1,4 +1,4 @@
-import type { FriendSearchLengthBucket } from '../utils/friend-search-length-bucket';
+import type { FriendSearchLengthBucket } from '../utils/friend-analytics';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

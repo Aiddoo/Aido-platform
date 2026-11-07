@@ -7,8 +7,8 @@ const unknownInviteRewardSchema = z.object({
 });
 
 // 구버전 앱이 새 보상 종류를 받아도 깨지지 않게 UNKNOWN으로 흡수한다
-export const InviteRewardSchema = z
+export const inviteRewardOrUnknownSchema = z
   .union([inviteRewardSchema, unknownInviteRewardSchema])
   .catch({ rewardType: REWARD_TYPE_UNKNOWN, quantity: 0 });
 
-export type InviteReward = z.output<typeof InviteRewardSchema>;
+export type InviteReward = z.output<typeof inviteRewardOrUnknownSchema>;

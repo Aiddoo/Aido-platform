@@ -1,7 +1,7 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 
 import {
-  allDoneBannerStorageKey,
+  createAllDoneBannerStorageKey,
   createAllDoneBannerRepository,
 } from './all-done-banner.repository';
 
@@ -17,6 +17,6 @@ describe('createAllDoneBannerRepository', () => {
 
     // Then
     expect(storage.get('aido_invite_all_done_banner_dismissed_v1:user-a')).toBe('2026-10-26');
-    expect(storage.get(allDoneBannerStorageKey('user-b'))).toBeUndefined();
+    expect(storage.get(createAllDoneBannerStorageKey('user-b'))).toBeUndefined();
   });
 });

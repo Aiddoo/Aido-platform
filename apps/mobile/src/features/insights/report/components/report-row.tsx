@@ -16,13 +16,13 @@ import { ReportTypeChip } from './report-type-chip';
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 
-interface ReportCardProps {
+interface ReportRowProps {
   report: AiReport;
   isSample?: boolean;
   isLast?: boolean;
 }
 
-export function ReportCard({ report, isSample, isLast = false }: ReportCardProps) {
+export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('ai');
@@ -31,7 +31,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
 
   return (
     <PressableFeedback
-      onPress={() => push({ pathname: '/reports/[id]', params: { id: reportId } })}
+      onPress={() => push({ pathname: '/reports/[reportId]', params: { reportId } })}
       className="rounded-xl"
     >
       <PressableFeedback.Highlight className="rounded-xl" />
@@ -110,7 +110,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-ReportCard.Loading = function Loading() {
+ReportRow.Loading = function Loading() {
   return (
     <VStack>
       {range(LOADING_CARD_COUNT).map((i) => (

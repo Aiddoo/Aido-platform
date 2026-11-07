@@ -1,6 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -22,24 +20,25 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
+import { toRedeemFailureReason } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 import type { InviteCode } from '../schemas/invite.schema';
 
 /** 초대 카드 위쪽. 누가 초대했는지를 가장 크게 보여 준다 */
-export function InvitePreviewCard() {
+export function InvitePreview() {
   const { inviteCode } = useInviteParams();
 
   if (inviteCode == null) {
-    return <InvitePreviewCard.Empty />;
+    return <InvitePreview.Empty />;
   }
 
-  return <InvitePreviewCard.Contents inviteCode={inviteCode} />;
+  return <InvitePreview.Contents inviteCode={inviteCode} />;
 }
 
-InvitePreviewCard.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
+InvitePreview.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
@@ -80,7 +79,7 @@ InvitePreviewCard.Contents = function Contents({ inviteCode }: { inviteCode: Inv
   );
 };
 
-InvitePreviewCard.Loading = function Loading() {
+InvitePreview.Loading = function Loading() {
   return (
     <VStack align="center" accessibilityState={{ busy: true }}>
       <Skeleton className="size-[104px] rounded-full" />
@@ -94,7 +93,7 @@ InvitePreviewCard.Loading = function Loading() {
 };
 
 /** 코드 형식이 틀렸거나 서버에 없는 코드일 때 */
-InvitePreviewCard.Empty = function Empty() {
+InvitePreview.Empty = function Empty() {
   const { t } = useTranslation('invite');
 
   return (
@@ -118,11 +117,11 @@ function EnterCodeButton() {
   );
 }
 
-InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+InvitePreview.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
-  return match(isApiError(error) ? error.code : null)
-    .with(ErrorCode.INVITE_2101, () => <InvitePreviewCard.Empty />)
-    .with(ErrorCode.INVITE_2102, () => (
+  return match(toRedeemFailureReason(error))
+    .with('not_found', () => <InvitePreview.Empty />)
+    .with('rotated', () => (
       <InviteResult
         icon={<RefreshIcon width={40} height={40} colorClassName="text-main" />}
         title={t('result.rotated.title')}
@@ -131,7 +130,7 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
         button={<EnterCodeButton />}
       />
     ))
-    .with(ErrorCode.INVITE_2105, () => (
+    .with('disabled', () => (
       <InviteResult
         icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
         title={t('result.disabled.title')}
@@ -139,14 +138,13 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
         testID="invite-result-disabled"
       />
     ))
-    .with(P.string.or(P.nullish), () => (
+    .otherwise(() => (
       <InviteResult
         title={t('result.loadFailed.title')}
         description={t('result.loadFailed.description')}
         button={<QueryErrorActions testID="invite-result-retry" onRetry={reset} />}
       />
-    ))
-    .exhaustive();
+    ));
 };
 
 interface InviteResultProps extends Pick<ComponentProps<typeof Result>, 'testID'> {

@@ -261,7 +261,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
 - 경계를 나눌 때는 한 오류가 한 곳에서만 보이는지, 로딩 모양이 지금과 같은지 먼저 확인한다. 같은 쿼리를 두 경계에서 읽으면 404가 두 번 보이므로 나누지 않는다.
 - 바깥 여백은 스크린의 `Spacing`이다. `mb`·`mt` 같은 여백 prop을 블록에 넘기지 않는다.
-- 스스로 숨는 블록은 간격도 함께 사라져야 한다. 조건을 스크린에서 알 수 있으면 `{isAvailable && (…)}` 안에 간격과 블록을 함께 둔다. 조회해야 알 수 있는 카드만 스크린이 `className`으로 넘긴다(`<PushPermissionCard className="mx-4 mb-3" />`).
+- 스스로 숨는 블록은 간격도 함께 사라져야 한다. 조건을 스크린에서 알 수 있으면 `{isAvailable && (…)}` 안에 간격과 블록을 함께 둔다. 조회해야 알 수 있는 카드만 스크린이 `className`으로 넘긴다(`<PushPermissionNotice className="mx-4 mb-3" />`).
 - 빈 줄로 구역을 나눈다.
 - 가상 목록의 `ListHeaderComponent` 안에도 카드·정렬 바·구분선을 직접 적는다. 헤더를 목록 밖으로 옮기면 스크롤과 첫 위치가 바뀐다. `header`·`ListHeaderComponent`는 자리가 정해진 슬롯이라 이름만 보고 없애지 않는다.
 - 데이터를 보여 주는 화면은 로딩·오류·빈 상태·데이터 4상태를 그린다. 저장 실패는 입력값을 지우지 않는다.
@@ -348,7 +348,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 
 **반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `range(n).map`이다.
 
-**네임스페이스는 응집도로 정한다.** `Item`·`Loading`·`Error`·`Empty`는 필수가 아니다. 쓰지 않는 static을 만들지 않는다. 부모에 강하게 결합된 조각(`DailyForecast.TemperatureBar`, `PushPermissionCard.Ask`)도 같은 방식으로 둔다. 파일 안 순서는 본체 → 구성 요소 → `.Loading` → `.Error` → `.Empty`다. 단계별 조각은 본체가 Policy의 step을 `match(step)….exhaustive()`로 고른다.
+**네임스페이스는 응집도로 정한다.** `Item`·`Loading`·`Error`·`Empty`는 필수가 아니다. 쓰지 않는 static을 만들지 않는다. 부모에 강하게 결합된 조각(`DailyForecast.TemperatureBar`, `PushPermissionNotice.Ask`)도 같은 방식으로 둔다. 파일 안 순서는 본체 → 구성 요소 → `.Loading` → `.Error` → `.Empty`다. 단계별 조각은 본체가 Policy의 step을 `match(step)….exhaustive()`로 고른다.
 
 **자리는 같고 구현이 갈리면 컴포넌트를 prop으로 넘긴다.** `MemoEditor`는 넓은 화면 pane과 Stack 화면에서 툴바만 다르다. `mode`로 분기하지 않고 인터페이스 하나를 받는다(`toolbar={MemoEditor.StackToolbar}`, `toolbar={MemoEditor.PaneToolbar}`).
 

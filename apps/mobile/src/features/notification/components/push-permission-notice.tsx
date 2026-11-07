@@ -20,12 +20,12 @@ import { PushPermissionDialog } from './push-permission-dialog';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';
 
-interface PushPermissionCardProps {
+interface PushPermissionNoticeProps {
   className?: string;
 }
 
 /** 이 기기로 알림이 닿지 않을 때 다음 할 일을 알려 준다. 닫으면 14일 동안 숨긴다 */
-export function PushPermissionCard({ className }: PushPermissionCardProps) {
+export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const [{ data: permission }, { data: preference }] = useSuspenseQueries({
     queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],
   });
@@ -51,16 +51,16 @@ export function PushPermissionCard({ className }: PushPermissionCardProps) {
 
   return match(step)
     .with(PUSH_PERMISSION_STEP.ASK, () => (
-      <PushPermissionCard.Ask className={className} onDismiss={dismiss} />
+      <PushPermissionNotice.Ask className={className} onDismiss={dismiss} />
     ))
     .with(PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
-      <PushPermissionCard.RequestSystem className={className} onDismiss={dismiss} />
+      <PushPermissionNotice.RequestSystem className={className} onDismiss={dismiss} />
     ))
     .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => (
-      <PushPermissionCard.OpenSettings className={className} onDismiss={dismiss} />
+      <PushPermissionNotice.OpenSettings className={className} onDismiss={dismiss} />
     ))
     .with(PUSH_PERMISSION_STEP.ENABLE_IN_APP, () => (
-      <PushPermissionCard.EnableInApp className={className} onDismiss={dismiss} />
+      <PushPermissionNotice.EnableInApp className={className} onDismiss={dismiss} />
     ))
     .exhaustive();
 }
@@ -70,7 +70,7 @@ interface StepNoticeProps {
   onDismiss: () => void;
 }
 
-PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps) {
+PushPermissionNotice.Ask = function Ask({ className, onDismiss }: StepNoticeProps) {
   const { t } = useTranslation('notification');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -99,7 +99,7 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
   );
 };
 
-PushPermissionCard.RequestSystem = function RequestSystem({
+PushPermissionNotice.RequestSystem = function RequestSystem({
   className,
   onDismiss,
 }: StepNoticeProps) {
@@ -138,7 +138,10 @@ PushPermissionCard.RequestSystem = function RequestSystem({
   );
 };
 
-PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }: StepNoticeProps) {
+PushPermissionNotice.OpenSettings = function OpenSettings({
+  className,
+  onDismiss,
+}: StepNoticeProps) {
   const { t } = useTranslation('notification');
   const { trackEvent } = useTrack();
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
@@ -169,7 +172,7 @@ PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }
   );
 };
 
-PushPermissionCard.EnableInApp = function EnableInApp({ className, onDismiss }: StepNoticeProps) {
+PushPermissionNotice.EnableInApp = function EnableInApp({ className, onDismiss }: StepNoticeProps) {
   const { t } = useTranslation('notification');
   const navigate = useSingleTap(router.navigate);
 

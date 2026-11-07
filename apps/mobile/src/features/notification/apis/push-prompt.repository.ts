@@ -7,7 +7,7 @@ export interface PushPromptRepository {
   dismiss(userId: string, dismissedAt: Instant): void;
 }
 
-export function pushPromptStorageKey(userId: string): string {
+export function createPushPromptStorageKey(userId: string): string {
   return `${PUSH_PROMPT_KEY_PREFIX}:${userId}`;
 }
 
@@ -20,6 +20,6 @@ export function parsePushPromptDismissedAt(saved: string | undefined): Instant |
 /** 알림 권한 안내를 닫은 시각을 계정마다 남긴다 */
 export function createPushPromptRepository(storage: SyncStorage): PushPromptRepository {
   return {
-    dismiss: (userId, dismissedAt) => storage.set(pushPromptStorageKey(userId), dismissedAt),
+    dismiss: (userId, dismissedAt) => storage.set(createPushPromptStorageKey(userId), dismissedAt),
   };
 }

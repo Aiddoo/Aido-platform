@@ -16,13 +16,13 @@ import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { useCommentParams } from '../hooks/use-comment-params';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentSortBar } from './todo-comment-sort-bar';
-import { TodoDetailCard } from './todo-detail-card';
+import { TodoDetailSummary } from './todo-detail-summary';
 
 /** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다 */
 export function TodoDetailHeader() {
   const { todoId } = useTodoParams();
   const [{ sort }, setCommentParams] = useCommentParams();
-  const changeSort = useChangeSort();
+  const sortChange = useSortChange();
 
   return (
     <>
@@ -30,12 +30,12 @@ export function TodoDetailHeader() {
         <Suspense
           fallback={
             <Box px={16} py={18}>
-              <TodoDetailCard.Loading />
+              <TodoDetailSummary.Loading />
             </Box>
           }
         >
           <Box px={16} py={18}>
-            <TodoDetailCard />
+            <TodoDetailSummary />
           </Box>
         </Suspense>
       </QueryErrorBoundary>
@@ -46,9 +46,11 @@ export function TodoDetailHeader() {
         <CommentCount />
         <TodoCommentSortBar
           value={sort}
-          isPending={changeSort.isPending}
+          isPending={sortChange.isPending}
           onChange={(next) =>
-            changeSort.run(next, () => setCommentParams({ sort: next, comment: undefined }))
+            sortChange.prefetchThenCommit(next, () =>
+              setCommentParams({ sort: next, comment: undefined }),
+            )
           }
         />
       </HStack>
@@ -78,7 +80,7 @@ function CommentCount() {
 }
 
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
-function useChangeSort() {
+function useSortChange() {
   const { todoId } = useTodoParams();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -95,7 +97,7 @@ function useChangeSort() {
     anchorCommentId: null,
   });
 
-  const run = (sort: TodoCommentSort, commit: () => void) => {
+  const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
     setIsPending(true);
     queryClient
       .prefetchInfiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
@@ -109,5 +111,5 @@ function useChangeSort() {
       );
   };
 
-  return { isPending, run };
+  return { isPending, prefetchThenCommit };
 }

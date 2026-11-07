@@ -14,7 +14,7 @@
   `/todo/[todoId]?comment=<id>`로 옮기는 Redirect만 남는다. 신고 시트(`comments/[commentId]/report`)는 그대로다.
 - 모바일은 묶음·답글 수·대표 답글·참여자·권한·`@멘션` 이름을 다시 계산하지 않는다. 서버 read model(v2)을 그린다.
   클라이언트가 정하는 것은 렌더 순서에 따른 연결선의 마지막 행뿐이다.
-- 할 일 본문은 `TodoDetailCard`가 소유한다. 각 feature 컴포넌트는 바깥 여백이나 화면 순서를 모른다.
+- 할 일 본문은 `TodoDetailSummary`가 소유한다. 각 feature 컴포넌트는 바깥 여백이나 화면 순서를 모른다.
 
 ## 상태와 소유자
 
@@ -67,7 +67,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
     <TodoCommentTitleBar.StackHeader />
 
     {isTodoUnavailable ? (
-      <TodoDetailCard.Unavailable onClose={router.back} />
+      <TodoDetailSummary.Unavailable onClose={router.back} />
     ) : (
       <TodoCommentKeyboardArea>
         <QueryErrorBoundary
@@ -93,8 +93,8 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 - `todoId`는 props로 넘기지 않는다. 각 컴포넌트가 `useTodoParams()`로 읽는다(`check:conventions`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
-- 할 일을 볼 수 없으면(`useIsTodoUnavailable`, 404) 본문·댓글 대신 `TodoDetailCard.Unavailable` 하나만 보인다.
-- `TodoDetailCard`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
+- 할 일을 볼 수 없으면(`useIsTodoUnavailable`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
+- `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
 - 체크는 내 할 일(`TodoPolicy.isOwnTodo`, `permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getDetailListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
 
@@ -185,7 +185,7 @@ features/engagement/comment/
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
-              todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-card.tsx  todo-detail-header.tsx
+              todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-summary.tsx  todo-detail-header.tsx
   utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts  comment-form-*.ts
   schemas/ todo-comment.schema.ts  todo-comment-form.schema.ts  todo-comment-draft.schema.ts  comment-params.schema.ts
 ```

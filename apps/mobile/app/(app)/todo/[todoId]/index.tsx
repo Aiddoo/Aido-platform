@@ -3,8 +3,8 @@ import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/compon
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
-import { TodoDetailCard } from '@src/features/engagement/comment/components/todo-detail-card';
 import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
+import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useIsTodoUnavailable } from '@src/features/planning/todo/hooks/use-is-todo-unavailable';
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
@@ -35,7 +35,7 @@ function TodoDetailScreen() {
         <TodoCommentTitleBar.StackHeader />
 
         {isTodoUnavailable ? (
-          <TodoDetailCard.Unavailable onClose={router.back} />
+          <TodoDetailSummary.Unavailable onClose={router.back} />
         ) : (
           <TodoCommentKeyboardArea>
             <QueryErrorBoundary

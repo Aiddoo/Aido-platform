@@ -17,17 +17,17 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { createInviteShareContent } from '../domains/invite-share.model';
+import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-content';
 import {
   useRotateInviteCodeMutationOptions,
   useShareInviteMutationOptions,
 } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
-import { getInviteShareCopy } from '../utils/invite-share-copy';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
 export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation(['invite', 'common']);
+  const createInviteShareContent = useCreateInviteShareContent();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
@@ -80,7 +80,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
           onPress={() =>
             share.mutate({
               channel: 'copy_link',
-              content: createInviteShareContent(myInvite, getInviteShareCopy(me.name)),
+              content: createInviteShareContent(myInvite, me.name),
             })
           }
         >

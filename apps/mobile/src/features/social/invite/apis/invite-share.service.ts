@@ -3,8 +3,8 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { SocialShareGateway } from '@src/core/ports/social-share';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
 
-import { INVITE_SHARE_IMAGE } from '../constants/invite-share';
-import type { InviteShareContent, InviteShareResult } from '../domains/invite-share.model';
+import { INVITE_SHARE_IMAGE } from '../constants/invite.constants';
+import type { InviteShareContent, InviteShareResult } from '../schemas/invite-share.schema';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
 interface InviteShareServicePorts {

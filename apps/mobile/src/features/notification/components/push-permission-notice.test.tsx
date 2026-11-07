@@ -23,7 +23,7 @@ import { PushDeviceService } from '../apis/push-device.service';
 import { createPushPromptRepository } from '../apis/push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../schemas/push-permission.schema';
-import { PushPermissionCard } from './push-permission-card';
+import { PushPermissionNotice } from './push-permission-notice';
 
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
@@ -47,7 +47,7 @@ async function renderCard(
   );
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
 
-  await renderUi(<PushPermissionCard />, {
+  await renderUi(<PushPermissionNotice />, {
     di: {
       pushPromptRepository: createPushPromptRepository(deviceSyncStorage),
       pushDeviceService: new PushDeviceService({
@@ -68,7 +68,7 @@ async function renderCard(
   return { gateway };
 }
 
-describe('PushPermissionCard — 홈 알림 안내', () => {
+describe('PushPermissionNotice — 홈 알림 안내', () => {
   afterEach(() => {
     deviceSyncStorage.keys().forEach((key) => deviceSyncStorage.remove(key));
   });

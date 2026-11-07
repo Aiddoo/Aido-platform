@@ -2,7 +2,7 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 
 import {
   type PendingRedemption,
-  PendingRedemptionSchema,
+  pendingRedemptionSchema,
 } from '../schemas/invite-redemption.schema';
 
 const PENDING_REDEMPTION_KEY = 'aido_invite_pending_v1';
@@ -25,7 +25,7 @@ export function createPendingRedemptionRepository(
       }
 
       try {
-        const parsed = PendingRedemptionSchema.safeParse(JSON.parse(raw));
+        const parsed = pendingRedemptionSchema.safeParse(JSON.parse(raw));
         return parsed.success ? parsed.data : null;
       } catch {
         // 손상된 값은 초대가 없는 것으로 본다

@@ -10,7 +10,7 @@ import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { allDoneBannerStorageKey } from '../apis/all-done-banner.repository';
+import { createAllDoneBannerStorageKey } from '../apis/all-done-banner.repository';
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 
@@ -38,7 +38,7 @@ export function InviteEntryBanner({
     enabled: userId != null,
   });
   // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
-  const [dismissedOn] = useStoredString(allDoneBannerStorageKey(userId ?? ''));
+  const [dismissedOn] = useStoredString(createAllDoneBannerStorageKey(userId ?? ''));
 
   if (
     !isInviteAvailable ||

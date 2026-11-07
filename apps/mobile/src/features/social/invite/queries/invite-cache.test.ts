@@ -6,7 +6,6 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createInvite, createRedemptionResult } from '../__tests__/invite.fixtures';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
-  getCachedInviteAvailability,
   invalidateAfterRedeem,
   invalidateOnInviteNotification,
   replaceMyInvite,
@@ -93,27 +92,6 @@ describe('invite-cache', () => {
         FRIEND_QUERY_KEYS.all,
         USER_QUERY_KEYS.me(),
       ]);
-    });
-  });
-
-  describe('getCachedInviteAvailability', () => {
-    it('아직 받지 못했으면 false를 반환한다', () => {
-      // When
-      const result = getCachedInviteAvailability(queryClient);
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    it('받은 사용 가능 여부를 반환한다', () => {
-      // Given
-      queryClient.setQueryData(INVITE_QUERY_KEYS.availability(), true);
-
-      // When
-      const result = getCachedInviteAvailability(queryClient);
-
-      // Then
-      expect(result).toBe(true);
     });
   });
 

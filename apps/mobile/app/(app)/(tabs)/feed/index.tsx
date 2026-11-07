@@ -7,13 +7,13 @@ import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/compon
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
-import { TodoDetailCard } from '@src/features/engagement/comment/components/todo-detail-card';
 import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
+import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
-import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
+import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
@@ -170,7 +170,7 @@ function MyFeed() {
         {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
         <QueryErrorBoundary fallback={() => null}>
           <Suspense fallback={null}>
-            <PushPermissionCard className="mx-4 mb-3" />
+            <PushPermissionNotice className="mx-4 mb-3" />
             <MarketingPushOptInBanner className="mx-4 mb-3" />
           </Suspense>
         </QueryErrorBoundary>
@@ -366,7 +366,7 @@ function FeedTodoDetailPane() {
   if (selectedTodoId == null) {
     return (
       <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
-        <TodoDetailCard.Empty />
+        <TodoDetailSummary.Empty />
       </StyledSafeAreaView>
     );
   }
@@ -392,7 +392,7 @@ function FeedTodoDetail({ onClose }: { onClose: () => void }) {
           <TodoCommentTitleBar date={date} />
 
           {isTodoUnavailable ? (
-            <TodoDetailCard.Unavailable onClose={onClose} />
+            <TodoDetailSummary.Unavailable onClose={onClose} />
           ) : (
             <TodoCommentKeyboardArea>
               <QueryErrorBoundary

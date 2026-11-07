@@ -1,25 +1,25 @@
-import { type RedemptionStatus } from '@aido/api/vocabulary';
+import type { RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time.constants';
 import { getErrorMessage } from '@src/shared/errors';
-import { type Page } from '@src/shared/types/page.types';
+import type { Page } from '@src/shared/types/page.types';
 import {
   queryOptions,
   type InfiniteData,
   infiniteQueryOptions,
   skipToken,
 } from '@tanstack/react-query';
-import { orderBy as orderByFn } from 'es-toolkit';
+import { orderBy } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import { isInviteDisabledError } from '../domains/invite.error';
 import { orderByJoinedAtDesc, orderByWaitingFirst } from '../domains/invited-friend.model';
-import { type RedemptionResult } from '../schemas/invite-redemption.schema';
-import { type InviteCode } from '../schemas/invite.schema';
-import { type InvitedFriend } from '../schemas/invited-friend.schema';
+import type { RedemptionResult } from '../schemas/invite-redemption.schema';
+import type { InviteCode } from '../schemas/invite.schema';
+import type { InvitedFriend } from '../schemas/invited-friend.schema';
 import { invalidateInviteAvailability } from './invite-cache';
 
 // 화면에 들어올 때마다 다시 확인하고, 떠나면 남기지 않는다
@@ -135,7 +135,7 @@ function selectInvitedFriendSummary(
   invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
 ) {
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
-  const invitedFriends = orderByFn(
+  const invitedFriends = orderBy(
     invitedFriendPages.pages.flatMap((page) => page.items),
     [orderByWaitingFirst, orderByJoinedAtDesc],
     ['asc', 'asc'],

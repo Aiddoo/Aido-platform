@@ -1,4 +1,4 @@
-import { getCommentFormMaxHeight } from './comment-form-layout';
+import { getCommentFormMaxHeight } from './todo-comment-form-layout';
 
 describe('getCommentFormMaxHeight', () => {
   it('작은 화면에서는 목록이 남도록 최소 높이를 쓴다', () => {

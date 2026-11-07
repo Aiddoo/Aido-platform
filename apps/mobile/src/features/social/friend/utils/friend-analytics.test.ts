@@ -1,4 +1,4 @@
-import { toFriendSearchLengthBucket } from './friend-search-length-bucket';
+import { toFriendSearchLengthBucket } from './friend-analytics';
 
 describe('toFriendSearchLengthBucket', () => {
   it.each([

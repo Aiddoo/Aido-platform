@@ -6,13 +6,13 @@ export interface AllDoneBannerRepository {
   dismiss(userId: string, dateKey: string): void;
 }
 
-export function allDoneBannerStorageKey(userId: string): string {
+export function createAllDoneBannerStorageKey(userId: string): string {
   return `${ALL_DONE_BANNER_KEY_PREFIX}:${userId}`;
 }
 
 /** "오늘은 그만 보기"를 계정마다 하루 한 칸만 남긴다(날짜가 바뀌면 이전 기록을 덮어쓴다) */
 export function createAllDoneBannerRepository(storage: SyncStorage): AllDoneBannerRepository {
   return {
-    dismiss: (userId, dateKey) => storage.set(allDoneBannerStorageKey(userId), dateKey),
+    dismiss: (userId, dateKey) => storage.set(createAllDoneBannerStorageKey(userId), dateKey),
   };
 }

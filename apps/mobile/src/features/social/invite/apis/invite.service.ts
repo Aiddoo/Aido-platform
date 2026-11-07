@@ -29,10 +29,10 @@ import {
   type InviteLinkSource,
   type PendingRedemption,
   type RedemptionResult,
-  RedemptionResultSchema,
+  redemptionResultSchema,
 } from '../schemas/invite-redemption.schema';
-import { type Invite, type InviteCode, InviteSchema } from '../schemas/invite.schema';
-import { type InvitedFriend, InvitedFriendsPageSchema } from '../schemas/invited-friend.schema';
+import { type Invite, type InviteCode, inviteSchema } from '../schemas/invite.schema';
+import { type InvitedFriend, invitedFriendsPageSchema } from '../schemas/invited-friend.schema';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
 import type { AllDoneBannerRepository } from './all-done-banner.repository';
 import type { InstallReferrerRepository } from './install-referrer.repository';
@@ -144,7 +144,7 @@ export class InviteService {
         `v1/invites/${inviteCode}/redeem`,
         installationId == null ? {} : { installationId },
       ),
-      RedemptionResultSchema,
+      redemptionResultSchema,
       identity,
       '[InviteService] Invalid redeem response',
     );
@@ -154,7 +154,7 @@ export class InviteService {
   getInvite = async (signal?: AbortSignal): Promise<Result<Invite, ApiError>> =>
     parseApiResponse(
       await this.#authHttpClient.get('v1/invites/me', { signal }),
-      InviteSchema,
+      inviteSchema,
       identity,
       '[InviteService] Invalid getInvite response',
     );
@@ -163,7 +163,7 @@ export class InviteService {
   rotateInviteCode = async (): Promise<Result<Invite, ApiError>> =>
     parseApiResponse(
       await this.#authHttpClient.post('v1/invites/me/rotate'),
-      InviteSchema,
+      inviteSchema,
       identity,
       '[InviteService] Invalid rotateInviteCode response',
     );
@@ -177,7 +177,7 @@ export class InviteService {
         signal,
         params: { cursor: params.cursor, limit: params.limit, status: params.status },
       }),
-      InvitedFriendsPageSchema,
+      invitedFriendsPageSchema,
       toInvitedFriendsPage,
       '[InviteService] Invalid getInvitedFriends response',
     );

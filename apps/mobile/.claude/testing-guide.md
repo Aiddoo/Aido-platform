@@ -130,7 +130,7 @@ const gateway = createPushNotificationGatewayStub({
 const pushPromptRepository = createPushPromptRepository(createMemorySyncStorage());
 
 // When
-await renderUi(<PushPermissionCard />, {
+await renderUi(<PushPermissionNotice />, {
   di: { pushPromptRepository, pushDeviceService: new PushDeviceService(gateway /* … */) },
   queryClient,
 });

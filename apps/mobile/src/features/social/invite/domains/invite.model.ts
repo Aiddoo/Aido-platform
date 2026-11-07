@@ -5,7 +5,7 @@ import { match } from 'ts-pattern';
 import {
   type Invite,
   type InviteCode,
-  InviteCodeSchema,
+  inviteCodeSchema,
   type InviterRewardMilestone,
   normalizeInviteCode,
 } from '../schemas/invite.schema';
@@ -24,7 +24,7 @@ export function toInviteCodeDraft(raw: string) {
 }
 
 export function parseInviteCode(raw: unknown): InviteCode | null {
-  const parsed = InviteCodeSchema.safeParse(typeof raw === 'string' ? raw.normalize('NFKC') : raw);
+  const parsed = inviteCodeSchema.safeParse(typeof raw === 'string' ? raw.normalize('NFKC') : raw);
   return parsed.success ? parsed.data : null;
 }
 

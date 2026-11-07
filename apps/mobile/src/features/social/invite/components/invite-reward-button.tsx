@@ -23,15 +23,18 @@ import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { createPawPrintBoard } from '../utils/invite-paw-print-board.geometry';
-import { inviteRewardDotVariants } from './invite-reward-card.variants';
+import { inviteRewardDotVariants } from './invite-reward-button.variants';
 
-type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onPress' | 'children'>;
+type InviteRewardButtonProps = Omit<
+  ComponentProps<typeof PressableFeedback>,
+  'onPress' | 'children'
+>;
 
 // 마이페이지 카드에는 지금 판의 첫 줄 네 칸만 줄여 보여 준다
 const PREVIEW_COLUMNS = 4;
 
 /** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 MyPageInviteCard가 정한다 */
-function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
+function InviteRewardButton({ className, ...props }: InviteRewardButtonProps) {
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
@@ -98,7 +101,7 @@ function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
   );
 }
 
-InviteRewardCard.Loading = function Loading({ className }: { className?: string }) {
+InviteRewardButton.Loading = function Loading({ className }: { className?: string }) {
   return (
     <VStack
       gap={12}
@@ -115,7 +118,7 @@ InviteRewardCard.Loading = function Loading({ className }: { className?: string 
 };
 
 /** 카드와 같은 자리·높이에 다시 불러오기와 문의를 둔다 */
-InviteRewardCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+InviteRewardButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['invite', 'common']);
 
   return (
@@ -152,9 +155,9 @@ export function MyPageInviteCard() {
   }
 
   return (
-    <QueryErrorBoundary fallback={InviteRewardCard.Error}>
-      <Suspense fallback={<InviteRewardCard.Loading />}>
-        <InviteRewardCard />
+    <QueryErrorBoundary fallback={InviteRewardButton.Error}>
+      <Suspense fallback={<InviteRewardButton.Loading />}>
+        <InviteRewardButton />
       </Suspense>
     </QueryErrorBoundary>
   );

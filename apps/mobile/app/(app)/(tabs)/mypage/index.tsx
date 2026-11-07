@@ -7,7 +7,7 @@ import { MyPageMenu } from '@src/features/identity/user/components/mypage-menu/m
 import { MyPagePaneLayout } from '@src/features/identity/user/components/mypage-pane/mypage-pane-layout';
 import { ProfileCard } from '@src/features/identity/user/components/profile-card';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
-import { MyPageInviteCard } from '@src/features/social/invite/components/invite-reward-card';
+import { MyPageInviteCard } from '@src/features/social/invite/components/invite-reward-button';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
