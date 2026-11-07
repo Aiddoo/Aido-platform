@@ -1,23 +1,36 @@
-import { PaywallPane } from '@src/features/billing/subscription/components/paywall-pane';
-import { SubscriberPane } from '@src/features/billing/subscription/components/subscriber-pane';
+import { Paywall } from '@src/features/billing/subscription/components/paywall';
+import { PlanPicker } from '@src/features/billing/subscription/components/plan-picker';
+import { PremiumNotice } from '@src/features/billing/subscription/components/premium-notice';
+import { PurchaseButton } from '@src/features/billing/subscription/components/purchase-button';
+import { RestorePurchaseButton } from '@src/features/billing/subscription/components/restore-purchase-button';
+import { SubscriptionOfflineActionsNotice } from '@src/features/billing/subscription/components/subscription-offline-actions-notice';
 import { SubscriptionReceipt } from '@src/features/billing/subscription/components/subscription-receipt';
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
+  Button,
+  DashedDivider,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   ReadableContent,
+  ScallopedContainer,
   Spacing,
   StyledSafeAreaView,
+  VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Suspense } from 'react';
+import { router } from 'expo-router';
+import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -33,12 +46,103 @@ function SubscriptionScreen() {
     canSubscribe: receipt.primaryAction === 'subscribe',
     view,
   })
-    .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => <PaywallPane />)
-    .with({ hasFullAccess: true }, () => (
-      <SubscriberPane rewardStamp={<InvitePawPrintBoard.Stamp />} />
+    .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => (
+      <SubscriptionScreen.Plans />
     ))
+    .with({ hasFullAccess: true }, () => <SubscriptionScreen.Receipt />)
     .exhaustive();
 }
+
+SubscriptionScreen.Plans = function Plans() {
+  const [chosenPlanId, setChosenPlanId] = useState<string>();
+
+  return (
+    <Box className="flex-1" testID="subscription-paywall">
+      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={16} />
+
+          <PremiumNotice.GrantEnded className="mb-3" />
+
+          <ScallopedContainer>
+            <Paywall />
+
+            <DashedDivider className="my-5 mx-5" />
+
+            <Box className="px-5 pb-5">
+              <QueryErrorBoundary fallback={PlanPicker.Error}>
+                <Suspense fallback={<PlanPicker.Loading />}>
+                  <PlanPicker chosenPlanId={chosenPlanId} onChoose={setChosenPlanId} />
+                </Suspense>
+              </QueryErrorBoundary>
+            </Box>
+          </ScallopedContainer>
+
+          <Spacing size={24} />
+
+          <VStack gap={8} className="items-center">
+            <Paywall.RenewalNotice />
+            <Paywall.Terms />
+            <RestorePurchaseButton size="small" />
+          </VStack>
+        </StyledSafeAreaView>
+      </ScrollView>
+
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        <PurchaseButton chosenPlanId={chosenPlanId} />
+      </StyledSafeAreaView>
+    </Box>
+  );
+};
+
+SubscriptionScreen.Receipt = function Receipt() {
+  const { t } = useTranslation('subscription');
+  const { primaryAction } = useSubscriptionReceipt();
+  const openSubscriptionManagement = useOpenSubscriptionManagement();
+  const isOnline = useIsOnline();
+
+  return (
+    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <Spacing size={16} />
+
+        <PremiumNotice.Ending className="mb-3" />
+
+        <SubscriptionReceipt rewardStamp={<InvitePawPrintBoard.Stamp />} />
+
+        <Spacing size={16} />
+
+        {match(primaryAction)
+          .with('subscribe', () => (
+            <Button
+              onPress={() =>
+                router.push({
+                  pathname: '/settings/subscription',
+                  params: { view: 'plans' satisfies SubscriptionView },
+                })
+              }
+            >
+              {t('subscriber.subscribeAfterGrantButton')}
+            </Button>
+          ))
+          .with('manage', () => (
+            <Button onPress={openSubscriptionManagement} variant="weak" color="dark">
+              {t('subscriber.manageButton')}
+            </Button>
+          ))
+          .with(null, () => null)
+          .exhaustive()}
+
+        <Spacing size={16} />
+
+        <VStack gap={8} className="items-center">
+          <RestorePurchaseButton size="medium" />
+          {!isOnline && <SubscriptionOfflineActionsNotice />}
+        </VStack>
+      </StyledSafeAreaView>
+    </ScrollView>
+  );
+};
 
 SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();

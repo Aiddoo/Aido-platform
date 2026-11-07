@@ -3,15 +3,19 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { InlineAlert, Spacing, Text } from '@src/shared/ui';
+import { InlineAlert, Text } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
+import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 
 /** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
-function Ending() {
+type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
+
+function Ending({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();
 
@@ -41,27 +45,24 @@ function Ending() {
     .exhaustive();
 
   return (
-    <>
-      <InlineAlert
-        status="accent"
-        accessibilityRole="summary"
-        className="rounded-2xl bg-main/10"
-        testID="subscription-ending-notice"
-        image={
-          <Chip className="self-center rounded-full bg-main px-2 py-0.5">
-            <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
-              {badge}
-            </Text>
-          </Chip>
-        }
-        title={message}
-      />
-      <Spacing size={12} />
-    </>
+    <InlineAlert
+      status="accent"
+      accessibilityRole="summary"
+      className={cn('rounded-2xl bg-main/10', className)}
+      testID="subscription-ending-notice"
+      image={
+        <Chip className="self-center rounded-full bg-main px-2 py-0.5">
+          <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
+            {badge}
+          </Text>
+        </Chip>
+      }
+      title={message}
+    />
   );
 }
 
-function GrantEnded() {
+function GrantEnded({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const dateFormatContext = useDateFormatContext();
@@ -72,20 +73,17 @@ function GrantEnded() {
   }
 
   return (
-    <>
-      <Text
-        size="b4"
-        shade={7}
-        align="center"
-        lineBreakStrategyIOS="hangul-word"
-        className="rounded-2xl bg-gray-1 px-4 py-3"
-      >
-        {t('paywall.grantEnded', {
-          date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),
-        })}
-      </Text>
-      <Spacing size={12} />
-    </>
+    <Text
+      size="b4"
+      shade={7}
+      align="center"
+      lineBreakStrategyIOS="hangul-word"
+      className={cn('rounded-2xl bg-gray-1 px-4 py-3', className)}
+    >
+      {t('paywall.grantEnded', {
+        date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),
+      })}
+    </Text>
   );
 }
 
