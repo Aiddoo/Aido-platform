@@ -1,3 +1,5 @@
+import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
+
 import {
   type AppVersionConfig,
   type AppVersionPlatform,
@@ -23,18 +25,6 @@ function isValidVersion(version: string | undefined): version is string {
   return appStoreVersionSchema.safeParse(version).success;
 }
 
-function compareVersions(current: string, latest: string) {
-  const left = current.split('.').map(Number);
-  const right = latest.split('.').map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    const difference = (left[index] ?? 0) - (right[index] ?? 0);
-    if (difference !== 0) {
-      return difference;
-    }
-  }
-  return 0;
-}
-
 /** 점검이 켜져 있고 플랫폼과 두 버전이 모두 올바를 때만 판정한다. 아니면 어떤 안내도 하지 않는다 */
 function canCompareVersions(input: AppVersionPolicyInput): input is ComparableInput {
   const { config, platform, currentVersion } = input;
@@ -47,7 +37,12 @@ function canCompareVersions(input: AppVersionPolicyInput): input is ComparableIn
 }
 
 function isBehindLatest(input: ComparableInput) {
-  return compareVersions(input.currentVersion, input.config.latestByPlatform[input.platform]) < 0;
+  const difference = compareSemanticVersions(
+    input.currentVersion,
+    input.config.latestByPlatform[input.platform],
+  );
+
+  return difference != null && difference < 0;
 }
 
 /** 스토어에 더 새 버전이 있다 */

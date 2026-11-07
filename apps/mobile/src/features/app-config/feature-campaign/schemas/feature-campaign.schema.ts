@@ -1,8 +1,5 @@
-import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
-
-export const featureCampaignAppVersionSchema = featureDiscoveryMinAppVersionSchema;
 
 const featureCampaignConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),

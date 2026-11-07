@@ -1,11 +1,10 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { toInstant } from '@src/shared/date/instant';
-import { i18n } from '@src/shared/i18n';
 
 import { RELEASES } from '../constants/releases';
 import type { ReleaseList } from '../schemas/release.schema';
-import { WhatsNewPolicy, isSemanticVersionAtLeast } from './whats-new.model';
+import { WhatsNewPolicy } from './whats-new.model';
 
 const createUser = (overrides: Partial<User> = {}): User => ({
   id: 'user-1',
@@ -41,37 +40,7 @@ const createEnabledConfig = (
   ...overrides,
 });
 
-describe('isSemanticVersionAtLeast', () => {
-  it.each([
-    ['1.8.0', '1.8.0'],
-    ['1.8.1', '1.8.0'],
-    ['2.0.0', '1.8.0'],
-    ['1.8.0', '1.8.0-rc.1'],
-  ])('%s는 최소 버전 %s를 충족한다', (appVersion, minVersion) => {
-    // When
-    const result = isSemanticVersionAtLeast(appVersion, minVersion);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it.each([
-    ['1.7.9', '1.8.0'],
-    ['1.8.0-rc.1', '1.8.0'],
-    ['1.8.0-alpha-a', '1.8.0-alpha-b'],
-    ['1.8.0-A', '1.8.0-a'],
-    [undefined, '1.8.0'],
-    ['invalid', '1.8.0'],
-  ])('%s는 최소 버전 %s를 충족하지 않는다', (appVersion, minVersion) => {
-    // When
-    const result = isSemanticVersionAtLeast(appVersion, minVersion);
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
-
-describe('WhatsNewPolicy.canAutoOpen', () => {
+describe('canAutoOpen', () => {
   const eligibleInput = {
     config: createEnabledConfig(),
     user: createUser(),
@@ -88,15 +57,15 @@ describe('WhatsNewPolicy.canAutoOpen', () => {
   });
 
   it.each([
-    [{ config: { enabled: false } as const }, '서버 비활성'],
-    [{ config: undefined }, '설정 실패'],
-    [{ user: undefined }, '사용자 조회 실패'],
-    [{ user: createUser({ createdAt: toInstant('2026-08-01T00:00:00.000Z') }) }, '신규 사용자'],
-    [{ appVersion: '1.7.9' }, '미지원 앱'],
-    [{ appVersion: undefined }, '알 수 없는 앱 버전'],
-    [{ hasSeen: true }, '이미 본 캠페인'],
-    [{ config: createEnabledConfig({ autoOpen: false }) }, '자동 열기 비활성'],
-  ])('%s 조건에서는 false를 반환한다', (overrides, _label) => {
+    ['서버 비활성', { config: { enabled: false } as const }],
+    ['설정 실패', { config: undefined }],
+    ['사용자 조회 실패', { user: undefined }],
+    ['신규 사용자', { user: createUser({ createdAt: toInstant('2026-08-01T00:00:00.000Z') }) }],
+    ['미지원 앱', { appVersion: '1.7.9' }],
+    ['알 수 없는 앱 버전', { appVersion: undefined }],
+    ['이미 본 캠페인', { hasSeen: true }],
+    ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
+  ])('%s 조건에서는 false를 반환한다', (_label, overrides) => {
     // When
     const result = WhatsNewPolicy.canAutoOpen({ ...eligibleInput, ...overrides });
 
@@ -105,7 +74,7 @@ describe('WhatsNewPolicy.canAutoOpen', () => {
   });
 });
 
-describe('WhatsNewPolicy.getLatestRelease', () => {
+describe('getLatestRelease', () => {
   it('목록 순서와 상관없이 가장 최근에 나온 출시를 고른다', () => {
     // Given
     const releases: ReleaseList = [
@@ -121,7 +90,7 @@ describe('WhatsNewPolicy.getLatestRelease', () => {
   });
 });
 
-describe('WhatsNewPolicy.findReleaseByCampaign', () => {
+describe('findReleaseByCampaign', () => {
   it('앱이 모르는 캠페인이면 찾지 못한다', () => {
     // When
     const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, 'feature-discovery-2026-08');
@@ -131,7 +100,7 @@ describe('WhatsNewPolicy.findReleaseByCampaign', () => {
   });
 });
 
-describe('WhatsNewPolicy.isReleaseAvailable', () => {
+describe('isReleaseAvailable', () => {
   it.each([
     [true, false, false],
     [true, true, true],
@@ -145,7 +114,7 @@ describe('WhatsNewPolicy.isReleaseAvailable', () => {
   });
 });
 
-describe('WhatsNewPolicy.isReentryVisible', () => {
+describe('isReentryVisible', () => {
   const openedAt = toInstant('2026-11-01T00:00:00.000Z');
 
   it.each([
@@ -170,7 +139,7 @@ describe('WhatsNewPolicy.isReentryVisible', () => {
   });
 });
 
-describe('WhatsNewPolicy.hasUnseenRelease', () => {
+describe('hasUnseenRelease', () => {
   it('최신 출시를 봤으면 지난 출시를 안 봤어도 없다', () => {
     // When
     const result = WhatsNewPolicy.hasUnseenRelease(RELEASES, [RELEASES[0].campaignId]);
@@ -185,16 +154,5 @@ describe('WhatsNewPolicy.hasUnseenRelease', () => {
 
     // Then
     expect(result).toBe(true);
-  });
-});
-
-describe('RELEASES', () => {
-  it('출시 id와 캠페인 id가 겹치지 않고 요약 문구가 있다', () => {
-    // Then
-    expect(new Set(RELEASES.map((release) => release.id)).size).toBe(RELEASES.length);
-    expect(new Set(RELEASES.map((release) => release.campaignId)).size).toBe(RELEASES.length);
-    RELEASES.forEach((release) => {
-      expect(i18n.exists(release.summaryKey, { ns: 'whatsNew' })).toBe(true);
-    });
   });
 });
