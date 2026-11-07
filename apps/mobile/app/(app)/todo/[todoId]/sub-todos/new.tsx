@@ -12,7 +12,7 @@ export default function SubTodoCreateSheetRoute() {
 
   return (
     <SheetRouteScreen>
-      <AddSubTodoBottomSheet mode="create" />
+      <AddSubTodoBottomSheet />
     </SheetRouteScreen>
   );
 }

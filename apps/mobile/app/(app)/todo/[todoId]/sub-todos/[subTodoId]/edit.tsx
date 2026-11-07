@@ -1,4 +1,4 @@
-import { AddSubTodoBottomSheet } from '@src/features/planning/composer/components/add-sub-todo-bottom-sheet';
+import { EditSubTodoBottomSheet } from '@src/features/planning/composer/components/edit-sub-todo-bottom-sheet';
 import { subTodoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -12,7 +12,7 @@ export default function SubTodoEditSheetRoute() {
 
   return (
     <SheetRouteScreen>
-      <AddSubTodoBottomSheet mode="edit" />
+      <EditSubTodoBottomSheet />
     </SheetRouteScreen>
   );
 }

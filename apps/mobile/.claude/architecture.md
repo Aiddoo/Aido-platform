@@ -167,7 +167,6 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | utils 파일                        | 평탄한 `*.view-model.ts` 8개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                  |
 | [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 22개. `safeParse(result.value)` 2곳이 남았다                                                                         |
 | [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 3개(`shared/infra/http` 2, `shared/date/time-of-day`). `common`의 서브패스가 없어 남겼다 |
-| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                         |
 | [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                         |
 | [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                      |
 | [층과 의존](#층과-의존)           | 양방향 6쌍, 허용 외 위층 import 없음                                                                                                                |

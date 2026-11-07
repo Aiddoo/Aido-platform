@@ -1,89 +1,32 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import {
-  useSubTodoParams,
-  useTodoSheetDateParam,
-} from '@src/features/planning/todo/hooks/use-todo-sheet-params';
-import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { type SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
-import { DictationButton } from '@src/features/voice/components/dictation-button';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
-import { useTranslation } from '@src/shared/i18n';
-import {
-  BottomSheetInput,
-  Box,
-  HintPopoverContent,
-  HStack,
-  InfoIcon,
-  INQUIRY_SHEET_EXIT,
-  KeyboardBottomSheet,
-  MicIcon,
-  QueryErrorActions,
-  QueryErrorBoundary,
-  type QueryErrorFallbackProps,
-  Result,
-  Text,
-  TrashIcon,
-  useSheetRoute,
-  VStack,
-  IconButton,
-} from '@src/shared/ui';
+import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
-import type { ComponentProps, ComponentRef } from 'react';
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import type { TextInput } from 'react-native';
-import { match } from 'ts-pattern';
+import { Separator } from 'heroui-native';
+import { type ComponentProps, useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 
-import {
-  useAddSubTodoMutationOptions,
-  useUpdateSubTodoMutationOptions,
-} from '../queries/todo-composer.mutations';
+import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
+import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
 import { TodoComposerSubmitButton } from './todo-composer-fields';
 
-type AddSubTodoBottomSheetProps = Omit<
-  ComponentProps<typeof KeyboardBottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
-> & {
-  mode: 'create' | 'edit';
-};
+type AddSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet>, 'children'>;
 
-export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
+export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
   return (
-    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <AddSubTodoBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<AddSubTodoBottomSheet.Loading />}>
-          {match(mode)
-            .with('create', () => <AddSubTodoBottomSheet.Create onClose={() => sheet.close()} />)
-            .with('edit', () => <AddSubTodoBottomSheet.Edit onClose={() => sheet.close()} />)
-            .exhaustive()}
-        </Suspense>
-      </QueryErrorBoundary>
-    </KeyboardBottomSheet>
+    <SubTodoBottomSheet {...props}>
+      {(close) => <AddSubTodoBottomSheet.Contents onClose={close} />}
+    </SubTodoBottomSheet>
   );
 }
 
-interface SheetContentProps {
-  onClose: () => void;
-}
-
-AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
+AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
   const { todoId } = useTodoParams();
   const date = useTodoSheetDateParam();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
@@ -99,210 +42,57 @@ AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
     return null;
   }
 
-  return <SubTodoForm todo={todo} subTodo={null} onClose={onClose} />;
+  return <AddSubTodoForm todo={todo} onClose={onClose} />;
 };
 
-AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
-  const { todoId } = useTodoParams();
-  const { subTodoId } = useSubTodoParams();
+function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) {
   const date = useTodoSheetDateParam();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
-
-  useEffect(() => {
-    if (todo == null || subTodo == null) {
-      onClose();
-    }
-  }, [todo, subTodo, onClose]);
-
-  if (todo == null || subTodo == null) {
-    return null;
-  }
-
-  return <SubTodoForm todo={todo} subTodo={subTodo} onClose={onClose} />;
-};
-
-AddSubTodoBottomSheet.Loading = function Loading() {
-  return (
-    <VStack gap={12}>
-      <Skeleton className="h-12 w-full rounded-xl" />
-      <Separator thickness={1} className="bg-gray-2" />
-      <Skeleton className="h-9 w-24 self-end rounded-4xl" />
-    </VStack>
-  );
-};
-
-AddSubTodoBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
-};
-
-interface SubTodoFormProps {
-  todo: Todo;
-  subTodo: SubTodo | null;
-  onClose: () => void;
-}
-
-function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
-  const { t } = useTranslation('todo');
-  const date = useTodoSheetDateParam();
-  const fontScaledSize = useFontScaledSize();
-
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
-    defaultValues: { title: subTodo?.title ?? '' },
+    defaultValues: { title: '' },
   });
-  const draftTitle = useWatch({ control: form.control, name: 'title' });
-  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
-
+  const title = useWatch({ control: form.control, name: 'title' });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
-  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
-  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
-  const isSubmitting = addSubTodo.isPending || updateSubTodo.isPending;
-  const isBusy = isSubmitting || deleteSubTodo.isPending;
+  const isSubmitDisabled = !title.trim() || addSubTodo.isPending;
 
-  const isSubmitDisabled = !draftTitle.trim() || isBusy;
-
-  const submitSubTodo = form.handleSubmit(async (values) => {
-    const title = values.title.trim();
-    if (!title || isBusy) {
-      return;
-    }
-    if (subTodo != null && !SubTodoPolicy.hasTitleChanged(subTodo, title)) {
-      onClose();
-
+  const submit = form.handleSubmit(async (values) => {
+    const trimmedTitle = values.title.trim();
+    if (!trimmedTitle || addSubTodo.isPending) {
       return;
     }
 
-    const saved = await (
-      subTodo == null
-        ? addSubTodo.mutateAsync({ todoId: todo.id, title, date })
-        : updateSubTodo.mutateAsync({
-            todoId: todo.id,
-            subTodoId: subTodo.id,
-            title,
-            date,
-          })
-    ).catch(() => null);
+    const saved = await addSubTodo
+      .mutateAsync({ todoId: todo.id, title: trimmedTitle, date })
+      .catch(() => null);
 
     if (saved == null) {
       return;
     }
 
-    if (subTodo == null) {
-      form.reset();
-    }
+    form.reset();
     onClose();
   });
 
-  const handleDelete = async (target: SubTodo) => {
-    if (isBusy) {
-      return;
-    }
-
-    const removed = await deleteSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: target.id, date })
-      .catch(() => null);
-
-    if (removed != null) {
-      onClose();
-    }
-  };
-
   return (
     <VStack gap={12}>
-      <Controller
-        control={form.control}
-        name="title"
-        render={({ field }) => (
-          <BottomSheetInput
-            ref={inputRef}
-            testID="sub-todo-input"
-            autoFocus
-            placeholder={t('subTodo.placeholder')}
-            value={field.value}
-            onChange={field.onChange}
-            maxLength={subTodoFormSchema.shape.title.maxLength ?? undefined}
-            size="medium"
-            renderErrorMessage={false}
-            returnKeyType="done"
-            onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitSubTodo())}
-          />
-        )}
+      <SubTodoTitleInput
+        form={form}
+        onSubmitEditing={() => (isSubmitDisabled ? onClose() : submit())}
       />
 
       <Separator thickness={1} className="bg-gray-2" />
 
       <HStack gap={8} align="center">
-        {subTodo != null && (
-          <IconButton
-            testID="sub-todo-delete"
-            accessibilityLabel={t('actions.delete')}
-            icon={
-              <TrashIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-error"
-              />
-            }
-            className="size-9 min-h-0 min-w-0 rounded-full bg-error/10"
-            isDisabled={isBusy}
-            onPress={() => handleDelete(subTodo)}
-          />
-        )}
-
         <Box className="flex-1" />
 
-        <SpeechTooltip />
-        <DictationButton value={draftTitle} onChange={(text) => form.setValue('title', text)} />
+        <SubTodoDictation form={form} />
         <TodoComposerSubmitButton
           testID="sub-todo-submit"
           isDisabled={isSubmitDisabled}
-          isSubmitting={isSubmitting}
-          onPress={() => submitSubTodo()}
+          isSubmitting={addSubTodo.isPending}
+          onPress={() => submit()}
         />
       </HStack>
     </VStack>
-  );
-}
-
-function SpeechTooltip() {
-  const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation('todo');
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Popover.Trigger asChild>
-        <PressableFeedback onPress={() => setIsOpen(true)} className="items-center justify-center">
-          <HStack gap={4} align="center">
-            <Text size="e2" weight="medium" shade={6}>
-              {t('subTodo.voiceInput')}
-            </Text>
-
-            <InfoIcon
-              width={fontScaledSize(16)}
-              height={fontScaledSize(16)}
-              colorClassName="text-gray-6"
-            />
-          </HStack>
-        </PressableFeedback>
-      </Popover.Trigger>
-      <HintPopoverContent
-        icon={MicIcon}
-        title={t('subTodo.voiceTitle')}
-        description={t('subTodo.voiceHint')}
-      />
-    </Popover>
   );
 }

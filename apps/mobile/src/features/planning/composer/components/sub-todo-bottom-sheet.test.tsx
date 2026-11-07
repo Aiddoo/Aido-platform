@@ -25,6 +25,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
+import { EditSubTodoBottomSheet } from './edit-sub-todo-bottom-sheet';
 
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
@@ -66,7 +67,7 @@ async function renderEditSheet() {
   await renderUi(
     <LocalDateProvider>
       <OverlayProvider>
-        <AddSubTodoBottomSheet mode="edit" />
+        <EditSubTodoBottomSheet />
       </OverlayProvider>
     </LocalDateProvider>,
     {
@@ -91,7 +92,7 @@ async function renderEditSheet() {
   };
 }
 
-describe('AddSubTodoBottomSheet 수정 모드', () => {
+describe('EditSubTodoBottomSheet', () => {
   it('보내는 동안 전송과 삭제가 모두 잠긴다', async () => {
     const { httpClient, settleRequests } = await renderEditSheet();
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '바뀐 제목');
@@ -132,6 +133,19 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     settleRequests();
   });
 
+  it('제목을 바꾸지 않고 전송하면 요청을 보내지 않는다', async () => {
+    // Given
+    const { httpClient, settleRequests } = await renderEditSheet();
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '  장 보기  ');
+
+    // When
+    await fireEvent.press(submitButton());
+
+    // Then
+    expect(httpClient.patch).not.toHaveBeenCalled();
+    settleRequests();
+  });
+
   it('고친 제목은 앞뒤 공백을 지우고 보낸다', async () => {
     const { httpClient, settleRequests } = await renderEditSheet();
 
@@ -152,7 +166,7 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
   });
 });
 
-describe('AddSubTodoBottomSheet 추가 모드', () => {
+describe('AddSubTodoBottomSheet', () => {
   it('여러 날 할 일에 다른 날짜에서 추가하면 보고 있는 날짜 목록에 바로 들어간다', async () => {
     // Given
     const viewingDate = '2026-03-09';
@@ -171,7 +185,7 @@ describe('AddSubTodoBottomSheet 추가 모드', () => {
     await renderUi(
       <LocalDateProvider>
         <OverlayProvider>
-          <AddSubTodoBottomSheet mode="create" />
+          <AddSubTodoBottomSheet />
         </OverlayProvider>
       </LocalDateProvider>,
       {
@@ -222,7 +236,7 @@ describe('AddSubTodoBottomSheet 추가 모드', () => {
     await renderUi(
       <LocalDateProvider>
         <OverlayProvider>
-          <AddSubTodoBottomSheet mode="create" />
+          <AddSubTodoBottomSheet />
         </OverlayProvider>
       </LocalDateProvider>,
       {
