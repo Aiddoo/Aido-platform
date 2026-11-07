@@ -11,14 +11,7 @@ import {
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { getPlanHeadline } from '@src/features/voice/utils/plan-headline.view-model';
-import {
-  formatDateKeyLabel,
-  formatDateKeyRange,
-  formatTimeOfDay,
-} from '@src/shared/date/date-format';
-import { parseHour, parseMinute } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -39,12 +32,12 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { compact, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
 import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
 import { PlanReviewPolicy } from '../../domains/plan-review.model';
@@ -53,6 +46,7 @@ import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
 import { type VoicePlan } from '../../schemas/voice-plan.schema';
+import { getPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
 const LOADING_ROW_COUNT = 3;
@@ -107,8 +101,7 @@ export function PlanReview({
   style,
 }: PlanReviewProps) {
   const { t } = useTranslation(['voicePlan', 'subscription']);
-  const idGenerator = useIdGenerator();
-  const { control, handleSubmit } = form;
+  const { control } = form;
   const { fields } = useFieldArray({ control, name: 'actions' });
   // 폼 전체가 아니라 목록을 다시 그릴 때 필요한 값만 구독한다. 카드 제목을 고치는 동안 화면 전체를 다시 그리지 않는다
   const actions = useWatch({
@@ -124,63 +117,22 @@ export function PlanReview({
       })),
   });
   const { isValid } = useFormState({ control });
-  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved, onMemoChanged }));
-  const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
+  const planApply = usePlanApply({
+    form,
+    plan,
+    fallbackCategoryId,
+    requestStore,
+    onSaved,
+    onMemoChanged,
+    onApplied,
+    onSourceMissing,
+  });
 
   const selection = PlanReviewPolicy.toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = getPlanHeadline(plan, selection);
   const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;
-
-  const handleApply = handleSubmit((values) => {
-    const selected = VoicePlanPolicy.sortPlanActionsByGroup(
-      VoicePlanPolicy.getSelectedActions(
-        { ...plan, actions: PlanReviewPolicy.toPlannedActions(values) },
-        PlanReviewPolicy.toPlanSelection(values),
-      ),
-      fallbackCategoryId,
-    );
-    const input = { source: plan.source, actions: selected, fallbackCategoryId };
-    const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
-    // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
-    const prepared = PlanRequestPolicy.prepare({
-      previous: previous == null ? null : { ...previous, input },
-      input,
-      createIdempotencyKey: idGenerator.create,
-    });
-    const rememberRequest = (request: PlanApplyRequest | null) => {
-      memoryRequestRef.current = request;
-      requestStore?.save(request);
-    };
-    rememberRequest({ idempotencyKey: prepared.idempotencyKey, fingerprint: prepared.fingerprint });
-
-    applyMutation.mutate(
-      {
-        source: plan.source,
-        sourceMemoId: plan.sourceMemoId,
-        actions: selected,
-        fallbackCategoryId,
-        skippedCount: values.actions.length - selected.length,
-        idempotencyKey: prepared.idempotencyKey,
-      },
-      {
-        onSuccess: () => {
-          memoryRequestRef.current = null;
-          onApplied?.();
-        },
-        // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
-        onError: (error) => {
-          if (PlanRequestPolicy.getAfterFailure(prepared, error) == null) {
-            rememberRequest(null);
-          }
-          if (isSourceMemoMissingError(error)) {
-            onSourceMissing?.();
-          }
-        },
-      },
-    );
-  });
 
   if (fields.length === 0) {
     return (
@@ -247,8 +199,8 @@ export function PlanReview({
         <Box className="flex-1">
           <Button
             isDisabled={!canApply || !isValid}
-            isLoading={applyMutation.isPending}
-            onPress={() => handleApply()}
+            isLoading={planApply.isPending}
+            onPress={() => planApply.apply()}
             testID="plan-review-apply"
           >
             {match({ todoCount, canApply })
@@ -260,6 +212,85 @@ export function PlanReview({
       </HStack>
     </VStack>
   );
+}
+
+type UsePlanApplyOptions = Pick<
+  PlanReviewProps,
+  | 'form'
+  | 'plan'
+  | 'fallbackCategoryId'
+  | 'requestStore'
+  | 'onSaved'
+  | 'onMemoChanged'
+  | 'onApplied'
+  | 'onSourceMissing'
+>;
+
+/** 고른 카드를 저장한다. 같은 카드를 다시 보내도 두 번 저장되지 않게 요청 키를 기억한다 */
+function usePlanApply({
+  form,
+  plan,
+  fallbackCategoryId,
+  requestStore,
+  onSaved,
+  onMemoChanged,
+  onApplied,
+  onSourceMissing,
+}: UsePlanApplyOptions) {
+  const idGenerator = useIdGenerator();
+  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved, onMemoChanged }));
+  const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
+
+  const apply = form.handleSubmit((values) => {
+    const selected = VoicePlanPolicy.sortPlanActionsByGroup(
+      VoicePlanPolicy.getSelectedActions(
+        { ...plan, actions: PlanReviewPolicy.toPlannedActions(values) },
+        PlanReviewPolicy.toPlanSelection(values),
+      ),
+      fallbackCategoryId,
+    );
+    const input = { source: plan.source, actions: selected, fallbackCategoryId };
+    const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
+    // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
+    const prepared = PlanRequestPolicy.prepare({
+      previous: previous == null ? null : { ...previous, input },
+      input,
+      createIdempotencyKey: idGenerator.create,
+    });
+    const rememberRequest = (request: PlanApplyRequest | null) => {
+      memoryRequestRef.current = request;
+      requestStore?.save(request);
+    };
+    rememberRequest({ idempotencyKey: prepared.idempotencyKey, fingerprint: prepared.fingerprint });
+
+    applyMutation.mutate(
+      {
+        source: plan.source,
+        sourceMemoId: plan.sourceMemoId,
+        actions: selected,
+        fallbackCategoryId,
+        skippedCount: values.actions.length - selected.length,
+        idempotencyKey: prepared.idempotencyKey,
+      },
+      {
+        onSuccess: () => {
+          memoryRequestRef.current = null;
+          onApplied?.();
+        },
+        // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
+        onError: (error) => {
+          if (PlanRequestPolicy.getAfterFailure(prepared, error) == null) {
+            rememberRequest(null);
+          }
+          if (isSourceMemoMissingError(error)) {
+            onSourceMissing?.();
+          }
+        },
+      },
+    );
+  });
+
+  return { apply, isPending: applyMutation.isPending };
 }
 
 PlanReview.Loading = function Loading({
@@ -321,28 +352,11 @@ PlanReview.TodoRow = function PlanTodoRow({
     return null;
   }
 
-  const dateLabel = match(todo)
-    .with({ endDate: P.nonNullable }, ({ startDate, endDate }) =>
-      formatDateKeyRange(startDate, endDate, dateFormatContext),
-    )
-    // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
-    .when(
-      ({ repeat, startDate }) => repeat == null && startDate !== todayKey,
-      ({ startDate }) => formatDateKeyLabel(startDate, 'monthDay', dateFormatContext),
-    )
-    .otherwise(() => null);
-  const timeLabel =
-    todo.scheduledTime == null
-      ? null
-      : formatTimeOfDay(
-          { hour: parseHour(todo.scheduledTime), minute: parseMinute(todo.scheduledTime) },
-          preference.timeFormat,
-          dateFormatContext,
-        );
-  const repeatLabel =
-    todo.repeat == null ? null : formatRepeatSummary(todo.repeat, dateFormatContext);
-  const subtitleParts = compact([dateLabel, timeLabel, repeatLabel]);
-  const subtitle = subtitleParts.length === 0 ? null : subtitleParts.join(' · ');
+  const subtitle = getPlanTodoSubtitle(todo, {
+    todayKey,
+    timeFormat: preference.timeFormat,
+    dateFormatContext,
+  });
   const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
 
   const handlePress = () => {
