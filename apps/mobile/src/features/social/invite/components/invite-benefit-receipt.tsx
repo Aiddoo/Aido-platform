@@ -122,6 +122,11 @@ InviteBenefitReceipt.Loading = function Loading() {
           ))}
         </VStack>
 
+        <VStack>
+          <TextSkeleton size="b4" className="w-full" />
+          <TextSkeleton size="b4" className="w-40" />
+        </VStack>
+
         <DashedDivider />
 
         <HStack justify="between" align="center">

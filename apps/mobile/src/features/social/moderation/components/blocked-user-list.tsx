@@ -6,7 +6,15 @@ import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, DocsIcon, InfiniteList, Text, useConfirmDialog } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  DocsIcon,
+  InfiniteList,
+  Text,
+  TextSkeleton,
+  useConfirmDialog,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
@@ -121,6 +129,11 @@ BlockedUserList.Loading = function Loading() {
       rows={6}
       hasSubtitle
       right={<Skeleton className="h-8 w-[72px] rounded-full" />}
+      ListHeaderComponent={
+        <Box py={12}>
+          <TextSkeleton size="b4" className="w-16" />
+        </Box>
+      }
     />
   );
 };

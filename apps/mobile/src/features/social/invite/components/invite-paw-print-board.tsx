@@ -319,7 +319,11 @@ InvitePawPrintBoard.Loading = function Loading() {
   return (
     <VStack gap={16} accessibilityState={{ busy: true }}>
       <TextSkeleton size="b4" className="w-44" />
-      <TextSkeleton size="b3" className="w-64" />
+      <VStack>
+        <TextSkeleton size="b3" className="w-full" />
+        <TextSkeleton size="b3" className="w-full" />
+        <TextSkeleton size="b3" className="w-40" />
+      </VStack>
       <VStack align="center" gap={22}>
         {range(PAW_PRINT_BOARD_SIZE / grid.columns).map((rowIndex) => (
           <HStack key={rowIndex} style={{ width: grid.rowWidth, gap: grid.connectorLength }}>
