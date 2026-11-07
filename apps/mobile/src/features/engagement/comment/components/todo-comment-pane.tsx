@@ -7,7 +7,6 @@ import { useCommentParams } from '../hooks/use-comment-params';
 import { TodoCommentComposerBar } from './todo-comment-composer/todo-comment-composer-bar';
 import { TodoCommentKeyboardArea } from './todo-comment-keyboard-area';
 import { TodoCommentThreadList } from './todo-comment-thread-list';
-import { TodoDetailHeader } from './todo-detail-header';
 import { TodoDetailSummary } from './todo-detail-summary';
 
 interface TodoCommentPaneProps {
@@ -28,12 +27,10 @@ export function TodoCommentPane({ onClose }: TodoCommentPaneProps) {
     <TodoCommentKeyboardArea>
       <QueryErrorBoundary
         resetKeys={[todoId, sort, comment]}
-        fallback={(props) => (
-          <TodoCommentThreadList.Error {...props} header={<TodoDetailHeader />} />
-        )}
+        fallback={TodoCommentThreadList.Error}
       >
-        <Suspense fallback={<TodoCommentThreadList.Loading header={<TodoDetailHeader />} />}>
-          <TodoCommentThreadList header={<TodoDetailHeader />} />
+        <Suspense fallback={<TodoCommentThreadList.Loading />}>
+          <TodoCommentThreadList />
         </Suspense>
       </QueryErrorBoundary>
 

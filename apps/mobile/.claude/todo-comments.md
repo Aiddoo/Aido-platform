@@ -61,23 +61,19 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 ## 화면 조립
 
 ```tsx
-// app/(app)/todo/[todoId]/index.tsx. 펼친 피드 칸은 `(tabs)/feed/index.tsx`의 FeedTodoDetail이 같은 조각을 나열한다
+// app/(app)/todo/[todoId]/index.tsx. 펼친 피드 칸은 `(tabs)/feed/index.tsx`가 같은 조각을 나열한다
 <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']} testID="todo-detail">
   <TodoCommentSession>
     <TodoCommentTitleBar.StackHeader />
 
-    {isTodoUnavailable ? (
-      <TodoDetailSummary.Unavailable onClose={router.back} />
-    ) : (
+    <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={router.back} />}>
       <TodoCommentKeyboardArea>
         <QueryErrorBoundary
           resetKeys={[todoId, sort, comment]}
-          fallback={(props) => (
-            <TodoCommentThreadList.Error {...props} header={<TodoDetailHeader />} />
-          )}
+          fallback={TodoCommentThreadList.Error}
         >
-          <Suspense fallback={<TodoCommentThreadList.Loading header={<TodoDetailHeader />} />}>
-            <TodoCommentThreadList header={<TodoDetailHeader />} />
+          <Suspense fallback={<TodoCommentThreadList.Loading />}>
+            <TodoCommentThreadList />
           </Suspense>
         </QueryErrorBoundary>
 
@@ -85,7 +81,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
           <TodoCommentComposerBar />
         </QueryErrorBoundary>
       </TodoCommentKeyboardArea>
-    )}
+    </TodoAvailabilityGuard>
   </TodoCommentSession>
 </StyledSafeAreaView>
 ```

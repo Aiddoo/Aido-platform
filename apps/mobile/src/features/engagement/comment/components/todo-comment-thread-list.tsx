@@ -22,7 +22,7 @@ import {
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
-import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -44,6 +44,7 @@ import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-vi
 import { TodoCommentReplies } from './todo-comment-replies';
 import { useTodoCommentReveal } from './todo-comment-reveal';
 import { TodoCommentRailRow } from './todo-comment-thread-rail';
+import { TodoDetailHeader } from './todo-detail-header';
 
 const LOADING_ROW_COUNT = 3;
 const ANCHOR_VIEW_POSITION = 0.2;
@@ -58,7 +59,7 @@ function getThreadKey(thread: TodoCommentThread) {
 
 type ThreadListProps = ComponentProps<typeof InfiniteList<TodoCommentThread>>;
 
-interface TodoCommentThreadListProps extends Omit<
+type TodoCommentThreadListProps = Omit<
   ThreadListProps,
   | 'data'
   | 'keyExtractor'
@@ -73,10 +74,7 @@ interface TodoCommentThreadListProps extends Omit<
   | 'ListEmptyComponent'
   | 'ListHeaderComponent'
   | 'extraData'
-> {
-  /** 할 일 본문과 정렬처럼 댓글 위에 함께 스크롤되는 영역 */
-  header: ReactNode;
-}
+>;
 
 function renderThreadListScrollView(props: ScrollViewProps) {
   return <TodoCommentKeyboardScrollView {...props} />;
@@ -86,7 +84,7 @@ function renderThreadListScrollView(props: ScrollViewProps) {
  * 할 일 상세의 댓글 묶음 목록. 바깥 스크롤은 키보드를 따라가는 하나뿐이고 묶음 행만 가상화한다.
  * 알림으로 연 댓글은 그 위치가 든 페이지를 받아 그 묶음으로 옮기고 잠깐 강조한다.
  */
-export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThreadListProps) {
+export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
   const [todoId] = useTodoId();
   const [{ sort, comment }] = useCommentParams();
   const queryClient = useQueryClient();
@@ -129,7 +127,7 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <>
-          {header}
+          <TodoDetailHeader />
           {threads.length > 0 && <DoubleTapHint className="mx-4 mb-1 mt-3" />}
           {threadsQuery.hasPreviousPage && (
             <LoadPrevious
@@ -152,15 +150,13 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
   );
 }
 
-TodoCommentThreadList.Loading = function Loading({
-  header,
-}: Pick<TodoCommentThreadListProps, 'header'>) {
+TodoCommentThreadList.Loading = function Loading() {
   return (
     <TodoCommentKeyboardScrollView
       style={styles.fallbackScrollView}
       showsVerticalScrollIndicator={false}
     >
-      {header}
+      <TodoDetailHeader />
       <VStack testID="todo-comment-thread-list-loading">
         {range(LOADING_ROW_COUNT).map((index) => (
           <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
@@ -184,10 +180,7 @@ TodoCommentThreadList.Empty = function Empty() {
   );
 };
 
-TodoCommentThreadList.Error = function ErrorFallback({
-  header,
-  reset,
-}: QueryErrorFallbackProps & Pick<TodoCommentThreadListProps, 'header'>) {
+TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todoComment');
 
   return (
@@ -195,7 +188,7 @@ TodoCommentThreadList.Error = function ErrorFallback({
       style={styles.fallbackScrollView}
       showsVerticalScrollIndicator={false}
     >
-      {header}
+      <TodoDetailHeader />
       <Flex flex={1} justify="center" align="center" py={32}>
         <Result title={t('list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
       </Flex>
