@@ -1,6 +1,8 @@
 import type { SpeechErrorCode, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import { uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
 import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
@@ -319,11 +321,16 @@ function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
 }
 
 /**
- * 내 카테고리·할 일 이름은 기기 안 인식일 때만 인식기에 준다.
+ * 인식기에 줄 힌트를 정한다. 흔한 단어는 늘 주고, 내 카테고리·할 일 이름은 기기 안 인식일 때만 앞에 둔다.
  * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
  */
 export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
-  return options.isOnDevice ? options : { ...options, hintWords: [] };
+  const commonHints = COMMON_SPEECH_HINTS[options.locale];
+
+  return {
+    ...options,
+    hintWords: options.isOnDevice ? uniq([...options.hintWords, ...commonHints]) : [...commonHints],
+  };
 }
 
 export const VoiceCapturePolicy = {

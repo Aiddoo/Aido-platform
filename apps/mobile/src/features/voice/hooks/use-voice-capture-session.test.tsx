@@ -135,7 +135,11 @@ describe('useVoiceCaptureSession', () => {
 
     // Then
     expect(speechRecognizer.start).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'quick', isOnDevice: true, hintWords: ['기획팀'] }),
+      expect.objectContaining({
+        mode: 'quick',
+        isOnDevice: true,
+        hintWords: expect.arrayContaining(['기획팀']),
+      }),
     );
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       'voice_capture_started',
@@ -910,7 +914,10 @@ describe('useVoiceCaptureSession', () => {
 
     // Then
     expect(speechRecognizer.start).toHaveBeenLastCalledWith(
-      expect.objectContaining({ isOnDevice: false, hintWords: [] }),
+      expect.objectContaining({
+        isOnDevice: false,
+        hintWords: expect.not.arrayContaining(['기획팀']),
+      }),
     );
   });
 

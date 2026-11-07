@@ -1,4 +1,5 @@
 import type { SpeechEvent, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import { range } from 'es-toolkit';
 import { PermissionStatus, type PermissionResponse } from 'expo';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 
@@ -79,10 +80,23 @@ describe('expoSpeechRecognizer', () => {
       interimResults: true,
       maxAlternatives: 1,
       requiresOnDeviceRecognition: false,
-      contextualStrings: expect.arrayContaining(['분기']),
+      contextualStrings: [],
       continuous: false,
       iosTaskHint: 'dictation',
     });
+  });
+
+  it('힌트가 많아도 Apple 권장 상한 100개까지만 넘긴다', () => {
+    // Given
+    const hintWords = range(150).map((index) => `단어${index}`);
+
+    // When
+    expoSpeechRecognizer.start({ ...START_OPTIONS, hintWords });
+
+    // Then
+    expect(nativeModule.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ contextualStrings: hintWords.slice(0, 100) }),
+    );
   });
 
   it('긴 녹음은 기기 안에서 이어 듣고 문장부호·고유명사·16kHz 녹음 파일을 쓴다', () => {
@@ -101,7 +115,7 @@ describe('expoSpeechRecognizer', () => {
         continuous: true,
         requiresOnDeviceRecognition: true,
         addsPunctuation: true,
-        contextualStrings: expect.arrayContaining(['분기', '기획팀', '민지']),
+        contextualStrings: ['기획팀', '민지'],
         iosTaskHint: 'dictation',
         // 침묵 길이는 SDK의 continuous에 맡긴다. 넘기면 12 이하의 10분 침묵을 덮어 세션이 짧아진다
         androidIntentOptions: { EXTRA_MASK_OFFENSIVE_WORDS: false },

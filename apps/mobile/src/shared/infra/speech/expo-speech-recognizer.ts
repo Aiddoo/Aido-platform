@@ -18,8 +18,8 @@ import {
 import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { getSpeechHints } from './speech-hints';
-
+/** Apple 권장 상한. 한 항목은 한두 단어로 둔다(SFSpeechRecognitionRequest.contextualStrings) */
+const MAX_SPEECH_HINTS = 100;
 /** 연속 인식·녹음 저장이 들어온 Android 13 */
 const ANDROID_CONTINUOUS_API_LEVEL = 33;
 /** SDK가 주는 음량 범위. 0 이하는 들리지 않는 소리다 */
@@ -111,13 +111,12 @@ function toRecognitionOptions({
   isOnDevice,
   recordingDirectory,
 }: SpeechStartOptions): ExpoSpeechRecognitionOptions {
-  const hints = getSpeechHints(locale, hintWords);
   const common: ExpoSpeechRecognitionOptions = {
     lang: locale,
     interimResults: true,
     maxAlternatives: 1,
     requiresOnDeviceRecognition: isOnDevice,
-    contextualStrings: hints,
+    contextualStrings: hintWords.slice(0, MAX_SPEECH_HINTS),
   };
   const volumeChangeEventOptions = { enabled: true, intervalMillis: VOLUME_INTERVAL_MS };
 

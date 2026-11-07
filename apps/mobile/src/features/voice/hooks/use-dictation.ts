@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
+import { getRecognizerStartOptions } from '../domains/voice-capture.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
@@ -98,13 +99,15 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
         return;
       }
       isSessionOwnerRef.current = true;
-      speechRecognizer.start({
-        locale,
-        mode: 'dictation',
-        hintWords: [],
-        isOnDevice: false,
-        recordingDirectory: null,
-      });
+      speechRecognizer.start(
+        getRecognizerStartOptions({
+          locale,
+          mode: 'dictation',
+          hintWords: [],
+          isOnDevice: false,
+          recordingDirectory: null,
+        }),
+      );
     } catch {
       isSessionOwnerRef.current = false;
       toast.error(getSpeechErrorMessage('unknown'));
