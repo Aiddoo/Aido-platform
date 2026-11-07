@@ -54,6 +54,7 @@ export function createLevelSampler(): LevelSampler {
  * 프레임마다 음량을 모아 `intervalMs`마다 그동안의 최댓값으로 한 칸을 만든다. UI 스레드에서 부른다.
  * worklet의 매개변수 기본값은 Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 오류가 나므로 호출부가 넘긴다.
  */
+// 프레임마다 도는 worklet이라 위치 인자를 유지한다
 export function appendLevelFrame(
   sampler: LevelSampler,
   level: number,
@@ -116,6 +117,7 @@ export function getTimelineLevel(
   return index >= 0 ? (levels[index] ?? null) : null;
 }
 
+// 프레임마다 도는 worklet이라 위치 인자를 유지한다
 export function followLevel(
   current: number,
   target: number,

@@ -1,16 +1,18 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { VoiceNoteRecordCaptions } from '@src/features/voice/components/note/voice-note-record-captions';
-import { VoiceNoteRecordClock } from '@src/features/voice/components/note/voice-note-record-clock';
 import { VoiceNoteRecordFooter } from '@src/features/voice/components/note/voice-note-record-footer';
 import { VoiceNoteRecordLanguageToggle } from '@src/features/voice/components/note/voice-note-record-language-toggle';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { RecognizerWaveform } from '@src/features/voice/components/note/waveform-timeline';
+import { useCaptureElapsedMs } from '@src/features/voice/hooks/use-capture-elapsed-ms';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
+import type { VoiceCaptureState } from '@src/features/voice/schemas/voice-capture.schema';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -70,7 +72,7 @@ function VoiceNoteRecordScreen() {
     });
   }, []);
 
-  const clock = <VoiceNoteRecordClock state={state} limitMs={limitMs} />;
+  const clock = <RecordClock state={state} limitMs={limitMs} />;
   const waveform = (
     <RecognizerWaveform
       level={recording.level}
@@ -134,6 +136,24 @@ function VoiceNoteRecordScreen() {
         </HStack>
       )}
     </VStack>
+  );
+}
+
+interface RecordClockProps {
+  state: VoiceCaptureState;
+  limitMs: number | null;
+}
+
+function RecordClock({ state, limitMs }: RecordClockProps) {
+  const { t } = useTranslation('voiceNote');
+  const elapsedMs = useCaptureElapsedMs(state);
+
+  return (
+    <RecordingTimer
+      elapsedMs={elapsedMs}
+      limitMs={limitMs}
+      label={state.status === 'paused' ? t('record.pausedLabel') : undefined}
+    />
   );
 }
 
