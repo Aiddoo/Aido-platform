@@ -2,10 +2,13 @@ import { WhatsNewEntryNotice } from '@src/features/app-config/whats-new/componen
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
-import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
+import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
+import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
 import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
+import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
+import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -16,6 +19,7 @@ import { Calendar } from '@src/features/planning/todo/components/calendar/calend
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
+import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
 import { useFeedDateKey, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import {
@@ -50,22 +54,28 @@ import {
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type PropsWithChildren, Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
+  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
+  const [{ sort, comment }] = useCommentParams();
+  const [selectedDateKey] = useFeedDateKey();
   const isInviteAvailable = useInviteAvailability();
   const openMyInvite = useOpenMyInvite();
+  const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+
+  useFeedTodoDetailHandoff();
 
   return (
     <>
       <NotificationBell.Toolbar />
       <AdaptivePane
         primary={
-          <FeedListPane>
+          <Box flex={1} className="bg-white">
             <StyledSafeAreaView edges={['left', 'right']}>
               <QueryErrorBoundary fallback={FriendStrip.Error}>
                 <Suspense fallback={<FriendStrip.Loading />}>
@@ -88,9 +98,48 @@ export default function FeedScreen() {
               ))
               .with(undefined, () => <MyFeed />)
               .exhaustive()}
-          </FeedListPane>
+          </Box>
         }
-        secondary={<FeedTodoDetailPane />}
+        secondary={match(selectedTodoId)
+          .with(undefined, () => (
+            <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+              <TodoDetailSummary.Empty />
+            </StyledSafeAreaView>
+          ))
+          .with(P.number, (id) => (
+            <KeyboardBottomGapProvider key={id}>
+              <StyledSafeAreaView
+                edges={['left', 'right']}
+                className="flex-1 bg-white"
+                testID="todo-detail"
+              >
+                {/* 펼친 피드의 오른쪽 칸이라 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */}
+                <TodoCommentSession onExit={closeDetail}>
+                  <TodoCommentTitleBar date={selectedDateKey} />
+
+                  <TodoAvailabilityGuard
+                    fallback={<TodoDetailSummary.Unavailable onClose={closeDetail} />}
+                  >
+                    <TodoCommentKeyboardArea>
+                      <QueryErrorBoundary
+                        resetKeys={[id, sort, comment]}
+                        fallback={TodoCommentThreadList.Error}
+                      >
+                        <Suspense fallback={<TodoCommentThreadList.Loading />}>
+                          <TodoCommentThreadList />
+                        </Suspense>
+                      </QueryErrorBoundary>
+
+                      <QueryErrorBoundary resetKeys={[id]}>
+                        <TodoCommentComposerBar />
+                      </QueryErrorBoundary>
+                    </TodoCommentKeyboardArea>
+                  </TodoAvailabilityGuard>
+                </TodoCommentSession>
+              </StyledSafeAreaView>
+            </KeyboardBottomGapProvider>
+          ))
+          .exhaustive()}
       />
     </>
   );
@@ -292,50 +341,4 @@ function MyFeedRedirect() {
   }, [selectFriend]);
 
   return null;
-}
-
-/** 피드 목록 칸. 접힌 화면으로 바뀌면 선택된 할 일과 댓글 위치를 상세 화면으로 넘긴다 */
-function FeedListPane({ children }: PropsWithChildren) {
-  useFeedTodoDetailHandoff();
-
-  return (
-    <Box flex={1} className="bg-white">
-      {children}
-    </Box>
-  );
-}
-
-function FeedTodoDetailPane() {
-  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
-  const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
-
-  if (selectedTodoId == null) {
-    return (
-      <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
-        <TodoDetailSummary.Empty />
-      </StyledSafeAreaView>
-    );
-  }
-
-  return <FeedTodoDetail key={selectedTodoId} onClose={closeDetail} />;
-}
-
-/** 펼친 피드의 오른쪽 칸. 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */
-function FeedTodoDetail({ onClose }: { onClose: () => void }) {
-  const [date] = useFeedDateKey();
-
-  return (
-    <KeyboardBottomGapProvider>
-      <StyledSafeAreaView
-        edges={['left', 'right']}
-        className="flex-1 bg-white"
-        testID="todo-detail"
-      >
-        <TodoCommentSession onExit={onClose}>
-          <TodoCommentTitleBar date={date} />
-          <TodoCommentPane onClose={onClose} />
-        </TodoCommentSession>
-      </StyledSafeAreaView>
-    </KeyboardBottomGapProvider>
-  );
 }
