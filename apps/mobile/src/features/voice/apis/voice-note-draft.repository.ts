@@ -1,6 +1,7 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { getErrorMessage } from '@src/shared/errors/to-error';
+// maxWait(계속 쓰는 중에도 이 시간 안에 한 번은 저장)는 메인 패키지 debounce에 없다
 import { debounce } from 'es-toolkit/compat';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';

@@ -7,6 +7,7 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
+import { noop } from 'es-toolkit';
 
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
@@ -53,7 +54,7 @@ export class TodoCategoryService {
         params: { moveToCategoryId: query?.moveToCategoryId },
       }),
       deleteTodoCategoryResponseSchema,
-      () => undefined,
+      noop,
       '[TodoCategoryService] Invalid deleteCategory response',
     );
 

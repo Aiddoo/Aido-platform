@@ -1,5 +1,5 @@
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
-import { sortBy } from 'es-toolkit';
+import { orderBy } from 'es-toolkit';
 
 import {
   VOICE_RECORDING_LATE_WAIT_MS,
@@ -127,9 +127,10 @@ export class VoiceRecordingIntake {
       storage.recordings.remove(accountId, fileName);
       return;
     }
-    this.#recordings = sortBy(
+    this.#recordings = orderBy(
       [...this.#recordings, { fileName, startMs }],
       [({ startMs: partStartMs }) => partStartMs],
+      ['asc'],
     );
     onRecordingSaved();
     const handedOff = this.#hasHandedOff ? storage.drafts.find(accountId, draftId) : undefined;

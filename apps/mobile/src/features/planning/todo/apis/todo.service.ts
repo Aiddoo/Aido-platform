@@ -16,6 +16,7 @@ import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
+import { noop } from 'es-toolkit';
 
 import {
   createRepeatingTodoEnvelopeSchema,
@@ -198,7 +199,7 @@ export class TodoService {
     return parseApiResponse(
       result,
       deleteTodoResponseSchema,
-      () => undefined,
+      noop,
       '[TodoService] Invalid deleteTodo response',
     );
   };
