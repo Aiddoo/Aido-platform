@@ -58,3 +58,5 @@ ActionButton.Icon = function Icon({
 
   return <IconComponent width={size} height={size} colorClassName={colorClassName} />;
 };
+
+export type { ActionButtonProps };

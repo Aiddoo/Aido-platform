@@ -21,6 +21,10 @@ const listRowVariants = tv({
       small: 'px-2',
       medium: 'px-4',
     },
+    border: {
+      none: '',
+      indented: 'border-b border-gray-3',
+    },
     isDisabled: {
       true: 'opacity-40',
     },
@@ -29,14 +33,40 @@ const listRowVariants = tv({
   defaultVariants: {
     verticalPadding: 'medium',
     horizontalPadding: 'none',
+    border: 'none',
   },
 });
 
-export interface ListRowProps
-  extends Omit<ViewProps, 'children'>, VariantProps<typeof listRowVariants> {
+const listRowSlotVariants = tv({
+  base: 'flex',
+  variants: {
+    alignment: {
+      top: 'items-start',
+      center: 'items-center',
+    },
+  },
+  defaultVariants: {
+    alignment: 'center',
+  },
+});
+
+type ListRowVariantProps = VariantProps<typeof listRowVariants>;
+
+/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+export type ListRowVerticalPadding = NonNullable<ListRowVariantProps['verticalPadding']>;
+/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+export type ListRowHorizontalPadding = NonNullable<ListRowVariantProps['horizontalPadding']>;
+/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+export type ListRowBorder = NonNullable<ListRowVariantProps['border']>;
+/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+export type ListRowAlignment = NonNullable<VariantProps<typeof listRowSlotVariants>['alignment']>;
+
+export interface ListRowProps extends Omit<ViewProps, 'children'>, ListRowVariantProps {
   left?: ReactNode;
   contents?: ReactNode;
   right?: ReactNode;
+  leftAlignment?: ListRowAlignment;
+  rightAlignment?: ListRowAlignment;
   className?: string;
 }
 
@@ -46,6 +76,9 @@ export function ListRow({
   right,
   verticalPadding,
   horizontalPadding,
+  border,
+  leftAlignment,
+  rightAlignment,
   isDisabled,
   className,
   ...props
@@ -54,12 +87,15 @@ export function ListRow({
     <HStack
       align="center"
       gap={12}
-      className={cn(listRowVariants({ verticalPadding, horizontalPadding, isDisabled }), className)}
+      className={cn(
+        listRowVariants({ verticalPadding, horizontalPadding, border, isDisabled }),
+        className,
+      )}
       {...props}
     >
-      {left && <Box className="flex items-center">{left}</Box>}
+      {left && <Box className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</Box>}
       {contents && <Box className="flex-1">{contents}</Box>}
-      {right && <Box className="flex items-center">{right}</Box>}
+      {right && <Box className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</Box>}
     </HStack>
   );
 }

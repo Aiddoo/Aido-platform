@@ -105,6 +105,25 @@ import { Text, H1, H2, H3, H4 } from '@src/shared/ui';
 <H4>부제목</H4>
 ```
 
+### emphasize
+
+브랜드 색상으로 강조합니다.
+
+```tsx
+<H1 emphasize>강조된 제목</H1>
+```
+
+### headline (H1 전용)
+
+상단에 작은 라벨을 추가합니다.
+
+```tsx
+<H1 headline="STEP 1">회원가입</H1>
+// 결과:
+// STEP 1  (작은 브랜드 색상 라벨)
+// 회원가입 (큰 제목)
+```
+
 ## 스타일 조합 예시
 
 ```tsx

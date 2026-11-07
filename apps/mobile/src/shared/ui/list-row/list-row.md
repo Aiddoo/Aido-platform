@@ -44,6 +44,9 @@ import { ListRow } from '@src/shared/ui';
 | `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠 |
 | `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩          |
 | `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩          |
+| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리        |
+| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬     |
+| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬   |
 | `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태      |
 | `className`         | `string`                                     | -          | 추가 클래스명      |
 
@@ -116,9 +119,43 @@ import { ListRow } from '@src/shared/ui';
 
 ---
 
+#### Type: `3RowTypeA`
+
+**3줄 레이아웃** - 제목 + 중간 텍스트 + 하단 텍스트
+
+```tsx
+<ListRow.Texts
+  type="3RowTypeA"
+  top="프로젝트 제목"
+  topProps={{ size: 'b2', weight: 'bold' }}
+  middle="진행 중 · 마감 3일 전"
+  middleProps={{ size: 'b3', shade: 6 }}
+  bottom="팀원 5명 참여 중"
+  bottomProps={{ size: 'e1', shade: 5 }}
+/>
+```
+
+**Props:**
+
+- `type`: `'3RowTypeA'` (필수)
+- `top`: `ReactNode` (필수) - 제목 텍스트
+- `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
+- `middle`: `ReactNode` (필수) - 중간 텍스트
+- `middleProps`: `Omit<TextProps, 'children'>` (선택) - 중간 스타일
+- `bottom`: `ReactNode` (필수) - 하단 텍스트
+- `bottomProps`: `Omit<TextProps, 'children'>` (선택) - 하단 스타일
+
+**사용 예시:**
+
+- 프로젝트 카드 (제목 + 상태 + 참여자)
+- 알림 아이템 (제목 + 내용 + 시간)
+- 상세 정보 (제목 + 설명 + 추가정보)
+
+---
+
 ### ListRow.Texts.Loading
 
-`ListRow.Texts`와 같은 `VStack`·간격·기본 크기(b2/e1)로 글자 자리를 `TextSkeleton`으로 채웁니다.
+`ListRow.Texts`와 같은 `VStack`·간격·기본 크기(b2/b3/e1)로 글자 자리를 `TextSkeleton`으로 채웁니다.
 목록의 `.Loading`은 `ListRow`의 같은 슬롯에 이것을 넣어 행 높이를 실제 행과 맞춥니다.
 
 ```tsx
@@ -131,7 +168,7 @@ import { ListRow } from '@src/shared/ui';
 ```
 
 - `type`: `ListRow.Texts`와 같은 줄 구성
-- `topProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
+- `topProps` / `middleProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
 
 ## 사용 예시
 
@@ -165,7 +202,37 @@ import { ListRow } from '@src/shared/ui';
 />
 ```
 
-### 3. 파일 리스트
+### 3. 프로젝트 카드
+
+```tsx
+<ListRow
+  left={
+    <FeatureMedia
+      alt=""
+      source={{ uri: 'https://example.com/project.jpg' }}
+      ratio={1}
+      className="w-16"
+    />
+  }
+  contents={
+    <ListRow.Texts
+      type="3RowTypeA"
+      top="AI 챗봇 개발"
+      topProps={{ size: 'b1', weight: 'bold' }}
+      middle="진행 중 · 마감 3일 전"
+      middleProps={{ size: 'b3', shade: 6 }}
+      bottom="팀원 5명 참여 중"
+      bottomProps={{ size: 'e1', shade: 5 }}
+    />
+  }
+  right={<Badge text="긴급" />}
+  horizontalPadding="medium"
+  verticalPadding="xlarge"
+  border="indented"
+/>
+```
+
+### 4. 파일 리스트
 
 ```tsx
 <ListRow
@@ -183,7 +250,7 @@ import { ListRow } from '@src/shared/ui';
 />
 ```
 
-### 4. 비활성화 상태
+### 5. 비활성화 상태
 
 ```tsx
 <ListRow
@@ -217,6 +284,31 @@ import { ListRow } from '@src/shared/ui';
 />
 ```
 
+### Border 스타일
+
+```tsx
+// 하단 테두리 (들여쓰기)
+<ListRow border="indented" horizontalPadding="medium" />
+```
+
+### Alignment
+
+```tsx
+// 왼쪽 영역 상단 정렬
+<ListRow
+  left={<LargeIcon />}
+  leftAlignment="top"
+  contents={<ListRow.Texts type="3RowTypeA" ... />}
+/>
+
+// 오른쪽 영역 상단 정렬
+<ListRow
+  contents={<ListRow.Texts type="2RowTypeA" ... />}
+  right={<Badge />}
+  rightAlignment="top"
+/>
+```
+
 ## 타입 안정성
 
 ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로 필수 props를 강제합니다.
@@ -234,6 +326,14 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
   type="2RowTypeA"
   top="제목"
   // Error: Property 'bottom' is missing
+/>
+
+// ✅ 올바른 사용
+<ListRow.Texts
+  type="3RowTypeA"
+  top="제목"
+  middle="설명"    // 필수
+  bottom="추가정보" // 필수
 />
 ```
 

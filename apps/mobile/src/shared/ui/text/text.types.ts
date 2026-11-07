@@ -37,3 +37,11 @@ export interface TextProps extends Omit<RNTextProps, 'style'> {
   style?: RNTextProps['style'];
   children?: React.ReactNode;
 }
+
+export interface HeadingProps extends TextProps {
+  emphasize?: boolean;
+}
+
+export interface H1Props extends HeadingProps {
+  headline?: string;
+}

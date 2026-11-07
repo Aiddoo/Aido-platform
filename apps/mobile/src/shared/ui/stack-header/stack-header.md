@@ -20,9 +20,10 @@ const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 </Stack>;
 ```
 
-| 옵션                   | 타입      | 기본값  | 설명                                      |
-| ---------------------- | --------- | ------- | ----------------------------------------- |
-| `hasContentBackground` | `boolean` | `false` | 화면 배경도 헤더와 같은 `bg-white`로 채움 |
+| 옵션                   | 타입         | 기본값     | 설명                                      |
+| ---------------------- | ------------ | ---------- | ----------------------------------------- |
+| `background`           | `'bg-white'` | `bg-white` | 헤더 배경                                 |
+| `hasContentBackground` | `boolean`    | `false`    | 화면 배경도 헤더와 같은 `bg-white`로 채움 |
 
 ## useStackBackToolbar
 

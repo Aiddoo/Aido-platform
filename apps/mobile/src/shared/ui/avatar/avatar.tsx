@@ -1,8 +1,9 @@
 import { Box } from '@src/shared/ui/box';
 import { CheckmarkIcon } from '@src/shared/ui/icon';
+import { VStack } from '@src/shared/ui/v-stack';
 import { cn } from '@src/shared/utils/cn';
 import { Image as ExpoImage } from 'expo-image';
-import { type AvatarRootProps, Avatar as HeroUIAvatar } from 'heroui-native';
+import { type AvatarRootProps, Avatar as HeroUIAvatar, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 
@@ -53,6 +54,15 @@ Avatar.Image = function Image({ source, ...props }: AvatarImageProps) {
   );
 };
 Avatar.Fallback = HeroUIAvatar.Fallback;
+
+Avatar.Loading = function Loading() {
+  return (
+    <VStack align="center" gap={8} py={8}>
+      <Skeleton className="w-20 h-20 rounded-2xl" />
+      <Skeleton className="h-4 w-12 rounded" />
+    </VStack>
+  );
+};
 
 function SelectedBadge() {
   return (
