@@ -46,7 +46,7 @@ describe('transitionAuthSession', () => {
     ['재판정 실패면 미인증', LOCKED, { type: 'bootFailed' }, BOOT_FAILED],
     ['인증 중 만료', AUTHENTICATED, { type: 'sessionExpired' }, EXPIRED],
   ])('판정과 만료: %s', (_name, state, event, expected) => {
-    // Given·When
+    // When
     const next = transitionAuthSession(state, event);
 
     // Then
@@ -54,7 +54,7 @@ describe('transitionAuthSession', () => {
   });
 
   it.each(ANY_STATE)('어느 상태에서든 로그인하면 인증이 된다: %j', (state) => {
-    // Given·When
+    // When
     const next = transitionAuthSession(state, { type: 'signedIn' });
 
     // Then
@@ -62,7 +62,7 @@ describe('transitionAuthSession', () => {
   });
 
   it.each(ANY_STATE)('어느 상태에서든 로그아웃하면 사용자가 나간 미인증이 된다: %j', (state) => {
-    // Given·When
+    // When
     const next = transitionAuthSession(state, { type: 'signedOut' });
 
     // Then
@@ -78,7 +78,7 @@ describe('transitionAuthSession', () => {
       ].map((event): [AuthSessionState, AuthSessionEvent] => [state, event]),
     ),
   )('판정이 끝난 뒤 늦게 온 판정은 무시한다: %j %j', (state, event) => {
-    // Given·When
+    // When
     const next = transitionAuthSession(state, event);
 
     // Then
@@ -88,7 +88,7 @@ describe('transitionAuthSession', () => {
   it.each([LOADING, LOCKED, NO_SESSION, SIGNED_OUT, EXPIRED, BOOT_FAILED])(
     '인증 중이 아니면 만료는 무시한다: %j',
     (state) => {
-      // Given·When
+      // When
       const next = transitionAuthSession(state, { type: 'sessionExpired' });
 
       // Then

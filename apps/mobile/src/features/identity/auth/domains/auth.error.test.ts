@@ -8,24 +8,43 @@ describe('getResendCooldownAfterError', () => {
     // Given
     const error = new ApiError(ErrorCode.VERIFY_0753, 'cooldown', 429, { remainingSeconds: 17 });
 
-    // When / Then
-    expect(getResendCooldownAfterError(error)).toBe(17);
+    // When
+    const result = getResendCooldownAfterError(error);
+
+    // Then
+    expect(result).toBe(17);
   });
 
   it('쿨다운 오류라도 남은 초가 숫자가 아니면 쿨다운을 걸지 않는다', () => {
     // Given
     const error = new ApiError(ErrorCode.VERIFY_0753, 'cooldown', 429, { remainingSeconds: '17' });
 
-    // When / Then
-    expect(getResendCooldownAfterError(error)).toBeUndefined();
+    // When
+    const result = getResendCooldownAfterError(error);
+
+    // Then
+    expect(result).toBeUndefined();
   });
 
-  it('다른 오류는 쿨다운을 걸지 않는다', () => {
+  it('다른 서버 오류는 남은 초가 실려 있어도 쿨다운을 걸지 않는다', () => {
     // Given
     const error = new ApiError(ErrorCode.VERIFY_0751, 'invalid', 400, { remainingSeconds: 17 });
 
-    // When / Then
-    expect(getResendCooldownAfterError(error)).toBeUndefined();
-    expect(getResendCooldownAfterError(new Error('network'))).toBeUndefined();
+    // When
+    const result = getResendCooldownAfterError(error);
+
+    // Then
+    expect(result).toBeUndefined();
+  });
+
+  it('서버 오류가 아니면 쿨다운을 걸지 않는다', () => {
+    // Given
+    const error = new Error('network');
+
+    // When
+    const result = getResendCooldownAfterError(error);
+
+    // Then
+    expect(result).toBeUndefined();
   });
 });

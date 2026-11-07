@@ -2,58 +2,68 @@ import { PASSWORD_RULES } from '@aido/api/vocabulary';
 
 import { PasswordPolicy } from './password.model';
 
-describe('PasswordPolicy', () => {
-  describe('hasLetter', () => {
-    test.each(['a', 'Z', 'Password1'])('"%s"는 영문을 포함하므로 true', (pw) => {
-      expect(PasswordPolicy.hasLetter(pw)).toBe(true);
-    });
+describe('hasLetter', () => {
+  it.each(['a', 'Z', 'Password1'])('"%s"는 영문을 포함하므로 true를 반환한다', (password) => {
+    // When
+    const result = PasswordPolicy.hasLetter(password);
 
-    test.each(['123456', '!@#$%', ''])('"%s"는 영문이 없으므로 false', (pw) => {
-      expect(PasswordPolicy.hasLetter(pw)).toBe(false);
-    });
+    // Then
+    expect(result).toBe(true);
   });
 
-  describe('hasNumber', () => {
-    test.each(['1', 'abc1', 'Password1'])('"%s"는 숫자를 포함하므로 true', (pw) => {
-      expect(PasswordPolicy.hasNumber(pw)).toBe(true);
-    });
+  it.each(['123456', '!@#$%', ''])('"%s"는 영문이 없으므로 false를 반환한다', (password) => {
+    // When
+    const result = PasswordPolicy.hasLetter(password);
 
-    test.each(['abc', '!@#$%', ''])('"%s"는 숫자가 없으므로 false', (pw) => {
-      expect(PasswordPolicy.hasNumber(pw)).toBe(false);
-    });
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('hasNumber', () => {
+  it.each(['1', 'abc1', 'Password1'])('"%s"는 숫자를 포함하므로 true를 반환한다', (password) => {
+    // When
+    const result = PasswordPolicy.hasNumber(password);
+
+    // Then
+    expect(result).toBe(true);
   });
 
-  describe('hasMinLength', () => {
-    test('최소 길이 이상이면 true', () => {
-      expect(PasswordPolicy.hasMinLength('1'.repeat(PASSWORD_RULES.MIN_LENGTH))).toBe(true);
-      expect(PasswordPolicy.hasMinLength('1'.repeat(PASSWORD_RULES.MIN_LENGTH + 1))).toBe(true);
-    });
+  it.each(['abc', '!@#$%', ''])('"%s"는 숫자가 없으므로 false를 반환한다', (password) => {
+    // When
+    const result = PasswordPolicy.hasNumber(password);
 
-    test('최소 길이 미만이면 false', () => {
-      expect(PasswordPolicy.hasMinLength('1'.repeat(PASSWORD_RULES.MIN_LENGTH - 1))).toBe(false);
-      expect(PasswordPolicy.hasMinLength('')).toBe(false);
-    });
+    // Then
+    expect(result).toBe(false);
   });
+});
 
-  describe('PasswordPolicy (composed)', () => {
-    const validPassword = 'Password1';
+describe('hasMinLength', () => {
+  it.each([PASSWORD_RULES.MIN_LENGTH, PASSWORD_RULES.MIN_LENGTH + 1])(
+    '%i자는 최소 길이 이상이므로 true를 반환한다',
+    (length) => {
+      // Given
+      const password = '1'.repeat(length);
 
-    test('유효한 비밀번호는 모든 규칙을 통과한다', () => {
-      expect(PasswordPolicy.hasLetter(validPassword)).toBe(true);
-      expect(PasswordPolicy.hasNumber(validPassword)).toBe(true);
-      expect(PasswordPolicy.hasMinLength(validPassword)).toBe(true);
-    });
+      // When
+      const result = PasswordPolicy.hasMinLength(password);
 
-    test('영문 없으면 hasLetter가 false', () => {
-      expect(PasswordPolicy.hasLetter('12345678')).toBe(false);
-    });
+      // Then
+      expect(result).toBe(true);
+    },
+  );
 
-    test('숫자 없으면 hasNumber가 false', () => {
-      expect(PasswordPolicy.hasNumber('Password')).toBe(false);
-    });
+  it.each([PASSWORD_RULES.MIN_LENGTH - 1, 0])(
+    '%i자는 최소 길이 미만이므로 false를 반환한다',
+    (length) => {
+      // Given
+      const password = '1'.repeat(length);
 
-    test('8자 미만이면 hasMinLength가 false', () => {
-      expect(PasswordPolicy.hasMinLength('Pass1')).toBe(false);
-    });
-  });
+      // When
+      const result = PasswordPolicy.hasMinLength(password);
+
+      // Then
+      expect(result).toBe(false);
+    },
+  );
 });
