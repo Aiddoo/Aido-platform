@@ -1,17 +1,12 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE } from '@aido/api/vocabulary';
-import { DAY_MS } from '@src/shared/constants/time.constants';
+import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { type Instant, toDateKey, toEpochMs } from '@src/shared/date/instant';
 
 import type { PremiumAccess } from '../schemas/premium-access.schema';
 
-// 같은 시간대의 달력 날짜끼리 비교해야 DST로 하루가 23·25시간인 날에도 하루씩 줄어든다
-function toCalendarDayNumber(instant: Instant, timeZone: string) {
-  return Date.parse(`${toDateKey(instant, timeZone)}T00:00:00Z`) / DAY_MS;
-}
-
 /** 끝나는 날까지 남은 달력 일수. 이미 지난 날은 0일이다 */
 export function calculateDaysLeft(endsAt: Instant, now: Instant, timeZone: string) {
-  return Math.max(toCalendarDayNumber(endsAt, timeZone) - toCalendarDayNumber(now, timeZone), 0);
+  return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);
 }
 
 export function hasPassed(endsAt: Instant, now: Instant) {
