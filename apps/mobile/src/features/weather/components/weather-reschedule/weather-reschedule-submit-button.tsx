@@ -46,7 +46,7 @@ export function WeatherRescheduleSubmitButton({
   const todayTodos = todoList?.todos ?? [];
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
-  const hasTargets = toRescheduleTargets({ selections }, todoIds, todayTodos).length > 0;
+  const targetCount = toRescheduleTargets({ selections }, todoIds, todayTodos).length;
 
   const settle = (failures: unknown[]) => {
     invalidateTodos(queryClient);
@@ -109,10 +109,10 @@ export function WeatherRescheduleSubmitButton({
       display="full"
       size="xlarge"
       isLoading={isSubmitting}
-      isDisabled={!hasTargets}
+      isDisabled={targetCount === 0}
       onPress={() => handleApply()}
     >
-      {t('reschedule.submit', { count: todoIds.length })}
+      {t('reschedule.submit', { count: targetCount })}
     </Button>
   );
 }
