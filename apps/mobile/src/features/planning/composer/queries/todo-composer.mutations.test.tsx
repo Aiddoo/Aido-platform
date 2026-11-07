@@ -1,5 +1,4 @@
 import '@src/shared/i18n/init';
-import { useUpdateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
   createAnalyticsStub,
   createHapticsStub,
@@ -10,6 +9,8 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ApiError } from '@src/shared/errors/api-error';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
+
+import { useUpdateTodoMutationOptions } from './todo-composer.mutations';
 
 /** 이후 회차까지 고치는 PATCH가 거절되는 상황. 함께 보낸 칸도 저장되지 않으므로 목록을 건드리지 않는다 */
 async function updateFollowing(error: ApiError) {

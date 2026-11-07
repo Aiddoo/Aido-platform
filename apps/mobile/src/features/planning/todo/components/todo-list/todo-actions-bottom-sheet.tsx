@@ -1,4 +1,3 @@
-import { toTodoEditFormValues } from '@src/features/planning/composer/utils/to-todo-edit-form-values';
 import { useTodoScreenParams } from '@src/features/planning/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
 import { isDateToday } from '@src/features/planning/todo/utils/calendar-date';
@@ -46,6 +45,7 @@ import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import type { Todo } from '../../schemas/todo.schema';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
+import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 
 type TodoActionsBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -114,7 +114,7 @@ TodoActionsBottomSheet.Content = function Content({
     return null;
   }
 
-  const editValues = toTodoEditFormValues(todo, dateFormatContext.timeZone);
+  const editValues = toTodoScheduleValues(todo, dateFormatContext.timeZone);
   const isTodoToday = isDateToday(editValues.startDate, today, dateFormatContext.timeZone);
 
   const sheetParams = { todoId: todo.id, date };

@@ -17,13 +17,6 @@ export interface TodoSnapshot {
   index: number;
 }
 
-let nextOptimisticId = -1;
-
-/** 서버 id와 겹치지 않는 음의 정수 id. 응답 후 목록을 다시 불러오면 사라진다. */
-export function createOptimisticId(): number {
-  return nextOptimisticId--;
-}
-
 /** 낙관적 값을 쓰기 전에 그 값을 덮을 수 있는 그 날짜 목록·상세 조회를 멈춘다. */
 export function cancelTodoQueries(
   queryClient: QueryClient,

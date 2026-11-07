@@ -4,9 +4,28 @@ import { ActivationService } from '@src/features/device/activation/apis/activati
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import { useAddSubTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
-import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
-import { useUpdateSubTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
+import {
+  createParentTodo,
+  createSubTodo,
+} from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
+import {
+  createTodoApiError,
+  createTodoDto,
+} from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
+import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useReorderSubTodosMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import type {
+  DailyCompletionsResult,
+  Todo,
+  TodoDetails,
+  TodoListResult,
+} from '@src/features/planning/todo/schemas/todo.schema';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
@@ -21,22 +40,9 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
-import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
-import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
-import { SubTodoService } from '../apis/sub-todo.service';
-import { TodoService } from '../apis/todo.service';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type {
-  DailyCompletionsResult,
-  Todo,
-  TodoDetails,
-  TodoListResult,
-} from '../schemas/todo.schema';
-import { useDeleteSubTodoMutationOptions } from './sub-todo.mutations';
-import { useReorderSubTodosMutationOptions } from './sub-todo.mutations';
-import { useToggleSubTodoMutationOptions } from './sub-todo.mutations';
-import { useDeleteTodoMutationOptions } from './todo.mutations';
-import { useToggleTodoMutationOptions } from './todo.mutations';
+import { useAddSubTodoMutationOptions } from './todo-composer.mutations';
+import { useCreateTodoMutationOptions } from './todo-composer.mutations';
+import { useUpdateSubTodoMutationOptions } from './todo-composer.mutations';
 
 const DAY_1 = '2026-03-08';
 const DAY_2 = '2026-03-09';

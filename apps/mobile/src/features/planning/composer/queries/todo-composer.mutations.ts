@@ -20,7 +20,6 @@ import {
   appendTodoToList,
   cancelTodoCompletionQueries,
   confirmTodoInList,
-  createOptimisticId,
   removeTodoFromList,
   settleTodoCompletionWrite,
   syncDailyCompletionWithList,
@@ -41,6 +40,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { createOptimisticId } from '@src/shared/utils/optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 export interface CreateTodoParams {

@@ -2,7 +2,6 @@ import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-
 import { findLimitedFeature } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
-  createOptimisticId,
   invalidateFeedTodos,
   invalidateTodos,
   invalidateWidgetSummary,
@@ -12,6 +11,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
+import { createOptimisticId } from '@src/shared/utils/optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
