@@ -8,7 +8,6 @@ import {
   toInviteCodeDraft,
 } from '@src/features/social/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/social/invite/hooks/use-invite-route-params';
-import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useGetClipboardPresenceQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { getInvitePreviewQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { useTrack } from '@src/shared/analytics';
@@ -19,7 +18,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   CopyIcon,
-  H3,
   HStack,
   InfoIcon,
   KeyboardAdaptiveButton,
@@ -31,12 +29,12 @@ import {
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useRef, useState } from 'react';
+import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'react';
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
-export function InviteCodeEntryForm() {
-  useTrackInviteLinkOpened();
+/** 코드 입력과 제출 버튼. 입력 위에 붙는 안내는 화면이 children으로 넘긴다 */
+export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const { openedAt } = useInviteRouteParams();
   const { t } = useTranslation('invite');
   const showFailure = useMutationFailure();
@@ -133,7 +131,7 @@ export function InviteCodeEntryForm() {
   };
 
   return (
-    <Box flex={1} className="bg-white">
+    <>
       <ScrollView
         className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
@@ -142,15 +140,7 @@ export function InviteCodeEntryForm() {
       >
         <StyledSafeAreaView edges={['left', 'right']}>
           <ReadableContent px={24} pt={20}>
-            <H3>{t('codeEntry.headline')}</H3>
-
-            <Spacing size={10} />
-
-            <Text size="b3" shade={7}>
-              {t('codeEntry.description')}
-            </Text>
-
-            <Spacing size={32} />
+            {children}
 
             <Controller
               control={form.control}
@@ -220,7 +210,7 @@ export function InviteCodeEntryForm() {
       >
         {errorMessage == null ? t('codeEntry.submit') : t('codeEntry.retry')}
       </KeyboardAdaptiveButton>
-    </Box>
+    </>
   );
 }
 
