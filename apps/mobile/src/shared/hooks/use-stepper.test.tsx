@@ -34,7 +34,9 @@ describe('useStepper', () => {
 
   it('push하면 단계와 index가 바뀌고 context가 좁혀진다', async () => {
     // Given
-    const { result } = await renderHook(() => useStepper<Contexts>({ initial: INITIAL }));
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
 
     // When
     await act(async () => {
@@ -48,9 +50,47 @@ describe('useStepper', () => {
     expect(step === 'password' ? context.email : null).toBe('a@b.c');
   });
 
+  it('받은 id를 그대로 돌려준다', async () => {
+    // When
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
+
+    // Then
+    expect(result.current.id).toBe('signup');
+  });
+
+  it('go는 기록 안에서 delta만큼 이동하고 범위를 벗어나면 무시한다', async () => {
+    // Given
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
+    await act(async () => {
+      result.current.history.push('password', { email: '' });
+    });
+
+    // When
+    await act(async () => {
+      result.current.history.go(-1);
+    });
+
+    // Then
+    expect(result.current.step).toBe('email');
+
+    // When
+    await act(async () => {
+      result.current.history.go(-1);
+    });
+
+    // Then
+    expect(result.current.index).toBe(0);
+  });
+
   it('연속으로 빠르게 두 번 push해도 한 단계만 쌓는다', async () => {
     // Given
-    const { result } = await renderHook(() => useStepper<Contexts>({ initial: INITIAL }));
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
 
     // When
     await act(async () => {
@@ -66,7 +106,7 @@ describe('useStepper', () => {
     // Given
     const onStepChange = jest.fn();
     const { result, rerender } = await renderHook(() =>
-      useStepper<Contexts>({ initial: INITIAL, onStepChange }),
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL, onStepChange }),
     );
 
     // When
@@ -88,14 +128,18 @@ describe('useStepper', () => {
   it('다시 마운트하면 처음 단계로 돌아가고 처음 단계를 알린다', async () => {
     // Given
     const onStepChange = jest.fn();
-    const first = await renderHook(() => useStepper<Contexts>({ initial: INITIAL, onStepChange }));
+    const first = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL, onStepChange }),
+    );
     await act(async () => {
       first.result.current.history.push('password', { email: '' });
     });
     await first.unmount();
 
     // When
-    const second = await renderHook(() => useStepper<Contexts>({ initial: INITIAL, onStepChange }));
+    const second = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL, onStepChange }),
+    );
 
     // Then
     expect(second.result.current.step).toBe('email');
@@ -105,7 +149,9 @@ describe('useStepper', () => {
   it('Android 뒤로 가기는 앞 단계가 있으면 되돌리고 첫 단계에서는 넘긴다', async () => {
     // Given
     const backHandler = givenBackHandler();
-    const { result } = await renderHook(() => useStepper<Contexts>({ initial: INITIAL }));
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
     await act(async () => {
       result.current.history.push('password', { email: '' });
     });
@@ -129,7 +175,9 @@ describe('useStepper', () => {
   it('화면이 사라지면 뒤로 가기 구독을 해제한다', async () => {
     // Given
     const backHandler = givenBackHandler();
-    const { unmount } = await renderHook(() => useStepper<Contexts>({ initial: INITIAL }));
+    const { unmount } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: INITIAL }),
+    );
 
     // When
     await unmount();
@@ -149,7 +197,7 @@ describe('useStepper', () => {
     }
     function Screen() {
       const [email, setEmail] = useState('');
-      const stepper = useStepper<Contexts>({ initial: INITIAL });
+      const stepper = useStepper<Contexts>({ id: 'signup', initial: INITIAL });
       return (
         <stepper.Render
           email={() => <EmailField value={email} onChange={setEmail} />}

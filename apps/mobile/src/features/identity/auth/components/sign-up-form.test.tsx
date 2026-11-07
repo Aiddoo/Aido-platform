@@ -8,6 +8,7 @@ import { SignUpForm, type SignUpStepContexts } from './sign-up-form';
 
 function SignUpHarness() {
   const stepper = useStepper<SignUpStepContexts>({
+    id: 'sign-up-test',
     initial: { step: 'userInfo', context: {} },
   });
 

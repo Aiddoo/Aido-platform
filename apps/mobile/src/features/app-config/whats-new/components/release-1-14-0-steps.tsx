@@ -22,6 +22,7 @@ export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_14_0, source });
   const stepper = useStepper<Release1140StepMap>({
+    id: 'whats-new-1.14.0',
     initial: { step: 'friendInvite', context: {} },
     onStepChange: flow.trackStepViewed,
   });

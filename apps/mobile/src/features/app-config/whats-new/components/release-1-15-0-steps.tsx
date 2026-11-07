@@ -27,6 +27,7 @@ export function Release1150Steps() {
   const flow = useWhatsNewFlow({ release: RELEASE_1_15_0, source });
   const startVoiceNote = useStartVoiceNote();
   const stepper = useStepper<Release1150StepMap>({
+    id: 'whats-new-1.15.0',
     initial: { step: 'voiceTodo', context: {} },
     onStepChange: flow.trackStepViewed,
   });

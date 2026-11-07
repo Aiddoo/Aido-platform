@@ -27,6 +27,7 @@ interface StepperHistory<Contexts extends StepperContexts> {
   push: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
   replace: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
   back: () => void;
+  go: (delta: number) => void;
 }
 
 interface StepRenderProps<
@@ -45,12 +46,14 @@ type StepRenderers<Contexts extends StepperContexts> = {
 
 type StepChange<Contexts extends StepperContexts> = StepEntry<Contexts> & { index: number };
 
-interface UseStepperOptions<Contexts extends StepperContexts> {
+export interface UseStepperOptions<Contexts extends StepperContexts> {
+  id: string;
   initial: StepEntry<Contexts>;
   onStepChange?: (change: StepChange<Contexts>) => void;
 }
 
 export type Stepper<Contexts extends StepperContexts> = StepEntry<Contexts> & {
+  id: string;
   index: number;
   historySteps: readonly StepEntry<Contexts>[];
   history: StepperHistory<Contexts>;
@@ -104,6 +107,7 @@ function createHistory<Contexts extends StepperContexts>(
     replace: (step, context) =>
       store.dispatch({ type: 'replace', entry: createStepEntry(step, context) }),
     back: () => store.dispatch({ type: 'go', delta: -1 }),
+    go: (delta) => store.dispatch({ type: 'go', delta }),
   };
 }
 
@@ -141,6 +145,7 @@ function createRender<Contexts extends StepperContexts>(
  * 화면이 사라지면 기록도 함께 사라진다. Android 뒤로 가기는 앞 단계가 있으면 한 단계 되돌린다.
  */
 export function useStepper<Contexts extends StepperContexts>({
+  id,
   initial,
   onStepChange,
 }: UseStepperOptions<Contexts>): Stepper<Contexts> {
@@ -177,6 +182,7 @@ export function useStepper<Contexts extends StepperContexts>({
 
   return {
     ...current,
+    id,
     index: state.cursor,
     historySteps: state.entries,
     history,

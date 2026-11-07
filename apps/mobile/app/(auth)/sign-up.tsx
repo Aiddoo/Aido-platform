@@ -21,6 +21,7 @@ const SIGN_UP_STEP_TITLE_KEYS = {
 export default function SignUpScreen() {
   const { t } = useTranslation(['auth', 'invite']);
   const stepper = useStepper<SignUpStepContexts>({
+    id: 'sign-up',
     initial: { step: 'userInfo', context: {} },
   });
   const openInviteCodeEntry = useSingleTap(() => router.push('/invite'));

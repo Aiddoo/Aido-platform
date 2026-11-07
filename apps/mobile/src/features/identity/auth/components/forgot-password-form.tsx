@@ -52,6 +52,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     mode: 'onChange',
   });
   const stepper = useStepper<ForgotPasswordStepContexts>({
+    id: 'forgot-password',
     initial: { step: 'email', context: {} },
   });
   const reportUnexpectedError = useReportUnexpectedError('auth');
