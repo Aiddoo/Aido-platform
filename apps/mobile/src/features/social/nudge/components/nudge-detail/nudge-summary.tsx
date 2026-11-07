@@ -8,9 +8,11 @@ import { HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { useNudgeParams } from '../../hooks/use-nudge-params';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 
-export function NudgeSummary({ nudgeId }: { nudgeId: number }) {
+export function NudgeSummary() {
+  const nudgeId = useNudgeParams();
   const { t } = useTranslation('todo');
   const dateFormatContext = useDateFormatContext();
   const now = useMinuteNow();

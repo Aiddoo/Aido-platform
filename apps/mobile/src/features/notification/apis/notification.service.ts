@@ -11,6 +11,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { identity, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
+import { isForeignNotificationError } from '../domains/notification.error';
 import type { GetNotificationsQuery, NotificationOwnership } from '../schemas/notification.schema';
 import { toNotificationListResult } from './notification.mapper';
 
@@ -101,7 +102,7 @@ export class NotificationService {
       if (result.ok) {
         return 'ok';
       }
-      return result.error.status === 403 || result.error.status === 404 ? 'foreign' : 'unknown';
+      return isForeignNotificationError(result.error) ? 'foreign' : 'unknown';
     } catch {
       return 'unknown';
     }

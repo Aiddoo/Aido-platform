@@ -6,6 +6,8 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   DashedDivider,
   HStack,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   ScallopedContainer,
   Spacing,
@@ -18,9 +20,11 @@ import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
+import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
+import { isReportUnavailable } from '../domains/ai-report.error';
 import { AiReportPolicy } from '../domains/ai-report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
@@ -316,9 +320,13 @@ ActivityReport.Loading = function Loading() {
   );
 };
 
-/** 지워졌거나 볼 수 없는 리포트. 예전 알림·딥링크가 열 때 보이고, 다시 시도 대신 목록으로 보낸다 */
-ActivityReport.Unavailable = function Unavailable({ onBackToList }: { onBackToList: () => void }) {
+/** 지워졌거나 볼 수 없는 리포트는 목록으로 보내고, 그 밖의 실패는 다시 시도를 준다. 예전 알림·딥링크가 지운 리포트를 열 때 보인다 */
+ActivityReport.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('ai');
+
+  if (!isReportUnavailable(error)) {
+    return <QueryErrorFallback reset={reset} />;
+  }
 
   return (
     <Result
@@ -326,7 +334,9 @@ ActivityReport.Unavailable = function Unavailable({ onBackToList }: { onBackToLi
       title={t('report.unavailable.title')}
       description={t('report.unavailable.description')}
       button={
-        <Result.Button onPress={onBackToList}>{t('report.unavailable.backToList')}</Result.Button>
+        <Result.Button onPress={() => router.dismissTo('/reports')}>
+          {t('report.unavailable.backToList')}
+        </Result.Button>
       }
     />
   );

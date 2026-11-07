@@ -153,6 +153,7 @@ function NudgeMessageSheet({
             name="message"
             render={({ field, fieldState }) => (
               <BottomSheetTextArea
+                ref={field.ref}
                 label={t('nudge.to', { name: receiver.displayName })}
                 isInvalid={fieldState.error != null}
                 placeholder={placeholder}

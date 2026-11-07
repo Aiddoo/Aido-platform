@@ -6,9 +6,7 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import type { FriendUser } from '@src/features/social/friend/schemas/friend.schema';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
 import { t } from '@src/shared/i18n';
@@ -17,7 +15,9 @@ import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/re
 import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import { getFriendErrorDetails } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
+import type { FriendUser } from '../schemas/friend.schema';
 import type { ReorderFriendInput } from '../schemas/friend.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
@@ -212,7 +212,7 @@ export function useSendRequestByTagMutationOptions({
         haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
-        const details = isApiError(err) ? err.details : undefined;
+        const details = getFriendErrorDetails(err);
         gate.handleError(
           err,
           match(

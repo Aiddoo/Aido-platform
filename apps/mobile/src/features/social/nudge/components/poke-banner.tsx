@@ -97,7 +97,7 @@ PokeBanner.Loading = function Loading() {
   return <Skeleton className="h-[72px] rounded-xl" />;
 };
 
-PokeBanner.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+PokeBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
     <HStack p={12} gap={8} align="center" className="rounded-xl bg-gray-1">

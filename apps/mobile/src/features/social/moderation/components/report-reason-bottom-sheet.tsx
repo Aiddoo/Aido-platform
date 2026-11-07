@@ -165,8 +165,9 @@ function DetailField({ control }: { control: Control<UserReportFormInput> }) {
     <Controller
       control={control}
       name="detail"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
+      render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
         <BottomSheetTextArea
+          ref={ref}
           label={t('report.detailLabel')}
           placeholder={t('report.detailPlaceholder')}
           value={value ?? ''}

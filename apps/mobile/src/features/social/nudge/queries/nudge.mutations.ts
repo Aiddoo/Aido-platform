@@ -1,4 +1,3 @@
-import { ErrorCode } from '@aido/api/errors';
 import {
   useErrorReporter,
   useTodoNudgeService,
@@ -16,6 +15,7 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
+import { isNudgeTodoChanged } from '../domains/todo-nudge.error';
 import type {
   CreateNudgeInput,
   CreateRemindNudgeInput,
@@ -72,7 +72,7 @@ export function useSendNudgeThanksMutationOptions() {
       }
       showFailure(error);
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
-      if (isApiError(error) && error.hasCode(ErrorCode.NUDGE_1110)) {
+      if (isNudgeTodoChanged(error)) {
         invalidateTodoDetails(queryClient, { todoId });
       }
     },

@@ -1,9 +1,8 @@
-import { ErrorCode } from '@aido/api/errors';
 import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { isSentNudgeListDisabled } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import type { NudgeInteraction } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
-import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -29,7 +28,7 @@ export function SentNudgeList() {
     useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }));
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
   const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
-  const [refreshing, onRefresh] = useRefresh(refetch);
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
     <InfiniteList
@@ -38,8 +37,8 @@ export function SentNudgeList() {
       isFetchingNextPage={isFetchingNextPage}
       isFetchNextPageError={isFetchNextPageError}
       fetchNextPage={fetchNextPage}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
@@ -64,9 +63,9 @@ export function SentNudgeList() {
 
 SentNudgeList.Loading = NotificationListRow.Loading;
 
-SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
+  const isDisabled = isSentNudgeListDisabled(error);
 
   return (
     <VStack flex={1} p={24}>

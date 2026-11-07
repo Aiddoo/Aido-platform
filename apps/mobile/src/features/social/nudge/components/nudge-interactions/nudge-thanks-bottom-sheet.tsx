@@ -1,8 +1,6 @@
-import { ErrorCode } from '@aido/api/errors';
 import { FlashList } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoParams } from '@src/features/planning/todo/hooks/use-todo-params';
-import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -26,6 +24,7 @@ import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { isNudgeThanksChanged } from '../../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
 import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
@@ -202,17 +201,14 @@ NudgeThanksBottomSheet.Empty = function Empty() {
   );
 };
 
-NudgeThanksBottomSheet.Error = function ErrorState({
+NudgeThanksBottomSheet.Error = function ErrorFallback({
   error,
   reset,
   onClose,
 }: QueryErrorFallbackProps & { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
-  const hasChanged =
-    isApiError(error) &&
-    (error.status === 404 ||
-      error.hasCode(ErrorCode.NUDGE_1109) ||
-      error.hasCode(ErrorCode.NUDGE_1110));
+  const hasChanged = isNudgeThanksChanged(error);
+
   return (
     <VStack py={24}>
       <Result

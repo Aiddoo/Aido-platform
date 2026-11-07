@@ -152,7 +152,7 @@ interface ThanksSummaryRowErrorProps extends QueryErrorFallbackProps {
 }
 
 /** 고마움 보내기 입구라 숨기지 않고 같은 자리에 다시 시도·문의를 둔다 */
-ThanksSummaryRow.Error = function ErrorState({ reset, onInquiry }: ThanksSummaryRowErrorProps) {
+ThanksSummaryRow.Error = function ErrorFallback({ reset, onInquiry }: ThanksSummaryRowErrorProps) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (

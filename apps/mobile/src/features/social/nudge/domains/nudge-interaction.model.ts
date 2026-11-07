@@ -8,22 +8,6 @@ import type {
   NudgeThanksSummaryState,
 } from '../schemas/nudge-interaction.schema';
 
-export function getNudgeInteractionStatusFromFlags(
-  isAvailable: boolean,
-  isTodoCompleted: boolean,
-  hasReply: boolean,
-  isThanked: boolean,
-): NudgeInteractionStatus {
-  return match({ isAvailable, isTodoCompleted, hasReply, isThanked })
-    .returnType<NudgeInteractionStatus>()
-    .with({ isAvailable: false }, () => 'UNAVAILABLE')
-    .with({ isThanked: true }, () => 'THANKED')
-    .with({ isTodoCompleted: true }, () => 'COMPLETED')
-    .with({ hasReply: true }, () => 'REPLIED')
-    .with({ hasReply: false }, () => 'WAITING')
-    .exhaustive();
-}
-
 interface NudgeThanksSummary {
   state: NudgeThanksSummaryState;
   pendingRecipientCount: number;
@@ -32,12 +16,19 @@ interface NudgeThanksSummary {
 function getNudgeInteractionStatus(
   nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
 ): NudgeInteractionStatus {
-  return getNudgeInteractionStatusFromFlags(
-    nudge.isAvailable,
-    nudge.isTodoCompleted,
-    nudge.replyKind != null,
-    nudge.thankedAt != null,
-  );
+  return match({
+    isAvailable: nudge.isAvailable,
+    isTodoCompleted: nudge.isTodoCompleted,
+    hasReply: nudge.replyKind != null,
+    isThanked: nudge.thankedAt != null,
+  })
+    .returnType<NudgeInteractionStatus>()
+    .with({ isAvailable: false }, () => 'UNAVAILABLE')
+    .with({ isThanked: true }, () => 'THANKED')
+    .with({ isTodoCompleted: true }, () => 'COMPLETED')
+    .with({ hasReply: true }, () => 'REPLIED')
+    .with({ hasReply: false }, () => 'WAITING')
+    .exhaustive();
 }
 
 function isThankableTodo(

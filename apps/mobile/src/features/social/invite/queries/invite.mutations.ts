@@ -19,10 +19,10 @@ import { match } from 'ts-pattern';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { type InviteShareContent } from '../domains/invite-share.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
-import { type InviteShareChannel } from '../schemas/invite-share.schema';
-import { type InviteCode } from '../schemas/invite.schema';
+import type { InviteShareContent } from '../schemas/invite-share.schema';
+import type { InviteShareChannel } from '../schemas/invite-share.schema';
+import type { InviteCode } from '../schemas/invite.schema';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 
 /** 코드 입력에서 없는 코드를 바로 알리고, 받은 미리보기는 초대 카드가 다시 부르지 않게 캐시에 둔다 */

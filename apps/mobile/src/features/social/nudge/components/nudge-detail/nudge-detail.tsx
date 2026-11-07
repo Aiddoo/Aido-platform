@@ -1,8 +1,8 @@
-import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   type QueryErrorFallbackProps,
   Result,
+  Spacing,
   StyledSafeAreaView,
   TextSkeleton,
   HStack,
@@ -12,9 +12,37 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { ScrollView } from 'react-native';
 
-function NudgeDetailError({ error, reset }: QueryErrorFallbackProps) {
+import { isNudgeUnavailable } from '../../domains/todo-nudge.error';
+import { NudgeModerationToolbar } from './nudge-moderation-toolbar';
+import { NudgeResponse } from './nudge-response';
+import { NudgeSummary } from './nudge-summary';
+import { NudgeTodoButton } from './nudge-todo-button';
+
+export function NudgeDetail() {
+  return (
+    <>
+      <NudgeModerationToolbar />
+
+      <ScrollView contentContainerClassName="grow">
+        <StyledSafeAreaView edges={['left', 'right']} className="p-6" testID="nudge-detail">
+          <NudgeSummary />
+
+          <Spacing size={24} />
+
+          <NudgeTodoButton />
+
+          <Spacing size={24} />
+
+          <NudgeResponse />
+        </StyledSafeAreaView>
+      </ScrollView>
+    </>
+  );
+}
+
+NudgeDetail.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const isUnavailable = isApiError(error) && error.status === 404;
+  const isUnavailable = isNudgeUnavailable(error);
 
   return (
     <VStack flex={1} p={24}>
@@ -29,9 +57,9 @@ function NudgeDetailError({ error, reset }: QueryErrorFallbackProps) {
       />
     </VStack>
   );
-}
+};
 
-function NudgeDetailLoading() {
+NudgeDetail.Loading = function Loading() {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <StyledSafeAreaView edges={['left', 'right']} className="p-6">
@@ -49,6 +77,4 @@ function NudgeDetailLoading() {
       </StyledSafeAreaView>
     </ScrollView>
   );
-}
-
-export const NudgeDetail = { Error: NudgeDetailError, Loading: NudgeDetailLoading } as const;
+};

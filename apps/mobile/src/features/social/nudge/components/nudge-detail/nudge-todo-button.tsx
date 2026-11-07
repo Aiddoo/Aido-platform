@@ -4,9 +4,11 @@ import { ArrowRightIcon, Button, HStack, PawIcon, Text, VStack } from '@src/shar
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
+import { useNudgeParams } from '../../hooks/use-nudge-params';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 
-export function NudgeTodoButton({ nudgeId }: { nudgeId: number }) {
+export function NudgeTodoButton() {
+  const nudgeId = useNudgeParams();
   const { t } = useTranslation('todo');
   const { data: nudge } = useSuspenseQuery(useGetNudgeInteractionQueryOptions({ nudgeId }));
   const openTodo = useSingleTap(() =>

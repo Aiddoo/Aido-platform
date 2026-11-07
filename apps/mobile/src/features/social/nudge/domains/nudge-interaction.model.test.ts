@@ -1,9 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import {
-  getNudgeInteractionStatusFromFlags,
-  NudgeInteractionPolicy,
-} from './nudge-interaction.model';
+import { NudgeInteractionPolicy } from './nudge-interaction.model';
 
 describe('콕 상호작용 상태', () => {
   test.each([
@@ -27,15 +24,15 @@ describe('콕 상호작용 상태', () => {
     '사용 가능 %s·완료 %s·답장 %s·감사 %s일 때 %s 상태로 표시한다',
     (isAvailable, isTodoCompleted, hasReply, isThanked, expected) => {
       // Given
-      const context = { isAvailable, isTodoCompleted, hasReply, isThanked };
+      const nudge = {
+        isAvailable,
+        isTodoCompleted,
+        replyKind: hasReply ? ('STARTING' as const) : null,
+        thankedAt: isThanked ? toInstant('2026-01-01T00:00:00Z') : null,
+      };
 
       // When
-      const status = getNudgeInteractionStatusFromFlags(
-        context.isAvailable,
-        context.isTodoCompleted,
-        context.hasReply,
-        context.isThanked,
-      );
+      const status = NudgeInteractionPolicy.getNudgeInteractionStatus(nudge);
 
       // Then
       expect(status).toBe(expected);

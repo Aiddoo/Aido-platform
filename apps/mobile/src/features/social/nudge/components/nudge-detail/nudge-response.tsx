@@ -23,11 +23,13 @@ import { match, P } from 'ts-pattern';
 
 import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-labels';
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { useNudgeParams } from '../../hooks/use-nudge-params';
 import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';
 
-export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
+export function NudgeResponse() {
+  const nudgeId = useNudgeParams();
   const { t } = useTranslation('todo');
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
@@ -43,7 +45,7 @@ export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
         description={t('interaction.unavailableDescription')}
       />
     ))
-    .with('reply', () => <ReplyPanel nudgeId={nudgeId} selectedKind={nudge.replyKind} />)
+    .with('reply', () => <ReplyPanel selectedKind={nudge.replyKind} />)
     .with('thanksPrompt', () => (
       <VStack gap={12}>
         <Text size="b3" shade={6}>
@@ -70,13 +72,8 @@ export function NudgeResponse({ nudgeId }: { nudgeId: number }) {
     .exhaustive();
 }
 
-function ReplyPanel({
-  nudgeId,
-  selectedKind,
-}: {
-  nudgeId: number;
-  selectedKind: NudgeReplyKind | null;
-}) {
+function ReplyPanel({ selectedKind }: { selectedKind: NudgeReplyKind | null }) {
+  const nudgeId = useNudgeParams();
   const { t } = useTranslation('todo');
   const reply = useMutation(useReplyToNudgeMutationOptions());
 

@@ -15,7 +15,7 @@ const savedReportSchema = routeIntegerStringSchema
 
 /** 리포트 상세는 미리보기 샘플 id(sample-weekly 등) 또는 저장된 리포트의 숫자 id를 받는다. */
 export const reportParamsSchema = z.object({
-  id: z.union([sampleReportSchema, savedReportSchema]),
+  reportId: z.union([sampleReportSchema, savedReportSchema]),
 });
 
 /** 리포트 목록의 주간·월간 탭. `?type=` */

@@ -7,10 +7,12 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { useNudgeParams } from '../../hooks/use-nudge-params';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 
 /** 받은 콕 찌르기의 ⋯ 메뉴. 보낸 사람의 메시지를 신고하거나 보낸 사람을 차단한다 */
-export function NudgeModerationToolbar({ nudgeId }: { nudgeId: number }) {
+export function NudgeModerationToolbar() {
+  const nudgeId = useNudgeParams();
   const { t } = useTranslation('moderation');
   const push = useSingleTap(router.push);
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
