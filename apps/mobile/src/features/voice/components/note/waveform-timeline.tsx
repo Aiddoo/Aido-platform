@@ -52,12 +52,17 @@ function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWav
 
   useVoiceFrameCallback((frame) => {
     'worklet';
-    const next = appendLevelFrame(sampler.get(), level.get(), frame.timeSincePreviousFrame ?? 0);
+    const next = appendLevelFrame(
+      sampler.get(),
+      level.get(),
+      frame.timeSincePreviousFrame ?? 0,
+      WAVEFORM_BAR.intervalMs,
+    );
     sampler.set(next.sampler);
     if (next.bar == null) {
       return;
     }
-    bars.set(appendTimelineBar(bars.get(), next.bar));
+    bars.set(appendTimelineBar(bars.get(), next.bar, WAVEFORM_BAR.maxLiveBars));
     barCount.set(barCount.get() + 1);
     if (!reduceMotion) {
       shift.set(STEP);

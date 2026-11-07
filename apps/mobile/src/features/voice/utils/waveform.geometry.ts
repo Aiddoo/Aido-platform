@@ -50,12 +50,15 @@ export function createLevelSampler(): LevelSampler {
   return { pendingMax: 0, elapsedMs: 0 };
 }
 
-/** 프레임마다 음량을 모아 `intervalMs`마다 그동안의 최댓값으로 한 칸을 만든다. UI 스레드에서 부른다 */
+/**
+ * 프레임마다 음량을 모아 `intervalMs`마다 그동안의 최댓값으로 한 칸을 만든다. UI 스레드에서 부른다.
+ * worklet의 매개변수 기본값은 Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 오류가 나므로 호출부가 넘긴다.
+ */
 export function appendLevelFrame(
   sampler: LevelSampler,
   level: number,
   frameMs: number,
-  intervalMs: number = WAVEFORM_BAR.intervalMs,
+  intervalMs: number,
 ): { sampler: LevelSampler; bar: number | null } {
   'worklet';
   const pendingMax = Math.max(sampler.pendingMax, level);
@@ -68,7 +71,7 @@ export function appendLevelFrame(
 export function appendTimelineBar(
   bars: readonly number[],
   bar: number,
-  maxBars: number = WAVEFORM_BAR.maxLiveBars,
+  maxBars: number,
 ): readonly number[] {
   'worklet';
   return bars.length < maxBars ? [...bars, bar] : [...bars.slice(1), bar];
