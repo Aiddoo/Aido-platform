@@ -5,7 +5,6 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useStoredString } from '@src/shared/infra/storage/mmkv-storage';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -21,6 +20,7 @@ import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 
 interface WhatsNewFeedInput {
+  isStable: boolean;
   /** 날씨 위치 안내가 뜰 수 있는 동안에는 자동으로 열지 않아 두 안내가 겹치지 않게 한다 */
   isWeatherIntroductionPending: boolean;
   isInviteAvailable: boolean;
@@ -28,6 +28,7 @@ interface WhatsNewFeedInput {
 
 /** 서버가 켠 캠페인을 처음 한 번 자동으로 열고, 14일 동안 피드 카드로 다시 열게 한다 */
 export function useWhatsNewFeed({
+  isStable,
   isWeatherIntroductionPending,
   isInviteAvailable,
 }: WhatsNewFeedInput) {
@@ -39,7 +40,6 @@ export function useWhatsNewFeed({
   });
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const appVersion = useMemo(getNativeAppVersion, []);
-  const isStable = useStableFeedForeground();
   const repository = useWhatsNewRepository();
   const now = toInstant(useMinuteNow().toISOString());
   const push = useSingleTap(router.push);

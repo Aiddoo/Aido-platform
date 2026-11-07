@@ -12,13 +12,6 @@ let focusEffect: EffectCallback | undefined;
 let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
 let idleCallbacks: Array<() => void> = [];
 
-jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useAuthSessionStore: () => ({
-    subscribe: () => () => {},
-    getState: () => ({ status: 'authenticated' }),
-  }),
-}));
-
 jest.mock('@src/shared/ui', () => ({
   useOverlayState: () => ({ hasActiveOverlay: mockHasActiveOverlay }),
 }));
@@ -40,6 +33,10 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
   type: 'default',
   appearance: 'light',
 });
+
+function useStableInFeed({ hasPendingNavigation = false } = {}) {
+  return useStableFeedForeground({ isAuthenticated: true, hasPendingNavigation });
+}
 
 describe('useStableFeedForeground', () => {
   beforeEach(() => {
@@ -79,7 +76,7 @@ describe('useStableFeedForeground', () => {
   it('딥링크 라우팅 상호작용이 끝나면 같은 focus에서도 대기 상태를 해제한다', async () => {
     // Given
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
-    const { result } = await renderHook(() => useStableFeedForeground());
+    const { result } = await renderHook(() => useStableInFeed());
 
     // When
     await act(async () => {
@@ -98,7 +95,7 @@ describe('useStableFeedForeground', () => {
 
   it('포커스를 유지한 런타임 딥링크도 라우팅 상호작용이 끝날 때까지 노출을 미룬다', async () => {
     // Given
-    const { result } = await renderHook(() => useStableFeedForeground());
+    const { result } = await renderHook(() => useStableInFeed());
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -124,7 +121,7 @@ describe('useStableFeedForeground', () => {
 
   it('화면을 떠나면 대기 중인 딥링크 해제를 취소한다', async () => {
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
-    const hook = await renderHook(() => useStableFeedForeground());
+    const hook = await renderHook(() => useStableInFeed());
     await act(async () => {
       await Promise.resolve();
     });
@@ -137,7 +134,7 @@ describe('useStableFeedForeground', () => {
   it('실제 OverlayProvider의 폼/오버레이 신호가 활성인 동안만 자동 노출을 막는다', async () => {
     // Given
     mockHasActiveOverlay = true;
-    const hook = await renderHook(() => useStableFeedForeground());
+    const hook = await renderHook(() => useStableInFeed());
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -157,7 +154,7 @@ describe('useStableFeedForeground', () => {
   it('키보드가 올라와 있는 동안은 자동 노출을 막는다', async () => {
     // Given
     mockIsKeyboardVisible = true;
-    const hook = await renderHook(() => useStableFeedForeground());
+    const hook = await renderHook(() => useStableInFeed());
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -172,5 +169,26 @@ describe('useStableFeedForeground', () => {
 
     // Then
     await waitFor(() => expect(hook.result.current).toBe(true));
+  });
+
+  it('눌린 푸시를 처리하는 동안은 안정되지 않았다고 본다', async () => {
+    // Given
+    const { result, rerender } = await renderHook(
+      (props: { hasPendingNavigation: boolean }) => useStableInFeed(props),
+      { initialProps: { hasPendingNavigation: true } },
+    );
+    await act(async () => {
+      focusEffect?.();
+      await Promise.resolve();
+    });
+
+    // Then
+    expect(result.current).toBe(false);
+
+    // When
+    await rerender({ hasPendingNavigation: false });
+
+    // Then
+    expect(result.current).toBe(true);
   });
 });

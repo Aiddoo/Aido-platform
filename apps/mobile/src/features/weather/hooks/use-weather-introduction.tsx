@@ -4,7 +4,6 @@ import {
   useWeatherIntroductionService,
 } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
 import { useEffect, useRef, useState } from 'react';
@@ -17,12 +16,13 @@ import { useWeatherLocation } from './use-weather-location';
  * 로그인 전에 연 초대처럼 이어서 열 화면이 남아 있으면 그 이동이 끝나 피드로 돌아올 때까지 미룬다.
  * 다른 자동 안내(기능 소개)가 겹치지 않도록 안내 여부가 정해질 때까지 isPending을 돌려준다.
  */
-export function useWeatherIntroduction(): { isPending: boolean } {
+export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
+  isPending: boolean;
+} {
   const location = useWeatherLocation();
   const introductionService = useWeatherIntroductionService();
   const inviteService = useInviteService();
   const logger = useLogger();
-  const stable = useStableFeedForeground();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather']);
   const [hasSeen, setHasSeen] = useState(() => introductionService.hasSeenIntroduction());
@@ -31,7 +31,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
   const request = location.status === 'needsPermission' ? location.request : null;
 
   useEffect(() => {
-    if (!stable || !shouldIntroduce || request == null) {
+    if (!isStable || !shouldIntroduce || request == null) {
       return;
     }
     const task = requestIdleCallback(() => {
@@ -95,7 +95,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
         });
     });
     return () => cancelIdleCallback(task);
-  }, [introductionService, inviteService, logger, overlay, request, shouldIntroduce, stable, t]);
+  }, [introductionService, inviteService, logger, overlay, request, shouldIntroduce, isStable, t]);
 
   return { isPending: location.status === 'checking' || shouldIntroduce };
 }

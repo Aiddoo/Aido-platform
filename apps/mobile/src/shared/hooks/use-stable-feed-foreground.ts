@@ -1,4 +1,3 @@
-import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useOverlayState } from '@src/shared/ui';
 import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
 import * as Linking from 'expo-linking';
@@ -7,8 +6,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
-export function useStableFeedForeground(): boolean {
-  const status = useAuthStatus();
+/** 로그인 상태와 곧 일어날 이동은 shared가 모르는 일이라 화면이 넘긴다 */
+export function useStableFeedForeground({
+  isAuthenticated,
+  hasPendingNavigation,
+}: {
+  isAuthenticated: boolean;
+  hasPendingNavigation: boolean;
+}): boolean {
   const { hasActiveOverlay } = useOverlayState();
   const [isFocused, setIsFocused] = useState(false);
   const [appState, setAppState] = useState<AppStateStatus | null>(
@@ -82,11 +87,12 @@ export function useStableFeedForeground(): boolean {
   }, [releasePendingDeepLinkWhenIdle]);
 
   return isStableFeedForeground({
-    isAuthenticated: status === 'authenticated',
+    isAuthenticated,
     isFocused,
     appState,
     isKeyboardVisible,
     hasActiveOverlay,
     hasPendingDeepLink,
+    hasPendingNavigation,
   });
 }

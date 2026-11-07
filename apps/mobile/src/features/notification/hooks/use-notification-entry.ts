@@ -30,3 +30,13 @@ export function useNotificationEntry() {
     href: ready?.destination.kind === 'route' ? ready.destination.href : null,
   };
 }
+
+/** 눌린 푸시가 열 곳을 정하는 중이거나 아직 열리지 않았다. 피드 자동 안내가 그 앞에 끼어들지 않게 한다 */
+export function useHasPendingNotificationEntry() {
+  const store = useNotificationEntryStore();
+
+  return useSyncExternalStore(store.subscribe, () => {
+    const { pending, ready } = store.getState();
+    return pending != null || ready != null;
+  });
+}

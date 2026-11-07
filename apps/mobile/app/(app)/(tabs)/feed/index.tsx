@@ -10,9 +10,11 @@ import { TodoCommentTitleBar } from '@src/features/engagement/comment/components
 import { TodoDetailCard } from '@src/features/engagement/comment/components/todo-detail-card';
 import { TodoDetailHeader } from '@src/features/engagement/comment/components/todo-detail-header';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
+import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -48,6 +50,7 @@ import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
@@ -105,9 +108,15 @@ export default function FeedScreen() {
 function MyFeed() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
-  const weatherIntroduction = useWeatherIntroduction();
+  const status = useAuthStatus();
+  const isStable = useStableFeedForeground({
+    isAuthenticated: status === 'authenticated',
+    hasPendingNavigation: useHasPendingNotificationEntry(),
+  });
+  const weatherIntroduction = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useInviteAvailability();
   const whatsNew = useWhatsNewFeed({
+    isStable,
     isWeatherIntroductionPending: weatherIntroduction.isPending,
     isInviteAvailable,
   });
