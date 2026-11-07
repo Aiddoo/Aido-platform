@@ -1,29 +1,114 @@
-import { NudgeDetail } from '@src/features/social/nudge/components/nudge-detail/nudge-detail';
+import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nudge-detail/nudge-moderation-toolbar';
+import { NudgeResponse } from '@src/features/social/nudge/components/nudge-detail/nudge-response';
+import { NudgeSummary } from '@src/features/social/nudge/components/nudge-detail/nudge-summary';
+import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-detail/nudge-todo-button';
+import { isNudgeUnavailable } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent, Result, StyledSafeAreaView } from '@src/shared/ui';
-import { useLocalSearchParams } from 'expo-router';
+import {
+  HStack,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  ReadableContent,
+  Result,
+  Spacing,
+  StyledSafeAreaView,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
+import { ScrollView } from 'react-native';
 
-export default function NudgeDetailRoute() {
+export default function NudgeDetailScreen() {
   const params = nudgeParamsSchema.safeParse(useLocalSearchParams());
-  const { t } = useTranslation('todo');
 
   return (
     <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-white">
       <ReadableContent flex={1}>
         {params.success ? (
-          <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetail.Error}>
-            <Suspense fallback={<NudgeDetail.Loading />}>
-              <NudgeDetail />
+          <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
+            <Suspense fallback={<NudgeDetailScreen.Loading />}>
+              <NudgeModerationToolbar />
+
+              <ScrollView contentContainerClassName="grow">
+                <StyledSafeAreaView edges={['left', 'right']} className="p-6" testID="nudge-detail">
+                  <NudgeSummary />
+
+                  <Spacing size={24} />
+
+                  <NudgeTodoButton />
+
+                  <Spacing size={24} />
+
+                  <NudgeResponse />
+                </StyledSafeAreaView>
+              </ScrollView>
             </Suspense>
           </QueryErrorBoundary>
         ) : (
-          <StyledSafeAreaView edges={['left', 'right']} className="flex-1 p-6">
-            <Result title={t('interaction.unavailable')} />
-          </StyledSafeAreaView>
+          <NudgeDetailScreen.Unavailable />
         )}
       </ReadableContent>
     </StyledSafeAreaView>
   );
 }
+
+/** 응답 자리는 받은 사람인지, 완료됐는지에 따라 모양이 달라 그리지 않는다 */
+NudgeDetailScreen.Loading = function Loading() {
+  return (
+    <ScrollView contentContainerClassName="grow">
+      <StyledSafeAreaView edges={['left', 'right']} className="p-6">
+        <VStack gap={24}>
+          <HStack gap={12} align="center">
+            <Skeleton className="size-12 rounded-full" />
+            <VStack flex={1} gap={4}>
+              <TextSkeleton size="b3" className="w-40" />
+              <TextSkeleton size="e1" className="w-16" />
+            </VStack>
+          </HStack>
+
+          <TextSkeleton size="t3" className="w-3/4" />
+
+          <HStack gap={12} align="center" className="p-4">
+            <Skeleton className="size-7 rounded-full" />
+            <VStack flex={1} gap={4}>
+              <TextSkeleton size="b3" className="w-3/4" />
+              <TextSkeleton size="e1" className="w-16" />
+            </VStack>
+          </HStack>
+        </VStack>
+      </StyledSafeAreaView>
+    </ScrollView>
+  );
+};
+
+NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+  const isUnavailable = isNudgeUnavailable(error);
+
+  return (
+    <VStack flex={1} p={24}>
+      <Result
+        title={t(isUnavailable ? 'todo:interaction.unavailable' : 'todo:interaction.loadError')}
+        description={isUnavailable ? t('todo:interaction.unavailableDescription') : undefined}
+        button={
+          <Result.Button onPress={isUnavailable ? () => router.replace('/notifications') : reset}>
+            {t(isUnavailable ? 'common:actions.goBack' : 'common:actions.retry')}
+          </Result.Button>
+        }
+      />
+    </VStack>
+  );
+};
+
+NudgeDetailScreen.Unavailable = function Unavailable() {
+  const { t } = useTranslation('todo');
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 p-6">
+      <Result title={t('interaction.unavailable')} />
+    </StyledSafeAreaView>
+  );
+};
