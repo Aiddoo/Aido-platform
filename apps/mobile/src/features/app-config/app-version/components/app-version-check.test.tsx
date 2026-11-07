@@ -6,6 +6,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { ServerError } from '@src/shared/errors/infra-error';
+import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { AppVersionCheck } from './app-version-check';
@@ -45,6 +46,10 @@ async function renderCheck({
 }
 
 describe('앱 버전 확인', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
   it('서버가 장애여도 앱을 막지 않고 확인하지 못했다고만 알린다', async () => {
     // Given
     const jsonFetcher: JsonFetcher = { get: jest.fn().mockRejectedValue(new ServerError(500)) };
@@ -60,16 +65,36 @@ describe('앱 버전 확인', () => {
     expect(screen.getByText('1.14.0')).toBeTruthy();
   });
 
-  it('서버 점검이 꺼져 있으면 스토어도 최신 안내도 띄우지 않는다', async () => {
+  it('서버 점검이 꺼져 있으면 실패로 알리지 않고 안내할 새 버전이 없다고 알린다', async () => {
     // Given
     const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue({ enabled: false }) };
-    const { listing } = await renderCheck({ jsonFetcher });
+    const { listing, errorReporter } = await renderCheck({ jsonFetcher });
 
     // When
     fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
-    expect(await screen.findAllByText(/버전 정보를 확인하지 못했어요/)).not.toHaveLength(0);
+    expect(await screen.findAllByText('지금은 안내할 새 버전이 없어요.')).not.toHaveLength(0);
+    expect(screen.queryByText(/버전 정보를 확인하지 못했어요/)).toBeNull();
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(listing.openListing).not.toHaveBeenCalled();
+  });
+
+  it('연결이 없으면 요청 없이 바로 오프라인이라고 알리고 나중에 스토어를 열지 않는다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const { listing } = await renderCheck({ jsonFetcher });
+
+    // When
+    fireEvent.press(screen.getByText('버전 정보'));
+    onlineManager.setOnline(true);
+
+    // Then
+    expect(
+      await screen.findAllByText(/인터넷에 연결되면 버전을 확인할 수 있어요/),
+    ).not.toHaveLength(0);
+    expect(jsonFetcher.get).not.toHaveBeenCalled();
     expect(listing.openListing).not.toHaveBeenCalled();
   });
 

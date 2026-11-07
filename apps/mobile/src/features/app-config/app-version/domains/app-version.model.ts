@@ -28,10 +28,11 @@ function isValidVersion(version: string | undefined): version is string {
 /** 점검이 켜져 있고 플랫폼과 두 버전이 모두 올바를 때만 판정한다. 아니면 어떤 안내도 하지 않는다 */
 function isVersionComparable(input: AppVersionPolicyInput): input is ComparableInput {
   const { config, platform, currentVersion } = input;
-  if (config?.enabled !== true || !appVersionPlatformSchema.safeParse(platform).success) {
+  const parsedPlatform = appVersionPlatformSchema.safeParse(platform);
+  if (config?.enabled !== true || !parsedPlatform.success) {
     return false;
   }
-  const latest = platform === 'ios' ? config.latestByPlatform.ios : config.latestByPlatform.android;
+  const latest = config.latestByPlatform[parsedPlatform.data];
 
   return isValidVersion(currentVersion) && isValidVersion(latest);
 }
@@ -45,14 +46,15 @@ function isBehindLatest(input: ComparableInput) {
   return difference != null && difference < 0;
 }
 
-/** 스토어에 더 새 버전이 있다 */
-function isOutdated(input: AppVersionPolicyInput) {
-  return isVersionComparable(input) && isBehindLatest(input);
+export type AppVersionUpdateStatus = 'unknown' | 'outdated' | 'up-to-date';
+
+/** 판정할 수 없으면 `unknown`이다. 스토어에 더 새 버전이 있으면 `outdated`, 이미 최신이거나 더 앞선 빌드면 `up-to-date`다 */
+function getUpdateStatus(input: AppVersionPolicyInput): AppVersionUpdateStatus {
+  if (!isVersionComparable(input)) {
+    return 'unknown';
+  }
+
+  return isBehindLatest(input) ? 'outdated' : 'up-to-date';
 }
 
-/** 판정할 수 있고 이미 최신이거나 더 앞선 빌드다 */
-function isUpToDate(input: AppVersionPolicyInput) {
-  return isVersionComparable(input) && !isBehindLatest(input);
-}
-
-export const AppVersionPolicy = { isVersionComparable, isOutdated, isUpToDate } as const;
+export const AppVersionPolicy = { getUpdateStatus } as const;

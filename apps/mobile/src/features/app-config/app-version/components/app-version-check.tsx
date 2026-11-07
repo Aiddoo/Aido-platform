@@ -4,8 +4,9 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
+import { match } from 'ts-pattern';
 
 import { AppVersionPolicy } from '../domains/app-version.model';
 import { useOpenStoreListingMutationOptions } from '../queries/app-version.mutations';
@@ -23,6 +24,12 @@ export function AppVersionCheck() {
   const openStoreListing = useMutation(useOpenStoreListingMutationOptions());
 
   const handlePress = useSingleTap(async () => {
+    // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌지도 않는다. 연결된 뒤 뒤늦게 스토어가 열리지 않도록 바로 알린다
+    if (!onlineManager.isOnline()) {
+      toast.warning(t('checkOffline'));
+      return;
+    }
+
     const result = await query.refetch();
     if (result.isError || !result.data || !installation) {
       if (result.error) {
@@ -32,24 +39,26 @@ export function AppVersionCheck() {
       return;
     }
 
-    const input = { config: result.data, ...installation };
-    if (!AppVersionPolicy.isVersionComparable(input)) {
-      toast.error(t('checkFailed'));
+    if (!result.data.enabled) {
+      toast.toast(t('noUpdateInfo'));
       return;
     }
 
-    if (AppVersionPolicy.isOutdated(input)) {
-      openStoreListing.mutate();
-      return;
-    }
-
-    if (AppVersionPolicy.isUpToDate(input)) {
-      await confirmDialog.openAsync({
-        title: t('latestTitle'),
-        description: t('latestDescription'),
-        confirmLabel: t('confirm'),
-      });
-    }
+    await match(AppVersionPolicy.getUpdateStatus({ config: result.data, ...installation }))
+      .with('unknown', () => {
+        toast.error(t('checkFailed'));
+      })
+      .with('outdated', () => {
+        openStoreListing.mutate();
+      })
+      .with('up-to-date', () =>
+        confirmDialog.openAsync({
+          title: t('latestTitle'),
+          description: t('latestDescription'),
+          confirmLabel: t('confirm'),
+        }),
+      )
+      .exhaustive();
   });
 
   if (!installation) {

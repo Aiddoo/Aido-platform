@@ -5,5 +5,7 @@
   "latestDescription": "You're using the latest version.",
   "confirm": "OK",
   "checkFailed": "We couldn't check the app version. Please try again shortly.",
+  "noUpdateInfo": "There's no new version to show right now.",
+  "checkOffline": "You can check the version once you're connected to the internet.",
   "storeOpenFailed": "We couldn't open the app store. Please try again shortly."
 }
