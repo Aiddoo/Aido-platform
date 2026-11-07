@@ -22,7 +22,7 @@ describe('TODO_COMMENT_QUERY_KEYS', () => {
 
   it('알림으로 연 답글 페이지도 같은 묶음 키 아래라 새 답글이 함께 붙는다', () => {
     // When
-    const thread = TODO_COMMENT_QUERY_KEYS.thread({ todoId: 42, commentId: 'c1' });
+    const thread = TODO_COMMENT_QUERY_KEYS.threadReplies({ todoId: 42, commentId: 'c1' });
     const around = TODO_COMMENT_QUERY_KEYS.replies({
       todoId: 42,
       commentId: 'c1',

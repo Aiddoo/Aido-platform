@@ -7,17 +7,17 @@ import type { TodoCommentAuthor } from '../schemas/todo-comment.schema';
 
 export type TodoCommentAuthorAvatarSize = 'xs' | 'sm' | 'md';
 
-export const TODO_COMMENT_AUTHOR_AVATAR_SIZE: Record<TodoCommentAuthorAvatarSize, number> = {
-  xs: 20,
-  sm: 28,
-  md: 36,
-};
+const AVATAR_SIZE = {
+  xs: { px: 20, className: 'size-5' },
+  sm: { px: 28, className: 'size-7' },
+  md: { px: 36, className: 'size-9' },
+} as const satisfies Record<TodoCommentAuthorAvatarSize, { px: number; className: string }>;
 
-const AVATAR_SIZE: Record<TodoCommentAuthorAvatarSize, string> = {
-  xs: 'size-5',
-  sm: 'size-7',
-  md: 'size-9',
-};
+export const TODO_COMMENT_AUTHOR_AVATAR_SIZE = {
+  xs: AVATAR_SIZE.xs.px,
+  sm: AVATAR_SIZE.sm.px,
+  md: AVATAR_SIZE.md.px,
+} as const;
 
 interface TodoCommentAuthorAvatarProps extends Omit<
   ComponentProps<typeof UserAvatar>,
@@ -39,7 +39,7 @@ export function TodoCommentAuthorAvatar({
     <UserAvatar
       {...avatarProps}
       alt={author?.name ?? t('list.unknownUser')}
-      className={cn(AVATAR_SIZE[size], className)}
+      className={cn(AVATAR_SIZE[size].className, className)}
       profileImage={author?.profileImage ?? null}
     />
   );

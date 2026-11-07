@@ -73,7 +73,7 @@ function hasCommentActions(comment: TodoComment) {
 }
 
 /** 답글이 남은 댓글은 지워도 "삭제된 댓글이에요"로 남는다 */
-function leavesTombstoneOnDelete(comment: TodoComment) {
+function isTombstonedOnDelete(comment: TodoComment) {
   return !isReply(comment) && comment.replyCount > 0;
 }
 
@@ -212,7 +212,7 @@ export const TodoCommentPolicy = {
   canReportComment,
   canBlockCommentAuthor,
   hasCommentActions,
-  leavesTombstoneOnDelete,
+  isTombstonedOnDelete,
   getHiddenReplyCount,
   hasRepliesToShow,
   flattenThreads,

@@ -42,6 +42,7 @@ function replyQueries(todoId: number) {
 export function cancelTodoCommentQueries({ queryClient, todoId }: TodoCommentCacheParams) {
   return queryClient.cancelQueries({
     queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }),
+    // nullish-strict: 데이터가 아직 없음(undefined)만 첫 로드로 본다
     predicate: (query) => query.state.data !== undefined,
   });
 }
@@ -122,7 +123,7 @@ export function addTodoCommentRepliesToCaches({
     addRepliesToThreadPages(data, threadCommentId, replies),
   );
   queryClient.setQueriesData<TodoCommentReplyPages>(
-    { queryKey: TODO_COMMENT_QUERY_KEYS.thread({ todoId, commentId: threadCommentId }) },
+    { queryKey: TODO_COMMENT_QUERY_KEYS.threadReplies({ todoId, commentId: threadCommentId }) },
     (data) => appendRepliesToReplyPages(data, replies),
   );
 }

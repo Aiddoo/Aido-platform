@@ -16,7 +16,7 @@ export const TODO_COMMENT_QUERY_KEYS = {
   }) => [...TODO_COMMENT_QUERY_KEYS.threadLists({ todoId }), { sort, anchorCommentId }] as const,
   replyLists: ({ todoId }: { todoId: number }) =>
     [...TODO_COMMENT_QUERY_KEYS.todo({ todoId }), 'replies'] as const,
-  thread: ({ todoId, commentId }: { todoId: number; commentId: string }) =>
+  threadReplies: ({ todoId, commentId }: { todoId: number; commentId: string }) =>
     [...TODO_COMMENT_QUERY_KEYS.replyLists({ todoId }), { commentId }] as const,
   replies: ({
     todoId,
@@ -26,5 +26,6 @@ export const TODO_COMMENT_QUERY_KEYS = {
     todoId: number;
     commentId: string;
     aroundReplyId: string | null;
-  }) => [...TODO_COMMENT_QUERY_KEYS.thread({ todoId, commentId }), { aroundReplyId }] as const,
+  }) =>
+    [...TODO_COMMENT_QUERY_KEYS.threadReplies({ todoId, commentId }), { aroundReplyId }] as const,
 } as const;

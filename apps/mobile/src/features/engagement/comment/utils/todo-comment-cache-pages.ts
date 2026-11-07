@@ -16,14 +16,9 @@ export type TodoCommentReplyPages = InfiniteData<TodoCommentReplyPage, TodoComme
 export type TodoCommentTransform = (comment: TodoComment) => TodoComment;
 
 function mapPreservingIdentity<T>(items: readonly T[], transform: (item: T) => T): readonly T[] {
-  let changed = false;
-  const nextItems = items.map((item) => {
-    const nextItem = transform(item);
-    changed ||= nextItem !== item;
-    return nextItem;
-  });
+  const nextItems = items.map(transform);
 
-  return changed ? nextItems : items;
+  return nextItems.some((nextItem, index) => nextItem !== items[index]) ? nextItems : items;
 }
 
 function mapPages<TPage extends { items: readonly unknown[] }>(

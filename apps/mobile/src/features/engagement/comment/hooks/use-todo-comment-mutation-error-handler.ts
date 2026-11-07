@@ -32,7 +32,7 @@ export function useTodoCommentMutationErrorHandler({ todoId }: { todoId: number 
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');
 
-  return (error: unknown, operation: TodoCommentMutationOperation, target?: TodoComment | null) => {
+  return (error: unknown, operation: TodoCommentMutationOperation, target: TodoComment | null) => {
     const fallback = match(operation)
       .with('create', () => t('toasts.writeFailed'))
       .with('update', () => t('toasts.updateFailed'))

@@ -102,7 +102,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
         );
     },
     onError: (error, { target }) => {
-      handleMutationError(error, 'create', target ?? undefined);
+      handleMutationError(error, 'create', target);
     },
   });
 }
@@ -211,7 +211,7 @@ export function useSetTodoCommentLikeMutationOptions({
       if (context != null) {
         restoreTodoCommentCaches(queryClient, context.snapshot);
       }
-      handleMutationError(error, 'like', context?.target);
+      handleMutationError(error, 'like', context?.target ?? null);
     },
     onSuccess: (result, { via }) => {
       trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked, via });

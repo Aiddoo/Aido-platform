@@ -52,12 +52,17 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
+import { TodoCommentComposerPolicy } from '../domains/todo-comment-composer.model';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import {
   useDeleteTodoCommentMutationOptions,
   useSetTodoCommentLikeMutationOptions,
 } from '../queries/todo-comment.mutations';
-import { toReplyFormValues, toEditFormValues } from '../schemas/todo-comment-form.schema';
+import {
+  NEW_TODO_COMMENT_FORM_VALUES,
+  toEditFormValues,
+  toReplyFormValues,
+} from '../schemas/todo-comment-form.schema';
 import type { TodoComment } from '../schemas/todo-comment.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import { useTodoCommentForm } from './todo-comment-form-context';
@@ -432,7 +437,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const logger = useLogger();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
-  const { reset } = useTodoCommentForm();
+  const { reset, getValues } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const author = comment.author;
@@ -454,7 +459,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
       toast.success(t('toasts.copied'));
     } catch (error) {
       logger.warn(TODO_COMMENT_LOG_EVENT.COPY_FAILED, { error: getErrorMessage(error) });
-      toast.error(undefined, { fallback: t('toasts.copyFailed') });
+      toast.error(t('toasts.copyFailed'));
     }
   };
 
@@ -465,15 +470,17 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
         .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
           t('deleteConfirm.othersDescription'),
         )
-        .when(TodoCommentPolicy.leavesTombstoneOnDelete, () =>
-          t('deleteConfirm.tombstoneDescription'),
-        )
+        .when(TodoCommentPolicy.isTombstonedOnDelete, () => t('deleteConfirm.tombstoneDescription'))
         .otherwise(() => t('deleteConfirm.description')),
       confirmLabel: t('deleteConfirm.confirm'),
       confirmColor: 'danger',
       cancelLabel: t('actions.cancel'),
     });
     if (isConfirmed) {
+      // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
+      if (TodoCommentComposerPolicy.getComposerTarget(getValues('mode'))?.id === comment.id) {
+        reset(NEW_TODO_COMMENT_FORM_VALUES);
+      }
       deleteComment.mutate({ comment });
     }
   };

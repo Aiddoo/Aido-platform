@@ -189,13 +189,13 @@ describe('canDeleteOnlyAsTodoOwner', () => {
   });
 });
 
-describe('leavesTombstoneOnDelete', () => {
+describe('isTombstonedOnDelete', () => {
   it('답글이 남은 댓글은 지워도 묘비로 남는다', () => {
     // Given
     const withReplies = createTodoComment({ replyCount: 2 });
 
     // When
-    const result = TodoCommentPolicy.leavesTombstoneOnDelete(withReplies);
+    const result = TodoCommentPolicy.isTombstonedOnDelete(withReplies);
 
     // Then
     expect(result).toBe(true);
@@ -203,7 +203,7 @@ describe('leavesTombstoneOnDelete', () => {
 
   it('답글이 없는 댓글은 묘비 없이 사라진다', () => {
     // When
-    const result = TodoCommentPolicy.leavesTombstoneOnDelete(createTodoComment());
+    const result = TodoCommentPolicy.isTombstonedOnDelete(createTodoComment());
 
     // Then
     expect(result).toBe(false);
@@ -214,7 +214,7 @@ describe('leavesTombstoneOnDelete', () => {
     const reply = createTodoCommentReply(createTodoComment({ replyCount: 2 }), { replyCount: 0 });
 
     // When
-    const result = TodoCommentPolicy.leavesTombstoneOnDelete(reply);
+    const result = TodoCommentPolicy.isTombstonedOnDelete(reply);
 
     // Then
     expect(result).toBe(false);
