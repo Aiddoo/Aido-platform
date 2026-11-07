@@ -47,15 +47,20 @@ ReorderCoachmark.Contents = function Contents({
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const service = useCoachmarkService();
+  const coachmarkKind = match(kind)
+    .with('todo', () => 'todo-reorder' as const)
+    .with('category', () => 'category-reorder' as const)
+    .exhaustive();
   const [isVisible, setIsVisible] = useState(() =>
-    service.claim({
-      accountId,
-      kind: match(kind)
-        .with('todo', () => 'todo-reorder' as const)
-        .with('category', () => 'category-reorder' as const)
-        .exhaustive(),
-    }),
+    service.isPending({ accountId, kind: coachmarkKind }),
   );
+
+  // 렌더는 버려질 수 있어 "봤음"은 화면에 붙은 뒤에 저장한다.
+  useEffect(() => {
+    if (isVisible) {
+      service.complete({ accountId, kind: coachmarkKind });
+    }
+  }, [isVisible, service, accountId, coachmarkKind]);
 
   if (!isVisible) {
     return null;
