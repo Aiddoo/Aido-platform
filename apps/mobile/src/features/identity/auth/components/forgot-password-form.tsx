@@ -34,8 +34,13 @@ type ForgotPasswordStepContexts = {
   newPassword: Record<string, never>;
 };
 
+interface ForgotPasswordFormProps {
+  /** 단계마다 위에 놓는 제목. 인증 코드 단계는 받은 이메일을 보여 줘 그 단계가 맡는다 */
+  stepTitles: Record<'email' | 'newPassword', string>;
+}
+
 /** 비밀번호 재설정 3단계(이메일, 인증 코드, 새 비밀번호)의 입력과 제출. 인증 코드 재발송 쿨다운은 인증 단계가 맡는다 */
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
   const form = useForm({
     resolver: zodResolver(forgotPasswordFormSchema),
     defaultValues: {
@@ -78,7 +83,12 @@ export function ForgotPasswordForm() {
 
   return stepper.Render({
     email: () => (
-      <EmailStep form={form} onSubmit={requestCode} isSubmitting={forgotPassword.isPending} />
+      <EmailStep
+        title={stepTitles.email}
+        form={form}
+        onSubmit={requestCode}
+        isSubmitting={forgotPassword.isPending}
+      />
     ),
     verificationCode: ({ context: { email }, history }) => (
       <EmailVerificationCodeStep
@@ -95,6 +105,7 @@ export function ForgotPasswordForm() {
     ),
     newPassword: () => (
       <NewPasswordStep
+        title={stepTitles.newPassword}
         newPassword={newPassword}
         newPasswordConfirm={newPasswordConfirm}
         isSubmitting={isSubmitting}
@@ -107,12 +118,13 @@ export function ForgotPasswordForm() {
 }
 
 interface EmailStepProps {
+  title: string;
   form: UseFormReturn<ForgotPasswordFormInput>;
   onSubmit: () => Promise<unknown>;
   isSubmitting: boolean;
 }
 
-function EmailStep({ form, onSubmit, isSubmitting }: EmailStepProps) {
+function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
   const { errors } = useFormState({ control, name: 'email' });
@@ -121,7 +133,7 @@ function EmailStep({ form, onSubmit, isSubmitting }: EmailStepProps) {
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={t('forgotPassword.emailTitle')}>
+      <FormStepLayout title={title}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <VStack gap={8}>
             <Controller

@@ -13,7 +13,10 @@ describe('비밀번호 변경 폼', () => {
     session.authHttp.patch.mockResolvedValue(
       err(createAuthApiError({ status: 400, message: '서버가 거절한 이유' })),
     );
-    await render(<ChangePasswordForm />, { wrapper: session.Wrapper });
+    await render(
+      <ChangePasswordForm stepTitles={{ currentPassword: '현재', newPassword: '새 비밀번호' }} />,
+      { wrapper: session.Wrapper },
+    );
     await fireEvent.changeText(
       await screen.findByPlaceholderText('현재 비밀번호를 입력해주세요'),
       'Current123',

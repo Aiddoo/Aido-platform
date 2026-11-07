@@ -29,8 +29,13 @@ type ChangePasswordStepContexts = {
   newPassword: Record<string, never>;
 };
 
+interface ChangePasswordFormProps {
+  /** 단계마다 위에 놓는 제목 */
+  stepTitles: Record<keyof ChangePasswordStepContexts, string>;
+}
+
 /** 비밀번호 변경 2단계(현재 비밀번호, 새 비밀번호)의 입력과 제출. 실패하면 토스트로 알리고 입력값은 그대로 둔다 */
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   const form = useForm({
     resolver: zodResolver(changePasswordFormSchema),
     defaultValues: { currentPassword: '', newPassword: '', newPasswordConfirm: '' },
@@ -63,9 +68,12 @@ export function ChangePasswordForm() {
   };
 
   return stepper.Render({
-    currentPassword: () => <CurrentPasswordStep form={form} onNext={handleNextStep} />,
+    currentPassword: () => (
+      <CurrentPasswordStep title={stepTitles.currentPassword} form={form} onNext={handleNextStep} />
+    ),
     newPassword: () => (
       <NewPasswordStep
+        title={stepTitles.newPassword}
         newPassword={newPassword}
         newPasswordConfirm={newPasswordConfirm}
         isSubmitting={isSubmitting}
@@ -78,11 +86,12 @@ export function ChangePasswordForm() {
 }
 
 interface CurrentPasswordStepProps {
+  title: string;
   form: UseFormReturn<ChangePasswordFormInput>;
   onNext: () => void;
 }
 
-function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
+function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
   const { errors } = useFormState({ control, name: 'currentPassword' });
@@ -91,7 +100,7 @@ function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={t('changePassword.currentTitle')}>
+      <FormStepLayout title={title}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <Controller
             control={control}

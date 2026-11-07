@@ -22,6 +22,7 @@ interface NewPasswordField {
 }
 
 interface NewPasswordStepProps {
+  title: string;
   /** 부모 폼의 필드. 값과 오류는 부모 폼이 지켜 앞 단계로 돌아가도 입력이 남는다 */
   newPassword: NewPasswordField;
   newPasswordConfirm: NewPasswordField;
@@ -34,6 +35,7 @@ interface NewPasswordStepProps {
 
 /** 새 비밀번호 입력 → 확인 입력 두 단계를 보여 주는 비밀번호 변경·재설정 공용 단계 */
 export function NewPasswordStep({
+  title,
   newPassword,
   newPasswordConfirm,
   isSubmitting,
@@ -71,7 +73,7 @@ export function NewPasswordStep({
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={t('forgotPassword.newPasswordTitle')}>
+      <FormStepLayout title={title}>
         {step === 'newPasswordConfirm' && (
           <Animated.View
             entering={FadeInUp.duration(ANIMATION.duration.slow)

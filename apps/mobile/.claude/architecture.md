@@ -159,17 +159,17 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-07 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                              | 지금 코드                                                                                                                                                                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                                                                                                             |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1)                                                                                    |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 7개(`shared` 5, `app` 2)                                                                                                                                |
-| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                                                                                                    |
-| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                    |
-| [사용성](#사용성)                 | `settings/edit-name.tsx`, `friends/add.tsx`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`), `settings/inquiry.tsx`(`useKeyboardHandler` + `automaticallyAdjustKeyboardInsets`). 코드로만 확인했고 기기 재현은 안 했다 |
-| [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                                                                                                   |
-| [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                                                                                                                 |
-| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                               |
+| 규칙                              | 지금 코드                                                                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| utils 파일                        | 평탄한 `*.view-model.ts` 9개가 `utils/`에 남았다. 폴더로 나눈 `view-models/`와 `analytics/`는 없다                                          |
+| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 20개. `safeParse(result.value)` 21곳이 남았다(`planning/todo` 19, `billing/subscription`, `notes/memo` 각 1) |
+| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트·`contracts`를 import하는 파일 7개(`shared` 5, `app` 2)                                             |
+| [생성·수정](#생성수정)            | `AddSubTodoBottomSheet`가 `mode`로 분기한다                                                                                                 |
+| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                 |
+| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                              |
+| [층과 의존](#층과-의존)           | 양방향 6쌍, 위층 import 없음                                                                                                                |
+| [Expo 권장](#라우팅)              | `useContext` 4개 파일(`use`로)                                                                                                              |
+| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                            |
 
 ---
 
@@ -252,7 +252,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 - `QueryErrorBoundary`·`Suspense`·`Spacing`을 스크린에 그대로 나열한다. 조각 안으로 숨기지 않는다.
 - 화면 제목, 구역 제목, 안내 문구처럼 화면 구성을 설명하는 글자와 그 레이아웃도 스크린에 적는다. 글자 한 줄을 감싼 지역 컴포넌트를 만들지 않는다. 데이터에 따라 달라지는 글자만 해당 컴포넌트 안에 둔다(`MemoList`의 `list.savedTitle`).
-- 스크린에 남겨도 되는 것은 폼 소유, `match`, 짧은 route 처리다. 긴 제출·effect·큰 조각은 그 역할을 맡는 컴포넌트로 옮긴다(`MemoCreateForm`, `MemoEditor`).
+- 스크린에 남겨도 되는 것은 `match`와 짧은 route 처리다. 폼과 제출, 긴 effect, 큰 조각은 그 역할을 맡는 컴포넌트로 옮긴다([폼](#폼)).
 - 넘기기용 래퍼(`Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
 - JSX 상수(`const waveform = …`)로 화면 구조를 숨기지 않는다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다.
@@ -528,7 +528,36 @@ MemoList.Loading = function Loading() {
 
 ### 폼
 
-모든 폼을 같은 모양으로 쓴다. 메모 작성의 실제 코드다.
+**폼 화면은 한 모양이다. 제출 로직은 컴포넌트, 제목과 간격은 스크린, 긴 흐름은 슬롯이다.**
+
+| 자리                       | 맡는 것                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 폼 컴포넌트                | `useForm`, mutation, 제출 뒤 이동, 입력칸, 키보드 위 버튼. `features/{feature}/components/{name}-form.tsx`                              |
+| 스크린                     | 경계, 바탕과 바깥 여백(`ReadableContent`), 제목과 안내 글자, 위층이 필요한 값                                                           |
+| 슬롯: `title`              | 제목 글자 하나. `FormStepLayout`에 넘긴다(`EditNameForm`, `InquiryForm`)                                                                |
+| 슬롯: `children`, `footer` | 입력 위 제목·안내와 간격, 입력 아래 안내·링크(`EmailLoginForm`, `InviteCodeEntryForm`, `AddFriendForm`, `DeleteAccountForm`의 `footer`) |
+| 슬롯: `stepTitles`         | 단계가 있는 긴 흐름의 단계별 제목(`ChangePasswordForm`, `ForgotPasswordForm`). 받은 값을 보여 주는 제목만 그 단계가 맡는다              |
+
+```tsx
+// app/(app)/(mypage-menu)/friends/add.tsx
+<Box className="flex-1 bg-white">
+  <AddFriendForm friendLimitInvite={friendLimitInvite}>
+    <H3>{t('add.title')}</H3>
+
+    <Spacing size={4} />
+
+    <Text size="b4" shade={6}>
+      {t('add.description')}
+    </Text>
+
+    <Spacing size={24} />
+  </AddFriendForm>
+</Box>
+```
+
+예외는 둘이다. 네이티브 헤더 제목과 툴바가 단계를 따라 바뀌는 가입은 스크린이 `useStepper`를 갖고 폼에 넘긴다(`sign-up.tsx`). 화면 전체가 입력칸이고 제목이 없는 작성 화면은 폼 하나가 곧 화면이다(`MemoCreateForm`). 시트의 폼은 시트 컴포넌트가 소유하고 route는 파라미터 확인만 한다(`WeatherRescheduleSheet`).
+
+폼 안은 메모 작성의 실제 코드와 같은 모양이다.
 
 ```tsx
 // features/notes/memo/schemas/memo-form.schema.ts
@@ -569,7 +598,7 @@ const { isSubmitting, isValid } = useFormState({ control: form.control });
 ```
 
 - 이름은 `form`으로 통일한다. 입력 바인딩은 RHF `Controller` 공식 형태이고 `field.ref`를 이어 검증 실패 때 그 칸으로 포커스한다.
-- 폼은 그 폼을 제출하는 컴포넌트가 소유한다(스크린 또는 `MemoCreateForm`). 읽기만 하는 자식은 `control`, `setValue`·`setFocus`까지 쓰는 자식은 `form`(`UseFormReturn<T>`)을 props로 넘긴다. `FormProvider`와 `useFormContext`는 쓰지 않는다(`useFormContext<T>()`의 제네릭은 검사 없는 단정이다). 입력과 출력의 타입이 다른 스키마를 Context로 나눠야 하면 값 필드를 `z.custom<T>()`로 입력과 출력을 맞춘다.
+- 폼은 그 폼을 제출하는 컴포넌트가 소유한다. 읽기만 하는 자식은 `control`, `setValue`·`setFocus`까지 쓰는 자식은 `form`(`UseFormReturn<T>`)을 props로 넘긴다. `FormProvider`와 `useFormContext`는 쓰지 않는다(`useFormContext<T>()`의 제네릭은 검사 없는 단정이다). 입력과 출력의 타입이 다른 스키마를 Context로 나눠야 하면 값 필드를 `z.custom<T>()`로 입력과 출력을 맞춘다.
 - 하위는 `useWatch({ name })`·`useFormState({ name })`로 자기 값만 구독한다.
 - `useForm`은 제네릭 없이 `resolver`에서 타입을 추론한다(`@hookform/resolvers` 권장). 스키마가 변환 없이 입력과 출력이 같으면 타입은 `z.infer` 하나로 쓴다.
 - 처음 값은 스키마의 `.default()`가 아니라 `defaultValues`에 둔다. 값이 없는 칸은 `undefined`가 아니라 `null`이다(RHF가 `undefined` 기본값을 권장하지 않고, 앱 모델의 "없음"도 `null`이다). 그래서 `?? null`·`?? undefined` 변환이 필요 없다.
