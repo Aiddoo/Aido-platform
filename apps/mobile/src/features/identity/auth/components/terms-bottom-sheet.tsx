@@ -1,4 +1,4 @@
-import { legalUrl } from '@src/shared/constants/legal-urls';
+import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -77,7 +77,7 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
                   isRequired
                   isSelected={value}
                   onSelectedChange={onChange}
-                  onPressLink={() => openUrl(legalUrl('terms', resolvedLanguage))}
+                  onPressLink={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
                 />
               )}
             />
@@ -101,7 +101,7 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
                   isRequired
                   isSelected={value}
                   onSelectedChange={onChange}
-                  onPressLink={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+                  onPressLink={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
                 />
               )}
             />

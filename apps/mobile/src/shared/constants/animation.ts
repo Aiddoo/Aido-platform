@@ -7,7 +7,5 @@ export const ANIMATION = {
   },
   delay: {
     short: 50,
-    medium: 100,
-    long: 200,
   },
 } as const;

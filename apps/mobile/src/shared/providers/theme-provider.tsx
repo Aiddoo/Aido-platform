@@ -12,7 +12,6 @@ import { useColorScheme } from 'react-native';
 import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
 
-export type { ThemeMode };
 type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeProviderProps extends PropsWithChildren {
@@ -57,9 +56,9 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   const value = useMemo(() => ({ mode, resolvedTheme, setMode }), [mode, resolvedTheme, setMode]);
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext value={value}>
       <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
-    </ThemeContext.Provider>
+    </ThemeContext>
   );
 }
 

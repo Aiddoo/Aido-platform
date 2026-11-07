@@ -1,5 +1,4 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -14,10 +13,6 @@ interface FakeDeviceCalendar {
 const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
-
-function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return createErrorReporterStub();
-}
 
 describe('앱 로컬 날짜 Provider', () => {
   beforeEach(() => {
@@ -38,7 +33,7 @@ describe('앱 로컬 날짜 Provider', () => {
 
   async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
     const analytics = createAnalyticsStub();
-    const errorReporter = createMockErrorReporter();
+    const errorReporter = createErrorReporterStub();
     const remove = jest.fn();
     let appStateListener: ((state: AppStateStatus) => void) | undefined;
 
@@ -163,6 +158,7 @@ describe('앱 로컬 날짜 Provider', () => {
     await act(() => {
       jest.advanceTimersByTime(200);
     });
+
     // Then
     expect(remove).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).not.toHaveBeenCalled();

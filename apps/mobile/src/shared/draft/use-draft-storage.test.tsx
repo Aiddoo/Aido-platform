@@ -50,7 +50,8 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   });
 
   it('디바운스가 끝나기 전에 언마운트되면 마지막 입력을 즉시 저장해 다음 마운트 첫 렌더에서 복원한다', async () => {
-    // Given — 입력 직후 pane에서 전체 화면으로 전환된다
+    // Given
+    // 입력 직후 pane에서 전체 화면으로 전환된다
     const first = await renderHook(useMemoFormWithDraft, { wrapper });
     await act(() => first.result.current.form.setValue('content', '접기 전에 쓰던 글'));
     expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
@@ -115,7 +116,8 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   });
 
   it('전환으로 화면이 사라진 뒤 제출이 성공해 지워도 언마운트 때 저장한 초안까지 지운다', async () => {
-    // Given — 제출 중 접기로 작성기가 언마운트되며 flush로 초안이 저장된다
+    // Given
+    // 제출 중 접기로 작성기가 언마운트되며 flush로 초안이 저장된다
     const { result, unmount } = await renderHook(useMemoFormWithDraft, { wrapper });
     const { form, discardMemoDraft } = result.current;
     await act(() => form.setValue('content', '제출 중이던 글'));

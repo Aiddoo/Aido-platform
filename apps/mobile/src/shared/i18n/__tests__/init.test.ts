@@ -16,13 +16,11 @@ describe('i18n init', () => {
   });
 
   it('ko 카탈로그의 키를 번역한다', () => {
-    // Given
-    // 초기 언어는 mock 기기 언어(ko) 기준 ko
-
     // When
     const result = t('common:actions.confirm');
 
     // Then
+    // 초기 언어는 mock 기기 언어(ko) 기준 ko
     expect(result).toBe('확인');
   });
 

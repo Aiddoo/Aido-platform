@@ -40,7 +40,7 @@ export interface FeatureAttributionStore {
   consume(input: ConsumeAttributionInput): ConsumedFeatureAttribution | null;
 }
 
-function attributionKey(accountId: string, feature: FeatureKey): string {
+function getAttributionKey(accountId: string, feature: FeatureKey): string {
   return `${KEY_PREFIX}:${accountId}:${feature}`;
 }
 
@@ -51,7 +51,7 @@ export function createFeatureAttributionStore(
   return {
     record({ accountId, campaignId, feature }) {
       storage.set(
-        attributionKey(accountId, feature),
+        getAttributionKey(accountId, feature),
         JSON.stringify({
           campaignId,
           feature,
@@ -61,20 +61,20 @@ export function createFeatureAttributionStore(
     },
 
     consume({ accountId, feature }) {
-      const key = attributionKey(accountId, feature);
+      const key = getAttributionKey(accountId, feature);
       const raw = storage.get(key);
       if (!raw) {
         return null;
       }
 
+      // 같은 JS 런루프에서 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다.
+      storage.remove(key);
+
       const persisted = parseStoredJson(raw, persistedAttributionSchema);
       if (persisted == null || persisted.feature !== feature || persisted.expiresAt < now()) {
-        storage.remove(key);
         return null;
       }
 
-      // 같은 JS 런루프에서 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다.
-      storage.remove(key);
       return {
         campaignId: persisted.campaignId,
         feature: persisted.feature,

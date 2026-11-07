@@ -8,11 +8,11 @@ import { z } from 'zod';
 import { getAppScheme } from './app-scheme';
 import { ENV_LOG_EVENT } from './env-log-events';
 
-const AppEnvSchema = z.enum(['development', 'preview', 'production']);
-type AppEnv = z.infer<typeof AppEnvSchema>;
+const appEnvSchema = z.enum(['development', 'preview', 'production']);
+type AppEnv = z.infer<typeof appEnvSchema>;
 
-const ExtraSchema = z.object({
-  env: AppEnvSchema,
+const extraSchema = z.object({
+  env: appEnvSchema,
   apiUrl: z.string(),
   devMachineIp: z.string().optional(),
   isDevelopment: z.boolean(),
@@ -40,7 +40,7 @@ type ApiUrlContext = {
   devMachineIp?: string;
 };
 
-const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
+const extra = extraSchema.parse(Constants.expoConfig?.extra);
 
 /** 카카오톡 공유 버튼이 앱을 여는 스킴(kakao{네이티브 앱 키}). 키가 없는 빌드는 null */
 function resolveKakaoScheme(kakaoNativeAppKey: string | undefined) {
@@ -96,15 +96,12 @@ function resolveApiUrl(): string {
   };
 
   const resolvedUrl = match(context)
-    // Android 에뮬레이터: localhost → 10.0.2.2
     .with({ platform: 'android', env: 'development', isPhysicalDevice: false }, ({ apiUrl }) =>
       toAndroidEmulatorUrl(apiUrl),
     )
-    // 실제 기기: localhost → DEV_MACHINE_IP
     .with({ env: 'development', isPhysicalDevice: true }, ({ apiUrl, devMachineIp }) =>
       toDeviceUrl(apiUrl, devMachineIp),
     )
-    // 그 외: 원본 URL 사용
     .otherwise(({ apiUrl }) => apiUrl);
 
   if (extra.env === 'development' && __DEV__) {
@@ -123,12 +120,7 @@ function resolveApiUrl(): string {
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,
   APP_ENV: extra.env,
-  IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,
-
-  PLATFORM: process.env.EXPO_OS,
-  IS_ANDROID: process.env.EXPO_OS === 'android',
-  IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
   SCHEME: getAppScheme(),

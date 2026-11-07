@@ -22,7 +22,10 @@ describe('classifyErrorReport', () => {
     ['잡지 못한 일반 오류', new Error('boom'), 'event'],
     ['TypeError', new TypeError('undefined is not a function'), 'event'],
   ])('%s는 %s로 보낸다', (_name, error, expected) => {
-    // When / Then
-    expect(classifyErrorReport(error)).toBe(expected);
+    // When
+    const kind = classifyErrorReport(error);
+
+    // Then
+    expect(kind).toBe(expected);
   });
 });

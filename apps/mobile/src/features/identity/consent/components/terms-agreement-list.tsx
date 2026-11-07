@@ -1,4 +1,4 @@
-import { legalUrl } from '@src/shared/constants/legal-urls';
+import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -37,13 +37,13 @@ export function TermsAgreementList() {
       <SettingsListGroup.Item
         label={t('terms.termsOfService')}
         description={getConsentDescription(consent.termsAgreedAt)}
-        onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}
+        onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Item
         label={t('terms.privacyPolicy')}
         description={getConsentDescription(consent.privacyAgreedAt)}
-        onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+        onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
       />
     </SettingsListGroup>
   );

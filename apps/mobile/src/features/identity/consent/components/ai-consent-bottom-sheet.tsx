@@ -1,4 +1,4 @@
-import { legalUrl } from '@src/shared/constants/legal-urls';
+import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -146,7 +146,7 @@ export function AiConsentBottomSheet({
               accessibilityRole="link"
               style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
               className="self-start justify-center"
-              onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+              onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
             >
               {t('consent.privacyLink')}
             </TextButton>

@@ -58,7 +58,7 @@ export function LanguageProvider({
     [languageMode, resolvedLanguage, setLanguageMode],
   );
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return <LanguageContext value={value}>{children}</LanguageContext>;
 }
 
 // Provider 없이도 안전하게 동작해야 함 (테스트, 부분 렌더 환경)

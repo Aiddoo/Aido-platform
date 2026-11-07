@@ -15,7 +15,7 @@ export interface DraftKey<TValue> {
   readonly schema: z.ZodType<TValue>;
 }
 
-export interface CreateDraftKeyInput<TValue> {
+interface CreateDraftKeyInput<TValue> {
   ownerId: string;
   scope: string;
   target: readonly (string | number)[];
@@ -57,8 +57,8 @@ export type DraftRestoreResult<TValue> =
   | { status: 'restored'; value: TValue }
   | { status: 'discarded'; reason: DraftDiscardReason };
 
-export function isDraftExpired(entry: DraftEntry, now: number, ttlMs: number = DRAFT_TTL_MS) {
-  return now - entry.savedAt >= ttlMs;
+export function isDraftExpired(entry: DraftEntry, now: number) {
+  return now - entry.savedAt >= DRAFT_TTL_MS;
 }
 
 /** 초안을 쓰기 시작한 뒤 서버 원본이 바뀌었으면 초안은 낡은 원본 위에서 쓴 글이다. */
@@ -70,7 +70,7 @@ function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: number | undefined)
   return sourceUpdatedAt > entry.sourceUpdatedAt;
 }
 
-export interface ResolveDraftRestoreInput<TValue> {
+interface ResolveDraftRestoreInput<TValue> {
   schema: z.ZodType<TValue>;
   now: number;
   /** 편집 대상의 서버 수정 시각(epoch ms) */

@@ -101,7 +101,7 @@ export function FontScaleProvider({
     [fontScale, setFontScale, resolveSize],
   );
 
-  return <FontScaleContext.Provider value={value}>{children}</FontScaleContext.Provider>;
+  return <FontScaleContext value={value}>{children}</FontScaleContext>;
 }
 
 // Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함

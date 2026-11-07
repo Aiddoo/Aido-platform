@@ -14,14 +14,24 @@ describe('route params', () => {
   it.each(['toString', '__proto__', 'constructor'])(
     '샘플 ID가 아닌 프로토타입 이름 %s를 거부한다',
     (id) => {
-      expect(isSampleReportId(id)).toBe(false);
-      expect(getSampleReport(id).type).toBe('WEEKLY');
+      // When
+      const isSample = isSampleReportId(id);
+      const report = getSampleReport(id);
+
+      // Then
+      expect(isSample).toBe(false);
+      expect(report.type).toBe('WEEKLY');
     },
   );
 
   it('등록된 샘플 ID만 허용한다', () => {
-    expect(isSampleReportId('sample-weekly')).toBe(true);
-    expect(isSampleReportId('sample-monthly')).toBe(true);
+    // When
+    const isWeeklySample = isSampleReportId('sample-weekly');
+    const isMonthlySample = isSampleReportId('sample-monthly');
+
+    // Then
+    expect(isWeeklySample).toBe(true);
+    expect(isMonthlySample).toBe(true);
   });
 
   it.each([
@@ -37,13 +47,23 @@ describe('route params', () => {
     ' 1',
     '9007199254740992',
   ])('잘못된 ID %p를 API 호출 전에 거부한다', (value) => {
-    expect(reportIdSchema.safeParse(value).success).toBe(false);
+    // When
+    const result = reportIdSchema.safeParse(value);
+
+    // Then
+    expect(result.success).toBe(false);
   });
 
   it('검증된 ID는 서버 계약의 숫자로 변환한다', () => {
-    expect(reportIdSchema.parse('42')).toBe(42);
-    expect(weekSchema.safeParse('54').success).toBe(false);
-    expect(weekSchema.parse('53')).toBe(53);
+    // When
+    const reportId = reportIdSchema.parse('42');
+    const tooLargeWeek = weekSchema.safeParse('54');
+    const lastWeek = weekSchema.parse('53');
+
+    // Then
+    expect(reportId).toBe(42);
+    expect(tooLargeWeek.success).toBe(false);
+    expect(lastWeek).toBe(53);
   });
 });
 

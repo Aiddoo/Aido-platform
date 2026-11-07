@@ -52,11 +52,11 @@ describe('parseApiResponse', () => {
     const logInvalid = jest.fn();
 
     // When
-    expect(() =>
-      parseApiResponse(response, schema, toCount, '[Test] Invalid response', logInvalid),
-    ).toThrow(ParseError);
+    const parse = () =>
+      parseApiResponse(response, schema, toCount, '[Test] Invalid response', logInvalid);
 
     // Then
+    expect(parse).toThrow(ParseError);
     expect(logInvalid).toHaveBeenCalledTimes(1);
   });
 });

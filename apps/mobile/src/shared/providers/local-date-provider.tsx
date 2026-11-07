@@ -176,7 +176,7 @@ export function LocalDateProvider({
     }
   }, [deviceCalendar, deviceTimeZone, reconcileCurrentLocalDate]);
 
-  return <LocalDateContext.Provider value={localDateState}>{children}</LocalDateContext.Provider>;
+  return <LocalDateContext value={localDateState}>{children}</LocalDateContext>;
 }
 
 export function useLocalDate(): LocalDateState {
