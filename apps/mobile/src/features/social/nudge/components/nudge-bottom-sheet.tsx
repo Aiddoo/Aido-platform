@@ -1,3 +1,4 @@
+import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -17,7 +18,6 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
 import { useSendRemindNudgeMutationOptions } from '../queries/nudge.mutations';
 import { useSendTodoNudgeMutationOptions } from '../queries/nudge.mutations';
@@ -160,7 +160,7 @@ function NudgeMessageSheet({
                 errorMessage={
                   fieldState.error == null
                     ? undefined
-                    : t('form.nudgeMessageMax', { count: TodoNudgePolicy.maxMessageLength })
+                    : t('form.nudgeMessageMax', { count: NUDGE_LIMITS.MAX_MESSAGE_LENGTH })
                 }
               />
             )}

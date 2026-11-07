@@ -51,7 +51,6 @@ function canNudgeTodoInRange(
 }
 
 export const TodoNudgePolicy = {
-  maxMessageLength: MAX_MESSAGE_LENGTH,
   normalizeMessage,
   isMessageTooLong,
   isLimitReached,

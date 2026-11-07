@@ -1,101 +1,10 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import {
-  createAnalyticsStub,
-  createTestDiContainer,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createMemorySyncStorage } from '@src/shared/__tests__';
+import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import type * as ReactTypes from 'react';
-import type * as ReactNativeTypes from 'react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 
 import LanguageSettingsScreen from '../../../../app/(app)/(mypage-menu)/settings/language';
-
-// vendor UI(heroui-native)와 그 배럴만 mock — 나머지 의존성은 DI(prop/컨테이너)로 주입한다
-jest.mock('@src/shared/ui', () => {
-  const React: typeof ReactTypes = require('react');
-  const { Text, View }: typeof ReactNativeTypes = require('react-native');
-
-  const StyledSafeAreaView = (props: ReactTypes.PropsWithChildren) =>
-    React.createElement(View, null, props.children);
-
-  const SettingsCard = (props: ReactTypes.PropsWithChildren) =>
-    React.createElement(View, null, props.children);
-  SettingsCard.Separator = () => null;
-  const SettingsScreenLayout = SettingsCard;
-
-  const ListRow = (props: { contents: ReactTypes.ReactNode; right?: ReactTypes.ReactNode }) =>
-    React.createElement(View, null, props.contents, props.right);
-  ListRow.Texts = (props: { top: string; bottom?: string }) =>
-    React.createElement(
-      View,
-      null,
-      React.createElement(Text, null, props.top),
-      props.bottom ? React.createElement(Text, null, props.bottom) : null,
-    );
-
-  const NoopIcon = () => null;
-
-  return {
-    StyledSafeAreaView,
-    SettingsCard,
-    SettingsScreenLayout,
-    ListRow,
-    DeviceIcon: NoopIcon,
-    KoreanIcon: NoopIcon,
-    EnglishIcon: NoopIcon,
-  };
-});
-
-jest.mock('heroui-native', () => {
-  const React: typeof ReactTypes = require('react');
-  const { Pressable, View }: typeof ReactNativeTypes = require('react-native');
-
-  const RadioGroupContext = React.createContext<(mockValue: string) => void>(() => {});
-
-  const RadioGroup = (
-    props: ReactTypes.PropsWithChildren<{ onValueChange: (value: string) => void }>,
-  ) =>
-    React.createElement(
-      RadioGroupContext.Provider,
-      { value: props.onValueChange },
-      React.createElement(View, null, props.children),
-    );
-
-  RadioGroup.Item = (props: {
-    value: string;
-    children: ReactTypes.ReactNode | ((state: { isSelected: boolean }) => ReactTypes.ReactNode);
-  }) => {
-    const onValueChange = React.useContext(RadioGroupContext);
-    const rendered =
-      typeof props.children === 'function' ? props.children({ isSelected: false }) : props.children;
-    return React.createElement(
-      Pressable,
-      { testID: `radio-${props.value}`, onPress: () => onValueChange(props.value) },
-      rendered,
-    );
-  };
-
-  const Radio = (props: ReactTypes.PropsWithChildren) =>
-    React.createElement(View, null, props.children);
-  Radio.Indicator = (props: ReactTypes.PropsWithChildren) =>
-    React.createElement(View, null, props.children);
-
-  return { Radio, RadioGroup };
-});
-
-// reanimated는 네이티브(worklets) 모듈을 import 시 로드해 jest에서 실패한다 — JS 목으로 대체
-jest.mock('react-native-reanimated', () => {
-  const { View } = require('react-native');
-  return {
-    __esModule: true,
-    default: { View },
-    useAnimatedStyle: (factory: () => Record<string, unknown>) => factory(),
-    withTiming: (value: number) => value,
-    Easing: { out: (fn: unknown) => fn, ease: () => 0 },
-  };
-});
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
@@ -105,12 +14,11 @@ const renderScreen = async ({
   storage = createMemorySyncStorage(),
   analytics = createAnalyticsStub(),
 } = {}) => {
-  await render(
-    <StaticDIProvider container={createTestDiContainer({ analytics })}>
-      <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
-        <LanguageSettingsScreen />
-      </LanguageProvider>
-    </StaticDIProvider>,
+  await renderUi(
+    <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
+      <LanguageSettingsScreen />
+    </LanguageProvider>,
+    { di: { analytics } },
   );
   return { storage, analytics };
 };
@@ -133,7 +41,7 @@ describe('LanguageSettingsScreen', () => {
     const { analytics } = await renderScreen({ storage });
 
     // When
-    await fireEvent.press(screen.getByTestId('radio-en'));
+    await fireEvent.press(screen.getByTestId('language-option-en'));
 
     // Then
     expect(storage.set).toHaveBeenCalledWith('aido_language', 'en');
@@ -151,7 +59,7 @@ describe('LanguageSettingsScreen', () => {
     await renderScreen({ storage });
 
     // When
-    await fireEvent.press(screen.getByTestId('radio-system'));
+    await fireEvent.press(screen.getByTestId('language-option-system'));
 
     // Then
     expect(storage.set).toHaveBeenCalledWith('aido_language', 'system');

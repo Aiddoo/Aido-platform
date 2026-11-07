@@ -1,20 +1,4 @@
 {
-  "jest-mock-src": {
-    "reason": "포트 stub으로 옮기기 전의 테스트. 파일을 고칠 때 createTestDi와 renderUi로 옮긴다",
-    "entries": {
-      "apps/mobile/src/bootstrap/hooks/use-widget-app-entry.test.tsx": 1,
-      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.push-entry.test.tsx": 3,
-      "apps/mobile/src/bootstrap/navigation/auth-gate-layout.test.tsx": 6,
-      "apps/mobile/src/shared/hooks/use-stable-feed-foreground.test.tsx": 1,
-      "apps/mobile/src/shared/preferences/__tests__/language-settings.test.tsx": 1
-    }
-  },
-  "policy-facade": {
-    "reason": "규칙을 넣기 전부터 있던 별칭. 해당 모델을 고칠 때 이름을 맞춘다",
-    "entries": {
-      "apps/mobile/src/features/social/nudge/domains/todo-nudge.model.ts": 1
-    }
-  },
   "feature-upward": {
     "reason": "위층에서 타입, 모델, *-cache 밖의 코드를 가져오는 간선. 줄 수를 넘으면 막는다",
     "entries": {}

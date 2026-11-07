@@ -18,3 +18,4 @@ export { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 export { mockWindowDimensions } from './mock-window-dimensions';
 export { runKyAfterResponseHook } from './run-ky-after-response-hook';
 export { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
+export { createWidgetNavigationStorageFake } from './create-widget-navigation-storage-fake';

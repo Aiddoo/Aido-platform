@@ -1,12 +1,20 @@
-import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import type * as SessionEpochModule from '@src/core/session/session-epoch';
+import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
-import type * as NotificationFixturesModule from '@src/features/notification/__tests__/notification.fixtures';
-import type * as NotificationEntryStoreModule from '@src/features/notification/apis/notification-entry.store';
-import type * as InviteServiceStubModule from '@src/features/social/invite/__tests__/create-stub-invite-service';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
+import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
+import {
+  createHttpClientStub,
+  createMemorySyncStorage,
+  createTestDiContainer,
+  createWidgetNavigationStorageFake,
+} from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
@@ -21,77 +29,10 @@ import { AuthGateLayout } from './auth-gate-layout';
 jest.unmock('expo-router');
 
 let mockAuthSessionStore = createAuthSessionStoreStub('loading');
-
-jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
-jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
-jest.mock('@src/bootstrap/providers/di-context', () => {
-  const { createStubInviteService } = jest.requireActual<typeof InviteServiceStubModule>(
-    '@src/features/social/invite/__tests__/create-stub-invite-service',
-  );
-  const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
-  const repository = {
-    subscribe: () => () => {},
-    getPendingCommand: () => null,
-    clearIfCurrent: () => false,
-  };
-  // 초대 진입 훅은 실제 서비스에 빈 저장소와 referrer 없는 gateway를 주입해 그대로 돈다
-  const inviteService = createStubInviteService();
-  const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-  const analytics = {
-    trackEvent: jest.fn(),
-    trackScreenView: jest.fn(),
-    setUserId: jest.fn(),
-    setUserProperties: jest.fn(),
-    resetData: jest.fn(),
-  };
-  const featureAttribution = { record: jest.fn(), consume: jest.fn(() => null) };
-  const { createPushNotificationGatewayStub } = jest.requireActual<
-    typeof NotificationFixturesModule
-  >('@src/features/notification/__tests__/notification.fixtures');
-  const { createNotificationEntryStore } = jest.requireActual<typeof NotificationEntryStoreModule>(
-    '@src/features/notification/apis/notification-entry.store',
-  );
-  const { createSessionEpoch } = jest.requireActual<typeof SessionEpochModule>(
-    '@src/core/session/session-epoch',
-  );
-  const pushNotificationGateway = createPushNotificationGatewayStub();
-  const notificationEntryStore = createNotificationEntryStore();
-  const sessionEpoch = createSessionEpoch();
-  const notificationService = {
-    markAsRead: jest.fn(),
-    markOpened: jest.fn(),
-    optOutMarketingPush: jest.fn(),
-    syncBadgeCount: jest.fn(),
-  };
-  return {
-    useAuthSessionStore: () => mockAuthSessionStore,
-    usePushNotificationGateway: () => pushNotificationGateway,
-    useNotificationEntryStore: () => notificationEntryStore,
-    useSessionEpoch: () => sessionEpoch,
-    useNotificationService: () => notificationService,
-    useErrorReporter: () => errorReporter,
-    useWidgetNavigationRepository: () => repository,
-    useInviteService: () => inviteService,
-    useLogger: () => logger,
-    useAnalytics: () => analytics,
-    useFeatureAttribution: () => featureAttribution,
-  };
-});
-
-jest.mock('@src/shared/di/shared-di-context', () =>
-  jest.requireMock('@src/bootstrap/providers/di-context'),
-);
-jest.mock('@src/features/identity/user/queries/user.queries', () => ({
-  useGetMeQueryOptions: () => ({
-    queryKey: ['user', 'me'],
-    queryFn: async () => ({ id: 'test-account' }),
-    staleTime: Infinity,
-  }),
+jest.mock('uniwind', () => ({
+  Uniwind: { setTheme: jest.fn() },
+  useResolveClassNames: () => ({ backgroundColor: '#ffffff' }),
 }));
-jest.mock('@src/shared/providers/theme-provider', () => ({
-  useTheme: () => ({ resolvedTheme: 'light' }),
-}));
-jest.mock('uniwind', () => ({ useResolveClassNames: () => ({ backgroundColor: '#ffffff' }) }));
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
   useLinkingURL: jest.fn(() => null),
@@ -135,15 +76,31 @@ function LoadingScreen() {
 async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
   const queryClient = createTestQueryClient();
   mockAuthSessionStore = createAuthSessionStoreStub(initialStatus);
+  const httpClient = createHttpClientStub();
+  httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
+  const container = createTestDiContainer({
+    ...createTestDi({
+      httpClient,
+      inviteService: createStubInviteService(),
+      widgetNavigationRepository: createWidgetNavigationRepository(
+        createWidgetNavigationStorageFake(),
+      ),
+    }),
+    authSessionStore: mockAuthSessionStore,
+  });
   function AuthFixture({ children }: PropsWithChildren) {
     return (
       <QueryClientProvider client={queryClient}>
-        <LocalDateProvider>{children}</LocalDateProvider>
+        <StaticDIProvider container={container}>
+          <ThemeProvider syncStorage={createMemorySyncStorage()}>
+            <LocalDateProvider>{children}</LocalDateProvider>
+          </ThemeProvider>
+        </StaticDIProvider>
       </QueryClientProvider>
     );
   }
 
-  return renderRouter(
+  const route = await renderRouter(
     {
       _layout: AuthGateLayout,
       index: RootIndex,
@@ -161,6 +118,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
     },
     { initialUrl, wrapper: AuthFixture },
   );
+  return { route, errorReporter: container.errorReporter };
 }
 
 describe('root 인증 route 전환', () => {
@@ -177,7 +135,7 @@ describe('root 인증 route 전환', () => {
   it.each(['loading', 'locked'] as const)(
     '%s 상태에서 복원 전에는 loading을 유지한다',
     async (status) => {
-      const route = await renderAuthRoutes(status);
+      const { route } = await renderAuthRoutes(status);
 
       expect(route.getPathname()).toBe('/loading');
       expect(screen.queryByTestId('login')).toBeNull();
@@ -186,7 +144,7 @@ describe('root 인증 route 전환', () => {
   );
 
   it('세션 없는 부팅은 login으로 이동한다', async () => {
-    const route = await renderAuthRoutes('loading');
+    const { route } = await renderAuthRoutes('loading');
 
     await fireEvent.press(screen.getByTestId('boot-unauthenticated'));
 
@@ -194,7 +152,7 @@ describe('root 인증 route 전환', () => {
   });
 
   it('세션 복원은 index가 없는 탭 그룹의 feed로 이동한다', async () => {
-    const route = await renderAuthRoutes('loading');
+    const { route } = await renderAuthRoutes('loading');
 
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
 
@@ -203,7 +161,7 @@ describe('root 인증 route 전환', () => {
   });
 
   it('로그인 후 feed, 로그아웃 후 login으로 이동한다', async () => {
-    const route = await renderAuthRoutes('unauthenticated');
+    const { route } = await renderAuthRoutes('unauthenticated');
 
     await fireEvent.press(screen.getByTestId('login'));
     expect(route.getPathname()).toBe('/feed');
@@ -213,13 +171,13 @@ describe('root 인증 route 전환', () => {
   });
 
   it('인증된 재실행의 root는 feed로 이동한다', async () => {
-    const route = await renderAuthRoutes('authenticated');
+    const { route } = await renderAuthRoutes('authenticated');
 
     expect(route.getPathname()).toBe('/feed');
   });
 
   it('미인증 사용자의 private URL은 login으로 이동한다', async () => {
-    const route = await renderAuthRoutes('unauthenticated', '/feed');
+    const { route } = await renderAuthRoutes('unauthenticated', '/feed');
 
     expect(route.getPathname()).toBe('/login');
   });
@@ -228,7 +186,7 @@ describe('root 인증 route 전환', () => {
     // Given: 인증 복원 중 초기 위젯 링크가 들어온다
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido-dev://todo/8');
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/8');
-    const route = await renderAuthRoutes('loading', '/todo/8');
+    const { route, errorReporter } = await renderAuthRoutes('loading', '/todo/8');
     expect(route.getPathname()).toBe('/loading');
 
     // When: 저장된 세션 복원을 마친다
@@ -237,7 +195,7 @@ describe('root 인증 route 전환', () => {
     // Then: 피드로 유실되지 않고 대상 상세에 한 번 도착한다
     expect(await screen.findByTestId('todo-detail')).toBeTruthy();
     expect(route.getPathname()).toBe('/todo/8');
-    expect(useErrorReporter().addBreadcrumb).toHaveBeenCalledWith({
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
       category: 'widget',
       message: 'initial widget destination restored',
     });
@@ -246,7 +204,7 @@ describe('root 인증 route 전환', () => {
   it('인증 복원 중 받은 최신 위젯 링크가 이전 초기 링크보다 우선한다', async () => {
     // Given
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://feed?date=today');
-    const route = await renderAuthRoutes('loading');
+    const { route } = await renderAuthRoutes('loading');
 
     // When
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/9');
@@ -259,7 +217,7 @@ describe('root 인증 route 전환', () => {
   it('종료된 앱의 상세 링크에서 뒤로가면 피드로 돌아가고 상세가 다시 열리지 않는다', async () => {
     // Given
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/8');
-    const route = await renderAuthRoutes('loading', '/todo/8');
+    const { route } = await renderAuthRoutes('loading', '/todo/8');
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
     await waitFor(() => expect(route.getPathname()).toBe('/todo/8'));
 
@@ -273,7 +231,7 @@ describe('root 인증 route 전환', () => {
   it('미인증으로 확정된 초기 링크는 이후 로그인에 다시 적용하지 않는다', async () => {
     // Given
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/8');
-    const route = await renderAuthRoutes('unauthenticated', '/todo/8');
+    const { route } = await renderAuthRoutes('unauthenticated', '/todo/8');
 
     // When
     await fireEvent.press(screen.getByTestId('login'));

@@ -1,6 +1,7 @@
+import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
-import type { EffectCallback } from 'react';
+import type { EffectCallback, PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
@@ -11,10 +12,6 @@ let mockIsKeyboardVisible = false;
 let focusEffect: EffectCallback | undefined;
 let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
 let idleCallbacks: Array<() => void> = [];
-
-jest.mock('@src/shared/ui', () => ({
-  useOverlayState: () => ({ hasActiveOverlay: mockHasActiveOverlay }),
-}));
 
 jest.mock('expo-router', () => ({
   useFocusEffect: (effect: EffectCallback) => {
@@ -33,6 +30,14 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
   type: 'default',
   appearance: 'light',
 });
+
+function OverlayStateWrapper({ children }: PropsWithChildren) {
+  return (
+    <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
+      {children}
+    </OverlayStateContext.Provider>
+  );
+}
 
 function useStableInFeed({ hasPendingNavigation = false } = {}) {
   return useStableFeedForeground({ isAuthenticated: true, hasPendingNavigation });
@@ -76,7 +81,7 @@ describe('useStableFeedForeground', () => {
   it('딥링크 라우팅 상호작용이 끝나면 같은 focus에서도 대기 상태를 해제한다', async () => {
     // Given
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
-    const { result } = await renderHook(() => useStableInFeed());
+    const { result } = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
 
     // When
     await act(async () => {
@@ -95,7 +100,7 @@ describe('useStableFeedForeground', () => {
 
   it('포커스를 유지한 런타임 딥링크도 라우팅 상호작용이 끝날 때까지 노출을 미룬다', async () => {
     // Given
-    const { result } = await renderHook(() => useStableInFeed());
+    const { result } = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -121,7 +126,7 @@ describe('useStableFeedForeground', () => {
 
   it('화면을 떠나면 대기 중인 딥링크 해제를 취소한다', async () => {
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
-    const hook = await renderHook(() => useStableInFeed());
+    const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
       await Promise.resolve();
     });
@@ -134,7 +139,7 @@ describe('useStableFeedForeground', () => {
   it('실제 OverlayProvider의 폼/오버레이 신호가 활성인 동안만 자동 노출을 막는다', async () => {
     // Given
     mockHasActiveOverlay = true;
-    const hook = await renderHook(() => useStableInFeed());
+    const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -154,7 +159,7 @@ describe('useStableFeedForeground', () => {
   it('키보드가 올라와 있는 동안은 자동 노출을 막는다', async () => {
     // Given
     mockIsKeyboardVisible = true;
-    const hook = await renderHook(() => useStableInFeed());
+    const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
     await act(async () => {
       focusEffect?.();
       await Promise.resolve();
@@ -175,7 +180,7 @@ describe('useStableFeedForeground', () => {
     // Given
     const { result, rerender } = await renderHook(
       (props: { hasPendingNavigation: boolean }) => useStableInFeed(props),
-      { initialProps: { hasPendingNavigation: true } },
+      { initialProps: { hasPendingNavigation: true }, wrapper: OverlayStateWrapper },
     );
     await act(async () => {
       focusEffect?.();

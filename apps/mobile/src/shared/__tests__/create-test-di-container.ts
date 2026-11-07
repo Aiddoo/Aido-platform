@@ -1,4 +1,5 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import { disabledQueryCacheStorage } from '@src/bootstrap/providers/query-cache-persistence';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -42,6 +43,8 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     idGenerator: createIdGeneratorStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
     voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+    // 사용자 식별 훅이 로그인 때 주인을 지정하는 저장소라 기기에 남기지 않는 저장소를 둔다
+    queryCacheStorage: disabledQueryCacheStorage,
     // 말로 메모 녹음 훅이 항상 읽는다. 받기 안내를 보는 테스트만 override한다
     offlineModelPromptRepository: createOfflineModelPromptRepository(createMemorySyncStorage()),
   };

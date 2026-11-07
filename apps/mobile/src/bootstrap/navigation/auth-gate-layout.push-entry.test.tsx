@@ -12,6 +12,7 @@ import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constant
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
   createHttpClientStub,
+  createMemorySyncStorage,
   createTestDiContainer,
   mockWindowDimensions,
 } from '@src/shared/__tests__';
@@ -20,6 +21,7 @@ import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError, NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
@@ -35,12 +37,10 @@ import { AuthGateLayout } from './auth-gate-layout';
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
 
-jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
-jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
-jest.mock('@src/shared/providers/theme-provider', () => ({
-  useTheme: () => ({ resolvedTheme: 'light' }),
+jest.mock('uniwind', () => ({
+  Uniwind: { setTheme: jest.fn() },
+  useResolveClassNames: () => ({ backgroundColor: '#ffffff' }),
 }));
-jest.mock('uniwind', () => ({ useResolveClassNames: () => ({ backgroundColor: '#ffffff' }) }));
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
   useLinkingURL: jest.fn(() => null),
@@ -158,7 +158,9 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     return (
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider container={container}>
-          <LocalDateProvider>{children}</LocalDateProvider>
+          <ThemeProvider syncStorage={createMemorySyncStorage()}>
+            <LocalDateProvider>{children}</LocalDateProvider>
+          </ThemeProvider>
         </StaticDIProvider>
       </QueryClientProvider>
     );

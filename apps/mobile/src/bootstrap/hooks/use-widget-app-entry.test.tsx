@@ -1,11 +1,14 @@
-import type { WidgetNavigationStorage } from '@src/core/ports/widget-navigation-storage';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
 } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/domains/widget-navigation.model';
 import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { createTestDiContainer, createWidgetNavigationStorageFake } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
@@ -15,29 +18,13 @@ import type { PropsWithChildren } from 'react';
 
 import { useWidgetAppEntry } from './use-widget-app-entry';
 
-let mockStatus = 'loading';
 let mockSegments = ['loading'];
 let mockPathname = '/loading';
 let mockParameters: Record<string, string> = {};
 let mockUrl: string | null = 'aido://feed?date=today';
+let authSessionStore = createAuthSessionStoreStub('loading');
 let mockRepository: WidgetNavigationRepository;
-const mockErrorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
 
-jest.mock('../providers/di-context', () => ({
-  useAuthSessionStore: () => ({
-    subscribe: () => () => {},
-    getState: () => ({ status: mockStatus }),
-  }),
-  useErrorReporter: () => mockErrorReporter,
-  useWidgetNavigationRepository: () => mockRepository,
-}));
-jest.mock('@src/features/identity/user/queries/user.queries', () => ({
-  useGetMeQueryOptions: () => ({
-    queryKey: ['user', 'me'],
-    queryFn: async () => ({ id: 'original-account' }),
-    staleTime: Infinity,
-  }),
-}));
 jest.mock('expo-linking', () => ({ useLinkingURL: () => mockUrl }));
 jest.mock('expo-router', () => ({
   router: { navigate: jest.fn() },
@@ -46,26 +33,6 @@ jest.mock('expo-router', () => ({
   useGlobalSearchParams: () => mockParameters,
 }));
 
-function createStorage(): WidgetNavigationStorage {
-  const values = new Map<string, string>();
-  const listeners = new Set<() => void>();
-  return {
-    get: (key) => values.get(key),
-    set: (key, value) => {
-      values.set(key, value);
-      listeners.forEach((listener) => listener());
-    },
-    remove: (key) => {
-      values.delete(key);
-      listeners.forEach((listener) => listener());
-    },
-    subscribe: (_key, listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-}
-
 describe('종료된 앱의 위젯 명령 복원', () => {
   let queryClient: QueryClient;
   let frames: Map<number, FrameRequestCallback>;
@@ -73,7 +40,19 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   let command: WidgetNavigationCommand;
 
   function Wrapper({ children }: PropsWithChildren) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <StaticDIProvider
+          container={createTestDiContainer({
+            ...createTestDi(),
+            authSessionStore,
+            widgetNavigationRepository: mockRepository,
+          })}
+        >
+          {children}
+        </StaticDIProvider>
+      </QueryClientProvider>
+    );
   }
 
   async function flushFrames() {
@@ -85,7 +64,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   }
 
   function authenticate() {
-    mockStatus = 'authenticated';
+    authSessionStore.setStatus('authenticated');
     mockSegments = ['(app)', '(tabs)', 'feed'];
     mockPathname = '/feed';
   }
@@ -106,13 +85,13 @@ describe('종료된 앱의 위젯 명령 복원', () => {
         frames.delete(id);
       }
     });
-    mockStatus = 'loading';
+    authSessionStore = createAuthSessionStoreStub('loading');
     mockSegments = ['loading'];
     mockPathname = '/loading';
     mockParameters = {};
     mockUrl = 'aido://feed?date=today';
-    mockRepository = createWidgetNavigationRepository(createStorage());
-    queryClient = createTestQueryClient();
+    mockRepository = createWidgetNavigationRepository(createWidgetNavigationStorageFake());
+    queryClient = createTestQueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'original-account' });
     command = {
       id: 'first-tap',
@@ -203,7 +182,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       authenticate();
       mockUrl = null;
       if (scenario === 'unauthenticated') {
-        mockStatus = 'unauthenticated';
+        authSessionStore.setStatus('unauthenticated');
       }
       if (scenario === 'different-account') {
         queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
