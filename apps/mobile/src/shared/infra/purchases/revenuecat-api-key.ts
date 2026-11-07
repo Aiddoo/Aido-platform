@@ -1,5 +1,7 @@
+import Constants from 'expo-constants';
 import type { PlatformOSType } from 'react-native';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 type RevenueCatApiKeyContext = {
   isDebugBuild: boolean;
@@ -23,4 +25,25 @@ export function resolveRevenueCatApiKey(context: RevenueCatApiKeyContext): strin
 
   // RevenueCat deliberately terminates Release builds configured with a Test Store key.
   return platformApiKey?.startsWith('test_') ? undefined : platformApiKey;
+}
+
+const revenueCatExtraSchema = z.object({
+  isDevelopment: z.boolean(),
+  revenueCatAppleApiKey: z.string().optional(),
+  revenueCatGoogleApiKey: z.string().optional(),
+  revenueCatTestApiKey: z.string().optional(),
+});
+
+/** 이 빌드가 쓸 RevenueCat 키. 키는 `app.config.ts`가 `extra`에 실어 주고 이 어댑터만 읽는다 */
+export function getRevenueCatApiKey(): string | undefined {
+  const extra = revenueCatExtraSchema.parse(Constants.expoConfig?.extra);
+
+  return resolveRevenueCatApiKey({
+    isDebugBuild: __DEV__,
+    isDevelopmentEnvironment: extra.isDevelopment,
+    platform: process.env.EXPO_OS,
+    appleApiKey: extra.revenueCatAppleApiKey,
+    googleApiKey: extra.revenueCatGoogleApiKey,
+    testApiKey: extra.revenueCatTestApiKey,
+  });
 }

@@ -16,7 +16,6 @@ interface PurchasesSdkManagerPorts {
   logger: Logger;
   analytics: Analytics;
   subscriberAttributes: SubscriberAttributes;
-  isDebugLogEnabled: boolean;
 }
 
 export class PurchasesSdkManager {
@@ -24,31 +23,22 @@ export class PurchasesSdkManager {
   readonly #logger: Logger;
   readonly #analytics: Analytics;
   readonly #subscriberAttributes: SubscriberAttributes;
-  readonly #isDebugLogEnabled: boolean;
   #configured = false;
 
-  constructor({
-    purchases,
-    logger,
-    analytics,
-    subscriberAttributes,
-    isDebugLogEnabled,
-  }: PurchasesSdkManagerPorts) {
+  constructor({ purchases, logger, analytics, subscriberAttributes }: PurchasesSdkManagerPorts) {
     this.#purchases = purchases;
     this.#logger = logger;
     this.#analytics = analytics;
     this.#subscriberAttributes = subscriberAttributes;
-    this.#isDebugLogEnabled = isDebugLogEnabled;
   }
 
-  configure = (apiKey: string): void => {
-    if (!apiKey) {
-      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_CONFIGURE_SKIPPED);
-      return;
-    }
-
+  configure = (): void => {
     try {
-      this.#purchases.configure(apiKey, { isDebugLogEnabled: this.#isDebugLogEnabled });
+      const result = this.#purchases.configure();
+      if (result === 'missing-api-key') {
+        this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_CONFIGURE_SKIPPED);
+        return;
+      }
       this.#configured = true;
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_CONFIGURE_FAILED, {

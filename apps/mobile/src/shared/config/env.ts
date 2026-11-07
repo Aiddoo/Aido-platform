@@ -1,6 +1,5 @@
 import { IS_PHYSICAL_DEVICE } from '@src/shared/infra/device/device-info';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { resolveRevenueCatApiKey } from '@src/shared/infra/purchases/revenuecat-api-key';
 import Constants from 'expo-constants';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -17,9 +16,6 @@ const extraSchema = z.object({
   devMachineIp: z.string().optional(),
   isDevelopment: z.boolean(),
   isProduction: z.boolean(),
-  revenueCatAppleApiKey: z.string().optional(),
-  revenueCatGoogleApiKey: z.string().optional(),
-  revenueCatTestApiKey: z.string().optional(),
   sentryDsn: z.string().optional(),
   sentryDebug: z.boolean().optional(),
   // .env의 빈 값(EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=)은 키가 없는 빌드로 본다
@@ -129,14 +125,6 @@ export const ENV = {
 
   API_URL: resolveApiUrl(),
   SCHEME: getAppScheme(),
-  PURCHASES_API_KEY: resolveRevenueCatApiKey({
-    isDebugBuild: __DEV__,
-    isDevelopmentEnvironment: extra.isDevelopment,
-    platform: process.env.EXPO_OS,
-    appleApiKey: extra.revenueCatAppleApiKey,
-    googleApiKey: extra.revenueCatGoogleApiKey,
-    testApiKey: extra.revenueCatTestApiKey,
-  }),
 
   // 카카오톡 공유 SDK 키(publishable). 없으면 OS 공유로 대신한다
   KAKAO_NATIVE_APP_KEY: extra.kakaoNativeAppKey,

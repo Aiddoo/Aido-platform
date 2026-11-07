@@ -19,6 +19,8 @@ import Purchases, {
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
+import { getRevenueCatApiKey } from './revenuecat-api-key';
+
 const storeErrorCodeSchema = z.enum(PURCHASES_ERROR_CODE);
 
 const NETWORK_CODES = [
@@ -115,65 +117,79 @@ function toPurchasePackage(rcPackage: PurchasesPackage): PurchasePackage {
   };
 }
 
-export const revenueCatPurchasesGateway: PurchasesGateway = {
-  configure: (apiKey, { isDebugLogEnabled }) => {
-    if (isDebugLogEnabled) {
-      Purchases.setLogLevel(LOG_LEVEL.WARN);
-    }
-    Purchases.configure({ apiKey });
-  },
+interface RevenueCatPurchasesGatewayOptions {
+  isDebugLogEnabled: boolean;
+}
 
-  logIn: async (userId) => {
-    await Purchases.logIn(userId);
-  },
-
-  // 익명 사용자에게 SDK logOut을 부르면 오류가 나므로 로그인한 사용자일 때만 부른다
-  logOut: async () => {
-    if (await Purchases.isAnonymous()) {
-      return;
-    }
-    await Purchases.logOut();
-  },
-
-  setAttributes: (attributes) => Purchases.setAttributes(attributes),
-
-  setAnalyticsId: (analyticsId) => Purchases.setFirebaseAppInstanceID(analyticsId),
-
-  getOffering: () =>
-    withGatewayError(async () => {
-      const { current } = await Purchases.getOfferings();
-      if (current == null) {
-        return null;
+export function createRevenueCatPurchasesGateway({
+  isDebugLogEnabled,
+}: RevenueCatPurchasesGatewayOptions): PurchasesGateway {
+  return {
+    configure: () => {
+      const apiKey = getRevenueCatApiKey();
+      if (!apiKey) {
+        return 'missing-api-key';
       }
-      return {
-        identifier: current.identifier,
-        packages: current.availablePackages.map(toPurchasePackage),
+      if (isDebugLogEnabled) {
+        Purchases.setLogLevel(LOG_LEVEL.WARN);
+      }
+      Purchases.configure({ apiKey });
+      return 'configured';
+    },
+
+    logIn: async (userId) => {
+      await Purchases.logIn(userId);
+    },
+
+    // 익명 사용자에게 SDK logOut을 부르면 오류가 나므로 로그인한 사용자일 때만 부른다
+    logOut: async () => {
+      if (await Purchases.isAnonymous()) {
+        return;
+      }
+      await Purchases.logOut();
+    },
+
+    setAttributes: (attributes) => Purchases.setAttributes(attributes),
+
+    setAnalyticsId: (analyticsId) => Purchases.setFirebaseAppInstanceID(analyticsId),
+
+    getOffering: () =>
+      withGatewayError(async () => {
+        const { current } = await Purchases.getOfferings();
+        if (current == null) {
+          return null;
+        }
+        return {
+          identifier: current.identifier,
+          packages: current.availablePackages.map(toPurchasePackage),
+        };
+      }),
+
+    // SDK가 요금제를 메모리에 캐시하므로 구매 때 다시 받아도 스토어에 다시 묻지 않는다
+    purchase: (packageIdentifier) =>
+      withGatewayError(async () => {
+        const { current } = await Purchases.getOfferings();
+        const rcPackage = current?.availablePackages.find(
+          (candidate) => candidate.identifier === packageIdentifier,
+        );
+        if (rcPackage == null) {
+          return { type: 'package-not-found' } as const;
+        }
+        const { customerInfo } = await Purchases.purchasePackage(rcPackage);
+        return { type: 'purchased', status: toPurchaseStatus(customerInfo) } as const;
+      }),
+
+    restore: () =>
+      withGatewayError(async () => toPurchaseStatus(await Purchases.restorePurchases())),
+
+    getStatus: async () => toPurchaseStatus(await Purchases.getCustomerInfo()),
+
+    subscribe: (listener) => {
+      const handleUpdate = (info: CustomerInfo) => listener(toPurchaseStatus(info));
+      Purchases.addCustomerInfoUpdateListener(handleUpdate);
+      return () => {
+        Purchases.removeCustomerInfoUpdateListener(handleUpdate);
       };
-    }),
-
-  // SDK가 요금제를 메모리에 캐시하므로 구매 때 다시 받아도 스토어에 다시 묻지 않는다
-  purchase: (packageIdentifier) =>
-    withGatewayError(async () => {
-      const { current } = await Purchases.getOfferings();
-      const rcPackage = current?.availablePackages.find(
-        (candidate) => candidate.identifier === packageIdentifier,
-      );
-      if (rcPackage == null) {
-        return { type: 'package-not-found' } as const;
-      }
-      const { customerInfo } = await Purchases.purchasePackage(rcPackage);
-      return { type: 'purchased', status: toPurchaseStatus(customerInfo) } as const;
-    }),
-
-  restore: () => withGatewayError(async () => toPurchaseStatus(await Purchases.restorePurchases())),
-
-  getStatus: async () => toPurchaseStatus(await Purchases.getCustomerInfo()),
-
-  subscribe: (listener) => {
-    const handleUpdate = (info: CustomerInfo) => listener(toPurchaseStatus(info));
-    Purchases.addCustomerInfoUpdateListener(handleUpdate);
-    return () => {
-      Purchases.removeCustomerInfoUpdateListener(handleUpdate);
-    };
-  },
-};
+    },
+  };
+}

@@ -78,9 +78,8 @@ async function renderSubscriptionScreen(
     logger: createLoggerStub(),
     analytics,
     subscriberAttributes: { appVersion: null, deviceModel: null },
-    isDebugLogEnabled: false,
   });
-  sdkManager.configure('api-key');
+  sdkManager.configure();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
   const queryClient = createTestQueryClient({

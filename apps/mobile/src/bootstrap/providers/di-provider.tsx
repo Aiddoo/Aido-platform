@@ -102,7 +102,7 @@ import {
 import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status-gateway';
 import { createExpoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
-import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
+import { createRevenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
 import { expoSystemShareGateway } from '@src/shared/infra/share/expo-system-share-gateway';
 import { expoSocialAuthGateway } from '@src/shared/infra/social-auth/expo-social-auth-gateway';
 import { expoSpeechRecognizer } from '@src/shared/infra/speech/expo-speech-recognizer';
@@ -307,19 +307,19 @@ export function DIProvider({
 
     const userService = new UserService(authHttpClient);
 
+    const purchasesGateway = createRevenueCatPurchasesGateway({ isDebugLogEnabled: __DEV__ });
     const purchasesSdkManager = new PurchasesSdkManager({
-      purchases: revenueCatPurchasesGateway,
+      purchases: purchasesGateway,
       logger,
       analytics,
       subscriberAttributes: {
         appVersion: installation?.currentVersion ?? null,
         deviceModel: DEVICE_MODEL_NAME,
       },
-      isDebugLogEnabled: __DEV__,
     });
     const subscriptionService = new SubscriptionService(
       purchasesSdkManager,
-      revenueCatPurchasesGateway,
+      purchasesGateway,
       logger,
     );
     const entitlementService = new EntitlementService(authHttpClient, logger);
@@ -363,7 +363,7 @@ export function DIProvider({
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizer,
-      purchasesGateway: revenueCatPurchasesGateway,
+      purchasesGateway,
       pushNotification,
       tokenStore,
       authSessionStore: createAuthSessionStore(),

@@ -19,7 +19,6 @@ function createManager({
     logger,
     analytics,
     subscriberAttributes: { appVersion: '1.14.0', deviceModel: 'iPhone 17' },
-    isDebugLogEnabled: false,
   });
   return { manager, purchases, logger, analytics };
 }
@@ -28,7 +27,7 @@ describe('RevenueCat 구독자 속성', () => {
   test('로그인하면 운영 알림에 쓸 앱 버전과 기기 모델을 설정한다', async () => {
     // Given
     const { manager, purchases } = createManager();
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
     purchases.setAttributes.mockClear();
 
@@ -46,7 +45,7 @@ describe('RevenueCat 구독자 속성', () => {
     // Given
     const { manager, purchases, logger } = createManager();
     purchases.setAttributes.mockRejectedValue(new Error('network'));
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
 
     // When
@@ -68,7 +67,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     const { manager, purchases } = createManager({ analytics });
 
     // When
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
 
     // Then
@@ -80,7 +79,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     const analytics = createAnalyticsStub();
     analytics.getAnalyticsId.mockResolvedValue('instance-1');
     const { manager, purchases } = createManager({ analytics });
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
     purchases.setAnalyticsId.mockClear();
 
@@ -96,7 +95,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     const { manager, purchases } = createManager();
 
     // When
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
 
     // Then
@@ -108,7 +107,7 @@ describe('RevenueCat Firebase 앱 인스턴스 ID 연동', () => {
     const analytics = createAnalyticsStub();
     analytics.getAnalyticsId.mockRejectedValue(new Error('analytics disabled'));
     const { manager, purchases, logger } = createManager({ analytics });
-    manager.configure('api-key');
+    manager.configure();
     await flushPromises();
 
     // When

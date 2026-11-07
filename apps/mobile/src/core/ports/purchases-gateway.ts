@@ -58,9 +58,12 @@ export class PurchasesGatewayError extends Error {
   }
 }
 
+/** `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다 */
+export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
+
 export interface PurchasesGateway {
   /** 초기화에 실패하면 throw한다 */
-  configure(apiKey: string, options: { isDebugLogEnabled: boolean }): void;
+  configure(): PurchasesConfigureResult;
   logIn(userId: string): Promise<void>;
   /** 로그인하지 않은 상태면 아무것도 하지 않는다 */
   logOut(): Promise<void>;

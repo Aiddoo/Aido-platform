@@ -15,7 +15,7 @@ export function createPurchasesGatewayStub(): PurchasesGatewayStub {
   const listeners = new Set<(info: PurchaseStatus) => void>();
 
   return {
-    configure: jest.fn(),
+    configure: jest.fn(() => 'configured'),
     logIn: mockMethod<PurchasesGateway['logIn']>(async () => {}),
     logOut: jest.fn(async () => {}),
     setAttributes: mockMethod<PurchasesGateway['setAttributes']>(async () => {}),

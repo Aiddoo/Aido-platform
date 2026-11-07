@@ -2,16 +2,28 @@ import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports
 import Purchases, { PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
 import {
-  revenueCatPurchasesGateway,
+  createRevenueCatPurchasesGateway,
   toPurchasesGatewayError,
 } from './revenuecat-purchases-gateway';
 
 const mockLogOut = jest.fn(async () => undefined);
+const mockExtra: { revenueCatAppleApiKey?: string } = {};
+
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    get expoConfig() {
+      return { extra: { isDevelopment: false, ...mockExtra } };
+    },
+  },
+}));
 
 jest.mock('react-native-purchases', () => ({
   ...jest.requireActual('react-native-purchases'),
   __esModule: true,
   default: {
+    configure: jest.fn(),
+    setLogLevel: jest.fn(),
     getOfferings: jest.fn(),
     purchasePackage: jest.fn(),
     addCustomerInfoUpdateListener: jest.fn(),
@@ -88,8 +100,11 @@ describe('toPurchasesGatewayError', () => {
   );
 });
 
-describe('revenueCatPurchasesGateway', () => {
+describe('createRevenueCatPurchasesGateway', () => {
+  const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({ isDebugLogEnabled: false });
+
   afterEach(() => {
+    delete mockExtra.revenueCatAppleApiKey;
     jest.resetAllMocks();
   });
 
@@ -137,5 +152,26 @@ describe('revenueCatPurchasesGateway', () => {
 
     // Then
     expect(purchases.removeCustomerInfoUpdateListener).toHaveBeenCalledWith(attached);
+  });
+
+  it('이 빌드에 결제 키가 있으면 SDK를 초기화한다', () => {
+    // Given
+    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+
+    // When
+    const result = revenueCatPurchasesGateway.configure();
+
+    // Then
+    expect(result).toBe('configured');
+    expect(purchases.configure).toHaveBeenCalledWith({ apiKey: 'appl_fixture' });
+  });
+
+  it('결제 키가 없는 빌드는 SDK를 초기화하지 않는다', () => {
+    // When
+    const result = revenueCatPurchasesGateway.configure();
+
+    // Then
+    expect(result).toBe('missing-api-key');
+    expect(purchases.configure).not.toHaveBeenCalled();
   });
 });

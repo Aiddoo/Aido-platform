@@ -16,9 +16,8 @@ function createConfiguredService() {
     logger,
     analytics: createAnalyticsStub(),
     subscriberAttributes: { appVersion: null, deviceModel: null },
-    isDebugLogEnabled: false,
   });
-  sdkManager.configure('api-key');
+  sdkManager.configure();
   return { service: new SubscriptionService(sdkManager, purchases, logger), purchases };
 }
 

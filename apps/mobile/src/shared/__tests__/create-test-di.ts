@@ -233,7 +233,6 @@ export function createTestDi({
       appVersion: applicationMetadata.getInstallation()?.currentVersion ?? null,
       deviceModel: null,
     },
-    isDebugLogEnabled: false,
   });
   const weatherService = new WeatherService(httpClient);
 

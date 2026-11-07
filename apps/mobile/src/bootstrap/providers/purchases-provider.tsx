@@ -8,7 +8,6 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
-import { ENV } from '@src/shared/config/env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
@@ -35,9 +34,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
 
   useEffect(() => {
-    if (ENV.PURCHASES_API_KEY) {
-      sdkManager.configure(ENV.PURCHASES_API_KEY);
-    }
+    sdkManager.configure();
   }, [sdkManager]);
 
   // 인증 게이트 위의 Provider라 사용자 조회에서 suspend하지 않도록 useSuspenseQuery 대신 useQuery를 쓴다
