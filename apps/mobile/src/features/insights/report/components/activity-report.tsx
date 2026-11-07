@@ -10,7 +10,6 @@ import {
   type QueryErrorFallbackProps,
   Result,
   ScallopedContainer,
-  Spacing,
   Text,
   TextSkeleton,
   VStack,
@@ -19,7 +18,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { orderBy } from 'es-toolkit';
+import { orderBy, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
@@ -28,6 +27,8 @@ import { isReportUnavailable } from '../domains/ai-report.error';
 import { AiReportPolicy } from '../domains/ai-report.model';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
+
+const LOADING_STAT_COUNT = 3;
 
 interface ActivityReportProps {
   report: AiReport;
@@ -310,18 +311,41 @@ function ImprovementTipList({ tips }: { tips: string[] }) {
 
 ActivityReport.Loading = function Loading() {
   return (
-    <VStack className="px-4" gap={16}>
-      <Spacing size={16} />
-      <HStack align="center" gap={8}>
-        <Skeleton className="h-6 w-12 rounded-full" />
-        <TextSkeleton size="b2" className="w-24" />
-        <TextSkeleton size="b4" className="w-32" />
-      </HStack>
-      <Skeleton className="h-32 w-full rounded-2xl" />
-      <Skeleton className="h-40 w-full rounded-2xl" />
-      <Skeleton className="h-24 w-full rounded-2xl" />
-      <Skeleton className="h-24 w-full rounded-2xl" />
-    </VStack>
+    <ScallopedContainer>
+      <Box className="px-5 pt-4 pb-2">
+        <HStack align="center" gap={8}>
+          <Skeleton className="h-6 w-12 rounded-full" />
+          <TextSkeleton size="b2" className="w-24" />
+          <TextSkeleton size="b4" className="w-32" />
+        </HStack>
+      </Box>
+
+      <VStack className="px-5 pb-4">
+        <Box className="py-4">
+          <VStack gap={16}>
+            <TextSkeleton size="b3" className="w-32" />
+            <HStack justify="around">
+              {range(LOADING_STAT_COUNT).map((index) => (
+                <VStack key={index} align="center" gap={4}>
+                  <TextSkeleton size="e1" className="w-12" />
+                  <TextSkeleton size="t2" className="w-16" />
+                </VStack>
+              ))}
+            </HStack>
+          </VStack>
+        </Box>
+
+        <DashedDivider />
+
+        <Box className="py-4">
+          <VStack gap={16}>
+            <TextSkeleton size="b3" className="w-32" />
+            <TextSkeleton size="b4" className="w-full" />
+            <TextSkeleton size="b4" className="w-full" />
+          </VStack>
+        </Box>
+      </VStack>
+    </ScallopedContainer>
   );
 };
 
