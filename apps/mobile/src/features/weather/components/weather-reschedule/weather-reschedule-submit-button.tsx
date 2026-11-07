@@ -11,7 +11,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as translate, useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
 import {
@@ -25,7 +25,13 @@ import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutation
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
-export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }) {
+export function WeatherRescheduleSubmitButton({
+  form,
+  onDone,
+}: {
+  form: UseFormReturn<WeatherRescheduleFormValues>;
+  onDone: () => void;
+}) {
   const { t } = useTranslation('weather');
   const toast = useAppToast();
   const queryClient = useQueryClient();
@@ -34,13 +40,12 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const [{ todoIds, reason }] = useWeatherRescheduleParams();
-  const { handleSubmit, control } = useFormContext<WeatherRescheduleFormValues>();
-  const { isSubmitting } = useFormState({ control });
+  const { isSubmitting } = useFormState({ control: form.control });
   const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: useTodayKey() }));
   const updateSchedule = useMutation(useRescheduleTodoMutationOptions());
   const todayTodos = todoList?.todos ?? [];
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
-  const selections = useWatch({ control, name: 'selections' }) ?? {};
+  const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
   const hasTargets = toRescheduleTargets({ selections }, todoIds, todayTodos).length > 0;
 
   const settle = (failures: unknown[]) => {
@@ -68,7 +73,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
     }
   };
 
-  const handleApply = handleSubmit(async (values) => {
+  const handleApply = form.handleSubmit(async (values) => {
     const targets = toRescheduleTargets(values, todoIds, todayTodos);
     const results = await Promise.allSettled(
       targets.map(({ todo, startsAt }) =>

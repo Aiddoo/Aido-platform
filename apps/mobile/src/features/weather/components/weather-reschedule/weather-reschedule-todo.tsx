@@ -3,8 +3,7 @@ import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useFormContext } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import type { ForecastTodo, RescheduleOption } from '../../domains/weather-briefing.model';
@@ -13,6 +12,7 @@ import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedu
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
 interface WeatherRescheduleTodoProps {
+  form: UseFormReturn<WeatherRescheduleFormValues>;
   todo: ForecastTodo;
   options: RescheduleOption[];
   reason: WeatherRescheduleReason;
@@ -20,8 +20,9 @@ interface WeatherRescheduleTodoProps {
   onExclude: () => void;
 }
 
-/** 할 일 하나의 옮길 시각 선택. 기본 선택(추천 시간)은 FormField의 defaultValue로 처음 그릴 때 한 번 정한다. */
+/** 할 일 하나의 옮길 시각 선택. 기본 선택(추천 시간)은 Controller의 defaultValue로 처음 그릴 때 한 번 정한다. */
 export function WeatherRescheduleTodo({
+  form,
   todo,
   options,
   reason,
@@ -29,7 +30,6 @@ export function WeatherRescheduleTodo({
   onExclude,
 }: WeatherRescheduleTodoProps) {
   const { t } = useTranslation('weather');
-  const { control } = useFormContext<WeatherRescheduleFormValues>();
   const dateFormat = useDateFormatContext();
   const [recommended] = options;
 
@@ -48,12 +48,11 @@ export function WeatherRescheduleTodo({
           {t(RESCHEDULE_COPY_KEYS[reason].noTime)}
         </Text>
       ) : (
-        <FormField
-          control={control}
+        <Controller
+          control={form.control}
           name={`selections.${toSelectionKey(todo.todoId)}`}
           defaultValue={recommended.startsAt}
-        >
-          {({ value, onChange }) => (
+          render={({ field: { value, onChange } }) => (
             <WeatherRescheduleTimeInput
               value={value}
               onChange={onChange}
@@ -62,7 +61,7 @@ export function WeatherRescheduleTodo({
               timeFormat={timeFormat}
             />
           )}
-        </FormField>
+        />
       )}
       <Box className="items-start">
         <TextButton size="small" onPress={onExclude}>

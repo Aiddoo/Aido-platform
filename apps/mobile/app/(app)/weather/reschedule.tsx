@@ -13,7 +13,10 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '@src/features/weather/queries/weather.queries';
-import { weatherRescheduleFormSchema } from '@src/features/weather/schemas/weather-reschedule-form.schema';
+import {
+  type WeatherRescheduleFormValues,
+  weatherRescheduleFormSchema,
+} from '@src/features/weather/schemas/weather-reschedule-form.schema';
 import { weatherRescheduleParamsSchema } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -39,7 +42,7 @@ import { keyBy, range } from 'es-toolkit';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 
 const WEATHER_HREF = '/weather';
 const LOADING_TODO_COUNT = 2;
@@ -73,33 +76,33 @@ function WeatherRescheduleSheet() {
     <BottomSheet
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
-      footer={
-        <FormProvider {...form}>
-          <RescheduleFooter onDone={() => sheet.close()} />
-        </FormProvider>
-      }
+      footer={<RescheduleFooter form={form} onDone={() => sheet.close()} />}
     >
-      <FormProvider {...form}>
-        {sheet.isOpen && (
-          <QueryErrorBoundary
-            fallback={(fallbackProps) => (
-              <RescheduleErrorFallback
-                {...fallbackProps}
-                onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-              />
-            )}
-          >
-            <Suspense fallback={<RescheduleLoading />}>
-              <RescheduleContent onEmpty={() => sheet.close()} />
-            </Suspense>
-          </QueryErrorBoundary>
-        )}
-      </FormProvider>
+      {sheet.isOpen && (
+        <QueryErrorBoundary
+          fallback={(fallbackProps) => (
+            <RescheduleErrorFallback
+              {...fallbackProps}
+              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+            />
+          )}
+        >
+          <Suspense fallback={<RescheduleLoading />}>
+            <RescheduleContent form={form} onEmpty={() => sheet.close()} />
+          </Suspense>
+        </QueryErrorBoundary>
+      )}
     </BottomSheet>
   );
 }
 
-function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
+function RescheduleContent({
+  form,
+  onEmpty,
+}: {
+  form: UseFormReturn<WeatherRescheduleFormValues>;
+  onEmpty: () => void;
+}) {
   const { t } = useTranslation('weather');
   const [{ todoIds, reason }, setParams] = useWeatherRescheduleParams();
   const todayKey = useTodayKey();
@@ -164,6 +167,7 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
         <Fragment key={todo.todoId}>
           {index > 0 && <Separator className="my-3" />}
           <WeatherRescheduleTodo
+            form={form}
             todo={todo}
             options={WeatherBriefingPolicy.getRescheduleOptions(report.hourly, todo, {
               now,
@@ -181,7 +185,13 @@ function RescheduleContent({ onEmpty }: { onEmpty: () => void }) {
 }
 
 /** 시트도 Apple 날씨 데이터를 보여 주므로 주 버튼 위에 출처 표기를 고정한다. 바탕은 앱 테마를 따른다. */
-function RescheduleFooter({ onDone }: { onDone: () => void }) {
+function RescheduleFooter({
+  form,
+  onDone,
+}: {
+  form: UseFormReturn<WeatherRescheduleFormValues>;
+  onDone: () => void;
+}) {
   const { resolvedTheme } = useTheme();
 
   return (
@@ -191,7 +201,7 @@ function RescheduleFooter({ onDone }: { onDone: () => void }) {
           <WeatherAttribution background={resolvedTheme} />
         </Suspense>
       </QueryErrorBoundary>
-      <WeatherRescheduleSubmitButton onDone={onDone} />
+      <WeatherRescheduleSubmitButton form={form} onDone={onDone} />
     </VStack>
   );
 }

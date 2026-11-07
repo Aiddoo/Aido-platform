@@ -42,14 +42,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { compact, range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
-import {
-  FormProvider,
-  type UseFormReturn,
-  useFieldArray,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form';
+import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -200,73 +193,72 @@ export function PlanReview({
   }
 
   return (
-    <FormProvider {...form}>
-      <VStack className={className} style={style}>
-        <ScrollFade className="shrink grow">
-          <ScrollView
-            contentContainerClassName="gap-4 pb-4"
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
-          >
-            <VStack gap={4}>
-              <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-                {match(headline)
-                  .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
-                  .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
-                  .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
-                  .exhaustive()}
-              </Text>
+    <VStack className={className} style={style}>
+      <ScrollFade className="shrink grow">
+        <ScrollView
+          contentContainerClassName="gap-4 pb-4"
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
+          <VStack gap={4}>
+            <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
+              {match(headline)
+                .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
+                .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
+                .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
+                .exhaustive()}
+            </Text>
+            <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+              {t('voicePlan:plan.hint')}
+            </Text>
+            {plan.omittedTodoCount > 0 && (
               <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                {t('voicePlan:plan.hint')}
+                {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
               </Text>
-              {plan.omittedTodoCount > 0 && (
-                <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                  {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
-                </Text>
-              )}
-            </VStack>
+            )}
+          </VStack>
 
-            <VStack gap={8}>
-              {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
-                <VStack key={group.categoryId ?? 'memo'} gap={8}>
-                  {group.categoryId != null && (
-                    <PlanReview.CategoryHeader categoryId={group.categoryId} />
-                  )}
-                  {group.indexes.map((index) =>
-                    group.categoryId == null ? (
-                      <PlanReview.MemoRow key={fields[index]?.id} index={index} />
-                    ) : (
-                      <PlanReview.TodoRow
-                        key={fields[index]?.id}
-                        index={index}
-                        fallbackCategoryId={fallbackCategoryId}
-                      />
-                    ),
-                  )}
-                </VStack>
-              ))}
-            </VStack>
-          </ScrollView>
-        </ScrollFade>
+          <VStack gap={8}>
+            {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
+              <VStack key={group.categoryId ?? 'memo'} gap={8}>
+                {group.categoryId != null && (
+                  <PlanReview.CategoryHeader categoryId={group.categoryId} />
+                )}
+                {group.indexes.map((index) =>
+                  group.categoryId == null ? (
+                    <PlanReview.MemoRow key={fields[index]?.id} form={form} index={index} />
+                  ) : (
+                    <PlanReview.TodoRow
+                      key={fields[index]?.id}
+                      form={form}
+                      index={index}
+                      fallbackCategoryId={fallbackCategoryId}
+                    />
+                  ),
+                )}
+              </VStack>
+            ))}
+          </VStack>
+        </ScrollView>
+      </ScrollFade>
 
-        <HStack gap={8} className="pt-3">
-          {secondaryAction}
-          <Box className="flex-1">
-            <Button
-              isDisabled={!canApply || !isValid}
-              isLoading={applyMutation.isPending}
-              onPress={() => handleApply()}
-              testID="plan-review-apply"
-            >
-              {match({ todoCount, canApply })
-                .with({ canApply: false }, () => t('voicePlan:plan.applyNothing'))
-                .with({ todoCount: 0 }, () => t('voicePlan:plan.applyMemo'))
-                .otherwise(() => t('voicePlan:plan.apply', { count: todoCount }))}
-            </Button>
-          </Box>
-        </HStack>
-      </VStack>
-    </FormProvider>
+      <HStack gap={8} className="pt-3">
+        {secondaryAction}
+        <Box className="flex-1">
+          <Button
+            isDisabled={!canApply || !isValid}
+            isLoading={applyMutation.isPending}
+            onPress={() => handleApply()}
+            testID="plan-review-apply"
+          >
+            {match({ todoCount, canApply })
+              .with({ canApply: false }, () => t('voicePlan:plan.applyNothing'))
+              .with({ todoCount: 0 }, () => t('voicePlan:plan.applyMemo'))
+              .otherwise(() => t('voicePlan:plan.apply', { count: todoCount }))}
+          </Button>
+        </Box>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -309,14 +301,15 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
 };
 
 PlanReview.TodoRow = function PlanTodoRow({
+  form,
   index,
   fallbackCategoryId,
 }: {
+  form: UseFormReturn<PlanReviewFormValues>;
   index: number;
   fallbackCategoryId: number;
 }) {
   const { t } = useTranslation('voicePlan');
-  const form = useFormContext<PlanReviewFormValues>();
   const overlay = useOverlay();
   const todo = useWatch({ control: form.control, name: `actions.${index}` });
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -454,9 +447,14 @@ PlanReview.TodoRow = function PlanTodoRow({
   );
 };
 
-PlanReview.MemoRow = function PlanMemoRow({ index }: { index: number }) {
+PlanReview.MemoRow = function PlanMemoRow({
+  form,
+  index,
+}: {
+  form: UseFormReturn<PlanReviewFormValues>;
+  index: number;
+}) {
   const { t } = useTranslation('voicePlan');
-  const form = useFormContext<PlanReviewFormValues>();
   const memo = useWatch({ control: form.control, name: `actions.${index}` });
 
   if (memo.type !== 'create-memo') {

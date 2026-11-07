@@ -12,7 +12,6 @@ import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import {
   ActionChip,
   BottomSheetInput,
@@ -30,18 +29,10 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import {
-  FormProvider,
-  useForm,
-  useFormContext,
-  useFormState,
-  useWatch,
-  type UseFormReturn,
-} from 'react-hook-form';
+import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import { VoicePlanPolicy } from '../../domains/voice-plan.model';
@@ -68,59 +59,63 @@ export function PlanTodoEditSheet({
   onConfirm,
 }: PlanTodoEditSheetProps) {
   const { t } = useTranslation('voicePlan');
-  const methods = useForm({
+  const form = useForm({
     resolver: zodResolver(planTodoEditFormSchema),
     defaultValues: { todo },
     mode: 'onChange',
   });
-  const { isValid } = useFormState({ control: methods.control });
-  const handleConfirm = methods.handleSubmit((values) => onConfirm(values.todo));
+  const { isValid } = useFormState({ control: form.control });
+  const handleConfirm = form.handleSubmit((values) => onConfirm(values.todo));
 
   return (
     <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <FormProvider {...methods}>
-        <VStack gap={12}>
-          <FormField control={methods.control} name="todo.title">
-            {({ value, onChange }) => (
-              <BottomSheetInput
-                accessibilityLabel={t('edit.titleLabel')}
-                value={value}
-                onChange={onChange}
-                maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
-                size="medium"
-                renderErrorMessage={false}
-                returnKeyType="done"
-                onSubmitEditing={() => handleConfirm()}
-              />
-            )}
-          </FormField>
+      <VStack gap={12}>
+        <Controller
+          control={form.control}
+          name="todo.title"
+          render={({ field: { value, onChange } }) => (
+            <BottomSheetInput
+              accessibilityLabel={t('edit.titleLabel')}
+              value={value}
+              onChange={onChange}
+              maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
+              size="medium"
+              renderErrorMessage={false}
+              returnKeyType="done"
+              onSubmitEditing={() => handleConfirm()}
+            />
+          )}
+        />
 
-          {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-            contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-          >
-            <DateChip />
-            <TimeChip />
-            <RepeatChip />
-            <VisibilityChip />
-            <CategoryChip fallbackCategoryId={fallbackCategoryId} />
-          </ScrollView>
+        {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+        >
+          <DateChip form={form} />
+          <TimeChip form={form} />
+          <RepeatChip form={form} />
+          <VisibilityChip form={form} />
+          <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
+        </ScrollView>
 
-          <Button
-            isDisabled={!isValid}
-            onPress={() => handleConfirm()}
-            testID="plan-todo-edit-confirm"
-          >
-            {t('edit.confirm')}
-          </Button>
-        </VStack>
-      </FormProvider>
+        <Button
+          isDisabled={!isValid}
+          onPress={() => handleConfirm()}
+          testID="plan-todo-edit-confirm"
+        >
+          {t('edit.confirm')}
+        </Button>
+      </VStack>
     </KeyboardBottomSheet>
   );
+}
+
+interface PlanTodoChipProps {
+  form: UseFormReturn<PlanTodoEditFormValues>;
 }
 
 function updateTodo(
@@ -131,12 +126,11 @@ function updateTodo(
   setValue('todo', { ...change(current), isSelected }, { shouldDirty: true, shouldValidate: true });
 }
 
-function DateChip() {
+function DateChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('common');
   const overlay = useOverlay();
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
-  const form = useFormContext<PlanTodoEditFormValues>();
   const [startDate, endDate] = useWatch({
     control: form.control,
     name: ['todo.startDate', 'todo.endDate'],
@@ -158,7 +152,10 @@ function DateChip() {
           value={toDate(startDate)}
           onChange={(nextStartDate) => {
             updateTodo(form, (current) =>
-              VoicePlanPolicy.withStartDate(current, toDateKey(nextStartDate, getDeviceTimezone())),
+              VoicePlanPolicy.withStartDate(
+                current,
+                toDateKey(nextStartDate, dateFormatContext.timeZone),
+              ),
             );
             close();
           }}
@@ -180,10 +177,9 @@ function DateChip() {
   );
 }
 
-function TimeChip() {
+function TimeChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const form = useFormContext<PlanTodoEditFormValues>();
   const [startDate, scheduledTime] = useWatch({
     control: form.control,
     name: ['todo.startDate', 'todo.scheduledTime'],
@@ -234,11 +230,10 @@ function TimeChip() {
   );
 }
 
-function RepeatChip() {
+function RepeatChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
   const dateFormatContext = useDateFormatContext();
-  const form = useFormContext<PlanTodoEditFormValues>();
   const [startDate, repeat] = useWatch({
     control: form.control,
     name: ['todo.startDate', 'todo.repeat'],
@@ -257,7 +252,7 @@ function RepeatChip() {
           onChange={(next) => {
             updateTodo(form, (current) =>
               VoicePlanPolicy.withRepeat(
-                { ...current, startDate: toDateKey(next.startDate, getDeviceTimezone()) },
+                { ...current, startDate: toDateKey(next.startDate, dateFormatContext.timeZone) },
                 next.repeat,
               ),
             );
@@ -284,9 +279,8 @@ function RepeatChip() {
   );
 }
 
-function VisibilityChip() {
+function VisibilityChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
-  const form = useFormContext<PlanTodoEditFormValues>();
   const visibility = useWatch({ control: form.control, name: 'todo.visibility' });
   const isPrivate = TodoPolicy.isPrivate({ visibility });
 
@@ -310,10 +304,12 @@ function VisibilityChip() {
   );
 }
 
-function CategoryChip({ fallbackCategoryId }: { fallbackCategoryId: number }) {
+function CategoryChip({
+  form,
+  fallbackCategoryId,
+}: PlanTodoChipProps & { fallbackCategoryId: number }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const form = useFormContext<PlanTodoEditFormValues>();
   const todo = useWatch({ control: form.control, name: 'todo' });
   const {
     data: { categories },
