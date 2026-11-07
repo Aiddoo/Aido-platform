@@ -71,7 +71,8 @@ import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
-import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store-gateway';
+import { expoAppStoreListingGateway } from '@src/shared/infra/app-store/expo-app-store-listing-gateway';
+import { expoAppStoreReviewGateway } from '@src/shared/infra/app-store/expo-app-store-review-gateway';
 import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer-gateway';
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id-gateway';
 import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
@@ -307,7 +308,7 @@ export function DIProvider({
 
     const storeReviewService = new StoreReviewService(
       createStoreReviewRepository(deviceSyncStorage),
-      expoAppStoreGateway,
+      expoAppStoreReviewGateway,
       getNowInstant,
     );
 
@@ -362,22 +363,18 @@ export function DIProvider({
     });
 
     return {
-      storage,
       logger,
       analytics,
       errorReporter,
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizer,
-      purchasesGateway,
       pushNotification,
       tokenStore,
       authSessionStore: createAuthSessionStore(),
       sessionEpoch,
-      sessionManager,
       sessionCleanupService,
       sessionRevocationService,
-      tokenRefresher,
       featureAttribution,
       draftService,
       queryCacheStorage,
@@ -436,7 +433,7 @@ export function DIProvider({
       clipboard: expoClipboardGateway,
       applicationMetadata: expoNativeApplicationMetadataGateway,
       socialAuth: expoSocialAuthGateway,
-      appStoreListing: expoAppStoreGateway,
+      appStoreListing: expoAppStoreListingGateway,
       externalLink: expoExternalLinkGateway,
       systemShare: expoSystemShareGateway,
       incomingLink: expoIncomingLinkGateway,
