@@ -24,6 +24,7 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
 import {
+  Flex,
   HStack,
   QueryErrorBoundary,
   STACK_CLOSE_ICON,
@@ -75,38 +76,13 @@ function VoiceNoteRecordScreen() {
     changeLocaleRef.current = recording.changeLocale;
   });
   const { state } = recording;
+  const footerProps = { recording, limitMs, onFinish: requestFinish, onClose: requestClose };
 
   useEffect(() => {
     recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch(() => {
       toast.error(t('record.failedTitle'));
     });
   }, []);
-
-  const clock = <RecordClock state={state} limitMs={limitMs} />;
-  const waveform = (
-    <RecognizerWaveform
-      level={recording.level}
-      isActive={state.status === 'listening'}
-      bookmarksMs={recording.bookmarksMs}
-      className="self-stretch"
-    />
-  );
-  const captions = (
-    <RecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
-  );
-  const footer = (
-    <VoiceNoteRecordFooter
-      state={state}
-      limitMs={limitMs}
-      markCount={recording.markCount}
-      onPause={recording.pause}
-      onFinish={requestFinish}
-      onMark={recording.mark}
-      onSummarize={recording.finish}
-      onClose={requestClose}
-      onResume={recording.resume}
-    />
-  );
 
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
@@ -126,25 +102,30 @@ function VoiceNoteRecordScreen() {
           onPress={close}
         />
       </Stack.Toolbar>
-      {isCompact ? (
-        <>
+      {/* 폴드를 접고 펴도 파형과 자막이 다시 마운트되지 않게 같은 트리에서 방향만 바꾼다 */}
+      <Flex direction={isCompact ? 'column' : 'row'} flex={1} gap={isCompact ? 12 : 20}>
+        <VStack
+          flex={isCompact ? 0 : 1}
+          gap={12}
+          justify={isCompact ? 'start' : 'center'}
+          align="center"
+        >
           <VStack align="center" className={cn(state.status === 'paused' && 'opacity-60')}>
-            {clock}
+            <RecordClock state={state} limitMs={limitMs} />
           </VStack>
-          {waveform}
-          {captions}
-          {footer}
-        </>
-      ) : (
-        <HStack flex={1} gap={20}>
-          <VStack flex={1} gap={12} justify="center" align="center">
-            {clock}
-            {waveform}
-            {footer}
-          </VStack>
-          <VStack flex={1}>{captions}</VStack>
-        </HStack>
-      )}
+          <RecognizerWaveform
+            level={recording.level}
+            isActive={state.status === 'listening'}
+            bookmarksMs={recording.bookmarksMs}
+            className="self-stretch"
+          />
+          {!isCompact && <RecordFooter {...footerProps} />}
+        </VStack>
+        <VStack flex={1}>
+          <RecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
+        </VStack>
+        {isCompact && <RecordFooter {...footerProps} />}
+      </Flex>
     </VStack>
   );
 }
@@ -197,6 +178,29 @@ function RecordCaptions(
       // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
       contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
       className="min-h-24 flex-1"
+    />
+  );
+}
+
+interface RecordFooterProps {
+  recording: ReturnType<typeof useVoiceNoteRecording>;
+  limitMs: number | null;
+  onFinish: () => void;
+  onClose: () => void;
+}
+
+function RecordFooter({ recording, limitMs, onFinish, onClose }: RecordFooterProps) {
+  return (
+    <VoiceNoteRecordFooter
+      state={recording.state}
+      limitMs={limitMs}
+      markCount={recording.markCount}
+      onPause={recording.pause}
+      onFinish={onFinish}
+      onMark={recording.mark}
+      onSummarize={recording.finish}
+      onClose={onClose}
+      onResume={recording.resume}
     />
   );
 }
