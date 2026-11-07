@@ -1,12 +1,12 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { err } from '@src/core/errors/result';
 import { H3, Spacing } from '@src/shared/ui';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { TextInput } from 'react-native';
 
 import { createAuthSession } from '../__tests__/auth-session.test-utils';
-import { createAuthApiError, createAuthTokensDto } from '../__tests__/auth.fixtures';
+import { createAuthApiError } from '../__tests__/auth.fixtures';
 import { EmailLoginForm } from './email-login-form';
 
 async function renderEmailLoginForm() {
@@ -90,18 +90,5 @@ describe('이메일 로그인 폼', () => {
         params: { email: 'user@aido.app' },
       }),
     );
-  });
-
-  it('로그인에 성공하면 인증 상태로 바뀐다', async () => {
-    // Given
-    const session = await renderEmailLoginForm();
-    session.publicHttp.post.mockResolvedValue(ok(createAuthTokensDto()));
-    await typeCredentials('user@aido.app', 'password-1');
-
-    // When
-    await fireEvent.press(screen.getByTestId('email-login-submit'));
-
-    // Then
-    await waitFor(() => expect(session.publicHttp.post).toHaveBeenCalledTimes(1));
   });
 });

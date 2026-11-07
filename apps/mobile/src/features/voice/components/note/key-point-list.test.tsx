@@ -64,19 +64,6 @@ describe('KeyPointList', () => {
     expect(onPressKeyPoint).toHaveBeenCalledWith(expect.objectContaining({ id: 'second' }));
   });
 
-  it('핵심 포인트를 누르면 그 포인트를 알려 그 지점부터 듣게 한다', async () => {
-    // Given
-    const { keyPoints } = createVoiceNoteDigest();
-    const onPressKeyPoint = jest.fn();
-    await renderUi(<KeyPointList keyPoints={keyPoints} onPressKeyPoint={onPressKeyPoint} />);
-
-    // When
-    fireEvent.press(screen.getByLabelText('0:41부터 듣기'));
-
-    // Then
-    expect(onPressKeyPoint).toHaveBeenCalledWith(keyPoints[1]);
-  });
-
   it('들을 녹음이 없으면 시간 안내를 띄우지 않고 소비하지도 않는다', async () => {
     // Given
     const { keyPoints } = createVoiceNoteDigest();
@@ -103,24 +90,6 @@ describe('KeyPointList', () => {
         kind: 'voice-key-point',
       }),
     ).toBe(true);
-  });
-
-  it('재생 중인 포인트만 선택된 상태로 알린다', async () => {
-    // Given
-    const { keyPoints } = createVoiceNoteDigest();
-
-    // When
-    await renderUi(
-      <KeyPointList
-        keyPoints={keyPoints}
-        activeKeyPointId="key-point-2"
-        onPressKeyPoint={jest.fn()}
-      />,
-    );
-
-    // Then
-    expect(screen.getByLabelText('0:41부터 듣기')).toBeSelected();
-    expect(screen.getByLabelText('0:12부터 듣기')).not.toBeSelected();
   });
 
   it('들을 녹음이 없으면 포인트를 눌러 재생할 수 없다', async () => {

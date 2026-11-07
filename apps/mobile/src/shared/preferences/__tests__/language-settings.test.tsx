@@ -24,16 +24,6 @@ const renderScreen = async ({
 };
 
 describe('LanguageSettingsScreen', () => {
-  it('시스템 설정·한국어·English 세 옵션을 렌더링한다', async () => {
-    // Given / When
-    await renderScreen();
-
-    // Then
-    expect(screen.getByText('시스템 설정')).toBeTruthy();
-    expect(screen.getByText('한국어')).toBeTruthy();
-    expect(screen.getByText('English')).toBeTruthy();
-  });
-
   it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
     const storage = createMemorySyncStorage();

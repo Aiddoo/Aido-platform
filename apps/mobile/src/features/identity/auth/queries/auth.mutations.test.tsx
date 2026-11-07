@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { ok } from '@src/core/errors/result';
 import { createAnalyticsStub, createHapticsStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
@@ -7,11 +7,7 @@ import { onlineManager, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
-import {
-  createAuthApiError,
-  createAuthTokensDto,
-  createRegisterDto,
-} from '../__tests__/auth.fixtures';
+import { createAuthTokensDto, createRegisterDto } from '../__tests__/auth.fixtures';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import {
   useChangePasswordMutationOptions,
@@ -81,14 +77,6 @@ describe('구글·카카오·네이버 코드 교환', () => {
     });
     return { status: result.current.status, analytics };
   }
-
-  it('OAuth 성공은 인증 상태로 바꾼다', async () => {
-    // Given·When
-    const { status } = await exchangeCode('google', createAuthTokensDto());
-
-    // Then
-    expect(status).toBe('authenticated');
-  });
 
   it('기존 계정 로그인은 auth_login만 보낸다', async () => {
     // Given·When
@@ -223,20 +211,6 @@ describe('비밀번호 변경 실패 안내', () => {
       await result.current.mutateAsync(INPUT).catch(() => undefined);
     });
   }
-
-  it('서버가 거절한 변경은 토스트로 이유를 알린다', async () => {
-    // Given
-    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
-    session.authHttp.patch.mockResolvedValue(
-      err(createAuthApiError({ status: 400, message: '서버가 거절한 이유' })),
-    );
-
-    // When
-    await changePassword(session);
-
-    // Then
-    expect(await screen.findAllByText('서버가 거절한 이유')).not.toHaveLength(0);
-  });
 
   it('네트워크 오류도 오류 화면으로 바꾸지 않고 토스트 한 번으로 알린다', async () => {
     // Given

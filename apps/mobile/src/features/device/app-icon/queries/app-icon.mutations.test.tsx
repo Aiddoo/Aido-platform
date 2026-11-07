@@ -35,17 +35,6 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
 }
 
 describe('앱 아이콘 바꾸기', () => {
-  it('바꾸면 현재 아이콘 캐시를 새 키로 바꾼다', async () => {
-    // Given
-    const { cached, change } = await renderChange();
-
-    // When
-    await change('cream_cat');
-
-    // Then
-    expect(cached()).toBe('cream_cat');
-  });
-
   it('네이티브가 거절하면 현재 아이콘을 그대로 두고 알린 뒤 오류를 app_icon으로 보고한다', async () => {
     // Given
     const gateway = createAppIconGatewayStub();

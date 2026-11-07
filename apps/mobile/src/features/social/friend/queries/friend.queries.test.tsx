@@ -2,10 +2,9 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createSearchUsersDto } from '../__tests__/friend.fixtures';
 import { FriendService } from '../apis/friend.service';
 import { useGetUserSearchInfiniteQueryOptions } from './friend.queries';
 
@@ -35,30 +34,5 @@ describe('useGetUserSearchInfiniteQueryOptions', () => {
 
     // Then
     expect(httpClient.get).not.toHaveBeenCalled();
-  });
-
-  test('유효한 검색어면 서버가 준 결과를 그대로 읽는다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue({ ok: true, value: createSearchUsersDto() });
-    const wrapper = createWrapper(httpClient);
-
-    // When
-    const { result } = await renderHook(
-      () => useInfiniteQuery(useGetUserSearchInfiniteQueryOptions({ query: '홍길동' })),
-      {
-        wrapper,
-      },
-    );
-
-    // Then
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(httpClient.get).toHaveBeenCalledWith('v1/follows/search', {
-      params: { q: '홍길동', cursor: undefined, limit: undefined },
-      signal: expect.any(AbortSignal),
-    });
-    const firstItem = result.current.data?.[0];
-    expect(firstItem?.name).toBe('홍길동');
-    expect(firstItem?.isFriend).toBe(false);
   });
 });

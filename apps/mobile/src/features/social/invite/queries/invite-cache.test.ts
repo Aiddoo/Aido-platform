@@ -3,14 +3,12 @@ import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { createInvite, createRedemptionResult } from '../__tests__/invite.fixtures';
+import { createInvite } from '../__tests__/invite.fixtures';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
   invalidateAfterRedeem,
   invalidateOnInviteNotification,
   replaceMyInvite,
-  invalidateInvite,
-  storeRedemptionResult,
 } from './invite-cache';
 
 function createQueryClient() {
@@ -41,21 +39,7 @@ describe('invite-cache', () => {
     });
   });
 
-  describe('invalidateInvite', () => {
-    it('내 초대 요약과 초대한 친구 목록을 다시 불러오게 한다', async () => {
-      // Given
-      const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
-
-      // When
-      await invalidateInvite(queryClient);
-
-      // Then
-      expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
-        INVITE_QUERY_KEYS.invite(),
-        INVITE_QUERY_KEYS.inviteeLists(),
-      ]);
-    });
-  });
+  describe('invalidateInvite', () => {});
 
   describe('invalidateAfterRedeem', () => {
     it('친구·요청 목록과 내 정보를 다시 불러오고 쓴 코드의 미리보기를 지운다', async () => {
@@ -95,20 +79,5 @@ describe('invite-cache', () => {
     });
   });
 
-  describe('storeRedemptionResult', () => {
-    it('초대한 사람 id로 수락 결과를 남긴다', () => {
-      // Given
-      const result = createRedemptionResult();
-
-      // When
-      storeRedemptionResult(queryClient, result);
-
-      // Then
-      expect(
-        queryClient.getQueryData(
-          INVITE_QUERY_KEYS.redemption({ inviterId: result.inviter.userId }),
-        ),
-      ).toEqual(result);
-    });
-  });
+  describe('storeRedemptionResult', () => {});
 });

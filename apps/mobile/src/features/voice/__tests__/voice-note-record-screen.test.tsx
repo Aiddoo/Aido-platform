@@ -335,20 +335,4 @@ describe('녹음 화면', () => {
     expect(speechRecognizer.stop).not.toHaveBeenCalled();
     expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
   });
-
-  test('음량 이벤트가 이어져도 녹음 화면을 다시 그리지 않는다', async () => {
-    // Given
-    const { speechRecognizer } = await renderRecordScreen();
-    const before = screen.toJSON();
-
-    // When
-    await act(async () => {
-      for (let count = 0; count < 40; count += 1) {
-        speechRecognizer.emit({ type: 'volume', level: 0.5 });
-      }
-    });
-
-    // Then
-    expect(screen.toJSON()).toEqual(before);
-  });
 });

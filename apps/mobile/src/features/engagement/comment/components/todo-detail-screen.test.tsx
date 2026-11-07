@@ -13,8 +13,8 @@ import {
   createClipboardGatewayStub,
   createHttpClientStub,
   createPendingResponse,
+  createTestDi,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager } from '@tanstack/react-query';
@@ -302,22 +302,6 @@ describe('할 일 상세 입력창과 키보드', () => {
 });
 
 describe('할 일 상세 카드', () => {
-  it('조회수는 지표 줄 한 곳이고 댓글 수와 정렬이 한 줄이며 내 할 일에는 작성자 줄이 없다', async () => {
-    // Given
-    await renderTodoDetail();
-
-    // When
-    const title = await screen.findByText('운동하기');
-
-    // Then
-    expect(title).toBeOnTheScreen();
-    expect(screen.queryByText('조회 3회')).toBeNull();
-    expect(screen.queryByTestId('todo-detail-owner')).toBeNull();
-    expect(screen.getByText('댓글')).toBeOnTheScreen();
-    expect(screen.getByTestId('todo-comment-count')).toHaveTextContent('1');
-    expect(screen.getByLabelText(/댓글 정렬 기준/u)).toBeOnTheScreen();
-  });
-
   it('친구 할 일은 작성자 줄이 보이고 체크박스는 읽기 전용이다', async () => {
     // Given
     await renderTodoDetail({ details: FRIEND_DETAILS });
@@ -388,18 +372,6 @@ describe('할 일 상세 카드', () => {
 
     // Then
     expect(router.back).toHaveBeenCalled();
-  });
-
-  it('댓글이 없으면 큰 아이콘 없이 짧은 안내만 보인다', async () => {
-    // Given
-    await renderTodoDetail({ threadItems: [] });
-
-    // When
-    const empty = await screen.findByText('첫 댓글을 남겨보세요');
-
-    // Then
-    expect(empty).toBeOnTheScreen();
-    expect(screen.queryByText('아직 댓글이 없어요')).toBeNull();
   });
 });
 

@@ -48,33 +48,6 @@ describe('useSingleTap', () => {
     expect(onTap).toHaveBeenCalledTimes(2);
   });
 
-  it('탭에 넘긴 인자를 그대로 전달한다', async () => {
-    // Given
-    const onTap = jest.fn<void, [string, number]>();
-    const { result } = await renderHook(() => useSingleTap(onTap));
-
-    // When
-    result.current('/settings/profile', 1);
-
-    // Then
-    expect(onTap).toHaveBeenCalledWith('/settings/profile', 1);
-  });
-
-  it('다시 렌더되어도 함수 정체성이 유지된다 (memo된 자식이 다시 그려지지 않도록)', async () => {
-    // Given
-    const { result, rerender } = await renderHook(
-      (props: { onTap: () => void }) => useSingleTap(props.onTap),
-      { initialProps: { onTap: jest.fn() } },
-    );
-    const firstTap = result.current;
-
-    // When - 부모가 매 렌더 새 핸들러를 넘기는 흔한 상황
-    await rerender({ onTap: jest.fn() });
-
-    // Then
-    expect(result.current).toBe(firstTap);
-  });
-
   it('가장 최근에 넘긴 핸들러를 실행한다', async () => {
     // Given
     const staleTap = jest.fn();

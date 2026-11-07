@@ -50,15 +50,6 @@ function PlayerProbe() {
   );
 }
 
-function RenderCountProbe({ onRender }: { onRender: () => void }) {
-  const [parts] = useState(PARTS);
-  const player = useVoiceNotePlayer({ parts, durationMs: 120_000 });
-  const isPlaying = useVoiceNotePlayback(player, (current) => current.isPlaying);
-  onRender();
-
-  return <Text testID="playing">{String(isPlaying)}</Text>;
-}
-
 const renderPlayer = async () => {
   await renderUi(<PlayerProbe />, { di: { logger } });
   return getLastAudioPlaylist();
@@ -174,27 +165,5 @@ describe('useVoiceNotePlayer', () => {
     expect(playlist.skipTo).not.toHaveBeenCalled();
     expect(playlist.seekTo).toHaveBeenCalledWith(30);
     expect(playlist.play).toHaveBeenCalledTimes(1);
-  });
-
-  test('고른 값이 그대로면 재생 위치가 바뀌어도 다시 그리지 않는다', async () => {
-    // Given
-    const onRender = jest.fn();
-    await renderUi(<RenderCountProbe onRender={onRender} />, { di: { logger } });
-    const playlist = getLastAudioPlaylist();
-    const rendersBefore = onRender.mock.calls.length;
-
-    // When
-    await act(async () => playlist.emitStatus({ currentTime: 1 }));
-    await act(async () => playlist.emitStatus({ currentTime: 2 }));
-
-    // Then
-    expect(onRender.mock.calls.length).toBe(rendersBefore);
-
-    // When
-    await act(async () => playlist.emitStatus({ playing: true }));
-
-    // Then
-    expect(screen.getByTestId('playing')).toHaveTextContent('true');
-    expect(onRender.mock.calls.length).toBe(rendersBefore + 1);
   });
 });

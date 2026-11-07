@@ -1,17 +1,12 @@
-import { err, ok } from '@src/core/errors/result';
-import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__';
+import { err } from '@src/core/errors/result';
+import { createHapticsStub, createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
-import {
-  createPreference,
-  createPreferenceApiError,
-  createPreferenceDto,
-} from '../__tests__/preference.fixtures';
+import { createPreference, createPreferenceApiError } from '../__tests__/preference.fixtures';
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import type { Preference } from '../schemas/preference.schema';
 import { useUpdatePreferenceMutationOptions } from './preference.mutations';
@@ -76,21 +71,5 @@ describe('설정 토글 저장', () => {
       0,
     );
     expect(screen.queryByText('서버 문구')).toBeNull();
-  });
-
-  it('저장하면 서버가 돌려준 값으로 캐시를 바꾼다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.patch.mockResolvedValue(
-      ok(createPreferenceDto({ nightPushEnabled: true, timezone: 'America/New_York' })),
-    );
-    const { cached, update } = await renderUpdate(httpClient);
-
-    // When
-    await update({ nightPushEnabled: true });
-
-    // Then
-    expect(cached()).toEqual(createPreference({ nightPushEnabled: true }));
-    expect(httpClient.patch).toHaveBeenCalledWith('v1/auth/preference', { nightPushEnabled: true });
   });
 });

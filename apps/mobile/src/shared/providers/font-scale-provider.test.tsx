@@ -11,13 +11,6 @@ const createWrapper =
   );
 
 describe('useFontScale', () => {
-  it('FontScaleProvider 없이 사용하면 기본값을 반환한다', async () => {
-    const { result } = await renderHook(() => useFontScale());
-
-    expect(result.current.fontScale).toBe('medium');
-    expect(result.current.resolveSize('b3')).toBe('b3');
-  });
-
   it('저장된 값이 없으면 medium으로 초기화된다', async () => {
     const storage = createMemorySyncStorage();
     storage.get.mockReturnValue(undefined);

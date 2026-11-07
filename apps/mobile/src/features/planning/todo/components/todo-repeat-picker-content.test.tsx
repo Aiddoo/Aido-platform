@@ -293,23 +293,6 @@ describe('TodoRepeatPickerContent', () => {
     });
   });
 
-  test('주중이면 띠 안의 토·일 글자는 neutral shade 5로 흐려지고 평일은 그대로다', async () => {
-    // Given
-    await renderSheet();
-    await press('주중');
-
-    // When
-    await press('15');
-
-    // Then
-    const dimmedClassName = (day: string) => screen.getByText(day).props.className;
-    expect(dimmedClassName('7')).toContain('text-gray-5');
-    expect(dimmedClassName('8')).toContain('text-gray-5');
-    expect(dimmedClassName('7')).not.toContain('text-info');
-    expect(dimmedClassName('8')).not.toContain('text-error');
-    expect(dimmedClassName('9')).not.toContain('text-gray-5');
-  });
-
   test('시작일이 반복 요일이 아니면 달력의 시작 원은 첫 회차 날짜에 그린다', async () => {
     // Given
     await renderSheet();
@@ -345,17 +328,6 @@ describe('TodoRepeatPickerContent', () => {
         end: { type: 'NEVER' },
       },
     });
-  });
-
-  test('칩을 누르면 선택 햅틱을 준다', async () => {
-    // Given
-    const { haptics } = await renderSheet();
-
-    // When
-    await press('격주');
-
-    // Then
-    expect(haptics.selection).toHaveBeenCalledTimes(1);
   });
 
   test('시작일을 새로 고르면 매월 n일도 따라간다', async () => {

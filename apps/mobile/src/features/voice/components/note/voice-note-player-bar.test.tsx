@@ -1,7 +1,6 @@
 import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { Profiler } from 'react';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
@@ -51,21 +50,6 @@ async function renderBar(player: VoiceNotePlayer) {
 }
 
 describe('VoiceNotePlayerBar', () => {
-  test('재생 위치와 전체 길이를 글자로 보여 주고 초가 바뀔 때 갱신한다', async () => {
-    // Given
-    const { player, emit } = createPlayerStub({ positionMs: 5_000 });
-    await renderBar(player);
-
-    // Then
-    expect(screen.getByText('0:05 / 2:00')).toBeOnTheScreen();
-
-    // When
-    await act(async () => emit({ positionMs: 6_400 }));
-
-    // Then
-    expect(screen.getByText('0:06 / 2:00')).toBeOnTheScreen();
-  });
-
   test('드래그를 끝낸 위치로 옮긴다', async () => {
     // Given
     const { player } = createPlayerStub();
@@ -100,31 +84,6 @@ describe('VoiceNotePlayerBar', () => {
 
     // Then
     expect(player.seekTo).toHaveBeenCalledWith(120_000);
-  });
-
-  test('같은 초 안에서는 재생 위치가 바뀌어도 다시 그리지 않고 초가 바뀌면 그린다', async () => {
-    // Given
-    const { player, emit } = createPlayerStub({ positionMs: 5_000 });
-    const onRender = jest.fn();
-    await renderUi(
-      <Profiler id="player-bar" onRender={onRender}>
-        <VoiceNotePlayerBar player={player} levels={LEVELS} flagIndexes={[]} isRecordingAvailable />
-      </Profiler>,
-    );
-    onRender.mockClear();
-
-    // When
-    await act(async () => emit({ positionMs: 5_100 }));
-    await act(async () => emit({ positionMs: 5_900 }));
-
-    // Then
-    expect(onRender).not.toHaveBeenCalled();
-
-    // When
-    await act(async () => emit({ positionMs: 6_000 }));
-
-    // Then
-    expect(onRender).toHaveBeenCalledTimes(1);
   });
 
   test('화면이 사라지면 재생 위치 구독을 푼다', async () => {

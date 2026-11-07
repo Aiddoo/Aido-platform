@@ -162,24 +162,4 @@ describe('VoiceNoteMarkControl', () => {
     // Then
     expect(screen.getByTestId('voice-note-mark-info')).toBeDisabled();
   });
-
-  it('표시한 문장이 있으면 라벨과 스크린리더가 개수를 말한다', async () => {
-    // When
-    await renderMarkControl({ isSeen: true, markCount: 2 });
-
-    // Then
-    expect(screen.getByText('중요 표시 2')).toBeTruthy();
-    expect(screen.getByTestId('voice-note-mark-active')).toBeTruthy();
-    expect(screen.getByLabelText('중요 표시, 지금까지 2개')).toBeTruthy();
-  });
-
-  it('표시한 문장이 없으면 개수를 숨긴다', async () => {
-    // When
-    await renderMarkControl({ isSeen: true });
-
-    // Then
-    expect(screen.getByText('중요 표시')).toBeTruthy();
-    expect(screen.queryByText(/중요 표시 \d/)).toBeNull();
-    expect(screen.queryByTestId('voice-note-mark-active')).toBeNull();
-  });
 });

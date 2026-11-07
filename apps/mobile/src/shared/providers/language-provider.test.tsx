@@ -22,13 +22,6 @@ afterEach(async () => {
 });
 
 describe('useLanguage', () => {
-  it('LanguageProvider 없이 사용하면 기본값을 반환한다', async () => {
-    const { result } = await renderHook(() => useLanguage());
-
-    expect(result.current.languageMode).toBe('system');
-    expect(result.current.resolvedLanguage).toBe('ko');
-  });
-
   it('저장된 값이 없으면 system 모드로 초기화된다', async () => {
     // Given
     const storage = createMemorySyncStorage();

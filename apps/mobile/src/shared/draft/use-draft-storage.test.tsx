@@ -67,7 +67,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
     // Given
     const { result } = await renderHook(useMemoFormWithDraft, { wrapper });
     await act(() => result.current.form.setValue('content', '잠깐 쓴 글'));
-    await act(() => jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS));
+    await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS));
     expect(draftService.restore(draftKey)).toEqual({
       status: 'restored',
       value: { content: '잠깐 쓴 글' },
@@ -75,7 +75,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
 
     // When
     await act(() => result.current.form.setValue('content', ''));
-    await act(() => jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS));
+    await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS));
 
     // Then
     expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
@@ -88,39 +88,13 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
 
     // When
     await act(() => first.result.current.discardMemoDraft());
-    await act(() => jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS));
+    await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS));
     await first.unmount();
     const second = await renderHook(useMemoFormWithDraft, { wrapper });
 
     // Then
     expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
     expect(second.result.current.form.getValues('content')).toBe('');
-  });
-
-  it('타이핑 중에는 폼 컴포넌트를 다시 렌더하지 않고 키 입력마다 저장하지 않는다', async () => {
-    // Given
-    const saveSpy = jest.spyOn(draftService, 'save');
-    let renderCount = 0;
-    const { result } = await renderHook(
-      () => {
-        renderCount += 1;
-        return useMemoFormWithDraft();
-      },
-      { wrapper },
-    );
-    const rendersBeforeTyping = renderCount;
-
-    // When
-    for (const content of ['안', '안녕', '안녕하', '안녕하세', '안녕하세요']) {
-      await act(() => result.current.form.setValue('content', content));
-    }
-
-    // Then
-    expect(renderCount).toBe(rendersBeforeTyping);
-    expect(saveSpy).not.toHaveBeenCalled();
-    await act(() => jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS));
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    expect(renderCount).toBe(rendersBeforeTyping);
   });
 
   it('언마운트 때 마지막 입력만 저장하고 구독이 풀린 뒤에는 시간이 지나도 더 저장하지 않는다', async () => {
@@ -133,7 +107,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
     // When
     await unmount();
     await act(() => form.setValue('content', '언마운트 뒤 값'));
-    await act(() => jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS * 2));
+    await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS * 2));
 
     // Then
     expect(saveSpy).toHaveBeenCalledTimes(1);

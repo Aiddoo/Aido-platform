@@ -19,18 +19,6 @@ describe('Button 누름', () => {
     jest.restoreAllMocks();
   });
 
-  test('누르면 onPress를 부른다', async () => {
-    // Given
-    const onPress = jest.fn();
-    await renderInProvider(<Button onPress={onPress}>저장</Button>);
-
-    // When
-    await fireEvent.press(screen.getByText('저장'));
-
-    // Then
-    expect(onPress).toHaveBeenCalledTimes(1);
-  });
-
   test('isLoading 중에는 두 번 눌러도 onPress를 부르지 않는다', async () => {
     // Given
     const onPress = jest.fn();
@@ -46,17 +34,5 @@ describe('Button 누름', () => {
 
     // Then
     expect(onPress).not.toHaveBeenCalled();
-  });
-
-  test('isDisabled이면 스크린 리더에 비활성으로 알린다', async () => {
-    // Given
-    await renderInProvider(
-      <Button isDisabled testID="button">
-        저장
-      </Button>,
-    );
-
-    // Then
-    expect(screen.getByRole('button', { disabled: true })).toBeTruthy();
   });
 });

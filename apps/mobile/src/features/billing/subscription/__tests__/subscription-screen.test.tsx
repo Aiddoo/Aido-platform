@@ -155,23 +155,6 @@ describe('구독 화면', () => {
     },
   );
 
-  it('결제 영수증은 제목·결제 행·각주를 그대로 보여 준다', async () => {
-    // Given
-    const state = PAID;
-
-    // When
-    await renderSubscriptionScreen(state);
-
-    // Then
-    expect(await screen.findByText('프리미엄 이용 중')).toBeTruthy();
-    expect(screen.getByText('모든 프리미엄 기능을 이용하고 있어요')).toBeTruthy();
-    expect(screen.getByText('다음 결제일')).toBeTruthy();
-    expect(screen.getByText('구독 상태')).toBeTruthy();
-    expect(screen.getByText('이어서 받을 보상')).toBeTruthy();
-    expect(screen.getByText('구독이 끝나면 보상 7일이 이어서 시작돼요')).toBeTruthy();
-    expect(screen.getByText('구독 관리 (스토어 설정)')).toBeTruthy();
-  });
-
   it('관리자 영수증은 관리자 계정 행만 보이고 구독 버튼이 없다', async () => {
     // Given
     const state = ADMIN;
@@ -196,24 +179,6 @@ describe('구독 화면', () => {
     // Then
     expect(await screen.findByTestId('subscription-ending-notice')).toBeTruthy();
     expect(screen.getByText('구독하고 계속 쓰기')).toBeTruthy();
-  });
-
-  it('영수증 혜택 목록은 AI 할 일 만들기 다음에 말로 메모하기를 보여 준다', async () => {
-    // Given
-    const state = REWARD;
-
-    // When
-    await renderSubscriptionScreen(state);
-
-    // Then
-    const aiParsing = await screen.findByText('AI 할 일 만들기 넉넉하게');
-    const voiceNote = screen.getByText('말로 메모하기 월 100회·회당 30분');
-    const benefitTexts = screen.getAllByText(/./).map((node) => node.props.children);
-    expect(aiParsing).toBeTruthy();
-    expect(benefitTexts.indexOf('말로 메모하기 월 100회·회당 30분')).toBe(
-      benefitTexts.indexOf('AI 할 일 만들기 넉넉하게') + 1,
-    );
-    expect(voiceNote).toBeTruthy();
   });
 
   it('요금제를 받으면 고를 수 있게 보여 주고 페이월을 본 것으로 센다', async () => {

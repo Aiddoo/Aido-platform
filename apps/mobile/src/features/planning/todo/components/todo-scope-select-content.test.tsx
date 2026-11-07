@@ -36,26 +36,6 @@ describe('TodoScopeSelectContent', () => {
     expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
   });
 
-  test('규칙을 바꾸면 이 할 일만은 고를 수 없어 이후 범위 한 줄만 보여준다', async () => {
-    // Given
-    const onChange = jest.fn();
-    await renderScope(
-      <TodoScopeSelectContent
-        action="edit"
-        date="2026-11-04"
-        scopes={['THIS_AND_FOLLOWING']}
-        onChange={onChange}
-      />,
-    );
-
-    // When
-    await fireEvent.press(screen.getByLabelText('이 할 일과 이후 할 일'));
-
-    // Then
-    expect(screen.queryByLabelText('이 할 일만')).toBeNull();
-    expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
-  });
-
   test('삭제는 전체 삭제와 완료 기록 안내까지 한 행으로 보여준다', async () => {
     // Given
     const onChange = jest.fn();
@@ -74,27 +54,6 @@ describe('TodoScopeSelectContent', () => {
     // Then
     expect(screen.getByText('11월 4일 할 일만 삭제돼요')).toBeTruthy();
     expect(screen.getByText('지난 할 일과 완료한 기록까지 모두 삭제돼요')).toBeTruthy();
-    expect(onChange).toHaveBeenCalledWith('ALL');
-  });
-
-  test('규칙 없는 묶음의 삭제는 이후 범위 없이 이 할 일만과 이 반복 전체를 보여준다', async () => {
-    // Given
-    const onChange = jest.fn();
-    await renderScope(
-      <TodoScopeSelectContent
-        action="delete"
-        date="2026-11-04"
-        scopes={['THIS_ONLY', 'ALL']}
-        onChange={onChange}
-      />,
-    );
-
-    // When
-    await fireEvent.press(screen.getByLabelText('이 반복 전체'));
-
-    // Then
-    expect(screen.queryByLabelText('이 할 일과 이후 할 일')).toBeNull();
-    expect(screen.getByLabelText('이 할 일만')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
 });

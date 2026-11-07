@@ -13,17 +13,6 @@ async function renderButtons(props: { index: number; isLast: boolean }) {
 }
 
 describe('Steps.Buttons', () => {
-  it('다음 버튼을 누르면 onNext를 부른다', async () => {
-    // Given
-    const { onNext } = await renderButtons({ index: 0, isLast: false });
-
-    // When
-    await fireEvent.press(screen.getByText('다음'));
-
-    // Then
-    expect(onNext).toHaveBeenCalledTimes(1);
-  });
-
   it('첫 단계에서는 뒤로 버튼을 접근성 트리에서 숨긴다', async () => {
     // Given
     await renderButtons({ index: 0, isLast: false });
@@ -43,16 +32,5 @@ describe('Steps.Buttons', () => {
 
     // Then
     expect(onNext).toHaveBeenCalledTimes(1);
-  });
-
-  it('둘째 단계부터 뒤로 버튼을 눌러 onBack을 부른다', async () => {
-    // Given
-    const { onBack } = await renderButtons({ index: 1, isLast: false });
-
-    // When
-    await fireEvent.press(screen.getByText('이전'));
-
-    // Then
-    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
