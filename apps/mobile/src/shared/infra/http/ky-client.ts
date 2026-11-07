@@ -1,35 +1,11 @@
 import { successEnvelopeSchema } from '@aido/api';
-import { ErrorCode, isErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
-import {
-  NetworkError,
-  ParseError,
-  ServerError,
-  TimeoutError,
-} from '@src/shared/errors/infra-error';
-import {
-  HTTPError,
-  isNetworkError,
-  type KyInstance,
-  TimeoutError as KyTimeoutError,
-  type Options,
-} from 'ky';
+import { ParseError } from '@src/shared/errors/infra-error';
+import { HTTPError, type KyInstance, type Options } from 'ky';
 
-import { errorEnvelopeSchema } from './error-envelope';
-import { resolveMessage } from './error-handler';
-import { REQUEST_ID_HEADER } from './request-headers';
-
-/**
- * RN의 전역 fetch(expo/fetch)는 연결 실패를 TypeError가 아니라 `fetch failed: …` 일반 Error로 던지고 클래스를
- * 내보내지 않아 ky도 알아보지 못한다. 사용자가 끊은 요청은 ky가 먼저 abort 사유로 던지므로 여기 오지 않는다.
- */
-const EXPO_FETCH_FAILURE_PREFIX = 'fetch failed: ';
-
-function isExpoFetchFailure(error: unknown) {
-  return error instanceof Error && error.message.startsWith(EXPO_FETCH_FAILURE_PREFIX);
-}
+import { toApiError, toTransportError } from './ky-error';
 
 /**
  * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
@@ -100,37 +76,13 @@ export class KyHttpClient implements HttpClient {
       }
       return ok(parsed.data.data);
     } catch (error) {
-      if (error instanceof KyTimeoutError) {
-        throw new TimeoutError();
+      const transportError = toTransportError(error);
+      if (transportError != null) {
+        throw transportError;
       }
 
       if (error instanceof HTTPError) {
-        const { response } = error;
-
-        if (response.status >= 500) {
-          throw new ServerError(response.status, error.request.headers.get(REQUEST_ID_HEADER));
-        }
-
-        // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다(`response.json()` 재호출 불가)
-        const envelope = errorEnvelopeSchema.safeParse(error.data);
-        const body = envelope.success ? envelope.data : undefined;
-        const candidateCode = body?.error.code;
-        const code =
-          candidateCode && isErrorCode(candidateCode) ? candidateCode : ErrorCode.SYS_0001;
-        return err(
-          new ApiError(
-            code,
-            resolveMessage(code, body?.error.message ?? response.statusText),
-            response.status,
-            body?.error.details,
-          ),
-        );
-      }
-
-      // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싼다(원인은 `.cause`).
-      // 방어적으로 raw TypeError도 함께 처리한다.
-      if (isNetworkError(error) || error instanceof TypeError || isExpoFetchFailure(error)) {
-        throw new NetworkError();
+        return err(toApiError(error));
       }
 
       throw error;

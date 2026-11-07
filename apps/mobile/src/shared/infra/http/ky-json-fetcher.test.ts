@@ -1,3 +1,5 @@
+import { ApiError } from '@src/core/errors/api-error';
+import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import ky from 'ky';
 
 import { KyJsonFetcher } from './ky-json-fetcher';
@@ -33,5 +35,47 @@ describe('KyJsonFetcher', () => {
     await expect(fetcher.get('v1/app-config/feature-discovery')).rejects.toBeInstanceOf(
       SyntaxError,
     );
+  });
+
+  it('서버 5xx를 앱의 ServerError로 바꿔 던진다', async () => {
+    // Given
+    const { client } = createClient(() => new Response('', { status: 503 }));
+    const fetcher = new KyJsonFetcher(client);
+
+    // When
+    const result = fetcher.get('v1/app-config/app-version');
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(ServerError);
+  });
+
+  it('4xx를 앱의 ApiError로 바꿔 던진다', async () => {
+    // Given
+    const { client } = createClient(() => new Response('', { status: 404 }));
+    const fetcher = new KyJsonFetcher(client);
+
+    // When
+    const result = fetcher.get('v1/app-config/app-version');
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('연결 실패를 앱의 NetworkError로 바꿔 던진다', async () => {
+    // Given
+    const client = ky.create({
+      baseUrl: 'https://api.test/',
+      fetch: async () => {
+        throw new TypeError('Network request failed');
+      },
+      retry: 0,
+    });
+    const fetcher = new KyJsonFetcher(client);
+
+    // When
+    const result = fetcher.get('v1/app-config/app-version');
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
   });
 });
