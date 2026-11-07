@@ -1,4 +1,5 @@
-import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { type ReactNode, useState } from 'react';
@@ -74,7 +75,7 @@ function WeatherTile({
         {children}
         <Text
           size="b4"
-          maxLines={2}
+          numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={noteMinScale}
           className="mt-2 leading-[18px] text-on-sky/[0.78]"
@@ -124,7 +125,7 @@ export function WeatherTextTile({
       <VStack className="mt-1.5 flex-1">
         <Text
           tone="onSky"
-          maxLines={1}
+          numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={valueMinScale}
           className="text-[32px] leading-[38px] font-normal tracking-[-1px] tabular-nums"
@@ -135,7 +136,7 @@ export function WeatherTextTile({
           size="b1"
           weight="semibold"
           tone="onSky"
-          maxLines={1}
+          numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={subMinScale}
           className="leading-[23px]"

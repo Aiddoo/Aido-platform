@@ -24,7 +24,8 @@ describe('useSingleTap', () => {
     const { result } = await renderHook(() => useSingleTap(onTap));
     freezeTimeAt(1_000);
 
-    // When - 같은 프레임에 세 번 들어온 탭
+    // When
+    // 같은 프레임에 세 번 들어온 탭
     result.current();
     result.current();
     result.current();
@@ -67,7 +68,8 @@ describe('useSingleTap', () => {
   });
 
   it('서로 다른 동작은 각자의 가드를 가져 연달아 실행된다', async () => {
-    // Given - 예: 모달을 닫고 곧바로 다른 화면으로 이동하는 흐름
+    // Given
+    // 예: 모달을 닫고 곧바로 다른 화면으로 이동하는 흐름
     const dismiss = jest.fn();
     const navigate = jest.fn();
     const { result } = await renderHook(() => ({

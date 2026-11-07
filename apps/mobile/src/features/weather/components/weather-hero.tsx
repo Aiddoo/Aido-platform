@@ -3,7 +3,8 @@ import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
@@ -147,7 +148,7 @@ export function WeatherHero() {
             weight="medium"
             align="center"
             tone="onSky"
-            maxLines={1}
+            numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={PLACE_MINIMUM_FONT_SCALE}
             className="mt-0.5 max-w-full"
@@ -205,7 +206,7 @@ WeatherHero.LocationLabel = function LocationLabel({
       <Text
         size="b4"
         weight="medium"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={minimumFontScale}
         className="text-on-sky/[0.78]"

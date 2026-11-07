@@ -9,7 +9,7 @@ import {
 } from '@src/shared/date/date-format';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { type Instant } from '@src/shared/date/instant';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -145,7 +145,7 @@ DailyForecast.Header = function Header({ count }: { count: number }) {
     <HStack align="center" justify="between" gap={8}>
       <HStack align="center" gap={6} accessibilityRole="header" className="shrink">
         <CalendarIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />
-        <Text size="b4" weight="medium" className="text-on-sky/[0.62]" maxLines={1}>
+        <Text size="b4" weight="medium" className="text-on-sky/[0.62]" numberOfLines={1}>
           {t('daily.title', { count })}
         </Text>
       </HStack>
@@ -156,7 +156,7 @@ DailyForecast.Header = function Header({ count }: { count: number }) {
         importantForAccessibility="no-hide-descendants"
       >
         <Box className="size-1.5 rounded-full" style={{ backgroundColor: TODO_DOT_COLOR }} />
-        <Text size="e1" weight="medium" className="text-on-sky/[0.62]" maxLines={1}>
+        <Text size="e1" weight="medium" className="text-on-sky/[0.62]" numberOfLines={1}>
           {t('daily.todoDay')}
         </Text>
       </HStack>
@@ -210,7 +210,7 @@ DailyForecast.Item = memo(function Item({
         className="min-h-14 flex-row items-center"
       >
         <HStack align="center" gap={5} style={{ width: width('day') }}>
-          <Text size="b1" weight="medium" tone="onSky" maxLines={1} className="shrink">
+          <Text size="b1" weight="medium" tone="onSky" numberOfLines={1} className="shrink">
             {label}
           </Text>
           {hasTodo && (
@@ -232,7 +232,7 @@ DailyForecast.Item = memo(function Item({
         <Text
           size="b1"
           weight="medium"
-          maxLines={1}
+          numberOfLines={1}
           className="text-right text-on-sky/50 tabular-nums"
           style={{ width: width('low') }}
         >
@@ -243,7 +243,7 @@ DailyForecast.Item = memo(function Item({
           size="b1"
           weight="medium"
           tone="onSky"
-          maxLines={1}
+          numberOfLines={1}
           className="text-right tabular-nums"
           style={{ width: width('high') }}
         >

@@ -91,7 +91,7 @@ export function WeatherCard({
             <Text
               size="b4"
               weight="medium"
-              maxLines={1}
+              numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={minimumFontScale}
               className="shrink leading-[18px] text-on-sky/[0.62]"

@@ -34,7 +34,7 @@ export function isValidDate(date: Date): boolean {
   return Number.isFinite(date.getTime());
 }
 
-export function findPart(
+export function getPartValue(
   parts: Intl.DateTimeFormatPart[],
   type: Intl.DateTimeFormatPartTypes,
 ): string {

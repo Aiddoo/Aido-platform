@@ -6,6 +6,6 @@ interface SupportMailInput {
   body: string;
 }
 
-export function buildSupportMailUrl({ subject, body }: SupportMailInput): string {
+export function createSupportMailUrl({ subject, body }: SupportMailInput): string {
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

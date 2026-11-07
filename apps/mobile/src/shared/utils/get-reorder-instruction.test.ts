@@ -5,7 +5,7 @@ const getItemId = (item: { id: string }) => item.id;
 
 describe('getReorderInstruction', () => {
   it('같은 위치면 null을 반환한다', () => {
-    // Given - 같은 from/to
+    // Given
     const items = createItems(['a', 'b', 'c']);
 
     // When
@@ -21,7 +21,8 @@ describe('getReorderInstruction', () => {
   });
 
   it('맨 앞으로 이동하면 첫 번째 아이템 앞으로 배치한다', () => {
-    // Given - index 2 → 0으로 이동 후 재정렬된 배열
+    // Given
+    // index 2 → 0으로 이동 후 재정렬된 배열
     const items = createItems(['c', 'a', 'b']);
 
     // When
@@ -37,7 +38,8 @@ describe('getReorderInstruction', () => {
   });
 
   it('중간 위치로 이동하면 이전 아이템 뒤로 배치한다', () => {
-    // Given - index 0 → 2로 이동 후 재정렬된 배열
+    // Given
+    // index 0 → 2로 이동 후 재정렬된 배열
     const items = createItems(['b', 'c', 'a']);
 
     // When
@@ -53,7 +55,7 @@ describe('getReorderInstruction', () => {
   });
 
   it('숫자 id도 그대로 돌려준다', () => {
-    // Given - 숫자 id 아이템
+    // Given
     const items = [{ id: 3 }, { id: 1 }, { id: 2 }];
 
     // When
@@ -69,7 +71,7 @@ describe('getReorderInstruction', () => {
   });
 
   it('유효하지 않은 to 인덱스면 null을 반환한다', () => {
-    // Given - 범위 밖 인덱스
+    // Given
     const items = createItems(['a', 'b']);
 
     // When
@@ -85,7 +87,7 @@ describe('getReorderInstruction', () => {
   });
 
   it('아이템이 하나뿐이면 null을 반환한다', () => {
-    // Given - 단일 아이템
+    // Given
     const items = createItems(['a']);
 
     // When

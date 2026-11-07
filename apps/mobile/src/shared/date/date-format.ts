@@ -5,8 +5,8 @@ import { match } from 'ts-pattern';
 
 import { isSameMonthDateKey, isSameYearDateKey } from './date-key';
 import { diffMs, getZonedHour, type Instant, toDate, toDateKey } from './instant';
-import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
-import { isValidHHmm, getHour, getMinute } from './time-of-day';
+import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
+import { getHour, getMinute, isValidHHmm } from './time-of-day';
 
 /** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
@@ -55,18 +55,18 @@ function formatNumericDay(date: Date, context: DateFormatContext): string {
     { ...context, locale: PARTS_LOCALE },
     DATE_OPTIONS.dayNumber,
   ).formatToParts(date);
-  return findPart(parts, 'day');
+  return getPartValue(parts, 'day');
 }
 
 function toUtcContext(context: DateFormatContext): DateFormatContext {
   return { ...context, timeZone: 'UTC' };
 }
 
-function toDateKeyInstant(dateKey: string): Date {
+function toUtcMidnight(dateKey: string): Date {
   return new Date(`${dateKey}T00:00:00Z`);
 }
 
-function toTimeOfDayInstant({ hour, minute }: TimeOfDay): Date {
+function toUtcDateAtTime({ hour, minute }: TimeOfDay): Date {
   return new Date(Date.UTC(1970, 0, 1, hour, minute));
 }
 
@@ -90,7 +90,7 @@ export function formatDateLabel(
         { ...context, locale: PARTS_LOCALE },
         DATE_OPTIONS.dottedMonthDay,
       ).formatToParts(date);
-      return `${findPart(parts, 'month')}.${findPart(parts, 'day')}`;
+      return `${getPartValue(parts, 'month')}.${getPartValue(parts, 'day')}`;
     })
     .otherwise(() => getFormatter(context, DATE_OPTIONS[kind]).format(date));
 }
@@ -101,7 +101,7 @@ export function formatDateKeyLabel(
   kind: DateLabel,
   context: DateFormatContext,
 ): string {
-  return formatDateLabel(toDateKeyInstant(dateKey), kind, toUtcContext(context));
+  return formatDateLabel(toUtcMidnight(dateKey), kind, toUtcContext(context));
 }
 
 /** YYYY-MM-DD 기간을 표시한다. 같은 해면 월·일만, 해가 다르면 연도까지 (ko: "10월 19일 ~ 10월 25일"). */
@@ -123,9 +123,7 @@ export function formatDateKeyCompactRange(
     return formatDateKeyRange(startDateKey, endDateKey, context);
   }
   const endLabel = isSameMonthDateKey(startDateKey, endDateKey)
-    ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(
-        toDateKeyInstant(endDateKey),
-      )
+    ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(toUtcMidnight(endDateKey))
     : formatDateKeyLabel(endDateKey, 'monthDay', context);
   return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
 }
@@ -153,7 +151,7 @@ export function formatTimeOfDay(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  return formatClockTime(toTimeOfDayInstant(time), timeFormat, toUtcContext(context));
+  return formatClockTime(toUtcDateAtTime(time), timeFormat, toUtcContext(context));
 }
 
 /** 정시를 로케일 순서로 표시한다 (ko: "오후 3시"/"15시", en: "3 PM"/"15"). */
@@ -162,7 +160,7 @@ export function formatHourLabel(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  const date = toTimeOfDayInstant({ hour, minute: 0 });
+  const date = toUtcDateAtTime({ hour, minute: 0 });
   if (!isValidDate(date)) {
     return '';
   }

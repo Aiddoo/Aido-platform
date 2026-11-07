@@ -56,7 +56,7 @@ export function WeatherAirQuality() {
             >
               <Text
                 size="b4"
-                maxLines={1}
+                numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={labelMinScale}
                 className="leading-[18px] text-on-sky/70"
@@ -65,7 +65,7 @@ export function WeatherAirQuality() {
               </Text>
               <Text
                 tone="onSky"
-                maxLines={1}
+                numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={gradeMinScale}
                 className="text-[24px] leading-[32px] font-medium tracking-[-0.6px]"

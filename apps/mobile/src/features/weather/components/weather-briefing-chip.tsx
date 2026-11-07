@@ -1,5 +1,5 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Chip } from 'heroui-native';

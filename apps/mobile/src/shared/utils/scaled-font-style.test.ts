@@ -48,39 +48,6 @@ describe('SCALED_FONT_STYLES', () => {
 });
 
 describe('getScaledFontSize', () => {
-  it('medium이면 기본 b2 크기인 16px을 반환한다', () => {
-    // Given
-    const scale: FontScale = 'medium';
-
-    // When
-    const result = getScaledFontSize(scale);
-
-    // Then
-    expect(result).toBe(16);
-  });
-
-  it('xsmall이면 b4 크기인 13px을 반환한다', () => {
-    // Given
-    const scale: FontScale = 'xsmall';
-
-    // When
-    const result = getScaledFontSize(scale);
-
-    // Then
-    expect(result).toBe(13);
-  });
-
-  it('xlarge이면 t3 크기인 20px을 반환한다', () => {
-    // Given
-    const scale: FontScale = 'xlarge';
-
-    // When
-    const result = getScaledFontSize(scale);
-
-    // Then
-    expect(result).toBe(20);
-  });
-
   it.each([
     ['xsmall', 13],
     ['small', 15],

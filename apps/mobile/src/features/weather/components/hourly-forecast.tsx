@@ -6,7 +6,8 @@ import {
   type TimeFormat,
 } from '@src/shared/date/date-format';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
-import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
@@ -239,7 +240,7 @@ function HourCell({
         size="b3"
         weight={isNow ? 'semibold' : 'medium'}
         tone="onSky"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={labelMinScale}
         className="tabular-nums"
@@ -262,7 +263,7 @@ function HourCell({
         size="b1"
         weight="medium"
         tone="onSky"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={value.minimumFontScale}
         className="tabular-nums"
@@ -303,7 +304,7 @@ function SunCell({
         size="b3"
         weight="medium"
         tone="onSky"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={labelMinScale}
         className="tabular-nums"
@@ -317,7 +318,7 @@ function SunCell({
         size="b1"
         weight="medium"
         tone="onSky"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={value.minimumFontScale}
         style={value.style}

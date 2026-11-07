@@ -1,8 +1,8 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';

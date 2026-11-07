@@ -9,6 +9,10 @@ describe('getWindowSizeClass', () => {
     [840, 'expanded'],
     [1200, 'expanded'],
   ])('창 폭 %ddp는 %s로 분류한다', (windowWidth, expected) => {
-    expect(getWindowSizeClass(windowWidth)).toBe(expected);
+    // When
+    const sizeClass = getWindowSizeClass(windowWidth);
+
+    // Then
+    expect(sizeClass).toBe(expected);
   });
 });

@@ -3,7 +3,7 @@ import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { z } from 'zod';
 
-import { findPart, getFormatter, isValidDate, PARTS_LOCALE } from './intl-formatter';
+import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -84,9 +84,9 @@ export function toDateKey(value: Date | Instant, timeZone: string): string {
   const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, DATE_KEY_OPTIONS).formatToParts(
     date,
   );
-  const year = findPart(parts, 'year');
-  const month = findPart(parts, 'month');
-  const day = findPart(parts, 'day');
+  const year = getPartValue(parts, 'year');
+  const month = getPartValue(parts, 'month');
+  const day = getPartValue(parts, 'day');
   return year && month && day ? `${year}-${month}-${day}` : '';
 }
 
@@ -96,7 +96,7 @@ export function getZonedHour(value: Date | Instant, timeZone: string): number {
     return Number.NaN;
   }
   return Number(
-    findPart(
+    getPartValue(
       getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_HOUR_OPTIONS).formatToParts(date),
       'hour',
     ),
@@ -112,7 +112,7 @@ export function toHHmm(value: Date | Instant, timeZone: string): string {
   const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_TIME_OPTIONS).formatToParts(
     date,
   );
-  return `${findPart(parts, 'hour')}:${findPart(parts, 'minute')}`;
+  return `${getPartValue(parts, 'hour')}:${getPartValue(parts, 'minute')}`;
 }
 
 /** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */

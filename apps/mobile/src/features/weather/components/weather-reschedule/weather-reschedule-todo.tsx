@@ -37,7 +37,7 @@ export function WeatherRescheduleTodo({
   return (
     <VStack gap={8}>
       <HStack align="center" gap={8}>
-        <Text size="b2" weight="semibold" className="shrink" maxLines={2}>
+        <Text size="b2" weight="semibold" className="shrink" numberOfLines={2}>
           {todo.title}
         </Text>
         <Text size="b4" shade={6}>

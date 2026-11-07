@@ -18,10 +18,6 @@ const CURRENCY_LOCALE_MAP: Record<string, string> = {
   AUD: 'en-AU',
 };
 
-function getLocaleForCurrency(currencyCode: string): string {
-  return CURRENCY_LOCALE_MAP[currencyCode] ?? 'en-US';
-}
-
 /**
  * 개수 뱃지가 넘지 않는 상한. 이보다 크면 자릿수가 계속 늘어 옆 요소를 밀어낸다.
  */
@@ -121,7 +117,7 @@ export function formatDecimal(
 }
 
 export function formatPrice(amount: number, currencyCode: string) {
-  return new Intl.NumberFormat(getLocaleForCurrency(currencyCode), {
+  return new Intl.NumberFormat(CURRENCY_LOCALE_MAP[currencyCode] ?? 'en-US', {
     style: 'currency',
     currency: currencyCode,
     maximumFractionDigits: ZERO_DECIMAL_CURRENCIES.has(currencyCode) ? 0 : 2,

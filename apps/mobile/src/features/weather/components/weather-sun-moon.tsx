@@ -88,7 +88,7 @@ export function WeatherSunMoon() {
       >
         <Text
           tone="onSky"
-          maxLines={isPolar ? 2 : 1}
+          numberOfLines={isPolar ? 2 : 1}
           className={
             isPolar
               ? 'shrink text-b1 font-semibold'

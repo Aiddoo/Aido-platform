@@ -2,7 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { type Instant } from '@src/shared/date/instant';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';

@@ -11,7 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import { type Instant, toHHmm } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -283,7 +283,7 @@ WeatherBriefing.Item = function Item({
           size="b2"
           weight="medium"
           tone="onSky"
-          maxLines={1}
+          numberOfLines={1}
           strikethrough={todo.completed}
           className="leading-[22px]"
         >
@@ -291,7 +291,11 @@ WeatherBriefing.Item = function Item({
         </Text>
       }
       middle={
-        <Text size="b4" maxLines={2} className="leading-[18px] text-on-sky/[0.62] tabular-nums">
+        <Text
+          size="b4"
+          numberOfLines={2}
+          className="leading-[18px] text-on-sky/[0.62] tabular-nums"
+        >
           {`${time} · `}
           <Text size="b4" className={cn('leading-[18px]', BRIEFING_ROW_TONES[tone].advice)}>
             {advice}
@@ -362,7 +366,7 @@ WeatherBriefing.RescheduleButton = function RescheduleButton({
   const openReschedule = useOpenReschedule(action);
   return (
     <Button onPress={openReschedule} className="h-auto min-h-14 py-2">
-      <Text size="b1" weight="semibold" tone="onSky" align="center" maxLines={2}>
+      <Text size="b1" weight="semibold" tone="onSky" align="center" numberOfLines={2}>
         {translate(action.label)}
       </Text>
     </Button>
@@ -397,7 +401,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
 
   return (
     <Button onPress={handlePress} className="h-auto min-h-14 bg-on-sky/16 py-2">
-      <Text size="b1" weight="semibold" tone="onSky" align="center" maxLines={2}>
+      <Text size="b1" weight="semibold" tone="onSky" align="center" numberOfLines={2}>
         {translate(action.label)}
       </Text>
     </Button>

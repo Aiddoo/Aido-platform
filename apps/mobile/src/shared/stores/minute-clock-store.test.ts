@@ -65,7 +65,8 @@ describe('createMinuteClockStore', () => {
     const onChange = jest.fn();
     store.subscribe(onChange);
 
-    // When: 하루 뒤 오프라인 상태로 다시 연다
+    // When
+    // 하루 뒤 오프라인 상태로 다시 연다
     setForeground(false);
     jest.advanceTimersByTime(60_000 * 5);
     jest.setSystemTime(new Date('2026-11-04T10:15:10.000Z'));

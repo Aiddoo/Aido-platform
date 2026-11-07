@@ -31,6 +31,7 @@ interface ReorderHold<TItem> {
 /**
  * 서버 순서를 받아 `ReorderableList`/`NestedReorderableList`에 그대로 펼칠 props를 만든다.
  * 평소에는 받은 목록을 그대로 그린다. 끄는 동안과 놓은 뒤 서버 값이 새로 올 때까지만 화면 순서를 붙잡는다.
+ * 끌기 시작과 자리 바뀜의 햅틱도 여기서 낸다. 콜백이 worklet이라 호출부로 나누면 `scheduleOnRN`까지 옮겨야 한다.
  */
 export function useReorderableList<TItem, TId>({
   items,

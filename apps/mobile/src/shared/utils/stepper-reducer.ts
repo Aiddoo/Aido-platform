@@ -70,7 +70,8 @@ function go<Contexts extends StepperContexts>(
   delta: number,
 ): StepperState<Contexts> {
   const cursor = state.cursor + delta;
-  if (!Number.isInteger(cursor) || cursor < 0 || cursor >= state.entries.length) {
+  const isInRange = 0 <= cursor && cursor < state.entries.length;
+  if (!Number.isInteger(cursor) || !isInRange) {
     return state;
   }
   return { entries: state.entries, cursor };

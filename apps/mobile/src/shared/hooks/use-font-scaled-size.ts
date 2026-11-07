@@ -1,6 +1,6 @@
 import { scaleByFontScale } from '@src/shared/utils/scale-by-font-scale';
 
-import { useFontScaleRatio } from './use-minimum-font-scale';
+import { useFontScaleRatio } from './use-font-scale-ratio';
 
 /**
  * 앱 글자 크기 설정(`useFontScale`)의 배율로 크기를 스케일링하는 함수를 반환한다.

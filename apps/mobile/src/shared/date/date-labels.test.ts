@@ -164,7 +164,6 @@ describe('로케일 인지 포맷 (i18n)', () => {
     // Then
     expect(koreanLabels).toEqual(['방금 전', '1분 전', '2시간 전', '2일 전']);
 
-    // Then
     // 영어는 단수/복수를 구분하고 앱 언어 ko와 무관하다
     expect(formatRelativeTimeLabel(now, now, EN_SEOUL)).toBe('Just now');
     expect(formatRelativeTimeLabel(oneMinuteAgo, now, EN_SEOUL)).toBe('1 minute ago');
