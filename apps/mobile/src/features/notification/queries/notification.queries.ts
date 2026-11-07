@@ -10,33 +10,25 @@ import {
 } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../schemas/notification.schema';
 
-type NotificationQueryParams = NotificationListFilters;
-
 interface NotificationPageParam {
   cursor?: number;
 }
 
 const INITIAL_NOTIFICATION_PAGE_PARAM: NotificationPageParam = {};
 
-export function useGetNotificationsInfiniteQueryOptions(params?: NotificationQueryParams) {
+export function useGetNotificationsInfiniteQueryOptions({
+  category,
+  limit,
+}: NotificationListFilters) {
   const notificationService = useNotificationService();
 
   return infiniteQueryOptions({
-    queryKey: NOTIFICATION_QUERY_KEYS.list({
-      category: params?.category,
-      unreadOnly: params?.unreadOnly,
-      limit: params?.limit,
-    }),
+    queryKey: NOTIFICATION_QUERY_KEYS.list({ category, limit }),
 
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await notificationService.getNotifications(
-          {
-            cursor: pageParam.cursor,
-            limit: params?.limit ?? 20,
-            category: params?.category,
-            unreadOnly: params?.unreadOnly,
-          },
+          { cursor: pageParam.cursor, limit, category },
           signal,
         ),
       ),

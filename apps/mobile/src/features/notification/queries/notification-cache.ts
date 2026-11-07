@@ -1,25 +1,16 @@
 import { getNowInstant } from '@src/shared/date/instant';
-import { getQueryKeyParams } from '@src/shared/utils/get-query-key-params';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
-import { match, P } from 'ts-pattern';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import { notificationListQueryKeySchema } from '../schemas/notification-list-query-key.schema';
 import type { NotificationListResult } from '../schemas/notification.schema';
 import type { PushPermission } from '../schemas/push-permission.schema';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
-interface MarkPagesReadOptions {
-  /** 없으면 모든 알림을 읽음으로 바꾼다 */
-  notificationId?: number;
-  shouldDecrement: boolean;
-  removeReadItems: boolean;
-}
-
+/** `notificationId`가 없으면 모든 알림을 읽음으로 바꾼다 */
 function markPagesRead(
   cachedPages: InfiniteData<NotificationListResult> | undefined,
-  { notificationId, shouldDecrement, removeReadItems }: MarkPagesReadOptions,
+  notificationId?: number,
 ): InfiniteData<NotificationListResult> | undefined {
   if (!cachedPages?.pages) {
     return cachedPages;
@@ -28,17 +19,11 @@ function markPagesRead(
     ...cachedPages,
     pages: cachedPages.pages.map((page) => ({
       ...page,
-      unreadCount: match({ notificationId, shouldDecrement })
-        .with({ notificationId: P.nullish }, () => 0)
-        .with({ shouldDecrement: true }, () => Math.max(0, page.unreadCount - 1))
-        .otherwise(() => page.unreadCount),
-      notifications: page.notifications
-        .map((notification) =>
-          (notificationId == null || notification.id === notificationId) && !notification.isRead
-            ? { ...notification, isRead: true, readAt: getNowInstant() }
-            : notification,
-        )
-        .filter((notification) => !removeReadItems || !notification.isRead),
+      notifications: page.notifications.map((notification) =>
+        (notificationId == null || notification.id === notificationId) && !notification.isRead
+          ? { ...notification, isRead: true, readAt: getNowInstant() }
+          : notification,
+      ),
     })),
   };
 }
@@ -54,10 +39,6 @@ function hasUnreadNotification(
       ),
     ) ?? false
   );
-}
-
-function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
-  return getQueryKeyParams(queryKey, notificationListQueryKeySchema)?.unreadOnly === true;
 }
 
 export async function optimisticallyMarkNotificationsRead(
@@ -81,14 +62,7 @@ export async function optimisticallyMarkNotificationsRead(
 
   notifyManager.batch(() => {
     for (const [queryKey, cachedPages] of listEntries) {
-      queryClient.setQueryData(
-        queryKey,
-        markPagesRead(cachedPages, {
-          notificationId,
-          shouldDecrement,
-          removeReadItems: isUnreadOnlyQuery(queryKey),
-        }),
-      );
+      queryClient.setQueryData(queryKey, markPagesRead(cachedPages, notificationId));
     }
     // 수를 아직 모르면 0으로 채우지 않는다. 성공 뒤 서버 값으로 맞춘다
     queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) => {

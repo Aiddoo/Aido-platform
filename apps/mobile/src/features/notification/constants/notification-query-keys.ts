@@ -2,8 +2,7 @@ import type { NotificationCategory } from '../schemas/notification.schema';
 
 export interface NotificationListFilters {
   category?: NotificationCategory;
-  unreadOnly?: boolean;
-  limit?: number;
+  limit: number;
 }
 
 export const NOTIFICATION_QUERY_KEYS = {

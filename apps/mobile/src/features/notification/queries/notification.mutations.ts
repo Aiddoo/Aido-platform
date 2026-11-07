@@ -7,7 +7,15 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
+import {
+  getErrorMessage,
+  getUserFacingMessage,
+  isConnectivityError,
+  ServerError,
+  toError,
+} from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -25,6 +33,7 @@ const PUSH_OPENED_RETRIES = 3;
 
 export function useMarkAllAsReadMutationOptions() {
   const haptics = useHaptics();
+  const toast = useAppToast();
   const notificationService = useNotificationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -46,11 +55,11 @@ export function useMarkAllAsReadMutationOptions() {
       clearBadgeQuietly();
       return { snapshot };
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
+    onSuccess: () => {
+      invalidateNotifications(queryClient);
       clearBadgeQuietly();
     },
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       if (context?.snapshot) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
@@ -60,6 +69,9 @@ export function useMarkAllAsReadMutationOptions() {
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
         );
       haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('notification:list.markAllReadFailed'),
+      });
     },
   });
 }
@@ -87,10 +99,8 @@ export function useMarkAsReadMutationOptions() {
       }
       return { snapshot, hasBadgeCount: count != null };
     },
-    onSuccess: async (_data, _notificationId, context) => {
-      await queryClient.invalidateQueries({
-        queryKey: NOTIFICATION_QUERY_KEYS.all,
-      });
+    onSuccess: (_data, _notificationId, context) => {
+      invalidateNotifications(queryClient);
       if (!context.hasBadgeCount) {
         notificationService.syncBadgeCount().catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {

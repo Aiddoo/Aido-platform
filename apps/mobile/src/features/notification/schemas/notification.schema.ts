@@ -33,7 +33,7 @@ export const pushNotificationPayloadSchema = pushNotificationDataSchema
     type: notificationTypeSchema.nullable().catch(null),
     action: notificationActionSchema.catch({ type: 'DEEP_LINK' }),
   });
-export type PushNotificationPayload = z.infer<typeof pushNotificationPayloadSchema>;
+type PushNotificationPayload = z.infer<typeof pushNotificationPayloadSchema>;
 
 /** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
 export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
@@ -62,7 +62,7 @@ const notificationSchema = z.object({
 export type Notification = z.infer<typeof notificationSchema>;
 
 const notificationListResultSchema = notificationInboxResponseSchema
-  .pick({ unreadCount: true, hasMore: true, nextCursor: true })
+  .pick({ hasMore: true, nextCursor: true })
   .extend({ notifications: z.array(notificationSchema) });
 export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
 
