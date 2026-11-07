@@ -1,7 +1,4 @@
-import type {
-  DeviceTimezoneChange,
-  TimezoneOffsetBucket,
-} from '../../schemas/device-timezone.schema';
+import type { DeviceTimezoneChange, TimezoneOffsetBucket } from '../schemas/device-timezone.schema';
 
 const MINUTES_PER_HOUR = 60;
 

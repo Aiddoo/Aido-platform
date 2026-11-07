@@ -40,7 +40,7 @@ import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-b
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
-import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';
+import { toWeatherBriefingKind } from '../utils/weather-analytics';
 import {
   type BriefingAction,
   type BriefingCopy,

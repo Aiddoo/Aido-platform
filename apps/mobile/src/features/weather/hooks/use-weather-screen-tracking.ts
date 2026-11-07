@@ -7,7 +7,7 @@ import { weatherEntryParamsSchema } from '../schemas/weather-entry-params.schema
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
-} from '../utils/analytics/weather-analytics';
+} from '../utils/weather-analytics';
 
 /**
  * 날씨 화면이 열릴 때 진입점을, 위치 확인이 처음 끝났을 때 그 결과를 한 번씩 남긴다.

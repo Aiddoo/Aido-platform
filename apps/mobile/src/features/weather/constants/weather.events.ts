@@ -5,7 +5,7 @@ import type {
   WeatherLocationRegisteredResult,
   WeatherOpenedEntry,
   WeatherReportFailedCause,
-} from '../utils/analytics/weather-analytics';
+} from '../utils/weather-analytics';
 import type { TodoSuggestionReason } from '../utils/weather-briefing.view-model';
 
 declare module '@src/shared/analytics/event-map' {

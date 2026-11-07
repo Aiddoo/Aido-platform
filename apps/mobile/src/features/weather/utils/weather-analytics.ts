@@ -1,13 +1,13 @@
 import { match, P } from 'ts-pattern';
 
-import type { BriefingResult } from '../../domains/weather-briefing.model';
-import type { WeatherLocationStatus } from '../../domains/weather-location.model';
+import type { BriefingResult } from '../domains/weather-briefing.model';
+import type { WeatherLocationStatus } from '../domains/weather-location.model';
 import {
   isConnectionError,
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
-} from '../../domains/weather.error';
-import type { WeatherEntry } from '../../schemas/weather-entry-params.schema';
+} from '../domains/weather.error';
+import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
 
 /** 진입점 파라미터가 없으면(딥 링크·다른 화면에서 되돌아옴) other로 센다 */
 export type WeatherOpenedEntry = WeatherEntry | 'other';

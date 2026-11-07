@@ -1,4 +1,4 @@
-import { INQUIRY_CATEGORY } from '@aido/api';
+import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { useAppVersionService } from '@src/bootstrap/providers/di-context';
 import { t } from '@src/shared/i18n';
 import { router } from 'expo-router';
