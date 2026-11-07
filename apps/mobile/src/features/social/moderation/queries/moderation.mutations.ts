@@ -1,7 +1,7 @@
 import { useHaptics, useModerationService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -16,8 +16,7 @@ export function useBlockUserMutationOptions() {
   const moderationService = useModerationService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const { success } = useAppToast();
-  const showFailure = useMutationFailure();
+  const { success, error: showError } = useAppToast();
 
   return mutationOptions({
     // 오프라인에 멈춰 있으면 확인 창을 닫지 못한다. 바로 실패해 알린다
@@ -30,7 +29,10 @@ export function useBlockUserMutationOptions() {
       success(t('moderation:block.toast', { name: displayName }));
       return invalidateAfterBlockChange(queryClient);
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      showError(getUserFacingMessage(error));
+    },
   });
 }
 
@@ -39,8 +41,7 @@ export function useUnblockUserMutationOptions() {
   const moderationService = useModerationService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const { success } = useAppToast();
-  const showFailure = useMutationFailure();
+  const { success, error: showError } = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
@@ -52,7 +53,10 @@ export function useUnblockUserMutationOptions() {
       success(t('moderation:unblock.toast'));
       return invalidateAfterBlockChange(queryClient);
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      showError(getUserFacingMessage(error));
+    },
   });
 }
 
@@ -63,9 +67,10 @@ export interface ReportContentVariables {
 
 /** 성공 안내(토스트·차단 바로가기)는 시트가 맡는다. 시트가 닫히는 순서와 함께 정해야 해서다 */
 export function useReportContentMutationOptions() {
+  const haptics = useHaptics();
+  const { error: showError } = useAppToast();
   const moderationService = useModerationService();
   const { trackEvent } = useTrack();
-  const showFailure = useMutationFailure();
 
   return mutationOptions({
     networkMode: 'always',
@@ -74,6 +79,9 @@ export function useReportContentMutationOptions() {
     onSuccess: (_result, { target, form }) => {
       trackEvent('content_reported', { target_type: target.targetType, reason: form.reason });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      showError(getUserFacingMessage(error));
+    },
   });
 }

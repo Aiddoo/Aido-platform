@@ -7,7 +7,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import type { Page } from '@src/shared/types/page.types';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -22,7 +22,7 @@ import type { ReorderFriendInput } from '../schemas/friend.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
 export function useAcceptRequestMutationOptions() {
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -38,12 +38,16 @@ export function useAcceptRequestMutationOptions() {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error));
+    },
   });
 }
 
 export function useCancelRequestMutationOptions() {
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const friendService = useFriendService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -58,12 +62,15 @@ export function useCancelRequestMutationOptions() {
       trackEvent('friend_request_cancelled');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error));
+    },
   });
 }
 
 export function useRejectRequestMutationOptions() {
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -79,12 +86,16 @@ export function useRejectRequestMutationOptions() {
       toast.success(t('friend:toast.requestRejected'));
       trackEvent('friend_request_rejected');
     },
-    onError: (error) => showFailure(error),
+    onError: (error) => {
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error));
+    },
   });
 }
 
 export function useRemoveFriendMutationOptions() {
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -125,7 +136,8 @@ export function useRemoveFriendMutationOptions() {
       return { previousData };
     },
     onError: (error, _userId, context) => {
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error));
 
       if (context?.previousData) {
         queryClient.setQueryData(friendsQueryKey, context.previousData);
@@ -147,7 +159,8 @@ interface ReorderFriendParams {
 }
 
 export function useReorderFriendMutationOptions() {
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -162,7 +175,8 @@ export function useReorderFriendMutationOptions() {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
     onError: (error) => {
-      showFailure(error);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error));
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
   });
@@ -177,7 +191,6 @@ export function useSendRequestByTagMutationOptions({
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useMutationFailure();
   const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
 
   return mutationOptions({
@@ -241,7 +254,8 @@ export function useSendRequestByTagMutationOptions({
         return;
       }
 
-      showFailure(err, t('friend:toast.requestFailed'));
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(err), { fallback: t('friend:toast.requestFailed') });
     },
   });
 }

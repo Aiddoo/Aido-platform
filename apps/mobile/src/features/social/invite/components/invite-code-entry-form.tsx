@@ -1,7 +1,7 @@
-import { useClipboard } from '@src/bootstrap/providers/di-context';
+import { useClipboard, useHaptics } from '@src/bootstrap/providers/di-context';
 import { isBusinessError } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -36,7 +36,7 @@ import { InviteCodeInput } from './invite-code-input';
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const [{ openedAt }] = useInviteParams();
   const { t } = useTranslation('invite');
-  const showFailure = useMutationFailure();
+  const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
   const checkPreview = useMutation(useCheckInvitePreviewMutationOptions());
@@ -111,7 +111,8 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
     } catch (error) {
       // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지키지 않고 둔다
       if (!isBusinessError(error)) {
-        showFailure(error);
+        haptics.notify('error');
+        toast.error(getUserFacingMessage(error));
         return;
       }
 

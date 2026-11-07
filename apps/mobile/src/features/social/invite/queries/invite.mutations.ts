@@ -8,8 +8,7 @@ import {
 import { isBusinessError, unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage, isApiError } from '@src/shared/errors';
-import { useMutationFailure } from '@src/shared/hooks/use-mutation-failure';
+import { getErrorMessage, getUserFacingMessage, isApiError } from '@src/shared/errors';
 import { useTranslation, t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -46,8 +45,7 @@ export function useRedeemInviteMutationOptions() {
   const inviteService = useInviteService();
   const logger = useLogger();
   const queryClient = useQueryClient();
-  const { toast } = useAppToast();
-  const showFailure = useMutationFailure();
+  const { toast, error: showError } = useAppToast();
   const { t } = useTranslation('invite');
   const { trackEvent } = useTrack();
 
@@ -105,7 +103,8 @@ export function useRedeemInviteMutationOptions() {
 
       const reason = toRedeemFailureReason(redeemError);
       trackEvent('invite_redeem_failed', { reason });
-      showFailure(redeemError);
+      haptics.notify('error');
+      showError(getUserFacingMessage(redeemError));
 
       if (isTerminalRedeemFailure(reason)) {
         inviteService.clearPendingRedemption();
