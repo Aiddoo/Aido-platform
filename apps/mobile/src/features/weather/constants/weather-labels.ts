@@ -9,6 +9,7 @@ import type {
 
 import type {
   CloudCoverLevel,
+  CloudCoverNote,
   NextSunEvent,
   VisibilityLevel,
   WindLevel,
@@ -21,7 +22,6 @@ import type {
   UvLevel,
 } from '../domains/weather-report.model';
 import type { PrecipitationLevel } from '../utils/next-hour-chart.geometry';
-import type { CloudCoverNote } from '../utils/weather-detail.view-model';
 
 export const WEATHER_CONDITION_LABEL_KEYS = {
   CLEAR: 'condition.clear',

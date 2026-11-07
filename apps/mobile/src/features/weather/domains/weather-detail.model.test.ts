@@ -27,6 +27,19 @@ describe('WeatherDetailPolicy 단계 분류', () => {
   });
 });
 
+describe('WeatherDetailPolicy.getCloudCoverNote', () => {
+  it.each([
+    [90, true, 'overcast'],
+    [50, true, 'brokenDay'],
+    [50, false, 'brokenNight'],
+    [10, true, 'clearDay'],
+    [0, false, 'clearNight'],
+  ] as const)('운량 %s%%, 낮 %s이면 %s 문구다', (cloudCover, isDaylight, note) => {
+    // Given 운량과 낮밤 When 구름 문구를 고르면 Then 단계와 낮밤에 맞는 문구다
+    expect(WeatherDetailPolicy.getCloudCoverNote(cloudCover, isDaylight)).toBe(note);
+  });
+});
+
 describe('WeatherDetailPolicy.getSunscreenWindow', () => {
   const now = toInstant('2026-11-02T02:30:00.000Z');
   const hourly = createWeatherReport({

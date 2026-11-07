@@ -1,6 +1,7 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time.constants';
 import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
 import { round, sumBy } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 import type {
   AirQuality,
@@ -37,6 +38,17 @@ function getCloudCoverLevel(cloudCover: number): CloudCoverLevel {
     return 'overcast';
   }
   return cloudCover >= 40 ? 'mostlyCloudy' : 'mostlyClear';
+}
+
+export type CloudCoverNote = 'overcast' | 'brokenDay' | 'brokenNight' | 'clearDay' | 'clearNight';
+
+/** 구름 단계에 낮밤을 더해 안내 문구를 고른다. 흐림은 낮밤이 같다. */
+function getCloudCoverNote(cloudCover: number, isDaylight: boolean): CloudCoverNote {
+  return match<CloudCoverLevel, CloudCoverNote>(getCloudCoverLevel(cloudCover))
+    .with('overcast', () => 'overcast')
+    .with('mostlyCloudy', () => (isDaylight ? 'brokenDay' : 'brokenNight'))
+    .with('mostlyClear', () => (isDaylight ? 'clearDay' : 'clearNight'))
+    .exhaustive();
 }
 
 /** 상대 습도가 이 값(%) 이상이면 눅눅하다고 안내한다. */
@@ -158,6 +170,7 @@ export const WeatherDetailPolicy = {
   pickPollutant,
   getVisibilityLevel,
   getCloudCoverLevel,
+  getCloudCoverNote,
   isMuggy,
   getSunscreenWindow,
   sumNextDayPrecipitation,

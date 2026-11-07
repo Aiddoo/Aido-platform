@@ -26,8 +26,8 @@ import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { toVisibilityKilometers } from '../utils/visibility-kilometers';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
-import { toCloudCoverNote, toVisibilityKilometers } from '../utils/weather-detail.view-model';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
 import {
   formatDegrees,
@@ -74,7 +74,10 @@ export function WeatherDetailGrid() {
   const pressure = String(Math.round(current.pressure));
   const nextDayPrecipitation = WeatherDetailPolicy.sumNextDayPrecipitation(hourly, now);
   const visibilityLevel = WeatherDetailPolicy.getVisibilityLevel(current.visibility);
-  const cloudCoverNote = toCloudCoverNote(current.cloudCover, current.isDaylight);
+  const cloudCoverNote = WeatherDetailPolicy.getCloudCoverNote(
+    current.cloudCover,
+    current.isDaylight,
+  );
 
   return (
     <Box onLayout={onLayout}>
