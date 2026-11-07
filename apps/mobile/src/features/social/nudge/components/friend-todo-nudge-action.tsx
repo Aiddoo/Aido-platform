@@ -17,7 +17,7 @@ interface FriendTodoNudgeActionProps {
 export function FriendTodoNudgeAction({ todo }: FriendTodoNudgeActionProps) {
   const { t } = useTranslation('friend');
   const { data: friend } = useScreenFriend();
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDateKey: selectedDateKey, isCompleted: todo.completed },

@@ -12,12 +12,15 @@ import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 
 import {
-  useFeedActionParam,
+  useFeedAction,
   useFeedDateKey,
-  useFeedDateParam,
-  useFeedFriendParam,
+  useFeedDate,
+  useFeedFriendId,
 } from '../hooks/use-feed-params';
-import { useFeedSelectedTodo, useFeedTodoDetailHandoff } from '../hooks/use-feed-selected-todo';
+import {
+  useFeedSelectedTodoId,
+  useFeedTodoDetailHandoff,
+} from '../hooks/use-feed-selected-todo-id';
 
 jest.unmock('expo-router');
 
@@ -40,15 +43,15 @@ function FeedProviders({ children }: PropsWithChildren) {
 }
 
 function useFeedScreen() {
-  const [selectedDate, setSelectedDate] = useFeedDateParam();
-  const [friendId, selectFriend] = useFeedFriendParam();
-  const [action] = useFeedActionParam();
-  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [friendId, selectFriend] = useFeedFriendId();
+  const [action] = useFeedAction();
+  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
 
   return {
     selectedDate,
     setSelectedDate,
-    selectedDateKey: useFeedDateKey(),
+    selectedDateKey: useFeedDateKey()[0],
     friendId,
     selectFriend,
     action,
@@ -138,7 +141,7 @@ describe('피드 URL 플로우', () => {
       const feed = await renderRouteHook(
         () => {
           useFeedTodoDetailHandoff();
-          return useFeedSelectedTodo();
+          return useFeedSelectedTodoId();
         },
         {
           url: `/feed?todoId=5&comment=${COMMENT}&sort=POPULAR`,

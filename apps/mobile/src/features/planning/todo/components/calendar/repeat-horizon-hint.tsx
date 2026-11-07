@@ -14,7 +14,7 @@ import { RepeatHintLine } from '../repeat-hint-line';
 export function RepeatHorizonHint() {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const { data: hasUpcomingRepeat = false } = useQuery(useGetHasUpcomingRepeatQueryOptions());
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 

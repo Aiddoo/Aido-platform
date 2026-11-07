@@ -17,14 +17,11 @@ import { FriendCalendar } from '@src/features/planning/todo/components/calendar/
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
+import { useFeedDateKey, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import {
-  useFeedDateKey,
-  useFeedFriendParam,
-} from '@src/features/planning/todo/hooks/use-feed-params';
-import {
-  useFeedSelectedTodo,
+  useFeedSelectedTodoId,
   useFeedTodoDetailHandoff,
-} from '@src/features/planning/todo/hooks/use-feed-selected-todo';
+} from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
@@ -59,7 +56,7 @@ import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
-  const [friendId] = useFeedFriendParam();
+  const [friendId] = useFeedFriendId();
   const isInviteAvailable = useInviteAvailability();
   const openMyInvite = useOpenMyInvite();
 
@@ -100,7 +97,7 @@ export default function FeedScreen() {
 }
 
 function MyFeed() {
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const status = useAuthStatus();
   const hasPendingNavigation = useHasPendingNotificationEntry();
@@ -177,7 +174,7 @@ function MyFeed() {
 }
 
 function FriendFeedTodos() {
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const {
     data: friend,
@@ -288,7 +285,7 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
 
 /** 더는 친구가 아닌 사람의 피드는 같은 화면의 내 피드로 돌린다. */
 function MyFeedRedirect() {
-  const [_friendId, selectFriend] = useFeedFriendParam();
+  const [_friendId, selectFriend] = useFeedFriendId();
 
   useEffect(() => {
     selectFriend(undefined);
@@ -309,7 +306,7 @@ function FeedListPane({ children }: PropsWithChildren) {
 }
 
 function FeedTodoDetailPane() {
-  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
 
   if (selectedTodoId == null) {
@@ -325,7 +322,7 @@ function FeedTodoDetailPane() {
 
 /** 펼친 피드의 오른쪽 칸. 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */
 function FeedTodoDetail({ onClose }: { onClose: () => void }) {
-  const date = useFeedDateKey();
+  const [date] = useFeedDateKey();
 
   return (
     <KeyboardBottomGapProvider>

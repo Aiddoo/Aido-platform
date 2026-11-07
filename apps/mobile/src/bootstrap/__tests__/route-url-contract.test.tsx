@@ -5,11 +5,8 @@ import { useSelectedMemo } from '@src/features/notes/memo/hooks/use-memo-params'
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
 import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
-import {
-  useFeedActionParam,
-  useFeedFriendParam,
-} from '@src/features/planning/todo/hooks/use-feed-params';
-import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-selected-todo';
+import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
+import { useFeedSelectedTodoId } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
 import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
@@ -47,7 +44,7 @@ describe('공개 URL 계약', () => {
     ],
   ])('피드 친구: %s', async (_name, url, expected, friend) => {
     // Given
-    const route = await renderRouteHook(() => useFeedFriendParam(), { url });
+    const route = await renderRouteHook(() => useFeedFriendId(), { url });
 
     // When
     await route.run(([_friendId, selectFriend]) => selectFriend(friend));
@@ -58,7 +55,7 @@ describe('공개 URL 계약', () => {
 
   it('피드 요청: 처리하면 action만 사라진다', async () => {
     // Given
-    const route = await renderRouteHook(() => useFeedActionParam(), {
+    const route = await renderRouteHook(() => useFeedAction(), {
       url: '/feed?action=add-todo&date=2026-07-20',
     });
 
@@ -86,7 +83,7 @@ describe('공개 URL 계약', () => {
     ],
   ])('폴드 할 일 칸: %s', async (_name, url, todoId, expected) => {
     // Given
-    const route = await renderRouteHook(() => useFeedSelectedTodo(), { url });
+    const route = await renderRouteHook(() => useFeedSelectedTodoId(), { url });
 
     // When
     await route.run(([_todoId, setSelectedTodoId]) => setSelectedTodoId(todoId));

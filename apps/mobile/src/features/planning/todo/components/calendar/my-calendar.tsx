@@ -14,7 +14,7 @@ import { RepeatHorizonHint } from './repeat-horizon-hint';
 export function MyCalendar() {
   const { rangeStart, rangeEnd } = useCalendarRange();
   const [viewMode] = useCalendarViewMode();
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
   const query = useQuery(
     useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),

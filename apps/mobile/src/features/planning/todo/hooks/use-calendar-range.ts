@@ -4,11 +4,11 @@ import { match } from 'ts-pattern';
 
 import { getCalendarRange, getWeekRange } from '../utils/calendar-grid';
 import { useCalendarViewMode } from './use-calendar-view-mode';
-import { useFeedDateParam } from './use-feed-params';
+import { useFeedDate } from './use-feed-params';
 
 /** 현재 뷰 모드(주/월)에 해당하는 캘린더 조회 범위 */
 export function useCalendarRange() {
-  const [selectedDate] = useFeedDateParam();
+  const [selectedDate] = useFeedDate();
   const [viewMode] = useCalendarViewMode();
   const { timeZone } = useDateFormatContext();
 

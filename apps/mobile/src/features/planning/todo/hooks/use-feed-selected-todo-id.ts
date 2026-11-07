@@ -12,7 +12,7 @@ import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params
  * 피드 URL의 `todoId`를 선택된 할 일로 읽는다. 접힌 화면은 상세 화면으로 push하고, 펼친 화면은 상세 칸을 바꾼다.
  * 칸의 할 일이 바뀌면 그 할 일에 딸린 댓글 위치와 정렬은 버린다. 이미 고른 할 일을 다시 누르면 그대로 둔다.
  */
-export function useFeedSelectedTodo() {
+export function useFeedSelectedTodoId() {
   const [{ todoId: selectedTodoId }, setParams] = useRouteParams(feedParamsSchema);
   const windowSizeClass = useWindowSizeClass();
 

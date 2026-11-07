@@ -3,7 +3,7 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useFeedFriendParam } from '@src/features/planning/todo/hooks/use-feed-params';
+import { useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -153,7 +153,7 @@ FriendStrip.Item = memo(function Item({
 }: FriendStripItemProps) {
   const haptics = useHaptics();
   const { t } = useTranslation('friend');
-  const [selectedFriendId, setSelectedFriendId] = useFeedFriendParam();
+  const [selectedFriendId, setSelectedFriendId] = useFeedFriendId();
   const isSelected = selectedFriendId === friendId;
   const selectFriend = useSingleTap((nextFriendId: string | undefined) => {
     haptics.selection();
@@ -354,7 +354,7 @@ function SelectedFriendReveal({
   friends: readonly FriendUser[];
   isListLoaded: boolean;
 }) {
-  const [selectedFriendId] = useFeedFriendParam();
+  const [selectedFriendId] = useFeedFriendId();
   const { width } = useFriendStripItemSize();
   const hasRevealedRef = useRef(false);
   const selectedIndex = friends.findIndex((friend) => friend.id === selectedFriendId);

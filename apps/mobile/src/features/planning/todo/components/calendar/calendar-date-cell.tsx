@@ -5,7 +5,7 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { memo, type ReactNode } from 'react';
 
-import { useFeedDateParam } from '../../hooks/use-feed-params';
+import { useFeedDate } from '../../hooks/use-feed-params';
 import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
 import { isSameDay } from '../../utils/calendar-day-comparison';
 
@@ -20,7 +20,7 @@ export const CalendarDateCell = memo(function CalendarDateCell({
   children,
   className,
 }: CalendarDateCellProps) {
-  const [value, onChange] = useFeedDateParam();
+  const [value, onChange] = useFeedDate();
   const today = useToday();
   const { timeZone } = useDateFormatContext();
   const isSelected = isSameDay(date, value, timeZone);

@@ -24,8 +24,8 @@ import { range } from 'es-toolkit';
 import { type ComponentType, useMemo, useState } from 'react';
 
 import { TodoPolicy } from '../domains/todo.model';
-import { useFeedDateKey, useFeedDateParam } from '../hooks/use-feed-params';
-import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
+import { useFeedDateKey, useFeedDate } from '../hooks/use-feed-params';
+import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import type { Todo } from '../schemas/todo.schema';
 import { formatTodoTime } from '../utils/format-todo-time';
@@ -43,7 +43,7 @@ interface FriendTodoListProps {
 
 export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoListProps) {
   const { timeZone } = useDateFormatContext();
-  const [date] = useFeedDateParam();
+  const [date] = useFeedDate();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
       useGetFriendTodosQueryOptions({
@@ -83,7 +83,7 @@ FriendTodoList.Item = function Item({
   action: ComponentType<{ todo: Todo }>;
 }) {
   const { t } = useTranslation('todo');
-  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const selectTodo = useSingleTap(setSelectedTodoId);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -170,7 +170,8 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
 
 FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: ComponentType }) {
   const { t } = useTranslation('todo');
-  const isToday = useFeedDateKey() === useTodayKey();
+  const [selectedDateKey] = useFeedDateKey();
+  const isToday = selectedDateKey === useTodayKey();
 
   return (
     <Flex flex={1} justify="center" align="center">

@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
-import { useFeedDateKey, useFeedDateParam } from './use-feed-params';
+import { useFeedDateKey, useFeedDate } from './use-feed-params';
 
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
@@ -50,8 +50,8 @@ describe('피드 날짜 선택', () => {
     );
     const rendered = await renderHook(
       () => {
-        const [selectedDate, setSelectedDate] = useFeedDateParam();
-        return { selectedDate, setSelectedDate, selectedDateKey: useFeedDateKey() };
+        const [selectedDate, setSelectedDate] = useFeedDate();
+        return { selectedDate, setSelectedDate, selectedDateKey: useFeedDateKey()[0] };
       },
       { wrapper },
     );

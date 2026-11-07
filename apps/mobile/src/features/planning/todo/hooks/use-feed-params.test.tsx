@@ -1,18 +1,18 @@
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useFeedActionParam, useFeedFriendParam } from './use-feed-params';
+import { useFeedAction, useFeedFriendId } from './use-feed-params';
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 const FRIEND_ID = 'cmfriend000000000000000001';
 
-describe('useFeedFriendParam', () => {
+describe('useFeedFriendId', () => {
   it('URL의 친구를 읽는다', async () => {
     // Given
     mockedUseLocalSearchParams.mockReturnValue({ friendId: FRIEND_ID });
 
     // When
-    const { result } = await renderHook(() => useFeedFriendParam());
+    const { result } = await renderHook(() => useFeedFriendId());
 
     // Then
     expect(result.current[0]).toBe(FRIEND_ID);
@@ -23,7 +23,7 @@ describe('useFeedFriendParam', () => {
     mockedUseLocalSearchParams.mockReturnValue({ friendId: 'not-a-user' });
 
     // When
-    const { result } = await renderHook(() => useFeedFriendParam());
+    const { result } = await renderHook(() => useFeedFriendId());
 
     // Then
     expect(result.current[0]).toBeUndefined();
@@ -32,7 +32,7 @@ describe('useFeedFriendParam', () => {
   it('친구를 바꾸면 이전 할 일 선택·댓글·요청 상태를 지우고 날짜는 건드리지 않는다', async () => {
     // Given
     mockedUseLocalSearchParams.mockReturnValue({ date: '2026-10-23', todoId: '5' });
-    const { result } = await renderHook(() => useFeedFriendParam());
+    const { result } = await renderHook(() => useFeedFriendId());
 
     // When
     result.current[1](FRIEND_ID);
@@ -50,7 +50,7 @@ describe('useFeedFriendParam', () => {
   it('나를 고르면 friendId를 지운다', async () => {
     // Given
     mockedUseLocalSearchParams.mockReturnValue({ friendId: FRIEND_ID });
-    const { result } = await renderHook(() => useFeedFriendParam());
+    const { result } = await renderHook(() => useFeedFriendId());
 
     // When
     result.current[1](undefined);
@@ -60,7 +60,7 @@ describe('useFeedFriendParam', () => {
   });
 });
 
-describe('useFeedActionParam', () => {
+describe('useFeedAction', () => {
   it.each([
     ['add-todo', 'add-todo'],
     ['delete-all', undefined],
@@ -70,7 +70,7 @@ describe('useFeedActionParam', () => {
     mockedUseLocalSearchParams.mockReturnValue({ action });
 
     // When
-    const { result } = await renderHook(() => useFeedActionParam());
+    const { result } = await renderHook(() => useFeedAction());
 
     // Then
     expect(result.current[0]).toBe(expected);
@@ -79,7 +79,7 @@ describe('useFeedActionParam', () => {
   it('요청을 처리하면 action만 지운다', async () => {
     // Given
     mockedUseLocalSearchParams.mockReturnValue({ action: 'add-todo', date: '2026-10-23' });
-    const { result } = await renderHook(() => useFeedActionParam());
+    const { result } = await renderHook(() => useFeedAction());
 
     // When
     result.current[1](undefined);

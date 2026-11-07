@@ -24,7 +24,7 @@ import { type ReactNode, useCallback, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
-import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
 import type { DailyCompletionSummary } from '../../schemas/todo.schema';
 import { isSameMonth } from '../../utils/calendar-day-comparison';
@@ -52,7 +52,7 @@ interface CalendarProps {
 
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
   const { t } = useTranslation('common');
-  const [selectedDate, setSelectedDate] = useFeedDateParam();
+  const [selectedDate, setSelectedDate] = useFeedDate();
   const today = useToday();
   const [viewMode] = useCalendarViewMode();
   const { timeZone } = useDateFormatContext();
@@ -143,7 +143,7 @@ function CalendarViewModeTrigger({
 
 function CalendarHeaderText() {
   const [viewMode] = useCalendarViewMode();
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
 
@@ -164,7 +164,7 @@ interface CalendarWeekPagerProps {
 }
 
 function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDateParam();
+  const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
   const baseWeekRef = useRef(getWeekStart(selectedDate, timeZone));
 
@@ -200,7 +200,7 @@ interface CalendarMonthPagerProps {
 }
 
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
-  const [selectedDate, setSelectedDate] = useFeedDateParam();
+  const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
   const baseMonthRef = useRef(startOfLocalMonth(selectedDate, timeZone));
 

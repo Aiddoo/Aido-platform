@@ -37,8 +37,8 @@ import { match } from 'ts-pattern';
 
 import { SubTodoPolicy } from '../../domains/sub-todo.model';
 import { TodoPolicy } from '../../domains/todo.model';
-import { useFeedDateParam, useFeedDateKey } from '../../hooks/use-feed-params';
-import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
+import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
@@ -65,7 +65,7 @@ import {
 
 export function TodoList() {
   const { timeZone } = useDateFormatContext();
-  const [selectedDate] = useFeedDateParam();
+  const [selectedDate] = useFeedDate();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
@@ -129,7 +129,7 @@ interface CategoryHeaderProps {
 
 function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
   const fontScaledSize = useFontScaledSize();
-  const date = useFeedDateKey();
+  const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
 
   return (
@@ -188,11 +188,11 @@ interface TodoListItemProps {
 TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
-  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const selectTodo = useSingleTap(setSelectedTodoId);
 
   const { t } = useTranslation('todo');
-  const date = useFeedDateKey();
+  const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());

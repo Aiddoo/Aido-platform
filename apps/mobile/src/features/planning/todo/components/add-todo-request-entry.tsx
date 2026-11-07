@@ -7,13 +7,13 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
-import { useFeedActionParam, useFeedDateKey } from '../hooks/use-feed-params';
+import { useFeedAction, useFeedDateKey } from '../hooks/use-feed-params';
 
 /** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
 export function AddTodoRequestEntry() {
   const { t } = useTranslation(['widget', 'common']);
-  const [action, setAction] = useFeedActionParam();
-  const selectedDateKey = useFeedDateKey();
+  const [action, setAction] = useFeedAction();
+  const [selectedDateKey] = useFeedDateKey();
   const isRequested = action === 'add-todo';
   const categories = useQuery({
     ...useGetTodoCategoriesQueryOptions(),
