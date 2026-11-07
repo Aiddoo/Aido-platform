@@ -1,6 +1,6 @@
 # 에러 처리 가이드
 
-**Version**: 1.3.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Mobile Team
+**Version**: 1.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 앱의 오류 처리 규칙의 원본이다. 서버와 함께 지키는 계약(envelope, ErrorCode 범위, 한 오류는 한 곳에서)은 [공통 오류 규칙](../../../docs/conventions/errors.md)에 있다.
 
@@ -115,26 +115,30 @@ return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
 if (isBusinessError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 ```
 
-| 요소        | 패턴                           | 위치                                                     |
-| ----------- | ------------------------------ | -------------------------------------------------------- |
-| 코드 상수   | `{FEATURE}_ERROR_CODE`         | `features/{area}/{feature}/domains/{feature}.error.ts`   |
-| 문구        | 코드를 키로 한 ko·en 항목      | `shared/i18n/locales/{ko,en}/errors.json`                |
-| 던지기      | `new BusinessError(코드)`      | Service·Policy 경계                                      |
-| 판별        | `isBusinessError(error, 코드)` | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다         |
-| 사용자 문구 | `getUserFacingMessage(error)`  | `useMutationFailure`, `toast.error(error, { fallback })` |
+| 요소        | 패턴                           | 위치                                                   |
+| ----------- | ------------------------------ | ------------------------------------------------------ |
+| 코드 상수   | `{FEATURE}_ERROR_CODE`         | `features/{area}/{feature}/domains/{feature}.error.ts` |
+| 문구        | 코드를 키로 한 ko·en 항목      | `shared/i18n/locales/{ko,en}/errors.json`              |
+| 던지기      | `new BusinessError(코드)`      | Service·Policy 경계                                    |
+| 판별        | `isBusinessError(error, 코드)` | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다       |
+| 사용자 문구 | `getUserFacingMessage(error)`  | `toast.error(getUserFacingMessage(error))`             |
 
-`isBusinessError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`, 아직 옮기지 않은 `{Feature}Error`)에 참이고, 그 타입은 `CodedError`다. 옮긴 feature는 friend이고 나머지 `*.error.ts`는 뒤 단계에서 같은 모양으로 옮긴다. 옮기지 않은 `{Feature}Error` 클래스는 `implements CodedError`로 `Result`와 함께 쓴다.
+`isBusinessError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`와 그 하위 클래스)에 참이고, 그 타입은 `CodedError`다. 코드 상수를 둔 feature는 `domains/{feature}.error.ts`에서 `BusinessError`를 쓰거나 `isApiError`로 서버 코드를 판별한다. 하위 클래스가 필요하면 `SubscriptionError`처럼 `BusinessError`를 확장한다.
 
 ## 저장 실패 알림
 
-저장 실패는 `useMutationFailure`(`shared/hooks/use-mutation-failure.ts`) 한 곳에서 햅틱과 토스트 한 번으로 알린다. 입력값과 화면은 그대로 둔다. 오프라인 저장 실패도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다.
+저장 실패는 호출부가 햅틱과 토스트를 나란히 한 번씩 쓴다. 서로 다른 일이라 한 훅으로 묶지 않는다. 입력값과 화면은 그대로 둔다. 오프라인 저장 실패도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다. 실제 예는 `features/social/invite/queries/invite.mutations.ts`다.
 
 ```typescript
-const showFailure = useMutationFailure(t('memo:toasts.retryLater'));
+const haptics = useHaptics();
+const toast = useAppToast();
 
 mutationOptions({
   networkMode: 'always',
-  onError: (error) => showFailure(error), // 호출마다 폴백을 바꾸려면 showFailure(error, t('memo:toasts.deleteRetry'))
+  onError: (error) => {
+    haptics.notify('error');
+    toast.error(getUserFacingMessage(error));
+  },
 });
 ```
 
@@ -211,7 +215,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 | 영구 오류 (키체인 손상, entitlement 오설정) | **원본 오류 그대로 throw**                     |
 | 저장된 값 파싱 실패                         | `null` (손상된 항목 하나가 부팅을 막지 않는다) |
 
-"지금 못 읽는다"를 "토큰이 없다"로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다. 그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 `useAuthBoot`가 관측하고 미인증으로 폴백한다. 벤더 에러 판별(OSStatus 메시지 매칭)은 `secure-storage.ts`에만 두고, `auth-boot.ts`는 `isKeychainLockedError()`만 안다.
+"지금 못 읽는다"를 "토큰이 없다"로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다. 그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 `useAuthBoot`가 관측하고 미인증으로 폴백한다. 벤더 에러 판별(OSStatus 메시지 매칭)은 `secure-storage.ts`에만 두고, `bootstrap/auth/resolve-initial-auth-status.ts`는 `isKeychainLockedError()`만 안다.
 
 ## 던져진 값 다루기: toError / getErrorMessage
 
