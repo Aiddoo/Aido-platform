@@ -93,7 +93,7 @@ import { TextButton } from '@src/shared/ui';
 
 // 리스트 아이템
 <ListRow
-  contents={<ListRow.Texts type="oneLine" top="설정" />}
+  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
   right={<TextButton variant="arrow">변경</TextButton>}
 />
 ```

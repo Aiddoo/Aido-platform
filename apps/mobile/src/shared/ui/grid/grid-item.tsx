@@ -3,13 +3,14 @@ import { useGridCell, useGridColumns } from './grid';
 import type { GridItemProps } from './grid-item.types';
 import { getGridItemLayout } from './grid-layout';
 
-export function GridItem({ style, ...props }: GridItemProps) {
+export function GridItem({ colSpan = 1, style, ...props }: GridItemProps) {
   const columns = useGridColumns();
   const { columnGap, startColumn } = useGridCell();
   const { width, paddingLeft, paddingRight } = getGridItemLayout({
     columns,
     columnGap,
     startColumn,
+    colSpan,
   });
 
   if (columnGap === 0) {

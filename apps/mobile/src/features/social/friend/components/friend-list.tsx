@@ -204,7 +204,7 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
                 profileImage={friend.profileImage}
               />
             }
-            contents={<ListRow.Texts type="oneLine" top={displayName} />}
+            contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
             right={match({ isEditMode, isActive })
               .with({ isEditMode: false }, () => (
                 <FriendModerationMenu userId={friend.id} displayName={displayName} />

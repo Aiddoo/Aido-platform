@@ -97,7 +97,7 @@ function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) 
       <ListRow
         contents={
           <ListRow.Texts
-            type="oneLine"
+            type="1RowTypeA"
             top={label}
             topProps={{
               size: 'b2',

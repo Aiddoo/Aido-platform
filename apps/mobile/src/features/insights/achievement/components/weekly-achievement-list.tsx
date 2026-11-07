@@ -95,7 +95,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
         left={<BadgeIcon type={badgeType} size="small" />}
         contents={
           <ListRow.Texts
-            type="twoLine"
+            type="2RowTypeA"
             top={achievement.weekLabel}
             topProps={{ weight: 'semibold', shade: 8 }}
             bottom={t('list.periodWithCompletedRatio', {
@@ -141,7 +141,7 @@ WeeklyAchievementList.Loading = function Loading() {
         <ListRow
           key={index}
           left={<Skeleton className="size-10 rounded-full" />}
-          contents={<ListRow.Texts.Loading type="twoLine" />}
+          contents={<ListRow.Texts.Loading type="2RowTypeA" />}
           right={<TextSkeleton size="b3" className="w-12" />}
           verticalPadding="medium"
         />

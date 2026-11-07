@@ -1,6 +1,7 @@
 import { Children, createContext, isValidElement, use } from 'react';
 
 import { Flex } from '../flex/flex';
+import { getGridStartColumns } from './grid-layout';
 import type { GridProps } from './grid.types';
 
 const GridContext = createContext(1);
@@ -16,18 +17,37 @@ export function useGridCell() {
   return use(GridCellContext);
 }
 
-export function Grid({ columns = 1, gap, style, children, ...props }: GridProps) {
-  // 열 간격은 flex gap으로 주면 50% 칸 두 개가 한 줄을 넘쳐 줄바꿈된다. GridItem padding으로 대신 만든다
-  const columnGap = gap ?? 0;
+function getColSpan(child: unknown) {
+  return isValidElement<{ colSpan?: number }>(child) ? (child.props.colSpan ?? 1) : 1;
+}
+
+export function Grid({
+  columns = 1,
+  gap,
+  rowGap,
+  columnGap,
+  style,
+  children,
+  ...props
+}: GridProps) {
+  // columnGap은 flex gap으로 주면 50% 칸 두 개가 한 줄을 넘쳐 줄바꿈된다. GridItem padding으로 대신 만든다
+  const resolvedColumnGap = columnGap ?? gap ?? 0;
+  const resolvedRowGap = rowGap ?? gap;
   const cells = Children.toArray(children);
+  const startColumns = getGridStartColumns(cells.map(getColSpan), columns);
 
   return (
     <GridContext.Provider value={columns}>
-      <Flex direction="row" wrap="wrap" style={[gap != null && { rowGap: gap }, style]} {...props}>
+      <Flex
+        direction="row"
+        wrap="wrap"
+        style={[resolvedRowGap != null && { rowGap: resolvedRowGap }, style]}
+        {...props}
+      >
         {cells.map((cell, index) => (
           <GridCellContext.Provider
             key={isValidElement(cell) && cell.key != null ? cell.key : index}
-            value={{ columnGap, startColumn: index % columns }}
+            value={{ columnGap: resolvedColumnGap, startColumn: startColumns[index] ?? 0 }}
           >
             {cell}
           </GridCellContext.Provider>

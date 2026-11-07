@@ -119,7 +119,7 @@ InvitedFriendRow.Loading = function Loading() {
     <ListRow
       horizontalPadding="medium"
       left={<Skeleton className="size-10 rounded-full" />}
-      contents={<ListRow.Texts.Loading type="twoLine" />}
+      contents={<ListRow.Texts.Loading type="2RowTypeA" />}
       right={<Skeleton className="h-7 w-[72px] rounded-full" />}
     />
   );

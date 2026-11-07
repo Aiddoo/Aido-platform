@@ -101,7 +101,7 @@ function InfoCard({ label, ...props }: InfoCardProps) {
         left={<AiIcon width={24} height={24} colorClassName="text-main" />}
         contents={
           <ListRow.Texts
-            type="oneLine"
+            type="1RowTypeA"
             top={label}
             topProps={{ size: 'b3', weight: 'medium', shade: 8 }}
           />
