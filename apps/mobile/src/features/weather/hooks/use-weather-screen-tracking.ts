@@ -1,5 +1,5 @@
 import { useTrack } from '@src/shared/analytics';
-import { useLocalSearchParams } from 'expo-router';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useEffect, useRef } from 'react';
 
 import type { WeatherLocationStatus } from '../domains/weather-location.model';
@@ -14,7 +14,7 @@ import {
  * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 화면에서는 더 세지 않는다.
  */
 export function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
-  const { entry } = weatherEntryParamsSchema.parse(useLocalSearchParams());
+  const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
   const { trackEvent } = useTrack();
   const hasTrackedLocation = useRef(false);
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);

@@ -131,7 +131,7 @@ export function useGetWeatherReportQueryOptions() {
   const weatherService = useWeatherService();
   const locationRevision = useWeatherLocationRevision();
   const client = useQueryClient();
-  const devOverride = useDevWeatherOverride();
+  const [devOverride] = useDevWeatherOverride();
 
   const reportOptions = queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision }),
