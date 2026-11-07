@@ -6,7 +6,7 @@ import {
   DeviceIcon,
   EnglishIcon,
   KoreanIcon,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
 } from '@src/shared/ui';
 import { IconRadioItem } from '@src/shared/ui/icon-radio-item';
@@ -27,7 +27,7 @@ function LanguageSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <SettingsCard>
+      <SettingsListGroup>
         <RadioGroup value={languageMode} onValueChange={handleChange} className="gap-0">
           <IconRadioItem
             value="system"
@@ -36,10 +36,10 @@ function LanguageSettingsScreen() {
             Icon={DeviceIcon}
             testID="language-option-system"
           />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           {/* 언어 이름은 해당 언어로 고정 표기한다 (번역하지 않음) */}
           <IconRadioItem value="ko" label="한국어" Icon={KoreanIcon} testID="language-option-ko" />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           <IconRadioItem
             value="en"
             label="English"
@@ -47,7 +47,7 @@ function LanguageSettingsScreen() {
             testID="language-option-en"
           />
         </RadioGroup>
-      </SettingsCard>
+      </SettingsListGroup>
     </SettingsScreenLayout>
   );
 }

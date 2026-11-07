@@ -15,11 +15,16 @@ import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { Text, TextSkeleton } from '../text';
 import { VStack } from '../v-stack';
 
-export interface SettingsCardProps extends ComponentProps<typeof ListGroup> {
+export interface SettingsListGroupProps extends ComponentProps<typeof ListGroup> {
   label?: string;
 }
 
-export function SettingsCard({ label, className, children, ...props }: SettingsCardProps) {
+export function SettingsListGroup({
+  label,
+  className,
+  children,
+  ...props
+}: SettingsListGroupProps) {
   return (
     <ListGroup variant="transparent" className={cn('rounded-2xl bg-gray-1', className)} {...props}>
       {label != null && (
@@ -32,7 +37,7 @@ export function SettingsCard({ label, className, children, ...props }: SettingsC
   );
 }
 
-interface SettingsCardItemProps extends Omit<
+interface SettingsListGroupItemProps extends Omit<
   ComponentProps<typeof ListGroup.Item>,
   'children' | 'disabled'
 > {
@@ -45,7 +50,7 @@ interface SettingsCardItemProps extends Omit<
   isDisabled?: boolean;
 }
 
-SettingsCard.Item = function Item({
+SettingsListGroup.Item = function Item({
   label,
   description,
   icon,
@@ -55,7 +60,7 @@ SettingsCard.Item = function Item({
   isDisabled = false,
   className,
   ...props
-}: SettingsCardItemProps) {
+}: SettingsListGroupItemProps) {
   return (
     <ListGroup.Item
       accessibilityRole="button"
@@ -93,15 +98,15 @@ SettingsCard.Item = function Item({
   );
 };
 
-interface SettingsCardItemSkeletonProps {
+interface SettingsListGroupItemSkeletonProps {
   descriptionLines?: number;
   hasValue?: boolean;
 }
 
-SettingsCard.ItemSkeleton = function ItemSkeleton({
+SettingsListGroup.ItemSkeleton = function ItemSkeleton({
   descriptionLines = 0,
   hasValue = false,
-}: SettingsCardItemSkeletonProps) {
+}: SettingsListGroupItemSkeletonProps) {
   return (
     <HStack align="center" gap={12} className="min-h-12 p-4 py-3">
       <VStack flex={1} gap={2}>
@@ -118,17 +123,20 @@ SettingsCard.ItemSkeleton = function ItemSkeleton({
   );
 };
 
-interface SettingsCardToggleProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
+interface SettingsListGroupToggleProps extends Omit<
+  ComponentProps<typeof ControlField>,
+  'children'
+> {
   label: string;
   description?: string;
 }
 
-SettingsCard.Toggle = function Toggle({
+SettingsListGroup.Toggle = function Toggle({
   label,
   description,
   className,
   ...props
-}: SettingsCardToggleProps) {
+}: SettingsListGroupToggleProps) {
   return (
     <ControlField className={cn('min-h-12 px-4 py-3', className)} {...props}>
       <Box className="flex-1 gap-0.5">
@@ -146,13 +154,13 @@ SettingsCard.Toggle = function Toggle({
   );
 };
 
-interface SettingsCardToggleSkeletonProps {
+interface SettingsListGroupToggleSkeletonProps {
   hasDescription?: boolean;
 }
 
-SettingsCard.ToggleSkeleton = function ToggleSkeleton({
+SettingsListGroup.ToggleSkeleton = function ToggleSkeleton({
   hasDescription = false,
-}: SettingsCardToggleSkeletonProps) {
+}: SettingsListGroupToggleSkeletonProps) {
   return (
     <HStack align="center" gap={12} className="min-h-12 px-4 py-3">
       <VStack flex={1} gap={2}>
@@ -164,28 +172,28 @@ SettingsCard.ToggleSkeleton = function ToggleSkeleton({
   );
 };
 
-SettingsCard.Content = function Content(props: ComponentProps<typeof VStack>) {
+SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;
 };
 
-SettingsCard.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   return (
-    <SettingsCard>
-      <SettingsCard.Content>
+    <SettingsListGroup>
+      <SettingsListGroup.Content>
         <Result
           className="py-4"
           title={t('errorBoundary.title')}
           description={t('errorBoundary.description')}
           button={<QueryErrorActions onRetry={reset} />}
         />
-      </SettingsCard.Content>
-    </SettingsCard>
+      </SettingsListGroup.Content>
+    </SettingsListGroup>
   );
 };
 
-SettingsCard.Separator = function CardSeparator() {
+SettingsListGroup.Separator = function CardSeparator() {
   return <Separator className="mx-4 bg-gray-3 dark:bg-gray-2" />;
 };
 

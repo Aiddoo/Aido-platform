@@ -20,7 +20,7 @@ import {
   ListRow,
   NaverIcon,
   QueryErrorBoundary,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
   Text,
   VStack,
@@ -41,7 +41,7 @@ function LinkedAccountsScreen() {
         {t('linkedAccounts.description')}
       </Text>
 
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<LinkedAccountsList.Loading />}>
           <LinkedAccountsList />
         </Suspense>
@@ -96,7 +96,7 @@ function LinkedAccountsList() {
 
   return (
     <>
-      <SettingsCard>
+      <SettingsListGroup>
         <ProviderListRow
           provider="KAKAO"
           slug="kakao"
@@ -108,7 +108,7 @@ function LinkedAccountsList() {
           onLink={link}
           onUnlinkRequest={handleUnlinkRequest}
         />
-        <SettingsCard.Separator />
+        <SettingsListGroup.Separator />
         <ProviderListRow
           provider="GOOGLE"
           slug="google"
@@ -122,7 +122,7 @@ function LinkedAccountsList() {
         />
         {process.env.EXPO_OS === 'ios' && (
           <>
-            <SettingsCard.Separator />
+            <SettingsListGroup.Separator />
             <ProviderListRow
               provider="APPLE"
               slug="apple"
@@ -138,7 +138,7 @@ function LinkedAccountsList() {
             />
           </>
         )}
-        <SettingsCard.Separator />
+        <SettingsListGroup.Separator />
         <ProviderListRow
           provider="NAVER"
           slug="naver"
@@ -150,7 +150,7 @@ function LinkedAccountsList() {
           onLink={link}
           onUnlinkRequest={handleUnlinkRequest}
         />
-      </SettingsCard>
+      </SettingsListGroup>
 
       <UnlinkConfirmDialog
         targetLabel={unlinkTarget?.label}
@@ -200,16 +200,16 @@ function UnlinkConfirmDialog({ targetLabel, onConfirm, onClose }: UnlinkConfirmD
 
 LinkedAccountsList.Loading = function Loading() {
   return (
-    <SettingsCard>
+    <SettingsListGroup>
       <SkeletonGroup isLoading isSkeletonOnly>
         {range(PROVIDER_ROW_COUNT).map((index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
-            {index < PROVIDER_ROW_COUNT - 1 && <SettingsCard.Separator />}
+            {index < PROVIDER_ROW_COUNT - 1 && <SettingsListGroup.Separator />}
           </Fragment>
         ))}
       </SkeletonGroup>
-    </SettingsCard>
+    </SettingsListGroup>
   );
 };
 

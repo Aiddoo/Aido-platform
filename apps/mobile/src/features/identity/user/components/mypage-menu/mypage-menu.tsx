@@ -15,7 +15,7 @@ import {
   MoonIcon,
   PawIcon,
   PersonIcon,
-  SettingsCard,
+  SettingsListGroup,
   type StyledIconType,
 } from '@src/shared/ui';
 import type { ComponentProps, ReactNode } from 'react';
@@ -28,7 +28,7 @@ import {
 const MENU_ICON_SIZE = 20;
 
 type MyPageMenuItemProps = Omit<
-  ComponentProps<typeof SettingsCard.Item>,
+  ComponentProps<typeof SettingsListGroup.Item>,
   'onPress' | 'className' | 'icon' | 'isSelected'
 > & {
   pathname: MyPageMenuPathname;
@@ -39,7 +39,7 @@ function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
   const { navigate, isSelected } = useMyPageMenuNavigation();
 
   return (
-    <SettingsCard.Item
+    <SettingsListGroup.Item
       {...props}
       icon={<MyPageMenuIcon Icon={Icon} />}
       isSelected={isSelected(pathname)}
@@ -64,29 +64,29 @@ function Activity({ whatsNewItem }: { whatsNewItem: ReactNode }) {
   const { t } = useTranslation('user');
 
   return (
-    <SettingsCard label={t('mypage.sections.activity')}>
+    <SettingsListGroup label={t('mypage.sections.activity')}>
       <MyPageMenuItem Icon={PersonIcon} label={t('mypage.items.friends')} pathname="/friends" />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={BlockIcon}
         label={t('mypage.items.blockedUsers')}
         pathname="/settings/blocked-users"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={ListIcon}
         label={t('mypage.items.categories')}
         pathname="/settings/category-settings"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       {whatsNewItem}
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={FlagIcon}
         label={t('mypage.items.achievements')}
         pathname="/achievements"
       />
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }
 
@@ -94,21 +94,21 @@ function Subscription() {
   const { t } = useTranslation('user');
 
   return (
-    <SettingsCard label={t('mypage.sections.subscription')}>
+    <SettingsListGroup label={t('mypage.sections.subscription')}>
       <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={PawIcon}
         label={t('mypage.items.appIcon')}
         pathname="/settings/app-icon"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={CrownIcon}
         label={t('mypage.items.subscription')}
         pathname="/settings/subscription"
       />
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }
 
@@ -116,33 +116,33 @@ function Settings() {
   const { t } = useTranslation(['user', 'settings']);
 
   return (
-    <SettingsCard label={t('mypage.sections.settings')}>
+    <SettingsListGroup label={t('mypage.sections.settings')}>
       <MyPageMenuItem
         Icon={BellIcon}
         label={t('mypage.items.notifications')}
         pathname="/settings/notifications"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem Icon={MoonIcon} label={t('mypage.items.theme')} pathname="/settings/theme" />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={EditIcon}
         label={t('mypage.items.fontSize')}
         pathname="/settings/font-size"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={KoreanIcon}
         label={t('settings:titles.language')}
         pathname="/settings/language"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem
         Icon={MicIcon}
         label={t('settings:titles.voiceStorage')}
         pathname="/settings/voice-storage"
       />
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }
 
@@ -150,15 +150,15 @@ function Support() {
   const { t } = useTranslation('user');
 
   return (
-    <SettingsCard>
+    <SettingsListGroup>
       <MyPageMenuItem
         Icon={ChatBubbleIcon}
         label={t('mypage.items.inquiry')}
         pathname="/settings/inquiry"
       />
-      <SettingsCard.Separator />
+      <SettingsListGroup.Separator />
       <MyPageMenuItem Icon={MemoIcon} label={t('mypage.items.terms')} pathname="/settings/terms" />
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }
 

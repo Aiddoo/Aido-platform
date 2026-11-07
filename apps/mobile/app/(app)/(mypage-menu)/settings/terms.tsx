@@ -12,7 +12,7 @@ import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   HStack,
   QueryErrorBoundary,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
   Text,
   TextButton,
@@ -46,19 +46,19 @@ function TermsSettingsScreen() {
 
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.Item
+      <SettingsListGroup>
+        <SettingsListGroup.Item
           label={t('terms.termsOfService')}
           description={getConsentDescription(consent.termsAgreedAt)}
           onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}
         />
-        <SettingsCard.Separator />
-        <SettingsCard.Item
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.Item
           label={t('terms.privacyPolicy')}
           description={getConsentDescription(consent.privacyAgreedAt)}
           onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
         />
-      </SettingsCard>
+      </SettingsListGroup>
 
       <AiDataSharingConsentCard />
     </>
@@ -68,15 +68,15 @@ function TermsSettingsScreen() {
 TermsSettingsScreen.Loading = function Loading() {
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.ItemSkeleton descriptionLines={2} />
-        <SettingsCard.Separator />
-        <SettingsCard.ItemSkeleton descriptionLines={2} />
-      </SettingsCard>
+      <SettingsListGroup>
+        <SettingsListGroup.ItemSkeleton descriptionLines={2} />
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.ItemSkeleton descriptionLines={2} />
+      </SettingsListGroup>
 
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton hasDescription />
-      </SettingsCard>
+      <SettingsListGroup>
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+      </SettingsListGroup>
     </>
   );
 };
@@ -84,7 +84,7 @@ TermsSettingsScreen.Loading = function Loading() {
 export default function TermsSettingsRoute() {
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<TermsSettingsScreen.Loading />}>
           <TermsSettingsScreen />
         </Suspense>
@@ -123,8 +123,8 @@ function AiDataSharingConsentCard() {
   };
 
   return (
-    <SettingsCard>
-      <SettingsCard.Toggle
+    <SettingsListGroup>
+      <SettingsListGroup.Toggle
         label={t('settings:terms.aiDataSharing.label')}
         description={
           // 이전 안내에 동의한 사람의 글자는 서버가 그 안내의 처리 업체(Google)로만 보낸다
@@ -137,7 +137,7 @@ function AiDataSharingConsentCard() {
         isDisabled={updateConsent.isPending}
         testID="ai-data-sharing-toggle"
       />
-      <SettingsCard.Content className="pt-0">
+      <SettingsListGroup.Content className="pt-0">
         {match(consent)
           .with(
             {
@@ -175,7 +175,7 @@ function AiDataSharingConsentCard() {
             </HStack>
           ))
           .exhaustive()}
-      </SettingsCard.Content>
-    </SettingsCard>
+      </SettingsListGroup.Content>
+    </SettingsListGroup>
   );
 }

@@ -11,7 +11,12 @@ import {
 } from '@src/features/notification/components/settings/settings-time-input';
 import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/notification.constants';
 import { useTranslation } from '@src/shared/i18n';
-import { CrownIcon, QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
+import {
+  CrownIcon,
+  QueryErrorBoundary,
+  SettingsListGroup,
+  SettingsScreenLayout,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -20,25 +25,25 @@ export default function ReminderSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<ReminderSettingsLoading />}>
-          <SettingsCard>
-            <SettingsCard.Content>
+          <SettingsListGroup>
+            <SettingsListGroup.Content>
               <ReminderTimeInput
                 label={t('settings.reminderMorningLabel')}
                 description={t('settings.reminderMorningDescription')}
                 period="morning"
               />
-            </SettingsCard.Content>
-            <SettingsCard.Separator />
-            <SettingsCard.Content>
+            </SettingsListGroup.Content>
+            <SettingsListGroup.Separator />
+            <SettingsListGroup.Content>
               <ReminderTimeInput
                 label={t('settings.reminderEveningLabel')}
                 description={t('settings.reminderEveningDescription')}
                 period="evening"
               />
-            </SettingsCard.Content>
-          </SettingsCard>
+            </SettingsListGroup.Content>
+          </SettingsListGroup>
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>
@@ -47,15 +52,15 @@ export default function ReminderSettingsScreen() {
 
 function ReminderSettingsLoading() {
   return (
-    <SettingsCard>
-      <SettingsCard.Content>
+    <SettingsListGroup>
+      <SettingsListGroup.Content>
         <TimeRowSkeleton />
-      </SettingsCard.Content>
-      <SettingsCard.Separator />
-      <SettingsCard.Content>
+      </SettingsListGroup.Content>
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Content>
         <TimeRowSkeleton />
-      </SettingsCard.Content>
-    </SettingsCard>
+      </SettingsListGroup.Content>
+    </SettingsListGroup>
   );
 }
 

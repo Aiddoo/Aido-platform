@@ -2,7 +2,7 @@ import { useApplicationMetadata, useErrorReporter } from '@src/bootstrap/provide
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, HStack, SettingsCard, Text, useConfirmDialog } from '@src/shared/ui';
+import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 
@@ -56,8 +56,8 @@ export function AppVersionCheck() {
   }
 
   return (
-    <SettingsCard label={t('section')}>
-      <SettingsCard.Item
+    <SettingsListGroup label={t('section')}>
+      <SettingsListGroup.Item
         label={t('item')}
         onPress={handlePress}
         isDisabled={query.isFetching}
@@ -74,6 +74,6 @@ export function AppVersionCheck() {
           </HStack>
         }
       />
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }

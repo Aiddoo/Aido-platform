@@ -16,7 +16,7 @@ import {
   type QueryErrorFallbackProps,
   ReadableContent,
   Result,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
   StyledSafeAreaView,
   Text,
@@ -78,8 +78,8 @@ function VoiceStorageScreen() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={
           <VoiceStorageScreen.Gutter className="pt-5 pb-3">
-            <SettingsCard>
-              <SettingsCard.Content gap={4}>
+            <SettingsListGroup>
+              <SettingsListGroup.Content gap={4}>
                 <Text size="b4" shade={6}>
                   {t('voiceStorage.totalLabel')}
                 </Text>
@@ -89,8 +89,8 @@ function VoiceStorageScreen() {
                 <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
                   {t('voiceStorage.description')}
                 </Text>
-              </SettingsCard.Content>
-            </SettingsCard>
+              </SettingsListGroup.Content>
+            </SettingsListGroup>
           </VoiceStorageScreen.Gutter>
         }
         ListEmptyComponent={
@@ -105,7 +105,7 @@ function VoiceStorageScreen() {
                 index === usage.notes.length - 1 && 'rounded-b-2xl',
               )}
             >
-              {index > 0 && <SettingsCard.Separator />}
+              {index > 0 && <SettingsListGroup.Separator />}
               <VoiceStorageScreen.Row
                 note={note}
                 bytes={bytes}
@@ -189,13 +189,13 @@ VoiceStorageScreen.Row = function Row({
 VoiceStorageScreen.Loading = function Loading() {
   return (
     <SettingsScreenLayout scrollEnabled={false}>
-      <SettingsCard>
-        <SettingsCard.Content gap={4}>
+      <SettingsListGroup>
+        <SettingsListGroup.Content gap={4}>
           <TextSkeleton size="b4" className="w-24" />
           <TextSkeleton size="t2" className="w-32" />
           <TextSkeleton size="b4" className="w-full" />
-        </SettingsCard.Content>
-      </SettingsCard>
+        </SettingsListGroup.Content>
+      </SettingsListGroup>
     </SettingsScreenLayout>
   );
 };
@@ -203,7 +203,7 @@ VoiceStorageScreen.Loading = function Loading() {
 VoiceStorageScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <SettingsScreenLayout>
-      <SettingsCard.Error {...props} />
+      <SettingsListGroup.Error {...props} />
     </SettingsScreenLayout>
   );
 };

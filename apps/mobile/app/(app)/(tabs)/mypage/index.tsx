@@ -16,7 +16,7 @@ import {
   H3,
   QueryErrorBoundary,
   Result,
-  SettingsCard,
+  SettingsListGroup,
   Spacing,
   StyledSafeAreaView,
   VStack,
@@ -57,7 +57,7 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
       <Spacing size={20} />
 
       <VStack gap={12}>
-        <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
           <Suspense fallback={<ProfileCard.Loading />}>
             <ProfileCard tierChip={<AccessTierChip />} />
           </Suspense>
@@ -80,7 +80,7 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
 
       <Spacing size={32} />
 
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<AccountActionButtons.Loading />}>
           <AccountActionButtons />
         </Suspense>

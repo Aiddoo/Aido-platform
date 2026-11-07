@@ -2,7 +2,7 @@ import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { Box, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
+import { Box, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { SCALED_FONT_STYLES } from '@src/shared/utils/scaled-font-style';
 import { Radio, RadioGroup } from 'heroui-native';
 import { Text as RNText } from 'react-native';
@@ -22,19 +22,19 @@ function FontSizeSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <SettingsCard>
+      <SettingsListGroup>
         <RadioGroup value={fontScale} onValueChange={handleChange} className="gap-0">
           <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           <FontScaleRadioItem value="small" label={t('fontSize.small')} />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           <FontScaleRadioItem value="large" label={t('fontSize.large')} />
-          <SettingsCard.Separator />
+          <SettingsListGroup.Separator />
           <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
         </RadioGroup>
-      </SettingsCard>
+      </SettingsListGroup>
     </SettingsScreenLayout>
   );
 }

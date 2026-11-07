@@ -8,7 +8,7 @@ import {
   Box,
   EditIcon,
   QueryErrorBoundary,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
   Text,
   VStack,
@@ -26,24 +26,24 @@ export default function ProfileScreen() {
   return (
     <>
       <SettingsScreenLayout>
-        <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
           <Suspense fallback={<AvatarButton.Loading />}>
             <AvatarButton onPress={() => setIsImageSheetOpen(true)} />
           </Suspense>
         </QueryErrorBoundary>
 
-        <QueryErrorBoundary fallback={SettingsCard.Error}>
+        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
           <Suspense fallback={<AccountCard.Loading />}>
             <AccountCard />
           </Suspense>
         </QueryErrorBoundary>
 
-        <SettingsCard>
-          <SettingsCard.Item
+        <SettingsListGroup>
+          <SettingsListGroup.Item
             label={t('titles.linkedAccounts')}
             onPress={() => push('/settings/linked-accounts')}
           />
-        </SettingsCard>
+        </SettingsListGroup>
       </SettingsScreenLayout>
       <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
     </>
@@ -89,8 +89,8 @@ function AccountCard() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   return (
-    <SettingsCard>
-      <SettingsCard.Item
+    <SettingsListGroup>
+      <SettingsListGroup.Item
         label={t('titles.editName')}
         value={
           <Text size="b2" shade={6}>
@@ -101,21 +101,21 @@ function AccountCard() {
       />
       {UserPolicy.hasCredential(user) && (
         <>
-          <SettingsCard.Separator />
-          <SettingsCard.Item
+          <SettingsListGroup.Separator />
+          <SettingsListGroup.Item
             label={t('titles.changePassword')}
             onPress={() => push('/settings/change-password')}
           />
         </>
       )}
-    </SettingsCard>
+    </SettingsListGroup>
   );
 }
 
 AccountCard.Loading = function Loading() {
   return (
-    <SettingsCard>
-      <SettingsCard.ItemSkeleton hasValue />
-    </SettingsCard>
+    <SettingsListGroup>
+      <SettingsListGroup.ItemSkeleton hasValue />
+    </SettingsListGroup>
   );
 };

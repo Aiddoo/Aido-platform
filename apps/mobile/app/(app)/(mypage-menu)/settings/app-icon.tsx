@@ -12,7 +12,7 @@ import {
   ConfirmDialog,
   HStack,
   QueryErrorBoundary,
-  SettingsCard,
+  SettingsListGroup,
   SettingsScreenLayout,
   Text,
   useOverlay,
@@ -86,16 +86,16 @@ function AppIconScreen() {
           {t('screen.chooseIcon')}
         </Text>
 
-        <SettingsCard>
-          <SettingsCard.Content>
+        <SettingsListGroup>
+          <SettingsListGroup.Content>
             <AppIconPicker
               value={currentIcon}
               onValueChange={handleIconPress}
               isDisabled={isChanging}
               isLocked={(key) => isIconLocked && AppIconPolicy.isPremiumIcon(key)}
             />
-          </SettingsCard.Content>
-        </SettingsCard>
+          </SettingsListGroup.Content>
+        </SettingsListGroup>
       </SettingsScreenLayout>
     ))
     .exhaustive();
@@ -110,11 +110,11 @@ AppIconScreen.Loading = function Loading() {
         {t('screen.chooseIcon')}
       </Text>
 
-      <SettingsCard>
-        <SettingsCard.Content>
+      <SettingsListGroup>
+        <SettingsListGroup.Content>
           <AppIconPicker.Loading />
-        </SettingsCard.Content>
-      </SettingsCard>
+        </SettingsListGroup.Content>
+      </SettingsListGroup>
     </SettingsScreenLayout>
   );
 };

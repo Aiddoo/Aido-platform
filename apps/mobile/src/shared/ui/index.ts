@@ -114,7 +114,7 @@ export { Result } from './result';
 export { ScreenScrollShadow } from './screen-scroll-shadow';
 export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer } from './scalloped-container';
-export { SettingsCard, SettingsScreenLayout } from './settings-card';
+export { SettingsListGroup, SettingsScreenLayout } from './settings-list-group';
 export { Spacing } from './spacing';
 export { Steps } from './steps';
 export { LineTabTrigger, SegmentTabTrigger } from './tab-trigger';

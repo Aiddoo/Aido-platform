@@ -5,7 +5,7 @@ import { formatTimeOfDay } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout, Text } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
@@ -31,8 +31,8 @@ function NotificationSettingsScreen() {
 
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.Toggle
+      <SettingsListGroup>
+        <SettingsListGroup.Toggle
           label={t('settings.timeFormat24')}
           isSelected={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
           onSelectedChange={(isEnabled) =>
@@ -42,10 +42,10 @@ function NotificationSettingsScreen() {
           }
           isDisabled={updateMutation.isPending}
         />
-      </SettingsCard>
+      </SettingsListGroup>
 
-      <SettingsCard>
-        <SettingsCard.Item
+      <SettingsListGroup>
+        <SettingsListGroup.Item
           label={t('settings.pushLabel')}
           value={
             <SummaryText isEnabled={preference.pushEnabled}>
@@ -54,8 +54,8 @@ function NotificationSettingsScreen() {
           }
           onPress={() => push('/settings/notifications/push')}
         />
-        <SettingsCard.Separator />
-        <SettingsCard.Item
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.Item
           label={t('settings.weatherLabel')}
           value={
             <SummaryText isEnabled={isWeatherEnabled}>
@@ -65,8 +65,8 @@ function NotificationSettingsScreen() {
           onPress={() => push('/settings/notifications/weather')}
           isDisabled={isPushDisabled}
         />
-        <SettingsCard.Separator />
-        <SettingsCard.Item
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.Item
           label={t('settings.reminderLabel')}
           value={
             <SummaryText isEnabled={!isPushDisabled}>
@@ -81,7 +81,7 @@ function NotificationSettingsScreen() {
           onPress={() => push('/settings/notifications/reminder')}
           isDisabled={isPushDisabled}
         />
-      </SettingsCard>
+      </SettingsListGroup>
     </>
   );
 }
@@ -89,17 +89,17 @@ function NotificationSettingsScreen() {
 NotificationSettingsScreen.Loading = function Loading() {
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton />
-      </SettingsCard>
+      <SettingsListGroup>
+        <SettingsListGroup.ToggleSkeleton />
+      </SettingsListGroup>
 
-      <SettingsCard>
-        <SettingsCard.ItemSkeleton hasValue />
-        <SettingsCard.Separator />
-        <SettingsCard.ItemSkeleton hasValue />
-        <SettingsCard.Separator />
-        <SettingsCard.ItemSkeleton hasValue />
-      </SettingsCard>
+      <SettingsListGroup>
+        <SettingsListGroup.ItemSkeleton hasValue />
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.ItemSkeleton hasValue />
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.ItemSkeleton hasValue />
+      </SettingsListGroup>
     </>
   );
 };
@@ -107,7 +107,7 @@ NotificationSettingsScreen.Loading = function Loading() {
 export default function NotificationSettingsRoute() {
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<NotificationSettingsScreen.Loading />}>
           <NotificationSettingsScreen />
         </Suspense>

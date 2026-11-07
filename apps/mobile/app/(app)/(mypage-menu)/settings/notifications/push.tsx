@@ -8,7 +8,7 @@ import { useUpdatePreferenceMutationOptions } from '@src/features/identity/prefe
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -26,22 +26,22 @@ function PushSettingsScreen() {
 
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.Content>
+      <SettingsListGroup>
+        <SettingsListGroup.Content>
           <PushPermissionStatusRow />
-        </SettingsCard.Content>
-      </SettingsCard>
+        </SettingsListGroup.Content>
+      </SettingsListGroup>
 
-      <SettingsCard>
-        <SettingsCard.Toggle
+      <SettingsListGroup>
+        <SettingsListGroup.Toggle
           label={t('settings.pushLabel')}
           description={t('settings.pushDescription')}
           isSelected={preference.pushEnabled}
           onSelectedChange={(enabled) => pushEnabledMutation.mutate({ pushEnabled: enabled })}
           isDisabled={updateMutation.isPending || pushEnabledMutation.isPending}
         />
-        <SettingsCard.Separator />
-        <SettingsCard.Toggle
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.Toggle
           label={t('settings.nightPushLabel')}
           description={
             preference.pushEnabled
@@ -54,26 +54,26 @@ function PushSettingsScreen() {
             !preference.pushEnabled || updateMutation.isPending || pushEnabledMutation.isPending
           }
         />
-      </SettingsCard>
+      </SettingsListGroup>
 
       {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
-      <SettingsCard>
-        <SettingsCard.Toggle
+      <SettingsListGroup>
+        <SettingsListGroup.Toggle
           label={t('settings.marketingLabel')}
           description={t('settings.marketingDescription')}
           isSelected={consent.marketingAgreedAt != null}
           onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
           isDisabled={marketingMutation.isPending}
         />
-        <SettingsCard.Separator />
-        <SettingsCard.Toggle
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.Toggle
           label={t('settings.marketingPushLabel')}
           description={t('settings.marketingPushDescription')}
           isSelected={consent.marketingPushAgreedAt != null}
           onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed })}
           isDisabled={marketingPushMutation.isPending}
         />
-      </SettingsCard>
+      </SettingsListGroup>
     </>
   );
 }
@@ -81,19 +81,19 @@ function PushSettingsScreen() {
 PushSettingsScreen.Loading = function Loading() {
   return (
     <>
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton hasDescription />
-      </SettingsCard>
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton hasDescription />
-        <SettingsCard.Separator />
-        <SettingsCard.ToggleSkeleton hasDescription />
-      </SettingsCard>
-      <SettingsCard>
-        <SettingsCard.ToggleSkeleton hasDescription />
-        <SettingsCard.Separator />
-        <SettingsCard.ToggleSkeleton hasDescription />
-      </SettingsCard>
+      <SettingsListGroup>
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+      </SettingsListGroup>
+      <SettingsListGroup>
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+      </SettingsListGroup>
+      <SettingsListGroup>
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+        <SettingsListGroup.Separator />
+        <SettingsListGroup.ToggleSkeleton hasDescription />
+      </SettingsListGroup>
     </>
   );
 };
@@ -101,7 +101,7 @@ PushSettingsScreen.Loading = function Loading() {
 export default function PushSettingsRoute() {
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<PushSettingsScreen.Loading />}>
           <PushSettingsScreen />
         </Suspense>

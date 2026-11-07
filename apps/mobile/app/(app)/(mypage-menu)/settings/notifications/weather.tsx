@@ -9,7 +9,7 @@ import {
 } from '@src/features/notification/components/settings/settings-time-input';
 import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/notification.constants';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsCard, SettingsScreenLayout } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -21,8 +21,8 @@ function WeatherSettingsScreen() {
   const isDisabled = !preference.pushEnabled || updateMutation.isPending;
 
   return (
-    <SettingsCard>
-      <SettingsCard.Toggle
+    <SettingsListGroup>
+      <SettingsListGroup.Toggle
         label={t('settings.weatherLabel')}
         description={
           preference.pushEnabled
@@ -39,39 +39,39 @@ function WeatherSettingsScreen() {
         }
         isDisabled={isDisabled}
       />
-      <SettingsCard.Separator />
-      <SettingsCard.Content>
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Content>
         <WeatherTimeInput
           label={t('settings.weatherMorningLabel')}
           description={t('settings.weatherMorningDescription')}
           period="morning"
         />
-      </SettingsCard.Content>
-      <SettingsCard.Separator />
-      <SettingsCard.Content>
+      </SettingsListGroup.Content>
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Content>
         <WeatherTimeInput
           label={t('settings.weatherEveningLabel')}
           description={t('settings.weatherEveningDescription')}
           period="evening"
         />
-      </SettingsCard.Content>
-    </SettingsCard>
+      </SettingsListGroup.Content>
+    </SettingsListGroup>
   );
 }
 
 WeatherSettingsScreen.Loading = function Loading() {
   return (
-    <SettingsCard>
-      <SettingsCard.ToggleSkeleton hasDescription />
-      <SettingsCard.Separator />
-      <SettingsCard.Content>
+    <SettingsListGroup>
+      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Content>
         <TimeRowSkeleton />
-      </SettingsCard.Content>
-      <SettingsCard.Separator />
-      <SettingsCard.Content>
+      </SettingsListGroup.Content>
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Content>
         <TimeRowSkeleton />
-      </SettingsCard.Content>
-    </SettingsCard>
+      </SettingsListGroup.Content>
+    </SettingsListGroup>
   );
 };
 
@@ -129,7 +129,7 @@ function WeatherTimeInput({
 export default function WeatherSettingsRoute() {
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<WeatherSettingsScreen.Loading />}>
           <WeatherSettingsScreen />
         </Suspense>
