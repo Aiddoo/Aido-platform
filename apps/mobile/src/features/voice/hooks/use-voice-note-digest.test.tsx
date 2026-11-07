@@ -163,7 +163,7 @@ describe('useVoiceNoteDigest', () => {
 
     // Then
     await waitFor(() => expect(screen.getByTestId('pending')).toHaveTextContent('false'));
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeUndefined();
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
   });
 
   it('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {

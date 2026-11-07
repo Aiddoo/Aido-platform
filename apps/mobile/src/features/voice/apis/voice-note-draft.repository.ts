@@ -18,7 +18,7 @@ export interface VoiceNoteDraftRepository {
   subscribe(listener: () => void): () => void;
   /** 내 초안 전체. 바뀌기 전까지 같은 배열을 돌려준다 */
   getSnapshot(accountId: string): readonly VoiceNote[];
-  find(accountId: string, draftId: string): VoiceNote | undefined;
+  find(accountId: string, draftId: string): VoiceNote | null;
   /** 오래된 순서가 아니라 저장소 순서다. 정렬은 쓰는 쪽이 정한다 */
   findAll(accountId: string): VoiceNote[];
   save(accountId: string, note: VoiceNote): void;
@@ -81,10 +81,10 @@ export function createVoiceNoteDraftRepository({
     };
   };
 
-  const read = (key: string): VoiceNote | undefined => {
+  const read = (key: string): VoiceNote | null => {
     const raw = storage.get(key);
     if (raw == null) {
-      return undefined;
+      return null;
     }
 
     try {
@@ -101,7 +101,7 @@ export function createVoiceNoteDraftRepository({
     }
 
     storage.remove(key);
-    return undefined;
+    return null;
   };
 
   const write = (accountId: string, note: VoiceNote) => {

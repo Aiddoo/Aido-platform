@@ -9,7 +9,7 @@ import type { VoiceNote } from '../schemas/voice-note.schema';
 
 interface UseVoiceNoteCaptionsOptions {
   /** 이어 듣는 초안. 없으면 빈 자막에서 시작한다 */
-  seedNote: VoiceNote | undefined;
+  seedNote: VoiceNote | null;
   getElapsedMs: () => number;
   /** 자막이 바뀌었다. 초안 저장은 부른 쪽이 맡는다 */
   onChange: () => void;

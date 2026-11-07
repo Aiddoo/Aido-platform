@@ -6,7 +6,7 @@ import { speechLocaleSchema } from '../schemas/speech-locale.schema';
 const KEY_PREFIX = 'aido_recognition_language_v1';
 
 export interface RecognitionLanguageRepository {
-  find(userId: string): SpeechLocale | undefined;
+  find(userId: string): SpeechLocale | null;
   save(userId: string, locale: SpeechLocale): void;
   subscribe(listener: () => void): () => void;
 }
@@ -30,9 +30,9 @@ export function createRecognitionLanguageRepository(
         const parsed = speechLocaleSchema.safeParse(
           storage.get(recognitionLanguageStorageKey(userId)),
         );
-        return parsed.success ? parsed.data : undefined;
+        return parsed.success ? parsed.data : null;
       } catch {
-        return undefined;
+        return null;
       }
     },
     save: (userId, locale) => {

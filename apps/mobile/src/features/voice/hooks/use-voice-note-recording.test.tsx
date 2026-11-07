@@ -1033,7 +1033,7 @@ describe('useVoiceNoteRecording', () => {
     await start(speechRecognizer);
     await say(speechRecognizer, '앱을 떠나기 전 말.');
     const draftId = screen.getByTestId('draft-id').props.children;
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)).toBeUndefined();
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)).toBeNull();
 
     // When
     await act(async () => unmount());

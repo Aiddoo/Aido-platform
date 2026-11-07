@@ -15,5 +15,5 @@ export function useVoiceNotes(accountId: string) {
 
 export function useVoiceNote(accountId: string, draftId: string) {
   const notes = useStoredVoiceNotes(accountId);
-  return notes.find((note) => note.draftId === draftId);
+  return notes.find((note) => note.draftId === draftId) ?? null;
 }

@@ -59,7 +59,7 @@ export function useVoiceNoteRecording({
   const { trackEvent } = useTrack();
 
   const [seedNote] = useState(() =>
-    seedDraftId == null ? undefined : draftRepository.find(accountId, seedDraftId),
+    seedDraftId == null ? null : draftRepository.find(accountId, seedDraftId),
   );
   const [baseNote] = useState<VoiceNote>(
     () =>

@@ -240,16 +240,16 @@ function canPlayRecording(note: VoiceNote): boolean {
   return note.recordings.length > 0 && note.durationMs > 0;
 }
 
-function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint | undefined {
+function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint | null {
   if (note.digest == null) {
-    return undefined;
+    return null;
   }
 
   const passed = note.digest.keyPoints.filter(
     (keyPoint) => keyPoint.startMs != null && keyPoint.startMs <= positionMs,
   );
 
-  return maxBy(passed.toReversed(), (keyPoint) => keyPoint.startMs ?? 0);
+  return maxBy(passed.toReversed(), (keyPoint) => keyPoint.startMs ?? 0) ?? null;
 }
 
 /** 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다 */

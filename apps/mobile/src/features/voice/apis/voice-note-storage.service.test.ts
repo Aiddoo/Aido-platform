@@ -42,7 +42,7 @@ describe('VoiceNoteStorageService', () => {
     service.discard('user-1', 'draft-1');
 
     // Then
-    expect(drafts.find('user-1', 'draft-1')).toBeUndefined();
+    expect(drafts.find('user-1', 'draft-1')).toBeNull();
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
@@ -57,7 +57,7 @@ describe('VoiceNoteStorageService', () => {
     jest.advanceTimersByTime(10_000);
 
     // Then
-    expect(drafts.find('user-1', 'draft-1')).toBeUndefined();
+    expect(drafts.find('user-1', 'draft-1')).toBeNull();
     jest.useRealTimers();
   });
 

@@ -86,7 +86,7 @@ describe('VoiceNoteDraftRepository', () => {
     const all = repository.findAll('user-2');
 
     // Then
-    expect(found).toBeUndefined();
+    expect(found).toBeNull();
     expect(all).toEqual([]);
   });
 
@@ -147,7 +147,7 @@ describe('VoiceNoteDraftRepository', () => {
     jest.advanceTimersByTime(VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS);
 
     // Then
-    expect(repository.find('user-1', note.draftId)).toBeUndefined();
+    expect(repository.find('user-1', note.draftId)).toBeNull();
   });
 
   it('읽을 수 없는 초안은 복원 실패를 남기고 버린다', () => {
@@ -159,7 +159,7 @@ describe('VoiceNoteDraftRepository', () => {
     const found = repository.find('user-1', 'draft-1');
 
     // Then
-    expect(found).toBeUndefined();
+    expect(found).toBeNull();
     expect(logger.warn).toHaveBeenCalledWith(
       VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED,
       expect.objectContaining({ reason: 'invalid-json' }),
@@ -176,7 +176,7 @@ describe('VoiceNoteDraftRepository', () => {
     const found = repository.find('user-1', 'draft-1');
 
     // Then
-    expect(found).toBeUndefined();
+    expect(found).toBeNull();
     expect(logger.warn).toHaveBeenCalledWith(VOICE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
       reason: 'schema-mismatch',
     });
@@ -318,7 +318,7 @@ describe('VoiceNoteDraftRepository', () => {
     jest.advanceTimersByTime(10_000);
 
     // Then
-    expect(repository.find('user-1', 'draft-1')).toBeUndefined();
+    expect(repository.find('user-1', 'draft-1')).toBeNull();
   });
 
   it('다른 계정의 대기 쓰기는 소유자만 남길 때 함께 취소한다', () => {
@@ -331,6 +331,6 @@ describe('VoiceNoteDraftRepository', () => {
     jest.advanceTimersByTime(10_000);
 
     // Then
-    expect(repository.find('user-2', 'draft-1')).toBeUndefined();
+    expect(repository.find('user-2', 'draft-1')).toBeNull();
   });
 });

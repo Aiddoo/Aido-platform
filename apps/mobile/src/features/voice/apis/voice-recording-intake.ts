@@ -138,7 +138,7 @@ export class VoiceRecordingIntake {
       ['asc'],
     );
     onRecordingSaved();
-    const handedOff = this.#hasHandedOff ? draftRepository.find(accountId, draftId) : undefined;
+    const handedOff = this.#hasHandedOff ? draftRepository.find(accountId, draftId) : null;
     if (handedOff != null) {
       draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
     }

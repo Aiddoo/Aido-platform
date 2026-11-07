@@ -150,7 +150,7 @@ describe('findKeyPointAt', () => {
     const keyPoint = VoiceNotePolicy.findKeyPointAt(note, positionMs);
 
     // Then
-    expect(keyPoint).toBeUndefined();
+    expect(keyPoint).toBeNull();
   });
 
   it('시작 시각 정각에는 그 포인트로 넘어간다', () => {
@@ -201,7 +201,7 @@ describe('findKeyPointAt', () => {
     const keyPoint = VoiceNotePolicy.findKeyPointAt(undigested, 60_000);
 
     // Then
-    expect(keyPoint).toBeUndefined();
+    expect(keyPoint).toBeNull();
   });
 });
 

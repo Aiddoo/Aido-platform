@@ -14,7 +14,7 @@ export function useRecognitionLanguage() {
   const userId = me?.id;
 
   const savedLocale = useSyncExternalStore(repository.subscribe, () =>
-    userId == null ? undefined : repository.find(userId),
+    userId == null ? null : repository.find(userId),
   );
   const locale = savedLocale ?? APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
 

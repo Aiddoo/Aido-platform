@@ -17,7 +17,7 @@ describe('recognitionLanguageRepository', () => {
 
     // Then
     expect(repository.find('user-1')).toBe('en-US');
-    expect(repository.find('user-2')).toBeUndefined();
+    expect(repository.find('user-2')).toBeNull();
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -31,6 +31,6 @@ describe('recognitionLanguageRepository', () => {
     const locale = repository.find('user-1');
 
     // Then
-    expect(locale).toBeUndefined();
+    expect(locale).toBeNull();
   });
 });

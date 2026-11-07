@@ -270,7 +270,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeUndefined();
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
   });
 
   it('녹음을 지운 메모는 글자와 요약이 남고 다시 들을 수 없다고 알린다', async () => {
