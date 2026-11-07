@@ -2,10 +2,10 @@ import type { Page } from '@src/shared/types/page.types';
 
 import type { FriendUser } from '../schemas/friend.schema';
 
-export const findFriendById = (
+export function findFriendById(
   pages: ReadonlyArray<Pick<Page<FriendUser>, 'items'>>,
   friendId: string,
-): FriendUser | null => {
+): FriendUser | null {
   for (const page of pages) {
     const friend = page.items.find((item) => item.id === friendId);
     if (friend) {
@@ -13,4 +13,4 @@ export const findFriendById = (
     }
   }
   return null;
-};
+}

@@ -6,7 +6,9 @@ import { addNetworkStateListener, getNetworkStateAsync, type NetworkState } from
 import { NETWORK_STATUS_LOG_EVENT } from './network-status-log-events';
 
 // 상태를 아직 모르면(undefined) 오프라인으로 단정하지 않는다
-const isOnline = (state: NetworkState): boolean => state.isConnected !== false;
+function isOnline(state: NetworkState): boolean {
+  return state.isConnected !== false;
+}
 
 export const expoNetworkStatusGateway: NetworkStatusGateway = {
   subscribe: (listener) => {

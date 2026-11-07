@@ -53,7 +53,7 @@ export interface TokenRefreshHookDeps {
  * - 갱신 직후 재발급 토큰까지 401이면(마커) 서버측 일시 불일치 신호다 — 즉시 Sentry
  *   warning으로 남기고 원 401을 반환한다(화면별 QueryErrorBoundary가 담음, 무음 금지).
  */
-export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterResponseHook => {
+export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterResponseHook {
   const { tokenStore, refresh, endSession, sessionEpoch } = deps;
 
   // 새 액세스 토큰과 마커를 실어 강제 재시도한다. `new Request(request, ...)`가 원 요청의
@@ -108,4 +108,4 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
       .with({ kind: 'superseded' }, () => response)
       .exhaustive();
   };
-};
+}

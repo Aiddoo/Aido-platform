@@ -6,5 +6,6 @@
  * @param fontScale 시스템 글꼴 배율
  * @param ratio 글꼴 배율 반영 비율 (0~1, 기본 0.5)
  */
-export const scaleByFontScale = (size: number, fontScale: number, ratio = 0.5): number =>
-  Math.round(size * (1 + (fontScale - 1) * ratio));
+export function scaleByFontScale(size: number, fontScale: number, ratio = 0.5): number {
+  return Math.round(size * (1 + (fontScale - 1) * ratio));
+}

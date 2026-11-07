@@ -1,7 +1,7 @@
 import { ErrorCode, isErrorCode } from '@aido/api/errors';
 import { t, tDynamic } from '@src/shared/i18n';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
-import type { AfterResponseHook } from 'ky';
+import type { AfterResponseState } from 'ky';
 import { z } from 'zod';
 
 import { REQUEST_ID_HEADER } from './request-headers';
@@ -25,25 +25,25 @@ const errorEnvelopeSchema = z.object({
   }),
 });
 
-export const getPathname = (url: string): string => {
+export function getPathname(url: string): string {
   try {
     return new URL(url).pathname;
   } catch {
     return url;
   }
-};
+}
 
 /** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). clone으로 원본 스트림 보존. */
-const readBody = async (response: Response): Promise<unknown> => {
+async function readBody(response: Response): Promise<unknown> {
   try {
     return await response.clone().json();
   } catch {
     return null;
   }
-};
+}
 
 /** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지/폴백을 사용(무캐스트, isErrorCode 가드). */
-export const resolveMessage = (code: string, serverMessage: string): string => {
+export function resolveMessage(code: string, serverMessage: string): string {
   if (isErrorCode(code)) {
     const mapped = tDynamic('errors', code);
     if (mapped) {
@@ -51,14 +51,14 @@ export const resolveMessage = (code: string, serverMessage: string): string => {
     }
   }
   return serverMessage || t('errors:fallback');
-};
+}
 
 /**
  * 실패한 API 응답을 Sentry breadcrumb(category: 'http')로 남긴다.
  * 이후 발생하는 에러 이벤트의 타임라인에 "어떤 요청이 어떤 코드로 실패했는지"가 붙는다.
  * 요청 ID로 같은 요청의 서버 로그(`reqId`)·Sentry 이벤트(`request_id`)를 찾는다.
  */
-const recordFailureBreadcrumb = async (request: Request, response: Response): Promise<void> => {
+async function recordFailureBreadcrumb(request: Request, response: Response): Promise<void> {
   const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
   const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
   errorReporter.addBreadcrumb({
@@ -73,21 +73,24 @@ const recordFailureBreadcrumb = async (request: Request, response: Response): Pr
       requestId: request.headers.get(REQUEST_ID_HEADER),
     },
   });
-};
+}
 
 /** auth-client용: 401은 갱신 흐름(token-refresh-hook)의 정상 경로라 소음 방지를 위해 건너뜀 */
-export const recordApiFailureBreadcrumb: AfterResponseHook = async ({ request, response }) => {
+export async function recordApiFailureBreadcrumb({
+  request,
+  response,
+}: AfterResponseState): Promise<void> {
   if (!response.ok && response.status !== 401) {
     await recordFailureBreadcrumb(request, response);
   }
-};
+}
 
 /** public-client용: 갱신 흐름이 없으므로 401 포함 모든 실패를 기록 */
-export const recordPublicApiFailureBreadcrumb: AfterResponseHook = async ({
+export async function recordPublicApiFailureBreadcrumb({
   request,
   response,
-}) => {
+}: AfterResponseState): Promise<void> {
   if (!response.ok) {
     await recordFailureBreadcrumb(request, response);
   }
-};
+}

@@ -11,7 +11,7 @@ import { toUserAnalyticsProperties } from '@src/features/identity/user/utils/use
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-export const useUserIdentity = (): void => {
+export function useUserIdentity(): void {
   const status = useAuthStatus();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
@@ -45,4 +45,4 @@ export const useUserIdentity = (): void => {
       voiceNoteStorageService.removeExpired(meId);
     }
   }, [isAuthenticated, meId, draftService, queryCacheStorage, voiceNoteStorageService]);
-};
+}

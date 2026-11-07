@@ -14,7 +14,9 @@ import { allDoneBannerStorageKey } from '../apis/all-done-banner.repository';
 import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 
-const selectUserId = (user: User) => user.id;
+function selectUserId(user: User) {
+  return user.id;
+}
 
 /** 오늘 할 일을 다 끝낸 순간에 친구 초대를 권한다. 하루에 한 번 닫을 수 있다 */
 export function InviteEntryBanner({

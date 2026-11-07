@@ -17,13 +17,15 @@ export interface SessionManager {
   end(details: SessionExpiredDetails): Promise<void>;
 }
 
-export const createSessionManager = (tokenStore: TokenStore): SessionManager => ({
-  async end(details: SessionExpiredDetails): Promise<void> {
-    try {
-      await tokenStore.clear();
-    } finally {
-      // 삭제가 실패해도(기기 잠김 등) UI는 반드시 미인증으로 내려가야 한다.
-      emitSessionExpired(details);
-    }
-  },
-});
+export function createSessionManager(tokenStore: TokenStore): SessionManager {
+  return {
+    async end(details: SessionExpiredDetails): Promise<void> {
+      try {
+        await tokenStore.clear();
+      } finally {
+        // 삭제가 실패해도(기기 잠김 등) UI는 반드시 미인증으로 내려가야 한다.
+        emitSessionExpired(details);
+      }
+    },
+  };
+}

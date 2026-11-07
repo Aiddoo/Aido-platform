@@ -40,11 +40,15 @@ interface PendingSave {
   run: ReturnType<typeof debounce<() => void>>;
 }
 
-const encodeSegment = (segment: string) => encodeURIComponent(segment);
-const createOwnerPrefix = (accountId: string) =>
-  `${KEY_PREFIX}${encodeSegment(accountId)}${KEY_SEPARATOR}`;
-const createKey = (accountId: string, draftId: string) =>
-  `${createOwnerPrefix(accountId)}${encodeSegment(draftId)}`;
+function encodeSegment(segment: string) {
+  return encodeURIComponent(segment);
+}
+function createOwnerPrefix(accountId: string) {
+  return `${KEY_PREFIX}${encodeSegment(accountId)}${KEY_SEPARATOR}`;
+}
+function createKey(accountId: string, draftId: string) {
+  return `${createOwnerPrefix(accountId)}${encodeSegment(draftId)}`;
+}
 
 export function createVoiceNoteDraftRepository({
   storage,

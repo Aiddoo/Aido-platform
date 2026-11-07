@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-export const useRefresh = (refetchFn: () => Promise<unknown>) => {
+export function useRefresh(refetchFn: () => Promise<unknown>) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -13,4 +13,4 @@ export const useRefresh = (refetchFn: () => Promise<unknown>) => {
   }, [refetchFn]);
 
   return [isRefreshing, handleRefresh] as const;
-};
+}

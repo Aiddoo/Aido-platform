@@ -7,7 +7,7 @@ import type { TrackedEventMap } from './event-map';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
 
 /** `track()`의 hook 버전 — DI에서 Analytics를 받아 타입 이벤트만 전송한다. */
-export const useTrack = () => {
+export function useTrack() {
   const analytics = useAnalytics();
   const featureAttribution = useFeatureAttribution();
 
@@ -31,4 +31,4 @@ export const useTrack = () => {
   );
 
   return { trackEvent, trackAttributedFeatureSuccess };
-};
+}

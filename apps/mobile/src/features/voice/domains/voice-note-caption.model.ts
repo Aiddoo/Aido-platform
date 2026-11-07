@@ -66,7 +66,9 @@ export function splitIntoSentences(
   });
 }
 
-const removeSpaces = (text: string) => text.replace(/\s/g, '');
+function removeSpaces(text: string) {
+  return text.replace(/\s/g, '');
+}
 
 function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number): number | null {
   let consumed = 0;

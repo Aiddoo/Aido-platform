@@ -15,10 +15,12 @@ import type { CurrentWeather, WeatherReport } from '../schemas/weather-report.sc
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
 
-const selectBadge = (report: WeatherReport) => ({
-  current: report.current,
-  serviceName: report.attribution.serviceName,
-});
+function selectBadge(report: WeatherReport) {
+  return {
+    current: report.current,
+    serviceName: report.attribution.serviceName,
+  };
+}
 
 /**
  * 피드·메모 헤더의 날씨 진입점. 날씨 화면과 같은 리포트 key를 구독해 화면에 들어가면 캐시를 그대로 쓴다.

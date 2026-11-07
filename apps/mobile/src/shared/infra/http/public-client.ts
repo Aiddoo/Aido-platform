@@ -8,7 +8,7 @@ import { type AppHeaderSource, applyPerRequestHeaders, createAppHeaders } from '
  * 토큰 없이 호출하는 공개 API용 HTTP 클라이언트
  * - 로그인, 회원가입 등 인증 전 요청에 사용
  */
-export const createPublicClient = ({ appVersion, appBuild }: AppHeaderSource = {}): KyInstance => {
+export function createPublicClient({ appVersion, appBuild }: AppHeaderSource = {}): KyInstance {
   return ky.create({
     // v2: prefixUrl → prefix (append 시맨틱 동일)
     prefix: ENV.API_URL,
@@ -24,4 +24,4 @@ export const createPublicClient = ({ appVersion, appBuild }: AppHeaderSource = {
       afterResponse: [recordPublicApiFailureBreadcrumb],
     },
   });
-};
+}

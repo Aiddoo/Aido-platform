@@ -9,7 +9,7 @@ const ICON_MAP = new Map<string, ImageSourcePropType>(
 const DEFAULT_ICON: ImageSourcePropType = defaultProfileIconImage;
 
 /** profileImage 값(아이콘 키 | URL | null)을 Image source로 변환 */
-export const getProfileIconSource = (profileImage: string | null): ImageSourcePropType => {
+export function getProfileIconSource(profileImage: string | null): ImageSourcePropType {
   if (!profileImage) {
     return DEFAULT_ICON;
   }
@@ -20,4 +20,4 @@ export const getProfileIconSource = (profileImage: string | null): ImageSourcePr
   }
 
   return /^https?:\/\//i.test(profileImage) ? { uri: profileImage } : DEFAULT_ICON;
-};
+}

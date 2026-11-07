@@ -10,7 +10,7 @@ type RevenueCatApiKeyContext = {
   testApiKey?: string;
 };
 
-export const resolveRevenueCatApiKey = (context: RevenueCatApiKeyContext): string | undefined => {
+export function resolveRevenueCatApiKey(context: RevenueCatApiKeyContext): string | undefined {
   if (context.isDebugBuild && context.isDevelopmentEnvironment) {
     return context.testApiKey;
   }
@@ -23,4 +23,4 @@ export const resolveRevenueCatApiKey = (context: RevenueCatApiKeyContext): strin
 
   // RevenueCat deliberately terminates Release builds configured with a Test Store key.
   return platformApiKey?.startsWith('test_') ? undefined : platformApiKey;
-};
+}

@@ -41,13 +41,14 @@ const KEYBOARD_SHOW_EVENTS =
     : (['keyboardDidShow'] as const);
 const KEYBOARD_HIDE_EVENT = process.env.EXPO_OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-const measureInWindow = (node: Pick<HostInstance, 'measureInWindow'>) =>
-  new Promise<VerticalRect>((resolve) => {
+function measureInWindow(node: Pick<HostInstance, 'measureInWindow'>) {
+  return new Promise<VerticalRect>((resolve) => {
     node.measureInWindow((_x, top, _width, height) => resolve({ top, height }));
   });
+}
 
-const waitForFocusedInput = () =>
-  new Promise<HostInstance | null>((resolve) => {
+function waitForFocusedInput() {
+  return new Promise<HostInstance | null>((resolve) => {
     let frames = 0;
     const check = () => {
       const input = TextInput.State.currentlyFocusedInput();
@@ -60,6 +61,7 @@ const waitForFocusedInput = () =>
     };
     check();
   });
+}
 
 interface ScrollFocusedInputOptions {
   isOpen: boolean;

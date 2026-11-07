@@ -118,7 +118,7 @@ const DEFAULT_CONTEXT: FontScaleContextValue = {
   resolveSize: (size: TextSize) => size,
 };
 
-export const useFontScale = (): FontScaleContextValue => {
+export function useFontScale(): FontScaleContextValue {
   const context = use(FontScaleContext);
   return context ?? DEFAULT_CONTEXT;
-};
+}

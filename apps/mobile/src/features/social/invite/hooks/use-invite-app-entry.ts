@@ -7,7 +7,9 @@ import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-const selectUserId = (user: User) => user.id;
+function selectUserId(user: User) {
+  return user.id;
+}
 
 /**
  * 로그인 전에 연 초대를 로그인 뒤 초대 카드로 이어서 연다(위젯 진입과 같은 방식).

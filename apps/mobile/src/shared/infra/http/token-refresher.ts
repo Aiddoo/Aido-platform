@@ -51,11 +51,11 @@ interface TokenRefresherDeps {
  * resolve = 확정 판정(refreshed/invalid/superseded), reject = 일시 인프라 장애(재시도 대상).
  * 같은 세대의 동시 대기자들은 single-flight로 동일한 결과(성공이든 실패든)를 공유한다.
  */
-export const createTokenRefresher = ({
+export function createTokenRefresher({
   tokenStore,
   requestRefresh,
   sessionEpoch,
-}: TokenRefresherDeps): TokenRefresher => {
+}: TokenRefresherDeps): TokenRefresher {
   let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 
   const refresh = async (epoch: number): Promise<RefreshOutcome> => {
@@ -140,4 +140,4 @@ export const createTokenRefresher = ({
     inFlight = { epoch, outcome };
     return outcome;
   };
-};
+}

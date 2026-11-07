@@ -26,10 +26,12 @@ export const INQUIRY_SHEET_EXIT: SheetRouteExit = {
   href: BUG_REPORT_INQUIRY_HREF,
 };
 
-export const openBugReportInquiry = () => router.push(BUG_REPORT_INQUIRY_HREF);
+export function openBugReportInquiry() {
+  return router.push(BUG_REPORT_INQUIRY_HREF);
+}
 
 /** 내비게이터가 없을 때(루트 경계)의 문의: 진단 코드만 담은 메일을 연다 */
-export const openSupportMail = () => {
+export function openSupportMail() {
   const code = createDiagnosticCode({
     platform: process.env.EXPO_OS,
     appVersion: Application.nativeApplicationVersion,
@@ -42,7 +44,7 @@ export const openSupportMail = () => {
   return Linking.openURL(url).catch((error: unknown) =>
     logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, { error: getErrorMessage(error) }),
   );
-};
+}
 
 interface QueryErrorActionsProps {
   onRetry: () => void;

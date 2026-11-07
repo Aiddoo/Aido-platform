@@ -6,22 +6,28 @@ import type {
 import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-category.schema';
 
 /** TodoCategoryWithCount DTO → TodoCategoryWithCount 도메인 모델 (목록 조회용) */
-export const toTodoCategoryWithCount = (dto: TodoCategoryWithCountDTO): TodoCategoryWithCount => ({
-  id: dto.id,
-  name: dto.name,
-  color: dto.color,
-  sortOrder: dto.sortOrder,
-  todoCount: dto.todoCount,
-});
+export function toTodoCategoryWithCount(dto: TodoCategoryWithCountDTO): TodoCategoryWithCount {
+  return {
+    id: dto.id,
+    name: dto.name,
+    color: dto.color,
+    sortOrder: dto.sortOrder,
+    todoCount: dto.todoCount,
+  };
+}
 
-export const toTodoCategoryWithCounts = (
+export function toTodoCategoryWithCounts(
   dtos: TodoCategoryWithCountDTO[],
-): TodoCategoryWithCount[] => dtos.map(toTodoCategoryWithCount);
+): TodoCategoryWithCount[] {
+  return dtos.map(toTodoCategoryWithCount);
+}
 
 /** TodoCategory DTO → TodoCategory 도메인 모델 (생성/수정 응답용) */
-export const toTodoCategory = (dto: TodoCategoryDTO): TodoCategory => ({
-  id: dto.id,
-  name: dto.name,
-  color: dto.color,
-  sortOrder: dto.sortOrder,
-});
+export function toTodoCategory(dto: TodoCategoryDTO): TodoCategory {
+  return {
+    id: dto.id,
+    name: dto.name,
+    color: dto.color,
+    sortOrder: dto.sortOrder,
+  };
+}

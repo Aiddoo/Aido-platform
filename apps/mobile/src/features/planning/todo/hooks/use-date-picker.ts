@@ -14,11 +14,11 @@ type DatePickerAction =
   | { type: 'prevMonth' }
   | { type: 'nextMonth' };
 
-export const datePickerReducer = (
+export function datePickerReducer(
   state: DatePickerState,
   action: DatePickerAction,
-): DatePickerState =>
-  match(action)
+): DatePickerState {
+  return match(action)
     .with({ type: 'selectDate' }, ({ date }) => ({ ...state, startDate: date }))
     .with({ type: 'prevMonth' }, () => ({
       ...state,
@@ -29,12 +29,13 @@ export const datePickerReducer = (
       displayMonth: dayjs(state.displayMonth).add(1, 'month').toDate(),
     }))
     .exhaustive();
+}
 
 interface UseDatePickerParams {
   startDate: Date;
 }
 
-export const useDatePicker = ({ startDate }: UseDatePickerParams) => {
+export function useDatePicker({ startDate }: UseDatePickerParams) {
   const { timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
     startDate,
@@ -54,6 +55,6 @@ export const useDatePicker = ({ startDate }: UseDatePickerParams) => {
     goToPrevMonth: () => dispatch({ type: 'prevMonth' }),
     goToNextMonth: () => dispatch({ type: 'nextMonth' }),
   };
-};
+}
 
 export type DatePicker = ReturnType<typeof useDatePicker>;

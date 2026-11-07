@@ -12,7 +12,7 @@
  */
 
 /** 순환 참조·getter 예외에도 죽지 않는 최선의 문자열화. */
-const stringify = (value: unknown): string => {
+function stringify(value: unknown): string {
   try {
     const json = JSON.stringify(value);
     if (json != null && json !== '{}') {
@@ -22,24 +22,24 @@ const stringify = (value: unknown): string => {
     // 순환 참조 등 — String()으로 폴백
   }
   return String(value);
-};
+}
 
 /** `{ message: '...' }` 형태에서 메시지를 꺼낸다. */
-const readMessage = (value: unknown): string | undefined => {
+function readMessage(value: unknown): string | undefined {
   if (typeof value !== 'object' || value == null || !('message' in value)) {
     return undefined;
   }
 
   const { message } = value;
   return typeof message === 'string' && message.length > 0 ? message : undefined;
-};
+}
 
 /**
  * 던져진 값에서 사람이 읽을 메시지를 뽑는다.
  *
  * `Error`가 아니어도 동작해야 한다 — 벤더 에러를 메시지로 판별하는 경계에서 쓴다.
  */
-export const getErrorMessage = (value: unknown): string => {
+export function getErrorMessage(value: unknown): string {
   if (value instanceof Error) {
     return value.message;
   }
@@ -47,7 +47,7 @@ export const getErrorMessage = (value: unknown): string => {
     return value;
   }
   return readMessage(value) ?? stringify(value);
-};
+}
 
 /**
  * 던져진 값을 `Error`로 정규화한다. 원본은 `cause`로 보존한다.
@@ -55,7 +55,7 @@ export const getErrorMessage = (value: unknown): string => {
  * `ErrorReporter.captureException`은 `Error`를 요구한다. 감싸는 과정에서
  * 원본을 잃으면 Sentry 이슈에 남는 것이 껍데기뿐이다.
  */
-export const toError = (value: unknown): Error => {
+export function toError(value: unknown): Error {
   if (value instanceof Error) {
     return value;
   }
@@ -64,4 +64,4 @@ export const toError = (value: unknown): Error => {
   // `new Error(msg, { cause })`는 Hermes가 무시할 수 있어 직접 대입한다.
   error.cause = value;
   return error;
-};
+}

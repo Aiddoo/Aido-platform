@@ -20,7 +20,7 @@ import { toPurchaseFailedReason } from '../utils/purchase-failed-reason';
 import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';
 
-export const usePurchaseMutationOptions = () => {
+export function usePurchaseMutationOptions() {
   const haptics = useHaptics();
   const subscriptionService = useSubscriptionService();
   const errorReporter = useErrorReporter();
@@ -85,9 +85,9 @@ export const usePurchaseMutationOptions = () => {
         })
         .exhaustive(),
   });
-};
+}
 
-export const useRestoreMutationOptions = () => {
+export function useRestoreMutationOptions() {
   const haptics = useHaptics();
   const subscriptionService = useSubscriptionService();
   const errorReporter = useErrorReporter();
@@ -146,4 +146,4 @@ export const useRestoreMutationOptions = () => {
         })
         .exhaustive(),
   });
-};
+}

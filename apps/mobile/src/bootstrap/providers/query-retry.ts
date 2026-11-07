@@ -21,8 +21,11 @@ const TRANSIENT_INFRA_RETRIES = 6;
  * - `ServerError`(5xx)·`TimeoutError`: 서버 부팅 중 502/503·느린 응답.
  * `ParseError`(응답 파싱 실패)는 재시도해도 안 낫으므로 제외 — 기본 상한(MAX_RETRIES)로.
  */
-const isRetryableInfraError = (error: unknown): boolean =>
-  error instanceof NetworkError || error instanceof ServerError || error instanceof TimeoutError;
+function isRetryableInfraError(error: unknown): boolean {
+  return (
+    error instanceof NetworkError || error instanceof ServerError || error instanceof TimeoutError
+  );
+}
 
 /**
  * React Query 쿼리 재시도 술어.
@@ -33,7 +36,7 @@ const isRetryableInfraError = (error: unknown): boolean =>
  *   기다린다(콜드스타트/배포 재시작 구간에 재시도 화면 대신 로딩 유지).
  * - 나머지: 기본 상한까지 재시도한다.
  */
-export const shouldRetryQuery = (failureCount: number, error: unknown): boolean => {
+export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
   if (isApiError(error) && [401, 403].includes(error.status)) {
     return false;
   }
@@ -47,4 +50,4 @@ export const shouldRetryQuery = (failureCount: number, error: unknown): boolean 
   }
 
   return failureCount < MAX_RETRIES;
-};
+}

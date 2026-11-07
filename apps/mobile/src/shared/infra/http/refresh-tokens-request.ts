@@ -16,9 +16,8 @@ const REFRESH_TIMEOUT_MS = 8_000;
  * `TokenRefresher`가 요구하는 HTTP 포트의 ky 구현. 벤더 의존은 이 파일에만 있다.
  * 갱신 요청도 일반 요청과 같은 앱·기기·시간대·언어·요청 ID 헤더를 보낸다.
  */
-export const createRefreshTokensRequest =
-  (source: AppHeaderSource): RefreshTokensRequest =>
-  (refreshToken) => {
+export function createRefreshTokensRequest(source: AppHeaderSource): RefreshTokensRequest {
+  return (refreshToken) => {
     const headers = new Headers({
       ...createAppHeaders(source),
       Authorization: `Bearer ${refreshToken}`,
@@ -34,3 +33,4 @@ export const createRefreshTokensRequest =
       headers,
     });
   };
+}

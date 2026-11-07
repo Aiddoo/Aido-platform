@@ -43,8 +43,8 @@ function isKnownAction(action: unknown) {
   );
 }
 
-const toPlannedAction = (dto: PlannedActionDto): PlannedAction =>
-  match(dto)
+function toPlannedAction(dto: PlannedActionDto): PlannedAction {
+  return match(dto)
     .returnType<PlannedAction>()
     .with({ type: 'CREATE_TODO' }, (todo) => ({
       type: 'create-todo',
@@ -66,6 +66,7 @@ const toPlannedAction = (dto: PlannedActionDto): PlannedAction =>
       content: memo.content,
     }))
     .exhaustive();
+}
 
 export function toVoicePlan(
   planId: string,
@@ -84,10 +85,12 @@ export function toVoicePlan(
   });
 }
 
-export const toQuickPlanRequest = ({ text, source }: CreateQuickPlanInput): QuickPlanRequest => ({
-  text,
-  source: source === 'voice' ? 'VOICE' : 'TEXT',
-});
+export function toQuickPlanRequest({ text, source }: CreateQuickPlanInput): QuickPlanRequest {
+  return {
+    text,
+    source: source === 'voice' ? 'VOICE' : 'TEXT',
+  };
+}
 
 export function toQuickPlanResult(
   dto: LenientQuickPlanResponse,
@@ -100,8 +103,8 @@ export function toQuickPlanResult(
   };
 }
 
-const toApplyAction = (action: PlannedAction, fallbackCategoryId: number): ApplyActionDto =>
-  match(action)
+function toApplyAction(action: PlannedAction, fallbackCategoryId: number): ApplyActionDto {
+  return match(action)
     .returnType<ApplyActionDto>()
     .with({ type: 'create-todo' }, (todo) => ({
       type: 'CREATE_TODO',
@@ -122,6 +125,7 @@ const toApplyAction = (action: PlannedAction, fallbackCategoryId: number): Apply
       content: memo.content,
     }))
     .exhaustive();
+}
 
 const APPLY_SOURCE = {
   'quick-voice': 'QUICK_VOICE',
@@ -147,19 +151,21 @@ export function toAppliedPlanResult({ todos, memo }: ApplyActionPlanResponse): A
   return { todoCount: todos.length, hasMemo: memo != null };
 }
 
-export const toVoiceNoteDigestRequest = ({
+export function toVoiceNoteDigestRequest({
   text,
   durationSeconds,
   segments,
-}: VoiceNoteDigestInput): VoiceNoteDigestRequest => ({
-  text,
-  durationSeconds,
-  segments: segments.map(({ startMs, text: segmentText, isBookmarked }) => ({
-    startMs,
-    text: segmentText,
-    isBookmarked,
-  })),
-});
+}: VoiceNoteDigestInput): VoiceNoteDigestRequest {
+  return {
+    text,
+    durationSeconds,
+    segments: segments.map(({ startMs, text: segmentText, isBookmarked }) => ({
+      startMs,
+      text: segmentText,
+      isBookmarked,
+    })),
+  };
+}
 
 export function toVoiceNoteDigestResult(
   dto: LenientVoiceNoteDigestResponse,

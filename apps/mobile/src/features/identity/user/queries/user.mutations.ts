@@ -8,7 +8,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 
-export const useUpdateProfileMutationOptions = () => {
+export function useUpdateProfileMutationOptions() {
   const userService = useUserService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -61,4 +61,4 @@ export const useUpdateProfileMutationOptions = () => {
       }
     },
   });
-};
+}

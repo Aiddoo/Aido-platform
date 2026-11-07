@@ -85,7 +85,7 @@ const DEFAULT_CONTEXT: LanguageContextValue = {
   setLanguageMode: noop,
 };
 
-export const useLanguage = (): LanguageContextValue => {
+export function useLanguage(): LanguageContextValue {
   const context = use(LanguageContext);
   return context ?? DEFAULT_CONTEXT;
-};
+}

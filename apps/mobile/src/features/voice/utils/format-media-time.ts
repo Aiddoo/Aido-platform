@@ -3,7 +3,9 @@ import { SECOND_MS } from '@src/shared/constants/time.constants';
 const MINUTE_SECONDS = 60;
 const HOUR_SECONDS = 3_600;
 
-const pad = (value: number) => String(value).padStart(2, '0');
+function pad(value: number) {
+  return String(value).padStart(2, '0');
+}
 
 export function formatMediaTime(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / SECOND_MS));

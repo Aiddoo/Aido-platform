@@ -132,7 +132,7 @@ interface DatePickerCalendarProps {
   onDatePress: (date: Date) => void;
 }
 
-const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) => {
+function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
   const { displayMonth, weeks, date: startDate, goToPrevMonth, goToNextMonth } = picker;
   const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
@@ -187,7 +187,7 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
       </VStack>
     </VStack>
   );
-};
+}
 
 interface DatePickerDateCellProps {
   date: Date;
@@ -195,7 +195,7 @@ interface DatePickerDateCellProps {
   onPress: (date: Date) => void;
 }
 
-const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProps) => {
+function DatePickerDateCell({ date, startDate, onPress }: DatePickerDateCellProps) {
   const dayOfMonth = date.getDate();
   const today = useToday();
   const { timeZone } = useDateFormatContext();
@@ -226,4 +226,4 @@ const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProp
       </Box>
     </PressableFeedback>
   );
-};
+}

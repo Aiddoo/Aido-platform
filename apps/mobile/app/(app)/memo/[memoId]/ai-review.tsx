@@ -101,11 +101,13 @@ function AiReviewScreen() {
   );
 }
 
-const createMemoPlanIdentity = (memoId: number) => ({
-  planId: voicePlanIdSchema.parse(`memo-${memoId}`),
-  source: 'memo' as const,
-  sourceMemoId: memoId,
-});
+function createMemoPlanIdentity(memoId: number) {
+  return {
+    planId: voicePlanIdSchema.parse(`memo-${memoId}`),
+    source: 'memo' as const,
+    sourceMemoId: memoId,
+  };
+}
 
 export default function AiReviewRoute() {
   const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());

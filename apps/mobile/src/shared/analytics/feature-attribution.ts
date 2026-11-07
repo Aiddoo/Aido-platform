@@ -39,8 +39,9 @@ export interface FeatureAttributionStore {
   consume(input: ConsumeAttributionInput): ConsumedFeatureAttribution | null;
 }
 
-const attributionKey = (accountId: string, feature: FeatureKey): string =>
-  `${KEY_PREFIX}:${accountId}:${feature}`;
+function attributionKey(accountId: string, feature: FeatureKey): string {
+  return `${KEY_PREFIX}:${accountId}:${feature}`;
+}
 
 export function createFeatureAttributionStore(
   storage: SyncStorage,

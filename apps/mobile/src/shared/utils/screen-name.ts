@@ -1,4 +1,6 @@
-const isRouteGroup = (segment: string) => segment.startsWith('(') && segment.endsWith(')');
+function isRouteGroup(segment: string) {
+  return segment.startsWith('(') && segment.endsWith(')');
+}
 
 /**
  * Expo Router 파일 세그먼트로 분석용 화면 이름(라우트 템플릿)을 만든다.

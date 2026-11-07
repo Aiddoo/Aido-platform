@@ -16,11 +16,11 @@ interface OnlineManagerDeps {
  *
  * @see https://tanstack.com/query/latest/docs/framework/react/react-native#online-status-management
  */
-export const connectOnlineManager = ({
+export function connectOnlineManager({
   networkStatus,
   errorReporter,
   analytics,
-}: OnlineManagerDeps) => {
+}: OnlineManagerDeps) {
   onlineManager.setEventListener((setOnline) => networkStatus.subscribe(setOnline));
 
   // onlineManager는 값이 바뀔 때만 알리므로 전환마다 breadcrumb가 한 번씩 남는다.
@@ -41,4 +41,4 @@ export const connectOnlineManager = ({
     onlineManager.setEventListener(() => undefined);
     onlineManager.setOnline(true);
   };
-};
+}

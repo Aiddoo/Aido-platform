@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
  * 경로가 바뀔 때마다 화면 조회를 남긴다. 이름은 라우트 템플릿(`/todo/[todoId]`)이라 id·초대 코드가 남지 않고,
  * 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)으로 옮겨도 경로가 바뀌었으므로 한 번 더 센다.
  */
-export const useScreenTracking = (): void => {
+export function useScreenTracking(): void {
   const pathname = usePathname();
   const screenName = toScreenName(useSegments());
   const analytics = useAnalytics();
@@ -31,4 +31,4 @@ export const useScreenTracking = (): void => {
       data: { from, to: screenName },
     });
   }, [pathname, screenName, analytics, errorReporter]);
-};
+}

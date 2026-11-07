@@ -27,7 +27,9 @@ const ANALYTICS_SOURCE = {
   memo: 'memo',
 } as const satisfies Record<VoicePlanSource, VoicePlanAnalyticsSource>;
 
-export const toAnalyticsSource = (source: VoicePlanSource) => ANALYTICS_SOURCE[source];
+export function toAnalyticsSource(source: VoicePlanSource) {
+  return ANALYTICS_SOURCE[source];
+}
 
 /** 제목·내용 없이 개수만 센다 */
 export function summarizePlanForAnalytics(plan: VoicePlan) {

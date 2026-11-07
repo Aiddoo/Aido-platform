@@ -11,8 +11,9 @@ export interface RecognitionLanguageRepository {
   subscribe(listener: () => void): () => void;
 }
 
-export const recognitionLanguageStorageKey = (userId: string) =>
-  `${KEY_PREFIX}:${encodeURIComponent(userId)}`;
+export function recognitionLanguageStorageKey(userId: string) {
+  return `${KEY_PREFIX}:${encodeURIComponent(userId)}`;
+}
 
 /**
  * 사용자별 인식 언어. 사용자 범위 로컬 저장소(초안 저장소)에 두므로 로그아웃으로 그 저장소를 비울 때 함께 지워진다.

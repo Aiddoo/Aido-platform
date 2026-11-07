@@ -11,12 +11,12 @@ interface CalendarDayInput {
   timeZone: string;
 }
 
-export const getDatePickerDayStyle = ({
+export function getDatePickerDayStyle({
   date,
   isSelected,
   today,
   timeZone,
-}: CalendarDayInput): CalendarDayType => {
+}: CalendarDayInput): CalendarDayType {
   if (isSelected) {
     return 'selected';
   }
@@ -30,14 +30,14 @@ export const getDatePickerDayStyle = ({
     return 'saturday';
   }
   return 'default';
-};
+}
 
-export const getMonthViewDayStyle = ({
+export function getMonthViewDayStyle({
   date,
   isSelected,
   today,
   timeZone,
-}: CalendarDayInput): CalendarDayType => {
+}: CalendarDayInput): CalendarDayType {
   if (isSelected) {
     return 'selected';
   }
@@ -51,11 +51,11 @@ export const getMonthViewDayStyle = ({
     return 'today';
   }
   return 'default';
-};
+}
 
-export const isTodayHighlighted = ({ date, isSelected, today, timeZone }: CalendarDayInput) => {
+export function isTodayHighlighted({ date, isSelected, today, timeZone }: CalendarDayInput) {
   return !isSelected && isDateToday(date, today, timeZone);
-};
+}
 
 export const DAY_TYPE_TONE: Record<CalendarDayType, TextTone> = {
   selected: 'white',

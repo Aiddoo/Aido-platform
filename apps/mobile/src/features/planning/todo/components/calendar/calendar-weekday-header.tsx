@@ -8,14 +8,14 @@ type WeekdayStyle = { tone: TextTone; shade: TextShade | undefined };
 const SUNDAY_INDEX = 0;
 const SATURDAY_INDEX = 6;
 
-const getWeekdayStyle = (dayIndex: number): WeekdayStyle => {
+function getWeekdayStyle(dayIndex: number): WeekdayStyle {
   return match<number, WeekdayStyle>(dayIndex)
     .with(SUNDAY_INDEX, () => ({ tone: 'danger', shade: undefined }))
     .with(SATURDAY_INDEX, () => ({ tone: 'info', shade: undefined }))
     .otherwise(() => ({ tone: 'neutral', shade: 6 }));
-};
+}
 
-export const CalendarWeekdayHeader = () => {
+export function CalendarWeekdayHeader() {
   const { i18n } = useTranslation();
 
   return (
@@ -33,4 +33,4 @@ export const CalendarWeekdayHeader = () => {
       })}
     </HStack>
   );
-};
+}

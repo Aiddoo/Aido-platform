@@ -23,7 +23,7 @@ export const OverlayContext = createContext<OverlayController | null>(null);
 
 type OverlayEntry = { element: ReactNode; version: number };
 
-export const OverlayProvider = ({
+export function OverlayProvider({
   children,
   resetKey,
   disableFullWindowOverlay = false,
@@ -32,7 +32,7 @@ export const OverlayProvider = ({
   resetKey?: string;
   /** 시트 route처럼 이미 네이티브 모달 안이면 켠다 */
   disableFullWindowOverlay?: boolean;
-}) => {
+}) {
   const [overlays, setOverlays] = useState<Map<string, OverlayEntry>>(new Map());
   const versionRef = useRef(0);
   const hostName = useId();
@@ -78,4 +78,4 @@ export const OverlayProvider = ({
       </OverlayStateContext.Provider>
     </OverlayContext.Provider>
   );
-};
+}

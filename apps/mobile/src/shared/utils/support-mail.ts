@@ -10,21 +10,23 @@ interface DiagnosticCodeInput {
 }
 
 /** 문의 메일에 붙이는 진단 코드. 사용자·기기 식별자 없이 플랫폼·앱 버전·발생 시각만 담는다 */
-export const createDiagnosticCode = ({
+export function createDiagnosticCode({
   platform,
   appVersion,
   occurredAt,
-}: DiagnosticCodeInput): string =>
-  [
+}: DiagnosticCodeInput): string {
+  return [
     platform.toUpperCase(),
     appVersion ?? 'unknown',
     toEpochMs(occurredAt).toString(36).toUpperCase(),
   ].join('-');
+}
 
 interface SupportMailInput {
   subject: string;
   body: string;
 }
 
-export const buildSupportMailUrl = ({ subject, body }: SupportMailInput): string =>
-  `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+export function buildSupportMailUrl({ subject, body }: SupportMailInput): string {
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

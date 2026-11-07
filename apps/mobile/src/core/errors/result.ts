@@ -18,32 +18,40 @@ export type Result<T, E extends CodedError = CodedError> =
   | { ok: false; error: E };
 
 /** 성공 Result 생성 */
-export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
+export function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value };
+}
 
 /** 실패 Result 생성 */
-export const err = <E extends CodedError>(error: E): Result<never, E> => ({ ok: false, error });
+export function err<E extends CodedError>(error: E): Result<never, E> {
+  return { ok: false, error };
+}
 
 /** Result가 성공인지 확인 (타입 가드) */
-export const isOk = <T, E extends CodedError>(
+export function isOk<T, E extends CodedError>(
   result: Result<T, E>,
-): result is { ok: true; value: T } => result.ok === true;
+): result is { ok: true; value: T } {
+  return result.ok === true;
+}
 
 /** Result가 실패인지 확인 (타입 가드) */
-export const isErr = <T, E extends CodedError>(
+export function isErr<T, E extends CodedError>(
   result: Result<T, E>,
-): result is { ok: false; error: E } => result.ok === false;
+): result is { ok: false; error: E } {
+  return result.ok === false;
+}
 
 /**
  * Result를 unwrap하여 성공 시 데이터 반환, 실패 시 throw
  * - React Query mutationFn에서 사용
  * - 에러는 onError 콜백에서 처리
  */
-export const unwrap = <T, E extends CodedError>(result: Result<T, E>): T => {
+export function unwrap<T, E extends CodedError>(result: Result<T, E>): T {
   if (result.ok) {
     return result.value;
   }
   throw result.error;
-};
+}
 
 /**
  * 코드를 가진 오류(서버 ApiError, 도메인 BusinessError)인지 확인한다.

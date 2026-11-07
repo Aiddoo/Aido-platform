@@ -54,14 +54,15 @@ type ApiUrlContext = {
 const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
 
 /** 카카오톡 공유 버튼이 앱을 여는 스킴(kakao{네이티브 앱 키}). 키가 없는 빌드는 null */
-const resolveKakaoScheme = (kakaoNativeAppKey: string | undefined) =>
-  kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
+function resolveKakaoScheme(kakaoNativeAppKey: string | undefined) {
+  return kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
+}
 
 /**
  * Expo Metro 번들러의 hostUri에서 개발 머신 IP를 자동으로 추출
  * 예: "192.168.1.100:8081" → "192.168.1.100"
  */
-const getAutoDetectedDevMachineIp = (): string | undefined => {
+function getAutoDetectedDevMachineIp(): string | undefined {
   if (!__DEV__) {
     return undefined;
   }
@@ -73,11 +74,13 @@ const getAutoDetectedDevMachineIp = (): string | undefined => {
 
   const [ip] = hostUri.split(':');
   return ip;
-};
+}
 
-const toAndroidEmulatorUrl = (url: string): string => url.replace('localhost', '10.0.2.2');
+function toAndroidEmulatorUrl(url: string): string {
+  return url.replace('localhost', '10.0.2.2');
+}
 
-const toDeviceUrl = (url: string, devMachineIp?: string): string => {
+function toDeviceUrl(url: string, devMachineIp?: string): string {
   // 1. 환경변수로 설정된 IP 우선 사용
   // 2. 없으면 자동 감지된 IP 사용
   const autoIp = getAutoDetectedDevMachineIp();
@@ -93,9 +96,9 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
   }
 
   return url.replace('localhost', resolvedIp);
-};
+}
 
-const resolveApiUrl = (): string => {
+function resolveApiUrl(): string {
   const context: ApiUrlContext = {
     platform: process.env.EXPO_OS,
     env: extra.env,
@@ -128,12 +131,12 @@ const resolveApiUrl = (): string => {
   }
 
   return resolvedUrl;
-};
+}
 
-const resolveScheme = (): string => {
+function resolveScheme(): string {
   const scheme = Constants.expoConfig?.scheme;
   return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
-};
+}
 
 // =============================================================================
 // Environment Configuration

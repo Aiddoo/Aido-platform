@@ -77,7 +77,7 @@ export function ThemeProvider({ children, syncStorage = mmkvSyncStorage }: Theme
   );
 }
 
-export const useTheme = (): ThemeContextValue => {
+export function useTheme(): ThemeContextValue {
   const context = use(ThemeContext);
 
   if (!context) {
@@ -85,4 +85,4 @@ export const useTheme = (): ThemeContextValue => {
   }
 
   return context;
-};
+}

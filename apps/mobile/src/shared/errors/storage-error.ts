@@ -20,5 +20,6 @@ export class KeychainLockedError extends Error {
 }
 
 /** `KeychainLockedError` 타입 가드 */
-export const isKeychainLockedError = (error: unknown): error is KeychainLockedError =>
-  error instanceof KeychainLockedError;
+export function isKeychainLockedError(error: unknown): error is KeychainLockedError {
+  return error instanceof KeychainLockedError;
+}

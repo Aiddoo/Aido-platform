@@ -9,13 +9,13 @@ import type { TrackedEventMap } from './event-map';
  * - `& AnalyticsEventParams` 교차로 payload가 포트 시그니처에 무캐스트로 할당된다
  *   (모든 이벤트 payload는 객체이므로 교차는 콜사이트 타입을 바꾸지 않음).
  */
-export const track = <E extends keyof TrackedEventMap & string>(
+export function track<E extends keyof TrackedEventMap & string>(
   analytics: Analytics,
   eventName: E,
   ...args: TrackedEventMap[E] extends undefined
     ? []
     : [params: TrackedEventMap[E] & AnalyticsEventParams]
-): void => {
+): void {
   const [params] = args;
   analytics.trackEvent(eventName, params);
-};
+}

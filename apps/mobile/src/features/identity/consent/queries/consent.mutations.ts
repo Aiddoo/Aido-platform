@@ -14,7 +14,7 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
-export const useUpdateAiDataSharingConsentMutationOptions = () => {
+export function useUpdateAiDataSharingConsentMutationOptions() {
   const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
@@ -69,9 +69,9 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
       });
     },
   });
-};
+}
 
-export const useUpdateMarketingConsentMutationOptions = () => {
+export function useUpdateMarketingConsentMutationOptions() {
   const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
@@ -120,9 +120,9 @@ export const useUpdateMarketingConsentMutationOptions = () => {
       }
     },
   });
-};
+}
 
-export const useUpdateMarketingPushConsentMutationOptions = () => {
+export function useUpdateMarketingPushConsentMutationOptions() {
   const haptics = useHaptics();
   const consentService = useConsentService();
   const queryClient = useQueryClient();
@@ -154,4 +154,4 @@ export const useUpdateMarketingPushConsentMutationOptions = () => {
       }
     },
   });
-};
+}

@@ -28,8 +28,9 @@ const SECURE_STORE_OPTIONS: ExpoSecureStore.SecureStoreOptions = {
  */
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
-const isLockedKeychain = (error: unknown): boolean =>
-  getErrorMessage(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+function isLockedKeychain(error: unknown): boolean {
+  return getErrorMessage(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+}
 
 export class SecureStorage implements Storage {
   async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {

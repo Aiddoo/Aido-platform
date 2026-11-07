@@ -11,14 +11,14 @@ const listeners = new Set<SessionExpiredListener>();
  * 관측 이벤트를 리포팅할 수 있도록 연결하는 단방향 채널.
  * 인프라는 React/DI를 모르므로 Context 대신 모듈 레벨 옵저버를 사용한다.
  */
-export const subscribeSessionExpired = (listener: SessionExpiredListener): (() => void) => {
+export function subscribeSessionExpired(listener: SessionExpiredListener): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
-};
+}
 
-export const emitSessionExpired = (details: SessionExpiredDetails): void => {
+export function emitSessionExpired(details: SessionExpiredDetails): void {
   for (const listener of [...listeners]) {
     try {
       listener(details);
@@ -26,4 +26,4 @@ export const emitSessionExpired = (details: SessionExpiredDetails): void => {
       // 한 리스너의 실패가 다른 리스너 알림을 막으면 안 됨
     }
   }
-};
+}

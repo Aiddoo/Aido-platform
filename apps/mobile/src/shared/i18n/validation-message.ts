@@ -20,14 +20,14 @@ interface ValidationMessageKeys {
  *   byType: { too_big: 'email.tooLong' },
  * })}
  */
-export const resolveValidationMessage = (
+export function resolveValidationMessage(
   error: FieldError | undefined,
   keys: ValidationMessageKeys,
-): string | undefined => {
+): string | undefined {
   if (!error) {
     return undefined;
   }
 
   const key = keys.byType?.[error.type] ?? keys.default;
   return tDynamic('validation', key, tDynamic('validation', keys.default));
-};
+}

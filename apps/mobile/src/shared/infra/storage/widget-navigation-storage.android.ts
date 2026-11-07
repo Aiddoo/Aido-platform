@@ -3,7 +3,9 @@ import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 let widgetStorage: MMKV | null = null;
 
-const getWidgetStorage = () => (widgetStorage ??= createMMKV({ id: 'widget-storage' }));
+function getWidgetStorage() {
+  return (widgetStorage ??= createMMKV({ id: 'widget-storage' }));
+}
 
 export const widgetNavigationStorage: WidgetNavigationStorage = {
   get: (key) => getWidgetStorage().getString(key),

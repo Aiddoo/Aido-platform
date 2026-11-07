@@ -31,7 +31,7 @@ export const disabledQueryCacheStorage: QueryCacheStorage = {
   clear: () => undefined,
 };
 
-export const createQueryCacheStorage = (storage: SyncStorage): QueryCacheStorage => {
+export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage {
   const ownedKey = (key: string, ownerId = storage.get(QUERY_CACHE_OWNER_KEY)) =>
     ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
 
@@ -72,52 +72,57 @@ export const createQueryCacheStorage = (storage: SyncStorage): QueryCacheStorage
       storage.remove(QUERY_CACHE_OWNER_KEY);
     },
   };
-};
+}
 
 /** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다 */
-export const removePlaintextQueryCache = (
+export function removePlaintextQueryCache(
   storage: Pick<EnumerableSyncStorage, 'keys' | 'remove'>,
-): void => {
+): void {
   for (const key of storage.keys()) {
     if (key === QUERY_CACHE_OWNER_KEY || key.startsWith(`${QUERY_CACHE_STORAGE_KEY}:`)) {
       storage.remove(key);
     }
   }
-};
+}
 
 /** 성공한 조회 중 opt-in한 것만 저장한다. 실패·대기 중인 조회와 opt-in하지 않은 조회는 남기지 않는다 */
-export const shouldPersistQuery = (query: Query): boolean =>
-  defaultShouldDehydrateQuery(query) && query.meta?.persist === true;
+export function shouldPersistQuery(query: Query): boolean {
+  return defaultShouldDehydrateQuery(query) && query.meta?.persist === true;
+}
 
 /**
  * 앱 버전이 바뀌면 모델 모양이 달라질 수 있어 캐시를 버린다.
  * 날씨·알림·AI 결과처럼 서버가 표시 언어로 만든 값도 담겨, 다른 언어로 저장한 캐시도 복원하지 않는다
  */
-export const createQueryCacheBuster = ({
+export function createQueryCacheBuster({
   appVersion,
   language,
 }: {
   appVersion: string | null | undefined;
   language: string;
-}): string => `${QUERY_CACHE_SCHEMA_VERSION}:${appVersion ?? 'unknown'}:${language}`;
+}): string {
+  return `${QUERY_CACHE_SCHEMA_VERSION}:${appVersion ?? 'unknown'}:${language}`;
+}
 
-export const createQueryPersistOptions = ({
+export function createQueryPersistOptions({
   storage,
   buster,
 }: {
   storage: QueryCacheStorage;
   buster: string;
-}): Omit<PersistQueryClientOptions, 'queryClient'> => ({
-  persister: createAsyncStoragePersister({
-    storage,
-    key: QUERY_CACHE_STORAGE_KEY,
-  }),
-  maxAge: QUERY_CACHE_MAX_AGE_MS,
-  buster,
-  dehydrateOptions: {
-    shouldDehydrateQuery: shouldPersistQuery,
-    shouldDehydrateMutation: () => false,
-  },
-  // 복원 뒤 아직 화면이 구독하지 않은 조회도 maxAge 동안 남긴다
-  hydrateOptions: { defaultOptions: { queries: { gcTime: QUERY_CACHE_MAX_AGE_MS } } },
-});
+}): Omit<PersistQueryClientOptions, 'queryClient'> {
+  return {
+    persister: createAsyncStoragePersister({
+      storage,
+      key: QUERY_CACHE_STORAGE_KEY,
+    }),
+    maxAge: QUERY_CACHE_MAX_AGE_MS,
+    buster,
+    dehydrateOptions: {
+      shouldDehydrateQuery: shouldPersistQuery,
+      shouldDehydrateMutation: () => false,
+    },
+    // 복원 뒤 아직 화면이 구독하지 않은 조회도 maxAge 동안 남긴다
+    hydrateOptions: { defaultOptions: { queries: { gcTime: QUERY_CACHE_MAX_AGE_MS } } },
+  };
+}

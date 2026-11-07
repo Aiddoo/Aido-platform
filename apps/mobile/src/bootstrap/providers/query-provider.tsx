@@ -41,7 +41,9 @@ const MAX_RETRY_DELAY = 5000; // 재시도 백오프 상한 5초 — 죽은 서�
  * `shouldRetryQuery`의 일시 인프라 장애 6회와 합치면 재시도 창 ≈ 22초로,
  * 서버 재시작(≈5-10초)을 덮어 재시도 화면 대신 로딩을 유지한다.
  */
-const retryDelay = (attempt: number): number => Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY);
+function retryDelay(attempt: number): number {
+  return Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY);
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,7 +64,9 @@ const appVersion = `${Application.nativeApplicationVersion}+${Updates.updateId ?
 
 // 복원한 데이터는 앱이 꺼지기 전 낙관적 반영(서버에 닿지 못한 변경)일 수 있어 stale로만 표시한다.
 // 화면이 붙을 때 서버 값으로 다시 맞추고, 여기서 요청을 기다리지 않아 복원 대기가 네트워크에 묶이지 않는다
-const markRestoredQueriesStale = () => queryClient.invalidateQueries({ refetchType: 'none' });
+function markRestoredQueriesStale() {
+  return queryClient.invalidateQueries({ refetchType: 'none' });
+}
 
 interface QueryProviderProps extends PropsWithChildren {
   /** 암호화 저장소를 열지 못하면 `null`. 이때는 캐시를 기기에 남기지 않는다 */

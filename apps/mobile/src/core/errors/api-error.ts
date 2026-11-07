@@ -32,4 +32,6 @@ export class ApiError extends Error implements CodedError {
 }
 
 /** ApiError 타입 가드 */
-export const isApiError = (error: unknown): error is ApiError => error instanceof ApiError;
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError;
+}

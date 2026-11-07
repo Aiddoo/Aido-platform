@@ -11,9 +11,9 @@ import { createConsoleErrorReporter } from './console-error-reporter';
 const fallback = createConsoleErrorReporter();
 let instance: ErrorReporter = fallback;
 
-export const setGlobalErrorReporter = (reporter: ErrorReporter): void => {
+export function setGlobalErrorReporter(reporter: ErrorReporter): void {
   instance = reporter;
-};
+}
 
 export const errorReporter: ErrorReporter = {
   captureException: (...args) => instance.captureException(...args),

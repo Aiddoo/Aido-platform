@@ -18,8 +18,8 @@ import {
   featureQuotaSchema,
 } from '../schemas/entitlement.schema';
 
-export const toFeatureQuota = (dto: FeatureQuotaDto): FeatureQuota =>
-  featureQuotaSchema.parse({
+export function toFeatureQuota(dto: FeatureQuotaDto): FeatureQuota {
+  return featureQuotaSchema.parse({
     feature: dto.feature,
     allowed: dto.allowed,
     limit: dto.limit,
@@ -33,14 +33,16 @@ export const toFeatureQuota = (dto: FeatureQuotaDto): FeatureQuota =>
         ? null
         : { maxSeconds: dto.perUse.maxSeconds, maxCharacters: dto.perUse.maxCharacters },
   } satisfies Record<keyof FeatureQuotaDto, unknown>);
+}
 
 // 새 서버가 더한 모르는 기능 키는 버린다
-export const toEntitlementSnapshot = (dto: EntitlementSnapshotDto): EntitlementSnapshot =>
-  entitlementSnapshotSchema.parse({
+export function toEntitlementSnapshot(dto: EntitlementSnapshotDto): EntitlementSnapshot {
+  return entitlementSnapshotSchema.parse({
     isPremium: dto.isPremium,
     tier: dto.tier,
     features: mapValues(pick(dto.features, PLAN_FEATURE_KEYS), toFeatureQuota),
   } satisfies Record<keyof EntitlementSnapshotDto, unknown>);
+}
 
 const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1303]: 'AI_PARSE',

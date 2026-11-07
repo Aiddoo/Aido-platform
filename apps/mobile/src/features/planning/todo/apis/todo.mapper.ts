@@ -22,41 +22,46 @@ import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-series.mapper';
 
 /** 옛 서버 응답에는 벽시계 칸이 없다. 순간만 보관하고 시간대는 표시 때 정한다 */
-const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | null =>
-  scheduledTime == null ? null : (scheduledLocalTime ?? null);
+function toLocalTime({ scheduledTime, scheduledLocalTime }: TodoDto): string | null {
+  return scheduledTime == null ? null : (scheduledLocalTime ?? null);
+}
 
-export const toTodo = (dto: TodoDto): Todo => ({
-  id: dto.id,
-  title: dto.title,
-  startDate: dto.startDate,
-  endDate: dto.endDate,
-  category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
-  completed: dto.completed,
-  localTime: toLocalTime(dto),
-  scheduledAt: dto.scheduledTime == null ? null : toInstant(dto.scheduledTime),
-  isAllDay: dto.isAllDay,
-  visibility: dto.visibility,
-  recurrenceGroupId: dto.recurrenceGroupId,
-  // 구 서버 응답과 친구 할 일에는 키가 없다
-  repeat: dto.repeat == null ? null : toRepeat(dto.repeat),
-  subTodos: dto.items.map(toSubTodo),
-  subTodoStats: { total: dto.itemStats.total, completed: dto.itemStats.completed },
-  commentCount: dto.commentCount,
-});
+export function toTodo(dto: TodoDto): Todo {
+  return {
+    id: dto.id,
+    title: dto.title,
+    startDate: dto.startDate,
+    endDate: dto.endDate,
+    category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
+    completed: dto.completed,
+    localTime: toLocalTime(dto),
+    scheduledAt: dto.scheduledTime == null ? null : toInstant(dto.scheduledTime),
+    isAllDay: dto.isAllDay,
+    visibility: dto.visibility,
+    recurrenceGroupId: dto.recurrenceGroupId,
+    // 구 서버 응답과 친구 할 일에는 키가 없다
+    repeat: dto.repeat == null ? null : toRepeat(dto.repeat),
+    subTodos: dto.items.map(toSubTodo),
+    subTodoStats: { total: dto.itemStats.total, completed: dto.itemStats.completed },
+    commentCount: dto.commentCount,
+  };
+}
 
-const toDailyCompletionSummary = (dto: DailyCompletionSummaryDTO): DailyCompletionSummary => ({
-  date: dto.date,
-  totalTodos: dto.totalTodos,
-  completedTodos: dto.completedTodos,
-  isComplete: dto.isComplete,
-  completionRate: dto.completionRate,
-  categoryColors: dto.categoryColors,
-});
+function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompletionSummary {
+  return {
+    date: dto.date,
+    totalTodos: dto.totalTodos,
+    completedTodos: dto.completedTodos,
+    isComplete: dto.isComplete,
+    completionRate: dto.completionRate,
+    categoryColors: dto.categoryColors,
+  };
+}
 
-export const toDailyCompletionsResult = (
+export function toDailyCompletionsResult(
   dto: DailyCompletionsRangeResponse,
-): DailyCompletionsResult =>
-  TodoPolicy.withMultiDayTodoSpans(
+): DailyCompletionsResult {
+  return TodoPolicy.withMultiDayTodoSpans(
     {
       completions: dto.completions.map(toDailyCompletionSummary),
       totalCompleteDays: dto.totalCompleteDays,
@@ -64,21 +69,24 @@ export const toDailyCompletionsResult = (
     },
     dto.multiDayTodos ?? [],
   );
+}
 
-export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
-  date: dto.date,
-  totalTodos: dto.totalTodos,
-  completedTodos: dto.completedTodos,
-  completionRate: dto.completionRate,
-  isComplete: dto.isComplete,
-  currentStreak: dto.currentStreak,
-  topTodos: dto.topTodos.map((todo) => ({
-    id: todo.id,
-    title: todo.title,
-    completed: todo.completed,
-    categoryColor: todo.categoryColor,
-  })),
-});
+export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {
+  return {
+    date: dto.date,
+    totalTodos: dto.totalTodos,
+    completedTodos: dto.completedTodos,
+    completionRate: dto.completionRate,
+    isComplete: dto.isComplete,
+    currentStreak: dto.currentStreak,
+    topTodos: dto.topTodos.map((todo) => ({
+      id: todo.id,
+      title: todo.title,
+      completed: todo.completed,
+      categoryColor: todo.categoryColor,
+    })),
+  };
+}
 
 export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
   return {

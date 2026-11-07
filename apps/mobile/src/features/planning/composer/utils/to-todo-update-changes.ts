@@ -9,8 +9,9 @@ function toNullableDateKey(date: Instant | null, timeZone: string) {
   return date == null ? null : toDateKey(date, timeZone);
 }
 
-const toScheduledTime = ({ isAllDay, scheduledTime }: AddTodoFormValues) =>
-  isAllDay ? null : scheduledTime;
+function toScheduledTime({ isAllDay, scheduledTime }: AddTodoFormValues) {
+  return isAllDay ? null : scheduledTime;
+}
 
 export interface TodoUpdateChanges {
   input: UpdateTodoInput;

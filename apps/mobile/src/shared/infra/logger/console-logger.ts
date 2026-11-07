@@ -11,7 +11,7 @@ interface ConsoleLoggerOptions {
   minLevel: LogLevel;
 }
 
-export const createConsoleLogger = ({ minLevel }: ConsoleLoggerOptions): Logger => {
+export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger {
   const shouldLog = (level: LogLevel): boolean =>
     LOG_LEVEL_ORDER[level] >= LOG_LEVEL_ORDER[minLevel];
 
@@ -49,4 +49,4 @@ export const createConsoleLogger = ({ minLevel }: ConsoleLoggerOptions): Logger 
       }
     },
   };
-};
+}

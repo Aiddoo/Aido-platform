@@ -20,16 +20,19 @@ export interface StoreReviewRepository {
   update(accountId: string, transition: StateTransition): StoreReviewState;
 }
 
-const storageKey = (accountId: string): string => `${KEY_PREFIX}:${accountId}`;
+function storageKey(accountId: string): string {
+  return `${KEY_PREFIX}:${accountId}`;
+}
 
 /** 이미 리뷰를 요청받은 사용자는 그 시각을 지난 요청 한 번으로 이어받아 곧바로 다시 묻지 않는다 */
-const fromLegacy = (legacy: LegacyStoreReviewState): StoreReviewState =>
-  storeReviewStateSchema.parse({
+function fromLegacy(legacy: LegacyStoreReviewState): StoreReviewState {
+  return storeReviewStateSchema.parse({
     activeDays: uniq(legacy.completions.map(({ localDate }) => localDate)).slice(
       -STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
     ),
     requestedAt: legacy.reviewRequestedAt == null ? [] : [legacy.reviewRequestedAt],
   });
+}
 
 export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRepository {
   const write = (accountId: string, state: StoreReviewState): void => {

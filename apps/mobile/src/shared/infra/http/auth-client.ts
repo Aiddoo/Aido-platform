@@ -24,14 +24,14 @@ interface AuthClientDeps {
  * 이 클라이언트는 토큰을 들고 있지 않다 — 매 요청 `TokenStore`에서 읽는다.
  * 따라서 로그아웃/세션 만료 시 리셋하거나 재생성할 상태가 없다.
  */
-export const createAuthClient = ({
+export function createAuthClient({
   appVersion,
   appBuild,
   tokenStore,
   refresh,
   endSession,
   sessionEpoch,
-}: AuthClientDeps): KyInstance => {
+}: AuthClientDeps): KyInstance {
   return ky.create({
     // v2: prefixUrl → prefix (append 시맨틱 동일 — input 앞에 붙이고 경계 슬래시 정규화)
     prefix: ENV.API_URL,
@@ -67,4 +67,4 @@ export const createAuthClient = ({
       ],
     },
   });
-};
+}

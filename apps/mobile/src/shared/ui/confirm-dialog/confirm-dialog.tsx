@@ -12,8 +12,9 @@ import { cloneElement, isValidElement, type ReactNode } from 'react';
 
 import type { ConfirmDialogProps } from './confirm-dialog.types';
 
-const asFullWidthAction = (action: ReactNode): ReactNode =>
-  isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
+function asFullWidthAction(action: ReactNode): ReactNode {
+  return isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
+}
 
 export function ConfirmDialog({
   isOpen,

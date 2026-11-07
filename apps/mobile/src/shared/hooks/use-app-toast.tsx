@@ -24,16 +24,16 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
 }
 
 /** 문자열은 그대로, Error는 사용자 문구일 때만 쓴다. 파싱 오류 등은 폴백 문구로 바꾼다. */
-const extractErrorMessage = (
+function extractErrorMessage(
   input: string | Error | undefined,
   fallback = t('common:toast.defaultError'),
-): string => {
+): string {
   if (typeof input === 'string') {
     return input.trim() ? input : fallback;
   }
 
   return getUserFacingMessage(input) ?? fallback;
-};
+}
 
 /**
  * 앱 전역 Toast 훅
@@ -54,7 +54,7 @@ const extractErrorMessage = (
  *   action: { label: '재시도', onPress: () => retry() },
  * });
  */
-export const useAppToast = () => {
+export function useAppToast() {
   const { toast: heroUIToast } = useToast();
 
   const toast = useCallback(
@@ -109,4 +109,4 @@ export const useAppToast = () => {
     error,
     hide,
   };
-};
+}

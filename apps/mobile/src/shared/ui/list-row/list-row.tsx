@@ -24,7 +24,7 @@ export interface ListRowProps extends Omit<ViewProps, 'children'> {
   className?: string;
 }
 
-const listRowVariants = ({
+function listRowVariants({
   verticalPadding = 'medium',
   horizontalPadding = 'none',
   border = 'none',
@@ -34,7 +34,7 @@ const listRowVariants = ({
   horizontalPadding?: ListRowHorizontalPadding;
   border?: ListRowBorder;
   isDisabled?: boolean;
-}) => {
+}) {
   const paddingY = {
     small: 'py-1',
     medium: 'py-2',
@@ -52,11 +52,11 @@ const listRowVariants = ({
   const disabledClass = isDisabled ? 'opacity-40' : '';
 
   return cn(paddingY, paddingX, borderClass, disabledClass);
-};
+}
 
-const listRowSlotVariants = ({ alignment = 'center' }: { alignment?: ListRowAlignment }) => {
+function listRowSlotVariants({ alignment = 'center' }: { alignment?: ListRowAlignment }) {
   return cn('flex', alignment === 'top' ? 'items-start' : 'items-center');
-};
+}
 
 export function ListRow({
   left,

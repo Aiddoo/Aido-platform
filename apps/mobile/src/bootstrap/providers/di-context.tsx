@@ -145,11 +145,13 @@ interface StaticDIProviderProps extends PropsWithChildren {
  * 미리 구성된 컨테이너를 그대로 주입하는 Provider.
  * 구현체 모듈(vendor 초기화 포함)을 로드하지 않으므로 테스트에서 사용한다.
  */
-export const StaticDIProvider = ({ container, children }: StaticDIProviderProps) => (
-  <DIContext.Provider value={container}>
-    <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
-  </DIContext.Provider>
-);
+export function StaticDIProvider({ container, children }: StaticDIProviderProps) {
+  return (
+    <DIContext.Provider value={container}>
+      <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
+    </DIContext.Provider>
+  );
+}
 
 export {
   useAnalytics,
@@ -160,7 +162,7 @@ export {
   useLogger,
 } from '@src/shared/di/shared-di-context';
 
-const useDI = (): DIContainer => {
+function useDI(): DIContainer {
   const context = use(DIContext);
 
   if (!context) {
@@ -168,68 +170,174 @@ const useDI = (): DIContainer => {
   }
 
   return context;
-};
+}
 
 // Infrastructure Hooks
-export const useLocationGateway = () => useDI().locationGateway;
-export const useClipboard = () => useDI().clipboard;
-export const useNetworkStatus = () => useDI().networkStatus;
-export const useTokenStore = () => useDI().tokenStore;
+export function useLocationGateway() {
+  return useDI().locationGateway;
+}
+export function useClipboard() {
+  return useDI().clipboard;
+}
+export function useNetworkStatus() {
+  return useDI().networkStatus;
+}
+export function useTokenStore() {
+  return useDI().tokenStore;
+}
 export function useAuthSessionStore() {
   return useDI().authSessionStore;
 }
-export const useSessionEpoch = () => useDI().sessionEpoch;
-export const useSessionCleanupService = () => useDI().sessionCleanupService;
-export const useSessionRevocationService = () => useDI().sessionRevocationService;
-export const useIdGenerator = () => useDI().idGenerator;
-export const useSpeechRecognizer = () => useDI().speechRecognizer;
-export const usePushNotificationGateway = () => useDI().pushNotificationGateway;
-export const useQueryCacheStorage = () => useDI().queryCacheStorage;
-export const useRecognitionLanguageRepository = () => useDI().recognitionLanguageRepository;
-export const useOfflineModelPromptRepository = () => useDI().offlineModelPromptRepository;
+export function useSessionEpoch() {
+  return useDI().sessionEpoch;
+}
+export function useSessionCleanupService() {
+  return useDI().sessionCleanupService;
+}
+export function useSessionRevocationService() {
+  return useDI().sessionRevocationService;
+}
+export function useIdGenerator() {
+  return useDI().idGenerator;
+}
+export function useSpeechRecognizer() {
+  return useDI().speechRecognizer;
+}
+export function usePushNotificationGateway() {
+  return useDI().pushNotificationGateway;
+}
+export function useQueryCacheStorage() {
+  return useDI().queryCacheStorage;
+}
+export function useRecognitionLanguageRepository() {
+  return useDI().recognitionLanguageRepository;
+}
+export function useOfflineModelPromptRepository() {
+  return useDI().offlineModelPromptRepository;
+}
 
 // Service Hooks
-export const useAchievementService = () => useDI().achievementService;
-export const useReportService = () => useDI().reportService;
-export const useSuggestionService = () => useDI().suggestionService;
-export const useConsentService = () => useDI().consentService;
-export const useAuthService = () => useDI().authService;
-export const usePreferenceService = () => useDI().preferenceService;
-export const useActivationService = () => useDI().activationService;
-export const useAppVersionService = () => useDI().appVersionService;
-export const useFriendService = () => useDI().friendService;
-export const useInviteService = () => useDI().inviteService;
-export const useInviteShareService = () => useDI().inviteShareService;
-export const useFeatureCampaignService = () => useDI().featureCampaignService;
-export const useWhatsNewRepository = () => useDI().whatsNewRepository;
-export const useInquiryService = () => useDI().inquiryService;
-export const useMemoService = () => useDI().memoService;
-export const useVoiceService = () => useDI().voiceService;
-export const useModerationService = () => useDI().moderationService;
-export const useSubTodoService = () => useDI().subTodoService;
-export const useTodoService = () => useDI().todoService;
-export const useTodoCommentService = () => useDI().todoCommentService;
-export const useTodoCategoryService = () => useDI().todoCategoryService;
-export const useNotificationService = () => useDI().notificationService;
-export const useNotificationEntryStore = () => useDI().notificationEntryStore;
-export const usePushDeviceService = () => useDI().pushDeviceService;
-export const useDeviceTimezoneService = () => useDI().deviceTimezoneService;
-export const usePushPromptRepository = () => useDI().pushPromptRepository;
-export const useMarketingPushPromptRepository = () => useDI().marketingPushPromptRepository;
-export const useTodoNudgeService = () => useDI().todoNudgeService;
-export const useCoachmarkService = () => useDI().coachmarkService;
-export const useStoreReviewService = () => useDI().storeReviewService;
-export const useUserService = () => useDI().userService;
-export const usePurchasesSdkManager = () => useDI().purchasesSdkManager;
-export const useSubscriptionService = () => useDI().subscriptionService;
-export const useEntitlementService = () => useDI().entitlementService;
-export const useWeatherIntroductionRepository = () => useDI().weatherIntroductionRepository;
+export function useAchievementService() {
+  return useDI().achievementService;
+}
+export function useReportService() {
+  return useDI().reportService;
+}
+export function useSuggestionService() {
+  return useDI().suggestionService;
+}
+export function useConsentService() {
+  return useDI().consentService;
+}
+export function useAuthService() {
+  return useDI().authService;
+}
+export function usePreferenceService() {
+  return useDI().preferenceService;
+}
+export function useActivationService() {
+  return useDI().activationService;
+}
+export function useAppVersionService() {
+  return useDI().appVersionService;
+}
+export function useFriendService() {
+  return useDI().friendService;
+}
+export function useInviteService() {
+  return useDI().inviteService;
+}
+export function useInviteShareService() {
+  return useDI().inviteShareService;
+}
+export function useFeatureCampaignService() {
+  return useDI().featureCampaignService;
+}
+export function useWhatsNewRepository() {
+  return useDI().whatsNewRepository;
+}
+export function useInquiryService() {
+  return useDI().inquiryService;
+}
+export function useMemoService() {
+  return useDI().memoService;
+}
+export function useVoiceService() {
+  return useDI().voiceService;
+}
+export function useModerationService() {
+  return useDI().moderationService;
+}
+export function useSubTodoService() {
+  return useDI().subTodoService;
+}
+export function useTodoService() {
+  return useDI().todoService;
+}
+export function useTodoCommentService() {
+  return useDI().todoCommentService;
+}
+export function useTodoCategoryService() {
+  return useDI().todoCategoryService;
+}
+export function useNotificationService() {
+  return useDI().notificationService;
+}
+export function useNotificationEntryStore() {
+  return useDI().notificationEntryStore;
+}
+export function usePushDeviceService() {
+  return useDI().pushDeviceService;
+}
+export function useDeviceTimezoneService() {
+  return useDI().deviceTimezoneService;
+}
+export function usePushPromptRepository() {
+  return useDI().pushPromptRepository;
+}
+export function useMarketingPushPromptRepository() {
+  return useDI().marketingPushPromptRepository;
+}
+export function useTodoNudgeService() {
+  return useDI().todoNudgeService;
+}
+export function useCoachmarkService() {
+  return useDI().coachmarkService;
+}
+export function useStoreReviewService() {
+  return useDI().storeReviewService;
+}
+export function useUserService() {
+  return useDI().userService;
+}
+export function usePurchasesSdkManager() {
+  return useDI().purchasesSdkManager;
+}
+export function useSubscriptionService() {
+  return useDI().subscriptionService;
+}
+export function useEntitlementService() {
+  return useDI().entitlementService;
+}
+export function useWeatherIntroductionRepository() {
+  return useDI().weatherIntroductionRepository;
+}
 export function useWeatherLocationService() {
   return useDI().weatherLocationService;
 }
-export const useWeatherService = () => useDI().weatherService;
-export const useWidgetSyncService = () => useDI().widgetSyncService;
-export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;
-export const useVoiceNoteStorageService = () => useDI().voiceNoteStorageService;
+export function useWeatherService() {
+  return useDI().weatherService;
+}
+export function useWidgetSyncService() {
+  return useDI().widgetSyncService;
+}
+export function useWidgetNavigationRepository() {
+  return useDI().widgetNavigationRepository;
+}
+export function useVoiceNoteStorageService() {
+  return useDI().voiceNoteStorageService;
+}
 
-export const useAppIconService = () => useDI().appIconService;
+export function useAppIconService() {
+  return useDI().appIconService;
+}

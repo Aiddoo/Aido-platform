@@ -7,11 +7,11 @@ interface TomorrowSchedule {
   endDate: Instant | null;
 }
 
-export const calculateTomorrowSchedule = (
+export function calculateTomorrowSchedule(
   endDate: Instant | null,
   today: Date,
   timeZone: string,
-): TomorrowSchedule => {
+): TomorrowSchedule {
   const tomorrow = dayjs(today).startOf('day').add(1, 'day').toDate();
   const isEndDateExpired = endDate != null && isBeforeDay(endDate, tomorrow, timeZone);
 
@@ -19,4 +19,4 @@ export const calculateTomorrowSchedule = (
     startDate: tomorrow,
     endDate: isEndDateExpired ? null : endDate,
   };
-};
+}

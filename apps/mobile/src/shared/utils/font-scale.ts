@@ -23,6 +23,6 @@ export const SCALED_FONT_STYLES: Record<FontScale, { fontSize: number; lineHeigh
 };
 
 /** FontScale에 대응하는 b2 기준 fontSize(px)를 반환한다. */
-export const getScaledFontSize = (scale: FontScale): number => {
+export function getScaledFontSize(scale: FontScale): number {
   return SCALED_FONT_STYLES[scale].fontSize;
-};
+}

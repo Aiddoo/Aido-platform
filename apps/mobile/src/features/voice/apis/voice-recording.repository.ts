@@ -39,10 +39,13 @@ export interface VoiceRecordingRepository {
 }
 
 const ROOT = [VOICE_RECORDING_ROOT_DIRECTORY] as const;
-const ownerDirectory = (accountId: string) => [...ROOT, encodeURIComponent(accountId)];
+function ownerDirectory(accountId: string) {
+  return [...ROOT, encodeURIComponent(accountId)];
+}
 
-const getExtension = (uri: string) =>
-  /\.([a-z0-9]{1,5})$/i.exec(uri)?.[1]?.toLowerCase() ?? VOICE_RECORDING_EXTENSION;
+function getExtension(uri: string) {
+  return /\.([a-z0-9]{1,5})$/i.exec(uri)?.[1]?.toLowerCase() ?? VOICE_RECORDING_EXTENSION;
+}
 
 export function createVoiceRecordingRepository(
   files: LocalFileSystem,

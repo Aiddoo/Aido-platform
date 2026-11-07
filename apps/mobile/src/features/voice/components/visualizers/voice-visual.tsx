@@ -70,12 +70,12 @@ half4 main(float2 position) {
 }
 `);
 
-const toRgb = (color: string) => {
+function toRgb(color: string) {
   const [red = 0, green = 0, blue = 0] = Skia.Color(color);
   return [red, green, blue];
-};
+}
 
-const getBarCount = (width: number) => {
+function getBarCount(width: number) {
   'worklet';
   return Math.min(
     VOICE_VISUAL_BARS.maxCount,
@@ -84,7 +84,7 @@ const getBarCount = (width: number) => {
       Math.floor((width / 2 - VOICE_VISUAL_BARS.startOffset - 1) / VOICE_VISUAL_BARS.step),
     ),
   );
-};
+}
 
 interface VoiceVisualProps {
   level: SharedValue<number>;

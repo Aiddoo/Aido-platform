@@ -35,16 +35,17 @@ export interface TodoSeriesEditOptions {
   checklist?: readonly { title: string }[];
 }
 
-const toRepeatEnd = (end: TodoRepeatEndDto): TodoRepeatEnd =>
-  match(end)
+function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
+  return match(end)
     .returnType<TodoRepeatEnd>()
     .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
     .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
     .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
     .exhaustive();
+}
 
-export const toRepeat = (dto: TodoRepeatDto): TodoRepeat =>
-  match(dto)
+export function toRepeat(dto: TodoRepeatDto): TodoRepeat {
+  return match(dto)
     .returnType<TodoRepeat>()
     .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEnd(end) }))
     .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
@@ -59,17 +60,19 @@ export const toRepeat = (dto: TodoRepeatDto): TodoRepeat =>
       end: toRepeatEnd(end),
     }))
     .exhaustive();
+}
 
-const toRepeatEndDto = (end: TodoRepeatEnd): TodoRepeatEndDto =>
-  match(end)
+function toRepeatEndDto(end: TodoRepeatEnd): TodoRepeatEndDto {
+  return match(end)
     .returnType<TodoRepeatEndDto>()
     .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
     .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
     .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
     .exhaustive();
+}
 
-export const toRepeatDto = (repeat: TodoRepeat): TodoRepeatDto =>
-  match(repeat)
+export function toRepeatDto(repeat: TodoRepeat): TodoRepeatDto {
+  return match(repeat)
     .returnType<TodoRepeatDto>()
     .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEndDto(end) }))
     .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
@@ -84,15 +87,18 @@ export const toRepeatDto = (repeat: TodoRepeat): TodoRepeatDto =>
       end: toRepeatEndDto(end),
     }))
     .exhaustive();
+}
 
-export const toTodoSeries = (dto: TodoSeriesResponse): TodoSeries => ({
-  id: dto.id,
-  repeat: toRepeat(dto.repeat),
-  startDate: dto.startDate,
-});
+export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {
+  return {
+    id: dto.id,
+    repeat: toRepeat(dto.repeat),
+    startDate: dto.startDate,
+  };
+}
 
-export const toCreateRepeatingTodoRequest = (draft: RepeatingTodoDraft) =>
-  ({
+export function toCreateRepeatingTodoRequest(draft: RepeatingTodoDraft) {
+  return {
     title: draft.title,
     categoryId: draft.categoryId,
     startDate: draft.startDate,
@@ -100,7 +106,8 @@ export const toCreateRepeatingTodoRequest = (draft: RepeatingTodoDraft) =>
     isAllDay: draft.isAllDay,
     visibility: draft.visibility,
     repeat: toRepeatDto(draft.repeat),
-  }) satisfies CreateTodoInput;
+  } satisfies CreateTodoInput;
+}
 
 export function toUpdateTodoRequest(
   input: UpdateTodoInput,
@@ -116,14 +123,16 @@ export function toUpdateTodoRequest(
 }
 
 /** `/schedule`은 범위를 받지 않는다. 이후 회차까지 고칠 때는 PATCH로 시간만 보낸다(날짜는 이 회차에만 적용된다) */
-export const toFollowingScheduleRequest = ({
+export function toFollowingScheduleRequest({
   scheduledTime,
   isAllDay,
-}: UpdateTodoScheduleInput): UpdateTodoInput =>
-  ({ scheduledTime, isAllDay, scope: 'THIS_AND_FOLLOWING' }) satisfies UpdateTodoInput;
+}: UpdateTodoScheduleInput): UpdateTodoInput {
+  return { scheduledTime, isAllDay, scope: 'THIS_AND_FOLLOWING' } satisfies UpdateTodoInput;
+}
 
 /** `/category`는 범위를 받지 않는다. 이후 회차까지 옮길 때는 PATCH로 보낸다 */
-export const toFollowingCategoryRequest = ({
+export function toFollowingCategoryRequest({
   categoryId,
-}: ChangeTodoCategoryInput): UpdateTodoInput =>
-  ({ categoryId, scope: 'THIS_AND_FOLLOWING' }) satisfies UpdateTodoInput;
+}: ChangeTodoCategoryInput): UpdateTodoInput {
+  return { categoryId, scope: 'THIS_AND_FOLLOWING' } satisfies UpdateTodoInput;
+}

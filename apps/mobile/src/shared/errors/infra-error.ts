@@ -54,8 +54,11 @@ export class ParseError extends InfraError {
 }
 
 /** InfraError 타입 가드 */
-export const isInfraError = (error: unknown): error is InfraError => error instanceof InfraError;
+export function isInfraError(error: unknown): error is InfraError {
+  return error instanceof InfraError;
+}
 
 /** 연결이 끊겼거나 응답이 오지 않은 오류. 기기 상태라 예외 리포트 대신 경고로 남긴다 */
-export const isConnectivityError = (error: unknown): error is NetworkError | TimeoutError =>
-  error instanceof NetworkError || error instanceof TimeoutError;
+export function isConnectivityError(error: unknown): error is NetworkError | TimeoutError {
+  return error instanceof NetworkError || error instanceof TimeoutError;
+}

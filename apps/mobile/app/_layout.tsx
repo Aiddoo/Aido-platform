@@ -45,10 +45,11 @@ function AppBootstrapLayout() {
 export default wrapRootComponent(AppBootstrapLayout);
 
 // OTA가 켜져 있으면 받아 둔 업데이트로, 아니면(개발 빌드) 같은 번들로 다시 띄운다
-const restartApp = () =>
-  (Updates.isEnabled ? Updates.reloadAsync() : reloadAppAsync()).catch((error: unknown) =>
+function restartApp() {
+  return (Updates.isEnabled ? Updates.reloadAsync() : reloadAppAsync()).catch((error: unknown) =>
     logger.warn(ROOT_ERROR_BOUNDARY_LOG_EVENT.RESTART_FAILED, { error: getErrorMessage(error) }),
   );
+}
 
 /**
  * Provider 안에서 던져진 오류의 마지막 경계. Provider·내비게이터가 없을 수 있어

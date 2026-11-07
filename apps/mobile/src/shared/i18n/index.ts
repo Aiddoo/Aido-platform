@@ -19,15 +19,17 @@ export const t = i18n.t.bind(i18n);
  * 런타임에 결정되는 키(에러 코드 등)를 조회한다.
  * 키가 없으면 defaultValue를 반환하며, 타입 검증 대상이 아니다.
  */
-export const tDynamic = (namespace: Namespace, key: string, defaultValue = ''): string => {
+export function tDynamic(namespace: Namespace, key: string, defaultValue = ''): string {
   if (!isTranslationKey(namespace, key)) {
     return defaultValue;
   }
   return i18n.t(key, { ns: namespace });
-};
+}
 
 /** 런타임 키가 해당 네임스페이스(폴백 언어 포함)에 있는지 확인한다. */
-const isTranslationKey = <TNamespace extends Namespace>(
+function isTranslationKey<TNamespace extends Namespace>(
   namespace: TNamespace,
   key: string,
-): key is ParseKeys<TNamespace> => i18n.exists(key, { ns: namespace });
+): key is ParseKeys<TNamespace> {
+  return i18n.exists(key, { ns: namespace });
+}

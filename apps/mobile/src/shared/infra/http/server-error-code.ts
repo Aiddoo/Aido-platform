@@ -16,7 +16,7 @@ const errorEnvelopeSchema = z.object({
  *
  * 알 수 없는 코드/비-JSON 본문이면 `undefined`.
  */
-export const toServerErrorCode = (body: unknown): ErrorCodeType | undefined => {
+export function toServerErrorCode(body: unknown): ErrorCodeType | undefined {
   const parsed = errorEnvelopeSchema.safeParse(body);
   if (!parsed.success) {
     return undefined;
@@ -24,4 +24,4 @@ export const toServerErrorCode = (body: unknown): ErrorCodeType | undefined => {
 
   const { code } = parsed.data.error;
   return isErrorCode(code) ? code : undefined;
-};
+}

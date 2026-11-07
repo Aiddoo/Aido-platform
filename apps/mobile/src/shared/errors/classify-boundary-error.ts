@@ -25,7 +25,7 @@ export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
 /** 서버 플래그로 기능이 꺼졌다는 코드. fallback이 "지금은 쓸 수 없음"을 그린다 */
 const FEATURE_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([ErrorCode.INVITE_2105]);
 
-export const classifyBoundaryError = (error: unknown): BoundaryErrorKind => {
+export function classifyBoundaryError(error: unknown): BoundaryErrorKind {
   if (isApiError(error) && error.status === 401) {
     return 'auth-transition';
   }
@@ -35,4 +35,4 @@ export const classifyBoundaryError = (error: unknown): BoundaryErrorKind => {
   }
 
   return 'error';
-};
+}

@@ -26,16 +26,16 @@ const toSentryLevel: Record<LogLevel, Sentry.SeverityLevel> = {
 
 const LOG_EVENT_KEY_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
-export const logEventFeature = (message: string): SentryFeature | undefined => {
+export function logEventFeature(message: string): SentryFeature | undefined {
   if (!LOG_EVENT_KEY_PATTERN.test(message)) {
     return undefined;
   }
   const [feature = ''] = message.split('.', 1);
   const featureTag = feature.replace(/-/g, '_');
   return SENTRY_FEATURES.find((known) => known === featureTag);
-};
+}
 
-export const createSentryLogger = (): Logger => {
+export function createSentryLogger(): Logger {
   const breadcrumb = (level: LogLevel, message: string, context?: LogContext): void => {
     const crumb: Sentry.Breadcrumb = {
       level: toSentryLevel[level],
@@ -70,4 +70,4 @@ export const createSentryLogger = (): Logger => {
       }
     },
   };
-};
+}

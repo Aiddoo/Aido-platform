@@ -24,11 +24,11 @@ interface KeyboardAdaptiveButtonProps extends ButtonProps {
 /**
  * 키보드 상태에 따라 스타일이 변하는 버튼 컴포넌트
  */
-export const KeyboardAdaptiveButton = ({
+export function KeyboardAdaptiveButton({
   children,
   enabled = true,
   ...buttonProps
-}: KeyboardAdaptiveButtonProps) => {
+}: KeyboardAdaptiveButtonProps) {
   const insets = useSafeAreaInsets();
   const isKeyboardOpen = useSharedValue(false);
 
@@ -68,4 +68,4 @@ export const KeyboardAdaptiveButton = ({
       </Animated.View>
     </KeyboardStickyView>
   );
-};
+}

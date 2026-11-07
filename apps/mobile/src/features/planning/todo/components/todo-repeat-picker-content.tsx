@@ -540,7 +540,7 @@ interface RepeatCalendarProps {
   onDatePress: (date: Date) => void;
 }
 
-const RepeatCalendar = ({
+function RepeatCalendar({
   picker,
   today,
   startDate,
@@ -548,7 +548,7 @@ const RepeatCalendar = ({
   isOpenEnded,
   occurrenceKeys,
   onDatePress,
-}: RepeatCalendarProps) => {
+}: RepeatCalendarProps) {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
   const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
@@ -647,7 +647,7 @@ const RepeatCalendar = ({
       </VStack>
     </VStack>
   );
-};
+}
 
 interface RepeatDateCellProps {
   date: Date;
