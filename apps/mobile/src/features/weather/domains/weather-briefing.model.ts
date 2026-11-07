@@ -123,9 +123,10 @@ interface BriefingClock {
 
 function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
   const time = toEpochMs(at);
-  return hourly.findIndex(
-    (hour) => toEpochMs(hour.startsAt) <= time && time < toEpochMs(hour.startsAt) + HOUR_MS,
-  );
+  return hourly.findIndex((hour) => {
+    const startsAt = toEpochMs(hour.startsAt);
+    return startsAt <= time && time < startsAt + HOUR_MS;
+  });
 }
 
 export function isHot(hour: HourlyForecastEntry): boolean {

@@ -5,6 +5,7 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
+import { isNotNil } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -66,7 +67,7 @@ export function WeatherSunMoon() {
       : t('sunMoon.nextFullMoon', {
           date: formatDateKeyLabel(nextFullMoon, 'monthDay', dateFormat),
         }),
-  ].filter((fact) => fact != null);
+  ].filter(isNotNil);
 
   return (
     <WeatherCard

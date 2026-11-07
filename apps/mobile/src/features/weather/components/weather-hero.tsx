@@ -92,10 +92,6 @@ const HERO_ENTERING = FadeInDown.duration(600)
   .withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })
   .reduceMotion(ReduceMotion.System);
 
-function useHeroScale() {
-  return Math.min(useFontScaleRatio(), MAX_HERO_SCALE);
-}
-
 function scaleType(type: typeof PLACE_TYPE, scale: number) {
   return {
     ...HERO_TEXT_SHADOW,
@@ -108,7 +104,7 @@ function scaleType(type: typeof PLACE_TYPE, scale: number) {
 export function WeatherHero() {
   const { t } = useTranslation('weather');
   const location = useWeatherLocation();
-  const scale = useHeroScale();
+  const scale = Math.min(useFontScaleRatio(), MAX_HERO_SCALE);
   const placeStyle = scaleType(PLACE_TYPE, scale);
   const lineStyle = scaleType(LINE_TYPE, scale);
   const unit = useTemperatureUnit();

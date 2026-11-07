@@ -42,19 +42,6 @@ interface WeatherCardProps extends Omit<
   children: ReactNode;
 }
 
-/** 카드 면과 테두리 색. 기본은 하늘 장면 색조, alert는 주황으로 물들이고 투명도 줄이기에서는 불투명하게 그린다. */
-function useCardSurface(tone: WeatherCardTone) {
-  const surface = useWeatherSurface();
-  const { theme } = useUniwind();
-  if (tone === 'default') {
-    return { background: surface.card, edge: surface.cardEdge, isOpaque: surface.isOpaque };
-  }
-  const background = surface.isOpaque
-    ? ALERT_SURFACE_COLORS.opaque
-    : ALERT_SURFACE_COLORS[theme === 'dark' ? 'dark' : 'light'];
-  return { background, edge: ALERT_SURFACE_COLORS.edge, isOpaque: surface.isOpaque };
-}
-
 /**
  * 하늘 장면 위에 놓이는 유리 카드. 면은 장면 색조로 반투명하게 물들이고 iOS에서만 뒤를 흐린다.
  * Android는 블러 없이 같은 반투명 면만 그리고, 투명도 줄이기에서는 불투명 면으로 그린다.
@@ -70,7 +57,15 @@ export function WeatherCard({
   style,
   ...cardProps
 }: WeatherCardProps) {
-  const { background, edge, isOpaque } = useCardSurface(tone);
+  const surface = useWeatherSurface();
+  const { theme } = useUniwind();
+  const { isOpaque } = surface;
+  const alertBackground = isOpaque
+    ? ALERT_SURFACE_COLORS.opaque
+    : ALERT_SURFACE_COLORS[theme === 'dark' ? 'dark' : 'light'];
+  /** 기본은 하늘 장면 색조, alert는 주황으로 물들이고 투명도 줄이기에서는 불투명하게 그린다. */
+  const background = tone === 'default' ? surface.card : alertBackground;
+  const edge = tone === 'default' ? surface.cardEdge : ALERT_SURFACE_COLORS.edge;
   const minimumFontScale = useMinimumFontScale('b4');
   const styles = weatherCard({ density });
 

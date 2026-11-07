@@ -30,6 +30,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { mapValues } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { Fragment, useEffect, useRef } from 'react';
@@ -68,11 +69,8 @@ type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 function useTranslateBriefingCopy() {
   const { t } = useTranslation('weather');
   const translate = (copy: BriefingCopy): string => {
-    const values = Object.fromEntries(
-      Object.entries(copy.values ?? {}).map(([name, value]) => [
-        name,
-        typeof value === 'object' ? translate(value) : value,
-      ]),
+    const values = mapValues(copy.values ?? {}, (value) =>
+      typeof value === 'object' ? translate(value) : value,
     );
     return t(copy.key, values);
   };
