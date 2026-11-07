@@ -131,6 +131,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
       subscribe: () => () => {},
       getPendingCommand: () => null,
       clearIfCurrent: () => false,
+      removeCorrupted: () => false,
       save: () => true,
     },
     authSessionStore,

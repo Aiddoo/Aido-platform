@@ -13,7 +13,9 @@ export interface WidgetNavigationRepository {
   getPendingCommand(): WidgetNavigationCommand | null;
   subscribe(listener: () => void): () => void;
   save(command: WidgetNavigationCommand): boolean;
-  clearIfCurrent(command: WidgetNavigationCommand | null): boolean;
+  clearIfCurrent(command: WidgetNavigationCommand): boolean;
+  /** 읽을 수 없는 저장 값만 지운다. 유효한 명령은 건드리지 않는다 */
+  removeCorrupted(): boolean;
 }
 
 export function createWidgetNavigationRepository(
@@ -50,11 +52,14 @@ export function createWidgetNavigationRepository(
     },
     clearIfCurrent: (command) => {
       const current = getPendingCommand();
-      if (
-        command == null
-          ? current != null || cachedRaw == null
-          : current == null || !WidgetNavigationPolicy.isSameCommand(command, current)
-      ) {
+      if (current == null || !WidgetNavigationPolicy.isSameCommand(command, current)) {
+        return false;
+      }
+      storage.remove(WIDGET_NAVIGATION_COMMAND_KEY);
+      return true;
+    },
+    removeCorrupted: () => {
+      if (getPendingCommand() != null || cachedRaw == null) {
         return false;
       }
       storage.remove(WIDGET_NAVIGATION_COMMAND_KEY);

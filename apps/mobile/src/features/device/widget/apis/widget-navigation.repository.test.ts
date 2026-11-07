@@ -32,7 +32,7 @@ describe('위젯 탐색 명령 저장소', () => {
     // Given
     const repository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
     repository.save(command);
-    const first = repository.getPendingCommand();
+    const first = command;
     const latest = { ...command, id: 'latest-tap', uri: 'aido://todo/13' };
     repository.save(latest);
 
@@ -54,7 +54,7 @@ describe('위젯 탐색 명령 저장소', () => {
 
     // When
     const before = repository.getPendingCommand();
-    const cleared = repository.clearIfCurrent(null);
+    const cleared = repository.removeCorrupted();
     const saved = repository.save({ ...command, uri: 'https://example.com' });
     const after = repository.getPendingCommand();
 

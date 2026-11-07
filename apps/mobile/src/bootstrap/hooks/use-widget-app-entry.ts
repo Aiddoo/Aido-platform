@@ -24,7 +24,6 @@ export function useWidgetAppEntry() {
   const meQuery = useQuery({
     ...useGetMeQueryOptions(),
     enabled: status === 'authenticated',
-    throwOnError: false,
     select: (user) => user.id,
   });
   const segments = useSegments();
@@ -48,11 +47,11 @@ export function useWidgetAppEntry() {
         return;
       }
       const currentCommand = widgetNavigationRepository.getPendingCommand();
-      if (
-        command
-          ? currentCommand == null || !WidgetNavigationPolicy.isSameCommand(command, currentCommand)
-          : currentCommand != null
-      ) {
+      const isCommandCurrent =
+        command == null
+          ? currentCommand == null
+          : currentCommand != null && WidgetNavigationPolicy.isSameCommand(command, currentCommand);
+      if (!isCommandCurrent) {
         return;
       }
       if (command) {
@@ -79,7 +78,11 @@ export function useWidgetAppEntry() {
         if (!isWidgetRouteShown(destinationUrl, pathname, parameters)) {
           router.navigate(destination, { withAnchor: true });
         }
-        widgetNavigationRepository.clearIfCurrent(command);
+        if (command == null) {
+          widgetNavigationRepository.removeCorrupted();
+        } else {
+          widgetNavigationRepository.clearIfCurrent(command);
+        }
         errorReporter.addBreadcrumb({
           category: 'widget',
           message: 'initial widget destination restored',
@@ -111,7 +114,11 @@ export function useWidgetAppEntry() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       setPendingInitialUrl(null);
-      widgetNavigationRepository.clearIfCurrent(pendingCommand);
+      if (pendingCommand == null) {
+        widgetNavigationRepository.removeCorrupted();
+      } else {
+        widgetNavigationRepository.clearIfCurrent(pendingCommand);
+      }
       return;
     }
 
@@ -123,18 +130,21 @@ export function useWidgetAppEntry() {
     if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
       return;
     }
-    if (pendingCommand && meQuery.data == null) {
-      return;
-    }
-    if (pendingCommand && !WidgetNavigationPolicy.isOwnedBy(pendingCommand, meQuery.data ?? '')) {
-      setPendingInitialUrl(null);
-      widgetNavigationRepository.clearIfCurrent(pendingCommand);
-      return;
+    const myId = meQuery.data;
+    if (pendingCommand != null) {
+      if (myId == null) {
+        return;
+      }
+      if (!WidgetNavigationPolicy.isOwnedBy(pendingCommand, myId)) {
+        setPendingInitialUrl(null);
+        widgetNavigationRepository.clearIfCurrent(pendingCommand);
+        return;
+      }
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
     if (!destinationUrl || !getWidgetRoute(destinationUrl)) {
-      widgetNavigationRepository.clearIfCurrent(null);
+      widgetNavigationRepository.removeCorrupted();
       return;
     }
 
