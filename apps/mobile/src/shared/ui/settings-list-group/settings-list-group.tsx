@@ -64,7 +64,6 @@ SettingsListGroup.Item = function Item({
   return (
     <ListGroup.Item
       accessibilityRole="button"
-      accessibilityLabel={label}
       accessibilityState={{ selected: isSelected, disabled: isDisabled }}
       disabled={isDisabled}
       className={cn(
