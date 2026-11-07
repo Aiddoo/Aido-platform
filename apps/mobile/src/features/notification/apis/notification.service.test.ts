@@ -1,5 +1,5 @@
 import { err, ok } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub, createPushNotificationGatewayStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { noop } from 'es-toolkit';
 
@@ -7,7 +7,6 @@ import {
   createMarkReadResponseDto,
   createNotificationApiError,
   createNotificationListResponseDto,
-  createPushNotificationGatewayStub,
   createUnreadCountResponseDto,
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';

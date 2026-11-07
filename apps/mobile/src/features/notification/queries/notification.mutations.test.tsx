@@ -1,11 +1,15 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi, createHttpClientStub, createLoggerStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { NotificationService } from '../apis/notification.service';
 import { useRecordPushOpenedMutationOptions } from './notification.mutations';
 

@@ -4,16 +4,14 @@ import type { PushNotificationResponse } from '@src/core/ports/push-notification
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import {
-  createMarkReadResponseDto,
-  createPushNotificationGatewayStub,
-} from '@src/features/notification/__tests__/notification.fixtures';
+import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
 import { createStubInviteService } from '@src/features/social/invite/__tests__/create-stub-invite-service';
 import {
+  createExternalLinkGatewayStub,
   createHttpClientStub,
   createMemorySyncStorage,
-  createExternalLinkGatewayStub,
+  createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
 } from '@src/shared/__tests__';

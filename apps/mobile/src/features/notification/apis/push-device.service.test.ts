@@ -1,11 +1,13 @@
-import type { Logger } from '@src/core/ports/logger';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+} from '@src/shared/__tests__';
 
 import {
   createNotificationApiError,
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
   createPushPermissionResponse,
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
@@ -17,12 +19,7 @@ function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () =
   const sessionEpoch = createSessionEpoch();
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-  const logger: jest.Mocked<Logger> = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
+  const logger = createLoggerStub();
   const service = new PushDeviceService({
     gateway,
     deviceIdService: { get: async () => DEVICE_ID },

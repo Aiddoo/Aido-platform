@@ -12,21 +12,22 @@ import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
-import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.fixtures';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
+  createAnalyticsStub,
   createErrorReporterStub,
+  createHttpClientStub,
+  createLoggerStub,
   createMemoryStorage,
   createMemorySyncStorage,
   createMemoryTokenStore,
-  createAnalyticsStub,
+  createPushNotificationGatewayStub,
   createSocialAuthGatewayStub,
   createTestDi,
-  createHttpClientStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -48,8 +49,6 @@ export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
   refreshToken: 'refresh-a',
 };
-
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 interface AuthSessionOptions {
   tokens?: AuthTokenPair;
@@ -87,7 +86,7 @@ export function createAuthSession({
     repository: pendingRevocation,
     requestRefresh,
     publicHttpClient: publicHttp,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     now: Date.now,
   });
   const sessionCleanupService = new SessionCleanupService({
@@ -100,12 +99,12 @@ export function createAuthSession({
       createDeviceTimezoneRepository(createMemorySyncStorage()),
     ),
     pendingRedemption,
-    logger: silentLogger,
+    logger: createLoggerStub(),
   });
 
   const container = createTestDi({
     tokenStore: store,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     errorReporter,
     analytics: createAnalyticsStub(),
     authService: new AuthService({
@@ -118,7 +117,7 @@ export function createAuthSession({
       gateway: createPushNotificationGatewayStub(),
       deviceIdService: { get: async () => 'device-1' },
       httpClient: authHttp,
-      logger: silentLogger,
+      logger: createLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       sessionEpoch,
     }),

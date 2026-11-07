@@ -8,7 +8,12 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createAnalyticsStub, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+} from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
@@ -16,7 +21,6 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
   createPushPermissionResponse,
 } from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
@@ -24,8 +28,6 @@ import { createPushPromptRepository } from '../apis/push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { PushPermission } from '../schemas/push-permission.schema';
 import { PushPermissionNotice } from './push-permission-notice';
-
-const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 async function renderCard(
   permission: PushPermission,
@@ -54,14 +56,14 @@ async function renderCard(
         gateway,
         deviceIdService: { get: async () => 'ios_device-123' },
         httpClient,
-        logger: silentLogger,
+        logger: createLoggerStub(),
         getTimeZone: () => 'Asia/Seoul',
         sessionEpoch: createSessionEpoch(),
       }),
       preferenceService: new PreferenceService(httpClient),
       userService: new UserService(httpClient),
       analytics: createAnalyticsStub(),
-      logger: silentLogger,
+      logger: createLoggerStub(),
     },
     queryClient,
   });

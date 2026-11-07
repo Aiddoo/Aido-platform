@@ -7,12 +7,13 @@ import {
   createLocalFileSystemFake,
   type LocalFileSystemFake,
 } from './create-local-file-system-fake';
+import { createLoggerStub } from './create-logger-stub';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 
 export const createVoiceNoteStorageServiceFake = (
   files: LocalFileSystemFake = createLocalFileSystemFake(),
 ): VoiceNoteStorageService => {
-  const logger = { warn: jest.fn() };
+  const logger = createLoggerStub();
 
   return new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({

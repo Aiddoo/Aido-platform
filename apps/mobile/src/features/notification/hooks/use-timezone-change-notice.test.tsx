@@ -1,13 +1,13 @@
-import type { Logger } from '@src/core/ports/logger';
 import {
   createTodoDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
-  createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, screen } from '@testing-library/react-native';
@@ -17,7 +17,6 @@ import { createDeviceTimezoneRepository } from '../apis/device-timezone.reposito
 import { DeviceTimezoneService } from '../apis/device-timezone.service';
 import { useTimezoneChangeNotice } from './use-timezone-change-notice';
 
-const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 const USER_ID = 'user-1';
 const NOW = new Date('2026-11-05T12:00:00.000Z');
 const NOTICE_TITLE = '할 일 알림 시간을 지금 시간대에 맞췄어요';
@@ -60,7 +59,7 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
   const getTodos = httpClient.get;
   const di = {
     analytics,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     deviceTimezoneService: new DeviceTimezoneService(repository),
     todoService: new TodoService(httpClient),
   };

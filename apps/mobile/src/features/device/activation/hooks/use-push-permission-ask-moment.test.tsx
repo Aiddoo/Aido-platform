@@ -1,5 +1,4 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import type { Logger } from '@src/core/ports/logger';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
@@ -9,11 +8,16 @@ import {
 } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
   createPushPermissionResponse,
 } from '@src/features/notification/__tests__/notification.fixtures';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { createHttpClientStub, createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createMemorySyncStorage,
+  createPushNotificationGatewayStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { toInstant } from '@src/shared/date/instant';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -28,8 +32,6 @@ import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 const CAMPAIGN_ID = 'feature-discovery-2026-08';
 const EXISTING_USER_CREATED_AT = '2026-07-01T00:00:00.000Z';
 const NEW_USER_CREATED_AT = '2026-08-01T00:00:00.000Z';
-
-const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 function setup({
   permissionStatus = 'undetermined',
@@ -55,7 +57,7 @@ function setup({
     gateway,
     deviceIdService: { get: async () => 'ios_device-123' },
     httpClient,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     getTimeZone: () => 'Asia/Seoul',
     sessionEpoch: createSessionEpoch(),
   });
@@ -64,7 +66,7 @@ function setup({
   const container = createTestDi({
     httpClient,
     pushDeviceService,
-    logger: silentLogger,
+    logger: createLoggerStub(),
     authSessionStore: createAuthSessionStore({ status: 'authenticated' }),
     activationService: new ActivationService(activationRepository),
     featureCampaignService: new FeatureCampaignService({

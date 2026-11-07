@@ -1,10 +1,9 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi } from '@src/shared/__tests__';
+import { createPushNotificationGatewayStub, createTestDi } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { useForegroundNotificationListener } from './use-foreground-notification-listener';
 
 async function setup() {

@@ -1,8 +1,12 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import type { Logger } from '@src/core/ports/logger';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
@@ -12,12 +16,9 @@ import { AppState, type AppStateStatus } from 'react-native';
 import {
   createNotificationApiError,
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
 } from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
 import { usePushDeviceSync } from './use-push-device-sync';
-
-const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 describe('usePushDeviceSync', () => {
   beforeEach(() => {
@@ -59,11 +60,11 @@ describe('usePushDeviceSync', () => {
       gateway,
       deviceIdService: { get: async () => 'ios_device-123' },
       httpClient,
-      logger: silentLogger,
+      logger: createLoggerStub(),
       getTimeZone: () => timeZone.current,
       sessionEpoch: createSessionEpoch(),
     });
-    const container = createTestDi({ pushDeviceService, logger: silentLogger });
+    const container = createTestDi({ pushDeviceService, logger: createLoggerStub() });
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={container}>

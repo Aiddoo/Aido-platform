@@ -1,7 +1,11 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
-import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
+import {
+  createHttpClientStub,
+  createPushNotificationGatewayStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -10,7 +14,6 @@ import { Slot } from 'expo-router';
 import { act, renderRouter, waitFor } from 'expo-router/testing-library';
 import type { PropsWithChildren } from 'react';
 
-import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { useNotificationResponseObserver } from './use-notification-response-observer';
 

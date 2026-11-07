@@ -19,7 +19,6 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
-import { createPushNotificationGatewayStub } from '@src/features/notification/__tests__/notification.fixtures';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
@@ -47,6 +46,7 @@ import { createIdGeneratorStub } from './create-id-generator-stub';
 import { createLoggerStub } from './create-logger-stub';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createMemoryTokenStore } from './create-memory-token-store';
+import { createPushNotificationGatewayStub } from './create-push-notification-gateway-stub';
 import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 import { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-service-fake';
 
