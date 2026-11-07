@@ -20,7 +20,7 @@ import { isSuggestionUnavailable } from '../domains/suggestion.error';
 import type { AiSuggestionActionInput } from '../schemas/suggestion.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
 
-interface HandleSuggestionParams {
+interface ActOnSuggestionParams {
   suggestionId: number;
   input: AiSuggestionActionInput;
 }
@@ -37,8 +37,8 @@ export function useActOnSuggestionMutationOptions() {
   const showFailure = useMutationFailure(t('ai:suggestions.toasts.retryLater'));
 
   return mutationOptions({
-    mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) =>
-      unwrap(await suggestionService.handleSuggestionAction(suggestionId, input)),
+    mutationFn: async ({ suggestionId, input }: ActOnSuggestionParams) =>
+      unwrap(await suggestionService.actOnSuggestion(suggestionId, input)),
     onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
       invalidateAiSuggestions(queryClient);
@@ -55,7 +55,7 @@ export function useActOnSuggestionMutationOptions() {
       );
     },
     onError: (error) => {
-      if (gate.handleError(error)) {
+      if (gate.promptIfLimited(error)) {
         haptics.notify('error');
         return;
       }

@@ -2,7 +2,7 @@ import {
   hasPushedScreen,
   isMyPageMenuItemSelected,
   getMyPageMenuNavigationMode,
-} from './mypage-menu-navigation';
+} from './my-page-menu-navigation';
 
 describe('getMyPageMenuNavigationMode', () => {
   it('내 정보 탭에서는 메뉴 화면으로 push한다', () => {

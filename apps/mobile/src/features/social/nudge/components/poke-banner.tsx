@@ -73,7 +73,7 @@ export function PokeBanner() {
 
   return (
     <PressableFeedback
-      onPress={() => gate.guard()}
+      onPress={() => gate.checkAccessOrPrompt()}
       isDisabled={!isLimitReached}
       className="rounded-xl"
     >

@@ -8,7 +8,7 @@ import { HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useNudgeId } from '../../hooks/use-nudge-params';
+import { useNudgeId } from '../../hooks/use-nudge-id';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 
 export function NudgeSummary() {

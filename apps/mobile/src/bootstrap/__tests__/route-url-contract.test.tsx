@@ -1,14 +1,14 @@
-import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
+import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view';
 import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
-import { useReportType } from '@src/features/insights/report/hooks/use-report-type-param';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
-import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
 import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
+import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view';
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';

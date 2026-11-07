@@ -9,7 +9,7 @@ import { SubscriptionResult } from '@src/features/billing/subscription/component
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
-import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view-param';
+import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';

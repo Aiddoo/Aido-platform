@@ -2,7 +2,7 @@ import { HStack, StyledSafeAreaView } from '@src/shared/ui';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 
-import { useMyPagePaneLayout } from '../../hooks/use-mypage-pane-layout';
+import { useMyPagePaneLayout } from '../../hooks/use-my-page-pane-layout';
 
 interface MyPagePaneLayoutProps extends PropsWithChildren {
   /** 두 칸의 왼쪽에 놓일 때. 네이티브 헤더가 없어 머리 동작과 위 여백을 여기서 그린다. */

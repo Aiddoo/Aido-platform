@@ -27,13 +27,13 @@ export class SuggestionService {
       this.#logInvalid('getSuggestions'),
     );
 
-  handleSuggestionAction = async (suggestionId: number, input: AiSuggestionActionInput) =>
+  actOnSuggestion = async (suggestionId: number, input: AiSuggestionActionInput) =>
     parseApiResponse(
       await this.#httpClient.patch(`v1/ai/suggestions/${suggestionId}`, input),
       suggestionActionResultSchema,
       (dto) => dto,
-      '[SuggestionService] Invalid handleSuggestionAction response',
-      this.#logInvalid('handleSuggestionAction'),
+      '[SuggestionService] Invalid actOnSuggestion response',
+      this.#logInvalid('actOnSuggestion'),
     );
 
   #logInvalid = (method: string) => (zodError: string) =>

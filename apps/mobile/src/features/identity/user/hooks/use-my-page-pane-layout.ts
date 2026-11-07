@@ -10,7 +10,7 @@ import {
 import type { NativeScrollEvent, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createMyPagePaneLayoutStore } from './mypage-pane-layout-store';
+import { createMyPagePaneLayoutStore } from './my-page-pane-layout-store';
 
 const myPagePaneLayoutStore = createMyPagePaneLayoutStore();
 

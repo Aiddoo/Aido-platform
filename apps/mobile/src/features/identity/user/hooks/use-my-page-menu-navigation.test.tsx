@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react-native';
 import { router, usePathname } from 'expo-router';
 
-import { useMyPageMenuNavigation } from './use-mypage-menu-navigation';
+import { useMyPageMenuNavigation } from './use-my-page-menu-navigation';
 
 const mockedUsePathname = jest.mocked(usePathname);
 

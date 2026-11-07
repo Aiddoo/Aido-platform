@@ -17,7 +17,7 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
 import { useTodoId } from '../../hooks/use-todo-params';
-import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-params';
+import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';

@@ -67,7 +67,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
     categoriesData.categories,
     suggestion?.suggestedCategoryId,
   );
-  const handleSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
+  const actOnSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
 
   useEffect(() => {
     if (suggestion == null || defaultCategoryId == null) {
@@ -83,13 +83,13 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
     <CategorySelectInput
       value={defaultCategoryId}
       onChange={(categoryId) =>
-        handleSuggestionMutation.mutate(
+        actOnSuggestionMutation.mutate(
           { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
           { onSuccess: () => onClose({ type: 'back-then-replace', href: '/feed' }) },
         )
       }
       submitLabel={t('suggestions.category.submit')}
-      isLoading={handleSuggestionMutation.isPending}
+      isLoading={actOnSuggestionMutation.isPending}
     />
   );
 };

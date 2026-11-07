@@ -258,7 +258,7 @@ function usePlanFailureHandler(
     trackEvent('voice_plan_failed', { source: toAnalyticsSource(source), cause });
     haptics.notify('error');
 
-    if (gate.handleError(error, { onSubscribe })) {
+    if (gate.promptIfLimited(error, { onSubscribe })) {
       return;
     }
 

@@ -5,7 +5,7 @@ import { FriendList } from '@src/features/social/friend/components/friend-list';
 import { ReceivedRequestList } from '@src/features/social/friend/components/received-request-list';
 import { SentRequestList } from '@src/features/social/friend/components/sent-request-list';
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
+import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view';
 import {
   FRIEND_LIST_VIEW,
   friendListViewSchema,

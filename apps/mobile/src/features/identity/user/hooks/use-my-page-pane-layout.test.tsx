@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 
-import { useMyPagePaneLayout } from './use-mypage-pane-layout';
+import { useMyPagePaneLayout } from './use-my-page-pane-layout';
 
 function createScrollEvent(y: number) {
   return { nativeEvent: { contentOffset: { x: 0, y } } };

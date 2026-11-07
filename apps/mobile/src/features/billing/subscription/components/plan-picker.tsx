@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
-import { useSubscriptionView } from '../hooks/use-subscription-view-param';
+import { useSubscriptionView } from '../hooks/use-subscription-view';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { type SubscriptionOffering } from '../schemas/subscription.schema';
 import {

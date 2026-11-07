@@ -21,7 +21,7 @@ export function useStartVoiceNote() {
   const push = useSingleTap(router.push);
 
   return async ({ onSubscribe, getRecordHref, navigate = push }: StartVoiceNoteOptions = {}) => {
-    if (!gate.guard({ onSubscribe })) {
+    if (!gate.checkAccessOrPrompt({ onSubscribe })) {
       return;
     }
     const consent = await aiConsent.ensureAgreedBeforeListening();

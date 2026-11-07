@@ -1,4 +1,4 @@
-import { createMyPagePaneLayoutStore } from './mypage-pane-layout-store';
+import { createMyPagePaneLayoutStore } from './my-page-pane-layout-store';
 
 describe('마이페이지 메뉴 칸 저장소', () => {
   it('떠 있는 칸의 위 여백 중 큰 값을 쓰고 값이 바뀔 때만 알린다', () => {

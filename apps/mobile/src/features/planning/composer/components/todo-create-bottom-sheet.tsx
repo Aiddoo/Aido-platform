@@ -5,7 +5,7 @@ import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
 import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';

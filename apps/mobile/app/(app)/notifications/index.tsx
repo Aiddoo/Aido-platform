@@ -3,7 +3,7 @@ import { NotificationList } from '@src/features/notification/components/notifica
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
 import { NotificationPolicy } from '@src/features/notification/domains/notification.model';
-import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category-param';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
 import {
   notificationCategoryParamSchema,
   notificationDirectionParamSchema,

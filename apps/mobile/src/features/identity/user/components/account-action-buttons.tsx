@@ -8,7 +8,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
 import { UserPolicy } from '../domains/user.model';
-import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
+import { useMyPageMenuNavigation } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 
 export function AccountActionButtons() {

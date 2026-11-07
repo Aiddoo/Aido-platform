@@ -5,7 +5,7 @@ import {
   hasPushedScreen,
   isMyPageMenuItemSelected,
   getMyPageMenuNavigationMode,
-} from '../utils/mypage-menu-navigation';
+} from '../utils/my-page-menu-navigation';
 
 export type MyPageMenuPathname = Extract<Href, string>;
 

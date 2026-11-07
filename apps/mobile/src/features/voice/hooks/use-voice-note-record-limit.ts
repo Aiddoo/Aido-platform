@@ -24,7 +24,7 @@ export function useVoiceNoteRecordLimit() {
       return;
     }
     const { voiceNoteMinutes: premiumMinutes } = getPremiumBenefitAmounts();
-    gate.showLimit({
+    gate.promptLimit({
       title: t('limit.title', { minutes }),
       description: hasText
         ? t('limit.description', { premiumMinutes })

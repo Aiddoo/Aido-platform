@@ -23,7 +23,7 @@ import { match, P } from 'ts-pattern';
 
 import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-labels';
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useNudgeId } from '../../hooks/use-nudge-params';
+import { useNudgeId } from '../../hooks/use-nudge-id';
 import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';

@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
-import { useSubscriptionView } from '../hooks/use-subscription-view-param';
+import { useSubscriptionView } from '../hooks/use-subscription-view';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';

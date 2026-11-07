@@ -33,8 +33,8 @@ function AiParseGate({ error }: { error?: unknown }) {
 
   return (
     <>
-      <Button onPress={() => gate.guard()}>시작</Button>
-      <Button onPress={() => gate.handleError(error)}>서버 응답</Button>
+      <Button onPress={() => gate.checkAccessOrPrompt()}>시작</Button>
+      <Button onPress={() => gate.promptIfLimited(error)}>서버 응답</Button>
     </>
   );
 }

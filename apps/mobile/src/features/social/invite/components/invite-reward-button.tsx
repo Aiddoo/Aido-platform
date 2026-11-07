@@ -1,4 +1,4 @@
-import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-mypage-menu-navigation';
+import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,

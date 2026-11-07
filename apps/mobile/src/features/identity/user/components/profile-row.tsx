@@ -17,7 +17,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 
-import { useMyPageMenuNavigation } from '../hooks/use-mypage-menu-navigation';
+import { useMyPageMenuNavigation } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';

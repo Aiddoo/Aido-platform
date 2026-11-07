@@ -27,7 +27,7 @@ import { match } from 'ts-pattern';
 import { NOTIFICATION_TYPE_LABEL_KEYS } from '../constants/notification-labels';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
-import { useNotificationCategory } from '../hooks/use-notification-category-param';
+import { useNotificationCategory } from '../hooks/use-notification-category';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
@@ -173,7 +173,7 @@ function useNotificationPress(notification: Notification) {
 
     if (
       NotificationPolicy.isAiFeature(notification) &&
-      !gate.guard({ description: tGlobal('notification:list.premiumDescription') })
+      !gate.checkAccessOrPrompt({ description: tGlobal('notification:list.premiumDescription') })
     ) {
       return;
     }

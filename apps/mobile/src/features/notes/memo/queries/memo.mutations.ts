@@ -250,7 +250,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
       haptics.notify('error');
 
-      if (gate.handleError(error)) {
+      if (gate.promptIfLimited(error)) {
         return;
       }
 

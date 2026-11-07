@@ -95,7 +95,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
 
   const start = async () => {
     const hasFailed = session.state.status === 'failed';
-    if (!gate.guard({ onSubscribe: onExit })) {
+    if (!gate.checkAccessOrPrompt({ onSubscribe: onExit })) {
       return;
     }
     Keyboard.dismiss();

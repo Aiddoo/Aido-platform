@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useFriendListView } from './use-friend-list-view-param';
+import { useFriendListView } from './use-friend-list-view';
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 

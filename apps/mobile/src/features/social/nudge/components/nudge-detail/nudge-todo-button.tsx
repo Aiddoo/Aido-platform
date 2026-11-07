@@ -4,7 +4,7 @@ import { ArrowRightIcon, Button, HStack, PawIcon, Text, VStack } from '@src/shar
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
-import { useNudgeId } from '../../hooks/use-nudge-params';
+import { useNudgeId } from '../../hooks/use-nudge-id';
 import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
 
 export function NudgeTodoButton() {

@@ -4,15 +4,15 @@
 
 ## 사용법
 
-기능 화면에서는 직접 렌더하지 말고 `useEntitlementGate(feature, { surface })`(`features/billing/subscription/hooks/use-entitlement-gate`)를 씁니다. 게이트가 서버 스냅샷(`GET /v1/entitlements`)으로 시작 전에 막고(`guard`), 서버 한도 오류는 같은 다이얼로그로 안내합니다(`handleError`). 기능별 제목·설명(다시 채워지는 날, 프리미엄 혜택)은 게이트가 채우고, 노출·구독하기를 `premium_gate_*`·`limit_reached_*`로 기록한 뒤 `subscriptionHref()`로 보냅니다.
+기능 화면에서는 직접 렌더하지 말고 `useEntitlementGate(feature, { surface })`(`features/billing/subscription/hooks/use-entitlement-gate`)를 씁니다. 게이트가 서버 스냅샷(`GET /v1/entitlements`)으로 시작 전에 막고(`checkAccessOrPrompt`), 서버 한도 오류는 같은 다이얼로그로 안내합니다(`promptIfLimited`). 기능별 제목·설명(다시 채워지는 날, 프리미엄 혜택)은 게이트가 채우고, 노출·구독하기를 `premium_gate_*`·`limit_reached_*`로 기록한 뒤 `subscriptionHref()`로 보냅니다.
 
 ```tsx
 const gate = useEntitlementGate('CUSTOM_REMINDER_TIME', { surface: 'reminder_settings' });
 
-<SettingsTimeInput onBeforeOpen={() => gate.guard()} />;
+<SettingsTimeInput onBeforeOpen={() => gate.checkAccessOrPrompt()} />;
 
 // mutation onError
-if (gate.handleError(error)) {
+if (gate.promptIfLimited(error)) {
   return;
 }
 ```

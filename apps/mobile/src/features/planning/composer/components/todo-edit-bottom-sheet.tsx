@@ -5,7 +5,7 @@ import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repea
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-params';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import {
   type TodoRepeat,
