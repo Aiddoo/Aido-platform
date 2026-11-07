@@ -12,8 +12,11 @@ let focusEffect: EffectCallback | undefined;
 let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
 let idleCallbacks: Array<() => void> = [];
 
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({
-  useAuth: () => ({ status: 'authenticated' }),
+jest.mock('@src/bootstrap/providers/di-context', () => ({
+  useAuthSessionStore: () => ({
+    subscribe: () => () => {},
+    getState: () => ({ status: 'authenticated' }),
+  }),
 }));
 
 jest.mock('@src/shared/ui', () => ({

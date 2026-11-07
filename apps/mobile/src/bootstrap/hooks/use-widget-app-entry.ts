@@ -1,5 +1,6 @@
 import { WidgetNavigationPolicy } from '@src/features/device/widget/domains/widget-navigation.model';
 import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
@@ -8,11 +9,10 @@ import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
-import { useAuth } from '../providers/auth-provider';
 import { useErrorReporter, useWidgetNavigationRepository } from '../providers/di-context';
 
 export function useWidgetAppEntry() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const errorReporter = useErrorReporter();
   const widgetNavigationRepository = useWidgetNavigationRepository();
   const queryClient = useQueryClient();

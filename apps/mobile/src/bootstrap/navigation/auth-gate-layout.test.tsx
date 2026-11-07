@@ -1,6 +1,7 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import type * as SessionEpochModule from '@src/core/session/session-epoch';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import type * as NotificationFixturesModule from '@src/features/notification/__tests__/notification.fixtures';
 import type * as NotificationEntryStoreModule from '@src/features/notification/apis/notification-entry.store';
 import type * as InviteServiceStubModule from '@src/features/social/invite/__tests__/create-stub-invite-service';
@@ -10,7 +11,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { createContext, type PropsWithChildren, use, useState } from 'react';
+import type { PropsWithChildren } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
 import RootIndex from '../../../app/index';
@@ -19,7 +20,8 @@ import { AuthGateLayout } from './auth-gate-layout';
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
 
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
+let mockAuthSessionStore = createAuthSessionStoreStub('loading');
+
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/bootstrap/providers/di-context', () => {
@@ -62,6 +64,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     syncBadgeCount: jest.fn(),
   };
   return {
+    useAuthSessionStore: () => mockAuthSessionStore,
     usePushNotificationGateway: () => pushNotificationGateway,
     useNotificationEntryStore: () => notificationEntryStore,
     useSessionEpoch: () => sessionEpoch,
@@ -90,63 +93,51 @@ jest.mock('expo-linking', () => ({
   useLinkingURL: jest.fn(() => null),
 }));
 
-type AuthState = ReturnType<typeof useAuth>;
-const AuthContext = createContext<AuthState | null>(null);
-
-function useTestAuth() {
-  const value = use(AuthContext);
-  if (!value) {
-    throw new Error('Auth fixture missing');
-  }
-  return value;
-}
-
 function LoginScreen() {
-  const { setStatus } = useTestAuth();
   return (
-    <Pressable testID="login" onPress={() => setStatus('authenticated')}>
+    <Pressable testID="login" onPress={() => mockAuthSessionStore.setStatus('authenticated')}>
       <Text>Login</Text>
     </Pressable>
   );
 }
 
 function FeedScreen() {
-  const { setStatus } = useTestAuth();
   return (
-    <Pressable testID="feed" onPress={() => setStatus('unauthenticated')}>
+    <Pressable testID="feed" onPress={() => mockAuthSessionStore.setStatus('unauthenticated')}>
       <Text>Feed</Text>
     </Pressable>
   );
 }
 
 function LoadingScreen() {
-  const { setStatus } = useTestAuth();
   return (
     <View>
-      <Pressable testID="boot-authenticated" onPress={() => setStatus('authenticated')}>
+      <Pressable
+        testID="boot-authenticated"
+        onPress={() => mockAuthSessionStore.setStatus('authenticated')}
+      >
         <Text>Restore session</Text>
       </Pressable>
-      <Pressable testID="boot-unauthenticated" onPress={() => setStatus('unauthenticated')}>
+      <Pressable
+        testID="boot-unauthenticated"
+        onPress={() => mockAuthSessionStore.setStatus('unauthenticated')}
+      >
         <Text>No session</Text>
       </Pressable>
     </View>
   );
 }
 
-async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl = '/') {
+async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
   const queryClient = createTestQueryClient();
+  mockAuthSessionStore = createAuthSessionStoreStub(initialStatus);
   function AuthFixture({ children }: PropsWithChildren) {
-    const [status, setStatus] = useState(initialStatus);
     return (
       <QueryClientProvider client={queryClient}>
-        <LocalDateProvider>
-          <AuthContext value={{ status, setStatus }}>{children}</AuthContext>
-        </LocalDateProvider>
+        <LocalDateProvider>{children}</LocalDateProvider>
       </QueryClientProvider>
     );
   }
-
-  jest.mocked(useAuth).mockImplementation(useTestAuth);
 
   return renderRouter(
     {

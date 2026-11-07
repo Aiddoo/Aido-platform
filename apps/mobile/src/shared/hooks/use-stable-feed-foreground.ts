@@ -1,4 +1,4 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useOverlayState } from '@src/shared/ui';
 import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
 import * as Linking from 'expo-linking';
@@ -8,7 +8,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
 export function useStableFeedForeground(): boolean {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const { hasActiveOverlay } = useOverlayState();
   const [isFocused, setIsFocused] = useState(false);
   const [appState, setAppState] = useState<AppStateStatus | null>(

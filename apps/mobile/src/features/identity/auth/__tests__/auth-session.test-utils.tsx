@@ -1,4 +1,4 @@
-import { AuthProvider, useAuth } from '@src/bootstrap/providers/auth-provider';
+import { AuthProvider } from '@src/bootstrap/providers/auth-provider';
 import { type DIContainer, StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
@@ -40,6 +40,7 @@ import { createPendingRevocationRepository } from '../apis/pending-revocation.re
 import { SessionCleanupService } from '../apis/session-cleanup.service';
 import { createSessionQueryCache } from '../apis/session-query-cache';
 import { SessionRevocationService } from '../apis/session-revocation.service';
+import { useAuthStatus } from '../hooks/use-auth-status';
 
 export const ACCOUNT_A_TOKENS: AuthTokenPair = {
   accessToken: 'access-a',
@@ -146,7 +147,7 @@ export function createAuthSession({
     let latestStatus = '';
     const rendered = await renderHook(
       () => {
-        latestStatus = useAuth().status;
+        latestStatus = useAuthStatus();
         return useValue();
       },
       { wrapper: Wrapper },

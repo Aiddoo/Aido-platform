@@ -1,5 +1,5 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useNotificationEntryStore } from '@src/bootstrap/providers/di-context';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useSegments } from 'expo-router';
 import { useSyncExternalStore } from 'react';
 
@@ -15,7 +15,7 @@ const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
  * 피드 안내와 화면 기록이 생기지 않고, 뒤로 가기는 anchor인 피드다.
  */
 export function useNotificationEntry() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const store = useNotificationEntryStore();
   const { pending, ready } = useSyncExternalStore(store.subscribe, store.getState);
   const [firstSegment] = useSegments();

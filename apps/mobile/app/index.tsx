@@ -1,11 +1,11 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useIsRestoring } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
 import { match } from 'ts-pattern';
 
 function Index() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const entry = useNotificationEntry();
 

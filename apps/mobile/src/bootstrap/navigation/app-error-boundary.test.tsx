@@ -1,16 +1,16 @@
 import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   ACCOUNT_A_TOKENS,
   createAuthSession,
 } from '@src/features/identity/auth/__tests__/auth-session.test-utils';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { ok } from '@src/shared/errors/result';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { ErrorBoundary } from '../../../app/(app)/_layout';
 
-const StatusProbe = () => <Text testID="status">{useAuth().status}</Text>;
+const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
 beforeEach(() => {
   jest.useFakeTimers();

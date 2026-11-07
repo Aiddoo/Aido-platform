@@ -1,6 +1,5 @@
 import type { DeleteAccountInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,
   useAuthService,
@@ -15,13 +14,15 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthSession } from '../hooks/use-auth-session';
+
 export const useDeleteAccountMutationOptions = () => {
   const haptics = useHaptics();
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const { setStatus } = useAuth();
+  const { signOut } = useAuthSession();
   const queryClient = useQueryClient();
   const sessionCleanupService = useSessionCleanupService();
 
@@ -51,10 +52,10 @@ export const useDeleteAccountMutationOptions = () => {
 
       toast.error(error, { fallback: t('auth:toasts.deleteAccountFailed') });
     },
-    // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
+    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     onSettled: (_data, error) => {
       if (!error) {
-        setStatus('unauthenticated');
+        signOut();
       }
     },
   });

@@ -1,6 +1,6 @@
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '@src/features/notification/constants/notification.constants';
 import { useNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useNotificationResponseObserver } from '@src/features/notification/hooks/use-notification-response-observer';
@@ -15,7 +15,7 @@ import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
 export function AuthGateLayout() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const { resolvedTheme } = useTheme();
   useScreenTracking();

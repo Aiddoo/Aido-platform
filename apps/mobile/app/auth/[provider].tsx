@@ -1,4 +1,4 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { Redirect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
@@ -19,7 +19,7 @@ import { useEffect } from 'react';
  * @see https://docs.expo.dev/guides/authentication/#expo-web-browser
  */
 export default function OAuthCallbackScreen() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
 
   useEffect(() => {
     // Android에서 WebBrowser.openAuthSessionAsync()가 URL을 캡처하도록 처리

@@ -1,5 +1,5 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ const selectUserId = (user: User) => user.id;
  * 초대는 수락하거나 끝난 실패일 때 지우고, 같은 초대는 이번 실행에서 한 번만 연다.
  */
 export function useInviteAppEntry() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const inviteService = useInviteService();
   const segments = useSegments();
   const { data: userId } = useQuery({

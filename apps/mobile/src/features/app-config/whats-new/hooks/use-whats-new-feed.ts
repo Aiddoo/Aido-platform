@@ -1,6 +1,6 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { toInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -31,7 +31,7 @@ export function useWhatsNewFeed({
   isWeatherIntroductionPending,
   isInviteAvailable,
 }: WhatsNewFeedInput) {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
     ...useGetFeatureCampaignConfigQueryOptions(),

@@ -1,4 +1,5 @@
 import { subscribeNotificationsChanged } from '@src/core/events/notifications-changed';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
@@ -13,13 +14,12 @@ import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
-import { useAuth } from './auth-provider';
 import { invalidateOnNotificationReceived } from './notification-received-invalidation';
 
 registerForegroundNotificationPresentation();
 
 export function NotificationProvider({ children }: PropsWithChildren) {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
   const queryClient = useQueryClient();
   const invalidateByType = useCallback(

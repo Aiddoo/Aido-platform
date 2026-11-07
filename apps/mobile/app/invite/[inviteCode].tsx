@@ -1,6 +1,6 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { ReceiptBenefitRow } from '@src/features/billing/subscription/components/receipt-benefit-row';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { InvitePreviewCard } from '@src/features/social/invite/components/invite-preview-card';
 import { InviteRedemptionPolicy } from '@src/features/social/invite/domains/invite-redemption.model';
@@ -197,7 +197,7 @@ function InviteBenefitReceiptLoading() {
 
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 function InviteCardActions() {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const { inviteCode, source } = useInviteRouteParams();
   const inviteService = useInviteService();
   const { t } = useTranslation('invite');

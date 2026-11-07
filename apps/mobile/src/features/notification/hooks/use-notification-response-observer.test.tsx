@@ -1,23 +1,21 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
 import { Slot } from 'expo-router';
 import { act, renderRouter, waitFor } from 'expo-router/testing-library';
-import { type PropsWithChildren, useState } from 'react';
+import type { PropsWithChildren } from 'react';
 
 import { createPushNotificationGatewayStub } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { useNotificationResponseObserver } from './use-notification-response-observer';
 
 jest.unmock('expo-router');
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 
 const RESPONSE = {
   id: 'response-1',
@@ -28,16 +26,18 @@ const RESPONSE = {
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
   const logger = createLoggerStub();
-  let changeStatus: (next: AuthStatus) => void = noop;
-  const container = createTestDiContainer(
-    createTestDi({ httpClient: createHttpClientStub(), pushNotificationGateway: gateway, logger }),
-  );
+  const authSessionStore = createAuthSessionStoreStub(status);
+  const container = createTestDiContainer({
+    ...createTestDi({
+      httpClient: createHttpClientStub(),
+      pushNotificationGateway: gateway,
+      logger,
+    }),
+    authSessionStore,
+  });
   const queryClient = createTestQueryClient();
 
   function Layout() {
-    const [authStatus, setStatus] = useState(status);
-    changeStatus = setStatus;
-    jest.mocked(useAuth).mockReturnValue({ status: authStatus, setStatus });
     useNotificationResponseObserver();
     return <Slot />;
   }
@@ -58,7 +58,7 @@ async function setup({ status }: { status: AuthStatus }) {
     gateway,
     logger,
     store: container.notificationEntryStore,
-    changeStatus: (next: AuthStatus) => act(async () => changeStatus(next)),
+    changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
   };
 }
 

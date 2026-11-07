@@ -1,4 +1,3 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useLogger,
   useNotificationEntryStore,
@@ -7,6 +6,7 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, unwrap } from '@src/shared/errors';
@@ -42,7 +42,7 @@ import { useNotificationNavigation } from './use-notification-navigation';
  * 판단은 NotificationPolicy, 목적지는 resolveNotificationDestination에 맡긴다.
  */
 export function useNotificationResponseObserver(): void {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const gateway = usePushNotificationGateway();
   const store = useNotificationEntryStore();
   const logger = useLogger();
@@ -107,7 +107,7 @@ function useMarketingOptOut(
   response: PendingNotificationResponse | null,
   finishResponse: (responseId: string) => void,
 ) {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const notificationService = useNotificationService();
   const logger = useLogger();
   const { trackEvent } = useTrack();
@@ -163,7 +163,7 @@ function useResolveResponse(
   response: PendingNotificationResponse | null,
   finishResponse: (responseId: string) => void,
 ) {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const store = useNotificationEntryStore();
   const notificationService = useNotificationService();

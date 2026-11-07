@@ -6,10 +6,6 @@ import type { PropsWithChildren } from 'react';
 
 import { useActivationProgress } from './use-activation-progress';
 
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({
-  useAuth: () => ({ status: 'authenticated' }),
-}));
-
 jest.mock('@src/features/app-config/feature-campaign/queries/feature-campaign.queries', () => ({
   useGetFeatureCampaignConfigQueryOptions: () => ({
     queryKey: ['feature-discovery'],
@@ -30,6 +26,10 @@ jest.mock('@src/features/identity/user/queries/user.queries', () => ({
 }));
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
+  useAuthSessionStore: () => ({
+    subscribe: () => () => {},
+    getState: () => ({ status: 'authenticated' }),
+  }),
   useActivationService: () => ({
     getProgress: jest.fn(),
   }),

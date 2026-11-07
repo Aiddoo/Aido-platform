@@ -4,6 +4,7 @@ import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
 import { type CustomerInfo } from '@src/features/billing/subscription/schemas/customer-info.schema';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
@@ -12,11 +13,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 
-import { useAuth } from './auth-provider';
 import { usePurchasesSdkManager, useSubscriptionService } from './di-context';
 
 export function RevenueCatProvider({ children }: PropsWithChildren) {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const sdkManager = usePurchasesSdkManager();
   const subscriptionService = useSubscriptionService();
   const queryClient = useQueryClient();

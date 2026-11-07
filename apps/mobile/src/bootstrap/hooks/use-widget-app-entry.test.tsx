@@ -23,8 +23,11 @@ let mockUrl: string | null = 'aido://feed?date=today';
 let mockRepository: WidgetNavigationRepository;
 const mockErrorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
 
-jest.mock('../providers/auth-provider', () => ({ useAuth: () => ({ status: mockStatus }) }));
 jest.mock('../providers/di-context', () => ({
+  useAuthSessionStore: () => ({
+    subscribe: () => () => {},
+    getState: () => ({ status: mockStatus }),
+  }),
   useErrorReporter: () => mockErrorReporter,
   useWidgetNavigationRepository: () => mockRepository,
 }));

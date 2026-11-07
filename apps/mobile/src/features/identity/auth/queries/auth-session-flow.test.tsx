@@ -1,7 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { resolveInitialAuthStatus } from '@src/bootstrap/providers/auth-boot';
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
@@ -38,6 +37,7 @@ import { z } from 'zod';
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
 import { createAuthTokensDto, createDeleteAccountDto } from '../__tests__/auth.fixtures';
 import { AuthService } from '../apis/auth.service';
+import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS, logOutDevice } from '../utils/log-out-device';
 import { useDeleteAccountMutationOptions } from './use-delete-account-mutation-options';
 import { useEmailLoginMutationOptions } from './use-email-login-mutation-options';
@@ -78,7 +78,7 @@ describe('부팅', () => {
     const session = createAuthSession({ tokens });
 
     // When
-    await session.renderSession(() => useAuth().status, expected);
+    await session.renderSession(() => useAuthStatus(), expected);
 
     // Then
     expect(session.publicHttp.post).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('로그아웃', () => {
   });
 
   const useLogoutProbe = () => ({
-    status: useAuth().status,
+    status: useAuthStatus(),
     logout: useMutation(useLogoutMutationOptions()),
   });
 
@@ -194,7 +194,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     );
     const rendered = await session.renderSession(
       () => ({
-        status: useAuth().status,
+        status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
         login: useMutation(useEmailLoginMutationOptions()),
       }),
@@ -307,7 +307,7 @@ describe('대기 중인 초대', () => {
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
     session.pendingRedemption.save(PENDING_INVITE);
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
     );
     expect(session.pendingRedemption.get()).not.toBeNull();
@@ -326,7 +326,7 @@ describe('대기 중인 초대', () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.pendingRedemption.save(PENDING_INVITE);
-    const { result } = await session.renderSession(() => useAuth().status, 'authenticated');
+    const { result } = await session.renderSession(() => useAuthStatus(), 'authenticated');
 
     // When
     await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
@@ -342,7 +342,7 @@ describe('대기 중인 초대', () => {
     session.pendingRedemption.save(PENDING_INVITE);
 
     // When
-    await session.renderSession(() => useAuth().status, 'unauthenticated');
+    await session.renderSession(() => useAuthStatus(), 'unauthenticated');
 
     // Then
     expect(session.pendingRedemption.get()).toMatchObject({ inviteCode: 'K7M2QX' });
@@ -351,7 +351,7 @@ describe('대기 중인 초대', () => {
 
 describe('탈퇴', () => {
   const useDeleteProbe = () => ({
-    status: useAuth().status,
+    status: useAuthStatus(),
     deleteAccount: useMutation(useDeleteAccountMutationOptions()),
   });
 
@@ -389,7 +389,7 @@ describe('탈퇴', () => {
     );
     const { result } = await session.renderSession(
       () => ({
-        status: useAuth().status,
+        status: useAuthStatus(),
         meOptions: useGetMeQueryOptions(),
         deleteAccount: useMutation(useDeleteAccountMutationOptions()),
       }),
@@ -483,7 +483,7 @@ describe('로그인', () => {
     const session = createAuthSession();
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, login: useMutation(useEmailLoginMutationOptions()) }),
+      () => ({ status: useAuthStatus(), login: useMutation(useEmailLoginMutationOptions()) }),
       'unauthenticated',
     );
 
@@ -510,7 +510,7 @@ describe('로그인', () => {
       authorizationCode: null,
     });
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, login: useMutation(useOpenAppleLoginMutationOptions()) }),
+      () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
       'unauthenticated',
     );
 
@@ -528,7 +528,7 @@ describe('로그인', () => {
     const session = createAuthSession();
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, login: useMutation(useExchangeCodeMutationOptions()) }),
+      () => ({ status: useAuthStatus(), login: useMutation(useExchangeCodeMutationOptions()) }),
       'unauthenticated',
     );
 
@@ -546,7 +546,7 @@ describe('로그인', () => {
     const session = createAuthSession();
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, verify: useMutation(useVerifyEmailMutationOptions()) }),
+      () => ({ status: useAuthStatus(), verify: useMutation(useVerifyEmailMutationOptions()) }),
       'unauthenticated',
     );
 
@@ -656,7 +656,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     session.userHttp.patch.mockReturnValue(profile.response);
     const { result } = await session.renderSession(
       () => ({
-        status: useAuth().status,
+        status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
         profileOptions: useUpdateProfileMutationOptions(),
       }),
@@ -703,7 +703,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
     const { result } = await session.renderSession(
       () => ({
-        status: useAuth().status,
+        status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
         createOptions: useCreateTodoMutationOptions(),
       }),
@@ -757,7 +757,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     const { result } = await session.renderSession(() => {
       useUserIdentity();
       return {
-        status: useAuth().status,
+        status: useAuthStatus(),
         logout: useMutation(useLogoutMutationOptions()),
         login: useMutation(useEmailLoginMutationOptions()),
         update: useMutation(useUpdateProfileMutationOptions()),
@@ -805,7 +805,7 @@ describe('로그인 직전 정리', () => {
     const fetchPublicConfig = jest.fn(async () => '공개 설정');
     const { result } = await session.renderSession(
       () => ({
-        status: useAuth().status,
+        status: useAuthStatus(),
         login: useMutation(useEmailLoginMutationOptions()),
         config: useQuery({ queryKey: ['public-config'], queryFn: fetchPublicConfig }),
       }),
@@ -851,7 +851,7 @@ describe('토큰 만료', () => {
     return { ...session, client };
   }
 
-  const useStatusProbe = () => useAuth().status;
+  const useStatusProbe = () => useAuthStatus();
 
   it.each([
     ['네트워크 실패', () => Promise.reject(new TypeError('Network request failed'))],
@@ -957,7 +957,7 @@ describe('토큰 만료', () => {
       di: { authService: new AuthService(createHttpClientStub(), http, tokenStore) },
     });
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
     );
     session.draftService.save(memoDraftKey, { content: '작성 중' });
@@ -981,7 +981,7 @@ describe('토큰 만료', () => {
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockReturnValue(logoutRequest.response);
     const { result } = await session.renderSession(
-      () => ({ status: useAuth().status, logout: useMutation(useLogoutMutationOptions()) }),
+      () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
     );
     session.draftService.save(memoDraftKey, { content: '작성 중' });
@@ -1039,7 +1039,7 @@ describe('만료 후 다시 로그인', () => {
 
   const useReloginProbe = () => {
     useUserIdentity();
-    return { status: useAuth().status, login: useMutation(useEmailLoginMutationOptions()) };
+    return { status: useAuthStatus(), login: useMutation(useEmailLoginMutationOptions()) };
   };
 
   async function expireThenLogin(nextAccount: typeof ACCOUNT_A) {

@@ -1,72 +1,61 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderHook } from '@testing-library/react-native';
+import { createAnalyticsStub } from '@src/shared/__tests__';
+import { ok } from '@src/shared/errors/result';
+import { useMutation } from '@tanstack/react-query';
+import { act } from '@testing-library/react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
-import { createAuthTokens } from '../__tests__/auth.fixtures';
+import { createAuthSession } from '../__tests__/auth-session.test-utils';
+import { createAuthTokensDto } from '../__tests__/auth.fixtures';
+import { useAuthStatus } from '../hooks/use-auth-status';
 import { useOpenAppleLoginMutationOptions } from './use-open-apple-login-mutation-options';
 
-const mockSetStatus = jest.fn();
-const mockTrackEvent = jest.fn();
-
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({
-  useAuth: () => ({ setStatus: mockSetStatus }),
+// 네이티브 SDK 경계만 바꾼다
+jest.mock('expo-apple-authentication', () => ({
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+  signInAsync: jest.fn(),
 }));
 
-jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
-  useAuthService: () => ({ openAppleLogin: jest.fn() }),
-}));
+async function loginWithApple(dto: ReturnType<typeof createAuthTokensDto>) {
+  jest.mocked(AppleAuthentication.signInAsync).mockResolvedValue({
+    identityToken: 'apple-id-token',
+    user: 'apple-user',
+    state: null,
+    fullName: null,
+    email: null,
+    realUserStatus: 1,
+    authorizationCode: null,
+  });
+  const analytics = createAnalyticsStub();
+  const session = createAuthSession({ di: { analytics } });
+  session.publicHttp.post.mockResolvedValue(ok(dto));
+  const { result } = await session.renderSession(
+    () => ({ status: useAuthStatus(), login: useMutation(useOpenAppleLoginMutationOptions()) }),
+    'unauthenticated',
+  );
 
-jest.mock('@src/shared/analytics', () => ({
-  useTrack: () => ({ trackEvent: mockTrackEvent }),
-}));
-
-jest.mock('@src/shared/hooks/use-app-toast', () => ({
-  useAppToast: () => ({ success: jest.fn() }),
-}));
-
-jest.mock('@src/shared/i18n', () => ({
-  t: (key: string) => key,
-}));
-
-const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
+  await act(async () => {
+    await result.current.login.mutateAsync();
+  });
+  return { status: result.current.status, analytics };
+}
 
 describe('useOpenAppleLoginMutationOptions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('기존 계정 로그인은 auth_login만 보낸다', async () => {
-    // Given
-    const { result } = await renderHook(() => useOpenAppleLoginMutationOptions());
-
-    // When
-    await result.current.onSuccess?.(
-      createAuthTokens({ isNewUser: false }),
-      undefined,
-      undefined,
-      MUTATION_CONTEXT,
-    );
+  it('기존 계정 로그인은 인증 상태로 바꾸고 auth_login만 보낸다', async () => {
+    // Given·When
+    const { status, analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: false }));
 
     // Then
-    expect(mockSetStatus).toHaveBeenCalledWith('authenticated');
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('auth_login', { method: 'apple' });
+    expect(status).toBe('authenticated');
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_login', { method: 'apple' });
   });
 
   it('신규 가입은 auth_signup만 보낸다', async () => {
-    // Given
-    const { result } = await renderHook(() => useOpenAppleLoginMutationOptions());
-
-    // When
-    await result.current.onSuccess?.(
-      createAuthTokens({ isNewUser: true }),
-      undefined,
-      undefined,
-      MUTATION_CONTEXT,
-    );
+    // Given·When
+    const { analytics } = await loginWithApple(createAuthTokensDto({ isNewUser: true }));
 
     // Then
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('auth_signup', { method: 'apple' });
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_signup', { method: 'apple' });
   });
 });

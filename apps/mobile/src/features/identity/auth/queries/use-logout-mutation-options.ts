@@ -1,4 +1,3 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,
   useAuthService,
@@ -11,6 +10,7 @@ import {
 import { useTrack } from '@src/shared/analytics';
 import { mutationOptions, onlineManager } from '@tanstack/react-query';
 
+import { useAuthSession } from '../hooks/use-auth-session';
 import { logOutDevice } from '../utils/log-out-device';
 
 export const useLogoutMutationOptions = () => {
@@ -23,7 +23,7 @@ export const useLogoutMutationOptions = () => {
   const sessionRevocationService = useSessionRevocationService();
   const logger = useLogger();
 
-  const { setStatus } = useAuth();
+  const { signOut } = useAuthSession();
 
   return mutationOptions({
     // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
@@ -40,11 +40,11 @@ export const useLogoutMutationOptions = () => {
     onError: () => {
       haptics.notify('error');
     },
-    // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
+    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     onSettled: () => {
       trackEvent('auth_logout');
       analytics.setUserId(null);
-      setStatus('unauthenticated');
+      signOut();
     },
   });
 };

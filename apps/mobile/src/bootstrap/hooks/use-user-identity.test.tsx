@@ -4,6 +4,7 @@ import {
   QUERY_CACHE_STORAGE_KEY,
   type QueryCacheStorage,
 } from '@src/bootstrap/providers/query-cache-persistence';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
@@ -24,10 +25,6 @@ import type { PropsWithChildren } from 'react';
 import { z } from 'zod';
 
 import { useUserIdentity } from './use-user-identity';
-
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({
-  useAuth: () => ({ status: 'authenticated', setStatus: jest.fn() }),
-}));
 
 const CURRENT_USER_ID = createCurrentUserDto().userId;
 
@@ -52,6 +49,7 @@ describe('useUserIdentity', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const container = createTestDiContainer({
+      authSessionStore: createAuthSessionStoreStub('authenticated'),
       draftService,
       queryCacheStorage,
       analytics: createAnalyticsStub(),

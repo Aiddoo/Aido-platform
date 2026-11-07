@@ -1,13 +1,10 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
-import type { AuthStatus } from '@src/core/session/auth-status';
 import {
   useWidgetSnapshotSync,
   type WidgetSyncAuthState,
 } from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
 import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
-import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
-import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
@@ -141,20 +138,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [authSession, sessionCleanupService]);
 
   return children;
-}
-
-export function useAuth() {
-  const status = useAuthStatus();
-  const { signIn, signOut } = useAuthSession();
-
-  return {
-    status,
-    setStatus: (next: AuthStatus) => {
-      if (next === 'authenticated') {
-        signIn();
-      } else if (next === 'unauthenticated') {
-        signOut();
-      }
-    },
-  };
 }

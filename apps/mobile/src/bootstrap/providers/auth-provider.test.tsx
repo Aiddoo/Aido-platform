@@ -5,6 +5,8 @@ import { createPendingRevocationRepository } from '@src/features/identity/auth/a
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
+import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
@@ -33,7 +35,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, type AppStateStatus, Text } from 'react-native';
 import { z } from 'zod';
 
-import { AuthProvider, useAuth } from './auth-provider';
+import { AuthProvider } from './auth-provider';
 import { StaticDIProvider } from './di-context';
 import {
   createQueryCacheStorage,
@@ -51,12 +53,12 @@ const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
   setUserId: jest.fn(),
 });
 
-const StatusProbe = () => <Text testID="status">{useAuth().status}</Text>;
+const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
 const LogoutProbe = () => {
-  const { setStatus } = useAuth();
+  const { signOut } = useAuthSession();
   return (
-    <Text testID="logout" onPress={() => setStatus('unauthenticated')}>
+    <Text testID="logout" onPress={signOut}>
       Logout
     </Text>
   );

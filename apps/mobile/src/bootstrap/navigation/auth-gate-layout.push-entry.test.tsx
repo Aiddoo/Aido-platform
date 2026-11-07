@@ -1,6 +1,7 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import type { AuthStatus } from '@src/core/session/auth-status';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
   createMarkReadResponseDto,
@@ -25,7 +26,7 @@ import * as ExpoLinking from 'expo-linking';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
-import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
+import { type PropsWithChildren, useCallback } from 'react';
 import { AppState, type AppStateStatus, Linking, Pressable, Text } from 'react-native';
 
 import RootIndex from '../../../app/index';
@@ -34,7 +35,6 @@ import { AuthGateLayout } from './auth-gate-layout';
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
 
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/shared/providers/theme-provider', () => ({
@@ -50,17 +50,6 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(async () => {}),
   preventAutoHideAsync: jest.fn(async () => {}),
 }));
-
-type AuthState = ReturnType<typeof useAuth>;
-const AuthContext = createContext<AuthState | null>(null);
-
-function useTestAuth() {
-  const value = use(AuthContext);
-  if (!value) {
-    throw new Error('Auth fixture missing');
-  }
-  return value;
-}
 
 const TODO_RESPONSE: PushNotificationResponse = {
   id: 'response-1',
@@ -89,7 +78,7 @@ const SECOND_TODO_RESPONSE: PushNotificationResponse = {
 const READ_OK = ok(createMarkReadResponseDto());
 
 interface SetupOptions {
-  status: AuthState['status'];
+  status: AuthStatus;
   initialUrl?: string;
   lastResponse?: PushNotificationResponse;
   markRead?: () => Promise<Result<unknown, ApiError>>;
@@ -104,36 +93,37 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   );
   httpClient.patch.mockImplementation(markRead ?? (async () => READ_OK));
   httpClient.post.mockImplementation(async () => ok({ opened: true }));
+  const authSessionStore = createAuthSessionStoreStub(status);
   const focusLog: string[] = [];
   const hideLog: string[] = [];
 
   function LoadingScreen() {
-    const { setStatus } = useTestAuth();
     return (
-      <Pressable testID="boot-authenticated" onPress={() => setStatus('authenticated')}>
+      <Pressable
+        testID="boot-authenticated"
+        onPress={() => authSessionStore.setStatus('authenticated')}
+      >
         <Text>Restore session</Text>
       </Pressable>
     );
   }
 
   function LoginScreen() {
-    const { setStatus } = useTestAuth();
     return (
-      <Pressable testID="login" onPress={() => setStatus('authenticated')}>
+      <Pressable testID="login" onPress={() => authSessionStore.setStatus('authenticated')}>
         <Text>Login</Text>
       </Pressable>
     );
   }
 
   function FeedScreen() {
-    const { setStatus } = useTestAuth();
     useFocusEffect(
       useCallback(() => {
         focusLog.push('feed');
       }, []),
     );
     return (
-      <Pressable testID="logout" onPress={() => setStatus('unauthenticated')}>
+      <Pressable testID="logout" onPress={() => authSessionStore.setStatus('unauthenticated')}>
         <Text>Feed</Text>
       </Pressable>
     );
@@ -149,8 +139,8 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   }
 
   const queryClient = createTestQueryClient();
-  const container = createTestDiContainer(
-    createTestDi({
+  const container = createTestDiContainer({
+    ...createTestDi({
       httpClient,
       pushNotificationGateway: gateway,
       inviteService: createStubInviteService(),
@@ -161,22 +151,18 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
         store: () => true,
       },
     }),
-  );
+    authSessionStore,
+  });
 
   function Fixture({ children }: PropsWithChildren) {
-    const [authStatus, setStatus] = useState(status);
     return (
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider container={container}>
-          <LocalDateProvider>
-            <AuthContext value={{ status: authStatus, setStatus }}>{children}</AuthContext>
-          </LocalDateProvider>
+          <LocalDateProvider>{children}</LocalDateProvider>
         </StaticDIProvider>
       </QueryClientProvider>
     );
   }
-
-  jest.mocked(useAuth).mockImplementation(useTestAuth);
 
   const route = await renderRouter(
     {

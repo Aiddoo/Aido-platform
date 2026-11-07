@@ -1,4 +1,3 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,
   useDraftService,
@@ -6,13 +5,14 @@ import {
   useQueryCacheStorage,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { toUserAnalyticsProperties } from '@src/features/identity/user/utils/user-analytics-properties';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 export const useUserIdentity = (): void => {
-  const { status } = useAuth();
+  const status = useAuthStatus();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const draftService = useDraftService();

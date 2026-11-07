@@ -1,91 +1,55 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
-import { renderHook } from '@testing-library/react-native';
+import { createAnalyticsStub } from '@src/shared/__tests__';
+import { ok } from '@src/shared/errors/result';
+import { useMutation } from '@tanstack/react-query';
+import { act } from '@testing-library/react-native';
 
-import { createAuthTokens } from '../__tests__/auth.fixtures';
+import { createAuthSession } from '../__tests__/auth-session.test-utils';
+import { createAuthTokensDto } from '../__tests__/auth.fixtures';
+import { useAuthStatus } from '../hooks/use-auth-status';
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
 
-const mockSetStatus = jest.fn();
-const mockRequestPushPermission = jest.fn();
-const mockTrackEvent = jest.fn();
+async function exchangeCode(
+  provider: 'google' | 'kakao',
+  dto: ReturnType<typeof createAuthTokensDto>,
+) {
+  const analytics = createAnalyticsStub();
+  const session = createAuthSession({ di: { analytics } });
+  session.publicHttp.post.mockResolvedValue(ok(dto));
+  const { result } = await session.renderSession(
+    () => ({ status: useAuthStatus(), exchange: useMutation(useExchangeCodeMutationOptions()) }),
+    'unauthenticated',
+  );
 
-jest.mock('@src/bootstrap/providers/auth-provider', () => ({
-  useAuth: () => ({ setStatus: mockSetStatus }),
-}));
-
-jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
-  useAuthService: () => ({ exchangeCode: jest.fn() }),
-  usePushDeviceService: () => ({ requestPermission: mockRequestPushPermission }),
-  useLogger: () => ({ warn: jest.fn() }),
-}));
-
-jest.mock('@src/shared/analytics', () => ({
-  useTrack: () => ({ trackEvent: mockTrackEvent }),
-}));
-
-jest.mock('@src/shared/hooks/use-app-toast', () => ({
-  useAppToast: () => ({ success: jest.fn() }),
-}));
-
-jest.mock('@src/shared/i18n', () => ({
-  t: (key: string) => key,
-}));
-
-const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
+  await act(async () => {
+    await result.current.exchange.mutateAsync({ code: 'exchange-code', provider });
+  });
+  return { status: result.current.status, analytics };
+}
 
 describe('useExchangeCodeMutationOptions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('OAuth 성공은 인증만 완료하고 푸시 결정은 공용 게이트에 맡긴다', async () => {
-    // Given
-    const { result } = await renderHook(() => useExchangeCodeMutationOptions());
-
-    // When
-    await result.current.onSuccess?.(
-      createAuthTokens(),
-      { code: 'exchange-code', provider: 'google' },
-      undefined,
-      MUTATION_CONTEXT,
-    );
+  it('OAuth 성공은 인증 상태로 바꾼다', async () => {
+    // Given·When
+    const { status } = await exchangeCode('google', createAuthTokensDto());
 
     // Then
-    expect(mockSetStatus).toHaveBeenCalledWith('authenticated');
-    expect(mockRequestPushPermission).not.toHaveBeenCalled();
+    expect(status).toBe('authenticated');
   });
 
   it('기존 계정 로그인은 auth_login만 보낸다', async () => {
-    // Given
-    const { result } = await renderHook(() => useExchangeCodeMutationOptions());
-
-    // When
-    await result.current.onSuccess?.(
-      createAuthTokens({ isNewUser: false }),
-      { code: 'exchange-code', provider: 'google' },
-      undefined,
-      MUTATION_CONTEXT,
-    );
+    // Given·When
+    const { analytics } = await exchangeCode('google', createAuthTokensDto({ isNewUser: false }));
 
     // Then
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('auth_login', { method: 'google' });
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_login', { method: 'google' });
   });
 
   it('신규 가입은 auth_signup만 보낸다', async () => {
-    // Given
-    const { result } = await renderHook(() => useExchangeCodeMutationOptions());
-
-    // When
-    await result.current.onSuccess?.(
-      createAuthTokens({ isNewUser: true }),
-      { code: 'exchange-code', provider: 'kakao' },
-      undefined,
-      MUTATION_CONTEXT,
-    );
+    // Given·When
+    const { analytics } = await exchangeCode('kakao', createAuthTokensDto({ isNewUser: true }));
 
     // Then
-    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackEvent).toHaveBeenCalledWith('auth_signup', { method: 'kakao' });
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('auth_signup', { method: 'kakao' });
   });
 });

@@ -38,7 +38,7 @@ function LoginScreen() {
   const naverLoginMutation = useMutation(useOpenNaverLoginMutationOptions());
   const googleLoginMutation = useMutation(useOpenGoogleLoginMutationOptions());
 
-  // 교환에 성공하면 AuthProvider가 인증 상태로 바꾸고 Stack.Protected가 (app)으로 보낸다.
+  // 교환에 성공하면 인증 상태로 바뀌고 Stack.Protected가 (app)으로 보낸다.
   const createExchangeCodeCallbacks = (provider: OAuthStartProvider) => ({
     onSuccess: (code: string | null) => {
       if (code) {

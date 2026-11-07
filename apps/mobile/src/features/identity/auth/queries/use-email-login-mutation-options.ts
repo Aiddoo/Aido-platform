@@ -1,5 +1,4 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -10,13 +9,15 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
+import { useAuthSession } from '../hooks/use-auth-session';
+
 export const useEmailLoginMutationOptions = () => {
   const haptics = useHaptics();
   const push = useSingleTap(router.push);
 
   const authService = useAuthService();
   const { trackEvent } = useTrack();
-  const { setStatus } = useAuth();
+  const { signIn } = useAuthSession();
   const toast = useAppToast();
 
   return mutationOptions({
@@ -25,7 +26,7 @@ export const useEmailLoginMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (data) => {
-      setStatus('authenticated');
+      signIn();
       if (data.accountRestored) {
         toast.success(t('auth:toasts.accountRestored'));
       }
