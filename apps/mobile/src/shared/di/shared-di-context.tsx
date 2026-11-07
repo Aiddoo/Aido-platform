@@ -1,0 +1,53 @@
+import type { Analytics } from '@src/core/ports/analytics';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { HapticsGateway } from '@src/core/ports/haptics';
+import type { Logger } from '@src/core/ports/logger';
+import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import type { DraftService } from '@src/shared/draft/draft.service';
+import { createContext, use } from 'react';
+
+/** shared 코드가 쓰는 의존성. bootstrap의 DI 컨테이너가 이 모양을 채워 Provider로 넘긴다 */
+export interface SharedDependencies {
+  logger: Logger;
+  analytics: Analytics;
+  errorReporter: ErrorReporter;
+  haptics: HapticsGateway;
+  featureAttribution: FeatureAttributionStore;
+  draftService: DraftService;
+}
+
+export const SharedDIContext = createContext<SharedDependencies | null>(null);
+
+function useSharedDI(): SharedDependencies {
+  const context = use(SharedDIContext);
+
+  if (!context) {
+    throw new Error('useSharedDI must be used within DIProvider');
+  }
+
+  return context;
+}
+
+export function useLogger() {
+  return useSharedDI().logger;
+}
+
+export function useAnalytics() {
+  return useSharedDI().analytics;
+}
+
+export function useErrorReporter() {
+  return useSharedDI().errorReporter;
+}
+
+export function useHaptics() {
+  return useSharedDI().haptics;
+}
+
+export function useFeatureAttribution() {
+  return useSharedDI().featureAttribution;
+}
+
+export function useDraftService() {
+  return useSharedDI().draftService;
+}

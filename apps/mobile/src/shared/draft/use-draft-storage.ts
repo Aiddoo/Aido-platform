@@ -1,4 +1,4 @@
-import { useDraftService } from '@src/bootstrap/providers/di-context';
+import { useDraftService } from '@src/shared/di/shared-di-context';
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 
 import type { DraftKey } from './draft.model';

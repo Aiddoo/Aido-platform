@@ -1,4 +1,4 @@
-import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/shared/di/shared-di-context';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 

@@ -1,4 +1,3 @@
-import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { track } from '@src/shared/analytics';
 import {
   createLocalDateState,
@@ -6,6 +5,7 @@ import {
   millisecondsUntilNextLocalMidnight,
   type LocalDateState,
 } from '@src/shared/date/local-date-clock';
+import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
 import type { LocalDateChangeTrigger } from '@src/shared/observability/telemetry-keys';
 import { type Calendar, useCalendars } from 'expo-localization';

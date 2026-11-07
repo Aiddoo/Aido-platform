@@ -113,7 +113,7 @@ import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-naviga
 import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
-import { type DIContainer, DIContext } from './di-context';
+import { type DIContainer, StaticDIProvider } from './di-context';
 import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
 import type { QueryCacheStorage } from './query-cache-persistence';
 
@@ -437,5 +437,5 @@ export function DIProvider({
     };
   });
 
-  return <DIContext.Provider value={di}>{children}</DIContext.Provider>;
+  return <StaticDIProvider container={di}>{children}</StaticDIProvider>;
 }

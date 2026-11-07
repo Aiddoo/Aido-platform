@@ -77,6 +77,10 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     useFeatureAttribution: () => featureAttribution,
   };
 });
+
+jest.mock('@src/shared/di/shared-di-context', () =>
+  jest.requireMock('@src/bootstrap/providers/di-context'),
+);
 jest.mock('@src/features/identity/user/queries/user.queries', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],

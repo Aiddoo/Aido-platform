@@ -1,4 +1,4 @@
-import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toScreenName } from '@src/shared/utils/screen-name';
 import { usePathname, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';

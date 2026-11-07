@@ -1,5 +1,5 @@
-import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
+import { useAnalytics, useFeatureAttribution } from '@src/shared/di/shared-di-context';
 import type { FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { useCallback } from 'react';
 

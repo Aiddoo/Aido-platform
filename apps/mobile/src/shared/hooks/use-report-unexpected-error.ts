@@ -1,4 +1,4 @@
-import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useErrorReporter } from '@src/shared/di/shared-di-context';
 import { isBusinessError, isConnectivityError, toError } from '@src/shared/errors';
 import type { SentryFeature } from '@src/shared/observability/telemetry-keys';
 

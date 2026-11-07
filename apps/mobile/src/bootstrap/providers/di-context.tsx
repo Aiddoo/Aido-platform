@@ -1,10 +1,6 @@
-import type { Analytics } from '@src/core/ports/analytics';
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { HapticsGateway } from '@src/core/ports/haptics';
 import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import type { Logger } from '@src/core/ports/logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
@@ -58,23 +54,18 @@ import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-not
 import type { VoiceService } from '@src/features/voice/apis/voice.service';
 import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
-import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import type { DraftService } from '@src/shared/draft/draft.service';
+import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
 import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
 import type { QueryCacheStorage } from './query-cache-persistence';
 
-export interface DIContainer {
+export interface DIContainer extends SharedDependencies {
   // Infrastructure
   storage: Storage;
   locationGateway: LocationGateway;
   clipboard: ClipboardGateway;
   networkStatus: NetworkStatusGateway;
-  logger: Logger;
-  analytics: Analytics;
-  errorReporter: ErrorReporter;
-  haptics: HapticsGateway;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
@@ -93,9 +84,6 @@ export interface DIContainer {
   sessionRevocationService: SessionRevocationService;
   /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
-  featureAttribution: FeatureAttributionStore;
-  /** 작성 중 초안(사용자 범위 로컬 상태) */
-  draftService: DraftService;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
   recognitionLanguageRepository: RecognitionLanguageRepository;
@@ -156,8 +144,19 @@ interface StaticDIProviderProps extends PropsWithChildren {
  * 구현체 모듈(vendor 초기화 포함)을 로드하지 않으므로 테스트에서 사용한다.
  */
 export const StaticDIProvider = ({ container, children }: StaticDIProviderProps) => (
-  <DIContext.Provider value={container}>{children}</DIContext.Provider>
+  <DIContext.Provider value={container}>
+    <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
+  </DIContext.Provider>
 );
+
+export {
+  useAnalytics,
+  useDraftService,
+  useErrorReporter,
+  useFeatureAttribution,
+  useHaptics,
+  useLogger,
+} from '@src/shared/di/shared-di-context';
 
 const useDI = (): DIContainer => {
   const context = use(DIContext);
@@ -178,15 +177,9 @@ export const useAuthSessionStore = () => useDI().authSessionStore;
 export const useSessionEpoch = () => useDI().sessionEpoch;
 export const useSessionCleanupService = () => useDI().sessionCleanupService;
 export const useSessionRevocationService = () => useDI().sessionRevocationService;
-export const useFeatureAttribution = () => useDI().featureAttribution;
-export const useLogger = () => useDI().logger;
-export const useAnalytics = () => useDI().analytics;
-export const useErrorReporter = () => useDI().errorReporter;
-export const useHaptics = () => useDI().haptics;
 export const useIdGenerator = () => useDI().idGenerator;
 export const useSpeechRecognizer = () => useDI().speechRecognizer;
 export const usePushNotificationGateway = () => useDI().pushNotificationGateway;
-export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;
 export const useRecognitionLanguageRepository = () => useDI().recognitionLanguageRepository;
 export const useOfflineModelPromptRepository = () => useDI().offlineModelPromptRepository;

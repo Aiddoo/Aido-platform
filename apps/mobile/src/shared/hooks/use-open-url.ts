@@ -1,4 +1,4 @@
-import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
