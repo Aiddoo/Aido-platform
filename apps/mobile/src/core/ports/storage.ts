@@ -12,5 +12,4 @@ export interface Storage {
   get<T>(key: string, schema: z.ZodType<T>): Promise<T | null>;
   set<T>(key: string, value: T): Promise<void>;
   remove(key: string): Promise<void>;
-  clear(): Promise<void>;
 }

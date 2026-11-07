@@ -24,8 +24,5 @@ export function createMemoryStorage(): jest.Mocked<Storage> {
     remove: jest.fn(async (key) => {
       values.delete(key);
     }),
-    clear: jest.fn(async () => {
-      values.clear();
-    }),
   };
 }

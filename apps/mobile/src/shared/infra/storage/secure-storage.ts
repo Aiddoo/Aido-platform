@@ -59,9 +59,4 @@ export class SecureStorage implements Storage {
   async remove(key: string): Promise<void> {
     await ExpoSecureStore.deleteItemAsync(key, SECURE_STORE_OPTIONS);
   }
-
-  async clear(): Promise<void> {
-    // expo-secure-store에는 전체 삭제가 없다. 필요하면 키를 직접 추적해 지운다
-    throw new Error('Clear method is not implemented for SecureStorage');
-  }
 }
