@@ -40,7 +40,7 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   const featureAttribution = useFeatureAttribution();
   const logger = useLogger();
   const repository = useWhatsNewRepository();
-  const { data: user } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+  const { data: user } = useQuery(useGetMeQueryOptions());
   const accountId = user?.id;
   const isFinishedRef = useRef(false);
   const viewedStepsRef = useRef(new Set<string>());

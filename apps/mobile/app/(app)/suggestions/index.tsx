@@ -22,7 +22,7 @@ export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
-  const entitlementsQuery = useQuery({ ...useGetEntitlementsQueryOptions(), throwOnError: false });
+  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
   const canViewSuggestions =
     entitlementsQuery.data == null
       ? undefined

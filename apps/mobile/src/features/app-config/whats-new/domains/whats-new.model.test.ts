@@ -115,21 +115,3 @@ describe('shouldShowReentry', () => {
     expect(result).toBe(false);
   });
 });
-
-describe('hasUnseenRelease', () => {
-  it('최신 출시를 봤으면 지난 출시를 안 봤어도 없다', () => {
-    // When
-    const result = WhatsNewPolicy.hasUnseenRelease(RELEASES, [RELEASES[0].campaignId]);
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('최신 출시를 안 봤으면 있다', () => {
-    // When
-    const result = WhatsNewPolicy.hasUnseenRelease(RELEASES, []);
-
-    // Then
-    expect(result).toBe(true);
-  });
-});

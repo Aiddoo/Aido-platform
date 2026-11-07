@@ -5,7 +5,7 @@ import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
 
 import { WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
-import type { Release, ReleaseList } from '../schemas/release.schema';
+import type { Release } from '../schemas/release.schema';
 
 interface AutoOpenInput {
   config: FeatureCampaignConfig | undefined;
@@ -54,16 +54,10 @@ function shouldShowReentry(openedAt: Instant | null, now: Instant): boolean {
   return openedAt != null && diffMs(now, openedAt) < WHATS_NEW_REENTRY_WINDOW_MS;
 }
 
-/** 지난 출시까지 점으로 남기면 오래 사라지지 않으므로 최신 출시만 본다 */
-function hasUnseenRelease(releases: ReleaseList, seenCampaignIds: readonly string[]): boolean {
-  return !seenCampaignIds.includes(getLatestRelease(releases).campaignId);
-}
-
 export const WhatsNewPolicy = {
   shouldAutoOpen,
   findReleaseByCampaign,
   getLatestRelease,
-  hasUnseenRelease,
   shouldShowReentry,
   canViewRelease,
 } as const;

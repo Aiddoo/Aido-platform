@@ -1,5 +1,8 @@
-import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { useSyncStorage } from '@src/bootstrap/providers/di-context';
+import {
+  useApplicationMetadata,
+  useSyncStorage,
+  useWhatsNewRepository,
+} from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';

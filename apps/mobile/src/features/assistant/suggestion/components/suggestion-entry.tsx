@@ -20,11 +20,8 @@ export function SuggestionEntry() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('todo');
-  const userQuery = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
-  const entitlementsQuery = useQuery({
-    ...useGetEntitlementsQueryOptions(),
-    throwOnError: false,
-  });
+  const userQuery = useQuery(useGetMeQueryOptions());
+  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
 
   if (userQuery.isPending || entitlementsQuery.isPending) {
     return <SuggestionEntry.Loading />;
