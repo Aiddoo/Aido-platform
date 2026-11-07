@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 
-export function toMe(user: User, { defaultName }: { defaultName: string }) {
+function toMe(user: User, { defaultName }: { defaultName: string }) {
   return {
     ...user,
     name: user.name ?? defaultName,
