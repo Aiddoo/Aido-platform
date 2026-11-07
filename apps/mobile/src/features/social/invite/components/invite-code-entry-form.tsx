@@ -22,16 +22,14 @@ import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'r
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
-import {
-  type InvalidCharacterSummary,
-  InviteCodePolicy,
-  summarizeInvalidCharacters,
-  parseInviteCode,
-  toInviteCodeDraft,
-} from '../domains/invite.model';
+import { InviteCodePolicy } from '../domains/invite-code.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
 import { useGetClipboardPresenceQueryOptions } from '../queries/invite.queries';
+import {
+  type InvalidCharacterSummary,
+  summarizeInvalidCharacters,
+} from '../utils/invite-code.view-model';
 import { InviteCodeInput } from './invite-code-input';
 
 /** 코드 입력과 제출 버튼. 입력 위에 붙는 안내는 화면이 children으로 넘긴다 */
@@ -73,7 +71,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   };
 
   const submitInviteCode = form.handleSubmit(async ({ inviteCode: raw }) => {
-    const inviteCode = parseInviteCode(raw);
+    const inviteCode = InviteCodePolicy.parseInviteCode(raw);
     if (inviteCode == null) {
       const invalidCharacterSummary = summarizeInvalidCharacters(
         InviteCodePolicy.findInvalidCharacters(raw),
@@ -123,7 +121,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
 
   const handlePaste = (value: string) => {
     form.clearErrors('inviteCode');
-    form.setValue('inviteCode', toInviteCodeDraft(value));
+    form.setValue('inviteCode', InviteCodePolicy.normalizeInviteCodeInput(value));
   };
 
   return (

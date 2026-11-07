@@ -19,10 +19,10 @@ import { InviteService } from '../apis/invite.service';
 import { createPawPrintCelebrationRepository } from '../apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '../apis/pending-redemption.repository';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
-import { parseInviteCode } from '../domains/invite.model';
+import { InviteCodePolicy } from '../domains/invite-code.model';
 import { createInvitePreviewDto } from './invite.fixtures';
 
-const CODE = parseInviteCode('K7M2QX') ?? '';
+const CODE = InviteCodePolicy.parseInviteCode('K7M2QX') ?? '';
 
 function createInviteService() {
   const storage = createMemorySyncStorage();

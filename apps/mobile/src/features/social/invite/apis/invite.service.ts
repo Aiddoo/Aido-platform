@@ -16,6 +16,7 @@ import type { Page } from '@src/shared/types/page.types';
 import { identity } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
+import { InviteCodePolicy } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import {
   INVITE_ERROR_CODE,
@@ -23,7 +24,6 @@ import {
   isTerminalRedeemFailure,
   toRedeemFailureReason,
 } from '../domains/invite.error';
-import { parseInviteCode } from '../domains/invite.model';
 import type { InvitePreview } from '../schemas/invite-preview.schema';
 import {
   type InviteLinkSource,
@@ -101,7 +101,7 @@ export class InviteService {
     rawCode: string,
     signal?: AbortSignal,
   ): Promise<Result<InvitePreview, InviteServiceError>> => {
-    const inviteCode = parseInviteCode(rawCode);
+    const inviteCode = InviteCodePolicy.parseInviteCode(rawCode);
     if (inviteCode == null) {
       return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
@@ -128,7 +128,7 @@ export class InviteService {
 
   /** 초대를 수락한다. 같은 기기에서 보상을 두 번 받지 않게 설치 식별자를 함께 보낸다 */
   redeem = async (rawCode: string): Promise<Result<RedemptionResult, InviteServiceError>> => {
-    const inviteCode = parseInviteCode(rawCode);
+    const inviteCode = InviteCodePolicy.parseInviteCode(rawCode);
     if (inviteCode == null) {
       return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
