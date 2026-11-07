@@ -68,7 +68,7 @@ describe('expoSpeechRecognizer', () => {
     jest.restoreAllMocks();
   });
 
-  test('받아쓰기는 지금처럼 한 번 말하면 끝나고 음량·녹음 옵션을 켜지 않는다', () => {
+  it('받아쓰기는 지금처럼 한 번 말하면 끝나고 음량·녹음 옵션을 켜지 않는다', () => {
     // When
     expoSpeechRecognizer.start(START_OPTIONS);
 
@@ -85,7 +85,7 @@ describe('expoSpeechRecognizer', () => {
     });
   });
 
-  test('긴 녹음은 기기 안에서 이어 듣고 문장부호·고유명사·16kHz 녹음 파일을 쓴다', () => {
+  it('긴 녹음은 기기 안에서 이어 듣고 문장부호·고유명사·16kHz 녹음 파일을 쓴다', () => {
     // When
     expoSpeechRecognizer.start({
       ...START_OPTIONS,
@@ -116,7 +116,7 @@ describe('expoSpeechRecognizer', () => {
     );
   });
 
-  test('글자 없이 닫힌 구간은 세션 끝과 나눠 알린다', () => {
+  it('글자 없이 닫힌 구간은 세션 끝과 나눠 알린다', () => {
     // Given
     const events: SpeechEvent[] = [];
     expoSpeechRecognizer.subscribe((event) => events.push(event));
@@ -128,7 +128,7 @@ describe('expoSpeechRecognizer', () => {
     expect(events).toEqual([{ type: 'no-match' }]);
   });
 
-  test('음량은 SDK 범위(-2..10)를 0..1로 바꾸고 범위 밖 값은 자른다', () => {
+  it('음량은 SDK 범위(-2..10)를 0..1로 바꾸고 범위 밖 값은 자른다', () => {
     // Given
     const events: SpeechEvent[] = [];
     expoSpeechRecognizer.subscribe((event) => events.push(event));
@@ -147,7 +147,7 @@ describe('expoSpeechRecognizer', () => {
     ]);
   });
 
-  test('결과는 가장 그럴듯한 문장과 단어 구간을 앱 모양으로 넘긴다', () => {
+  it('결과는 가장 그럴듯한 문장과 단어 구간을 앱 모양으로 넘긴다', () => {
     // Given
     const events: SpeechEvent[] = [];
     expoSpeechRecognizer.subscribe((event) => events.push(event));
@@ -175,7 +175,7 @@ describe('expoSpeechRecognizer', () => {
     ]);
   });
 
-  test('구독을 끝내면 붙인 네이티브 리스너를 모두 뗀다', () => {
+  it('구독을 끝내면 붙인 네이티브 리스너를 모두 뗀다', () => {
     // Given
     const unsubscribe = expoSpeechRecognizer.subscribe(jest.fn());
     const attachedCount = nativeModule.addListener.mock.calls.length;
@@ -187,7 +187,7 @@ describe('expoSpeechRecognizer', () => {
     expect(mockRemove).toHaveBeenCalledTimes(attachedCount);
   });
 
-  test('녹음 파일을 쓰기 시작하면 파일 주소를 알린다', () => {
+  it('녹음 파일을 쓰기 시작하면 파일 주소를 알린다', () => {
     // Given
     const events: SpeechEvent[] = [];
     expoSpeechRecognizer.subscribe((event) => events.push(event));
@@ -201,7 +201,7 @@ describe('expoSpeechRecognizer', () => {
   });
 
   describe('iOS 언어별 기능 확인', () => {
-    test('기기 기본 언어는 기기 인식으로 보고 마이크 권한만 묻는다', async () => {
+    it('기기 기본 언어는 기기 인식으로 보고 마이크 권한만 묻는다', async () => {
       // When
       const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'note');
       await expoSpeechRecognizer.requestPermission('note', 'ko-KR');
@@ -212,7 +212,7 @@ describe('expoSpeechRecognizer', () => {
       expect(nativeModule.requestPermissionsAsync).not.toHaveBeenCalled();
     });
 
-    test('빠른 말하기는 기기 기본 언어여도 서버 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
+    it('빠른 말하기는 기기 기본 언어여도 서버 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
       const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'quick');
       await expoSpeechRecognizer.requestPermission('quick', 'ko-KR');
@@ -223,7 +223,7 @@ describe('expoSpeechRecognizer', () => {
       expect(nativeModule.requestMicrophonePermissionsAsync).not.toHaveBeenCalled();
     });
 
-    test('기기 기본 언어가 아니면 네트워크 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
+    it('기기 기본 언어가 아니면 네트워크 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
       const capabilities = await expoSpeechRecognizer.getCapabilities('en-US', 'note');
       await expoSpeechRecognizer.requestPermission('note', 'en-US');
@@ -235,7 +235,7 @@ describe('expoSpeechRecognizer', () => {
       expect(nativeModule.requestMicrophonePermissionsAsync).not.toHaveBeenCalled();
     });
 
-    test('받아쓰기는 언어와 상관없이 음성 인식 권한까지 묻는다', async () => {
+    it('받아쓰기는 언어와 상관없이 음성 인식 권한까지 묻는다', async () => {
       // When
       await expoSpeechRecognizer.getPermission('dictation', 'ko-KR');
 
@@ -243,7 +243,7 @@ describe('expoSpeechRecognizer', () => {
       expect(nativeModule.getPermissionsAsync).toHaveBeenCalledTimes(1);
     });
 
-    test.each([
+    it.each([
       {
         microphone: PermissionStatus.GRANTED,
         speechRecognizer: PermissionStatus.DENIED,
@@ -286,7 +286,7 @@ describe('expoSpeechRecognizer', () => {
       },
     );
 
-    test('기기 인식이면 음성 인식 권한을 읽지 않고 마이크를 막은 권한으로 알린다', async () => {
+    it('기기 인식이면 음성 인식 권한을 읽지 않고 마이크를 막은 권한으로 알린다', async () => {
       // Given
       nativeModule.getMicrophonePermissionsAsync.mockResolvedValueOnce(
         createPermissionResponse({ status: PermissionStatus.DENIED }),

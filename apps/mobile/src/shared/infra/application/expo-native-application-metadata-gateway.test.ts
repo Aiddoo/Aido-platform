@@ -40,15 +40,25 @@ describe('expoNativeApplicationMetadataGateway', () => {
   });
 
   it('Expo Go의 호스트 앱 버전은 설치된 서비스 앱 버전으로 표시하지 않는다', () => {
+    // Given
     Object.defineProperty(Constants, 'executionEnvironment', {
       configurable: true,
       value: ExecutionEnvironment.StoreClient,
     });
-    expect(expoNativeApplicationMetadataGateway.getInstallation()).toBeUndefined();
+
+    // When
+    const installation = expoNativeApplicationMetadataGateway.getInstallation();
+
+    // Then
+    expect(installation).toBeUndefined();
   });
 
   it('expoVersion이 없는 SDK58 개발 빌드의 네이티브 버전을 읽는다', () => {
-    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
+    // When
+    const installation = expoNativeApplicationMetadataGateway.getInstallation();
+
+    // Then
+    expect(installation).toEqual({
       platform: 'ios',
       currentVersion: '1.10.0',
       currentBuild: '123',
@@ -56,9 +66,15 @@ describe('expoNativeApplicationMetadataGateway', () => {
   });
 
   it('설치 버전을 알 수 없을 때 package 또는 OTA 버전으로 대체하지 않는다', () => {
+    // Given
     mockNativeApplicationVersion = null;
     mockNativeBuildVersion = null;
-    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
+
+    // When
+    const installation = expoNativeApplicationMetadataGateway.getInstallation();
+
+    // Then
+    expect(installation).toEqual({
       platform: 'ios',
       currentVersion: undefined,
       currentBuild: undefined,

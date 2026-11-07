@@ -31,10 +31,11 @@ describe('KyJsonFetcher', () => {
     );
     const fetcher = new KyJsonFetcher(client);
 
-    // When & Then
-    await expect(fetcher.get('v1/app-config/feature-discovery')).rejects.toBeInstanceOf(
-      SyntaxError,
-    );
+    // When
+    const result = fetcher.get('v1/app-config/feature-discovery');
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(SyntaxError);
   });
 
   it('서버 5xx를 앱의 ServerError로 바꿔 던진다', async () => {

@@ -54,20 +54,29 @@ describe('scrubText', () => {
     // Given
     const uuid = '3f2b8c1e-9d4a-4e6b-8a7c-1d2e3f4a5b6c';
 
-    // When / Then
-    expect(scrubText(uuid)).toBe(uuid);
+    // When
+    const result = scrubText(uuid);
+
+    // Then
+    expect(result).toBe(uuid);
   });
 
   it('긴 임의 토큰 문자열을 가린다', () => {
-    // When / Then
-    expect(scrubText(`refresh ${'a1B2'.repeat(12)} end`)).toBe('refresh [token] end');
+    // When
+    const result = scrubText(`refresh ${'a1B2'.repeat(12)} end`);
+
+    // Then
+    expect(result).toBe('refresh [token] end');
   });
 });
 
 describe('scrubBreadcrumb', () => {
   it('console 카테고리는 버린다', () => {
-    // When / Then
-    expect(scrubBreadcrumb({ category: 'console', message: '메모 본문' })).toBeNull();
+    // When
+    const result = scrubBreadcrumb({ category: 'console', message: '메모 본문' });
+
+    // Then
+    expect(result).toBeNull();
   });
 
   it('data는 허용 목록으로, message는 패턴으로 걸러 남긴다', () => {

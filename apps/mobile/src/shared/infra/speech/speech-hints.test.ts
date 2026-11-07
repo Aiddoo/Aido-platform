@@ -3,7 +3,7 @@ import { range } from 'es-toolkit';
 import { getSpeechHints } from './speech-hints';
 
 describe('getSpeechHints', () => {
-  test('내 단어를 앞에 두고 겹치는 말은 한 번만 넣는다', () => {
+  it('내 단어를 앞에 두고 겹치는 말은 한 번만 넣는다', () => {
     // Given
     const personalHints = ['기획팀', '분기'];
 
@@ -15,7 +15,7 @@ describe('getSpeechHints', () => {
     expect(hints.filter((hint) => hint === '분기')).toHaveLength(1);
   });
 
-  test('내 단어가 많아도 Apple 권장 상한 100개를 넘지 않는다', () => {
+  it('내 단어가 많아도 Apple 권장 상한 100개를 넘지 않는다', () => {
     // Given
     const personalHints = range(150).map((index) => `단어${index}`);
 

@@ -22,7 +22,7 @@ describe('위치 구독의 종료와 복구', () => {
     jest.resetAllMocks();
   });
 
-  test('취소 후 늦게 생성된 위치 구독도 제거한다', async () => {
+  it('취소 후 늦게 생성된 위치 구독도 제거한다', async () => {
     // Given
     const controller = new AbortController();
     const remove = jest.fn();
@@ -53,7 +53,7 @@ describe('위치 구독의 종료와 복구', () => {
     );
   });
 
-  test('위치가 도착하지 않으면 시간 제한 후 구독을 제거한다', async () => {
+  it('위치가 도착하지 않으면 시간 제한 후 구독을 제거한다', async () => {
     // Given
     const remove = jest.fn();
     watchLocation.mockResolvedValue({ remove });
@@ -69,7 +69,7 @@ describe('위치 구독의 종료와 복구', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
-  test('역지오코딩이 실패해도 위치 흐름을 예외로 종료하지 않는다', async () => {
+  it('역지오코딩이 실패해도 위치 흐름을 예외로 종료하지 않는다', async () => {
     // Given
     jest.mocked(Location.reverseGeocodeAsync).mockRejectedValue(new Error('네트워크 오류'));
     const coordinates = { latitude: 37.5, longitude: 127 };

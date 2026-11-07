@@ -11,7 +11,10 @@ const metaIsClosed: [keyof QueryMeta] extends [
 
 describe('AppQueryMeta', () => {
   it('등록한 키만 쓸 수 있도록 닫혀 있다', () => {
+    // When
+    const isClosed = metaIsClosed;
+
     // Then
-    expect(metaIsClosed).toBe(true);
+    expect(isClosed).toBe(true);
   });
 });

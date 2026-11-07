@@ -69,13 +69,15 @@ describe('QueryErrorBoundary 관측', () => {
     );
 
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
-    // Given — 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
+    // Given
+    // 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
     const error = new ApiError('AUTH_0101', '인증 정보가 올바르지 않아요', 401);
 
     // When
     await renderWithBoundary(error);
 
-    // Then — 에러 이슈(PRODUCTION-3) 소음 없이, 발생 사실은 즉시 관측된다
+    // Then
+    // 에러 이슈(PRODUCTION-3) 소음 없이, 발생 사실은 즉시 관측된다
     expect(errorReporter.captureException).not.toHaveBeenCalled();
     expect(errorReporter.captureMessage).toHaveBeenCalledWith(
       'query_boundary_auth_contained',
@@ -128,6 +130,7 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
+    // Given
     const screen = await renderUi(
       <QueryErrorBoundary resetKeys={['2026-07-14']}>
         <MaybeThrower shouldThrow />
@@ -136,16 +139,19 @@ describe('QueryErrorBoundary 관측', () => {
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
+    // When
     await screen.rerender(
       <QueryErrorBoundary resetKeys={['2026-07-15']}>
         <MaybeThrower shouldThrow={false} />
       </QueryErrorBoundary>,
     );
 
+    // Then
     expect(screen.getByTestId('healthy-content')).toBeTruthy();
   });
 
   it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
+    // Given
     const error = new ServerError(503);
     const screen = await renderUi(
       <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
@@ -154,8 +160,10 @@ describe('QueryErrorBoundary 관측', () => {
       { di: { errorReporter } },
     );
 
+    // When
     await fireEvent.press(screen.getByTestId('submit-error'));
 
+    // Then
     expect(screen.getByTestId('submit-fallback')).toBeTruthy();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       error,
@@ -164,6 +172,7 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
+    // Given
     const error = new ServerError(503);
     const screen = await renderUi(
       <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
@@ -177,8 +186,10 @@ describe('QueryErrorBoundary 관측', () => {
     await fireEvent.press(screen.getByTestId('open-error-overlay'));
     expect(screen.getByTestId('submit-error')).toBeTruthy();
 
+    // When
     await fireEvent.press(screen.getByTestId('submit-error'));
 
+    // Then
     expect(screen.getByTestId('overlay-fallback')).toBeTruthy();
     expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
     expect(errorReporter.captureException).toHaveBeenCalledWith(

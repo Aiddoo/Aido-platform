@@ -41,7 +41,7 @@ describe('expoLocalFileSystem', () => {
     mockList.mockReset();
   });
 
-  test('폴더는 문서 폴더 아래에 중간 폴더까지 만들고 이미 있어도 실패하지 않는다', () => {
+  it('폴더는 문서 폴더 아래에 중간 폴더까지 만들고 이미 있어도 실패하지 않는다', () => {
     // Given
     const directory = ['voice-notes', 'user-1'];
 
@@ -53,7 +53,7 @@ describe('expoLocalFileSystem', () => {
     expect(mockCreate).toHaveBeenCalledWith({ intermediates: true, idempotent: true });
   });
 
-  test('목록에서 파일만 골라 크기와 수정 시각을 읽는다', () => {
+  it('목록에서 파일만 골라 크기와 수정 시각을 읽는다', () => {
     // Given
     mockList.mockReturnValue([
       new Directory('sub'),

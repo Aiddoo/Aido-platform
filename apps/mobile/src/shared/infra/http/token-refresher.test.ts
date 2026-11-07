@@ -102,7 +102,8 @@ describe('createTokenRefresher', () => {
 
   describe('세션 무효 판정 (서버 응답에 근거)', () => {
     it('401 응답이면 서버가 준 ErrorCode를 그대로 실어 보고한다', async () => {
-      // Given — SESSION_0704(토큰 재사용 → 패밀리 폐기)는 단순 만료와 전혀 다른 사건이다
+      // Given
+      // SESSION_0704(토큰 재사용 → 패밀리 폐기)는 단순 만료와 전혀 다른 사건이다
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
       const requestRefresh = respondWith(
         createFakeResponse({
@@ -146,7 +147,8 @@ describe('createTokenRefresher', () => {
     });
 
     it('2xx인데 응답 스키마가 어긋나면 invalid-refresh-response로 보고한다', async () => {
-      // Given — 서버는 이미 회전했으므로 보유 토큰은 곧 무효
+      // Given
+      // 서버는 이미 회전했으므로 보유 토큰은 곧 무효
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
       const requestRefresh = respondWith(
         createFakeResponse({ ok: true, status: 200, body: { data: { unexpected: true } } }),
@@ -186,14 +188,21 @@ describe('createTokenRefresher', () => {
 
   describe('일시적 실패 — 재시도 가능한 인프라 에러로 던진다 (토큰 보존)', () => {
     it.each([429, 500, 503])('%i 응답이면 ServerError를 던진다', async (status) => {
-      // Given — 서버가 아직 살아나지 못했을 뿐, 보유 토큰은 유효하다
+      // Given
+      // 서버가 아직 살아나지 못했을 뿐, 보유 토큰은 유효하다
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
       const requestRefresh = respondWith(createFakeResponse({ ok: false, status }));
 
-      // When / Then — React Query가 5xx와 동일하게 자동 재시도한다
-      await expect(
-        createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch: createSessionEpoch() })(),
-      ).rejects.toBeInstanceOf(ServerError);
+      // When
+      const outcome = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+      })();
+
+      // Then
+      // React Query가 5xx와 동일하게 자동 재시도한다
+      await expect(outcome).rejects.toBeInstanceOf(ServerError);
     });
 
     it('네트워크 오류면 NetworkError를 던진다', async () => {
@@ -203,10 +212,15 @@ describe('createTokenRefresher', () => {
         .fn<Promise<Response>, [string]>()
         .mockRejectedValue(new TypeError('Network request failed'));
 
-      // When / Then
-      await expect(
-        createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch: createSessionEpoch() })(),
-      ).rejects.toBeInstanceOf(NetworkError);
+      // When
+      const outcome = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+      })();
+
+      // Then
+      await expect(outcome).rejects.toBeInstanceOf(NetworkError);
     });
 
     it('갱신 요청 타임아웃이면 TimeoutError를 던진다', async () => {
@@ -216,21 +230,32 @@ describe('createTokenRefresher', () => {
         .fn<Promise<Response>, [string]>()
         .mockRejectedValue(new KyTimeoutError(new Request('https://api.test/v1/auth/refresh')));
 
-      // When / Then
-      await expect(
-        createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch: createSessionEpoch() })(),
-      ).rejects.toBeInstanceOf(TimeoutError);
+      // When
+      const outcome = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+      })();
+
+      // Then
+      await expect(outcome).rejects.toBeInstanceOf(TimeoutError);
     });
 
     it('키체인을 읽을 수 없으면 세션 없음이 아니라 재시도 가능한 에러다', async () => {
-      // Given — 기기 잠금 중 콜드 스타트: "토큰 없음"으로 오판하면 살아있는 세션이 죽는다
+      // Given
+      // 기기 잠금 중 콜드 스타트: "토큰 없음"으로 오판하면 살아있는 세션이 죽는다
       tokenStore.getRefreshToken.mockRejectedValue(new Error('User interaction is not allowed.'));
       const requestRefresh = respondWith(createFakeResponse({ ok: true, status: 200 }));
 
-      // When / Then
-      await expect(
-        createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch: createSessionEpoch() })(),
-      ).rejects.toBeInstanceOf(NetworkError);
+      // When
+      const outcome = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+      })();
+
+      // Then
+      await expect(outcome).rejects.toBeInstanceOf(NetworkError);
       expect(requestRefresh).not.toHaveBeenCalled();
     });
 
@@ -242,10 +267,15 @@ describe('createTokenRefresher', () => {
         createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }),
       );
 
-      // When / Then
-      await expect(
-        createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch: createSessionEpoch() })(),
-      ).rejects.toBeInstanceOf(NetworkError);
+      // When
+      const outcome = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+      })();
+
+      // Then
+      await expect(outcome).rejects.toBeInstanceOf(NetworkError);
     });
 
     it('동시 대기자들은 같은 실패를 공유한다 (single-flight)', async () => {
@@ -282,10 +312,12 @@ describe('createTokenRefresher', () => {
       ['스키마 위반', createFakeResponse({ ok: true, status: 200, body: {} })],
       ['갱신 성공', createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY })],
     ])('%s에서도 갱신기는 토큰을 지우지 않는다', async (_case, response) => {
-      // Given — 세션 종료(토큰 삭제)는 SessionManager의 책임이다
+      // Given
+      // 세션 종료(토큰 삭제)는 SessionManager의 책임이다
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
 
-      // When — 일시 실패는 throw되므로 결과와 무관하게 정산만 기다린다
+      // When
+      // 일시 실패는 throw되므로 결과와 무관하게 정산만 기다린다
       await createTokenRefresher({
         tokenStore,
         requestRefresh: respondWith(response),

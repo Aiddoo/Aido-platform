@@ -7,16 +7,19 @@ describe('SCALED_FONT_STYLES', () => {
     // Given
     const scales: FontScale[] = ['xsmall', 'small', 'medium', 'large', 'xlarge'];
 
-    // When & Then
-    for (const scale of scales) {
-      expect(SCALED_FONT_STYLES[scale]).toBeDefined();
-      expect(SCALED_FONT_STYLES[scale].fontSize).toBeGreaterThan(0);
-      expect(SCALED_FONT_STYLES[scale].lineHeight).toBeGreaterThan(0);
+    // When
+    const styles = scales.map((scale) => SCALED_FONT_STYLES[scale]);
+
+    // Then
+    for (const style of styles) {
+      expect(style).toBeDefined();
+      expect(style.fontSize).toBeGreaterThan(0);
+      expect(style.lineHeight).toBeGreaterThan(0);
     }
   });
 
   it('fontSize는 scale이 커질수록 증가한다', () => {
-    // Given & When
+    // When
     const xsmall = SCALED_FONT_STYLES.xsmall.fontSize;
     const small = SCALED_FONT_STYLES.small.fontSize;
     const medium = SCALED_FONT_STYLES.medium.fontSize;
@@ -34,9 +37,11 @@ describe('SCALED_FONT_STYLES', () => {
     // Given
     const scales: FontScale[] = ['xsmall', 'small', 'medium', 'large', 'xlarge'];
 
-    // When & Then
-    for (const scale of scales) {
-      const { fontSize, lineHeight } = SCALED_FONT_STYLES[scale];
+    // When
+    const styles = scales.map((scale) => SCALED_FONT_STYLES[scale]);
+
+    // Then
+    for (const { fontSize, lineHeight } of styles) {
       expect(lineHeight).toBeGreaterThan(fontSize);
     }
   });
@@ -83,7 +88,7 @@ describe('getScaledFontSize', () => {
     ['large', 17],
     ['xlarge', 20],
   ] as const)('%s이면 %dpx을 반환한다', (scale, expected) => {
-    // Given & When
+    // When
     const result = getScaledFontSize(scale);
 
     // Then

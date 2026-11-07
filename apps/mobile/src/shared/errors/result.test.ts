@@ -8,19 +8,33 @@ describe('isBusinessError', () => {
     // Given
     const error = new BusinessError('FRIEND_EMPTY_TAG');
 
-    // When & Then
-    expect(isBusinessError(error, 'FRIEND_EMPTY_TAG')).toBe(true);
-    expect(isBusinessError(error, 'FRIEND_INVALID_TAG')).toBe(false);
+    // When
+    const sameCode = isBusinessError(error, 'FRIEND_EMPTY_TAG');
+    const otherCode = isBusinessError(error, 'FRIEND_INVALID_TAG');
+
+    // Then
+    expect(sameCode).toBe(true);
+    expect(otherCode).toBe(false);
   });
 
   it('서버 ApiError도 코드로 판별한다', () => {
-    // When & Then
-    expect(isBusinessError(new ApiError('INVITE_2101', 'message', 404), 'INVITE_2101')).toBe(true);
+    // Given
+    const error = new ApiError('INVITE_2101', 'message', 404);
+
+    // When
+    const result = isBusinessError(error, 'INVITE_2101');
+
+    // Then
+    expect(result).toBe(true);
   });
 
   it('코드가 없는 오류와 Error가 아닌 값은 거른다', () => {
-    // When & Then
-    expect(isBusinessError(new TypeError('x'))).toBe(false);
-    expect(isBusinessError({ code: 'A' }, 'A')).toBe(false);
+    // When
+    const withoutCode = isBusinessError(new TypeError('x'));
+    const notError = isBusinessError({ code: 'A' }, 'A');
+
+    // Then
+    expect(withoutCode).toBe(false);
+    expect(notError).toBe(false);
   });
 });

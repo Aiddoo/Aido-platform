@@ -15,7 +15,7 @@ describe('createDiagnosticCode', () => {
   });
 
   it('앱 버전을 읽지 못하면 unknown으로 둔다', () => {
-    // Given / When
+    // When
     const code = createDiagnosticCode({
       platform: 'android',
       appVersion: null,

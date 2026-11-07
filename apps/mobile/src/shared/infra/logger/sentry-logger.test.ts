@@ -20,18 +20,23 @@ describe('createSentryLogger', () => {
   });
 
   it('debug는 Sentry에 아무것도 남기지 않는다', () => {
+    // When
     createSentryLogger().debug('nope', { a: 1 });
 
+    // Then
     expect(addBreadcrumb).not.toHaveBeenCalled();
     expect(captureException).not.toHaveBeenCalled();
   });
 
   it('info/warn은 level 매핑된 breadcrumb로 남는다', () => {
+    // Given
     const logger = createSentryLogger();
 
+    // When
     logger.info('hello', { a: 1 });
     logger.warn('careful');
 
+    // Then
     expect(addBreadcrumb).toHaveBeenNthCalledWith(1, {
       level: 'info',
       message: 'hello',
@@ -45,9 +50,11 @@ describe('createSentryLogger', () => {
     expect(captureException).not.toHaveBeenCalled();
   });
 
-  it('context는 그대로 breadcrumb data로 전달된다(카테고리 승격 없음)', () => {
+  it('context는 승격 없이 그대로 breadcrumb data로 전달된다', () => {
+    // When
     createSentryLogger().info('작업 완료', { jobId: 7 });
 
+    // Then
     expect(addBreadcrumb).toHaveBeenCalledWith({
       level: 'info',
       message: '작업 완료',
@@ -56,11 +63,14 @@ describe('createSentryLogger', () => {
   });
 
   it('error는 breadcrumb를 남기고, Error가 있으면 non-fatal로 수집한다', () => {
+    // Given
     const logger = createSentryLogger();
     const error = new Error('boom');
 
+    // When
     logger.error('failed', error, { feature: 'x' });
 
+    // Then
     expect(addBreadcrumb).toHaveBeenCalledWith({
       level: 'error',
       message: 'failed',
@@ -73,8 +83,10 @@ describe('createSentryLogger', () => {
   });
 
   it('error에 Error가 없으면 breadcrumb만 남기고 captureException은 호출하지 않는다', () => {
+    // When
     createSentryLogger().error('just a message');
 
+    // Then
     expect(addBreadcrumb).toHaveBeenCalledTimes(1);
     expect(captureException).not.toHaveBeenCalled();
   });
@@ -100,21 +112,30 @@ describe('logEventFeature', () => {
     ['todo-comment.submit.failed', 'todo_comment'],
     ['token-refresher.access-token-read.failed', 'token_refresher'],
   ])('이벤트 키 %s의 feature는 %s다', (message, feature) => {
-    // When / Then
-    expect(logEventFeature(message)).toBe(feature);
+    // When
+    const result = logEventFeature(message);
+
+    // Then
+    expect(result).toBe(feature);
   });
 
   it.each(['failed', '[Notification] 실패', 'support_mail.open_failed', 'Todo.submit.failed'])(
     '이벤트 키 형식이 아닌 %s는 feature가 없다',
     (message) => {
-      // When / Then
-      expect(logEventFeature(message)).toBeUndefined();
+      // When
+      const result = logEventFeature(message);
+
+      // Then
+      expect(result).toBeUndefined();
     },
   );
 
   it('ERROR_REPORT_FEATURES에 없는 첫 마디는 태그로 보내지 않는다', () => {
-    // When / Then
-    expect(logEventFeature('unknown-feature.submit.failed')).toBeUndefined();
+    // When
+    const result = logEventFeature('unknown-feature.submit.failed');
+
+    // Then
+    expect(result).toBeUndefined();
   });
 
   it('로그 이벤트 상수의 첫 마디는 모두 ERROR_REPORT_FEATURES에 있다', () => {

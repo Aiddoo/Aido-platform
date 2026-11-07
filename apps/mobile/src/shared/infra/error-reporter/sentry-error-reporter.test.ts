@@ -58,15 +58,17 @@ describe('createSentryErrorReporter', () => {
     expect(captureMessage).toHaveBeenCalledWith('session_expired', { level: 'info', tags: {} });
   });
 
-  it('모든 Severity 값이 유효한 Sentry level로 매핑된다', () => {
+  it('모든 Severity 값은 같은 이름의 Sentry level로 넘어간다', () => {
     // Given
     const reporter = createSentryErrorReporter();
     const severities: Severity[] = ['debug', 'info', 'warning', 'error', 'fatal'];
 
-    // When / Then
+    // When
     for (const severity of severities) {
       reporter.captureMessage('session_expired', { severity });
     }
+
+    // Then
     severities.forEach((severity, index) => {
       expect(captureMessage).toHaveBeenNthCalledWith(index + 1, 'session_expired', {
         level: severity,

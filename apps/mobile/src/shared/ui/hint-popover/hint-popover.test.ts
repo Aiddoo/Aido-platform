@@ -3,7 +3,7 @@ import { getHintPlacement, getHintWidth } from './hint-popover';
 const SCREEN = { windowHeight: 800, topInset: 48, bottomInset: 34, offset: 9 };
 
 describe('getHintPlacement', () => {
-  test.each([
+  it.each([
     {
       name: '위에 자리가 있으면 위',
       placement: 'top',
@@ -73,7 +73,7 @@ describe('getHintPlacement', () => {
     expect(result).toBe(expected);
   });
 
-  test('아직 재지 못했으면 요청한 방향이다', () => {
+  it('아직 재지 못했으면 요청한 방향이다', () => {
     // When
     const result = getHintPlacement({
       ...SCREEN,
@@ -90,7 +90,7 @@ describe('getHintPlacement', () => {
 describe('getHintWidth', () => {
   const INPUT = { windowWidth: 393, leftInset: 0, offset: 9 };
 
-  test('위아래로 열면 대상 자리와 상관없이 화면 안의 최대 폭이다', () => {
+  it('위아래로 열면 대상 자리와 상관없이 화면 안의 최대 폭이다', () => {
     // When
     const width = getHintWidth({ ...INPUT, placement: 'top', trigger: { pageX: 100 } });
 
@@ -98,7 +98,7 @@ describe('getHintWidth', () => {
     expect(width).toBe(300);
   });
 
-  test('왼쪽으로 열면 대상과 화면 왼쪽 끝 사이로 줄인다', () => {
+  it('왼쪽으로 열면 대상과 화면 왼쪽 끝 사이로 줄인다', () => {
     // When
     const width = getHintWidth({ ...INPUT, placement: 'left', trigger: { pageX: 297 } });
 
@@ -106,7 +106,7 @@ describe('getHintWidth', () => {
     expect(width).toBe(276);
   });
 
-  test('왼쪽 레일이 있으면 그만큼 더 줄인다', () => {
+  it('왼쪽 레일이 있으면 그만큼 더 줄인다', () => {
     // When
     const width = getHintWidth({
       ...INPUT,
@@ -119,7 +119,7 @@ describe('getHintWidth', () => {
     expect(width).toBe(192);
   });
 
-  test('아직 대상을 재지 못했으면 최대 폭이다', () => {
+  it('아직 대상을 재지 못했으면 최대 폭이다', () => {
     // When
     const width = getHintWidth({ ...INPUT, placement: 'left', trigger: null });
 

@@ -11,7 +11,7 @@ const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
 
 describe('설정 시간대 기준 달력 칸 계산', () => {
-  test('자정 직전은 그 날이고 정각은 다음 날이다', () => {
+  it('자정 직전은 그 날이고 정각은 다음 날이다', () => {
     // Given
     const beforeMidnight = new Date('2026-06-10T14:59:59.999Z');
     const atMidnight = new Date('2026-06-10T15:00:00.000Z');
@@ -25,7 +25,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(at).toEqual(new Date(2026, 5, 11));
   });
 
-  test('기기 시간대와 다른 시간대의 날짜를 따른다', () => {
+  it('기기 시간대와 다른 시간대의 날짜를 따른다', () => {
     // Given
     const instant = new Date('2026-03-08T20:00:00.000Z');
 
@@ -38,7 +38,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(seoul).toEqual(new Date(2026, 2, 9));
   });
 
-  test('서머타임이 시작하는 날을 지나 하루씩 더해도 날이 밀리지 않는다', () => {
+  it('서머타임이 시작하는 날을 지나 하루씩 더해도 날이 밀리지 않는다', () => {
     // Given
     const saturday = new Date('2026-03-07T12:00:00.000Z');
 
@@ -51,7 +51,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(monday).toEqual(new Date(2026, 2, 9));
   });
 
-  test('서머타임이 끝나는 날에도 일주일 뒤는 같은 요일이다', () => {
+  it('서머타임이 끝나는 날에도 일주일 뒤는 같은 요일이다', () => {
     // Given
     const sunday = new Date('2026-10-25T12:00:00.000Z');
 
@@ -62,7 +62,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(result).toEqual(new Date(2026, 10, 1));
   });
 
-  test('달의 첫날과 월 차이를 구한다', () => {
+  it('달의 첫날과 월 차이를 구한다', () => {
     // Given
     const date = new Date('2026-06-15T03:00:00.000Z');
     const other = new Date('2025-11-02T03:00:00.000Z');
@@ -76,7 +76,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(diff).toBe(7);
   });
 
-  test('31일에서 달을 옮기면 그 달의 마지막 날로 맞춘다', () => {
+  it('31일에서 달을 옮기면 그 달의 마지막 날로 맞춘다', () => {
     // Given
     const jan31 = new Date(2026, 0, 31, 12);
 
@@ -89,7 +89,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(previous).toEqual(new Date(2026, 1, 28));
   });
 
-  test('해를 넘겨 달을 옮긴다', () => {
+  it('해를 넘겨 달을 옮긴다', () => {
     // Given
     const december = new Date(2026, 11, 15, 12);
 
@@ -102,7 +102,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(previous).toEqual(new Date(2025, 11, 15));
   });
 
-  test('다른 달로 넘어가도 선택한 일을 지키고 없는 일은 마지막 날로 맞춘다', () => {
+  it('다른 달로 넘어가도 선택한 일을 지키고 없는 일은 마지막 날로 맞춘다', () => {
     // Given
     const selected = new Date(2026, 0, 31, 12);
     const february = new Date(2026, 1, 1);
@@ -114,7 +114,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
     expect(result).toEqual(new Date(2026, 1, 28));
   });
 
-  test('윤년 2월 29일을 평년 2월로 옮기면 2월 28일이 된다', () => {
+  it('윤년 2월 29일을 평년 2월로 옮기면 2월 28일이 된다', () => {
     // Given
     const leapDay = new Date(2028, 1, 29, 12);
     const commonFebruary = new Date(2029, 1, 1);
@@ -128,7 +128,7 @@ describe('설정 시간대 기준 달력 칸 계산', () => {
 });
 
 describe('diffLocalMonths', () => {
-  it('같은 달 안이면 0을 반환해야 한다', () => {
+  it('같은 달 안이면 월 차이는 0이다', () => {
     // Given
     const day1 = new Date(2026, 3, 1);
     const day15 = new Date(2026, 3, 15);
@@ -140,19 +140,23 @@ describe('diffLocalMonths', () => {
     expect(result).toBe(0);
   });
 
-  it('다음 달이면 1, 이전 달이면 -1을 반환해야 한다', () => {
+  it('다음 달이면 1, 이전 달이면 -1이다', () => {
     // Given
     const april = new Date(2026, 3, 15);
     const may = new Date(2026, 4, 15);
     const march = new Date(2026, 2, 15);
 
-    // When / Then
-    expect(diffLocalMonths(may, april, SEOUL)).toBe(1);
-    expect(diffLocalMonths(march, april, SEOUL)).toBe(-1);
+    // When
+    const next = diffLocalMonths(may, april, SEOUL);
+    const previous = diffLocalMonths(march, april, SEOUL);
+
+    // Then
+    expect(next).toBe(1);
+    expect(previous).toBe(-1);
   });
 
-  it('월말 경계를 넘어도 startOf month 기준으로 정규화되어야 한다', () => {
-    // Given — 1/31 vs 2/1: 달력상 하루 차이지만 월 차이는 1
+  it('월말 경계를 넘어도 달의 첫날 기준으로 월 차이를 센다', () => {
+    // Given
     const jan31 = new Date(2026, 0, 31);
     const feb1 = new Date(2026, 1, 1);
 
@@ -160,6 +164,7 @@ describe('diffLocalMonths', () => {
     const result = diffLocalMonths(feb1, jan31, SEOUL);
 
     // Then
+    // 1/31 vs 2/1: 달력상 하루 차이지만 월 차이는 1
     expect(result).toBe(1);
   });
 });

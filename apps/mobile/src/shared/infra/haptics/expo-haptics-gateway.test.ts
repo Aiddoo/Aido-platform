@@ -13,7 +13,7 @@ jest.mock('expo-haptics', () => ({
 const notificationAsync = jest.mocked(Haptics.notificationAsync);
 
 describe('expoHapticsGateway', () => {
-  test('알림 햅틱을 지원하지 않는 기기에서 실패해도 예외를 밖으로 내지 않는다', async () => {
+  it('알림 햅틱을 지원하지 않는 기기에서 실패해도 예외를 밖으로 내지 않는다', async () => {
     // Given
     notificationAsync.mockRejectedValue(new Error('unsupported'));
 

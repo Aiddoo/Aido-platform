@@ -18,11 +18,17 @@ describe('expoNativeApplicationMetadataGateway (Android)', () => {
   });
 
   it('standalone Android 빌드의 네이티브 버전을 읽는다', () => {
+    // Given
     Object.defineProperty(Constants, 'executionEnvironment', {
       configurable: true,
       value: ExecutionEnvironment.Standalone,
     });
-    expect(expoNativeApplicationMetadataGateway.getInstallation()).toEqual({
+
+    // When
+    const installation = expoNativeApplicationMetadataGateway.getInstallation();
+
+    // Then
+    expect(installation).toEqual({
       platform: 'android',
       currentVersion: '1.10.0',
       currentBuild: '123',

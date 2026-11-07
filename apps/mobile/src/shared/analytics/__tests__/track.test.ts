@@ -9,7 +9,7 @@ describe('track', () => {
     analytics = createAnalyticsStub();
   });
 
-  test('이벤트명과 파라미터를 analytics.trackEvent에 전달한다', () => {
+  it('이벤트명과 파라미터를 analytics.trackEvent에 전달한다', () => {
     // Given
     const params = { method: 'google' as const };
 
@@ -21,8 +21,8 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  test('파라미터가 없는 이벤트는 params 없이 호출한다', () => {
-    // Given & When
+  it('파라미터가 없는 이벤트는 params 없이 호출한다', () => {
+    // When
     track(analytics, 'auth_logout');
 
     // Then
@@ -30,7 +30,7 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  test('복합 파라미터를 가진 이벤트를 올바르게 전달한다', () => {
+  it('복합 파라미터를 가공 없이 그대로 전달한다', () => {
     // Given
     const params = {
       source: 'manual' as const,
@@ -48,7 +48,7 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith('todo_created', params);
   });
 
-  test('badge_summary_viewed 이벤트가 올바른 파라미터로 전달된다', () => {
+  it('badge_summary_viewed 이벤트에 배지 종류·달성률·주차 라벨을 그대로 전달한다', () => {
     // Given
     const params = {
       badge_type: 'perfect' as const,
@@ -64,8 +64,8 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  test('badge_empty_cta_tapped 이벤트는 params 없이 호출한다', () => {
-    // Given & When
+  it('badge_empty_cta_tapped 이벤트는 params 없이 호출한다', () => {
+    // When
     track(analytics, 'badge_empty_cta_tapped');
 
     // Then
@@ -73,7 +73,7 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  test('session_expired 이벤트를 reason과 함께 전달한다(카탈로그 경유)', () => {
+  it('session_expired 이벤트를 reason과 함께 전달한다(카탈로그 경유)', () => {
     // Given
     const params = { reason: 'refresh-rejected' as const };
 
@@ -85,7 +85,7 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  test('기능 가이드 이벤트에는 캠페인·기능·진입점만 전달하고 사용자 입력은 받지 않는다', () => {
+  it('기능 가이드 이벤트에는 캠페인·기능·진입점만 전달하고 사용자 입력은 받지 않는다', () => {
     // Given
     const params = {
       campaign_id: 'feature-discovery-2026-08',
@@ -100,7 +100,7 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', params);
   });
 
-  test('검색 이벤트는 원문 대신 길이 버킷만 전달한다', () => {
+  it('검색 이벤트는 원문 대신 길이 버킷만 전달한다', () => {
     // Given
     const params = { query_length_bucket: '4_7' as const };
 

@@ -74,15 +74,18 @@ describe('toPurchasesGatewayError', () => {
     ],
     ['SDK 오류가 아닌 값이면', new Error('boom'), 'other', null],
     ['SDK 코드가 아닌 code 값이면', { code: 'not-a-store-code' }, 'other', null],
-  ])('%s %s 실패로 넘긴다', (_case, error, expectedKind, expectedStoreCode) => {
-    // When
-    const failure = toPurchasesGatewayError(error);
+  ])(
+    '%s 기대한 실패 종류와 스토어 코드로 바꾼다',
+    (_case, error, expectedKind, expectedStoreCode) => {
+      // When
+      const failure = toPurchasesGatewayError(error);
 
-    // Then
-    expect(failure).toBeInstanceOf(PurchasesGatewayError);
-    expect(failure.kind).toBe(expectedKind);
-    expect(failure.storeErrorCode).toBe(expectedStoreCode);
-  });
+      // Then
+      expect(failure).toBeInstanceOf(PurchasesGatewayError);
+      expect(failure.kind).toBe(expectedKind);
+      expect(failure.storeErrorCode).toBe(expectedStoreCode);
+    },
+  );
 });
 
 describe('revenueCatPurchasesGateway', () => {
@@ -90,7 +93,7 @@ describe('revenueCatPurchasesGateway', () => {
     jest.resetAllMocks();
   });
 
-  test('판매 중인 요금제에 없는 패키지는 결제창을 열지 않는다', async () => {
+  it('판매 중인 요금제에 없는 패키지는 결제창을 열지 않는다', async () => {
     // Given
     purchases.getOfferings.mockResolvedValue({ all: {}, current: null });
 
@@ -102,7 +105,7 @@ describe('revenueCatPurchasesGateway', () => {
     expect(purchases.purchasePackage).not.toHaveBeenCalled();
   });
 
-  test('익명 사용자면 SDK 로그아웃을 부르지 않는다', async () => {
+  it('익명 사용자면 SDK 로그아웃을 부르지 않는다', async () => {
     // Given
     purchases.isAnonymous.mockResolvedValue(true);
 
@@ -113,7 +116,7 @@ describe('revenueCatPurchasesGateway', () => {
     expect(mockLogOut).not.toHaveBeenCalled();
   });
 
-  test('로그인한 사용자면 SDK 로그아웃을 부른다', async () => {
+  it('로그인한 사용자면 SDK 로그아웃을 부른다', async () => {
     // Given
     purchases.isAnonymous.mockResolvedValue(false);
 
@@ -124,7 +127,7 @@ describe('revenueCatPurchasesGateway', () => {
     expect(mockLogOut).toHaveBeenCalledTimes(1);
   });
 
-  test('고객 정보 구독을 끝내면 SDK에 붙인 같은 리스너를 뗀다', () => {
+  it('고객 정보 구독을 끝내면 SDK에 붙인 같은 리스너를 뗀다', () => {
     // Given
     const unsubscribe = revenueCatPurchasesGateway.subscribe(jest.fn());
     const [attached] = purchases.addCustomerInfoUpdateListener.mock.calls[0] ?? [];

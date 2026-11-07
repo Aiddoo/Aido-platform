@@ -51,7 +51,12 @@ describe.each(namespaces)('%s 네임스페이스', (namespace) => {
   const enKeys = flattenKeys(resources.en[namespace]);
 
   it('ko와 en의 키 집합이 동일하다', () => {
-    expect([...enKeys.keys()].sort()).toEqual([...koKeys.keys()].sort());
+    // When
+    const enKeyList = [...enKeys.keys()].sort();
+    const koKeyList = [...koKeys.keys()].sort();
+
+    // Then
+    expect(enKeyList).toEqual(koKeyList);
   });
 
   it('모든 키의 보간 변수 집합이 ko/en에서 동일하다', () => {
@@ -61,8 +66,11 @@ describe.each(namespaces)('%s 네임스페이스', (namespace) => {
         continue; // 키 집합 검증에서 이미 실패함
       }
 
+      // When
       const koVariables = [...extractVariables(koValues)].sort();
       const enVariables = [...extractVariables(enValues)].sort();
+
+      // Then
       expect({ key: `${namespace}:${key}`, variables: enVariables }).toEqual({
         key: `${namespace}:${key}`,
         variables: koVariables,
@@ -74,8 +82,10 @@ describe.each(namespaces)('%s 네임스페이스', (namespace) => {
     ['ko', koKeys],
     ['en', enKeys],
   ] as const)('%s 카탈로그에 빈 문자열 값이 없다', (_locale, keys) => {
+    // When
     for (const [key, values] of keys) {
       for (const value of values) {
+        // Then
         expect({ key: `${namespace}:${key}`, value }).not.toEqual({
           key: `${namespace}:${key}`,
           value: '',

@@ -14,7 +14,7 @@ jest.mock('expo-speech-recognition', () => ({
 const nativeModule = jest.mocked(ExpoSpeechRecognitionModule);
 
 describe('expoSpeechRecognizer (Android)', () => {
-  test('설치된 언어 모델로 기기 인식을 판단하고 없으면 받기를 제안한다', async () => {
+  it('설치된 언어 모델로 기기 인식을 판단하고 없으면 받기를 제안한다', async () => {
     // Given
     nativeModule.getSupportedLocales.mockResolvedValueOnce({
       locales: ['ko-KR', 'en-US'],

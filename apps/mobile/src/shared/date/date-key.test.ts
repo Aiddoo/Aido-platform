@@ -52,7 +52,7 @@ describe('getDayOfWeek — 날짜 key의 요일', () => {
 });
 
 describe('날짜 key 기준 달력 주', () => {
-  test.each([
+  it.each([
     ['2026-03-08', '2026-03-08', '2026-03-14', 2],
     ['2026-11-01', '2026-11-01', '2026-11-07', 1],
     ['2028-02-29', '2028-02-27', '2028-03-04', 4],
@@ -60,20 +60,20 @@ describe('날짜 key 기준 달력 주', () => {
     ['2027-01-03', '2027-01-03', '2027-01-09', 1],
     ['2031-10-20', '2031-10-19', '2031-10-25', 3],
   ])('%s의 주는 %s~%s, 시작한 달의 %s주차다', (dateKey, startDateKey, endDateKey, weekOfMonth) => {
-    // Given: DST 전환일, 윤일, ISO 53주(12-28~01-03)에 걸친 날짜
-
     // When
     const week = getCalendarWeek(dateKey);
 
     // Then
+    // DST 전환일, 윤일, ISO 53주(12-28~01-03)에 걸친 날짜
     expect(week).toEqual({ startDateKey, endDateKey, weekOfMonth });
   });
 
-  test.each([
+  it.each([
     ['ko', 'en'],
     ['en', 'ko'],
   ] as const)('표시 언어를 %s→%s로 바꿔도 자정 근처의 오늘과 주는 그대로다', async (from, to) => {
-    // Given: 서울은 일요일 0시, LA는 토요일 오전인 같은 순간
+    // Given
+    // 서울은 일요일 0시, LA는 토요일 오전인 같은 순간
     const instant = new Date('2026-10-31T15:00:00Z');
     const readWeeks = () =>
       ['Asia/Seoul', 'America/Los_Angeles'].map((timeZone) => {
@@ -104,8 +104,9 @@ describe('날짜 key 기준 달력 주', () => {
     ]);
   });
 
-  test('DST 전환일 자정 직후도 그 시간대의 날짜와 주로 계산한다', () => {
-    // Given: LA DST 시작(2026-03-08)과 종료(2026-11-01) 당일 0시 30분
+  it('DST 전환일 자정 직후도 그 시간대의 날짜와 주로 계산한다', () => {
+    // Given
+    // LA DST 시작(2026-03-08)과 종료(2026-11-01) 당일 0시 30분
     const springForward = new Date('2026-03-08T08:30:00Z');
     const fallBack = new Date('2026-11-01T07:30:00Z');
 
@@ -139,8 +140,9 @@ describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
     expect(result).toBe(expected);
   });
 
-  test('DST 전환일을 지나도 하루씩 늘고 줄어든다', () => {
-    // Given: 미국·유럽 DST 전환(3월, 10~11월)을 모두 지나는 두 해
+  it('DST 전환일을 지나도 하루씩 늘고 줄어든다', () => {
+    // Given
+    // 미국·유럽 DST 전환(3월, 10~11월)을 모두 지나는 두 해
     const start = '2026-01-01';
 
     // When
@@ -214,30 +216,48 @@ describe('getYearOfDateKey', () => {
     const newYearEve = '2026-12-31';
     const newYear = '2027-01-01';
 
-    // When / Then
-    expect(getYearOfDateKey(newYearEve)).toBe(2026);
-    expect(getYearOfDateKey(newYear)).toBe(2027);
+    // When
+    const eveYear = getYearOfDateKey(newYearEve);
+    const newYearYear = getYearOfDateKey(newYear);
+
+    // Then
+    expect(eveYear).toBe(2026);
+    expect(newYearYear).toBe(2027);
   });
 });
 
 describe('달 단위 key 계산', () => {
   it('말일을 넘기면 그 달의 마지막 날로 맞춰 달을 더한다', () => {
-    // When / Then
-    expect(addMonthsToDateKey('2026-01-31', 1)).toBe('2026-02-28');
-    expect(addMonthsToDateKey('2028-01-31', 1)).toBe('2028-02-29');
-    expect(addMonthsToDateKey('2026-12-15', 1)).toBe('2027-01-15');
-    expect(addMonthsToDateKey('2026-01-15', -1)).toBe('2025-12-15');
+    // When
+    const common = addMonthsToDateKey('2026-01-31', 1);
+    const leap = addMonthsToDateKey('2028-01-31', 1);
+    const nextYear = addMonthsToDateKey('2026-12-15', 1);
+    const previousYear = addMonthsToDateKey('2026-01-15', -1);
+
+    // Then
+    expect(common).toBe('2026-02-28');
+    expect(leap).toBe('2028-02-29');
+    expect(nextYear).toBe('2027-01-15');
+    expect(previousYear).toBe('2025-12-15');
   });
 
   it('달의 첫날을 구한다', () => {
-    // When / Then
-    expect(getMonthStartDateKey('2026-06-15')).toBe('2026-06-01');
+    // When
+    const monthStart = getMonthStartDateKey('2026-06-15');
+
+    // Then
+    expect(monthStart).toBe('2026-06-01');
   });
 
   it('일은 보지 않고 달 차이만 센다', () => {
-    // When / Then
-    expect(diffDateKeysInMonths('2026-01-31', '2026-02-01')).toBe(1);
-    expect(diffDateKeysInMonths('2026-04-15', '2026-04-01')).toBe(0);
-    expect(diffDateKeysInMonths('2026-04-15', '2026-03-15')).toBe(-1);
+    // When
+    const acrossMonth = diffDateKeysInMonths('2026-01-31', '2026-02-01');
+    const sameMonth = diffDateKeysInMonths('2026-04-15', '2026-04-01');
+    const backwards = diffDateKeysInMonths('2026-04-15', '2026-03-15');
+
+    // Then
+    expect(acrossMonth).toBe(1);
+    expect(sameMonth).toBe(0);
+    expect(backwards).toBe(-1);
   });
 });

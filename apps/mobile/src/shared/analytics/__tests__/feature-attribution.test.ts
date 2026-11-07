@@ -113,10 +113,18 @@ describe('FeatureAttributionStore', () => {
       feature: 'todo_reorder',
     });
 
-    // When / Then
-    expect(attribution.consume({ accountId: 'account-b', feature: 'todo_reorder' })).toBeNull();
-    expect(attribution.consume({ accountId: 'account-a', feature: 'category_reorder' })).toBeNull();
-    expect(attribution.consume({ accountId: 'account-a', feature: 'todo_reorder' })).not.toBeNull();
+    // When
+    const otherAccount = attribution.consume({ accountId: 'account-b', feature: 'todo_reorder' });
+    const otherFeature = attribution.consume({
+      accountId: 'account-a',
+      feature: 'category_reorder',
+    });
+    const matched = attribution.consume({ accountId: 'account-a', feature: 'todo_reorder' });
+
+    // Then
+    expect(otherAccount).toBeNull();
+    expect(otherFeature).toBeNull();
+    expect(matched).not.toBeNull();
   });
 
   it('7일이 지난 attribution은 성공으로 집계하지 않고 제거한다', () => {
@@ -157,9 +165,13 @@ describe('FeatureAttributionStore', () => {
     );
     const attribution = createFeatureAttributionStore(storage, () => now);
 
-    // When / Then
-    expect(attribution.consume({ accountId: 'account-a', feature: 'memo_ai' })).toBeNull();
-    expect(attribution.consume({ accountId: 'account-a', feature: 'memo_ai' })).toBeNull();
+    // When
+    const broken = attribution.consume({ accountId: 'account-a', feature: 'memo_ai' });
+    const unknownFeature = attribution.consume({ accountId: 'account-a', feature: 'memo_ai' });
+
+    // Then
+    expect(broken).toBeNull();
+    expect(unknownFeature).toBeNull();
     expect(storage.remove).toHaveBeenCalledTimes(2);
   });
 

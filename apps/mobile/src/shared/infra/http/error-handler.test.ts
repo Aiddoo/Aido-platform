@@ -32,12 +32,16 @@ describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () =
     jest.restoreAllMocks();
   });
 
-  it('실패 응답은 throw 없이 breadcrumb만 남긴다 (status·서버 코드 포함)', async () => {
+  it('실패 응답은 throw 없이 status와 서버 코드를 담은 breadcrumb만 남긴다', async () => {
     // Given
     const response = createErrorResponse(ErrorCode.TODO_0801, '할 일 없음', 404);
 
-    // When / Then — 훅은 절대 throw하지 않는다
-    await expect(runHook(recordPublicApiFailureBreadcrumb, response)).resolves.toBeUndefined();
+    // When
+    const result = runHook(recordPublicApiFailureBreadcrumb, response);
+
+    // Then
+    // 훅은 절대 throw하지 않는다
+    await expect(result).resolves.toBeUndefined();
     expect(addBreadcrumb).toHaveBeenCalledWith(
       expect.objectContaining({
         category: 'http',
@@ -50,8 +54,11 @@ describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () =
     // Given
     const response = new Response('Bad Gateway', { status: 502 });
 
-    // When / Then
-    await expect(runHook(recordPublicApiFailureBreadcrumb, response)).resolves.toBeUndefined();
+    // When
+    const result = runHook(recordPublicApiFailureBreadcrumb, response);
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(addBreadcrumb).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 502, code: ErrorCode.SYS_0001 }),
@@ -89,7 +96,8 @@ describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () =
   });
 
   it('auth 훅은 401을 건너뛴다 (갱신 흐름의 소음 방지)', async () => {
-    // Given — 401 처리는 token-refresh-hook의 책임
+    // Given
+    // 401 처리는 token-refresh-hook의 책임
     const response = createErrorResponse('AUTH_0102', 'expired', 401);
 
     // When
@@ -132,23 +140,44 @@ describe('resolveMessage (KyHttpClient의 4xx → ApiError 분기에서 사용)'
   });
 
   it('알려진 코드는 서버 메시지 대신 카탈로그 문구를 사용한다', () => {
-    expect(resolveMessage('TODO_0801', '서버의 포멀한 메시지')).toBe('할 일을 찾을 수 없어요');
+    // When
+    const message = resolveMessage('TODO_0801', '서버의 포멀한 메시지');
+
+    // Then
+    expect(message).toBe('할 일을 찾을 수 없어요');
   });
 
   it('en에서는 같은 코드가 영어 문구로 번역된다', async () => {
+    // Given
     await i18n.changeLanguage('en');
-    expect(resolveMessage('TODO_0801', '서버의 포멀한 메시지')).toBe('To-do not found');
+
+    // When
+    const message = resolveMessage('TODO_0801', '서버의 포멀한 메시지');
+
+    // Then
+    expect(message).toBe('To-do not found');
   });
 
   it('보안 마스킹 그룹(EMAIL_0502/0507)은 두 언어 모두 동일 문구를 사용한다', async () => {
-    expect(resolveMessage(ErrorCode.EMAIL_0502, '')).toBe(resolveMessage(ErrorCode.EMAIL_0507, ''));
-
+    // When
+    const koMasked = resolveMessage(ErrorCode.EMAIL_0502, '');
+    const koOther = resolveMessage(ErrorCode.EMAIL_0507, '');
     await i18n.changeLanguage('en');
-    expect(resolveMessage(ErrorCode.EMAIL_0502, '')).toBe(resolveMessage(ErrorCode.EMAIL_0507, ''));
+    const enMasked = resolveMessage(ErrorCode.EMAIL_0502, '');
+    const enOther = resolveMessage(ErrorCode.EMAIL_0507, '');
+
+    // Then
+    expect(koMasked).toBe(koOther);
+    expect(enMasked).toBe(enOther);
   });
 
   it('미지 코드는 서버 메시지, 그것도 없으면 폴백을 사용한다', () => {
-    expect(resolveMessage('UNKNOWN_9999', '서버가 내려준 메시지')).toBe('서버가 내려준 메시지');
-    expect(resolveMessage('UNKNOWN_9999', '')).toBe('문제가 생겼어요');
+    // When
+    const serverMessage = resolveMessage('UNKNOWN_9999', '서버가 내려준 메시지');
+    const fallback = resolveMessage('UNKNOWN_9999', '');
+
+    // Then
+    expect(serverMessage).toBe('서버가 내려준 메시지');
+    expect(fallback).toBe('문제가 생겼어요');
   });
 });

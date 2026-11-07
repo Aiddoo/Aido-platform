@@ -76,7 +76,8 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('재시도 마커가 있으면 갱신 없이 응답을 반환하고, 즉시 Sentry warning을 남긴다', async () => {
-    // Given — 갱신 성공 후 재시도가 다시 401 = 서버가 갓 발급한 토큰을 거부한 것.
+    // Given
+    // 갱신 성공 후 재시도가 다시 401 = 서버가 갓 발급한 토큰을 거부한 것.
     // 서버측 일시 불일치(예: 세션 캐시 스테일) 신호이므로 무음이면 안 된다.
     const response = createFakeResponse(401);
     const request = createFakeRequest({ [RETRY_MARKER_HEADER]: '1' });
@@ -84,7 +85,8 @@ describe('createTokenRefreshHook', () => {
     // When
     const result = await invokeHook(request, response);
 
-    // Then — 원 401 반환(화면별 QueryErrorBoundary가 담음) + 즉시 관측
+    // Then
+    // 원 401 반환(화면별 QueryErrorBoundary가 담음) + 즉시 관측
     expect(result).toBe(response);
     expect(refresh).not.toHaveBeenCalled();
     expect(endSession).not.toHaveBeenCalled();
@@ -95,14 +97,16 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('보낸 토큰이 저장된 토큰과 다르면(이미 회전됨) 갱신 없이 강제 재시도를 지시한다', async () => {
-    // Given — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다
+    // Given
+    // 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다
     tokenStore.getAccessToken.mockResolvedValue('fresh-token');
     const request = createFakeRequest({ Authorization: 'Bearer stale-token' });
 
     // When
     const result = await invokeHook(request, createFakeResponse(401));
 
-    // Then — 저장된 최신 토큰을 재시도 요청에 실어 보낸다
+    // Then
+    // 저장된 최신 토큰을 재시도 요청에 실어 보낸다
     expect(refresh).not.toHaveBeenCalled();
     expectForcedRetry(result, 'fresh-token');
   });
@@ -143,7 +147,8 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('로컬에 토큰이 없으면 tokens-missing으로 세션을 종료한다', async () => {
-    // Given — 이미 로그아웃된 앱의 401. 잡음 여부 판단은 useAuthBoot의 몫이다.
+    // Given
+    // 이미 로그아웃된 앱의 401. 잡음 여부 판단은 useAuthBoot의 몫이다.
     tokenStore.getAccessToken.mockResolvedValue(null);
     refresh.mockResolvedValue({ kind: 'invalid', details: { reason: 'tokens-missing' } });
     const response = createFakeResponse(401);
@@ -157,27 +162,36 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('갱신의 일시 실패(인프라 에러)는 그대로 전파되고 세션은 끝나지 않는다', async () => {
-    // Given — 네트워크·5xx·잠긴 키체인. 갱신기가 재시도 가능한 에러를 던지면
+    // Given
+    // 네트워크·5xx·잠긴 키체인. 갱신기가 재시도 가능한 에러를 던지면
     // 훅은 개입하지 않는다 — React Query가 5xx/네트워크와 동일하게 자동 재시도한다.
     tokenStore.getAccessToken.mockResolvedValue('current-token');
     refresh.mockRejectedValue(new NetworkError());
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });
     const response = createFakeResponse(401);
 
-    // When / Then
-    await expect(invokeHook(request, response)).rejects.toBeInstanceOf(NetworkError);
+    // When
+    const result = invokeHook(request, response);
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(endSession).not.toHaveBeenCalled();
   });
 
   it('액세스 토큰 읽기가 실패해도 경고를 남기고 갱신 경로로 넘어간다 (세션 유지)', async () => {
-    // Given — 잠긴 키체인. 읽기 실패를 "토큰 없음"으로 오판하면 안 된다.
+    // Given
+    // 잠긴 키체인. 읽기 실패를 "토큰 없음"으로 오판하면 안 된다.
     const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
     tokenStore.getAccessToken.mockRejectedValue(new Error('User interaction is not allowed.'));
     refresh.mockRejectedValue(new NetworkError());
     const response = createFakeResponse(401);
 
-    // When / Then — 갱신 경로로 넘어가고, 일시 실패는 전파되되 세션은 끝나지 않는다
-    await expect(invokeHook(createFakeRequest(), response)).rejects.toBeInstanceOf(NetworkError);
+    // When
+    const result = invokeHook(createFakeRequest(), response);
+
+    // Then
+    // 갱신 경로로 넘어가고, 일시 실패는 전파되되 세션은 끝나지 않는다
+    await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith('token-refresher.access-token-read.failed', {

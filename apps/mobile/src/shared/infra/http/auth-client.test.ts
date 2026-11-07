@@ -249,7 +249,8 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   });
 
   it('갱신에 성공하면 원 요청을 재시도해 데이터를 반환한다', async () => {
-    // Given — 첫 요청은 401, 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
+    // Given
+    // 첫 요청은 401, 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
     let retriedAuthorization: string | null = null;
     fetchMock.mockImplementation(async (input) => {
       const request = toRequest(input);
@@ -269,15 +270,18 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     // When
     const result = await http.get('todos');
 
-    // Then — 강제 재시도의 beforeRequest가 회전된 새 토큰을 주입한다
+    // Then
+    // 강제 재시도의 beforeRequest가 회전된 새 토큰을 주입한다
     expect(result).toEqual({ ok: true, value: { id: 'todo-1' } });
     expect(retriedAuthorization).toBe('Bearer access-2');
-    expect(fetchMock).toHaveBeenCalledTimes(2); // 원 요청 1 + 강제 재시도 1 (자동 재시도 없음)
+    // 원 요청 1 + 강제 재시도 1 (자동 재시도 없음)
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(endSession).not.toHaveBeenCalled();
   });
 
-  it('갱신 후 재시도가 다시 401이면 Result.err(ApiError)로 담긴다 (세션 유지 — 화면 QEB가 로컬 재시도)', async () => {
-    // Given — 회전 레이스: 갱신은 성공하지만 재시도도 401 (매 호출 새 Response — ky가 clone하므로)
+  it('갱신 후 재시도가 다시 401이면 세션을 유지한 채 Result.err(ApiError)로 담는다', async () => {
+    // Given
+    // 회전 레이스: 갱신은 성공하지만 재시도도 401 (매 호출 새 Response — ky가 clone하므로)
     fetchMock.mockImplementation(async () => errorBody(401, 'AUTH_0102', 'access token expired'));
     requestRefresh.mockResolvedValue(
       new Response(
@@ -289,26 +293,30 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     // When
     const result = await http.get('todos');
 
-    // Then — 로그아웃(endSession) 없이 ApiError로 담긴다. 세션 종료가 아니므로 화면별
+    // Then
+    // 로그아웃(endSession) 없이 ApiError로 담긴다. 세션 종료가 아니므로 화면별
     // QueryErrorBoundary가 로컬 재시도로 흡수한다(앱 레벨로 새지 않음).
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toBeInstanceOf(ApiError);
       expect(result.error.status).toBe(401);
     }
-    expect(fetchMock).toHaveBeenCalledTimes(2); // 원 요청 1 + 재시도 1 — ky가 이중 재시도하지 않음
+    // 원 요청 1 + 재시도 1 — ky가 이중 재시도하지 않음
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(endSession).not.toHaveBeenCalled();
   });
 
   it('서버가 리프레시 토큰을 거부하면 세션을 종료하고 ApiError를 반환한다', async () => {
-    // Given — 갱신 요청이 401(SESSION_0704: 토큰 재사용 감지)
+    // Given
+    // 갱신 요청이 401(SESSION_0704: 토큰 재사용 감지)
     fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0105', 're-login required'));
     requestRefresh.mockResolvedValue(errorBody(401, 'SESSION_0704', 'reuse detected'));
 
     // When
     const result = await http.get('todos');
 
-    // Then — 진짜 세션 종료: endSession 호출 + Result.err(ApiError)
+    // Then
+    // 진짜 세션 종료: endSession 호출 + Result.err(ApiError)
     expect(endSession).toHaveBeenCalledWith({
       reason: 'refresh-rejected',
       serverErrorCode: 'SESSION_0704',
@@ -322,24 +330,34 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   });
 
   it('서버가 5xx를 반환하면 재시도 가능한 ServerError를 던진다', async () => {
-    // Given — 배포 재시작 부트 구간의 500
+    // Given
+    // 배포 재시작 부트 구간의 500
     fetchMock.mockResolvedValue(errorBody(500, 'SYS_0001', 'internal error'));
 
-    // When / Then — 비재시도 ApiError가 아니라 ServerError로 표면화 → React Query가 자동 재시도
-    await expect(http.get('todos')).rejects.toBeInstanceOf(ServerError);
-    expect(fetchMock).toHaveBeenCalledTimes(1); // ky 자체 재시도 없음
+    // When
+    const request = http.get('todos');
+
+    // Then
+    // 비재시도 ApiError가 아니라 ServerError로 표면화 → React Query가 자동 재시도
+    await expect(request).rejects.toBeInstanceOf(ServerError);
+    // ky 자체 재시도 없음
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
   });
 
   it('본문이 JSON이 아닌 프록시 502도 ServerError로 표면화한다', async () => {
-    // Given — 프록시/게이트웨이가 내려주는 HTML 에러 페이지
+    // Given
+    // 프록시/게이트웨이가 내려주는 HTML 에러 페이지
     fetchMock.mockResolvedValue(new Response('Bad Gateway', { status: 502 }));
 
-    // When / Then
-    await expect(http.get('todos')).rejects.toBeInstanceOf(ServerError);
+    // When
+    const request = http.get('todos');
+
+    // Then
+    await expect(request).rejects.toBeInstanceOf(ServerError);
   });
 
-  it('4xx는 Result.err(ApiError)로 담긴다 (서버 코드·카탈로그 문구 보존)', async () => {
+  it('4xx는 서버 코드와 카탈로그 문구를 보존한 Result.err(ApiError)로 담는다', async () => {
     // Given
     fetchMock.mockResolvedValue(errorBody(404, 'TODO_0801', 'todo not found'));
 
@@ -356,7 +374,8 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   });
 
   it('갱신 성공 후 재시도가 5xx면 ServerError로 표면화한다', async () => {
-    // Given — 401 → 갱신 성공 → 재시도 요청이 503 (서버 부팅 중)
+    // Given
+    // 401 → 갱신 성공 → 재시도 요청이 503 (서버 부팅 중)
     fetchMock.mockImplementation(async (input) => {
       const request = toRequest(input);
       if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
@@ -371,8 +390,11 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
       ),
     );
 
-    // When / Then
-    await expect(http.get('todos')).rejects.toBeInstanceOf(ServerError);
+    // When
+    const request = http.get('todos');
+
+    // Then
+    await expect(request).rejects.toBeInstanceOf(ServerError);
     expect(endSession).not.toHaveBeenCalled();
   });
 
@@ -390,36 +412,52 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   });
 
   it('갱신이 일시 실패(서버 재시작·네트워크)하면 로그아웃 없이 NetworkError를 던진다', async () => {
-    // Given — 콜드 스타트/배포 재시작: 원 요청은 401, 갱신 POST는 네트워크 실패(reject)
+    // Given
+    // 콜드 스타트/배포 재시작: 원 요청은 401, 갱신 POST는 네트워크 실패(reject)
     fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
     requestRefresh.mockRejectedValue(new TypeError('Network request failed'));
 
-    // When / Then — 원 401을 ApiError로 담지 않고, 인프라 에러 그대로 전파한다
+    // When
+    const request = http.get('todos');
+
+    // Then
+    // 원 401을 ApiError로 담지 않고, 인프라 에러 그대로 전파한다
     // (React Query가 5xx/네트워크와 동일하게 자동 재시도 → 재시도 화면 대신 로딩 유지).
-    await expect(http.get('todos')).rejects.toBeInstanceOf(NetworkError);
-    expect(endSession).not.toHaveBeenCalled(); // 세션 유지 — 강제 로그아웃 없음
-    expect(fetchMock).toHaveBeenCalledTimes(1); // 원 요청만; 일시 실패는 즉시 던지고 재시도 안 함
+    await expect(request).rejects.toBeInstanceOf(NetworkError);
+    // 세션 유지 — 강제 로그아웃 없음
+    expect(endSession).not.toHaveBeenCalled();
+    // 원 요청만; 일시 실패는 즉시 던지고 재시도 안 함
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('갱신 엔드포인트가 5xx면 ServerError를 던진다 (로그아웃 없음)', async () => {
-    // Given — 갱신 POST가 503 (서버 부팅 중)
+  it('갱신 엔드포인트가 5xx면 로그아웃 없이 ServerError를 던진다', async () => {
+    // Given
+    // 갱신 POST가 503 (서버 부팅 중)
     fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
     requestRefresh.mockResolvedValue(errorBody(503, 'SYS_0001', 'booting'));
 
-    // When / Then
-    await expect(http.get('todos')).rejects.toBeInstanceOf(ServerError);
+    // When
+    const request = http.get('todos');
+
+    // Then
+    await expect(request).rejects.toBeInstanceOf(ServerError);
     expect(endSession).not.toHaveBeenCalled();
   });
 
-  it('일시 실패로 던진 뒤 서버가 복귀하면 다음 시도(React Query 재시도)는 정상 복구된다', async () => {
-    // Given (1차 — 서버 다운): 401 + 갱신 네트워크 실패
+  it('일시 실패 뒤 서버가 복귀하면 다음 시도에서 갱신과 재시도로 데이터를 반환한다', async () => {
+    // Given
+    // 서버 다운: 401 + 갱신 네트워크 실패
     fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
     requestRefresh.mockRejectedValue(new TypeError('Network request failed'));
 
-    // When (1차) — NetworkError로 실패
-    await expect(http.get('todos')).rejects.toBeInstanceOf(NetworkError);
+    // When
+    const failedRequest = http.get('todos');
 
-    // Given (2차 — 서버 복귀): 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
+    // Then
+    await expect(failedRequest).rejects.toBeInstanceOf(NetworkError);
+
+    // Given
+    // 서버 복귀: 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
     fetchMock.mockImplementation(async (input) => {
       const request = toRequest(input);
       if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
@@ -434,8 +472,10 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
       ),
     );
 
-    // When (2차) / Then — 자동 복구
+    // When
     const result = await http.get('todos');
+
+    // Then
     expect(result).toEqual({ ok: true, value: { id: 'todo-1' } });
     expect(endSession).not.toHaveBeenCalled();
   });

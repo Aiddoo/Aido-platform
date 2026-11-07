@@ -19,7 +19,7 @@ describe('Button 누름', () => {
     jest.restoreAllMocks();
   });
 
-  test('isLoading 중에는 두 번 눌러도 onPress를 부르지 않는다', async () => {
+  it('isLoading 중에는 두 번 눌러도 onPress를 부르지 않는다', async () => {
     // Given
     const onPress = jest.fn();
     await renderInProvider(

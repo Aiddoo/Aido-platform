@@ -19,7 +19,7 @@ async function setup() {
 }
 
 describe('useReportUnexpectedError', () => {
-  test('서버 장애처럼 예측하지 못한 오류만 보고한다', async () => {
+  it('서버 장애처럼 예측하지 못한 오류만 보고한다', async () => {
     // Given
     const { errorReporter, report } = await setup();
 
@@ -30,7 +30,7 @@ describe('useReportUnexpectedError', () => {
     expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
   });
 
-  test('예상한 거절과 연결 문제는 보고하지 않는다', async () => {
+  it('예상한 거절과 연결 문제는 보고하지 않는다', async () => {
     // Given
     const { errorReporter, report } = await setup();
 
