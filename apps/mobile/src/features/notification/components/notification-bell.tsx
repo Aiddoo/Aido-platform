@@ -4,17 +4,11 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  BellFilledIcon,
-  BellIcon,
-  Box,
-  QueryErrorBoundary,
-  type QueryErrorFallbackProps,
-} from '@src/shared/ui';
+import { BellFilledIcon, BellIcon, Box, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
 import Animated, { css } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -101,22 +95,19 @@ NotificationBell.Loading = function Loading() {
 };
 
 NotificationBell.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('notification');
+
   return (
-    <PressableFeedback onPress={reset} hitSlop={8} className="rounded-xl p-2">
+    <PressableFeedback
+      onPress={reset}
+      hitSlop={8}
+      className="rounded-xl p-2"
+      accessibilityRole="button"
+      accessibilityLabel={t('bell.retryLabel')}
+    >
       <BellIcon width={24} height={24} colorClassName="text-gray-4" />
       <Box className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
     </PressableFeedback>
-  );
-};
-
-/** pane 꼭대기처럼 Stack 헤더가 없는 자리에 두는 JS 벨이다. */
-NotificationBell.Header = function Header() {
-  return (
-    <QueryErrorBoundary fallback={NotificationBell.Error}>
-      <Suspense fallback={<NotificationBell.Loading />}>
-        <NotificationBell />
-      </Suspense>
-    </QueryErrorBoundary>
   );
 };
 
@@ -129,12 +120,12 @@ NotificationBell.Toolbar = function Toolbar() {
   const {
     data: unreadCount,
     isPending,
-    isError,
+    isLoadingError,
     refetch,
   } = useQuery(useGetUnreadCountQueryOptions());
   const hasUnread = unreadCount != null && NotificationBadgePolicy.hasUnread(unreadCount);
-  const tintColor = match({ isError, hasUnread })
-    .with({ isError: true }, () => errorTint)
+  const tintColor = match({ isLoadingError, hasUnread })
+    .with({ isLoadingError: true }, () => errorTint)
     .with({ hasUnread: true }, () => unreadTint)
     .otherwise(() => undefined);
 
@@ -145,7 +136,7 @@ NotificationBell.Toolbar = function Toolbar() {
         accessibilityLabel={hasUnread ? t('bell.unreadLabel') : t('titles.notifications')}
         disabled={isPending}
         tintColor={tintColor}
-        onPress={isError ? () => refetch() : () => navigate('/notifications')}
+        onPress={isLoadingError ? () => refetch() : () => navigate('/notifications')}
       />
     </Stack.Toolbar>
   );

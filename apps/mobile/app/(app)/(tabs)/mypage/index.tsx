@@ -53,7 +53,16 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
-    <MyPagePaneLayout isSplit={isSplit} headerAction={<NotificationBell.Header />}>
+    <MyPagePaneLayout
+      isSplit={isSplit}
+      headerAction={
+        <QueryErrorBoundary fallback={NotificationBell.Error}>
+          <Suspense fallback={<NotificationBell.Loading />}>
+            <NotificationBell />
+          </Suspense>
+        </QueryErrorBoundary>
+      }
+    >
       <H3>{t('mypage.header')}</H3>
 
       <Spacing size={20} />
