@@ -30,7 +30,6 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  ChatBubbleIcon,
   DocsIcon,
   EyeIcon,
   HStack,
@@ -251,10 +250,6 @@ TodoDetailCard.Metrics = function Metrics() {
         icon={<EyeIcon width={16} height={16} colorClassName="text-gray-5" />}
         count={detail.metrics.viewCount}
       />
-      <Metric
-        icon={<ChatBubbleIcon width={16} height={16} colorClassName="text-gray-5" />}
-        count={detail.metrics.commentCount}
-      />
       {canNudge && (
         <TodoNudgeButton
           receiver={{
@@ -314,10 +309,7 @@ TodoDetailCard.Loading = function Loading() {
           </HStack>
         </VStack>
 
-        <HStack gap={16} align="center">
-          <Metric.Loading />
-          <Metric.Loading />
-        </HStack>
+        <Metric.Loading />
       </VStack>
     </VStack>
   );

@@ -50,7 +50,6 @@ const ANCHOR_VIEW_POSITION = 0.2;
 const HINT_HEART_SIZE = 20;
 const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 
-const contentContainerStyle = { flexGrow: 1 };
 const styles = StyleSheet.create({ fallbackScrollView: { flex: 1 } });
 
 function getThreadKey(thread: TodoCommentThread) {
@@ -127,7 +126,6 @@ export function TodoCommentThreadList({ header, ...listProps }: TodoCommentThrea
       keyExtractor={getThreadKey}
       renderItem={renderItem}
       renderScrollComponent={renderThreadListScrollView}
-      contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <>
