@@ -8,15 +8,17 @@ provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이 사라지�
 
 ## 구조
 
-| 위치                           | 책임                                                            |
-| ------------------------------ | --------------------------------------------------------------- |
-| schemas                        | snapshot v2 Zod 계약(v1 읽기 포함)                              |
-| domains                        | day 선택 policy, 직렬화 props                                   |
-| apis                           | summary→snapshot→props·iOS timeline mapper와 쓰기 직렬화        |
-| bridge                         | iOS timeline / Android snapshot·HeadlessJS / 미지원 플랫폼 경계 |
-| components/widgets.ios.tsx     | 격리된 SwiftUI renderer (`expo-widgets`)                        |
-| components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                 |
-| hooks                          | AuthBootProvider가 소유하는 계정·날짜(오늘·내일)·언어 동기화    |
+| 위치                           | 책임                                                                |
+| ------------------------------ | ------------------------------------------------------------------- |
+| schemas                        | snapshot v2 Zod 계약(v1 읽기 포함), props, 탐색 명령                |
+| domains                        | day 선택 policy, 탐색 명령 유효성                                   |
+| utils                          | 첫 동기화 전 props, 탐색 링크 변환(번들이 별칭을 못 풀어 상대 경로) |
+| constants                      | Android 위젯 정의·저장 키·탐색 action                               |
+| apis                           | summary→snapshot→props·iOS timeline mapper와 쓰기 직렬화            |
+| bridge                         | iOS timeline / Android snapshot·HeadlessJS / 미지원 플랫폼 경계     |
+| components/widgets.ios.tsx     | 격리된 SwiftUI renderer (`expo-widgets`)                            |
+| components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                     |
+| hooks                          | AuthBootProvider가 소유하는 계정·날짜(오늘·내일)·언어 동기화        |
 
 위젯은 네트워크·인증 저장소에 접근하지 않는다. 변경은 앱에서 검증한 표시용 snapshot으로만
 전달한다. snapshot은 오늘과 (받을 수 있으면) 내일 요약을 담는다. iOS는 [지금: 오늘] →

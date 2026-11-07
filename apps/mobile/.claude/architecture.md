@@ -1018,7 +1018,9 @@ export const expoClipboardGateway: ClipboardGateway = {
 clipboard: expoClipboardGateway,
 
 // bootstrap/providers/di-context.tsx
-export const useClipboard = () => useDI().clipboard;
+export function useClipboard() {
+  return useDI().clipboard;
+}
 
 // 컴포넌트
 const clipboard = useClipboard();

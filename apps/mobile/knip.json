@@ -1,24 +1,23 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "index.ts",
-    "app/**/*.{ts,tsx}",
-    "src/features/**/constants/*.events.ts",
-    "app.config.ts",
-    "plugins/*.js",
-    "scripts/*.mjs",
-    "metro.config.js",
-    "babel.config.js",
-    "jest.setup.ts"
-  ],
-  "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
-  "ignore": ["**/*.d.ts", "src/shared/constants/query-meta.ts"],
-  "ignoreDependencies": [
-    "@react-native-kakao/social",
-    "@react-native-kakao/user",
-    "expo-glass-effect",
-    "babel-plugin-react-compiler",
-    "babel-jest"
-  ],
-  "ignoreBinaries": ["adb", "eas", "oxfmt", "oxlint"]
+  "workspaces": {
+    "apps/mobile": {
+      "entry": [
+        "app/**/*.{ts,tsx}",
+        "src/features/**/constants/*.events.ts",
+        "plugins/*.js",
+        "scripts/*.mjs"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "ignore": ["src/shared/constants/query-meta.ts"],
+      "ignoreDependencies": [
+        "@react-native-kakao/social",
+        "@react-native-kakao/user",
+        "expo-glass-effect",
+        "babel-plugin-react-compiler",
+        "babel-jest"
+      ],
+      "ignoreBinaries": ["adb", "eas"]
+    }
+  }
 }

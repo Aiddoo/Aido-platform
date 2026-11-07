@@ -6,14 +6,14 @@ export interface ScheduleChange {
   startsAt: Instant;
 }
 
-export interface TodoScheduleSnapshot {
+interface TodoScheduleSnapshot {
   startDate: string;
   endDate: string | null;
   localTime: string | null;
   isAllDay: boolean;
 }
 
-export interface TodoScheduleInput {
+interface TodoScheduleInput {
   startDate: string;
   endDate: string | null;
   scheduledTime: string | null;
@@ -47,7 +47,7 @@ function getOriginalScheduleInput(todo: TodoScheduleSnapshot): TodoScheduleInput
   };
 }
 
-export interface RescheduleTarget<TTodo> {
+interface RescheduleTarget<TTodo> {
   todo: TTodo;
   startsAt: Instant;
 }

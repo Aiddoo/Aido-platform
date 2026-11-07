@@ -14,6 +14,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 사용성·화면·컴포넌트·모델·서비스·DI·상태·넓은 화면         | [.claude/architecture.md](.claude/architecture.md)                                             |
 | UI 부품 선택·스타일·애니메이션·safe area                   | [.claude/ui-components.md](.claude/ui-components.md)                                           |
+| HeroUI Native 부품 문서 색인·테마                          | [.claude/heroui-native.md](.claude/heroui-native.md), [DESIGN.md](DESIGN.md)                   |
 | 테스트 작성                                                | [.claude/testing-guide.md](.claude/testing-guide.md)                                           |
 | 테스트 범위와 이유                                         | [docs/testing-strategy.md](docs/testing-strategy.md)                                           |
 | 에러 처리 (Result, ApiError, QueryErrorBoundary, 오프라인) | [docs/error-handling.md](docs/error-handling.md)                                               |
