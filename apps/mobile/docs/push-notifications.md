@@ -67,12 +67,12 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | `NONE`           | OS 허용 + 앱 설정 켜짐         | 안내 없음              |
 
 - 활성화 시점 안내는 신규 코호트가 활성화하기 전에는 열지 않는다(`ActivationPolicy.shouldRegisterPushAutomatically`).
-- 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledMutationOptions`).
+- 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
 - 분석 이벤트는 [observability.md](../.claude/observability.md#푸시-권한-퍼널)를 본다.
 
 ## 로그아웃과 배지
 
-- 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고가 있으면 먼저 끝나기를 기다린다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
+- 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
 - 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](authentication_guide.md#오프라인-로그아웃)). 기록이 만료되면(24시간) refresh 만료 또는 다음 로그인의 소유권 이전까지 이전 계정 알림이 올 수 있다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
 - 앱 아이콘 배지는 읽지 않은 알림 수에 맞춘다. 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 지우지 않는다. 로그아웃(`unauthenticated`)일 때만 지운다(`syncNotificationBadge`).
@@ -164,4 +164,4 @@ Android 에뮬레이터는 FCM 없이 로컬 알림으로 본다. 임시 코드�
 
 ## 테스트
 
-포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-card.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.test.tsx`다. 자세한 규칙은 [testing-guide](../.claude/testing-guide.md)를 본다.
+포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-notice.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.test.tsx`다. 자세한 규칙은 [testing-guide](../.claude/testing-guide.md)를 본다.
