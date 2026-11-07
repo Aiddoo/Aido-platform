@@ -7,6 +7,43 @@ import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 
 const DEBOUNCE_MS = 800;
 
+const STORED_NOTE = {
+  draftId: 'draft-1',
+  locale: 'ko-KR',
+  createdAt: '2026-11-06T00:00:00.000Z',
+  durationMs: 1_000,
+  sentences: [],
+  recordings: [],
+  digest: null,
+  digestRequest: null,
+  planDraft: {
+    omittedTodoCount: 0,
+    form: {
+      actions: [
+        {
+          type: 'create-todo',
+          actionId: 'a1',
+          title: '보고서 쓰기',
+          startDate: '2026-11-10',
+          endDate: null,
+          scheduledTime: null,
+          repeat: null,
+          visibility: null,
+          items: [],
+          categoryId: 1,
+          duplicateOfTodoId: null,
+          isSelected: true,
+        },
+      ],
+    },
+  },
+  planApplyRequest: null,
+  appliedAt: null,
+  appliedTodoCount: null,
+  memoSaveRequest: null,
+  memoSavedAt: null,
+};
+
 function createRepository() {
   const storage = createMemorySyncStorage();
   const logger = { warn: jest.fn() };
@@ -168,6 +205,26 @@ describe('VoiceNoteDraftRepository', () => {
     // Then
     expect(repository.findAll('user-1')).toEqual([]);
     expect(storage.get('aido_draft_v1:user-1:memo')).toBe('keep');
+  });
+
+  test('기기에 저장된 초안의 고친 카드를 그대로 읽고 같은 형식으로 다시 쓴다', () => {
+    // Given
+    const { storage, repository } = createRepository();
+    const key = 'aido_voice_note_draft_v1:user-1:draft-1';
+    storage.set(key, JSON.stringify(STORED_NOTE));
+
+    // When
+    const note = repository.find('user-1', 'draft-1');
+    if (note != null) {
+      repository.save('user-1', note);
+    }
+
+    // Then
+    expect(note?.planDraft?.form.actions[0]).toMatchObject({
+      title: '보고서 쓰기',
+      startDate: '2026-11-10',
+    });
+    expect(JSON.parse(storage.get(key) ?? '')).toEqual(STORED_NOTE);
   });
 
   test('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
