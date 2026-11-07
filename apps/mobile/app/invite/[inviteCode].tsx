@@ -18,40 +18,31 @@ export default function InviteCardScreen() {
   return (
     <Box flex={1} className="bg-white">
       <QueryErrorBoundary fallback={InvitePreview.Error}>
-        <Suspense fallback={<InviteCardScreenLoading />}>
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="grow"
-            contentInsetAdjustmentBehavior="automatic"
-          >
-            <StyledSafeAreaView edges={['left', 'right']} className="grow">
-              <ReadableContent px={24} pt={4} pb={24} className="grow">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="grow"
+          contentInsetAdjustmentBehavior="automatic"
+        >
+          <StyledSafeAreaView edges={['left', 'right']} className="grow">
+            <ReadableContent px={24} pt={4} pb={24} className="grow">
+              <Suspense fallback={<InvitePreview.Loading />}>
                 <InvitePreview />
+              </Suspense>
 
-                <Spacing size={24} />
+              <Spacing size={24} />
 
+              <Suspense fallback={<InviteBenefitReceipt.Loading />}>
                 <InviteBenefitReceipt />
-              </ReadableContent>
-            </StyledSafeAreaView>
-          </ScrollView>
+              </Suspense>
+            </ReadableContent>
+          </StyledSafeAreaView>
+        </ScrollView>
 
+        {/* 받기 전에는 누를 수 없고, 화면 맨 아래에 붙어 위 내용을 밀지 않는다 */}
+        <Suspense fallback={null}>
           <InviteCardActions />
         </Suspense>
       </QueryErrorBoundary>
     </Box>
-  );
-}
-
-function InviteCardScreenLoading() {
-  return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1">
-      <ReadableContent px={24} pt={4} className="flex-1">
-        <InvitePreview.Loading />
-
-        <Spacing size={24} />
-
-        <InviteBenefitReceipt.Loading />
-      </ReadableContent>
-    </StyledSafeAreaView>
   );
 }
