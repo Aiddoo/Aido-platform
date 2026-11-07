@@ -7,9 +7,8 @@ import {
   type LegacyStoreReviewState,
   legacyStoreReviewStateSchema,
   persistedStoreReviewStateSchema,
-  type StoreReviewState,
-  storeReviewStateSchema,
-} from '../schemas/store-review.schema';
+} from '../schemas/store-review-persisted.schema';
+import { type StoreReviewState, storeReviewStateSchema } from '../schemas/store-review.schema';
 
 const KEY_PREFIX = 'aido_store_review_prompt_v1';
 

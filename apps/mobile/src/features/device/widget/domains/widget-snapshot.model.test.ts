@@ -1,7 +1,7 @@
 import { toDateKey } from '@src/shared/date/instant';
 
 import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
-import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot.schema';
+import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot-persisted.schema';
 import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
 describe('getDay', () => {

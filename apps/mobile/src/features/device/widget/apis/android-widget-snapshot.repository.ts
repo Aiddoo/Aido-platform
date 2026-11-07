@@ -2,7 +2,8 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
-import { storedWidgetSnapshotSchema, type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot-persisted.schema';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
 export interface AndroidWidgetSnapshotRepository {
   getSnapshot(): WidgetSnapshot | null;
