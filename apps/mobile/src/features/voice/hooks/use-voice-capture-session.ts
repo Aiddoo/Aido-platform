@@ -20,6 +20,7 @@ import {
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import {
   createVoiceCaptureState,
+  getRecognizerStartOptions,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
   type VoiceCaptureSeed,
@@ -193,7 +194,7 @@ export function useVoiceCaptureSession({
       return;
     }
     updateLink({ type: 'segment-restarted', at: now });
-    speechRecognizer.start(startOptions);
+    speechRecognizer.start(getRecognizerStartOptions(startOptions));
   };
 
   /**
@@ -244,7 +245,7 @@ export function useVoiceCaptureSession({
       return;
     }
     updateLink({ type: 'start-requested', at: Date.now() });
-    speechRecognizer.start(startOptions);
+    speechRecognizer.start(getRecognizerStartOptions(startOptions));
   }
 
   useSpeechEvent((event) => {

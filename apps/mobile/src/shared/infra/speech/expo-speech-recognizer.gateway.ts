@@ -111,7 +111,7 @@ function toRecognitionOptions({
   isOnDevice,
   recordingDirectory,
 }: SpeechStartOptions): ExpoSpeechRecognitionOptions {
-  const hints = getSpeechHints(locale, isOnDevice ? contextualStrings : []);
+  const hints = getSpeechHints(locale, contextualStrings);
   const common: ExpoSpeechRecognitionOptions = {
     lang: locale,
     interimResults: true,

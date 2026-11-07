@@ -890,6 +890,30 @@ describe('useVoiceCaptureSession', () => {
     );
   });
 
+  it('기기 인식이 안 되는 언어로 바꾸면 내 카테고리·할 일 이름을 인식기에 주지 않는다', async () => {
+    // Given
+    const { speechRecognizer } = await renderSession();
+    await fireEvent.press(screen.getByTestId('begin'));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+    speechRecognizer.getCapabilities.mockResolvedValueOnce({
+      isAvailable: true,
+      canRecognizeOnDevice: false,
+      canDownloadOnDeviceModel: true,
+      canSaveRecording: true,
+      canContinue: true,
+    });
+
+    // When
+    await fireEvent.press(screen.getByTestId('change-locale'));
+    await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isOnDevice: false, contextualStrings: [] }),
+    );
+  });
+
   it('화면이 내려가면 구독을 먼저 풀고 인식기를 끊어 끊김 이벤트가 세션에 오지 않는다', async () => {
     // Given
     const { speechRecognizer, unmount } = await renderSession();

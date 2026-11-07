@@ -187,22 +187,6 @@ describe('expoSpeechRecognizerGateway', () => {
     expect(mockRemove).toHaveBeenCalledTimes(attachedCount);
   });
 
-  test('네트워크 인식이면 내 카테고리·할 일 이름을 인식 서비스로 보내지 않는다', () => {
-    // When
-    expoSpeechRecognizerGateway.start({
-      ...START_OPTIONS,
-      mode: 'quick',
-      contextualStrings: ['기획팀'],
-      isOnDevice: false,
-    });
-
-    // Then
-    const [options] = nativeModule.start.mock.calls.at(-1) ?? [];
-    expect(options?.contextualStrings).toContain('분기');
-    expect(options?.contextualStrings).not.toContain('기획팀');
-    expect(options?.requiresOnDeviceRecognition).toBe(false);
-  });
-
   test('녹음 파일을 쓰기 시작하면 파일 주소를 알린다', () => {
     // Given
     const events: SpeechEvent[] = [];

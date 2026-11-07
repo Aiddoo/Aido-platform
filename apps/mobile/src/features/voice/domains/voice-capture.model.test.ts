@@ -1,12 +1,47 @@
+import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import {
   createVoiceCaptureState,
+  getRecognizerStartOptions,
   reduceVoiceCapture,
   VoiceCapturePolicy,
 } from './voice-capture.model';
 
 const NOW = 100_000;
+
+describe('getRecognizerStartOptions', () => {
+  const baseOptions: SpeechStartOptions = {
+    locale: 'ko-KR',
+    mode: 'quick',
+    contextualStrings: ['기획팀', '민지'],
+    isOnDevice: false,
+    recordingDirectory: null,
+  };
+
+  it('네트워크 인식이면 내 카테고리·할 일 이름을 인식기에 주지 않는다', () => {
+    // Given
+    const options = { ...baseOptions, isOnDevice: false };
+
+    // When
+    const result = getRecognizerStartOptions(options);
+
+    // Then
+    expect(result.contextualStrings).toEqual([]);
+  });
+
+  it('기기 안 인식이면 내 카테고리·할 일 이름을 그대로 준다', () => {
+    // Given
+    const options = { ...baseOptions, isOnDevice: true };
+
+    // When
+    const result = getRecognizerStartOptions(options);
+
+    // Then
+    expect(result.contextualStrings).toEqual(['기획팀', '민지']);
+  });
+});
 
 describe('reduceVoiceCapture', () => {
   const plan = voicePlanSchema.parse({

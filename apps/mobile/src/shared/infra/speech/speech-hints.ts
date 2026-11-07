@@ -89,7 +89,7 @@ const COMMON_SPEECH_HINTS = {
   ],
 } as const satisfies Record<SpeechLocale, readonly string[]>;
 
-/** 내 단어가 더 정확한 신호라 앞에 둔다. 내 단어는 음성 인식 서비스로 나가지 않게 기기 인식일 때만 받는다 */
+/** 내 단어가 더 정확한 신호라 앞에 둔다. 내 단어를 넘길지는 호출하는 쪽이 정한다(네트워크 인식에는 주지 않는다) */
 export function getSpeechHints(locale: SpeechLocale, personalHints: readonly string[]): string[] {
   return uniq([...personalHints, ...COMMON_SPEECH_HINTS[locale]]).slice(0, MAX_SPEECH_HINTS);
 }

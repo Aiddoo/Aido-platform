@@ -72,6 +72,7 @@ export type OfflineModelResult = 'downloaded' | 'scheduled' | 'dialog-opened' | 
 export interface SpeechStartOptions {
   locale: SpeechLocale;
   mode: SpeechMode;
+  /** 인식을 돕는 내 단어. 네트워크 인식(`isOnDevice`가 false)에는 비워서 보낸다. 어댑터는 받은 그대로 쓴다 */
   contextualStrings: readonly string[];
   /** 기기 안 인식을 쓴다. `getCapabilities().canRecognizeOnDevice`일 때만 켠다 */
   isOnDevice: boolean;

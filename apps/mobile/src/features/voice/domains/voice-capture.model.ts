@@ -1,4 +1,4 @@
-import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
+import type { SpeechErrorCode, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { match, P } from 'ts-pattern';
 
 import {
@@ -316,6 +316,14 @@ function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now
 
 function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
   return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * 1_000;
+}
+
+/**
+ * 내 카테고리·할 일 이름은 기기 안 인식일 때만 인식기에 준다.
+ * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
+ */
+export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
+  return options.isOnDevice ? options : { ...options, contextualStrings: [] };
 }
 
 export const VoiceCapturePolicy = {
