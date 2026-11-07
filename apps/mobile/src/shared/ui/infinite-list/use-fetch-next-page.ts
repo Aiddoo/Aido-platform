@@ -21,18 +21,18 @@ export function useFetchNextPage({
   isFetchNextPageError,
   fetchNextPage,
 }: UseFetchNextPageParams) {
-  const isRequesting = useRef(false);
+  const isRequestingRef = useRef(false);
   const previous = useRef({ isFetchingNextPage, isFetchNextPageError });
 
   const request = () => {
-    if (isRequesting.current) {
+    if (isRequestingRef.current) {
       return;
     }
-    isRequesting.current = true;
+    isRequestingRef.current = true;
     fetchNextPage({ cancelRefetch: false })
       .catch(noop)
       .finally(() => {
-        isRequesting.current = false;
+        isRequestingRef.current = false;
       });
   };
 

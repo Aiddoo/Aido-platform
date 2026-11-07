@@ -103,7 +103,7 @@ import { useConfirmDialog } from '@src/shared/ui';
 const confirmDialog = useConfirmDialog();
 
 const handleLogoutPress = async () => {
-  const isConfirmed = await confirmDialog.open({
+  const isConfirmed = await confirmDialog.openAsync({
     title: t('logout.confirmTitle'),
     description: t('logout.confirmDescription'),
     cancelLabel: t('common:actions.cancel'),

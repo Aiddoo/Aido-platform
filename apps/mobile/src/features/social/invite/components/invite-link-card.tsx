@@ -36,7 +36,7 @@ export function InviteLinkCard({ className, ...props }: ComponentProps<typeof VS
   const confirmDialog = useConfirmDialog();
 
   const handleRotatePress = async () => {
-    const isConfirmed = await confirmDialog.open({
+    const isConfirmed = await confirmDialog.openAsync({
       title: t('myInvite.rotate.title'),
       description: t('myInvite.rotate.description'),
       cancelLabel: t('common:actions.cancel'),

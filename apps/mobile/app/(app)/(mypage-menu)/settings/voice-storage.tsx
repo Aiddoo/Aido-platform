@@ -42,7 +42,7 @@ function VoiceStorageScreen() {
   const [usage, setUsage] = useState(() => storage.getRecordingUsage(me.id));
 
   const confirmRemoval = (title: string) =>
-    confirmDialog.open({
+    confirmDialog.openAsync({
       title,
       description: t('voiceStorage.removeDescription'),
       confirmLabel: t('voiceStorage.removeConfirm'),

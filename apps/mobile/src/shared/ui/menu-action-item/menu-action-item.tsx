@@ -1,6 +1,7 @@
 import { Menu } from 'heroui-native';
 import type { ComponentProps, ComponentType } from 'react';
 
+import { Text } from '../text/text';
 import { VStack } from '../v-stack/v-stack';
 
 const MENU_ICON_SIZE = 18;
@@ -26,11 +27,21 @@ export function MenuActionItem({
         colorClassName={variant === 'danger' ? 'text-error' : 'text-main'}
       />
       {description == null ? (
-        <Menu.ItemTitle>{title}</Menu.ItemTitle>
+        <Menu.ItemTitle>
+          <Text size="b2" weight="medium">
+            {title}
+          </Text>
+        </Menu.ItemTitle>
       ) : (
         <VStack flex={1}>
-          <Menu.ItemTitle>{title}</Menu.ItemTitle>
-          <Menu.ItemDescription>{description}</Menu.ItemDescription>
+          <Menu.ItemTitle>
+            <Text size="b2" weight="medium">
+              {title}
+            </Text>
+          </Menu.ItemTitle>
+          <Menu.ItemDescription>
+            <Text size="b4">{description}</Text>
+          </Menu.ItemDescription>
         </VStack>
       )}
     </Menu.Item>

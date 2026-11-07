@@ -248,7 +248,7 @@ function useOfflineModelOffer(accountId: string, isAbandoned: () => boolean) {
     if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
       return;
     }
-    const shouldDownload = await confirmDialog.open({
+    const shouldDownload = await confirmDialog.openAsync({
       title: t('voiceNote:offlineModel.title'),
       description: t('voiceNote:offlineModel.description'),
       confirmLabel: t('voiceNote:offlineModel.confirm'),

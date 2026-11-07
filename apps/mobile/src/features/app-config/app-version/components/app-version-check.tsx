@@ -43,7 +43,7 @@ export function AppVersionCheck() {
     }
 
     if (AppVersionPolicy.isUpToDate(input)) {
-      return confirmDialog.open({
+      return confirmDialog.openAsync({
         title: t('latestTitle'),
         description: t('latestDescription'),
         confirmLabel: t('confirm'),

@@ -53,7 +53,7 @@ export function useEnsureMicrophonePermission() {
         toast.error(copy.denied);
         return false;
       }
-      const shouldOpenSettings = await confirmDialog.open({
+      const shouldOpenSettings = await confirmDialog.openAsync({
         title: copy.title,
         description: copy.message,
         cancelLabel: t('common:permissions.cancel'),

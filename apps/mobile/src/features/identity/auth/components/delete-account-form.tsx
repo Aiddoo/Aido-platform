@@ -32,7 +32,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
 
   const handleDeletePress = form.handleSubmit(async ({ password }) => {
     Keyboard.dismiss();
-    const isConfirmed = await confirmDialog.open({
+    const isConfirmed = await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
       description: t('deleteAccount.dialogMessage'),
       cancelLabel: t('common:actions.cancel'),

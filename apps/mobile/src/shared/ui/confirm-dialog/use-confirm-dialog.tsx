@@ -21,7 +21,7 @@ export function useConfirmDialog() {
 
   return useMemo(
     () => ({
-      open: ({
+      openAsync: ({
         title,
         description,
         confirmLabel,

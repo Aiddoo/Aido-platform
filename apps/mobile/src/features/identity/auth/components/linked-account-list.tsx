@@ -116,7 +116,7 @@ function ProviderRow({ provider, slug, icon, iconClassName }: ProviderRowProps) 
   const isPending = isLinking || isUnlinking;
 
   const requestUnlink = async () => {
-    const isConfirmed = await confirmDialog.open({
+    const isConfirmed = await confirmDialog.openAsync({
       title: t('linkedAccounts.unlinkDialogTitle'),
       description: t('linkedAccounts.unlinkDialogMessage', {
         provider: getOAuthProviderLabel(provider),

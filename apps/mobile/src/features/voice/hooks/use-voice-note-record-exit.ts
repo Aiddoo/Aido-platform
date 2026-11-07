@@ -35,7 +35,7 @@ export function useVoiceNoteRecordExit({
       router.back();
       return;
     }
-    const shouldFinish = await confirmDialog.open({
+    const shouldFinish = await confirmDialog.openAsync({
       title: t('record.leaveTitle'),
       description: t('record.leaveDescription'),
       confirmLabel: t('record.leaveConfirm'),
@@ -51,7 +51,7 @@ export function useVoiceNoteRecordExit({
       finish();
       return;
     }
-    const shouldFinish = await confirmDialog.open({
+    const shouldFinish = await confirmDialog.openAsync({
       title: t('record.finishEmptyTitle'),
       description: t('record.finishEmptyDescription'),
       confirmLabel: t('record.leaveConfirm'),

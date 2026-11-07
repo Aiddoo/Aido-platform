@@ -33,7 +33,7 @@ export function AppIconSelector() {
     }
 
     if (process.env.EXPO_OS === 'android') {
-      const isConfirmed = await confirmDialog.open({
+      const isConfirmed = await confirmDialog.openAsync({
         title: t('restartDialog.title'),
         description: t('restartDialog.description'),
         confirmLabel: t('restartDialog.confirm'),

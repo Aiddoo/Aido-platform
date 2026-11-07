@@ -141,7 +141,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   };
 
   const confirmDeleteMultiDayTodo = () =>
-    confirmDialog.open({
+    confirmDialog.openAsync({
       title: t('multiDayDelete.title'),
       description: t('multiDayDelete.description', {
         period: formatDateKeyCompactRange(

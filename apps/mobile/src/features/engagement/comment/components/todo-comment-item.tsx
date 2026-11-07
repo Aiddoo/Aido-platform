@@ -410,7 +410,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   };
 
   const confirmDelete = async () => {
-    const isConfirmed = await confirmDialog.open({
+    const isConfirmed = await confirmDialog.openAsync({
       title: t('deleteConfirm.title'),
       description: match(comment)
         .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>

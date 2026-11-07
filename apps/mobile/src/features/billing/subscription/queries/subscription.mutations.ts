@@ -73,7 +73,7 @@ export function usePurchaseMutationOptions() {
             severity: 'warning',
             errorCode: failure.diagnosticCode,
           });
-          const shouldContactSupport = await confirmDialog.open({
+          const shouldContactSupport = await confirmDialog.openAsync({
             title: t(failure.titleKey),
             description: t(failure.descriptionKey),
             cancelLabel: t('common:actions.close'),

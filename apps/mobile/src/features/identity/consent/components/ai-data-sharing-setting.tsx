@@ -24,7 +24,7 @@ export function AiDataSharingSetting() {
 
   const handleSelectedChange = async (agreed: boolean) => {
     if (!agreed) {
-      const isConfirmed = await confirmDialog.open({
+      const isConfirmed = await confirmDialog.openAsync({
         title: t('settings:terms.aiDataSharing.withdrawTitle'),
         description: t('settings:terms.aiDataSharing.withdrawDescription'),
         confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),

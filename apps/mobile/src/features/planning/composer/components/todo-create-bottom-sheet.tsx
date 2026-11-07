@@ -213,7 +213,7 @@ function TodoCreateForm({
 
   const confirmDiscardPlan = async () => {
     const isCharged = VoiceCapturePolicy.isChargedReview(voice.state);
-    const shouldDiscard = await confirmDialog.open({
+    const shouldDiscard = await confirmDialog.openAsync({
       title: tVoice('review.leaveTitle'),
       description: tVoice(isCharged ? 'review.leaveDescriptionCharged' : 'review.leaveDescription'),
       confirmLabel: tVoice('review.leaveConfirm'),

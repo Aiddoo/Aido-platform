@@ -40,7 +40,7 @@ export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps)
   const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');
 
   const handleDelete = async () => {
-    const isConfirmed = await confirmDialog.open({
+    const isConfirmed = await confirmDialog.openAsync({
       title: t('result.deleteTitle'),
       description: t('result.deleteDescription'),
       confirmLabel: t('result.deleteConfirm'),
