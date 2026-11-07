@@ -2,7 +2,7 @@ import { INQUIRY_CATEGORY } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { ok } from '@src/core/errors/result';
 import { createHapticsStub, createHttpClientStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager, useMutation } from '@tanstack/react-query';

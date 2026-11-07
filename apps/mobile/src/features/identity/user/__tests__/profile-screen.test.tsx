@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createHttpClientStub, createPendingResponse } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { i18n } from '@src/shared/i18n';
 import { act, screen } from '@testing-library/react-native';

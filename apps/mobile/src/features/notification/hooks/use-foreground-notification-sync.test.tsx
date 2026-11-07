@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
+import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ async function setup(isAuthenticated: boolean) {
   const syncBadgeCount = jest.spyOn(notificationService, 'syncBadgeCount').mockResolvedValue();
   const queryClient = createTestQueryClient();
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
-  const container = createTestDiContainer({
+  const container = createTestDi({
     notificationService,
     logger: createLoggerStub(),
   });

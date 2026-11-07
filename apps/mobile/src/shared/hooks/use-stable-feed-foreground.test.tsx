@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createIncomingLinkGatewayStub, createTestDiContainer } from '@src/shared/__tests__';
+import { createIncomingLinkGatewayStub, createTestDi } from '@src/shared/__tests__';
 import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useFocusEffect } from 'expo-router';
@@ -30,7 +30,7 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
 
 function OverlayStateWrapper({ children }: PropsWithChildren) {
   return (
-    <StaticDIProvider container={createTestDiContainer({ incomingLink })}>
+    <StaticDIProvider container={createTestDi({ incomingLink })}>
       <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
         {children}
       </OverlayStateContext.Provider>

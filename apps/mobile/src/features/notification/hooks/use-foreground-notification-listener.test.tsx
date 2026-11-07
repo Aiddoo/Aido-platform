@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDiContainer } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -10,7 +10,7 @@ import { useForegroundNotificationListener } from './use-foreground-notification
 async function setup() {
   const gateway = createPushNotificationGatewayStub();
   const handleForegroundNotification = jest.fn();
-  const container = createTestDiContainer({
+  const container = createTestDi({
     logger: createLoggerStub(),
     pushNotificationGateway: gateway,
   });

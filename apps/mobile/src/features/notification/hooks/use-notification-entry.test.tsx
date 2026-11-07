@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDiContainer } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -16,7 +16,7 @@ const RESPONSE: PendingNotificationResponse = {
 
 async function setup() {
   const store = createNotificationEntryStore();
-  const container = createTestDiContainer({ notificationEntryStore: store });
+  const container = createTestDi({ notificationEntryStore: store });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );

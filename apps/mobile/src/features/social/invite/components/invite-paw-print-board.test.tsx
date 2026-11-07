@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createHapticsStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';

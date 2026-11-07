@@ -22,7 +22,7 @@ import {
   createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
-  createStorageStub,
+  createMemoryStorage,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -122,7 +122,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
         preferenceService: new PreferenceService(httpClient),
         consentService: new ConsentService(httpClient),
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
-        storage: createStorageStub(),
+        storage: createMemoryStorage(),
         voiceNoteStorageService: storage,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),

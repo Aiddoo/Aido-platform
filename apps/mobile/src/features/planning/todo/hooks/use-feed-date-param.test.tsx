@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -34,7 +34,7 @@ describe('피드 날짜 선택', () => {
     jest.mocked(router.setParams).mockImplementation((next) => {
       date = typeof next?.date === 'string' ? next.date : undefined;
     });
-    const container = createTestDiContainer({
+    const container = createTestDi({
       analytics: createAnalyticsStub(),
       errorReporter: {
         captureException: jest.fn(),

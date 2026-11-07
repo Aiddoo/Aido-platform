@@ -21,7 +21,7 @@ import {
   createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
-  createStorageStub,
+  createMemoryStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -171,7 +171,7 @@ async function renderQuickVoice({
         analytics,
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
-        storage: createStorageStub(),
+        storage: createMemoryStorage(),
         logger,
       },
     },

@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';

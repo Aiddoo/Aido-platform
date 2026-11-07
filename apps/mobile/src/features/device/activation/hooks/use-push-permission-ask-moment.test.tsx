@@ -13,12 +13,7 @@ import {
   createPushPermissionResponse,
 } from '@src/features/notification/__tests__/notification.fixtures';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import {
-  createHttpClientStub,
-  createMemorySyncStorage,
-  createTestDiContainer,
-} from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createHttpClientStub, createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { toInstant } from '@src/shared/date/instant';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -66,8 +61,8 @@ function setup({
   });
   const activationRepository = createActivationProgressRepository(createMemorySyncStorage());
   const queryClient = createTestQueryClient();
-  const container = createTestDiContainer({
-    ...createTestDi({ httpClient }),
+  const container = createTestDi({
+    httpClient,
     pushDeviceService,
     logger: silentLogger,
     authSessionStore: createAuthSessionStore({ status: 'authenticated' }),

@@ -2,8 +2,8 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
-  createTestDiContainer,
-  mockWindowDimensions,
+  createTestDi,
+  stubWindowDimensions,
 } from '@src/shared/__tests__';
 import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -32,7 +32,7 @@ const PHONE_WIDTH = 390;
 function FeedProviders({ children }: PropsWithChildren) {
   return (
     <StaticDIProvider
-      container={createTestDiContainer({
+      container={createTestDi({
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
       })}
@@ -66,7 +66,7 @@ function renderFeed(url: string, options: { from?: string; routes?: string[] } =
 
 describe('피드 URL 플로우', () => {
   beforeEach(() => {
-    mockWindowDimensions(FOLD_WIDTH);
+    stubWindowDimensions(FOLD_WIDTH);
   });
 
   describe('날짜', () => {
@@ -137,7 +137,7 @@ describe('피드 URL 플로우', () => {
   describe('폴드 접고 펴기', () => {
     it('고른 할 일이 있는 채로 접히면 상세로 넘어가고, 뒤로 오면 다시 열리지 않는다', async () => {
       // Given
-      mockWindowDimensions(PHONE_WIDTH);
+      stubWindowDimensions(PHONE_WIDTH);
       const feed = await renderRouteHook(
         () => {
           useFeedTodoDetailHandoff();
@@ -162,7 +162,7 @@ describe('피드 URL 플로우', () => {
 
     it('접힌 화면에서 할 일을 고르면 상세 화면을 쌓고 피드 URL은 그대로다', async () => {
       // Given
-      mockWindowDimensions(PHONE_WIDTH);
+      stubWindowDimensions(PHONE_WIDTH);
       const feed = await renderFeed('/feed?date=2030-01-02', { routes: ['todo/[todoId]'] });
 
       // When

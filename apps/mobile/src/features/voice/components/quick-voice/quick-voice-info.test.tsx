@@ -8,7 +8,7 @@ import { EntitlementService } from '@src/features/billing/subscription/apis/enti
 import {
   createErrorReporterStub,
   createAnalyticsStub,
-  createTestDiContainer,
+  createTestDi,
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -40,7 +40,7 @@ describe('QuickVoiceInfo', () => {
           >
             <QueryClientProvider client={createTestQueryClient()}>
               <StaticDIProvider
-                container={createTestDiContainer({
+                container={createTestDi({
                   analytics: createAnalyticsStub(),
                   errorReporter: createErrorReporterStub(),
                   logger: silentLogger,

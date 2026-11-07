@@ -14,7 +14,7 @@ import {
   createMemorySyncStorage,
   createAnalyticsStub,
   createHttpClientStub,
-  createStorageStub,
+  createMemoryStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -59,7 +59,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
         coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
-        storage: createStorageStub(),
+        storage: createMemoryStorage(),
         speechRecognizer,
         voiceNoteStorageService: storage,
         analytics: createAnalyticsStub(),

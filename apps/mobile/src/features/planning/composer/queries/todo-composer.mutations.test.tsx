@@ -5,7 +5,7 @@ import {
   createHapticsStub,
   createHttpClientStub,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError, ParseError } from '@src/shared/errors';
 import { useMutation } from '@tanstack/react-query';
@@ -32,11 +32,11 @@ async function updateFollowing(error: ApiError) {
   }
 
   const { queryClient } = await renderUi(<Probe />, {
-    di: {
-      ...createTestDi({ httpClient }),
+    di: createTestDi({
+      httpClient,
       analytics: createAnalyticsStub(),
       haptics: createHapticsStub(),
-    },
+    }),
     withOverlay: true,
   });
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
@@ -103,7 +103,11 @@ async function createFailing(failure: Error) {
   }
 
   await renderUi(<Probe />, {
-    di: { ...createTestDi({ httpClient }), analytics: createAnalyticsStub(), haptics },
+    di: createTestDi({
+      httpClient,
+      analytics: createAnalyticsStub(),
+      haptics,
+    }),
     withOverlay: true,
   });
   const create = current.value;

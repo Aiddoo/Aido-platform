@@ -14,11 +14,10 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createExternalLinkGatewayStub,
-  createTestDiContainer,
-  mockWindowDimensions,
+  createTestDi,
+  stubWindowDimensions,
 } from '@src/shared/__tests__';
 import { createPendingResponse } from '@src/shared/__tests__/create-pending-response';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError, NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -127,19 +126,17 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
 
   const queryClient = createTestQueryClient();
   const externalLink = createExternalLinkGatewayStub();
-  const container = createTestDiContainer({
+  const container = createTestDi({
     externalLink,
-    ...createTestDi({
-      httpClient,
-      pushNotificationGateway: gateway,
-      inviteService: createStubInviteService(),
-      widgetNavigationRepository: {
-        subscribe: () => () => {},
-        getPendingCommand: () => null,
-        clearIfCurrent: () => false,
-        store: () => true,
-      },
-    }),
+    httpClient,
+    pushNotificationGateway: gateway,
+    inviteService: createStubInviteService(),
+    widgetNavigationRepository: {
+      subscribe: () => () => {},
+      getPendingCommand: () => null,
+      clearIfCurrent: () => false,
+      store: () => true,
+    },
     authSessionStore,
   });
 
@@ -193,7 +190,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
 describe('푸시 탭 진입', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockWindowDimensions(390);
+    stubWindowDimensions(390);
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
@@ -318,7 +315,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 펼친 화면은 피드의 상세 pane으로 연다', async () => {
     // Given
-    mockWindowDimensions(1000);
+    stubWindowDimensions(1000);
     const { route, hideLog } = await setup({ status: 'loading', lastResponse: TODO_RESPONSE });
 
     // When

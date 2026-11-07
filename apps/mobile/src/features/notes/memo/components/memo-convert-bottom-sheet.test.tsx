@@ -9,7 +9,7 @@ import {
   createMemorySyncStorage,
   createHttpClientStub,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 

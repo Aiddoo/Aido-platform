@@ -10,7 +10,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement, ReactNode } from 'react';
 
-import { createTestDiContainer } from './create-test-di-container';
+import { createTestDi } from './create-test-di';
 import { createTestQueryClient } from './query-client';
 
 export { createTestQueryClient } from './query-client';
@@ -36,7 +36,7 @@ export async function renderUi(
   { di, queryClient, withLocalDate = false, withOverlay = false }: RenderUiOptions = {},
 ): Promise<RenderUiResult> {
   const client = queryClient ?? createTestQueryClient();
-  const container = createTestDiContainer(di);
+  const container = createTestDi(di);
 
   function Harness({ children }: { children: ReactNode }) {
     const overlaid = withOverlay ? <OverlayProvider>{children}</OverlayProvider> : children;

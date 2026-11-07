@@ -16,7 +16,7 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createAnalyticsStub,
-  createTestDiContainer,
+  createTestDi,
   createHttpClientStub,
   createMemoryTokenStore,
   createMemoryStorage,
@@ -117,7 +117,7 @@ describe('AuthBootProvider', () => {
 
     const mountedProvider = await render(
       <StaticDIProvider
-        container={createTestDiContainer({
+        container={createTestDi({
           tokenStore,
           errorReporter,
           analytics,

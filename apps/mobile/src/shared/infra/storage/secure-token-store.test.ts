@@ -1,13 +1,13 @@
-import { createStorageStub } from '@src/shared/__tests__';
+import { createMemoryStorage } from '@src/shared/__tests__/create-memory-storage';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
 
 import { createSecureTokenStore } from './secure-token-store';
 
 describe('createSecureTokenStore', () => {
-  let storage: ReturnType<typeof createStorageStub>;
+  let storage: ReturnType<typeof createMemoryStorage>;
 
   beforeEach(() => {
-    storage = createStorageStub();
+    storage = createMemoryStorage();
   });
 
   it('액세스 토큰과 리프레시 토큰을 각자의 키에서 읽는다', async () => {

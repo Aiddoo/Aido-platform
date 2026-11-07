@@ -1,4 +1,4 @@
-import { mockWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -6,7 +6,7 @@ import { useFeedSelectedTodoId } from './use-feed-selected-todo-id';
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 function givenWindow(width: number, params: Record<string, string> = {}) {
-  mockWindowDimensions(width);
+  stubWindowDimensions(width);
   mockedUseLocalSearchParams.mockReturnValue(params);
 }
 

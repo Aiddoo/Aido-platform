@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -53,7 +53,7 @@ describe('앱 로컬 날짜 Provider', () => {
     });
 
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDiContainer({ analytics, errorReporter })}>
+      <StaticDIProvider container={createTestDi({ analytics, errorReporter })}>
         <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
           {children}
         </LocalDateProvider>

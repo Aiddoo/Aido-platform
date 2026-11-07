@@ -11,7 +11,7 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import {
   createMemorySyncStorage,
   createAnalyticsStub,
-  createTestDiContainer,
+  createTestDi,
   createHttpClientStub,
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
@@ -48,7 +48,7 @@ describe('useUserIdentity', () => {
     queryClient = createTestQueryClient();
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const container = createTestDiContainer({
+    const container = createTestDi({
       authSessionStore: createAuthSessionStoreStub('authenticated'),
       draftService,
       queryCacheStorage,

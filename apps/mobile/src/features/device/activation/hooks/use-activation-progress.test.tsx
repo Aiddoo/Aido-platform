@@ -2,8 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createHttpClientStub, createTestDiContainer } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createHttpClientStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
@@ -27,8 +26,8 @@ describe('활성화 진행 상태의 기존 사용자 호환성', () => {
         createdAt: '2026-07-31T23:59:59.999Z',
       }),
     });
-    const container = createTestDiContainer({
-      ...createTestDi({ httpClient }),
+    const container = createTestDi({
+      httpClient,
       authSessionStore: createAuthSessionStore({ status: 'authenticated' }),
       featureCampaignService: new FeatureCampaignService({
         get: () => Promise.reject(new Error('campaign config unavailable')),

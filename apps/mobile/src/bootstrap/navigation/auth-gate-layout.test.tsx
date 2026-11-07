@@ -8,10 +8,9 @@ import { createStubInviteService } from '@src/features/social/invite/__tests__/c
 import {
   createHttpClientStub,
   createMemorySyncStorage,
-  createTestDiContainer,
-  createObservableSyncStorageFake,
+  createTestDi,
+  createMemoryObservableSyncStorage,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
@@ -69,14 +68,12 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
   mockAuthSessionStore = createAuthSessionStoreStub(initialStatus);
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
-  const container = createTestDiContainer({
-    ...createTestDi({
-      httpClient,
-      inviteService: createStubInviteService(),
-      widgetNavigationRepository: createWidgetNavigationRepository(
-        createObservableSyncStorageFake(),
-      ),
-    }),
+  const container = createTestDi({
+    httpClient,
+    inviteService: createStubInviteService(),
+    widgetNavigationRepository: createWidgetNavigationRepository(
+      createMemoryObservableSyncStorage(),
+    ),
     authSessionStore: mockAuthSessionStore,
   });
   function AuthFixture({ children }: PropsWithChildren) {

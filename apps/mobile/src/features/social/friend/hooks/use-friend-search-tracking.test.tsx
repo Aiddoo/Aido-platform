@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createTestDiContainer } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -10,9 +10,7 @@ describe('useFriendSearchTracking', () => {
     // Given
     const analytics = createAnalyticsStub();
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDiContainer({ analytics })}>
-        {children}
-      </StaticDIProvider>
+      <StaticDIProvider container={createTestDi({ analytics })}>{children}</StaticDIProvider>
     );
     const { rerender } = await renderHook<void, { query: string }>(
       ({ query }) => useFriendSearchTracking(query),

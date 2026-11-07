@@ -8,8 +8,8 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
 } from '@src/shared/__tests__';
+import { createTestDi } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { fromDate } from '@src/shared/date/instant';

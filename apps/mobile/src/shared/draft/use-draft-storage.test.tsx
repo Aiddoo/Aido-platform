@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMemorySyncStorage, createTestDiContainer } from '@src/shared/__tests__';
+import { createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { useForm } from 'react-hook-form';
@@ -39,7 +39,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
-    const container = createTestDiContainer({ draftService });
+    const container = createTestDi({ draftService });
     wrapper = ({ children }) => (
       <StaticDIProvider container={container}>{children}</StaticDIProvider>
     );

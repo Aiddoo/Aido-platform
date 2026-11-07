@@ -25,7 +25,7 @@ import {
   createMemoryTokenStore,
   createAnalyticsStub,
   createSocialAuthGatewayStub,
-  createTestDiContainer,
+  createTestDi,
   createHttpClientStub,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
@@ -103,7 +103,7 @@ export function createAuthSession({
     logger: silentLogger,
   });
 
-  const container = createTestDiContainer({
+  const container = createTestDi({
     tokenStore: store,
     logger: silentLogger,
     errorReporter,

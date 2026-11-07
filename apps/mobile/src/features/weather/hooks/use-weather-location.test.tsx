@@ -8,11 +8,7 @@ import {
   type LocationGateway,
 } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
-import {
-  createAnalyticsStub,
-  createTestDiContainer,
-  createHttpClientStub,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDi, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -66,7 +62,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
   const weatherService = new WeatherService(httpClient);
-  const container = createTestDiContainer({
+  const container = createTestDi({
     locationGateway: gateway,
     weatherService,
     weatherLocationService: new WeatherLocationService({

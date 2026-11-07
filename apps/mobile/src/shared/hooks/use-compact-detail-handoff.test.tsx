@@ -1,4 +1,4 @@
-import { mockWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 
@@ -8,7 +8,7 @@ const mockedUseIsFocused = jest.mocked(useIsFocused);
 
 function givenScreen({ isFocused, width }: { isFocused: boolean; width: number }) {
   mockedUseIsFocused.mockReturnValue(isFocused);
-  mockWindowDimensions(width);
+  stubWindowDimensions(width);
 }
 
 describe('useCompactDetailHandoff', () => {

@@ -13,7 +13,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager } from '@tanstack/react-query';

@@ -12,10 +12,10 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
-  createStorageStub,
+  createMemoryStorage,
   createVoiceNoteStorageServiceFake,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -39,8 +39,8 @@ async function renderCreateSheet() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        ...createTestDi({ httpClient }),
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         voiceService: new VoiceService(httpClient, logger),
@@ -49,8 +49,8 @@ async function renderCreateSheet() {
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         haptics: createHapticsStub(),
-        storage: createStorageStub(),
-      },
+        storage: createMemoryStorage(),
+      }),
     },
   );
 

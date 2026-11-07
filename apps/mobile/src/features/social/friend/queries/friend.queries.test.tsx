@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
+import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
@@ -11,7 +11,7 @@ import { useGetUserSearchInfiniteQueryOptions } from './friend.queries';
 
 const createWrapper = (httpClient: ReturnType<typeof createHttpClientStub>) => {
   const queryClient = createTestQueryClient();
-  const container = createTestDiContainer({
+  const container = createTestDi({
     friendService: new FriendService(httpClient),
   });
 

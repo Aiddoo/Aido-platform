@@ -12,7 +12,7 @@ import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
-import { mockWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/shared/__tests__';
 import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
 import { useView } from '@src/shared/hooks/use-view';
 
@@ -26,7 +26,7 @@ const STRANGER_DRAFT = '11111111-1111-4111-8111-111111111111';
 /** 앱 밖 링크와 저장된 알림이 쓰는 주소다. 값이 하나라도 바뀌면 옛 링크가 다르게 열린다 */
 describe('공개 URL 계약', () => {
   beforeEach(() => {
-    mockWindowDimensions(FOLD_WIDTH);
+    stubWindowDimensions(FOLD_WIDTH);
   });
 
   it.each([

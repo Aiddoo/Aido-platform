@@ -1,9 +1,8 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/auth-session.fixtures';
-import { createTestDiContainer, createHttpClientStub } from '@src/shared/__tests__';
+import { createTestDi, createHttpClientStub } from '@src/shared/__tests__';
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -27,12 +26,10 @@ async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
   const logger = createLoggerStub();
   const authSessionStore = createAuthSessionStoreStub(status);
-  const container = createTestDiContainer({
-    ...createTestDi({
-      httpClient: createHttpClientStub(),
-      pushNotificationGateway: gateway,
-      logger,
-    }),
+  const container = createTestDi({
+    httpClient: createHttpClientStub(),
+    pushNotificationGateway: gateway,
+    logger,
     authSessionStore,
   });
   const queryClient = createTestQueryClient();

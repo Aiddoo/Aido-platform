@@ -12,7 +12,7 @@ import {
   createMemorySyncStorage,
   createPendingResponse,
 } from '@src/shared/__tests__';
-import { createTestDi } from '@src/shared/__tests__/create-test-di';
+import { createTestDi } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -62,15 +62,15 @@ async function renderToggle() {
       <Probe />
     </LocalDateProvider>,
     {
-      di: {
-        ...createTestDi({ httpClient }),
+      di: createTestDi({
+        httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         activationService: new ActivationService(
           createActivationProgressRepository(createMemorySyncStorage()),
         ),
         storeReviewService,
-      },
+      }),
     },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
