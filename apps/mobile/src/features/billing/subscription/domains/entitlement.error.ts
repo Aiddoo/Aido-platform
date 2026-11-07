@@ -36,10 +36,9 @@ export function findLimitedFeature(error: unknown): LimitedFeature | null {
   if (!isApiError(error) || !isLimitedErrorCode(error.code)) {
     return null;
   }
-  const details = quotaErrorDetailsSchema.safeParse(error.details);
   return {
     feature: LIMITED_FEATURE_BY_ERROR_CODE[error.code],
-    featureQuota: details.success ? toFeatureQuota(details.data.featureQuota) : null,
+    featureQuota: findErrorFeatureQuota(error),
   };
 }
 

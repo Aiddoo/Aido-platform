@@ -67,7 +67,10 @@ export class SubscriptionService {
     }
   };
 
-  /** 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다. */
+  /**
+   * 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다.
+   * 조회에 실패해도 목록으로 열면 되므로 "없음"과 "실패"를 구분하지 않고 실패는 경고로만 남긴다.
+   */
   getActiveStoreProductId = async (store: SubscriptionStore): Promise<string | null> => {
     if (!this.#session.isConfigured()) {
       return null;
@@ -101,6 +104,15 @@ export class SubscriptionService {
     if (!this.#session.isConfigured()) {
       return noop;
     }
-    return this.#purchases.subscribe((dto) => listener(toCustomerInfo(dto)));
+    return this.#purchases.subscribe((dto) => {
+      // SDK 콜백으로 예외가 새지 않게 모르는 값은 경고로만 남기고 이번 갱신은 건너뛴다
+      try {
+        listener(toCustomerInfo(dto));
+      } catch (error) {
+        this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
+          error: getErrorMessage(error),
+        });
+      }
+    });
   };
 }

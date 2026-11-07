@@ -64,4 +64,22 @@ describe('SubscriptionService', () => {
     expect(listener).not.toHaveBeenCalled();
     expect(purchases.getListenerCount()).toBe(0);
   });
+
+  it('모르는 값이 실린 구독 갱신은 SDK 콜백으로 예외를 던지지 않고 건너뛴다', () => {
+    // Given
+    const { service, purchases } = createConfiguredService();
+    const listener = jest.fn();
+    service.subscribeCustomerInfo(listener);
+
+    // When
+    // 새 스토어 값은 타입으로 만들 수 없어 문자열에서 읽는다
+    const unknownStoreInfo = JSON.parse(
+      '{"activeEntitlements":[{"store":"UNKNOWN_STORE","productIdentifier":"x"}]}',
+    );
+    const emit = () => purchases.emitCustomerInfo(unknownStoreInfo);
+
+    // Then
+    expect(emit).not.toThrow();
+    expect(listener).not.toHaveBeenCalled();
+  });
 });
