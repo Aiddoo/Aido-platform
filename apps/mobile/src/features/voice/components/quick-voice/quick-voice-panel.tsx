@@ -68,11 +68,11 @@ export function QuickVoicePanel({
   const { t } = useTranslation('voice');
   const isPaused = state.status === 'paused';
   const isListening = state.status === 'listening';
-  const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
+  const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state);
   const canFinish = VoiceCapturePolicy.canFinish(state);
 
   return (
-    <PanelFrame
+    <SheetPanel
       center={<ListeningClock state={state} />}
       right={<RecognitionLanguageToggle value={locale} onValueChange={onLocaleChange} />}
       onClose={onCancel}
@@ -170,7 +170,7 @@ export function QuickVoicePanel({
           </Box>
         </VStack>
       )}
-    </PanelFrame>
+    </SheetPanel>
   );
 }
 
@@ -184,7 +184,7 @@ QuickVoicePanel.Planning = function Planning({
   const { t } = useTranslation('voice');
 
   return (
-    <PanelFrame
+    <SheetPanel
       center={
         <Text size="b4" weight="semibold" shade={7} maxLines={1}>
           {t('planning.title')}
@@ -205,7 +205,7 @@ QuickVoicePanel.Planning = function Planning({
       >
         {t('planning.cancel')}
       </TextButton>
-    </PanelFrame>
+    </SheetPanel>
   );
 };
 
@@ -340,7 +340,7 @@ QuickVoicePanel.Failed = function Failed({
   );
 };
 
-interface PanelFrameProps {
+interface SheetPanelProps {
   center: ReactNode;
   right?: ReactNode;
   onClose: () => void;
@@ -349,7 +349,7 @@ interface PanelFrameProps {
 }
 
 /** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
-function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
+function SheetPanel({ center, right, onClose, testID, children }: SheetPanelProps) {
   const { height: windowHeight } = useWindowDimensions();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
   const height = Math.min(

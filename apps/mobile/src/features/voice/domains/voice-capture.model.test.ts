@@ -669,14 +669,12 @@ describe('VoiceCapturePolicy', () => {
   });
 
   describe('90초 제안', () => {
-    const NOW = 1_000_000;
-
     it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
       // Given
       const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
 
       // When
-      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, NOW);
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
 
       // Then
       expect(offers).toBe(true);
@@ -691,7 +689,7 @@ describe('VoiceCapturePolicy', () => {
       });
 
       // When
-      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, NOW);
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
 
       // Then
       expect(offers).toBe(false);

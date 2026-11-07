@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
-import { ok } from '@src/core/errors/result';
+import { ApiError } from '@src/core/errors/api-error';
+import { err, ok, type Result } from '@src/core/errors/result';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import {
@@ -60,10 +61,13 @@ function ApplyProbe({
   );
 }
 
-async function renderApply(sourceMemoId: number | null) {
+async function renderApply(
+  sourceMemoId: number | null,
+  response: Result<unknown, ApiError> = ok({ todos: [], memo: null }),
+) {
   const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
-  httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
+  httpClient.post.mockResolvedValue(response);
   const queryClient = createTestQueryClient();
   const onMemoChanged = jest.fn();
 
@@ -123,5 +127,16 @@ describe('useApplyActionPlanMutationOptions', () => {
       'memo_converted_to_todos',
       expect.anything(),
     );
+  });
+
+  test('원본 메모가 이미 없어 저장하지 못하면 메모가 바뀌었다고 알려 목록을 다시 읽게 한다', async () => {
+    // Given & When
+    const { onMemoChanged } = await renderApply(
+      42,
+      err(new ApiError('MEMO_2001', '메모 없음', 404)),
+    );
+
+    // Then
+    await waitFor(() => expect(onMemoChanged).toHaveBeenCalledTimes(1));
   });
 });

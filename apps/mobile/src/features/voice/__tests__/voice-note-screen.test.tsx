@@ -12,6 +12,8 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { createMemo } from '@src/features/notes/memo/__tests__/memo.fixtures';
+import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
@@ -130,7 +132,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
     },
   );
 
-  return { httpClient, storage, unmount };
+  return { httpClient, storage, unmount, queryClient };
 }
 
 describe('말로 메모 화면', () => {
@@ -225,6 +227,51 @@ describe('말로 메모 화면', () => {
     // Then
     await waitFor(() => expect(screen.getByLabelText('메모로 저장했어요')).toBeDisabled());
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/action-plans/apply');
+  });
+
+  test('메모로 저장하면 메모 목록과 개수 한도를 다시 읽는다', async () => {
+    // Given
+    const { httpClient, queryClient } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+    httpClient.post.mockResolvedValue(
+      ok({
+        todos: [],
+        memo: { ...createMemo(), userId: 'clz7x5p8k0001qz0z8z8z8z8z', sortOrder: 0 },
+      }),
+    );
+
+    // When
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+
+    // Then
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.list() }),
+    );
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
+  });
+
+  test('메모로 저장에 실패하면 저장한 것으로 바뀌지 않고 같은 키로 다시 저장할 수 있다', async () => {
+    // Given
+    const { httpClient, storage } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    httpClient.post.mockRejectedValue(new NetworkError());
+
+    // When
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+
+    // Then
+    await waitFor(() => expect(screen.getByLabelText('메모로 저장')).toBeEnabled());
+    const kept = storage.drafts.find(ACCOUNT_ID, DRAFT_ID);
+    expect(kept?.memoSavedAt).toBeNull();
+    expect(kept?.digest).not.toBeNull();
+    expect(kept?.memoSaveRequest?.idempotencyKey).toBe(
+      httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],
+    );
   });
 
   test('삭제를 확인하면 기기에서 지우고 화면을 닫는다', async () => {

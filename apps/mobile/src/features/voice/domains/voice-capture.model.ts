@@ -466,8 +466,8 @@ function isOverQuickLimit(
   return getElapsedMs(state, now) >= maxSeconds * 1_000;
 }
 
-function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boolean {
-  return state.status === 'paused' && isOverQuickLimit(state, now);
+function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
+  return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * 1_000;
 }
 
 export const VoiceCapturePolicy = {
