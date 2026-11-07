@@ -49,14 +49,14 @@ export class StoreReviewService {
   }
 
   /** 할 일을 하나라도 끝낸 날을 남긴다. 하루에 몇 개를 끝냈는지는 세지 않는다 */
-  recordActiveDay(accountId: string, localDate: string): void {
+  recordActiveDay = (accountId: string, localDate: string): void => {
     this.#repository.update(accountId, (state) => recordActiveDay(state, localDate));
-  }
+  };
 
-  async requestReviewAt(
+  requestReviewAt = async (
     { accountId, moment }: RequestReviewInput,
     waitUntilPresentable: WaitUntilPresentable,
-  ): Promise<StoreReviewOutcome> {
+  ): Promise<StoreReviewOutcome> => {
     if (this.#hasRequestedThisSession) {
       return 'already_requested_this_session';
     }
@@ -88,5 +88,5 @@ export class StoreReviewService {
     } finally {
       this.#inFlightAccounts.delete(accountId);
     }
-  }
+  };
 }
