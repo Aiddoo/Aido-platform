@@ -85,10 +85,24 @@ export class PushDeviceService {
   /**
    * 이 기기의 권한과 토큰을 서버에 알린다. 이번 세션에 같은 값을 이미 보냈으면 요청하지 않는다.
    * 서버는 시간대를 요청 헤더에서 읽으므로 기기 시간대가 바뀌어도 다시 보낸다.
+   * 권한과 토큰을 읽는 동안도 진행 중으로 잡아 해제가 기다리게 하고, 그사이 세션이 끝났으면 보내지 않는다.
    */
-  report = async ({ force = false }: { force?: boolean } = {}): Promise<
-    Result<PushDevice | null, ApiError>
-  > => {
+  report = (options: { force?: boolean } = {}): Promise<Result<PushDevice | null, ApiError>> => {
+    const reporting = this.#report(options);
+    this.#reportInFlight = reporting;
+    return reporting.finally(() => {
+      if (this.#reportInFlight === reporting) {
+        this.#reportInFlight = null;
+      }
+    });
+  };
+
+  #report = async ({
+    force = false,
+  }: {
+    force?: boolean;
+  }): Promise<Result<PushDevice | null, ApiError>> => {
+    const epoch = this.#sessionEpoch.current();
     const permission = await this.getPermission();
     const token = PushPermissionPolicy.canDeliverPush(permission) ? await this.#issueToken() : null;
     const deviceId = await this.#deviceIdService.get();
@@ -96,8 +110,7 @@ export class PushDeviceService {
     const timeZone = this.#getTimeZone();
 
     const lastReported = this.#lastReported;
-    if (
-      !force &&
+    const isSameReport =
       lastReported != null &&
       isEqual(
         { deviceId, input, timeZone },
@@ -106,19 +119,18 @@ export class PushDeviceService {
           input: lastReported.input,
           timeZone: lastReported.timeZone,
         },
-      )
-    ) {
+      );
+    if (!force && lastReported != null && isSameReport) {
       return ok(lastReported.device);
     }
 
-    const request = this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input);
-    this.#reportInFlight = request;
+    // 읽는 사이 로그아웃했다면 끝난 세션의 기기를 다시 등록하지 않는다
+    if (this.#sessionEpoch.current() !== epoch) {
+      return ok(null);
+    }
+
     const result = parseApiResponse(
-      await request.finally(() => {
-        if (this.#reportInFlight === request) {
-          this.#reportInFlight = null;
-        }
-      }),
+      await this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input),
       pushDeviceResponseSchema,
       toPushDevice,
       '[PushDeviceService] Invalid reportPushDevice response',

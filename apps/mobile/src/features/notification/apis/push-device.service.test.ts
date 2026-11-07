@@ -313,6 +313,60 @@ describe('PushDeviceService.unregister', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
 
+  it('권한과 토큰을 읽는 중에 해제하면 읽기가 끝난 뒤에 해제해 늦은 보고가 기기를 다시 등록하지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    let resolveToken: ((token: string) => void) | undefined;
+    gateway.getToken.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToken = resolve;
+        }),
+    );
+    const { service, httpClient } = setup(gateway);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const reporting = service.report();
+    while (resolveToken == null) {
+      await Promise.resolve();
+    }
+
+    // When
+    const unregistering = service.unregister();
+    resolveToken('token-1');
+    await Promise.all([reporting, unregistering]);
+
+    // Then
+    expect(httpClient.put.mock.invocationCallOrder[0]).toBeLessThan(
+      httpClient.delete.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('권한과 토큰을 읽는 중에 세션이 끝나면 보고를 보내지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    let resolveToken: ((token: string) => void) | undefined;
+    gateway.getToken.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToken = resolve;
+        }),
+    );
+    const { service, httpClient, sessionEpoch } = setup(gateway);
+    const reporting = service.report();
+    while (resolveToken == null) {
+      await Promise.resolve();
+    }
+
+    // When
+    sessionEpoch.advance();
+    resolveToken('token-1');
+    const result = await reporting;
+
+    // Then
+    expect(result).toEqual({ ok: true, value: null });
+    expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
   it('보고를 기다리는 사이 세션이 바뀌면 해제하지 않아 새 세션의 기기 등록을 지키지 않는다', async () => {
     // Given
     // 이전 세션의 보고가 진행 중이다
