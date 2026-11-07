@@ -1,12 +1,9 @@
 import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import { z } from 'zod';
 
 import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
+const MS_PER_MINUTE = 60_000;
 
 const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -70,9 +67,31 @@ export function toDate(date: Date | string | number): Date {
   return dayjs(date).toDate();
 }
 
-/** 그 시간대의 날짜(YYYY-MM-DD)와 벽시계(HH:mm)가 가리키는 순간 */
+/** 그 순간에 그 시간대의 벽시계가 UTC보다 앞선 밀리초 */
+function getZoneOffsetMs(epochMs: number, timeZone: string): number {
+  const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, WALL_CLOCK_OPTIONS).formatToParts(
+    new Date(epochMs),
+  );
+  const read = (type: Intl.DateTimeFormatPartTypes) => Number(getPartValue(parts, type));
+  const wallClockAsUtc = Date.UTC(
+    read('year'),
+    read('month') - 1,
+    read('day'),
+    read('hour'),
+    read('minute'),
+  );
+  return wallClockAsUtc - (epochMs - (epochMs % MS_PER_MINUTE));
+}
+
+/**
+ * 그 시간대의 날짜(YYYY-MM-DD)와 벽시계(HH:mm)가 가리키는 순간.
+ * dayjs.tz는 iOS Hermes에서 분이 어긋난 순간을 돌려줘(오전 9:00 → 9:17) 다른 함수와 같은 Intl 파트로 오프셋을 구한다.
+ * 서머타임 경계는 오프셋을 한 번 더 구해 맞춘다
+ */
 export function fromWallClock(dateKey: string, hhmm: string, timeZone: string): Instant {
-  return fromEpochMs(dayjs.tz(`${dateKey} ${hhmm}`, timeZone).valueOf());
+  const wallClockAsUtc = Date.parse(`${dateKey}T${hhmm.slice(0, 5)}:00Z`);
+  const firstGuess = wallClockAsUtc - getZoneOffsetMs(wallClockAsUtc, timeZone);
+  return fromEpochMs(wallClockAsUtc - getZoneOffsetMs(firstGuess, timeZone));
 }
 
 /** 순간이 그 시간대에서 놓인 달력 날짜(YYYY-MM-DD) */

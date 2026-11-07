@@ -310,6 +310,21 @@ describe('getNowInstant', () => {
 
 describe('fromWallClock', () => {
   it.each([
+    ['서머타임 시작일 오후', '2026-03-08', '14:30', '2026-03-08T21:30:00.000Z'],
+    ['서머타임 시작일 새벽', '2026-03-08', '00:30', '2026-03-08T08:30:00.000Z'],
+    ['서머타임 끝나는 날 오후', '2026-11-01', '14:30', '2026-11-01T22:30:00.000Z'],
+  ])('LA %s에도 벽시계 그대로의 순간이다', (_name, dateKey, hhmm, iso) => {
+    // Given
+    const timeZone = 'America/Los_Angeles';
+
+    // When
+    const instant = fromWallClock(dateKey, hhmm, timeZone);
+
+    // Then
+    expect(new Date(instant).toISOString()).toBe(iso);
+  });
+
+  it.each([
     ['Asia/Seoul', '2026-10-01T05:30:00.000Z'],
     ['America/Los_Angeles', '2026-10-01T21:30:00.000Z'],
   ])('같은 벽시계도 %s에서는 다른 순간이다', (timeZone, iso) => {
