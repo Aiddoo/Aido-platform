@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import { Box } from '../box';
 import { Text } from '../text';
 import { VStack } from '../v-stack';
-import { splitRunsIntoWords, type TextRun } from './split-text-words';
+import { splitRunsIntoLines, splitRunsIntoWords, type TextRun } from './split-text-words';
 
 interface WordWrapTextProps extends Omit<
   ComponentProps<typeof Text>,
@@ -43,31 +43,37 @@ export function WordWrapText({ children, className, ...textProps }: WordWrapText
     );
   }
 
-  const lines = runs.flatMap((run) =>
-    run.text.split('\n').map((text): TextRun => ({ ...run, text })),
-  );
-  const hasLineBreak = lines.length > runs.length;
-
   return (
     <VStack
       className={className}
       accessible
       accessibilityLabel={runs.map(({ text }) => text).join('')}
     >
-      {(hasLineBreak ? lines.map((line) => [line]) : [runs]).map((lineRuns, lineIndex) => (
-        <Box key={lineIndex} className="flex-row flex-wrap">
-          {splitRunsIntoWords(lineRuns).map((word, wordIndex) => (
-            <Text
-              key={wordIndex}
-              {...textProps}
-              className="max-w-full"
-              importantForAccessibility="no"
-            >
-              <WordRuns {...textProps} runs={word} />{' '}
-            </Text>
-          ))}
-        </Box>
-      ))}
+      {splitRunsIntoLines(runs).map((lineRuns, lineIndex) => {
+        const words = splitRunsIntoWords(lineRuns);
+
+        return (
+          <Box key={lineIndex} className="flex-row flex-wrap">
+            {words.length === 0 ? (
+              // 빈 줄(문단 사이)은 단어가 없어 높이가 0이 되므로 공백 한 칸으로 줄 높이를 지킨다
+              <Text {...textProps} className="max-w-full" importantForAccessibility="no">
+                {' '}
+              </Text>
+            ) : (
+              words.map((word, wordIndex) => (
+                <Text
+                  key={wordIndex}
+                  {...textProps}
+                  className="max-w-full"
+                  importantForAccessibility="no"
+                >
+                  <WordRuns {...textProps} runs={word} />{' '}
+                </Text>
+              ))
+            )}
+          </Box>
+        );
+      })}
     </VStack>
   );
 }
