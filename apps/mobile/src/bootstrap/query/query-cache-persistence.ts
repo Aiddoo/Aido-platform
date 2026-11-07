@@ -12,6 +12,7 @@ import type {
   PersistedClient,
   PersistQueryClientOptions,
 } from '@tanstack/react-query-persist-client';
+import { noop, uniq } from 'es-toolkit';
 import type { z } from 'zod';
 
 import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
@@ -37,10 +38,10 @@ export interface QueryCacheStorage {
 /** 암호화 저장소를 열지 못했을 때. 캐시를 기기에 남기지 않고 주인 지정·삭제도 할 일이 없다 */
 export const disabledQueryCacheStorage: QueryCacheStorage = {
   getItem: () => null,
-  setItem: () => undefined,
-  removeItem: () => undefined,
-  setOwner: () => undefined,
-  clear: () => undefined,
+  setItem: noop,
+  removeItem: noop,
+  setOwner: noop,
+  clear: noop,
 };
 
 export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage {
@@ -128,7 +129,7 @@ function keepValidPersistedQueries(
   logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
     droppedCount: droppedQueries.length,
     totalCount: queries.length,
-    droppedRoots: [...new Set(droppedQueries.map(({ queryKey }) => String(queryKey[0])))],
+    droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))),
   });
   return {
     ...client,

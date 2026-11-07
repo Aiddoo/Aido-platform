@@ -1,4 +1,5 @@
 import { type Instant, toHHmm } from '@src/shared/date/instant';
+import { keyBy } from 'es-toolkit';
 
 export interface ScheduleChange {
   todoId: number;
@@ -59,9 +60,9 @@ function getRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
   changes: readonly ScheduleChange[],
   todos: readonly TTodo[],
 ): RescheduleTarget<TTodo>[] {
-  const todosById = new Map(todos.map((todo) => [todo.id, todo]));
+  const todosById = keyBy(todos, (todo) => todo.id);
   return changes.flatMap(({ todoId, startsAt }) => {
-    const todo = todosById.get(todoId);
+    const todo = todosById[todoId];
     return todo == null || todo.completed ? [] : [{ todo, startsAt }];
   });
 }
