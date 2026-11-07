@@ -4,6 +4,7 @@ import {
   type TimeFormat,
 } from '@src/shared/date/date-format';
 
+import { TodoPolicy } from '../domains/todo.model';
 import type { Todo } from '../schemas/todo.schema';
 
 export function formatTodoTime(
@@ -11,7 +12,6 @@ export function formatTodoTime(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string | null {
-  return todo.isAllDay || todo.localTime == null
-    ? null
-    : formatTimeDisplay(todo.localTime, timeFormat, context);
+  const localTime = TodoPolicy.getLocalTime(todo, context.timeZone);
+  return localTime == null ? null : formatTimeDisplay(localTime, timeFormat, context);
 }

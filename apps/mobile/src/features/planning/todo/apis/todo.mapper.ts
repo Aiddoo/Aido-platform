@@ -7,8 +7,7 @@ import {
   type TodoListResponse,
   type TodoSummaryResponse,
 } from '@aido/api';
-import { toHHmm } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
+import { toInstant } from '@src/shared/date/instant';
 
 import { TodoPolicy } from '../domains/todo.model';
 import {
@@ -22,13 +21,9 @@ import {
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-series.mapper';
 
-/** 옛 서버 응답에는 벽시계 칸이 없어 순간을 기기 시간대로 읽는다 */
-const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | null => {
-  if (scheduledTime == null) {
-    return null;
-  }
-  return scheduledLocalTime ?? toHHmm(new Date(scheduledTime), getDeviceTimezone());
-};
+/** 옛 서버 응답에는 벽시계 칸이 없다. 순간만 보관하고 시간대는 표시 때 정한다 */
+const toLocalTime = ({ scheduledTime, scheduledLocalTime }: TodoDto): string | null =>
+  scheduledTime == null ? null : (scheduledLocalTime ?? null);
 
 export const toTodo = (dto: TodoDto): Todo => ({
   id: dto.id,
@@ -38,6 +33,7 @@ export const toTodo = (dto: TodoDto): Todo => ({
   category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
   completed: dto.completed,
   localTime: toLocalTime(dto),
+  scheduledAt: dto.scheduledTime == null ? null : toInstant(dto.scheduledTime),
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
   recurrenceGroupId: dto.recurrenceGroupId,

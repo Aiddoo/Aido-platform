@@ -21,6 +21,7 @@ const generateParentTodo = (): Todo => ({
   category: { id: 1, name: '기본', color: '#3B82F6' },
   completed: false,
   localTime: null,
+  scheduledAt: null,
   isAllDay: false,
   visibility: 'PUBLIC',
   recurrenceGroupId: null,

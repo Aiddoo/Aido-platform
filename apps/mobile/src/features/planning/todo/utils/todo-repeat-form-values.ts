@@ -5,7 +5,6 @@ import {
   isSameDay,
 } from '@src/features/planning/todo/utils/calendar-date';
 import { toDate, toDateKey } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { without, xor } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -17,8 +16,9 @@ import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 export function toTodoRepeatFormValues(
   startDate: Date,
   repeat: TodoRepeat | null,
+  timeZone: string,
 ): TodoRepeatFormValues {
-  const startWeekday = [getWeekday(toDateKey(startDate, getDeviceTimezone()))];
+  const startWeekday = [getWeekday(toDateKey(startDate, timeZone))];
   const base = {
     startDate,
     weekdays: startWeekday,
@@ -56,17 +56,18 @@ export function toTodoRepeatFormValues(
 function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
   nextStartDate: Date,
+  timeZone: string,
 ): TodoRepeatFormValues {
   const next = { ...values, startDate: nextStartDate, monthDay: null };
-  const repeat = toTodoRepeat(values);
+  const repeat = toTodoRepeat(values, timeZone);
   if (repeat == null) {
     return next;
   }
 
   const adjusted = TodoRepeatPolicy.withRepeatStartDate(
     repeat,
-    toDateKey(values.startDate, getDeviceTimezone()),
-    toDateKey(nextStartDate, getDeviceTimezone()),
+    toDateKey(values.startDate, timeZone),
+    toDateKey(nextStartDate, timeZone),
   );
 
   return {
@@ -127,13 +128,16 @@ export function withTodoRepeatFormDayToggled(
 }
 
 /** 날짜 종료를 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다. 첫 할 일이 실제로 생기는 날이다 */
-export function getTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues): string | null {
-  const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
+export function getTodoRepeatFormFirstOccurrenceKey(
+  values: TodoRepeatFormValues,
+  timeZone: string,
+): string | null {
+  const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, timeZone);
   return repeat == null
     ? null
     : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
         repeat,
-        toDateKey(values.startDate, getDeviceTimezone()),
+        toDateKey(values.startDate, timeZone),
       );
 }
 
@@ -141,21 +145,24 @@ export function withTodoRepeatFormCalendarDate(
   values: TodoRepeatFormValues,
   date: Date,
   today: Date,
+  timeZone: string,
 ): TodoRepeatFormValues {
-  if (isBeforeDay(date, today)) {
+  if (isBeforeDay(date, today, timeZone)) {
     return values;
   }
 
   const isFirstOccurrence =
-    toDateKey(date, getDeviceTimezone()) === getTodoRepeatFormFirstOccurrenceKey(values) &&
-    !isSameDay(date, values.startDate);
+    toDateKey(date, timeZone) === getTodoRepeatFormFirstOccurrenceKey(values, timeZone) &&
+    !isSameDay(date, values.startDate, timeZone);
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
   if (isFirstOccurrence || hasPickedPeriod) {
-    return { ...withTodoRepeatFormStartDate(values, date), untilDate: null };
+    return { ...withTodoRepeatFormStartDate(values, date, timeZone), untilDate: null };
   }
-  if (isAfterDay(date, values.startDate)) {
+  if (isAfterDay(date, values.startDate, timeZone)) {
     return { ...values, endType: 'UNTIL', untilDate: date };
   }
-  return isBeforeDay(date, values.startDate) ? withTodoRepeatFormStartDate(values, date) : values;
+  return isBeforeDay(date, values.startDate, timeZone)
+    ? withTodoRepeatFormStartDate(values, date, timeZone)
+    : values;
 }

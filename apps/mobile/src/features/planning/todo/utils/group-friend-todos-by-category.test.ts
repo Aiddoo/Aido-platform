@@ -5,7 +5,7 @@ import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 describe('친구 할 일 목록 표시', () => {
   test('조회한 원본을 유지하면서 카테고리와 시간 표시를 조합한다', () => {
     // Given
-    const first = toTodo(createTodoDto({ id: 1 }));
+    const first = toTodo(createTodoDto({ id: 1, scheduledLocalTime: '18:00' }));
     const second = toTodo(
       createTodoDto({ id: 2, category: { id: 2, name: '스터디', color: '#123456', sortOrder: 1 } }),
     );

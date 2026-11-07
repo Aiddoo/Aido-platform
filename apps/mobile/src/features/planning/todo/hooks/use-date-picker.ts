@@ -1,4 +1,5 @@
 import { getMonthWeeks } from '@src/features/planning/todo/utils/calendar-date';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import dayjs from 'dayjs';
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
@@ -34,12 +35,16 @@ interface UseDatePickerParams {
 }
 
 export const useDatePicker = ({ startDate }: UseDatePickerParams) => {
+  const { timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
     startDate,
     displayMonth: startDate,
   });
 
-  const weeks = useMemo(() => getMonthWeeks(state.displayMonth), [state.displayMonth]);
+  const weeks = useMemo(
+    () => getMonthWeeks(state.displayMonth, timeZone),
+    [state.displayMonth, timeZone],
+  );
 
   return {
     date: state.startDate,

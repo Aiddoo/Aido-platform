@@ -1,5 +1,6 @@
 import { calculateTomorrowSchedule } from './calculate-tomorrow-schedule';
 
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const TODAY = new Date(2025, 5, 10);
 const TOMORROW = new Date(2025, 5, 11);
 
@@ -7,7 +8,7 @@ describe('calculateTomorrowSchedule', () => {
   describe('startDate 계산', () => {
     it('startDate는 오늘 기준 내일이 된다', () => {
       // When
-      const result = calculateTomorrowSchedule(null, TODAY);
+      const result = calculateTomorrowSchedule(null, TODAY, TIME_ZONE);
 
       // Then
       expect(result.startDate).toEqual(TOMORROW);
@@ -18,7 +19,7 @@ describe('calculateTomorrowSchedule', () => {
       const todayAfternoon = new Date(2025, 5, 10, 15, 30);
 
       // When
-      const result = calculateTomorrowSchedule(null, todayAfternoon);
+      const result = calculateTomorrowSchedule(null, todayAfternoon, TIME_ZONE);
 
       // Then
       expect(result.startDate).toEqual(TOMORROW);
@@ -28,7 +29,7 @@ describe('calculateTomorrowSchedule', () => {
   describe('endDate 처리', () => {
     it('endDate가 null이면 null을 유지한다', () => {
       // When
-      const result = calculateTomorrowSchedule(null, TODAY);
+      const result = calculateTomorrowSchedule(null, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toBeNull();
@@ -39,7 +40,7 @@ describe('calculateTomorrowSchedule', () => {
       const endDate = new Date(2025, 5, 15);
 
       // When
-      const result = calculateTomorrowSchedule(endDate, TODAY);
+      const result = calculateTomorrowSchedule(endDate, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toEqual(endDate);
@@ -50,7 +51,7 @@ describe('calculateTomorrowSchedule', () => {
       const endDate = new Date(2025, 5, 9);
 
       // When
-      const result = calculateTomorrowSchedule(endDate, TODAY);
+      const result = calculateTomorrowSchedule(endDate, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toBeNull();
@@ -58,7 +59,7 @@ describe('calculateTomorrowSchedule', () => {
 
     it('endDate가 내일과 같은 날이면 기존 endDate를 유지한다', () => {
       // When
-      const result = calculateTomorrowSchedule(TOMORROW, TODAY);
+      const result = calculateTomorrowSchedule(TOMORROW, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toEqual(TOMORROW);

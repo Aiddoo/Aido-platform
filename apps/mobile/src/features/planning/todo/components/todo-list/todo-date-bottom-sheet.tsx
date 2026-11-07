@@ -69,7 +69,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
     return null;
   }
 
-  const editValues = toTodoEditFormValues(todo);
+  const editValues = toTodoEditFormValues(todo, timeZone);
 
   return (
     <TodoDatePickerContent

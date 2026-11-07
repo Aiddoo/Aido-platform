@@ -63,6 +63,7 @@ interface QuickDateOptionsProps {
 function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
   const today = useToday();
+  const { timeZone } = useDateFormatContext();
   const todayStart = dayjs(today).startOf('day').toDate();
   const tomorrowStart = dayjs(todayStart).add(1, 'day').toDate();
 
@@ -71,13 +72,13 @@ function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
       <QuickDateRow
         label={t('picker.today')}
         date={todayStart}
-        isSelected={isSameDay(picker.date, todayStart)}
+        isSelected={isSameDay(picker.date, todayStart, timeZone)}
         onSelect={onSelect}
       />
       <QuickDateRow
         label={t('picker.tomorrow')}
         date={tomorrowStart}
-        isSelected={isSameDay(picker.date, tomorrowStart)}
+        isSelected={isSameDay(picker.date, tomorrowStart, timeZone)}
         onSelect={onSelect}
       />
     </VStack>
@@ -170,7 +171,7 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
           // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>
             {week.map((date) =>
-              isSameMonth(date, displayMonth) ? (
+              isSameMonth(date, displayMonth, dateFormatContext.timeZone) ? (
                 <DatePickerDateCell
                   key={date.toISOString()}
                   date={date}
@@ -197,9 +198,10 @@ interface DatePickerDateCellProps {
 const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProps) => {
   const dayOfMonth = date.getDate();
   const today = useToday();
-  const isSelected = isSameDay(date, startDate);
-  const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
-  const highlightToday = isTodayHighlighted({ date, isSelected, today });
+  const { timeZone } = useDateFormatContext();
+  const isSelected = isSameDay(date, startDate, timeZone);
+  const dayStyle = getDatePickerDayStyle({ date, isSelected, today, timeZone });
+  const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
     <PressableFeedback

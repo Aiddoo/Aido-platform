@@ -51,6 +51,7 @@ export function useTimezoneChangeNotice({
       TodoPolicy.hasUpcomingTimedTodo(result.value.todos, {
         dateKey: currentLocalDateKey,
         time: toHHmm(currentLocalDate, currentTimeZone),
+        timeZone: currentTimeZone,
       })
     );
   };

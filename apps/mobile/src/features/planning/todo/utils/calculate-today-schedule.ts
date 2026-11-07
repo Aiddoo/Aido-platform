@@ -6,9 +6,13 @@ interface TodaySchedule {
   endDate: Date | null;
 }
 
-export const calculateTodaySchedule = (endDateObj: Date | null, today: Date): TodaySchedule => {
+export const calculateTodaySchedule = (
+  endDateObj: Date | null,
+  today: Date,
+  timeZone: string,
+): TodaySchedule => {
   const todayStart = dayjs(today).startOf('day').toDate();
-  const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, todayStart);
+  const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, todayStart, timeZone);
 
   return {
     startDate: todayStart,

@@ -1,5 +1,6 @@
 import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { todoCategorySchema as categorySchema } from '@src/features/planning/category/schemas/todo-category.schema';
+import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.schema';
@@ -17,6 +18,8 @@ export const todoSchema = z.object({
   completed: z.boolean(),
   /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
   localTime: z.iso.time({ precision: -1 }).nullable(),
+  /** 벽시계 칸이 없는 옛 서버 응답의 시각을 표시 때 시간대로 계산하려고 순간을 함께 둔다. 시간 없는 할 일은 null */
+  scheduledAt: instantSchema.nullable(),
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
   recurrenceGroupId: z.string().nullable(),

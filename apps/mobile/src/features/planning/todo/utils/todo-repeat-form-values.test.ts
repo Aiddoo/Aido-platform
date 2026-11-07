@@ -7,8 +7,10 @@ import {
   withTodoRepeatFormDayToggled,
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
+  toTodoRepeatFormValues,
 } from './todo-repeat-form-values';
 
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const TODAY = new Date(2026, 10, 2);
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
@@ -91,7 +93,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     const values = createValues();
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 1), TODAY);
+    const next = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 1), TODAY, TIME_ZONE);
 
     // Then
     expect(next).toBe(values);
@@ -103,7 +105,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     const date = new Date(2026, 10, 20);
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, date, TODAY);
+    const next = withTodoRepeatFormCalendarDate(values, date, TODAY, TIME_ZONE);
 
     // Then
     expect(next).toMatchObject({ endType: 'UNTIL', untilDate: date });
@@ -115,7 +117,7 @@ describe('반복 달력에서 날짜 누르기', () => {
     const date = new Date(2026, 10, 25);
 
     // When
-    const next = withTodoRepeatFormCalendarDate(values, date, TODAY);
+    const next = withTodoRepeatFormCalendarDate(values, date, TODAY, TIME_ZONE);
 
     // Then
     expect(next).toMatchObject({ startDate: date, untilDate: null });
@@ -127,11 +129,41 @@ describe('반복 달력에서 날짜 누르기', () => {
     const earlier = new Date(2026, 10, 3);
 
     // When
-    const moved = withTodoRepeatFormCalendarDate(values, earlier, TODAY);
-    const same = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 9), TODAY);
+    const moved = withTodoRepeatFormCalendarDate(values, earlier, TODAY, TIME_ZONE);
+    const same = withTodoRepeatFormCalendarDate(values, new Date(2026, 10, 9), TODAY, TIME_ZONE);
 
     // Then
     expect(moved.startDate).toEqual(earlier);
     expect(same).toBe(values);
+  });
+});
+
+describe('반복 폼 값의 시간대', () => {
+  test('시작 요일은 고른 시간대의 날짜로 정한다', () => {
+    // Given
+    const startDate = new Date('2026-11-06T15:30:00Z');
+
+    // When
+    const seoul = toTodoRepeatFormValues(startDate, null, 'Asia/Seoul');
+    const losAngeles = toTodoRepeatFormValues(startDate, null, 'America/Los_Angeles');
+
+    // Then
+    expect(seoul.weekdays).toEqual(['SAT']);
+    expect(losAngeles.weekdays).toEqual(['FRI']);
+  });
+
+  test('말일 규칙이 있는 폼을 열면 매월 며칠인지 규칙 값을 그대로 보여 준다', () => {
+    // Given
+    const startDate = new Date('2026-02-28T03:00:00Z');
+
+    // When
+    const values = toTodoRepeatFormValues(
+      startDate,
+      { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },
+      'Asia/Seoul',
+    );
+
+    // Then
+    expect(values).toMatchObject({ isMonthly: true, monthDay: 31 });
   });
 });

@@ -1,5 +1,6 @@
 import { calculateTodaySchedule } from './calculate-today-schedule';
 
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const TODAY = new Date(2025, 5, 10, 15, 30);
 const TODAY_MIDNIGHT = new Date(2025, 5, 10);
 
@@ -7,7 +8,7 @@ describe('calculateTodaySchedule', () => {
   describe('startDate 계산', () => {
     it('startDate는 오늘 날짜의 자정(00:00:00)이 된다', () => {
       // When
-      const result = calculateTodaySchedule(null, TODAY);
+      const result = calculateTodaySchedule(null, TODAY, TIME_ZONE);
 
       // Then
       expect(result.startDate).toEqual(TODAY_MIDNIGHT);
@@ -17,7 +18,7 @@ describe('calculateTodaySchedule', () => {
   describe('endDate 처리', () => {
     it('endDate가 null이면 null을 유지한다', () => {
       // When
-      const result = calculateTodaySchedule(null, TODAY);
+      const result = calculateTodaySchedule(null, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toBeNull();
@@ -28,7 +29,7 @@ describe('calculateTodaySchedule', () => {
       const endDate = new Date(2025, 5, 15);
 
       // When
-      const result = calculateTodaySchedule(endDate, TODAY);
+      const result = calculateTodaySchedule(endDate, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toEqual(endDate);
@@ -39,7 +40,7 @@ describe('calculateTodaySchedule', () => {
       const endDate = new Date(2025, 5, 10);
 
       // When
-      const result = calculateTodaySchedule(endDate, TODAY);
+      const result = calculateTodaySchedule(endDate, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toEqual(endDate);
@@ -50,7 +51,7 @@ describe('calculateTodaySchedule', () => {
       const endDate = new Date(2025, 5, 8);
 
       // When
-      const result = calculateTodaySchedule(endDate, TODAY);
+      const result = calculateTodaySchedule(endDate, TODAY, TIME_ZONE);
 
       // Then
       expect(result.endDate).toBeNull();

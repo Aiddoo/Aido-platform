@@ -1,4 +1,5 @@
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
+import { toHHmm } from '@src/shared/date/instant';
 import { orderBy, range, uniq } from 'es-toolkit';
 
 import type { SubTodo } from '../schemas/sub-todo.schema';
@@ -151,18 +152,36 @@ function withDailyCompletionFromTodos(
   );
 }
 
+/**
+ * 사용자가 고른 벽시계. 서버가 준 값은 어디서든 그 시각이고, 벽시계 칸이 없는 옛 응답만 순간을 보는 시간대로 읽는다.
+ * 종일이거나 시간이 없으면 null이다
+ */
+function getLocalTime(
+  todo: Pick<Todo, 'isAllDay' | 'localTime' | 'scheduledAt'>,
+  timeZone: string,
+): string | null {
+  if (todo.isAllDay) {
+    return null;
+  }
+  if (todo.localTime != null) {
+    return todo.localTime;
+  }
+  return todo.scheduledAt == null ? null : toHHmm(todo.scheduledAt, timeZone);
+}
+
 /** 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다 */
 function hasUpcomingTimedTodo(
   todos: readonly Todo[],
-  now: { dateKey: string; time: string },
+  now: { dateKey: string; time: string; timeZone: string },
 ): boolean {
-  return todos.some(
-    (todo) =>
+  return todos.some((todo) => {
+    const localTime = getLocalTime(todo, now.timeZone);
+    return (
       !todo.completed &&
-      todo.localTime != null &&
-      (todo.startDate > now.dateKey ||
-        (todo.startDate === now.dateKey && todo.localTime > now.time)),
-  );
+      localTime != null &&
+      (todo.startDate > now.dateKey || (todo.startDate === now.dateKey && localTime > now.time))
+    );
+  });
 }
 
 /** 서버가 준 수정 권한이 곧 내 할 일이다. 사용자 id를 다시 비교하지 않는다 */
@@ -190,5 +209,6 @@ export const TodoPolicy = {
   withMultiDayTodoSpans,
   hasSubTodos,
   completesAllTodos,
+  getLocalTime,
   hasUpcomingTimedTodo,
 } as const;

@@ -1,5 +1,6 @@
 import { useFeedDateParam } from '@src/features/planning/todo/hooks/use-feed-params';
 import { isSameDay } from '@src/features/planning/todo/utils/calendar-date';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -17,9 +18,10 @@ interface CalendarDateCellProps {
 export const CalendarDateCell = memo(({ date, children, className }: CalendarDateCellProps) => {
   const [value, onChange] = useFeedDateParam();
   const today = useToday();
-  const isSelected = isSameDay(date, value);
-  const dayStyle = getMonthViewDayStyle({ date, isSelected, today });
-  const highlightToday = isTodayHighlighted({ date, isSelected, today });
+  const { timeZone } = useDateFormatContext();
+  const isSelected = isSameDay(date, value, timeZone);
+  const dayStyle = getMonthViewDayStyle({ date, isSelected, today, timeZone });
+  const highlightToday = isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
     <PressableFeedback

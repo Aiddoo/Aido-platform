@@ -140,7 +140,7 @@ function TodoEditForm({ todo, repeat, isOpen, onOpenChange, onClose }: TodoEditF
   const overlay = useOverlay();
 
   // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
-  const [initialValues] = useState(() => toTodoEditFormValues(todo, repeat));
+  const [initialValues] = useState(() => toTodoEditFormValues(todo, timeZone, repeat));
   const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
     ...todo,
     repeat: initialValues.repeat,

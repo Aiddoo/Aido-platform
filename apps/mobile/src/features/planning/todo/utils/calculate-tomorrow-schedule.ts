@@ -9,9 +9,10 @@ interface TomorrowSchedule {
 export const calculateTomorrowSchedule = (
   endDateObj: Date | null,
   today: Date,
+  timeZone: string,
 ): TomorrowSchedule => {
   const tomorrow = dayjs(today).startOf('day').add(1, 'day').toDate();
-  const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, tomorrow);
+  const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, tomorrow, timeZone);
 
   return {
     startDate: tomorrow,

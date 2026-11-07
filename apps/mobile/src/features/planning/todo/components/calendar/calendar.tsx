@@ -10,6 +10,7 @@ import {
   getWeekDates,
   getWeekStart,
   isSameMonth,
+  shiftCalendarDate,
 } from '@src/features/planning/todo/utils/calendar-date';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
@@ -38,11 +39,7 @@ import { match } from 'ts-pattern';
 
 import type { CompletionsByDate } from '../../queries/todo.queries';
 import type { DailyCompletionSummary } from '../../schemas/todo.schema';
-import {
-  clampCalendarPage,
-  getCalendarPageAtOffset,
-  shiftCalendarDate,
-} from '../../utils/view-models/calendar-paging.view-model';
+import { clampCalendarPage, getCalendarPageAtOffset } from '../../utils/calendar-pager.geometry';
 import { CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
@@ -64,14 +61,16 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   const [selectedDate, setSelectedDate] = useFeedDateParam();
   const today = useToday();
   const [viewMode] = useCalendarViewMode();
+  const { timeZone } = useDateFormatContext();
 
   const pagerHeight = match(viewMode)
     .with('week', () => DATE_CELL_HEIGHT)
     .with('month', () => MONTH_WEEKS * DATE_CELL_HEIGHT)
     .exhaustive();
 
-  const handlePrevious = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, -1));
-  const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1));
+  const handlePrevious = () =>
+    setSelectedDate(shiftCalendarDate(viewMode, selectedDate, -1, timeZone));
+  const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1, timeZone));
 
   return (
     <VStack className="bg-white" gap={8}>
@@ -171,7 +170,8 @@ interface CalendarWeekPagerProps {
 
 function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDateParam();
-  const baseWeekRef = useRef(getWeekStart(selectedDate));
+  const { timeZone } = useDateFormatContext();
+  const baseWeekRef = useRef(getWeekStart(selectedDate, timeZone));
 
   const weekAtPage = useCallback(
     (page: number) =>
@@ -183,8 +183,8 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
 
   const pageOfWeek = useCallback(
     (week: Date) =>
-      clampCalendarPage(diffWeeks(week, baseWeekRef.current) + CENTER_PAGE, TOTAL_PAGES),
-    [],
+      clampCalendarPage(diffWeeks(week, baseWeekRef.current, timeZone) + CENTER_PAGE, TOTAL_PAGES),
+    [timeZone],
   );
 
   const handleChange = (page: number) => {
@@ -342,7 +342,7 @@ interface WeekRowProps {
 
 function WeekRow({ week, completions }: WeekRowProps) {
   const { timeZone } = useDateFormatContext();
-  const dates = getWeekDates(getWeekStart(week));
+  const dates = getWeekDates(getWeekStart(week, timeZone));
 
   return (
     <HStack px={8}>
@@ -362,7 +362,7 @@ interface MonthGridProps {
 
 function MonthGrid({ month, completions }: MonthGridProps) {
   const { timeZone } = useDateFormatContext();
-  const weeks = fillMonthGrid(getMonthWeeks(month));
+  const weeks = fillMonthGrid(getMonthWeeks(month, timeZone));
 
   return (
     <VStack>
@@ -373,7 +373,7 @@ function MonthGrid({ month, completions }: MonthGridProps) {
             <CalendarDateCell
               key={date.toISOString()}
               date={date}
-              className={isSameMonth(date, month) ? undefined : 'opacity-20'}
+              className={isSameMonth(date, month, timeZone) ? undefined : 'opacity-20'}
             >
               <CompletionIndicator completion={completions[toDateKey(date, timeZone)]} />
             </CalendarDateCell>

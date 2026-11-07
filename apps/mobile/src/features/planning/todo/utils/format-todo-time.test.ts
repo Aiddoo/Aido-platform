@@ -33,7 +33,7 @@ describe('떠 있는 시각 표시', () => {
     // Given
     const todo = createParentTodo({ localTime: '10:00', isAllDay: false });
     // When
-    const values = toTodoEditFormValues(todo, null);
+    const values = toTodoEditFormValues(todo, SEOUL.timeZone, null);
     // Then
     expect(values.scheduledTime).toBe('10:00');
   });
@@ -42,7 +42,7 @@ describe('떠 있는 시각 표시', () => {
     // Given
     const todo = createParentTodo({ localTime: null, isAllDay: true });
     // When
-    const values = toTodoEditFormValues(todo, null);
+    const values = toTodoEditFormValues(todo, SEOUL.timeZone, null);
     // Then
     expect(values.scheduledTime).toBeNull();
   });

@@ -1,4 +1,3 @@
-import { isDateToday, isSaturday, isSunday } from '@src/features/planning/todo/utils/calendar-date';
 import { range } from 'es-toolkit';
 
 import {
@@ -8,286 +7,88 @@ import {
   isTodayHighlighted,
 } from './calendar-day';
 
-jest.mock('./calendar-date', () => ({
-  isDateToday: jest.fn(),
-  isSunday: jest.fn(),
-  isSaturday: jest.fn(),
-}));
+const TIME_ZONE = 'Asia/Seoul';
+const MONDAY = new Date('2025-03-17T03:00:00Z');
+const SATURDAY = new Date('2025-03-22T03:00:00Z');
+const SUNDAY = new Date('2025-03-23T03:00:00Z');
+const OTHER_DAY = new Date('2025-03-20T03:00:00Z');
 
-const mockIsDateToday = jest.mocked(isDateToday);
-const mockIsSunday = jest.mocked(isSunday);
-const mockIsSaturday = jest.mocked(isSaturday);
-
-const DATE = new Date('2025-03-17'); // 임의 날짜 (월요일)
-const TODAY = new Date('2025-03-20');
-
-beforeEach(() => {
-  mockIsDateToday.mockReturnValue(false);
-  mockIsSunday.mockReturnValue(false);
-  mockIsSaturday.mockReturnValue(false);
+const input = (date: Date, isSelected: boolean, today: Date = OTHER_DAY) => ({
+  date,
+  isSelected,
+  today,
+  timeZone: TIME_ZONE,
 });
 
 describe('getDatePickerDayStyle', () => {
-  it('선택된 날짜는 항상 selected를 반환해야 한다', () => {
-    // Given
-    const input = { date: DATE, isSelected: true, today: TODAY };
-
+  test.each([
+    ['선택된 날짜는 항상 selected', input(SUNDAY, true, SUNDAY), 'selected'],
+    ['오늘이고 선택되지 않은 날짜는 today', input(MONDAY, false, MONDAY), 'today'],
+    ['일요일이고 선택되지 않고 오늘이 아니면 sunday', input(SUNDAY, false), 'sunday'],
+    ['토요일이고 선택되지 않고 오늘이 아니면 saturday', input(SATURDAY, false), 'saturday'],
+    ['평일이고 선택되지 않고 오늘이 아니면 default', input(MONDAY, false), 'default'],
+    ['오늘이 일요일이면 today가 sunday보다 우선', input(SUNDAY, false, SUNDAY), 'today'],
+  ])('%s', (_title, params, expected) => {
     // When
-    const result = getDatePickerDayStyle(input);
+    const result = getDatePickerDayStyle(params);
 
     // Then
-    expect(result).toBe('selected');
+    expect(result).toBe(expected);
   });
 
-  it('오늘이고 선택되지 않은 날짜는 today를 반환해야 한다', () => {
+  test('자정을 막 넘긴 순간은 서울에서는 월요일, 뉴욕에서는 일요일로 칠한다', () => {
     // Given
-    mockIsDateToday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
+    const justAfterMidnightInSeoul = new Date('2025-03-16T15:30:00Z');
+    const params = input(justAfterMidnightInSeoul, false);
 
     // When
-    const result = getDatePickerDayStyle(input);
+    const seoul = getDatePickerDayStyle(params);
+    const newYork = getDatePickerDayStyle({ ...params, timeZone: 'America/New_York' });
 
     // Then
-    expect(result).toBe('today');
-  });
-
-  it('일요일이고 선택되지 않고 오늘이 아니면 sunday를 반환해야 한다', () => {
-    // Given
-    mockIsSunday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getDatePickerDayStyle(input);
-
-    // Then
-    expect(result).toBe('sunday');
-  });
-
-  it('토요일이고 선택되지 않고 오늘이 아니면 saturday를 반환해야 한다', () => {
-    // Given
-    mockIsSaturday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getDatePickerDayStyle(input);
-
-    // Then
-    expect(result).toBe('saturday');
-  });
-
-  it('평일이고 선택되지 않고 오늘이 아니면 default를 반환해야 한다', () => {
-    // Given
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getDatePickerDayStyle(input);
-
-    // Then
-    expect(result).toBe('default');
-  });
-
-  describe('우선순위: selected > today > sunday > saturday > default', () => {
-    it('선택됨 + 오늘 + 일요일 → selected', () => {
-      // Given
-      mockIsDateToday.mockReturnValue(true);
-      mockIsSunday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: true, today: TODAY };
-
-      // When
-      const result = getDatePickerDayStyle(input);
-
-      // Then
-      expect(result).toBe('selected');
-    });
-
-    it('오늘 + 일요일 + 미선택 → today (selected보다 today가 sunday보다 우선)', () => {
-      // Given
-      mockIsDateToday.mockReturnValue(true);
-      mockIsSunday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: false, today: TODAY };
-
-      // When
-      const result = getDatePickerDayStyle(input);
-
-      // Then
-      expect(result).toBe('today');
-    });
-
-    it('일요일 + 토요일 + 미선택 + 오늘 아님 → sunday (sunday가 saturday보다 우선)', () => {
-      // Given
-      mockIsSunday.mockReturnValue(true);
-      mockIsSaturday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: false, today: TODAY };
-
-      // When
-      const result = getDatePickerDayStyle(input);
-
-      // Then
-      expect(result).toBe('sunday');
-    });
+    expect(seoul).toBe('default');
+    expect(newYork).toBe('sunday');
   });
 });
 
 describe('getMonthViewDayStyle', () => {
-  it('선택된 날짜는 항상 selected를 반환해야 한다', () => {
-    // Given
-    const input = { date: DATE, isSelected: true, today: TODAY };
-
+  test.each([
+    ['선택된 날짜는 항상 selected', input(SUNDAY, true), 'selected'],
+    ['일요일이고 선택되지 않으면 sunday', input(SUNDAY, false), 'sunday'],
+    ['토요일이고 선택되지 않으면 saturday', input(SATURDAY, false), 'saturday'],
+    ['오늘이고 주말이 아니고 선택되지 않으면 today', input(MONDAY, false, MONDAY), 'today'],
+    ['평일이고 선택되지 않고 오늘이 아니면 default', input(MONDAY, false), 'default'],
+    [
+      '오늘이 일요일이어도 월 달력에서는 sunday가 today보다 우선',
+      input(SUNDAY, false, SUNDAY),
+      'sunday',
+    ],
+    [
+      '오늘이 토요일이어도 월 달력에서는 saturday가 today보다 우선',
+      input(SATURDAY, false, SATURDAY),
+      'saturday',
+    ],
+  ])('%s', (_title, params, expected) => {
     // When
-    const result = getMonthViewDayStyle(input);
+    const result = getMonthViewDayStyle(params);
 
     // Then
-    expect(result).toBe('selected');
-  });
-
-  it('일요일이고 선택되지 않으면 sunday를 반환해야 한다', () => {
-    // Given
-    mockIsSunday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getMonthViewDayStyle(input);
-
-    // Then
-    expect(result).toBe('sunday');
-  });
-
-  it('토요일이고 선택되지 않으면 saturday를 반환해야 한다', () => {
-    // Given
-    mockIsSaturday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getMonthViewDayStyle(input);
-
-    // Then
-    expect(result).toBe('saturday');
-  });
-
-  it('오늘이고 주말이 아니고 선택되지 않으면 today를 반환해야 한다', () => {
-    // Given
-    mockIsDateToday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getMonthViewDayStyle(input);
-
-    // Then
-    expect(result).toBe('today');
-  });
-
-  it('평일이고 선택되지 않고 오늘이 아니면 default를 반환해야 한다', () => {
-    // Given
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = getMonthViewDayStyle(input);
-
-    // Then
-    expect(result).toBe('default');
-  });
-
-  describe('우선순위: selected > sunday > saturday > today > default (DatePicker와 달리 sunday가 today보다 우선)', () => {
-    it('선택됨 + 일요일 → selected', () => {
-      // Given
-      mockIsSunday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: true, today: TODAY };
-
-      // When
-      const result = getMonthViewDayStyle(input);
-
-      // Then
-      expect(result).toBe('selected');
-    });
-
-    it('오늘 + 일요일 + 미선택 → sunday (MonthView에서는 sunday가 today보다 우선)', () => {
-      // Given
-      mockIsDateToday.mockReturnValue(true);
-      mockIsSunday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: false, today: TODAY };
-
-      // When
-      const result = getMonthViewDayStyle(input);
-
-      // Then
-      expect(result).toBe('sunday');
-    });
-
-    it('오늘 + 토요일 + 미선택 → saturday (MonthView에서는 saturday가 today보다 우선)', () => {
-      // Given
-      mockIsDateToday.mockReturnValue(true);
-      mockIsSaturday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: false, today: TODAY };
-
-      // When
-      const result = getMonthViewDayStyle(input);
-
-      // Then
-      expect(result).toBe('saturday');
-    });
-
-    it('일요일 + 토요일 + 미선택 + 오늘 아님 → sunday (sunday가 saturday보다 우선)', () => {
-      // Given
-      mockIsSunday.mockReturnValue(true);
-      mockIsSaturday.mockReturnValue(true);
-      const input = { date: DATE, isSelected: false, today: TODAY };
-
-      // When
-      const result = getMonthViewDayStyle(input);
-
-      // Then
-      expect(result).toBe('sunday');
-    });
+    expect(result).toBe(expected);
   });
 });
 
 describe('isTodayHighlighted', () => {
-  it('오늘이고 선택되지 않은 경우 true를 반환해야 한다', () => {
-    // Given
-    mockIsDateToday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
+  test.each([
+    ['오늘이고 선택되지 않은 경우 true', input(MONDAY, false, MONDAY), true],
+    ['오늘이지만 선택된 경우 false', input(MONDAY, true, MONDAY), false],
+    ['오늘이 아니고 선택되지 않은 경우 false', input(MONDAY, false), false],
+    ['오늘이 아니고 선택된 경우 false', input(MONDAY, true), false],
+  ])('%s', (_title, params, expected) => {
     // When
-    const result = isTodayHighlighted(input);
+    const result = isTodayHighlighted(params);
 
     // Then
-    expect(result).toBe(true);
-  });
-
-  it('오늘이지만 선택된 경우 false를 반환해야 한다', () => {
-    // Given
-    mockIsDateToday.mockReturnValue(true);
-    const input = { date: DATE, isSelected: true, today: TODAY };
-
-    // When
-    const result = isTodayHighlighted(input);
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('오늘이 아니고 선택되지 않은 경우 false를 반환해야 한다', () => {
-    // Given
-    mockIsDateToday.mockReturnValue(false);
-    const input = { date: DATE, isSelected: false, today: TODAY };
-
-    // When
-    const result = isTodayHighlighted(input);
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('오늘이 아니고 선택된 경우 false를 반환해야 한다', () => {
-    // Given
-    mockIsDateToday.mockReturnValue(false);
-    const input = { date: DATE, isSelected: true, today: TODAY };
-
-    // When
-    const result = isTodayHighlighted(input);
-
-    // Then
-    expect(result).toBe(false);
+    expect(result).toBe(expected);
   });
 });
 

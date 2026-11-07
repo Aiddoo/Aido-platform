@@ -38,7 +38,7 @@ import {
   getTodoRepeatFormIssue,
   getTodoRepeatFormMonthDay,
   toTodoRepeat,
-  todoRepeatFormSchema,
+  createTodoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
 import { type TodoRepeat } from '../schemas/todo-repeat.schema';
@@ -79,9 +79,10 @@ export function TodoRepeatPickerContent({
   onChange,
   onCancel,
 }: TodoRepeatPickerContentProps) {
+  const { timeZone } = useDateFormatContext();
   const methods = useForm({
-    resolver: zodResolver(todoRepeatFormSchema),
-    defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat),
+    resolver: zodResolver(createTodoRepeatFormSchema(timeZone)),
+    defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
     mode: 'onChange',
   });
   const picker = useDatePicker({ startDate: value.startDate });
@@ -200,12 +201,16 @@ function useApplyRepeatFormValues() {
 
 TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector() {
   const { t } = useTranslation('todo');
+  const { timeZone } = useDateFormatContext();
   const { control, getValues } = useFormContext<TodoRepeatFormValues>();
   const [weekdays, interval, isMonthly] = useWatch({
     control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
-  const monthDay = useWatch({ control, compute: getTodoRepeatFormMonthDay });
+  const monthDay = useWatch({
+    control,
+    compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
+  });
   const isPresetSelected = (days: readonly DayOfWeek[]) =>
     isTodoRepeatFormPreset({ isMonthly, interval, weekdays }, days);
   const applyFormValues = useApplyRepeatFormValues();
@@ -262,13 +267,20 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector() {
 
 TodoRepeatPickerContent.RepeatSummary = function RepeatSummary() {
   const { t } = useTranslation('todo');
+  const { timeZone } = useDateFormatContext();
   const { control } = useFormContext<TodoRepeatFormValues>();
   const [weekdays, interval, isMonthly] = useWatch({
     control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
-  const monthDay = useWatch({ control, compute: getTodoRepeatFormMonthDay });
-  const issue = useWatch({ control, compute: getTodoRepeatFormIssue });
+  const monthDay = useWatch({
+    control,
+    compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
+  });
+  const issue = useWatch({
+    control,
+    compute: (values) => getTodoRepeatFormIssue(values, timeZone),
+  });
   const days = formatDaysOfWeek(weekdays);
   const summary = match({ weekdays, interval, isMonthly })
     .returnType<string | null>()
@@ -315,11 +327,12 @@ TodoRepeatPickerContent.RepeatPickerHeader = function RepeatPickerHeader({
   onCancel,
 }: RepeatPickerHeaderProps) {
   const { t } = useTranslation('todo');
+  const { timeZone } = useDateFormatContext();
   const { control, handleSubmit } = useFormContext<TodoRepeatFormValues>();
   const { isValid } = useFormState({ control });
 
   const handleConfirm = handleSubmit((values) => {
-    onChange({ startDate: values.startDate, repeat: toTodoRepeat(values) });
+    onChange({ startDate: values.startDate, repeat: toTodoRepeat(values, timeZone) });
   });
 
   return (
@@ -345,8 +358,11 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
     control,
     name: ['startDate', 'endType', 'untilDate'],
   });
-  const repeat = useWatch({ control, compute: toTodoRepeat });
-  const firstOccurrenceKey = useWatch({ control, compute: getTodoRepeatFormFirstOccurrenceKey });
+  const repeat = useWatch({ control, compute: (values) => toTodoRepeat(values, timeZone) });
+  const firstOccurrenceKey = useWatch({
+    control,
+    compute: (values) => getTodoRepeatFormFirstOccurrenceKey(values, timeZone),
+  });
   const today = useToday();
   const startDateKey = toDateKey(startDate, timeZone);
   const firstWeekDate = picker.weeks.at(0)?.at(0);
@@ -381,7 +397,7 @@ TodoRepeatPickerContent.RepeatCalendarSection = function RepeatCalendarSection({
   const applyFormValues = useApplyRepeatFormValues();
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
   const handleCalendarPress = (date: Date) => {
-    applyFormValues(withTodoRepeatFormCalendarDate(getValues(), date, today));
+    applyFormValues(withTodoRepeatFormCalendarDate(getValues(), date, today, timeZone));
   };
 
   return (
@@ -416,7 +432,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
   const firstOccurrenceKey = useWatch({
     control,
     compute: (values) => {
-      const repeat = toTodoRepeat(values);
+      const repeat = toTodoRepeat(values, dateFormatContext.timeZone);
       return repeat == null
         ? null
         : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
@@ -430,7 +446,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
   const isMonthDayClamped = useWatch({
     control,
     compute: (values) => {
-      const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
+      const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, dateFormatContext.timeZone);
       return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
     },
   });
@@ -464,7 +480,8 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
               </Text>
             ))
             .with('UNTIL', () =>
-              untilDate != null && !isSameDay(periodStart, untilDate) ? (
+              untilDate != null &&
+              !isSameDay(periodStart, untilDate, dateFormatContext.timeZone) ? (
                 <Text size="b3" tone="brand">
                   {formatMonthDay(periodStart)} - {formatMonthDay(untilDate)}
                 </Text>
@@ -523,7 +540,9 @@ const RepeatCalendar = ({
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
   const { t: tCommon } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
-  const hasDistinctRange = isOpenEnded || (endDate != null && !isSameDay(startDate, endDate));
+  const { timeZone } = dateFormatContext;
+  const hasDistinctRange =
+    isOpenEnded || (endDate != null && !isSameDay(startDate, endDate, dateFormatContext.timeZone));
 
   return (
     <VStack gap={16}>
@@ -557,9 +576,9 @@ const RepeatCalendar = ({
       <VStack className="h-[288px]">
         {weeks.map((week, weekIndex) => {
           const days = week.map((date) => {
-            const isVisible = isSameMonth(date, displayMonth);
-            const isStart = isSameDay(date, startDate);
-            const isEnd = endDate != null && isSameDay(date, endDate);
+            const isVisible = isSameMonth(date, displayMonth, timeZone);
+            const isStart = isSameDay(date, startDate, timeZone);
+            const isEnd = endDate != null && isSameDay(date, endDate, timeZone);
             return {
               date,
               isVisible,
@@ -568,8 +587,8 @@ const RepeatCalendar = ({
               isInRange:
                 isVisible &&
                 hasDistinctRange &&
-                isAfterDay(date, startDate) &&
-                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate))),
+                isAfterDay(date, startDate, timeZone) &&
+                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate, timeZone))),
               isRangeStart: isVisible && hasDistinctRange && isStart,
               isRangeEnd: isVisible && !isOpenEnded && hasDistinctRange && isEnd,
             };
@@ -637,10 +656,12 @@ const RepeatDateCell = memo(function RepeatDateCell({
   onPress,
 }: RepeatDateCellProps) {
   const dayOfMonth = date.getDate();
-  const isDisabled = isBeforeDay(date, today);
+  const { timeZone } = useDateFormatContext();
+  const isDisabled = isBeforeDay(date, today, timeZone);
   const isSelected = isStart || isEnd;
-  const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
-  const shouldHighlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
+  const dayStyle = getDatePickerDayStyle({ date, isSelected, today, timeZone });
+  const shouldHighlightToday =
+    !isDisabled && isTodayHighlighted({ date, isSelected, today, timeZone });
 
   return (
     <PressableFeedback

@@ -114,15 +114,15 @@ TodoActionsBottomSheet.Content = function Content({
     return null;
   }
 
-  const editValues = toTodoEditFormValues(todo);
-  const isTodoToday = isDateToday(editValues.startDate, today);
+  const editValues = toTodoEditFormValues(todo, dateFormatContext.timeZone);
+  const isTodoToday = isDateToday(editValues.startDate, today, dateFormatContext.timeZone);
 
   const sheetParams = { todoId: todo.id, date };
 
   const handleScheduleToggle = () => {
     const { startDate, endDate } = isTodoToday
-      ? calculateTomorrowSchedule(editValues.endDate, today)
-      : calculateTodaySchedule(editValues.endDate, today);
+      ? calculateTomorrowSchedule(editValues.endDate, today, dateFormatContext.timeZone)
+      : calculateTodaySchedule(editValues.endDate, today, dateFormatContext.timeZone);
 
     updateScheduleMutation.mutate(
       {

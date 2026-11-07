@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { type DailyCompletionsResult } from '../schemas/todo.schema';
 import { TodoPolicy } from './todo.model';
@@ -244,8 +246,63 @@ describe('TodoPolicy.getShiftedEndDate', () => {
   });
 });
 
+describe('TodoPolicy.getLocalTime', () => {
+  const instant = toInstant('2026-11-05T01:00:00.000Z');
+
+  it('서버가 준 벽시계는 시간대를 바꿔도 같은 오전 10시다', () => {
+    // Given
+    const todo = { isAllDay: false, localTime: '10:00', scheduledAt: instant };
+
+    // When
+    const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
+    const newYork = TodoPolicy.getLocalTime(todo, 'America/New_York');
+
+    // Then
+    expect(seoul).toBe('10:00');
+    expect(newYork).toBe('10:00');
+  });
+
+  it('벽시계가 없는 옛 응답은 보는 순간의 시간대로 계산한다', () => {
+    // Given
+    const todo = { isAllDay: false, localTime: null, scheduledAt: instant };
+
+    // When
+    const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
+    const newYork = TodoPolicy.getLocalTime(todo, 'America/New_York');
+
+    // Then
+    expect(seoul).toBe('10:00');
+    expect(newYork).toBe('20:00');
+  });
+
+  it('서머타임이 시작되는 날도 순간을 그 날의 오프셋으로 계산한다', () => {
+    // Given
+    const todo = {
+      isAllDay: false,
+      localTime: null,
+      scheduledAt: toInstant('2026-03-08T07:30:00.000Z'),
+    };
+
+    // When
+    const time = TodoPolicy.getLocalTime(todo, 'America/New_York');
+
+    // Then
+    expect(time).toBe('03:30');
+  });
+
+  it('종일이거나 시간이 없으면 null이다', () => {
+    // Given
+    const allDay = { isAllDay: true, localTime: '10:00', scheduledAt: instant };
+    const noTime = { isAllDay: false, localTime: null, scheduledAt: null };
+
+    // When / Then
+    expect(TodoPolicy.getLocalTime(allDay, 'Asia/Seoul')).toBeNull();
+    expect(TodoPolicy.getLocalTime(noTime, 'Asia/Seoul')).toBeNull();
+  });
+});
+
 describe('TodoPolicy.hasUpcomingTimedTodo', () => {
-  const now = { dateKey: '2026-11-05', time: '12:00' };
+  const now = { dateKey: '2026-11-05', time: '12:00', timeZone: 'Asia/Seoul' };
 
   it.each([
     ['내일 시간 있는 할 일', { startDate: '2026-11-06', localTime: '09:00' }, true],

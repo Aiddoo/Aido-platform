@@ -88,6 +88,7 @@ export function useCreateTodoMutationOptions() {
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
         localTime: input.scheduledTime ?? null,
+        scheduledAt: null,
         isAllDay: input.isAllDay,
         visibility: input.visibility ?? 'PUBLIC',
         recurrenceGroupId: null,

@@ -1,7 +1,6 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES, type DayOfWeek } from '@aido/api/vocabulary';
 import { getDayOfMonth } from '@src/shared/date/date-key';
 import { toDateKey } from '@src/shared/date/instant';
-import { getDeviceTimezone } from '@src/shared/infra/device-clock';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -25,32 +24,32 @@ export type TodoRepeatFormValues = z.input<typeof todoRepeatFormShape>;
 
 const WEEK_LENGTH = 7;
 
-export function getTodoRepeatFormMonthDay({
-  monthDay,
-  startDate,
-}: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>): number {
-  return monthDay ?? getDayOfMonth(toDateKey(startDate, getDeviceTimezone()));
+export function getTodoRepeatFormMonthDay(
+  { monthDay, startDate }: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>,
+  timeZone: string,
+): number {
+  return monthDay ?? getDayOfMonth(toDateKey(startDate, timeZone));
 }
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
 }
 
-function toTodoRepeatEnd(values: TodoRepeatFormValues): TodoRepeatEnd | null {
+function toTodoRepeatEnd(values: TodoRepeatFormValues, timeZone: string): TodoRepeatEnd | null {
   return match(values.endType)
     .returnType<TodoRepeatEnd | null>()
     .with('NEVER', () => ({ type: 'NEVER' }))
     .with('UNTIL', () =>
       values.untilDate == null
         ? null
-        : { type: 'UNTIL', date: toDateKey(values.untilDate, getDeviceTimezone()) },
+        : { type: 'UNTIL', date: toDateKey(values.untilDate, timeZone) },
     )
     .with('COUNT', () => ({ type: 'COUNT', count: values.count }))
     .exhaustive();
 }
 
-export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
-  const end = toTodoRepeatEnd(values);
+export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): TodoRepeat | null {
+  const end = toTodoRepeatEnd(values, timeZone);
   if (end == null) {
     return null;
   }
@@ -58,7 +57,7 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
   if (values.isMonthly) {
     return {
       frequency: 'MONTHLY',
-      monthDay: getTodoRepeatFormMonthDay(values),
+      monthDay: getTodoRepeatFormMonthDay(values, timeZone),
       end,
     };
   }
@@ -81,17 +80,20 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
 
 export type TodoRepeatFormIssue = 'no-weekdays' | 'until-required' | 'no-occurrence';
 
-export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeatFormIssue | null {
+export function getTodoRepeatFormIssue(
+  values: TodoRepeatFormValues,
+  timeZone: string,
+): TodoRepeatFormIssue | null {
   if (!values.isMonthly && values.weekdays.length === 0) {
     return 'no-weekdays';
   }
-  const repeat = toTodoRepeat(values);
+  const repeat = toTodoRepeat(values, timeZone);
   if (repeat == null) {
     return 'until-required';
   }
   return TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
     repeat,
-    toDateKey(values.startDate, getDeviceTimezone()),
+    toDateKey(values.startDate, timeZone),
   ) == null
     ? 'no-occurrence'
     : null;
@@ -103,9 +105,11 @@ const ISSUE_PATH = {
   'no-occurrence': 'untilDate',
 } as const satisfies Record<TodoRepeatFormIssue, keyof TodoRepeatFormValues>;
 
-export const todoRepeatFormSchema = todoRepeatFormShape.superRefine((values, context) => {
-  const issue = getTodoRepeatFormIssue(values);
-  if (issue != null) {
-    context.addIssue({ code: 'custom', message: issue, path: [ISSUE_PATH[issue]] });
-  }
-});
+export function createTodoRepeatFormSchema(timeZone: string) {
+  return todoRepeatFormShape.superRefine((values, context) => {
+    const issue = getTodoRepeatFormIssue(values, timeZone);
+    if (issue != null) {
+      context.addIssue({ code: 'custom', message: issue, path: [ISSUE_PATH[issue]] });
+    }
+  });
+}
