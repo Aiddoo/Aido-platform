@@ -2,13 +2,12 @@ import { z } from 'zod';
 
 import { voiceNoteDraftIdSchema } from './voice-note.schema';
 
-export const voiceNoteTabSchema = z.enum(['summary', 'todos', 'transcript']);
+export const voiceNoteTabSchema = z.enum(['summary', 'todos', 'transcript']).catch('summary');
 
 export type VoiceNoteTab = z.output<typeof voiceNoteTabSchema>;
 
 export const voiceNoteParamsSchema = z.object({
   draftId: voiceNoteDraftIdSchema,
-  tab: voiceNoteTabSchema.catch('summary'),
 });
 
 export const voiceNoteRecordParamsSchema = z.object({

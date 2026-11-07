@@ -3,6 +3,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useView } from '@src/shared/hooks/use-view';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,6 +14,7 @@ import {
   ScreenScrollShadow,
   SegmentTabTrigger,
   Text,
+  ViewTabs,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
@@ -26,7 +28,6 @@ import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
-import { useVoiceNoteTab } from '../../hooks/use-voice-note-params';
 import {
   useVoiceNotePlayback,
   useVoiceNotePlayer,
@@ -52,7 +53,7 @@ interface VoiceNoteResultProps {
 }
 
 export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
-  const [tab, setTab] = useVoiceNoteTab();
+  const [tab, setTab] = useView('tab', voiceNoteTabSchema);
   const isCompact = useWindowSizeClass() === 'compact';
   const { player, canPlay } = useVoiceNoteResultPlayer(note);
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
@@ -157,15 +158,11 @@ VoiceNoteResult.TabList = function TabList({
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
-    <Tabs
+    <ViewTabs
       {...tabsProps}
+      schema={voiceNoteTabSchema}
       value={value}
-      onValueChange={(next) => {
-        const parsed = voiceNoteTabSchema.safeParse(next);
-        if (parsed.success) {
-          onValueChange(parsed.data);
-        }
-      }}
+      onValueChange={onValueChange}
     >
       <Tabs.List>
         <Tabs.Indicator />
@@ -196,7 +193,7 @@ VoiceNoteResult.TabList = function TabList({
           {t('result.tabs.transcript')}
         </SegmentTabTrigger>
       </Tabs.List>
-    </Tabs>
+    </ViewTabs>
   );
 };
 

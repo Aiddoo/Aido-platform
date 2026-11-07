@@ -13,7 +13,7 @@ import { useFeedSelectedTodo } from '@src/features/planning/todo/hooks/use-feed-
 import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
 import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view-param';
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
-import { useVoiceNoteTab } from '@src/features/voice/hooks/use-voice-note-params';
+import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { mockWindowDimensions } from '@src/shared/__tests__';
 import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
@@ -258,7 +258,7 @@ describe('공개 URL 계약', () => {
 
   it('음성 메모 탭', async () => {
     // Given
-    const route = await renderRouteHook(() => useVoiceNoteTab(), {
+    const route = await renderRouteHook(() => useView('tab', voiceNoteTabSchema), {
       url: `/voice-note?draftId=${STRANGER_DRAFT}`,
     });
 
