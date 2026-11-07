@@ -1,5 +1,6 @@
 import { refreshTokensSchema } from '@aido/api';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
+import type { Logger } from '@src/core/ports/logger';
 import type {
   RefreshOutcome,
   RefreshTokensRequest,
@@ -8,7 +9,6 @@ import type {
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
-import { logger } from '@src/shared/infra/logger/global-logger';
 import { TimeoutError as KyTimeoutError } from 'ky';
 import { z } from 'zod';
 
@@ -21,6 +21,7 @@ interface TokenRefresherDeps {
   tokenStore: TokenStore;
   requestRefresh: RefreshTokensRequest;
   sessionEpoch: SessionEpoch;
+  logger: Pick<Logger, 'warn'>;
 }
 
 /**
@@ -37,6 +38,7 @@ export function createTokenRefresher({
   tokenStore,
   requestRefresh,
   sessionEpoch,
+  logger,
 }: TokenRefresherDeps): TokenRefresher {
   let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 

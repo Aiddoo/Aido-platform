@@ -1,11 +1,11 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { Logger } from '@src/core/ports/logger';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
-import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
-import { logger } from '@src/shared/infra/logger/global-logger';
 import ky, { type AfterResponseHook } from 'ky';
 import { match } from 'ts-pattern';
 
@@ -30,6 +30,8 @@ export interface TokenRefreshHookDeps {
   refresh: TokenRefresher;
   endSession: EndSession;
   sessionEpoch: SessionEpoch;
+  logger: Pick<Logger, 'warn'>;
+  errorReporter: Pick<ErrorReporter, 'captureMessage'>;
 }
 
 /**
@@ -54,7 +56,7 @@ export interface TokenRefreshHookDeps {
  *   warning으로 남기고 원 401을 반환한다(화면별 QueryErrorBoundary가 담음, 무음 금지).
  */
 export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterResponseHook {
-  const { tokenStore, refresh, endSession, sessionEpoch } = deps;
+  const { tokenStore, refresh, endSession, sessionEpoch, logger, errorReporter } = deps;
 
   // 새 액세스 토큰과 마커를 실어 강제 재시도한다. `new Request(request, ...)`가 원 요청의
   // body·method·나머지 헤더를 보존하고, Authorization만 갱신된 토큰으로 덮어쓴다.

@@ -1,10 +1,12 @@
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { Logger } from '@src/core/ports/logger';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
 
-import { recordApiFailureBreadcrumb } from './error-handler';
+import { createApiFailureBreadcrumbHook } from './error-handler';
 import { createAppHeaders, setPerRequestHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
@@ -17,6 +19,8 @@ interface AuthClientDeps {
   refresh: TokenRefresher;
   endSession: EndSession;
   sessionEpoch: SessionEpoch;
+  logger: Pick<Logger, 'warn'>;
+  errorReporter: Pick<ErrorReporter, 'addBreadcrumb' | 'captureMessage'>;
 }
 
 /**
@@ -32,6 +36,8 @@ export function createAuthClient({
   refresh,
   endSession,
   sessionEpoch,
+  logger,
+  errorReporter,
 }: AuthClientDeps): KyInstance {
   return ky.create({
     prefix: ENV.API_URL,
@@ -62,8 +68,15 @@ export function createAuthClient({
         },
       ],
       afterResponse: [
-        recordApiFailureBreadcrumb,
-        createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch }),
+        createApiFailureBreadcrumbHook(errorReporter),
+        createTokenRefreshHook({
+          tokenStore,
+          refresh,
+          endSession,
+          sessionEpoch,
+          logger,
+          errorReporter,
+        }),
       ],
     },
   });

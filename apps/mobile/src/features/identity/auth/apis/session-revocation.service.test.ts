@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import {
+  createErrorReporterStub,
   createMemoryStorage,
   createMemoryTokenStore,
   createHttpClientStub,
@@ -310,7 +311,9 @@ describe('SessionRevocationService', () => {
     const service = new SessionRevocationService({
       repository,
       requestRefresh,
-      publicHttpClient: new KyHttpClient(createPublicClient()),
+      publicHttpClient: new KyHttpClient(
+        createPublicClient({ errorReporter: createErrorReporterStub() }),
+      ),
       logger: { info: jest.fn(), warn: jest.fn() },
       now: Date.now,
     });

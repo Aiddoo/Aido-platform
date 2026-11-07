@@ -1,6 +1,6 @@
+import type { Logger } from '@src/core/ports/logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import { getErrorMessage } from '@src/shared/errors';
-import { logger } from '@src/shared/infra/logger/global-logger';
 import { addNetworkStateListener, getNetworkStateAsync, type NetworkState } from 'expo-network';
 
 import { NETWORK_STATUS_LOG_EVENT } from './network-status-log-events';
@@ -10,31 +10,33 @@ function isOnline(state: NetworkState): boolean {
   return state.isConnected !== false;
 }
 
-export const expoNetworkStatusGateway: NetworkStatusGateway = {
-  subscribe: (listener) => {
-    let hasEvent = false;
-    let isSubscribed = true;
-    const subscription = addNetworkStateListener((state) => {
-      hasEvent = true;
-      listener(isOnline(state));
-    });
-
-    getNetworkStateAsync()
-      .then((state) => {
-        // 구독을 끝낸 뒤(Fast Refresh·재연결) 늦게 온 첫 조회가 새 구독의 상태를 덮어쓰지 않게 한다
-        if (isSubscribed && !hasEvent) {
-          listener(isOnline(state));
-        }
-      })
-      .catch((error: unknown) => {
-        logger.warn(NETWORK_STATUS_LOG_EVENT.INITIAL_READ_FAILED, {
-          error: getErrorMessage(error),
-        });
+export function createExpoNetworkStatusGateway(logger: Pick<Logger, 'warn'>): NetworkStatusGateway {
+  return {
+    subscribe: (listener) => {
+      let hasEvent = false;
+      let isSubscribed = true;
+      const subscription = addNetworkStateListener((state) => {
+        hasEvent = true;
+        listener(isOnline(state));
       });
 
-    return () => {
-      isSubscribed = false;
-      subscription.remove();
-    };
-  },
-};
+      getNetworkStateAsync()
+        .then((state) => {
+          // 구독을 끝낸 뒤(Fast Refresh·재연결) 늦게 온 첫 조회가 새 구독의 상태를 덮어쓰지 않게 한다
+          if (isSubscribed && !hasEvent) {
+            listener(isOnline(state));
+          }
+        })
+        .catch((error: unknown) => {
+          logger.warn(NETWORK_STATUS_LOG_EVENT.INITIAL_READ_FAILED, {
+            error: getErrorMessage(error),
+          });
+        });
+
+      return () => {
+        isSubscribed = false;
+        subscription.remove();
+      };
+    },
+  };
+}

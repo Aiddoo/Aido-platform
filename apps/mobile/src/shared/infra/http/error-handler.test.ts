@@ -1,11 +1,11 @@
 import { ErrorCode } from '@aido/api/errors';
-import { runKyAfterResponseHook } from '@src/shared/__tests__';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { createErrorReporterStub, runKyAfterResponseHook } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
-import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 
 import {
-  recordApiFailureBreadcrumb,
-  recordPublicApiFailureBreadcrumb,
+  createApiFailureBreadcrumbHook,
+  createPublicApiFailureBreadcrumbHook,
   resolveMessage,
 } from './error-handler';
 
@@ -15,21 +15,22 @@ const createErrorResponse = (code: string, message: string, status = 400): Respo
     headers: { 'Content-Type': 'application/json' },
   });
 
-type Hook = typeof recordPublicApiFailureBreadcrumb;
+type Hook = ReturnType<typeof createPublicApiFailureBreadcrumbHook>;
 
 const runHook = async (hook: Hook, response: Response): Promise<void> => {
   await runKyAfterResponseHook(hook, new Request('https://api.test/todos'), response);
 };
 
 describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () => {
-  let addBreadcrumb: jest.SpyInstance;
+  let addBreadcrumb: jest.Mocked<ErrorReporter>['addBreadcrumb'];
+  let recordPublicApiFailureBreadcrumb: Hook;
+  let recordApiFailureBreadcrumb: Hook;
 
   beforeEach(() => {
-    addBreadcrumb = jest.spyOn(errorReporter, 'addBreadcrumb').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
+    const errorReporter = createErrorReporterStub();
+    addBreadcrumb = errorReporter.addBreadcrumb;
+    recordPublicApiFailureBreadcrumb = createPublicApiFailureBreadcrumbHook(errorReporter);
+    recordApiFailureBreadcrumb = createApiFailureBreadcrumbHook(errorReporter);
   });
 
   it('실패 응답은 throw 없이 status와 서버 코드를 담은 breadcrumb만 남긴다', async () => {

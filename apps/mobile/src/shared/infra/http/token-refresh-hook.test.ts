@@ -1,10 +1,13 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
-import { createMemoryTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';
+import {
+  createErrorReporterStub,
+  createLoggerStub,
+  createMemoryTokenStore,
+  runKyAfterResponseHook,
+} from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
-import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
-import { logger } from '@src/shared/infra/logger/global-logger';
 
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 
@@ -30,7 +33,8 @@ describe('createTokenRefreshHook', () => {
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let refresh: jest.MockedFunction<() => Promise<RefreshOutcome>>;
   let endSession: jest.MockedFunction<(details: SessionExpiredDetails) => Promise<void>>;
-  let captureMessage: jest.SpyInstance;
+  let errorReporter: ReturnType<typeof createErrorReporterStub>;
+  let logger: ReturnType<typeof createLoggerStub>;
   let hook: ReturnType<typeof createTokenRefreshHook>;
   let sessionEpoch: SessionEpoch;
 
@@ -39,8 +43,16 @@ describe('createTokenRefreshHook', () => {
     tokenStore = createMemoryTokenStore();
     refresh = jest.fn();
     endSession = jest.fn().mockResolvedValue(undefined);
-    captureMessage = jest.spyOn(errorReporter, 'captureMessage').mockImplementation(() => {});
-    hook = createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch });
+    errorReporter = createErrorReporterStub();
+    logger = createLoggerStub();
+    hook = createTokenRefreshHook({
+      tokenStore,
+      refresh,
+      endSession,
+      sessionEpoch,
+      logger,
+      errorReporter,
+    });
   });
 
   afterEach(() => {
@@ -90,7 +102,7 @@ describe('createTokenRefreshHook', () => {
     expect(result).toBe(response);
     expect(refresh).not.toHaveBeenCalled();
     expect(endSession).not.toHaveBeenCalled();
-    expect(captureMessage).toHaveBeenCalledWith(
+    expect(errorReporter.captureMessage).toHaveBeenCalledWith(
       'auth_refresh_retry_rejected',
       expect.objectContaining({ severity: 'warning', statusCode: 401 }),
     );
@@ -181,7 +193,6 @@ describe('createTokenRefreshHook', () => {
   it('액세스 토큰 읽기가 실패해도 경고를 남기고 갱신 경로로 넘어간다 (세션 유지)', async () => {
     // Given
     // 잠긴 키체인. 읽기 실패를 "토큰 없음"으로 오판하면 안 된다.
-    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
     tokenStore.getAccessToken.mockRejectedValue(new Error('User interaction is not allowed.'));
     refresh.mockRejectedValue(new NetworkError());
     const response = createFakeResponse(401);
@@ -194,7 +205,7 @@ describe('createTokenRefreshHook', () => {
     await expect(result).rejects.toBeInstanceOf(NetworkError);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith('token-refresher.access-token-read.failed', {
+    expect(logger.warn).toHaveBeenCalledWith('token-refresher.access-token-read.failed', {
       error: 'User interaction is not allowed.',
     });
   });

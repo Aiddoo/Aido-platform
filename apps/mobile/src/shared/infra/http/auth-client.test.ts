@@ -1,13 +1,17 @@
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
-import { createPendingResponse } from '@src/shared/__tests__';
+import {
+  createErrorReporterStub,
+  createLoggerStub,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import { waitFor } from '@testing-library/react-native';
 import ky, { type KyInstance } from 'ky';
 
 import { createAuthClient } from './auth-client';
-import { recordApiFailureBreadcrumb } from './error-handler';
+import { createApiFailureBreadcrumbHook } from './error-handler';
 import { KyHttpClient } from './ky-client';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import { createTokenRefresher } from './token-refresher';
@@ -98,9 +102,12 @@ describe('createAuthClient: 동시 401', () => {
           tokenStore,
           requestRefresh,
           sessionEpoch: createSessionEpoch(),
+          logger: createLoggerStub(),
         }),
         endSession,
         sessionEpoch: createSessionEpoch(),
+        logger: createLoggerStub(),
+        errorReporter: createErrorReporterStub(),
       }),
     );
 
@@ -126,9 +133,16 @@ describe('createAuthClient: 계정 전환과 늦은 응답', () => {
     const http = new KyHttpClient(
       createAuthClient({
         tokenStore,
-        refresh: createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch }),
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh,
+          sessionEpoch,
+          logger: createLoggerStub(),
+        }),
         endSession,
         sessionEpoch,
+        logger: createLoggerStub(),
+        errorReporter: createErrorReporterStub(),
       }),
     );
     return { tokenStore, endSession, http };
@@ -216,7 +230,9 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
 
   const buildClient = (): KyInstance => {
     const sessionEpoch = createSessionEpoch();
-    const refresh = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch });
+    const logger = createLoggerStub();
+    const errorReporter = createErrorReporterStub();
+    const refresh = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch, logger });
 
     return ky.create({
       prefix: 'https://api.test',
@@ -232,8 +248,15 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
           },
         ],
         afterResponse: [
-          recordApiFailureBreadcrumb,
-          createTokenRefreshHook({ tokenStore, refresh, endSession, sessionEpoch }),
+          createApiFailureBreadcrumbHook(errorReporter),
+          createTokenRefreshHook({
+            tokenStore,
+            refresh,
+            endSession,
+            sessionEpoch,
+            logger,
+            errorReporter,
+          }),
         ],
       },
     });

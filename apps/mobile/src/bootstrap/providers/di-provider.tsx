@@ -77,7 +77,6 @@ import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/applicat
 import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id-gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard-gateway';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
-import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { expoLocalFileSystem } from '@src/shared/infra/file-system/expo-local-file-system';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics-gateway';
@@ -99,7 +98,7 @@ import {
   createSentryLogger,
   setGlobalLogger,
 } from '@src/shared/infra/logger';
-import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status-gateway';
+import { createExpoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status-gateway';
 import { createExpoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { createEnvironmentAnalytics } from '@src/shared/infra/observability/observability-env';
 import { createRevenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases-gateway';
@@ -157,9 +156,6 @@ export function DIProvider({
 
     const errorReporter = createEnvironmentErrorReporter();
 
-    // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
-    setGlobalErrorReporter(errorReporter);
-
     const storageFailure = encryptedStorageBootstrap.failure;
     if (storageFailure != null) {
       // 이번 실행은 초안·조회 캐시를 기기에 남기지 않는다. 앱은 서버 값만으로 동작한다
@@ -175,7 +171,7 @@ export function DIProvider({
     const installation = expoNativeApplicationMetadataGateway.getInstallation();
     const appVersion = installation?.currentVersion ?? ENV.APP_VERSION;
     const appBuild = installation?.currentBuild;
-    const publicKyInstance = createPublicClient({ appVersion, appBuild });
+    const publicKyInstance = createPublicClient({ appVersion, appBuild, errorReporter });
     const publicHttpClient = new KyHttpClient(publicKyInstance);
     const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
@@ -185,7 +181,12 @@ export function DIProvider({
     // 단일 리프레셔: 인스턴스가 갈라지면 single-flight mutex가 분리되어
     // 동시 회전이 서버의 토큰 패밀리를 소모한다.
     const requestRefresh = createRefreshTokensRequest({ appVersion, appBuild });
-    const tokenRefresher = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch });
+    const tokenRefresher = createTokenRefresher({
+      tokenStore,
+      requestRefresh,
+      sessionEpoch,
+      logger,
+    });
     const sessionRevocationService = new SessionRevocationService({
       repository: createPendingRevocationRepository(storage),
       requestRefresh,
@@ -201,6 +202,8 @@ export function DIProvider({
       refresh: tokenRefresher,
       endSession: (reason) => sessionManager.end(reason),
       sessionEpoch,
+      logger,
+      errorReporter,
     });
     const authHttpClient = new KyHttpClient(authKyInstance);
 
@@ -435,7 +438,7 @@ export function DIProvider({
       systemShare: expoSystemShareGateway,
       incomingLink: expoIncomingLinkGateway,
       syncStorage: deviceSyncStorage,
-      networkStatus: expoNetworkStatusGateway,
+      networkStatus: createExpoNetworkStatusGateway(logger),
       widgetSyncService,
       widgetNavigationRepository,
       logOutDeviceService: new LogOutDeviceService({

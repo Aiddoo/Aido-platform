@@ -17,6 +17,8 @@ import { useCreateTodoMutationOptions } from '@src/features/planning/composer/qu
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
+  createErrorReporterStub,
+  createLoggerStub,
   createMemorySyncStorage,
   createMemoryTokenStore,
   createHttpClientStub,
@@ -724,9 +726,12 @@ describe('로그아웃과 늦은 갱신', () => {
           tokenStore,
           requestRefresh: () => lateRefresh.response,
           sessionEpoch,
+          logger: createLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
+        logger: createLoggerStub(),
+        errorReporter: createErrorReporterStub(),
       }),
     );
     const authService = new AuthService({
@@ -975,9 +980,16 @@ describe('토큰 만료', () => {
     const sessionManager = createSessionManager(tokenStore);
     const client = createAuthClient({
       tokenStore,
-      refresh: createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch }),
+      refresh: createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch,
+        logger: createLoggerStub(),
+      }),
       endSession: (details) => sessionManager.end(details),
       sessionEpoch,
+      logger: createLoggerStub(),
+      errorReporter: createErrorReporterStub(),
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({
@@ -1080,9 +1092,12 @@ describe('토큰 만료', () => {
           tokenStore,
           requestRefresh: async () => new Response(null, { status: 401 }),
           sessionEpoch,
+          logger: createLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
+        logger: createLoggerStub(),
+        errorReporter: createErrorReporterStub(),
       }),
     );
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));

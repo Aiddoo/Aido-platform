@@ -1,6 +1,6 @@
 import { ErrorCode, isErrorCode } from '@aido/api/errors';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { t, tDynamic } from '@src/shared/i18n';
-import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { AfterResponseState } from 'ky';
 
 import { errorEnvelopeSchema } from './error-envelope';
@@ -50,7 +50,11 @@ export function resolveMessage(code: string, serverMessage: string): string {
  * 이후 발생하는 에러 이벤트의 타임라인에 "어떤 요청이 어떤 코드로 실패했는지"가 붙는다.
  * 요청 ID로 같은 요청의 서버 로그(`reqId`)·Sentry 이벤트(`request_id`)를 찾는다.
  */
-async function recordFailureBreadcrumb(request: Request, response: Response): Promise<void> {
+async function recordFailureBreadcrumb(
+  errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
+  request: Request,
+  response: Response,
+): Promise<void> {
   const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
   const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
   errorReporter.addBreadcrumb({
@@ -68,21 +72,23 @@ async function recordFailureBreadcrumb(request: Request, response: Response): Pr
 }
 
 /** auth-client용: 401은 갱신 흐름(token-refresh-hook)의 정상 경로라 소음 방지를 위해 건너뜀 */
-export async function recordApiFailureBreadcrumb({
-  request,
-  response,
-}: AfterResponseState): Promise<void> {
-  if (!response.ok && response.status !== 401) {
-    await recordFailureBreadcrumb(request, response);
-  }
+export function createApiFailureBreadcrumbHook(
+  errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
+) {
+  return async ({ request, response }: AfterResponseState): Promise<void> => {
+    if (!response.ok && response.status !== 401) {
+      await recordFailureBreadcrumb(errorReporter, request, response);
+    }
+  };
 }
 
 /** public-client용: 갱신 흐름이 없으므로 401 포함 모든 실패를 기록 */
-export async function recordPublicApiFailureBreadcrumb({
-  request,
-  response,
-}: AfterResponseState): Promise<void> {
-  if (!response.ok) {
-    await recordFailureBreadcrumb(request, response);
-  }
+export function createPublicApiFailureBreadcrumbHook(
+  errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
+) {
+  return async ({ request, response }: AfterResponseState): Promise<void> => {
+    if (!response.ok) {
+      await recordFailureBreadcrumb(errorReporter, request, response);
+    }
+  };
 }
