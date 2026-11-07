@@ -3,6 +3,7 @@ import { SocialLoginButtons } from '@src/features/identity/auth/components/socia
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Avatar,
   H1,
   HStack,
   ReadableContent,
@@ -13,7 +14,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
-import { Avatar, Separator } from 'heroui-native';
+import { Separator } from 'heroui-native';
 
 export default function LoginScreen() {
   const push = useSingleTap(router.push);

@@ -953,6 +953,46 @@ const PENDING_CARD_NAME_PATHS = new Set([
   'apps/mobile/src/features/social/invite/components/invite-link-card.tsx',
 ]);
 
+// 공용 부품 이름(Avatar, BottomSheet, Button, Input, Text, TextArea)은 앱 안에서 하나의 뜻만 갖는다.
+// shared/ui가 heroui-native 원본을 감싸므로, 그 밖에서 같은 이름을 heroui-native에서 가져오면 막는다.
+const SHARED_UI_NAMES_OVER_HEROUI = new Set([
+  'Avatar',
+  'BottomSheet',
+  'Button',
+  'Input',
+  'Text',
+  'TextArea',
+]);
+
+function checkHerouiSharedNameImports(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName);
+  if (
+    !/^apps\/mobile\/(?:src|app)\//u.test(relativePath) ||
+    relativePath.startsWith('apps/mobile/src/shared/ui/')
+  ) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== 'heroui-native' ||
+      statement.importClause?.namedBindings === undefined ||
+      !ts.isNamedImports(statement.importClause.namedBindings)
+    ) {
+      continue;
+    }
+    for (const element of statement.importClause.namedBindings.elements) {
+      const importedName = (element.propertyName ?? element.name).text;
+      if (SHARED_UI_NAMES_OVER_HEROUI.has(importedName)) {
+        errors.push(
+          `${getLocation(sourceFile, element, repositoryRoot)} heroui-native의 ${importedName} 대신 @src/shared/ui의 ${importedName}를 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다.`,
+        );
+      }
+    }
+  }
+}
+
 function checkCardComponentUsesCard(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName);
   if (
@@ -1890,6 +1930,7 @@ export function checkMobileConventions(
     checkOwnFeatureAbsoluteImports(sourceFile, repositoryRoot, errors);
     checkServerErrorReading(sourceFile, repositoryRoot, errors);
     checkCardComponentUsesCard(sourceFile, repositoryRoot, errors);
+    checkHerouiSharedNameImports(sourceFile, repositoryRoot, errors);
     checkTestQueryClientFactory(sourceFile, repositoryRoot, errors);
     checkClientOwnedModelImports(sourceFile, repositoryRoot, errors);
     checkSchemaFolderImports(sourceFile, repositoryRoot, errors);

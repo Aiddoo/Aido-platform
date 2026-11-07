@@ -9,6 +9,7 @@ import {
   MenuActionItem,
   STACK_MENU_ICON,
   HStack,
+  IconButton,
   MoreIcon,
   STACK_BACK_ICON,
   STACK_MORE_ICON,
@@ -17,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
-import { Button, Menu } from 'heroui-native';
+import { Menu } from 'heroui-native';
 import { useState } from 'react';
 
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
@@ -109,15 +110,12 @@ function TodoActionsButton({ date }: { date: string }) {
   }
 
   return (
-    <Button
-      isIconOnly
-      variant="ghost"
+    <IconButton
+      icon={<MoreIcon width={22} height={22} colorClassName="text-gray-9" />}
       className="size-11 rounded-full"
       accessibilityLabel={t('actions.more')}
       onPress={() => push({ pathname: '/todo/[todoId]/actions', params: { todoId, date } })}
-    >
-      <MoreIcon width={22} height={22} colorClassName="text-gray-9" />
-    </Button>
+    />
   );
 }
 
@@ -135,15 +133,12 @@ function TodoModerationMenu() {
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
       <Menu.Trigger asChild>
-        <Button
-          isIconOnly
-          variant="ghost"
+        <IconButton
+          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
           className="size-11 rounded-full"
           accessibilityLabel={t('menu.more')}
           accessibilityState={{ expanded: isOpen }}
-        >
-          <MoreIcon width={20} height={20} colorClassName="text-gray-9" />
-        </Button>
+        />
       </Menu.Trigger>
       <Menu.Portal disableFullWindowOverlay={false}>
         <Menu.Overlay />

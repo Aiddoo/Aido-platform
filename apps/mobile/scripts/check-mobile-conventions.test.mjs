@@ -584,7 +584,7 @@ test('공용 훅과 파라미터 훅의 router.setParams, 테스트의 호출은
     {
       'apps/mobile/src/shared/hooks/use-route-params.ts': `router.setParams({ date: undefined });`,
       'apps/mobile/src/shared/hooks/use-view.ts': `router.setParams({ view: 'friends' });`,
-      'apps/mobile/src/features/notification/hooks/use-notification-category.ts': `router.setParams({});`,
+      'apps/mobile/src/features/notification/hooks/use-notification-params.ts': `router.setParams({});`,
       'apps/mobile/src/features/planning/todo/hooks/use-feed-params.test.tsx': `router.setParams({});`,
     },
     (errors) => {
@@ -612,7 +612,7 @@ test('스키마로 parse한 값의 구조 분해는 통과한다', () => {
 test('파라미터 훅 파일에서 z.object를 정의하면 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/notification/hooks/use-notification-category.ts': `const schema = z.object({});`,
+      'apps/mobile/src/features/notification/hooks/use-notification-params.ts': `const schema = z.object({});`,
       'apps/mobile/src/features/voice/hooks/use-voice-note-params.ts': `const schema = z.object({});`,
     },
     (errors) => {
@@ -1199,6 +1199,30 @@ test('이름이 -card인 컴포넌트는 heroui Card를 써야 한다', () => {
     (errors) => {
       assert.equal(errors.length, 1);
       assert.match(errors[0], /bad-card\.tsx/u);
+    },
+  );
+});
+
+test('shared/ui 밖에서는 공용 부품과 같은 이름을 heroui-native에서 가져오지 못한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/components/ok.tsx': `
+        import { Button } from '@src/shared/ui';
+        import { Skeleton } from 'heroui-native';
+        export function Ok() { return <Button><Skeleton /></Button>; }
+      `,
+      'apps/mobile/src/features/weather/components/bad.tsx': `
+        import { Button as HeroButton, Menu } from 'heroui-native';
+        export function Bad() { return <HeroButton><Menu /></HeroButton>; }
+      `,
+      'apps/mobile/src/shared/ui/button/button.tsx': `
+        import { Button as HeroButton } from 'heroui-native';
+        export function Button() { return <HeroButton />; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /bad\.tsx/u);
     },
   );
 });
