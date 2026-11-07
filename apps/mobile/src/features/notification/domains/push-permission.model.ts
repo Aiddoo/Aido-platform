@@ -18,7 +18,7 @@ type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMIS
 export const PUSH_PROMPT_SNOOZE_DAYS = 14;
 
 /** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
-function isDeliveryAllowed(permission: PushPermission): boolean {
+function canDeliverPush(permission: PushPermission): boolean {
   return (
     permission.status === PUSH_PERMISSION_STATUS.GRANTED ||
     permission.status === PUSH_PERMISSION_STATUS.PROVISIONAL
@@ -30,11 +30,11 @@ function isNotDetermined(permission: PushPermission): boolean {
 }
 
 function canRequestSystemDialog(permission: PushPermission): boolean {
-  return !isDeliveryAllowed(permission) && permission.canAskAgain;
+  return !canDeliverPush(permission) && permission.canAskAgain;
 }
 
-function isBlockedUntilSettings(permission: PushPermission): boolean {
-  return !isDeliveryAllowed(permission) && !permission.canAskAgain;
+function isSettingsRequired(permission: PushPermission): boolean {
+  return !canDeliverPush(permission) && !permission.canAskAgain;
 }
 
 function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
@@ -50,16 +50,16 @@ function getNextStep(
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {
   return match(permission)
-    .when(isDeliveryAllowed, () =>
+    .when(canDeliverPush, () =>
       pushEnabled ? PUSH_PERMISSION_STEP.NONE : PUSH_PERMISSION_STEP.ENABLE_IN_APP,
     )
-    .when(isBlockedUntilSettings, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
+    .when(isSettingsRequired, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
     .when(isNotDetermined, () => PUSH_PERMISSION_STEP.ASK)
     .otherwise(() => PUSH_PERMISSION_STEP.REQUEST_SYSTEM);
 }
 
 export const PushPermissionPolicy = {
-  isDeliveryAllowed,
+  canDeliverPush,
   isNotDetermined,
   canRequestSystemDialog,
   isPromptSnoozed,

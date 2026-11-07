@@ -90,7 +90,7 @@ export class NotificationService {
    * 눌린 푸시를 읽음 처리하며 내 알림인지 본다. 예산 안에 답이 없어도 항상 끝난다.
    * 0은 서버 알림 기록이 없는 푸시라 묻지 않는다.
    */
-  checkOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
+  markAsReadAndCheckOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
     if (notificationId === 0) {
       return 'ok';
     }

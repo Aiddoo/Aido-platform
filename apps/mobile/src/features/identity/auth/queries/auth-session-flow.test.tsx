@@ -314,7 +314,7 @@ describe('대기 중인 초대', () => {
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
     );
-    expect(session.pendingRedemption.get()).not.toBeNull();
+    expect(session.pendingRedemption.find()).not.toBeNull();
 
     // When
     await act(async () => {
@@ -323,7 +323,7 @@ describe('대기 중인 초대', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    expect(session.pendingRedemption.get()).toBeNull();
+    expect(session.pendingRedemption.find()).toBeNull();
   });
 
   it('세션이 만료되면 남겨 다시 로그인한 뒤 이어서 받는다', async () => {
@@ -337,7 +337,7 @@ describe('대기 중인 초대', () => {
 
     // Then
     await waitFor(() => expect(result.current).toBe('unauthenticated'));
-    expect(session.pendingRedemption.get()).toMatchObject({ inviteCode: 'K7M2QX' });
+    expect(session.pendingRedemption.find()).toMatchObject({ inviteCode: 'K7M2QX' });
   });
 
   it('로그인 전 미인증으로 시작해도 지우지 않는다', async () => {
@@ -349,7 +349,7 @@ describe('대기 중인 초대', () => {
     await session.renderSession(() => useAuthStatus(), 'unauthenticated');
 
     // Then
-    expect(session.pendingRedemption.get()).toMatchObject({ inviteCode: 'K7M2QX' });
+    expect(session.pendingRedemption.find()).toMatchObject({ inviteCode: 'K7M2QX' });
   });
 });
 

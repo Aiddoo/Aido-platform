@@ -1,6 +1,6 @@
 import { FriendPolicy } from './friend.model';
 
-describe('hasValidSearchQuery', () => {
+describe('isValidSearchQuery', () => {
   it.each([
     ['홍길', true],
     ['ab', true],
@@ -13,14 +13,14 @@ describe('hasValidSearchQuery', () => {
     const input = { query };
 
     // When
-    const result = FriendPolicy.hasValidSearchQuery(input);
+    const result = FriendPolicy.isValidSearchQuery(input);
 
     // Then
     expect(result).toBe(expected);
   });
 });
 
-describe('hasValidUserTag', () => {
+describe('isValidUserTag', () => {
   it.each([
     ['ABCD1234', true],
     [' ABCD1234 ', true],
@@ -31,7 +31,7 @@ describe('hasValidUserTag', () => {
     const user = { userTag };
 
     // When
-    const result = FriendPolicy.hasValidUserTag(user);
+    const result = FriendPolicy.isValidUserTag(user);
 
     // Then
     expect(result).toBe(expected);

@@ -24,10 +24,13 @@ describe('hasDeviceTimezoneChanged', () => {
   });
 });
 
-describe('isOffsetChanged', () => {
+describe('hasOffsetChanged', () => {
   it('이름만 다른 시간대는 알림 시각이 그대로라 오프셋이 달라지지 않았다', () => {
     // When
-    const offsetChanged = DeviceTimezonePolicy.isOffsetChanged({ previous: SEOUL, current: TOKYO });
+    const offsetChanged = DeviceTimezonePolicy.hasOffsetChanged({
+      previous: SEOUL,
+      current: TOKYO,
+    });
 
     // Then
     expect(offsetChanged).toBe(false);
@@ -35,7 +38,7 @@ describe('isOffsetChanged', () => {
 
   it('다른 대륙으로 옮겨 오프셋이 달라지면 알릴 일이다', () => {
     // When
-    const offsetChanged = DeviceTimezonePolicy.isOffsetChanged({
+    const offsetChanged = DeviceTimezonePolicy.hasOffsetChanged({
       previous: SEOUL,
       current: NEW_YORK,
     });

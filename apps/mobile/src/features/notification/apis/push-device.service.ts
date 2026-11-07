@@ -57,7 +57,7 @@ export class PushDeviceService {
     this.#sessionEpoch = sessionEpoch;
   }
 
-  readPermission = async (): Promise<PushPermission> =>
+  getPermission = async (): Promise<PushPermission> =>
     toPushPermission(await this.#gateway.getPermission());
 
   /** 시스템 권한 창을 띄우고, 바뀐 권한을 바로 서버에 알린다 */
@@ -89,10 +89,8 @@ export class PushDeviceService {
   report = async ({ force = false }: { force?: boolean } = {}): Promise<
     Result<PushDevice | null, ApiError>
   > => {
-    const permission = await this.readPermission();
-    const token = PushPermissionPolicy.isDeliveryAllowed(permission)
-      ? await this.#issueToken()
-      : null;
+    const permission = await this.getPermission();
+    const token = PushPermissionPolicy.canDeliverPush(permission) ? await this.#issueToken() : null;
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();

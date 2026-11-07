@@ -200,7 +200,9 @@ export function useRecordPushOpenedMutationOptions() {
     onMutate: (notificationId) => {
       const epoch = sessionEpoch.current();
       const isSameSession = () => sessionEpoch.current() === epoch;
-      optimisticallyMarkNotificationsRead(queryClient, notificationId, { canApply: isSameSession })
+      optimisticallyMarkNotificationsRead(queryClient, notificationId, {
+        shouldApply: isSameSession,
+      })
         .then(() => (isSameSession() ? notificationService.syncBadgeCount() : undefined))
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {

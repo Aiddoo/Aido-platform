@@ -40,7 +40,7 @@ export function usePushDeviceSync({
     let isReporting = false;
     let pendingForce: boolean | null = null;
 
-    const sync = (force: boolean) => {
+    const sync = ({ force }: { force: boolean }) => {
       if (isReporting) {
         pendingForce = pendingForce === true || force;
         return;
@@ -54,22 +54,22 @@ export function usePushDeviceSync({
           const nextForce = pendingForce;
           pendingForce = null;
           if (isSubscribed && nextForce != null) {
-            sync(nextForce);
+            sync({ force: nextForce });
           }
         });
     };
-    const syncOnActive = debounce(() => sync(false), APP_ACTIVE_SYNC_DELAY_MS);
+    const syncOnActive = debounce(() => sync({ force: false }), APP_ACTIVE_SYNC_DELAY_MS);
     // 서버는 푸시 문구 언어를 요청 헤더에서 읽으므로 권한·토큰이 같아도 다시 보낸다
-    const handleLanguageChanged = () => sync(true);
+    const handleLanguageChanged = () => sync({ force: true });
 
     // 다른 계정이 쓰던 기기일 수 있어 로그인 확인 직후에는 같은 값이어도 보낸다
-    sync(true);
+    sync({ force: true });
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         syncOnActive();
       }
     });
-    const removeTokenListener = pushNotification.subscribeToken(() => sync(false));
+    const removeTokenListener = pushNotification.subscribeToken(() => sync({ force: false }));
     // 앞에 떠 있는 동안 누른 푸시는 복귀 이벤트 없이 온다. 꺼진 상태에서 누른 푸시는 위의 첫 보고가 맡는다
     const removeResponseListener = pushNotification.subscribeResponse(syncOnActive);
     i18n.on('languageChanged', handleLanguageChanged);

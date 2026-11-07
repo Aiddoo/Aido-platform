@@ -184,7 +184,7 @@ function useResolveResponse(
       sessionEpoch.current() === epoch && store.getState().pending?.id === target.id;
     const { data } = target;
     try {
-      const ownership = await notificationService.checkOwnership(data.notificationId);
+      const ownership = await notificationService.markAsReadAndCheckOwnership(data.notificationId);
       if (!isCurrent()) {
         return;
       }

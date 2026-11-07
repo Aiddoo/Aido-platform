@@ -111,13 +111,13 @@ describe('notification cache optimistic update', () => {
     const listKey = NOTIFICATION_QUERY_KEYS.list({});
     const data = makeData(1);
     client.setQueryData(listKey, data);
-    let canApply = true;
+    let shouldApply = true;
     const cancel = jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
-      canApply = false;
+      shouldApply = false;
     });
     // When
     const snapshot = await optimisticallyMarkNotificationsRead(client, 1, {
-      canApply: () => canApply,
+      shouldApply: () => shouldApply,
     });
     // Then
     expect(snapshot).toEqual([]);

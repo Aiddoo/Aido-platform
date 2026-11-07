@@ -62,7 +62,7 @@ export function useGetPushPermissionQueryOptions() {
 
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.permission(),
-    queryFn: () => pushDeviceService.readPermission(),
+    queryFn: () => pushDeviceService.getPermission(),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
 

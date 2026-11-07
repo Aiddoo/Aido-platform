@@ -39,7 +39,7 @@ export function useTimezoneChangeNotice({
   const { toast } = useAppToast();
   const { t } = useTranslation('notification');
 
-  const hasUpcomingTimedTodo = async (): Promise<boolean> => {
+  const fetchHasUpcomingTimedTodo = async (): Promise<boolean> => {
     const { currentLocalDate, currentLocalDateKey, currentTimeZone } = readDeviceLocalDateState();
     const result = await todoService.getTodos({
       startDate: currentLocalDateKey,
@@ -58,8 +58,8 @@ export function useTimezoneChangeNotice({
 
   const announce = useEffectEvent(async (change: DeviceTimezoneChange) => {
     const isNoticeShown =
-      DeviceTimezonePolicy.isOffsetChanged(change) &&
-      (await hasUpcomingTimedTodo().catch((error: unknown) => {
+      DeviceTimezonePolicy.hasOffsetChanged(change) &&
+      (await fetchHasUpcomingTimedTodo().catch((error: unknown) => {
         logger.warn(NOTIFICATION_LOG_EVENT.TIMEZONE_NOTICE_SKIPPED, {
           error: getErrorMessage(error),
         });

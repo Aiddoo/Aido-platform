@@ -45,7 +45,7 @@ export function FriendSearchList({ query, openFriendLimitInvite }: FriendSearchL
   });
   useFriendSearchTracking(debouncedQuery);
 
-  if (!FriendPolicy.hasValidSearchQuery({ query: normalizedQuery })) {
+  if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
     return <FriendSearchList.Prompt />;
   }
   if (!isSettled || search.isPending) {

@@ -11,7 +11,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
-import { isNudgeTodoChanged } from '../domains/todo-nudge.error';
+import { isNudgeTodoChangedError } from '../domains/todo-nudge.error';
 import type {
   CreateNudgeInput,
   CreateRemindNudgeInput,
@@ -68,7 +68,7 @@ export function useSendNudgeThanksMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
-      if (isNudgeTodoChanged(error)) {
+      if (isNudgeTodoChangedError(error)) {
         invalidateTodoDetails(queryClient, { todoId });
       }
     },

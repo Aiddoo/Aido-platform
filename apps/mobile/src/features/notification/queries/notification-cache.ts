@@ -10,11 +10,16 @@ import type { PushPermission } from '../schemas/push-permission.schema';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
+interface MarkPagesReadOptions {
+  /** 없으면 모든 알림을 읽음으로 바꾼다 */
+  notificationId?: number;
+  shouldDecrement: boolean;
+  removeReadItems: boolean;
+}
+
 function markPagesRead(
   cachedPages: InfiniteData<NotificationListResult> | undefined,
-  notificationId?: number,
-  shouldDecrement = true,
-  removeReadItems = false,
+  { notificationId, shouldDecrement, removeReadItems }: MarkPagesReadOptions,
 ): InfiniteData<NotificationListResult> | undefined {
   if (!cachedPages?.pages) {
     return cachedPages;
@@ -38,7 +43,7 @@ function markPagesRead(
   };
 }
 
-function containsUnreadNotification(
+function hasUnreadNotification(
   cachedPages: InfiniteData<NotificationListResult> | undefined,
   notificationId: number,
 ): boolean {
@@ -58,10 +63,10 @@ function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
 export async function optimisticallyMarkNotificationsRead(
   queryClient: QueryClient,
   notificationId?: number,
-  { canApply }: { canApply?: () => boolean } = {},
+  { shouldApply }: { shouldApply?: () => boolean } = {},
 ): Promise<NotificationCacheSnapshot> {
   await queryClient.cancelQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
-  if (canApply && !canApply()) {
+  if (shouldApply && !shouldApply()) {
     return [];
   }
   const snapshot = queryClient.getQueriesData({ queryKey: NOTIFICATION_QUERY_KEYS.all });
@@ -71,14 +76,18 @@ export async function optimisticallyMarkNotificationsRead(
   const shouldDecrement =
     notificationId == null ||
     listEntries.some(([_queryKey, cachedPages]) =>
-      containsUnreadNotification(cachedPages, notificationId),
+      hasUnreadNotification(cachedPages, notificationId),
     );
 
   notifyManager.batch(() => {
     for (const [queryKey, cachedPages] of listEntries) {
       queryClient.setQueryData(
         queryKey,
-        markPagesRead(cachedPages, notificationId, shouldDecrement, isUnreadOnlyQuery(queryKey)),
+        markPagesRead(cachedPages, {
+          notificationId,
+          shouldDecrement,
+          removeReadItems: isUnreadOnlyQuery(queryKey),
+        }),
       );
     }
     queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old = 0) =>

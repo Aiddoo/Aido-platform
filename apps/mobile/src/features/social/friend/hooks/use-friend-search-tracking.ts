@@ -11,7 +11,7 @@ export function useFriendSearchTracking(debouncedQuery: string): void {
 
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
-    if (!FriendPolicy.hasValidSearchQuery({ query: trimmed })) {
+    if (!FriendPolicy.isValidSearchQuery({ query: trimmed })) {
       lastTrackedQuery.current = null;
       return;
     }

@@ -14,11 +14,11 @@ interface FriendLimitOfferInput {
   knownLimit: number | null;
 }
 
-function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
+function isValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
   return userTagSchema.safeParse(user.userTag.trim()).success;
 }
 
-function hasValidSearchQuery(input: { query: string }) {
+function isValidSearchQuery(input: { query: string }) {
   return input.query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
@@ -57,8 +57,8 @@ function getFriendLimitOffer({
 }
 
 export const FriendPolicy = {
-  hasValidUserTag,
-  hasValidSearchQuery,
+  isValidUserTag,
+  isValidSearchQuery,
   getRequestState,
   getFriendLimitOffer,
 } as const;

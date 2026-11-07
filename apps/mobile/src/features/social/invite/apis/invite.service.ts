@@ -100,7 +100,7 @@ export class InviteService {
     if (!result.ok) {
       // 이어서 열려던 초대가 없어졌거나 바뀌었으면 다음 실행 때 다시 열지 않는다
       if (
-        this.#pendingRedemptionRepository.get()?.inviteCode === inviteCode &&
+        this.#pendingRedemptionRepository.find()?.inviteCode === inviteCode &&
         isTerminalRedeemFailure(toRedeemFailureReason(result.error))
       ) {
         this.#pendingRedemptionRepository.clear();
@@ -181,7 +181,7 @@ export class InviteService {
    * 계정이 이어서 연다. 찾기만 하고 지우지 않아 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
    */
   findPendingRedemption = (now: Instant): PendingRedemption | null => {
-    const pending = this.#pendingRedemptionRepository.get();
+    const pending = this.#pendingRedemptionRepository.find();
     if (pending == null) {
       return null;
     }

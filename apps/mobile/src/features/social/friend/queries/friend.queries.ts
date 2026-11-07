@@ -105,7 +105,7 @@ export function useGetUserSearchInfiniteQueryOptions({ query }: { query: string 
     queryFn: async ({ pageParam, signal }) =>
       unwrap(await friendService.searchUsers({ query: trimmed, cursor: pageParam.cursor }, signal)),
     initialPageParam: INITIAL_SEARCH_USERS_PAGE_PARAM,
-    enabled: FriendPolicy.hasValidSearchQuery({ query: trimmed }),
+    enabled: FriendPolicy.isValidSearchQuery({ query: trimmed }),
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore || lastPage.nextCursor == null) {
         return undefined;

@@ -21,7 +21,7 @@ import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { type Control, Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
-import { isReportTargetUnavailable } from '../domains/moderation.error';
+import { isReportTargetUnavailableError } from '../domains/moderation.error';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
 import {
   type UserReportFormInput,
@@ -70,7 +70,7 @@ export function ReportReasonBottomSheet({
     try {
       await reportContent.mutateAsync({ target, form });
     } catch (error) {
-      if (isReportTargetUnavailable(error)) {
+      if (isReportTargetUnavailableError(error)) {
         sheet.close();
       }
       return;

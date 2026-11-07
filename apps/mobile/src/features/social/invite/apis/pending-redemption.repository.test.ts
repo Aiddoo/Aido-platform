@@ -21,7 +21,7 @@ describe('createPendingRedemptionRepository', () => {
     const repository = createPendingRedemptionRepository(storage);
 
     // When
-    const result = repository.get();
+    const result = repository.find();
 
     // Then
     expect(result).toEqual({
@@ -51,7 +51,7 @@ describe('createPendingRedemptionRepository', () => {
     storage.set(PENDING_REDEMPTION_KEY, '{broken');
 
     // When
-    const result = createPendingRedemptionRepository(storage).get();
+    const result = createPendingRedemptionRepository(storage).find();
 
     // Then
     expect(result).toBeNull();

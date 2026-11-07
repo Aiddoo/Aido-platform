@@ -8,7 +8,7 @@ import {
 const PENDING_REDEMPTION_KEY = 'aido_invite_pending_v1';
 
 export interface PendingRedemptionRepository {
-  get(): PendingRedemption | null;
+  find(): PendingRedemption | null;
   save(pending: PendingRedemption): void;
   clear(): void;
 }
@@ -18,7 +18,7 @@ export function createPendingRedemptionRepository(
   storage: SyncStorage,
 ): PendingRedemptionRepository {
   return {
-    get: () => {
+    find: () => {
       const raw = storage.get(PENDING_REDEMPTION_KEY);
       if (raw == null) {
         return null;

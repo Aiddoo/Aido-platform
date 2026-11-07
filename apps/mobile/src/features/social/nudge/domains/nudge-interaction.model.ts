@@ -32,7 +32,7 @@ function getNudgeInteractionStatus(
 }
 
 /** 고맙다는 인사는 완료한 공개 할 일의 주인만 받는다. 할 일은 주인만 고칠 수 있어 수정 권한으로 주인을 안다 */
-function isThankableTodo(
+function canThankTodo(
   todo: { completed: boolean; visibility: TodoVisibility },
   { canEditTodo }: { canEditTodo: boolean },
 ): boolean {
@@ -43,7 +43,7 @@ function isReceivedBy(nudge: Pick<NudgeInteraction, 'receiverId'>, userId: strin
   return nudge.receiverId === userId;
 }
 
-function isReplyable(
+function canReply(
   nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
   userId: string,
 ): boolean {
@@ -94,7 +94,7 @@ function getResponseStage(
     return 'unavailable';
   }
   const isReceived = isReceivedBy(nudge, userId);
-  if (isReceived && !nudge.isTodoCompleted && isReplyable(nudge, userId)) {
+  if (isReceived && !nudge.isTodoCompleted && canReply(nudge, userId)) {
     return 'reply';
   }
   if (isReceived && nudge.isTodoCompleted) {
@@ -108,7 +108,7 @@ export const NudgeInteractionPolicy = {
   getNudgeInteractionStatus,
   getResponseStage,
   isReceivedBy,
-  isThankableTodo,
+  canThankTodo,
   hasThankableRecipients,
   getThanksSummary,
 } as const;

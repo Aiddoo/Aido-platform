@@ -364,7 +364,7 @@ function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
       return;
     }
 
-    pawPrintCelebrationRepository.setCelebratedCount(userId, qualifiedCount);
+    pawPrintCelebrationRepository.saveCelebratedCount(userId, qualifiedCount);
     if (hasNewPawPrint) {
       haptics.notify('success');
       // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다

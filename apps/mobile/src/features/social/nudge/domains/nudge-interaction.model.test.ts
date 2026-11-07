@@ -76,7 +76,7 @@ describe('hasThankableRecipients', () => {
   );
 });
 
-describe('isThankableTodo', () => {
+describe('canThankTodo', () => {
   it.each([
     [true, true, 'PUBLIC' as const, true],
     [false, true, 'PUBLIC' as const, false],
@@ -89,7 +89,7 @@ describe('isThankableTodo', () => {
       const todo = { completed, visibility };
 
       // When
-      const isThankable = NudgeInteractionPolicy.isThankableTodo(todo, { canEditTodo });
+      const isThankable = NudgeInteractionPolicy.canThankTodo(todo, { canEditTodo });
 
       // Then
       expect(isThankable).toBe(expected);

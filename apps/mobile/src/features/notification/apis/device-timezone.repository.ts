@@ -5,7 +5,7 @@ import { type DeviceTimezone, savedDeviceTimezoneSchema } from '../schemas/devic
 const DEVICE_TIMEZONE_KEY = 'aido_device_timezone_v1';
 
 export interface DeviceTimezoneRepository {
-  get(userId: string): DeviceTimezone | null;
+  find(userId: string): DeviceTimezone | null;
   save(userId: string, deviceTimezone: DeviceTimezone): void;
   clear(): void;
 }
@@ -13,7 +13,7 @@ export interface DeviceTimezoneRepository {
 /** 이 기기에서 쓰는 계정 하나의 값만 남긴다. 다른 계정의 값은 없는 것으로 읽는다 */
 export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTimezoneRepository {
   return {
-    get: (userId) => {
+    find: (userId) => {
       const saved = storage.get(DEVICE_TIMEZONE_KEY);
       if (saved == null) {
         return null;

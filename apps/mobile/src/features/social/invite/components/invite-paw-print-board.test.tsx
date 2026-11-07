@@ -23,7 +23,7 @@ async function renderBoard({
 }) {
   const pawPrintCelebrationRepository =
     createPawPrintCelebrationRepository(createMemorySyncStorage());
-  pawPrintCelebrationRepository.setCelebratedCount(USER_ID, celebratedCount);
+  pawPrintCelebrationRepository.saveCelebratedCount(USER_ID, celebratedCount);
   const haptics = createHapticsGatewayStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },

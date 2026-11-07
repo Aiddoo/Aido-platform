@@ -143,7 +143,7 @@ describe('NotificationService', () => {
   });
 });
 
-describe('NotificationService.checkOwnership', () => {
+describe('NotificationService.markAsReadAndCheckOwnership', () => {
   function setup() {
     const httpClient = createHttpClientStub();
     return {
@@ -162,7 +162,7 @@ describe('NotificationService.checkOwnership', () => {
     httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
 
     // When
-    const ownership = await service.checkOwnership(7);
+    const ownership = await service.markAsReadAndCheckOwnership(7);
 
     // Then
     expect(ownership).toBe('ok');
@@ -174,7 +174,7 @@ describe('NotificationService.checkOwnership', () => {
     httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
 
     // When
-    const ownership = await service.checkOwnership(7);
+    const ownership = await service.markAsReadAndCheckOwnership(7);
 
     // Then
     expect(ownership).toBe('foreign');
@@ -187,8 +187,8 @@ describe('NotificationService.checkOwnership', () => {
     httpClient.patch.mockRejectedValueOnce(new NetworkError());
 
     // When
-    const rejected = await service.checkOwnership(7);
-    const offline = await service.checkOwnership(7);
+    const rejected = await service.markAsReadAndCheckOwnership(7);
+    const offline = await service.markAsReadAndCheckOwnership(7);
 
     // Then
     expect(rejected).toBe('unknown');
@@ -202,7 +202,7 @@ describe('NotificationService.checkOwnership', () => {
     httpClient.patch.mockReturnValue(new Promise(noop));
 
     // When
-    const ownership = service.checkOwnership(7);
+    const ownership = service.markAsReadAndCheckOwnership(7);
     await jest.advanceTimersByTimeAsync(NOTIFICATION_READ_BUDGET_MS);
 
     // Then
@@ -214,7 +214,7 @@ describe('NotificationService.checkOwnership', () => {
     const { httpClient, service } = setup();
 
     // When
-    const ownership = await service.checkOwnership(0);
+    const ownership = await service.markAsReadAndCheckOwnership(0);
 
     // Then
     expect(ownership).toBe('ok');

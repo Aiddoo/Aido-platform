@@ -2,7 +2,7 @@ import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nu
 import { NudgeResponse } from '@src/features/social/nudge/components/nudge-detail/nudge-response';
 import { NudgeSummary } from '@src/features/social/nudge/components/nudge-detail/nudge-summary';
 import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-detail/nudge-todo-button';
-import { isNudgeUnavailable } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { isNudgeUnavailableError } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -86,7 +86,7 @@ NudgeDetailScreen.Loading = function Loading() {
 
 NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const isUnavailable = isNudgeUnavailable(error);
+  const isUnavailable = isNudgeUnavailableError(error);
 
   return (
     <VStack flex={1} p={24}>

@@ -244,8 +244,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
     throwOnError: false,
   });
   const isTurnedOn =
-    requestPermission.data != null &&
-    PushPermissionPolicy.isDeliveryAllowed(requestPermission.data);
+    requestPermission.data != null && PushPermissionPolicy.canDeliverPush(requestPermission.data);
 
   // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다.
   // 시스템 창을 다시 띄울 수 없으면 버튼이 아무 일도 하지 않으므로 보여 주지 않는다

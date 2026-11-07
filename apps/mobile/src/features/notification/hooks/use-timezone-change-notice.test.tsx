@@ -99,7 +99,7 @@ describe('useTimezoneChangeNotice', () => {
     expect(screen.queryByText(NOTICE_TITLE)).toBeNull();
     expect(getTodos).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
-    expect(repository.get(USER_ID)?.timeZone).toBe('America/New_York');
+    expect(repository.find(USER_ID)?.timeZone).toBe('America/New_York');
   });
 
   it('시간대가 바뀌었고 앞으로 시간 있는 할 일이 있으면 한 번만 안내한다', async () => {
@@ -151,7 +151,7 @@ describe('useTimezoneChangeNotice', () => {
 
     // Then
     expect(screen.queryByText(NOTICE_TITLE)).toBeNull();
-    expect(repository.get(USER_ID)?.timeZone).toBe('America/New_York');
+    expect(repository.find(USER_ID)?.timeZone).toBe('America/New_York');
     expect(analytics.trackEvent).toHaveBeenCalledWith('device_timezone_changed', {
       offset_bucket: '8h_plus',
       notice_shown: false,

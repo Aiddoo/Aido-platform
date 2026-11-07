@@ -110,7 +110,7 @@ describe('InviteService', () => {
       await service.getPreview('K7M2QX');
 
       // Then
-      expect(pendingRedemptionRepository.get()).toBeNull();
+      expect(pendingRedemptionRepository.find()).toBeNull();
     });
 
     it('다른 코드의 실패나 일시 오류는 기기에 남긴 초대를 지우지 않는다', async () => {
@@ -133,7 +133,7 @@ describe('InviteService', () => {
       await service.getPreview('K7M2QX');
 
       // Then
-      expect(pendingRedemptionRepository.get()).toEqual(pending);
+      expect(pendingRedemptionRepository.find()).toEqual(pending);
     });
 
     it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
@@ -372,7 +372,7 @@ describe('InviteService', () => {
 
       // Then 10-20 → 10-25 = 5일 ≤ 7일
       expect(result).toEqual(pending);
-      expect(pendingRedemptionRepository.get()).toEqual(pending);
+      expect(pendingRedemptionRepository.find()).toEqual(pending);
     });
 
     it('7일이 지난 초대면 null을 반환하고 지운다', () => {
@@ -387,7 +387,7 @@ describe('InviteService', () => {
 
       // Then 10-10 → 10-25 = 15일 > 7일
       expect(result).toBeNull();
-      expect(pendingRedemptionRepository.get()).toBeNull();
+      expect(pendingRedemptionRepository.find()).toBeNull();
     });
   });
 
@@ -401,7 +401,7 @@ describe('InviteService', () => {
       service.clearPendingRedemption();
 
       // Then
-      expect(pendingRedemptionRepository.get()).toBeNull();
+      expect(pendingRedemptionRepository.find()).toBeNull();
     });
   });
 
@@ -419,7 +419,7 @@ describe('InviteService', () => {
       // Then
       const expected = createPendingRedemption({ source: 'install_referrer', savedAt: now });
       expect(result).toEqual(expected);
-      expect(pendingRedemptionRepository.get()).toEqual(expected);
+      expect(pendingRedemptionRepository.find()).toEqual(expected);
     });
 
     it('이미 한 번 확인했으면 referrer를 다시 읽지 않는다', async () => {

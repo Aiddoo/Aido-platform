@@ -11,8 +11,8 @@ describe('createDeviceTimezoneRepository', () => {
     repository.save('user-a', SEOUL);
 
     // When
-    const mine = repository.get('user-a');
-    const other = repository.get('user-b');
+    const mine = repository.find('user-a');
+    const other = repository.find('user-b');
 
     // Then
     expect(mine).toEqual(SEOUL);
@@ -26,7 +26,7 @@ describe('createDeviceTimezoneRepository', () => {
     const repository = createDeviceTimezoneRepository(storage);
 
     // When
-    const result = repository.get('user-a');
+    const result = repository.find('user-a');
 
     // Then
     expect(result).toBeNull();
@@ -41,6 +41,6 @@ describe('createDeviceTimezoneRepository', () => {
     repository.clear();
 
     // Then
-    expect(repository.get('user-a')).toBeNull();
+    expect(repository.find('user-a')).toBeNull();
   });
 });

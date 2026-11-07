@@ -24,7 +24,7 @@ import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { isNudgeThanksChanged } from '../../domains/todo-nudge.error';
+import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../../queries/nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
 import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
@@ -207,7 +207,7 @@ NudgeThanksBottomSheet.Error = function ErrorFallback({
   onClose,
 }: QueryErrorFallbackProps & { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
-  const hasChanged = isNudgeThanksChanged(error);
+  const hasChanged = isNudgeThanksChangedError(error);
 
   return (
     <VStack py={24}>

@@ -1,6 +1,6 @@
 import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { isSentNudgeListDisabled } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { isSentNudgeListDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
 import type { NudgeInteraction } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -65,7 +65,7 @@ SentNudgeList.Loading = NotificationListRow.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  const isDisabled = isSentNudgeListDisabled(error);
+  const isDisabled = isSentNudgeListDisabledError(error);
 
   return (
     <VStack flex={1} p={24}>
