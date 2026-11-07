@@ -1,32 +1,30 @@
 import { NotificationBadgePolicy } from './notification-badge.model';
 
-describe('NotificationBadgePolicy', () => {
-  it('읽지 않은 알림이 하나라도 있으면 채운 종을 그린다', () => {
-    // Given
-    const counts = [0, 1, 120];
-
+describe('hasUnread', () => {
+  it.each([
+    [0, false],
+    [1, true],
+    [120, true],
+  ])('읽지 않은 알림이 %i개면 채운 종을 그리는지 %s다', (count, expected) => {
     // When
-    const results = counts.map(NotificationBadgePolicy.hasUnread);
+    const hasUnread = NotificationBadgePolicy.hasUnread(count);
 
     // Then
-    expect(results).toEqual([false, true, true]);
+    expect(hasUnread).toBe(expected);
   });
+});
 
-  it('읽지 않은 수가 늘었을 때만 새 알림으로 보고 처음 읽은 값과 줄어든 값은 흔들지 않는다', () => {
-    // Given
-    const transitions: [number, number | null][] = [
-      [3, null],
-      [3, 2],
-      [3, 3],
-      [1, 3],
-    ];
-
+describe('hasNewUnread', () => {
+  it.each([
+    ['처음 읽은 값은 흔들지 않는다', 3, null, false],
+    ['읽지 않은 수가 늘면 새 알림이다', 3, 2, true],
+    ['읽지 않은 수가 그대로면 새 알림이 아니다', 3, 3, false],
+    ['읽지 않은 수가 줄면 새 알림이 아니다', 1, 3, false],
+  ])('%s', (_label, count, previous, expected) => {
     // When
-    const results = transitions.map(([count, previous]) =>
-      NotificationBadgePolicy.hasNewUnread(count, previous),
-    );
+    const hasNewUnread = NotificationBadgePolicy.hasNewUnread(count, previous);
 
     // Then
-    expect(results).toEqual([false, true, false, false]);
+    expect(hasNewUnread).toBe(expected);
   });
 });

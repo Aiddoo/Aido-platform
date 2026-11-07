@@ -6,7 +6,7 @@ import { PUSH_PROMPT_SNOOZE_DAYS, PushPermissionPolicy } from './push-permission
 const NOW = toInstant('2026-11-04T09:00:00.000Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-describe('PushPermissionPolicy.getNextStep', () => {
+describe('getNextStep', () => {
   it('iOS 임시 허용은 알림이 오므로 앱 설정만 켜져 있으면 더 할 일이 없다', () => {
     // Given
     const permission = createPushPermission({ status: 'PROVISIONAL', canAskAgain: true });
@@ -63,7 +63,7 @@ describe('PushPermissionPolicy.getNextStep', () => {
   });
 });
 
-describe('PushPermissionPolicy.canRequestSystemDialog', () => {
+describe('canRequestSystemDialog', () => {
   it('이미 허용했으면 시스템 창을 다시 띄우지 않는다', () => {
     // Given
     const permission = createPushPermission({ status: 'PROVISIONAL', canAskAgain: true });
@@ -76,7 +76,7 @@ describe('PushPermissionPolicy.canRequestSystemDialog', () => {
   });
 });
 
-describe('PushPermissionPolicy.isPromptSnoozed', () => {
+describe('isPromptSnoozed', () => {
   it('닫은 적이 없으면 안내를 숨기지 않는다', () => {
     // When
     const result = PushPermissionPolicy.isPromptSnoozed(null, NOW);
