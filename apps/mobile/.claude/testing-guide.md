@@ -119,53 +119,60 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 
 ### 공용 도구 (`src/shared/__tests__`, `index.ts`로 공개)
 
-포트 하나에 도구 하나다. 이름은 `create{Port}Stub`(`jest.fn`으로 호출을 기록하는 빈 구현), `create{Port}Fake`(동작을 흉내 냄), `createMemory{X}`(메모리에 저장하는 구현)다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
+포트 하나에 도구 하나다. 모든 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드의 인자와 반환 타입은 `mockMethod<Port['method']>(구현)`으로 포트에서 가져와 포트가 바뀌면 기본값도 컴파일되지 않는다(`jest.fn()`은 무엇이든 받는다). 이름은 `create{Port}Stub`(`jest.fn`으로 호출을 기록하는 빈 구현), `create{Port}Fake`(동작을 흉내 냄), `createMemory{X}`(메모리에 저장하는 구현)다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 
-| 포트                               | 도구                                                                        |
-| ---------------------------------- | --------------------------------------------------------------------------- |
-| `Logger`                           | `createLoggerStub()`                                                        |
-| `Analytics`                        | `createAnalyticsStub()`                                                     |
-| `ErrorReporter`                    | `createErrorReporterStub()`                                                 |
-| `HapticsGateway`                   | `createHapticsStub()`                                                       |
-| `IdGenerator`                      | `createIdGeneratorStub()` (호출마다 다른 id)                                |
-| `HttpClient`                       | `createHttpClientStub()`                                                    |
-| `Storage`                          | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)             |
-| `SyncStorage`                      | `createMemorySyncStorage()`                                                 |
-| `ObservableSyncStorage`            | `createMemoryObservableSyncStorage()`                                       |
-| `TokenStore`                       | `createMemoryTokenStore(tokens)`                                            |
-| `DeviceIdStore`                    | `createMemoryDeviceIdStore(initial)`                                        |
-| `LocalFileSystem`                  | `createLocalFileSystemFake()`                                               |
-| `ExternalLinkGateway`              | `createExternalLinkGatewayStub()`                                           |
-| `IncomingLinkGateway`              | `createIncomingLinkGatewayStub()`                                           |
-| `ClipboardGateway`                 | `createClipboardGatewayStub()`                                              |
-| `SystemShareGateway`               | `createSystemShareGatewayStub()`                                            |
-| `SocialShareGateway`               | `createSocialShareGatewayStub()`                                            |
-| `LocationGateway`                  | `createLocationGatewayStub()`                                               |
-| `NetworkStatusGateway`             | `createNetworkStatusGatewayStub()`                                          |
-| `AppStoreReviewGateway`            | `createAppStoreReviewGatewayStub()`                                         |
-| `AppStoreListingGateway`           | `createAppStoreListingGatewayStub()`                                        |
-| `AppIconGateway`                   | `createAppIconGatewayStub()`                                                |
-| `InstallReferrerGateway`           | `createInstallReferrerGatewayStub()`                                        |
-| `InstallationIdGateway`            | `createInstallationIdGatewayStub()`                                         |
-| `VendorIdGateway`                  | `createVendorIdGatewayStub()`                                               |
-| `JsonFetcher`                      | `createJsonFetcherStub()`                                                   |
-| `NativeApplicationMetadataGateway` | `createNativeApplicationMetadataGatewayStub(installation)`                  |
-| `PurchasesGateway`                 | `createPurchasesGatewayStub()`                                              |
-| `PushNotificationGateway`          | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림) |
-| `SocialAuthGateway`                | `createSocialAuthGatewayStub()`                                             |
-| `SpeechRecognizer`                 | `createSpeechRecognizerStub()`                                              |
-| `TokenRefresher`                   | `createTokenRefresherStub()`                                                |
-| `AudioPartPlaylist`                | `createAudioPartPlaylistStub(status)`                                       |
+| 포트                                   | 도구                                                                                               |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `Logger`                               | `createLoggerStub()`                                                                               |
+| `Analytics`                            | `createAnalyticsStub()`                                                                            |
+| `ErrorReporter`                        | `createErrorReporterStub()`                                                                        |
+| `HapticsGateway`                       | `createHapticsGatewayStub()`                                                                       |
+| `IdGenerator`                          | `createIdGeneratorStub()` (호출마다 다른 id)                                                       |
+| `HttpClient`                           | `createHttpClientStub()`                                                                           |
+| `Storage`                              | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)                                    |
+| `SyncStorage`, `EnumerableSyncStorage` | `createMemorySyncStorage()` (`keys`·`clear`까지 있는 `jest.Mocked`)                                |
+| `ObservableSyncStorage`                | `createMemoryObservableSyncStorage()`                                                              |
+| `TokenStore`                           | `createMemoryTokenStore(tokens)`                                                                   |
+| `DeviceIdStore`                        | `createMemoryDeviceIdStore(initial)`                                                               |
+| `LocalFileSystem`                      | `createLocalFileSystemFake()`                                                                      |
+| 말로 메모 초안·녹음 저장소             | `createVoiceNoteStorageFake(files, { storage, logger })` (`service`, `drafts`, `recordings`, `di`) |
+| `ExternalLinkGateway`                  | `createExternalLinkGatewayStub()`                                                                  |
+| `IncomingLinkGateway`                  | `createIncomingLinkGatewayStub()`                                                                  |
+| `ClipboardGateway`                     | `createClipboardGatewayStub()`                                                                     |
+| `SystemShareGateway`                   | `createSystemShareGatewayStub()`                                                                   |
+| `SocialShareGateway`                   | `createSocialShareGatewayStub()`                                                                   |
+| `LocationGateway`                      | `createLocationGatewayStub()`                                                                      |
+| `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()`                                                                 |
+| `AppStoreReviewGateway`                | `createAppStoreReviewGatewayStub()`                                                                |
+| `AppStoreListingGateway`               | `createAppStoreListingGatewayStub()`                                                               |
+| `AppIconGateway`                       | `createAppIconGatewayStub()`                                                                       |
+| `InstallReferrerGateway`               | `createInstallReferrerGatewayStub()`                                                               |
+| `InstallationIdGateway`                | `createInstallationIdGatewayStub()`                                                                |
+| `VendorIdGateway`                      | `createVendorIdGatewayStub()`                                                                      |
+| `JsonFetcher`                          | `createJsonFetcherStub()`                                                                          |
+| `NativeApplicationMetadataGateway`     | `createNativeApplicationMetadataGatewayStub(installation)`                                         |
+| `PurchasesGateway`                     | `createPurchasesGatewayStub()`                                                                     |
+| `PushNotificationGateway`              | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림)                        |
+| `SocialAuthGateway`                    | `createSocialAuthGatewayStub()`                                                                    |
+| `SpeechRecognizer`                     | `createSpeechRecognizerStub()`                                                                     |
+| `TokenRefresher`                       | `createTokenRefresherStub()`                                                                       |
+| `AudioPartPlaylist`                    | `createAudioPartPlaylistStub(status)`                                                              |
 
-| 도구                                                            | 용도                                                                                                            |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `createTestDi({ httpClient, …overrides })`                      | 실제 Service를 포트 stub 위에 조립한 DI. 응답은 `httpClient`에 정한다. 넣지 않은 포트에 손대면 이름을 대며 실패 |
-| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })` | 실제 provider 위에 `di`를 얹어 렌더. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다                               |
-| `createTestQueryClient()`                                       | 테스트용 QueryClient                                                                                            |
-| `createPendingResponse()`                                       | 끝나는 시점을 테스트가 정하는 응답(두 번 누름, 늦은 응답)                                                       |
-| `stubWindowDimensions(width)`                                   | 창 폭·글꼴 배율. spy라 테스트가 끝나면 되돌아간다                                                               |
-| `OverlayStateContext.Provider`                                  | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다                          |
-| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`            | 모델 fixture(`createX(overrides)`)                                                                              |
+**stub 기본값 규칙.** 기본은 정상 기기와 빈 데이터다(알림을 허용했고, 클립보드는 비었고, 요금제와 구독은 없고, 사용자는 로그인 창을 닫는다). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표·장소)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 같은 포트의 모든 도구가 이 규칙을 따른다. 어긋난 기본값이 필요하면 테스트가 반환된 `jest.fn`을 바꾼다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
+
+SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `index.ts` 대신 도구 파일을 직접 import한다. index가 `createTestDi`를 통해 앱 전체와 어댑터를 불러와 테스트가 가로챈 SDK보다 먼저 읽히기 때문이다.
+
+| 도구                                                            | 용도                                                                                                                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createTestDi({ httpClient, …overrides })`                      | 운영의 `di-provider`와 같은 모양으로 실제 Service 전부를 조립한 DI. 응답은 `httpClient`에 정한다. 기기 저장소 `syncStorage` 하나를 모든 저장소가 함께 쓴다. 넣은 포트는 Service 조립에도 쓰인다 |
+| `renderUi(ui, { di, queryClient, withLocalDate, withOverlay })` | 실제 provider 위에 `di`(`TestDiOverrides`)를 얹어 렌더. `di: createTestDi(...)`를 다시 넘기지 않는다. 오늘 날짜를 읽거나 시트를 띄우면 옵션을 켠다                                              |
+| `renderUiHook(useHook, { di, … })`                              | `renderUi`와 같은 provider 위에서 훅을 돌린다                                                                                                                                                   |
+| `renderRouteHook(useHook, { url })`                             | 진짜 Expo Router 위에서 훅을 돌려 URL을 본다(`index`가 아니라 `render-route-hook`을 직접 import하고 `jest.unmock('expo-router')`)                                                               |
+| `createTestQueryClient()`                                       | 테스트용 QueryClient                                                                                                                                                                            |
+| `createPendingResponse()`                                       | 끝나는 시점을 테스트가 정하는 응답(두 번 누름, 늦은 응답)                                                                                                                                       |
+| `stubWindowDimensions(width)`                                   | 창 폭·글꼴 배율. spy라 테스트가 끝나면 되돌아간다                                                                                                                                               |
+| `OverlayStateContext.Provider`                                  | 시트·다이얼로그 활성 여부를 읽는 훅 테스트. `@src/shared/ui`를 mock하지 않고 값을 준다                                                                                                          |
+| `features/{area}/{f}/__tests__/{entity}.fixtures.ts`            | 모델 fixture(`createX(overrides)`)                                                                                                                                                              |
 
 `mocks/`는 `jest.config.js`의 `moduleNameMapper`와 `jest.setup.ts`가 가리키는 SDK 모듈 대체(expo-router, MMKV, Skia 등)다. 포트 stub이 아니라 jest가 모듈을 바꿔 끼우는 층이고, 테스트 파일이 직접 import하지 않는다.
 
@@ -208,7 +215,7 @@ it('연결이 끊겨 실패해도 입력값을 지키고 화면에 머문다', a
   httpClient.post.mockRejectedValue(new NetworkError());
   await renderUi(<InquiryRoute />, {
     withOverlay: true,
-    di: createTestDi({ httpClient, haptics: createHapticsStub() }),
+    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
   await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
 
@@ -221,7 +228,7 @@ it('연결이 끊겨 실패해도 입력값을 지키고 화면에 머문다', a
 });
 ```
 
-`di`에는 이 테스트가 바꾸는 포트만 더한다(`createTestDi({ httpClient, analytics })`). `di: { xService: new XService(httpClient) }`처럼 Service를 직접 조립하지 않는다. 쓰는 Service가 `createTestDi`에 없으면 거기에 더한다.
+`di`에는 이 테스트가 바꾸는 포트만 더한다(`di: { httpClient, analytics }`). `di: { xService: new XService(httpClient) }`처럼 Service를 직접 조립하지 않는다. 값을 미리 넣을 때는 저장소가 아니라 `syncStorage`에 넣는다(`createTestDi().syncStorage.set(key, value)` 또는 `di: { syncStorage }`). 쓰는 Service가 `createTestDi`에 없으면 거기에 더한다.
 
 ## expo-router 공용 mock
 

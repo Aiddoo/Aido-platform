@@ -6,7 +6,7 @@
 ## 구성
 
 ```
-PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/infra/notification)
+PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shared/infra/notification)
                     ↓
         PushDeviceService (features/notification/apis) → PUT /v1/notifications/push-devices/{deviceId}
 ```
@@ -15,7 +15,7 @@ PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/inf
 | --------------------------------------------- | --------------------------------------------------------------------- |
 | `domains/push-permission.model.ts`            | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)          |
 | `apis/push-permission.mapper.ts`              | OS 값 → 모델, 모델·토큰 → 보고 입력                                   |
-| `apis/push-device.service.ts`                 | 권한 읽기·요청, 채널 → 토큰 → 보고, 로그아웃 해제                     |
+| `apis/push-device.service.ts`                 | 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제                            |
 | `apis/push-prompt.{repository,service}.ts`    | 홈 안내를 닫은 시각을 계정마다 MMKV에 저장                            |
 | `hooks/use-push-device-sync.ts`               | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출) |
 | `hooks/use-notification-response-observer.ts` | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                    |
@@ -26,7 +26,7 @@ PushNotificationGateway (core/ports) ← expoPushNotificationGateway (shared/inf
 ## 클라이언트가 하는 일
 
 1. OS 권한을 읽는다. iOS 임시 허용(`PROVISIONAL`·`EPHEMERAL`)은 모두 `PROVISIONAL`로 바꾼다. 알림이 조용히 도착하므로 허용으로 본다.
-2. Android 알림 채널을 먼저 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
+2. Android 알림 채널은 어댑터가 권한 창을 띄우기 전과 토큰을 받기 전에 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
 3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음으로 실패하면 토큰 없이 권한만 보고한다.
 4. `PUT /v1/notifications/push-devices/{deviceId}`로 `{ permission, token, payloadVersion }`을 보낸다. 같은 값을 이번 세션에 이미 보냈으면 요청하지 않는다(`force`로 무시). 웹은 보내지 않는다.
 

@@ -977,7 +977,10 @@ export function useCreateMemoMutationOptions() {
 
 ```
 core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조립) → di-context (use{X} 훅) → 컴포넌트·쿼리
+                                                      └→ shared-di-context (shared가 쓰는 포트만 나눈 훅)
 ```
+
+`shared`는 `bootstrap`을 import하지 못하므로 `shared`가 쓰는 포트(`logger`, `analytics`, `errorReporter`, `haptics`, `externalLink`, `systemShare`, `syncStorage` 등)는 `shared/di/shared-di-context`의 훅으로 읽는다. feature와 `app/`은 입구 하나인 `di-context`에서만 꺼낸다. `di-context`가 필요한 `shared-di-context` 훅을 다시 내보낸다.
 
 왜 이렇게 하나:
 
@@ -996,7 +999,10 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 - **SDK 직접 import 예외(검사 대상이 아닌 라이브러리).** `expo-router`는 라우터 교체가 route 전체를 바꾸는 일이라 포트로 숨기지 않고, 화면과 route 경계 훅(`useRouteParams`, `useView`, `useSingleTap` 등)에서 import한다. `env.ts`는 `expo-constants`로 앱 설정을 읽고, 루트 레이아웃은 `expo-splash-screen`을, 내비게이션 테마는 `@react-navigation/native`를 직접 쓴다. 이유는 `check-mobile-conventions.mjs`의 `SDK_MODULES` 위 주석에 있다.
 - **`check:conventions`가 강제한다.** 예외 목록은 없다. 검사 대상이 아닌 라이브러리(`expo-router`, UI 라이브러리, 위젯 자기 조립, `expo-constants`, `expo-splash-screen`)와 이유는 `SDK_MODULES` 위 주석에 있다.
 - **파일 이름은 내보내는 이름을 말한다.** 포트 파일은 주 인터페이스 이름의 kebab-case다(`ClipboardGateway` → `clipboard-gateway.ts`, `HttpClient` → `http-client.ts`). 어댑터 파일은 `{공급자}-{포트 파일 이름}.ts` 한 형식이고 내보내는 이름이 그대로 camelCase다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`, `revenuecat-purchases-gateway.ts`, `kakao-social-share-gateway.ts`, `expo-system-share-gateway.ts`). 한 파일이 포트 둘을 구현하지 않고 포트마다 파일을 나눈다(`expo-external-link-gateway.ts`, `expo-incoming-link-gateway.ts`). 테스트는 어댑터 옆 `-gateway.test.ts`다.
-- **포트 이름은 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setFirebaseAppInstanceId` → `setAnalyticsId`, `setString` → `copy`).
+- **포트 이름은 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setFirebaseAppInstanceId` → `setAnalyticsId`, `setString` → `copy`). 구독은 `subscribe*`(`subscribeToken`, `subscribeResponse`), 읽기는 `get*`이다. 같은 종류의 포트는 같은 동사를 쓴다.
+- **플랫폼·기기 차이는 어댑터 안에 숨긴다.** Android 알림 채널 준비, OS 버전 비교(`device-info`의 `ANDROID_API_LEVEL`, `IOS_MAJOR_VERSION`)가 그렇다. Service·Policy·domains·utils에는 `EXPO_OS`, `Platform`, SDK 타입을 올리지 않는다. 컴포넌트와 스크린의 UI 모양 분기만 `process.env.EXPO_OS`로 쓴다.
+- **어댑터가 쓰는 관측은 주입받는다.** 어댑터와 HTTP 훅은 전역 접근자 대신 팩토리·deps로 `logger`, `errorReporter`를 받는다(`createExpoPushNotificationGateway(logger)`, `createAuthClient({ logger, errorReporter })`). 전역 `logger`는 아래 표의 곳만 쓴다.
+- **공급자 설정은 어댑터가 읽는다.** 결제 키는 `revenuecat-api-key.ts`가 `extra`에서 읽고 `env.ts`는 모른다. 포트의 초기화는 인자 없이 결과만 돌려준다(`PurchasesGateway.configure()`).
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
 - **조립은 `di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
 - **Mapper는 DI에 넣지 않는다.** 순수 함수라 서비스가 직접 import한다.
@@ -1014,7 +1020,10 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `device-info`(`DEVICE_TOTAL_MEMORY_BYTES`, `IS_PHYSICAL_DEVICE`)                                                                                                                                         | 시작 때 정해지는 상수라 렌더 중 호출이 아니다. 날씨 장면 품질과 개발 API 주소만 쓴다                                                 |
 | `new SecureStorage`(`di-provider`, `use-encrypted-storage-bootstrap`)                                                                                                                                    | 암호화 초안 저장소는 키체인에서 키를 읽어 열린 뒤에야 DI가 만들어진다. 부트스트랩이 같은 어댑터를 따로 연다                          |
 | `new VoiceRecordingIntake`(`use-voice-note-recording`)                                                                                                                                                   | 초안마다 하나씩 만들어 화면이 내려간 뒤에도 파일을 받는 수명 객체다. 상태를 갖지 않는 Service가 아니라 DI에 두지 않는다              |
-| 모듈 수준 전역 `logger`: `env.ts`, `use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`, `query-cache-persistence`, `openSupportMail`                                                    | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다 |
+| 모듈 수준 전역 `logger`: `env.ts`, `use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`, `query-cache-persistence`, `openSupportMail`, `query-error-actions`                             | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다 |
+| `query-provider`(`getAppBundleId`, `deviceSyncStorage`), `font-scale-provider`·`theme-provider`·`language-provider`(`deviceSyncStorage`, `useSystemLocale`)                                              | `app-providers`에서 DI보다 위에 있어 훅으로 읽을 수 없다                                                                             |
+| `local-date-provider`·`local-date-clock`(기기 시계), `i18n/init`(기기 언어·저장 언어), `use-window-size-class`(창 크기 경계 훅), `app/_layout.tsx`의 `wrapRootComponent`                                 | 시작 값이거나 위젯과 공용인 시계, 라이브러리 경계 훅이라 옮길 곳이 없다                                                              |
+| `query-error-actions`(메타데이터·링크 어댑터)                                                                                                                                                            | 루트 `QueryErrorBoundary`가 Provider 밖에서 그려진다                                                                                 |
 
 기기 동기 값을 렌더에서 읽는 Service는 컴포넌트가 `useXService()`로 직접 부른다(저장소 읽기라 Suspense·쿼리가 필요 없다). 서버 비동기는 쿼리 옵션 훅으로만 부른다.
 
@@ -1022,27 +1031,27 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 
 전체 목록은 `core/ports/`에 있다.
 
-| 포트                      | 메서드 이름                                                                 | 어댑터 (`shared/infra/`)                         |
-| ------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
-| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                         | `http/ky-client.ts`                              |
-| `Storage`                 | `get`·`set`·`remove`                                                        | `storage/secure-storage.ts`                      |
-| `SyncStorage`             | `get`·`set`·`remove`                                                        | `storage/encrypted-draft-storage.ts`             |
-| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                 | `storage/device-sync-storage.ts`                 |
-| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                              | `storage/encrypted-draft-storage.ts`             |
-| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                 | `clipboard/expo-clipboard-gateway.ts`            |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                    | `linking/expo-external-link-gateway.ts`          |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                 | `linking/expo-incoming-link-gateway.ts`          |
-| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                | `share/expo-system-share-gateway.ts`             |
-| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace`     | `location/expo-location-gateway.ts`              |
-| `PurchasesGateway`        | `purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`·`setAnalyticsId` | `purchases/revenuecat-purchases-gateway.ts`      |
-| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                       | `speech/expo-speech-recognizer.ts`               |
-| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken` 등                           | `notification/expo-push-notification-gateway.ts` |
-| `HapticsGateway`          | `selection`·`impact`·`notify`                                               | `haptics/expo-haptics-gateway.ts`                |
-| `NetworkStatusGateway`    | `subscribe`                                                                 | `network/expo-network-status-gateway.ts`         |
-| `IdGenerator`             | `create`                                                                    | `id-generator/expo-id-generator.ts`              |
-| `Logger`                  | `debug`·`info`·`warn`·`error`                                               | `logger/`                                        |
-| `Analytics`               | `trackEvent`·`trackScreenView` 등                                           | `analytics/`                                     |
-| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                         | `error-reporter/`                                |
+| 포트                      | 메서드 이름                                                             | 어댑터 (`shared/infra/`)                         |
+| ------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ |
+| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                     | `http/ky-client.ts`                              |
+| `Storage`                 | `get`·`set`·`remove`                                                    | `storage/secure-storage.ts`                      |
+| `SyncStorage`             | `get`·`set`·`remove`                                                    | `storage/encrypted-draft-storage.ts`             |
+| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                             | `storage/device-sync-storage.ts`                 |
+| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                          | `storage/encrypted-draft-storage.ts`             |
+| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                             | `clipboard/expo-clipboard-gateway.ts`            |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                | `linking/expo-external-link-gateway.ts`          |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                             | `linking/expo-incoming-link-gateway.ts`          |
+| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                            | `share/expo-system-share-gateway.ts`             |
+| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`getCoordinates`·`getPlace` | `location/expo-location-gateway.ts`              |
+| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`  | `purchases/revenuecat-purchases-gateway.ts`      |
+| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                   | `speech/expo-speech-recognizer.ts`               |
+| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등          | `notification/expo-push-notification-gateway.ts` |
+| `HapticsGateway`          | `selection`·`impact`·`notify`                                           | `haptics/expo-haptics-gateway.ts`                |
+| `NetworkStatusGateway`    | `subscribe`                                                             | `network/expo-network-status-gateway.ts`         |
+| `IdGenerator`             | `create`                                                                | `id-generator/expo-id-generator.ts`              |
+| `Logger`                  | `debug`·`info`·`warn`·`error`                                           | `logger/`                                        |
+| `Analytics`               | `trackEvent`·`trackScreenView` 등                                       | `analytics/`                                     |
+| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                     | `error-reporter/`                                |
 
 `core/`는 `shared`와 feature를 import하지 않는다. 포트가 쓰는 관측 키와 오류 타입은 `core/observability/telemetry-keys`, `core/errors`에 있다.
 
@@ -1093,7 +1102,7 @@ await clipboard.copy(comment.content ?? '');
 
 ### 포트별 참고
 
-- **음성 인식**: 화면은 `SpeechRecognizer`의 `mode`(`dictation`·`quick`·`note`)만 고른다. 연속 인식·기기 안 인식·문장부호·음량 정규화·녹음 파일 옵션은 어댑터가 정한다. 인식 이벤트는 앱 전체에 하나라 `subscribe`한 쪽이 자기가 시작한 세션의 이벤트만 쓴다.
+- **음성 인식**: 화면은 `SpeechRecognizer`의 `mode`(`dictation`·`quick`·`note`)를 고르고, 기기 안 인식(`isOnDevice`)과 인식 힌트는 `getRecognizerStartOptions`가 정한다(개인 단어는 기기 안 인식에만 주는 것이 앱 규칙이다). 연속 인식·문장부호·음량 정규화·녹음 파일 옵션과 힌트 개수 상한은 어댑터가 정한다. 인식 이벤트는 앱 전체에 하나라 `subscribe`한 쪽이 자기가 시작한 세션의 이벤트만 쓴다.
 - **결제**: `PurchasesGateway`는 RevenueCat 타입 대신 plain 값과 `PurchasesGatewayError(kind, storeErrorCode)`만 넘긴다. `subscription.mapper.ts`가 모델로 바꾼다.
 - **푸시**: 서비스는 게이트웨이가 준 OS 원본(`PushPermissionResponse`)을 `push-permission.mapper.ts`로 모델에 바꾼 뒤에만 Policy에 넘긴다. 흐름은 [push-notifications](../docs/push-notifications.md)를 본다.
 
