@@ -24,7 +24,7 @@ import {
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 
 import { AchievementPolicy } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
@@ -90,36 +90,35 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   };
 
   return (
-    <PressableFeedback onPress={handlePress}>
-      <ListRow
-        left={<BadgeIcon type={badgeType} size="small" />}
-        contents={
-          <ListRow.Texts
-            type="2RowTypeA"
-            top={achievement.weekLabel}
-            topProps={{ weight: 'semibold', shade: 8 }}
-            bottom={t('list.periodWithCompletedRatio', {
-              period: formatDateKeyRange(
-                achievement.dateRange.startDate,
-                achievement.dateRange.endDate,
-                dateFormatContext,
-              ),
-              completed: achievement.completedTodos,
-              total: achievement.totalTodos,
-            })}
-          />
-        }
-        right={
-          <HStack align="center" gap={4}>
-            <Text size="b3" className="text-main" weight="semibold">
-              {achievement.completionRate}%
-            </Text>
-            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />
-          </HStack>
-        }
-        verticalPadding="medium"
-      />
-    </PressableFeedback>
+    <ListRow
+      onPress={handlePress}
+      left={<BadgeIcon type={badgeType} size="small" />}
+      contents={
+        <ListRow.Texts
+          type="2RowTypeA"
+          top={achievement.weekLabel}
+          topProps={{ weight: 'semibold', shade: 8 }}
+          bottom={t('list.periodWithCompletedRatio', {
+            period: formatDateKeyRange(
+              achievement.dateRange.startDate,
+              achievement.dateRange.endDate,
+              dateFormatContext,
+            ),
+            completed: achievement.completedTodos,
+            total: achievement.totalTodos,
+          })}
+        />
+      }
+      right={
+        <HStack align="center" gap={4}>
+          <Text size="b3" className="text-main" weight="semibold">
+            {achievement.completionRate}%
+          </Text>
+          <ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />
+        </HStack>
+      }
+      verticalPadding="medium"
+    />
   );
 };
 

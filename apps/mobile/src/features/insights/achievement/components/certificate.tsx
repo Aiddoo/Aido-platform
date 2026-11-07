@@ -14,7 +14,7 @@ function CertificateBorder({ children }: { children: ReactNode }) {
 }
 
 /** 주간 달성 배지 상장. 머리말·제목·부제목과 이중 테두리를 고정하고 본문만 children으로 받는다. */
-export function Certificate({ subtitle, children }: { subtitle?: string; children: ReactNode }) {
+export function Certificate({ subtitle, children }: { subtitle?: ReactNode; children: ReactNode }) {
   const { t } = useTranslation('achievement');
 
   return (
@@ -26,11 +26,7 @@ export function Certificate({ subtitle, children }: { subtitle?: string; childre
               {t('card.eyebrow')}
             </Text>
             <H3 className="tracking-wider">{t('card.title')}</H3>
-            {subtitle != null && (
-              <Text size="b4" shade={6} weight="medium">
-                {subtitle}
-              </Text>
-            )}
+            {subtitle}
           </VStack>
           {children}
         </Box>
@@ -38,6 +34,14 @@ export function Certificate({ subtitle, children }: { subtitle?: string; childre
     </Box>
   );
 }
+
+Certificate.Subtitle = function Subtitle({ children }: { children: string }) {
+  return (
+    <Text size="b4" shade={6} weight="medium">
+      {children}
+    </Text>
+  );
+};
 
 Certificate.Ornament = function Ornament() {
   return (

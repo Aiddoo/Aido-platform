@@ -5,7 +5,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   DashedDivider,
@@ -48,7 +48,7 @@ export function WeeklyAchievementCertificate() {
   const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
 
   const badgeType = AchievementPolicy.getBadgeType(achievement);
-  const badgeName = tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);
+  const badgeName = t(ACHIEVEMENT_BADGE_NAME_KEYS[badgeType]);
 
   const handleShare = async () => {
     trackEvent('badge_share_attempted', { badge_type: badgeType, year, week });
@@ -58,7 +58,7 @@ export function WeeklyAchievementCertificate() {
   return (
     <>
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
-        <Certificate subtitle={badgeName}>
+        <Certificate subtitle={<Certificate.Subtitle>{badgeName}</Certificate.Subtitle>}>
           <Spacing size={16} />
 
           <VStack align="center" gap={8}>
@@ -145,42 +145,52 @@ export function WeeklyAchievementCertificate() {
 
 WeeklyAchievementCertificate.Loading = function Loading() {
   return (
-    <Certificate>
-      <Spacing size={16} />
+    <>
+      <Certificate subtitle={<TextSkeleton size="b4" className="w-20" />}>
+        <Spacing size={16} />
 
-      <VStack align="center">
-        <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
-      </VStack>
+        <VStack align="center">
+          <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
+        </VStack>
 
-      <Spacing size={16} />
+        <Spacing size={16} />
 
-      <Certificate.Ornament />
+        <Certificate.Ornament />
 
-      <Spacing size={16} />
+        <Spacing size={16} />
 
-      <VStack align="center" gap={4}>
-        <TextSkeleton size="e1" className="w-10" />
-        <TextSkeleton size="t3" className="w-32" />
-      </VStack>
+        <VStack align="center" gap={4}>
+          <TextSkeleton size="e1" className="w-10" />
+          <Box className="border-b border-transparent pb-1 px-8">
+            <TextSkeleton size="t3" className="w-32" />
+          </Box>
+        </VStack>
 
-      <Spacing size={16} />
+        <Spacing size={16} />
 
-      <VStack align="center">
-        {range(CERTIFICATE_LINE_COUNT).map((index) => (
-          <TextSkeleton key={index} size="b3" className="w-full" />
-        ))}
-      </VStack>
+        <VStack align="center">
+          {range(CERTIFICATE_LINE_COUNT).map((index) => (
+            <TextSkeleton key={index} size="b3" className="w-full" />
+          ))}
+        </VStack>
 
-      <Spacing size={20} />
+        <Spacing size={20} />
 
-      <DashedDivider />
+        <DashedDivider />
 
-      <Spacing size={14} />
+        <Spacing size={14} />
 
-      <VStack align="center">
-        <TextSkeleton size="e1" className="w-40" />
-      </VStack>
-    </Certificate>
+        <VStack align="center">
+          <TextSkeleton size="e1" className="w-40" />
+        </VStack>
+      </Certificate>
+
+      <Spacing size={8} />
+
+      <Box className="self-end py-1">
+        <TextSkeleton size="b3" className="w-16" />
+      </Box>
+    </>
   );
 };
 

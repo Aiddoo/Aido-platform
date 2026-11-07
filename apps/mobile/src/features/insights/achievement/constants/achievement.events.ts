@@ -1,4 +1,4 @@
-type BadgeType = 'perfect' | 'almost' | 'completed';
+import type { BadgeType } from '../schemas/achievement.schema';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

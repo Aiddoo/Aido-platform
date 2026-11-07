@@ -7,7 +7,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
@@ -91,7 +91,13 @@ export function AchievementSummary() {
   return (
     <Box>
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
-        <Certificate subtitle={tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[latestBadgeType])}>
+        <Certificate
+          subtitle={
+            <Certificate.Subtitle>
+              {t(ACHIEVEMENT_BADGE_NAME_KEYS[latestBadgeType])}
+            </Certificate.Subtitle>
+          }
+        >
           <Spacing size={12} />
 
           <Certificate.Ornament />
@@ -238,7 +244,7 @@ AchievementSummary.Empty = function Empty() {
 AchievementSummary.Loading = function Loading() {
   return (
     <Box>
-      <Certificate>
+      <Certificate subtitle={<TextSkeleton size="b4" className="w-20" />}>
         <Spacing size={12} />
 
         <Certificate.Ornament />
