@@ -7,7 +7,7 @@
 1. `schemas/release.schema.ts`의 `RELEASE_ID`에 한 줄 더한다.
 2. `constants/releases.ts`에 `RELEASE_x_y_z`와 `RELEASES` 항목을 더한다. 캠페인 id가 새로 생기면 `feature-campaign.constants.ts`에도 더한다. 활성화가 그 캠페인을 이어야 하면 `ACTIVATION_CAMPAIGN_IDS`에 올린다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. id를 더하면 `exhaustive()`가 컴파일 에러로 알려 준다.
-4. `app/(app)/whats-new/releases.tsx`에 `<ReleaseCard />` 한 줄을 더한다.
+4. `app/(app)/whats-new/releases.tsx`에 `<ReleaseRow />` 한 줄을 더한다.
 5. `assets/whats-new/{version}/`에 WebP를 넣는다. 파일 이름은 `{step}.{ko|en}.{light|dark}.webp`다. 개인정보 없는 샘플 데이터로 찍는다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
