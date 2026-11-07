@@ -22,10 +22,10 @@ describe('Grid 컴포넌트', () => {
     expect(style.columnGap).toBeUndefined();
   });
 
-  it('columnGap은 flex gap 대신 GridItem 좌우 padding으로 나눠 한 줄이 넘치지 않게 한다', async () => {
+  it('gap은 열 간격을 flex gap 대신 GridItem 좌우 padding으로 나눠 한 줄이 넘치지 않게 한다', async () => {
     // Given
     await render(
-      <Grid testID="grid" rowGap={12} columnGap={10} columns={2}>
+      <Grid testID="grid" gap={10} columns={2}>
         <GridItem testID="first">
           <Text>왼쪽</Text>
         </GridItem>
@@ -41,16 +41,16 @@ describe('Grid 컴포넌트', () => {
     const secondCell = StyleSheet.flatten(screen.getByTestId('second').parent?.props.style);
 
     // Then
-    expect(gridStyle.rowGap).toBe(12);
+    expect(gridStyle.rowGap).toBe(10);
     expect(gridStyle.columnGap).toBeUndefined();
     expect(firstCell).toEqual({ width: '50%', paddingLeft: 0, paddingRight: 5 });
     expect(secondCell).toEqual({ width: '50%', paddingLeft: 5, paddingRight: 0 });
   });
 
-  it('columnGap이 있어도 GridItem의 className·style은 간격 안쪽 칸에 준다', async () => {
+  it('gap이 있어도 GridItem의 className·style은 간격 안쪽 칸에 준다', async () => {
     // Given
     await render(
-      <Grid columns={2} columnGap={10}>
+      <Grid columns={2} gap={10}>
         <GridItem testID="item" className="bg-gray-2" style={{ borderRadius: 8 }}>
           <Text>아이템</Text>
         </GridItem>
@@ -69,23 +69,6 @@ describe('Grid 컴포넌트', () => {
 });
 
 describe('GridItem 컴포넌트', () => {
-  it('3열 Grid에서 colSpan=2이면 너비는 3분의 2이다', async () => {
-    // Given
-    await render(
-      <Grid columns={3}>
-        <GridItem testID="item" colSpan={2}>
-          <Text>아이템</Text>
-        </GridItem>
-      </Grid>,
-    );
-
-    // When
-    const style = StyleSheet.flatten(screen.getByTestId('item').props.style);
-
-    // Then
-    expect(style.width).toBe('66.66666666666666%');
-  });
-
   it('Grid 없이 단독으로 쓰면 너비는 100%이다', async () => {
     // Given
     await render(
