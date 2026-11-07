@@ -47,7 +47,7 @@ Android Release의 FREE 계정에서도 로그아웃/로그인, AI 예시 화면
 
 ## 재현
 
-[Maestro 흐름](../../../maestro/release-1.10.1/)은 상태를 명시한 시나리오다. 모든 파일을 순서 없이 한 번에 실행하는 suite가 아니다. 로그인에는 별도 Docker fixture 계정과 환경 변수를 주입한다. iOS 아이콘 변경은 PAID 계정으로 아이콘 화면에서 시작하며 OS 확인 대화상자를 포함한다. 해외 검증은 Simulator 위치를 도쿄로 설정한 뒤 실행한다. 완료 후 서울로 복원한다. Debug의 RevenueCat Test Store offering 오류는 개발 LogBox로 표시될 수 있어 자동화 시작 전에 닫는다. Release QA는 실제 플랫폼 SDK 키를 사용한다.
+Maestro 흐름(`maestro/release-1.10.1/`, 폴더는 삭제되어 git 이력에 있다)은 상태를 명시한 시나리오다. 모든 파일을 순서 없이 한 번에 실행하는 suite가 아니다. 로그인에는 별도 Docker fixture 계정과 환경 변수를 주입한다. iOS 아이콘 변경은 PAID 계정으로 아이콘 화면에서 시작하며 OS 확인 대화상자를 포함한다. 해외 검증은 Simulator 위치를 도쿄로 설정한 뒤 실행한다. 완료 후 서울로 복원한다. Debug의 RevenueCat Test Store offering 오류는 개발 LogBox로 표시될 수 있어 자동화 시작 전에 닫는다. Release QA는 실제 플랫폼 SDK 키를 사용한다.
 
 ```bash
 maestro --device <device-id> test \

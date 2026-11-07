@@ -58,6 +58,8 @@ job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`�
 
 workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 스키마와 업무 데이터를 되돌리지 않는다.
 
+배포 순서는 서버 → 안정화 확인 → 앱이다. 앱 1.15.0은 1.15 서버가 안정화된 뒤에 낸다. 모바일은 최신 서버 응답만 읽으므로 앱 1.15.0 출시 뒤에는 서버를 1.15 이전으로 되돌리지 않고 수정 배포로 대응한다. 아래 1.14.2 롤백 절은 앱 출시 전에만 쓴다.
+
 **1.14.2 migration 뒤에는 이미지를 1.14.1 이하로만 되돌리지 않는다.** `drop_legacy_comment_path_and_retention_outbox`가 `TodoComment.path`·`depth`·`rootId` 열과 `RetentionPushOutbox`를 지웠다. 이전 이미지는 지운 열에 값을 쓰므로 댓글 작성이 실패한다. API를 되돌려야 하면 1.14.2 이상 이미지를 쓴다.
 
 **1.15.0 반복 할 일(`todo_series`)**은 1.14.2 이미지로 되돌릴 수 있도록 `Todo`→`TodoSeries` FK와 `CHECK ((recurrenceGroupId IS NULL) = (occurrenceDate IS NULL))`를 걸지 않았다. 되돌린 동안 옛 코드가 만든 묶음은 규칙이 없고 `occurrenceDate`도 NULL이다. 1.16.0에서 이 고아 묶음을 보정한 뒤 FK(`NOT VALID`→`VALIDATE`)와 CHECK를 건다.

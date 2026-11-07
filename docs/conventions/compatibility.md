@@ -20,7 +20,7 @@
 | 기기 저장 key     | SecureStore 토큰 key, MMKV key, 초안 key 형식. 바꾸면 기존 설치의 로그인·설정·초안을 잃는다. 1.15.0에 SecureStore `pendingRevocation`(`{ refreshToken, expiresAt }`)을 더했다([오프라인 로그아웃](../../apps/mobile/docs/authentication_guide.md#오프라인-로그아웃)) |
 | DB·queue·cache    | 마이그레이션은 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/DEPLOYMENT.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다                                                      |
 
-새 기능은 추가 API로 낸다. 서버를 먼저 배포하고 앱을 낸다. 롤백 대상 서버에 없는 기능은 앱이 옛 서버를 만나도 깨지지 않게 처리한다(아래 표).
+새 기능은 추가 API로 낸다. 서버를 먼저 배포하고 안정화를 확인한 뒤 앱을 낸다. 옛 앱 호환은 서버가 맡는다.
 
 구 앱 경로를 남긴 경우 지원 범위는 여기에 적는다.
 
@@ -36,25 +36,18 @@
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`): 1.15.1에서 지운다. 대기 잡 보관이 24시간이라 배포 순간의 잡만 해당한다.
 
-출시 앱이 아니라 서버 롤백 구간을 위한 1.15 앱 코드도 있다. 1.15 서버를 되돌려 1.15 앱이 옛 서버를 만나도 저장이 어긋나지 않게 한다. 1.15 서버 안정화를 확인한 뒤 1.16에서 지운다.
-
-| 코드(앱)                                              | 옛 서버에서 생기는 일                                                | 동작                                   |
-| ----------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
-| `todo.mapper.ts` `toLocalTime`의 `scheduledTime` 대체 | 응답에 `scheduledLocalTime`이 없다                                   | 순간을 기기 시간대의 시각으로 읽는다   |
-| `voice-plan.mapper.ts` `toParsedMemoRepeat`           | parse-memo 응답에 `repeat`가 없고 `recurrence`(요일 + 종료일)만 온다 | 매주 + 날짜까지로 바꾼다               |
-| `todo-series.error.ts` `TodoSeriesNotCreatedError`    | `POST /v1/todos`가 `repeat`를 모르고 단일 할 일을 만들고 201을 준다  | 성공으로 처리하지 않고 안내한다        |
-| `todo.service.ts` `getTodoSeries`의 404 → `null`      | `GET /v1/todo-series/{id}` 경로가 없어 404 `SYS_0002`로 온다         | 규칙이 없는 할 일로 보고 화면을 그린다 |
+모바일은 최신 코드만 둔다. 앱은 옛 서버 응답을 위한 분기를 두지 않고, 기기 저장 값과 공개 링크, 지금 서버가 주는 값만 받는다. 앱 1.15.0 출시 뒤에는 서버를 1.15 이전으로 되돌리지 않고 수정 배포로 대응한다.
 
 기기에 이미 남은 값과 링크를 읽는 앱 코드도 외부 계약이다. 새 앱이 쓰지 않는 모양을 읽어 옮기거나 받아 준다.
 
-| 코드(앱)                                                                 | 읽는 것                                                       | 지울 시점                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------- |
-| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                           | 미정. 1.16.0 호환 판단 때 정한다        |
-| `store-review.repository.ts` `fromLegacy`                                | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 미정. 1.16.0 호환 판단 때 정한다        |
-| `notification-destination.ts` `fromLegacyFields`                         | `navigation`이 없는 알림의 type·action·context·routing        | 미정. 보관된 알림이 모두 지난 뒤 정한다 |
-| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 미정. 1.16.0 호환 판단 때 정한다        |
-| `widget-snapshot.schema.ts` `legacyWidgetSnapshotV1Schema`               | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)      |
-| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다           | 영구(기기 저장 key)                     |
+| 코드(앱)                                                                 | 읽는 것                                                       | 지울 시점                                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                           | 지우면 이전 버전에서 올라온 사용자의 저장 전 초안이 사라진다          |
+| `store-review.repository.ts` `fromLegacy`                                | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                   |
+| `notification-destination.ts` `fromLegacyFields`                         | `navigation`이 없는 알림의 type·action·context·routing        | 영구(알림함 응답에 `navigation`이 없어 알림함에서 화면으로 가는 경로) |
+| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 지우면 이미 받은 푸시·공유 링크가 열리지 않는다                       |
+| `widget-snapshot.schema.ts` `legacyWidgetSnapshotV1Schema`               | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)                                    |
+| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다           | 영구(기기 저장 key)                                                   |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/.claude/e2e-test.md#호환성openapi))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 
