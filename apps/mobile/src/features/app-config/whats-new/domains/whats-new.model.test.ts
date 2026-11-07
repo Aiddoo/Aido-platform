@@ -26,7 +26,7 @@ const createUser = (overrides: Partial<User> = {}): User => ({
     grantEndedAt: null,
   },
   isPremium: false,
-  createdAt: new Date('2026-07-01T00:00:00.000Z'),
+  createdAt: toInstant('2026-07-01T00:00:00.000Z'),
   ...overrides,
 });
 
@@ -91,7 +91,7 @@ describe('WhatsNewPolicy.canAutoOpen', () => {
     [{ config: { enabled: false } as const }, '서버 비활성'],
     [{ config: undefined }, '설정 실패'],
     [{ user: undefined }, '사용자 조회 실패'],
-    [{ user: createUser({ createdAt: new Date('2026-08-01T00:00:00.000Z') }) }, '신규 사용자'],
+    [{ user: createUser({ createdAt: toInstant('2026-08-01T00:00:00.000Z') }) }, '신규 사용자'],
     [{ appVersion: '1.7.9' }, '미지원 앱'],
     [{ appVersion: undefined }, '알 수 없는 앱 버전'],
     [{ hasSeen: true }, '이미 본 캠페인'],

@@ -34,13 +34,13 @@ const EXISTING_USER_STATE: ActivationState = {
     launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
     autoOpen: true,
   },
-  user: { id: 'existing-user', createdAt: new Date('2026-07-01T00:00:00.000Z') },
+  user: { id: 'existing-user', createdAt: toInstant('2026-07-01T00:00:00.000Z') },
   progress: { todoCreatedAt: null, activatedAt: null, pushRegistrationUnlockedAt: null },
   isReady: true,
   isAuthenticated: true,
   hasUserError: false,
 };
-const NEW_USER = { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') };
+const NEW_USER = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
 
 let mockActivationState = EXISTING_USER_STATE;
 

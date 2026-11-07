@@ -149,7 +149,7 @@ function canAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): bool
   return (
     config.autoOpen &&
     !hasSeen &&
-    user.createdAt.getTime() < toEpochMs(config.launchedAt) &&
+    toEpochMs(user.createdAt) < toEpochMs(config.launchedAt) &&
     isSemanticVersionAtLeast(appVersion, config.minAppVersion)
   );
 }

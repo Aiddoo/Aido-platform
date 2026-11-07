@@ -28,7 +28,7 @@ describe('ActivationPolicy', () => {
   describe('isNewUserCohort', () => {
     it('캠페인 시작 시각에 가입한 사용자를 신규 코호트로 분류한다', () => {
       // Given
-      const user = { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') };
+      const user = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
 
       // When
       const result = ActivationPolicy.isNewUserCohort(createConfig(), user);
@@ -39,7 +39,7 @@ describe('ActivationPolicy', () => {
 
     it('캠페인 시작 전에 가입한 기존 사용자는 신규 코호트가 아니다', () => {
       // Given
-      const user = { id: 'existing-user', createdAt: new Date('2026-07-31T23:59:59.999Z') };
+      const user = { id: 'existing-user', createdAt: toInstant('2026-07-31T23:59:59.999Z') };
 
       // When
       const result = ActivationPolicy.isNewUserCohort(createConfig(), user);
@@ -50,7 +50,7 @@ describe('ActivationPolicy', () => {
 
     it('비활성 또는 알 수 없는 캠페인은 신규 코호트를 만들지 않는다', () => {
       // Given
-      const user = { id: 'new-user', createdAt: LAUNCHED_AT };
+      const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
       const disabled = ActivationPolicy.isNewUserCohort({ enabled: false }, user);
@@ -68,7 +68,7 @@ describe('ActivationPolicy', () => {
   describe('isChecklistEligible', () => {
     it('가입 후 7일 미만인 미활성 신규 사용자에게 체크리스트를 표시한다', () => {
       // Given
-      const user = { id: 'new-user', createdAt: LAUNCHED_AT };
+      const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
       const now = toInstant('2026-08-07T23:59:59.999Z');
 
       // When
@@ -85,7 +85,7 @@ describe('ActivationPolicy', () => {
 
     it('활성화됐거나 가입 후 7일이 지난 사용자는 체크리스트를 숨긴다', () => {
       // Given
-      const user = { id: 'new-user', createdAt: LAUNCHED_AT };
+      const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
       const activated = ActivationPolicy.isChecklistEligible({
@@ -108,7 +108,7 @@ describe('ActivationPolicy', () => {
   });
 
   describe('isChecklistVisible', () => {
-    const user = { id: 'new-user', createdAt: LAUNCHED_AT };
+    const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
     const withinWindow = toInstant('2026-08-03T00:00:00.000Z');
     const requiredDone = { hasCreatedTodo: true, hasCompletedTodo: true };
 
@@ -167,7 +167,10 @@ describe('ActivationPolicy', () => {
 
     it('캠페인 전에 가입한 기존 사용자는 업데이트 후에도 체크리스트를 보지 않는다', () => {
       // Given: 1.12.x 이전부터 쓰던 사용자이고 필수 단계 기록이 없다
-      const existingUser = { id: 'existing-user', createdAt: new Date('2026-07-01T00:00:00.000Z') };
+      const existingUser = {
+        id: 'existing-user',
+        createdAt: toInstant('2026-07-01T00:00:00.000Z'),
+      };
 
       // When
       const result = ActivationPolicy.isChecklistVisible({
@@ -240,12 +243,12 @@ describe('ActivationPolicy', () => {
       // When
       const existing = ActivationPolicy.shouldRegisterPushAutomatically({
         config,
-        user: { id: 'existing', createdAt: new Date('2026-07-01T00:00:00.000Z') },
+        user: { id: 'existing', createdAt: toInstant('2026-07-01T00:00:00.000Z') },
         progress: createProgress(),
       });
       const activated = ActivationPolicy.shouldRegisterPushAutomatically({
         config,
-        user: { id: 'new', createdAt: LAUNCHED_AT },
+        user: { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) },
         progress: createProgress({ activatedAt: toInstant('2026-08-02T00:00:00.000Z') }),
       });
 
@@ -256,7 +259,7 @@ describe('ActivationPolicy', () => {
 
     it('미활성 신규 사용자는 자동 등록하지 않는다', () => {
       // Given
-      const user = { id: 'new', createdAt: LAUNCHED_AT };
+      const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
       const result = ActivationPolicy.shouldRegisterPushAutomatically({
@@ -271,7 +274,7 @@ describe('ActivationPolicy', () => {
 
     it('설정에서 푸시를 명시적으로 켠 신규 사용자는 자동 등록한다', () => {
       // Given
-      const user = { id: 'new', createdAt: LAUNCHED_AT };
+      const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
       const result = ActivationPolicy.shouldRegisterPushAutomatically({
@@ -290,7 +293,7 @@ describe('ActivationPolicy', () => {
       // Given
       const user = {
         id: 'existing',
-        createdAt: new Date('2026-07-31T23:59:59.999Z'),
+        createdAt: toInstant('2026-07-31T23:59:59.999Z'),
       };
 
       // When
@@ -306,7 +309,7 @@ describe('ActivationPolicy', () => {
 
     it('캠페인 설정 조회 실패 중에도 출시 이후 신규 사용자는 권한 요청을 연기한다', () => {
       // Given
-      const user = { id: 'new', createdAt: LAUNCHED_AT };
+      const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
       // When
       const result = ActivationPolicy.shouldRegisterPushAutomatically({

@@ -19,7 +19,7 @@ jest.mock('@src/features/identity/user/queries/user.queries', () => ({
     queryKey: ['me'],
     queryFn: async () => ({
       id: 'existing-user',
-      createdAt: new Date('2026-07-31T23:59:59.999Z'),
+      createdAt: '2026-07-31T23:59:59.999Z',
     }),
     retry: false,
   }),

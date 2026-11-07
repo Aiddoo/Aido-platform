@@ -5,7 +5,7 @@ import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.
 import { toUpdateProfileResult, toUser } from './user.mapper';
 
 describe('toUser', () => {
-  test('userId → id, createdAt ISO → Date 매핑', () => {
+  test('userId → id, createdAt ISO → Instant 매핑', () => {
     // Given
     const dto = createCurrentUserDto();
 
@@ -15,8 +15,7 @@ describe('toUser', () => {
     // Then
     expect(result.id).toBe(dto.userId);
     expect(result.email).toBe(dto.email);
-    expect(result.createdAt).toBeInstanceOf(Date);
-    expect(result.createdAt.toISOString()).toBe(dto.createdAt);
+    expect(result.createdAt).toBe(dto.createdAt);
   });
 
   test('name null → null 유지', () => {

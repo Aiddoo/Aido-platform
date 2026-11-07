@@ -27,7 +27,7 @@ describe('ActivationService', () => {
   it('신규 사용자의 생성 후 완료 성공에서 활성화 이벤트 payload를 한 번 반환한다', () => {
     // Given
     const service = createService();
-    const user = { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') };
+    const user = { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') };
     service.recordTodoCreated({
       config,
       user,
@@ -61,7 +61,7 @@ describe('ActivationService', () => {
     const service = createService();
     const existingUser = {
       id: 'existing-user',
-      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      createdAt: toInstant('2026-07-01T00:00:00.000Z'),
     };
 
     // When
@@ -72,7 +72,7 @@ describe('ActivationService', () => {
     });
     const uncomplete = service.recordTodoCompletion({
       config,
-      user: { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') },
+      user: { id: 'new-user', createdAt: toInstant('2026-08-01T00:00:00.000Z') },
       isCompleted: false,
       now: toInstant('2026-08-02T12:00:00.000Z'),
     });

@@ -30,7 +30,7 @@ export const userSchema = z.object({
   premiumAccess: premiumAccessSchema,
   /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). 앱의 결제 사용자 판별은 UserPolicy.hasPremiumAccess 하나다 */
   isPremium: z.boolean(),
-  createdAt: z.coerce.date(),
+  createdAt: instantSchema,
 });
 export type User = z.infer<typeof userSchema>;
 export type SubscriptionStatus = User['subscriptionStatus'];

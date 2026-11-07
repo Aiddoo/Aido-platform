@@ -152,7 +152,7 @@ describe('activation mutation bridge', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), {
       ...user,
       id: 'existing-user',
-      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      createdAt: toInstant('2026-07-01T00:00:00.000Z'),
     });
 
     // When

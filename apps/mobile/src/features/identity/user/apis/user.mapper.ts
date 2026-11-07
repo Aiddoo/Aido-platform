@@ -27,7 +27,7 @@ export function toUser(dto: CurrentUserResponse): User {
       grantEndedAt: toNullableInstant(dto.premiumGrantEndedAt),
     },
     isPremium: dto.isPremium,
-    createdAt: new Date(dto.createdAt),
+    createdAt: toInstant(dto.createdAt),
   };
 }
 

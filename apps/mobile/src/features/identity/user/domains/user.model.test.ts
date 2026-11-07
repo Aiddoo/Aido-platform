@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import type { User } from '../schemas/user.schema';
 import { UserPolicy } from './user.model';
 
@@ -20,7 +22,7 @@ const createUser = (overrides?: Partial<User>): User => ({
     grantEndedAt: null,
   },
   isPremium: false,
-  createdAt: new Date('2026-01-01T09:00:00.000Z'),
+  createdAt: toInstant('2026-01-01T09:00:00.000Z'),
   ...overrides,
 });
 

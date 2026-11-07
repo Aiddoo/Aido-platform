@@ -55,7 +55,7 @@ function isNewUserCohort(
   user: ActivationUser | undefined,
 ): boolean {
   const campaign = config ? resolveEnabledCampaign(config) : null;
-  return Boolean(campaign && user && user.createdAt.getTime() >= toEpochMs(campaign.launchedAt));
+  return Boolean(campaign && user && toEpochMs(user.createdAt) >= toEpochMs(campaign.launchedAt));
 }
 
 function getActivationIdentity(
@@ -63,7 +63,7 @@ function getActivationIdentity(
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
   const campaign = config ? resolveEnabledCampaign(config) : null;
-  if (!campaign || !user || user.createdAt.getTime() < toEpochMs(campaign.launchedAt)) {
+  if (!campaign || !user || toEpochMs(user.createdAt) < toEpochMs(campaign.launchedAt)) {
     return null;
   }
   return {
@@ -86,7 +86,7 @@ function isChecklistEligible({ config, user, progress, now }: ChecklistEligibili
   }
 
   return isWithinTimeWindow(
-    user.createdAt.getTime(),
+    toEpochMs(user.createdAt),
     toEpochMs(now),
     ACTIVATION_CHECKLIST_WINDOW_MS,
   );
@@ -124,7 +124,7 @@ function shouldRegisterPushAutomatically({
   }
   const isDeferredCohort =
     config == null
-      ? user.createdAt.getTime() >= new Date(PUSH_REGISTRATION_DEFERRED_SINCE).getTime()
+      ? toEpochMs(user.createdAt) >= new Date(PUSH_REGISTRATION_DEFERRED_SINCE).getTime()
       : isNewUserCohort(config, user);
   if (!isDeferredCohort) {
     return true;
@@ -133,7 +133,7 @@ function shouldRegisterPushAutomatically({
 }
 
 function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
-  return calculateElapsedDays(user.createdAt.getTime(), toEpochMs(now));
+  return calculateElapsedDays(toEpochMs(user.createdAt), toEpochMs(now));
 }
 
 export const ActivationPolicy = {

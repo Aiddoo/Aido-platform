@@ -36,7 +36,7 @@ describe('UserService', () => {
           id: dto.userId,
           email: dto.email,
           name: dto.name,
-          createdAt: expect.any(Date),
+          createdAt: expect.any(String),
         }),
       });
     });
