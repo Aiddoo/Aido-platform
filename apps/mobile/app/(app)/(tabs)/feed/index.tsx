@@ -119,10 +119,9 @@ function MyFeed() {
     <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+      <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
         <MyCalendar />
 
@@ -130,7 +129,7 @@ function MyFeed() {
 
         <ActivationChecklist className="mx-4 mb-5" />
 
-        <Box px={16} style={{ flexGrow: 1 }}>
+        <Box px={16}>
           <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
             <Suspense fallback={<TodoList.Loading />}>
               <TodoList key={selectedDateKey} />
