@@ -25,5 +25,6 @@ export function createAudioPartPlaylistStub(
     skipTo: jest.fn(),
     seekTo: mockMethod<AudioPartPlaylist['seekTo']>(async () => {}),
     subscribe: mockMethod<AudioPartPlaylist['subscribe']>(() => () => {}),
+    prepareForPlayback: mockMethod<AudioPartPlaylist['prepareForPlayback']>(async () => {}),
   };
 }

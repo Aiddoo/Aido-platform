@@ -4,7 +4,7 @@ import { range } from 'es-toolkit';
 
 import {
   createVoiceNoteDigest,
-  createVoiceNoteFixture,
+  createSpokenVoiceNote,
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
@@ -51,11 +51,11 @@ const createPlannedTodo = (actionId: string, title: string) => ({
 describe('getListedNotes', () => {
   it('최근에 만든 노트부터 보인다', () => {
     // Given
-    const older = createVoiceNoteFixture({
+    const older = createSpokenVoiceNote({
       draftId: 'older',
       createdAt: toInstant('2026-11-01T00:00:00.000Z'),
     });
-    const newer = createVoiceNoteFixture({
+    const newer = createSpokenVoiceNote({
       draftId: 'newer',
       createdAt: toInstant('2026-11-02T00:00:00.000Z'),
     });
@@ -69,8 +69,8 @@ describe('getListedNotes', () => {
 
   it('글자가 없는 노트는 목록에서 뺀다', () => {
     // Given
-    const empty = createVoiceNoteFixture({ draftId: 'empty', sentences: [] });
-    const spoken = createVoiceNoteFixture({ draftId: 'spoken' });
+    const empty = createSpokenVoiceNote({ draftId: 'empty', sentences: [] });
+    const spoken = createSpokenVoiceNote({ draftId: 'spoken' });
 
     // When
     const notes = VoiceNotePolicy.getListedNotes([empty, spoken]);
@@ -83,7 +83,7 @@ describe('getListedNotes', () => {
 describe('canDigest', () => {
   it('글자가 있고 아직 정리하지 않았으면 정리할 수 있다', () => {
     // Given
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
 
     // When
     const result = VoiceNotePolicy.canDigest(note);
@@ -94,7 +94,7 @@ describe('canDigest', () => {
 
   it('공백뿐인 문장만 있으면 정리할 수 없다', () => {
     // Given
-    const note = createVoiceNoteFixture({ sentences: [createVoiceNoteSentence({ text: '  ' })] });
+    const note = createSpokenVoiceNote({ sentences: [createVoiceNoteSentence({ text: '  ' })] });
 
     // When
     const result = VoiceNotePolicy.canDigest(note);
@@ -105,7 +105,7 @@ describe('canDigest', () => {
 
   it('이미 정리한 노트는 다시 정리할 수 없다', () => {
     // Given
-    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest() });
+    const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest() });
 
     // When
     const result = VoiceNotePolicy.canDigest(note);
@@ -118,7 +118,7 @@ describe('canDigest', () => {
 describe('canPlayRecording', () => {
   it('녹음 파일이 없으면 다시 들을 수 없다', () => {
     // Given
-    const note = createVoiceNoteFixture({ recordings: [] });
+    const note = createSpokenVoiceNote({ recordings: [] });
 
     // When
     const result = VoiceNotePolicy.canPlayRecording(note);
@@ -129,7 +129,7 @@ describe('canPlayRecording', () => {
 
   it('녹음 파일과 길이가 있으면 다시 들을 수 있다', () => {
     // Given
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
 
     // When
     const result = VoiceNotePolicy.canPlayRecording(note);
@@ -140,7 +140,7 @@ describe('canPlayRecording', () => {
 });
 
 describe('findKeyPointAt', () => {
-  const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest() });
+  const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest() });
 
   it('첫 핵심 포인트 전에는 아무 포인트도 아니다', () => {
     // Given
@@ -177,7 +177,7 @@ describe('findKeyPointAt', () => {
 
   it('순서가 섞여 있어도 가장 가까운 시작 시각을 고른다', () => {
     // Given
-    const unordered = createVoiceNoteFixture({
+    const unordered = createSpokenVoiceNote({
       digest: createVoiceNoteDigest({
         keyPoints: [
           createVoiceNoteKeyPoint({ id: 'late', startMs: 90_000 }),
@@ -195,7 +195,7 @@ describe('findKeyPointAt', () => {
 
   it('정리 전 노트에는 핵심 포인트가 없다', () => {
     // Given
-    const undigested = createVoiceNoteFixture();
+    const undigested = createSpokenVoiceNote();
 
     // When
     const keyPoint = VoiceNotePolicy.findKeyPointAt(undigested, 60_000);
@@ -206,7 +206,7 @@ describe('findKeyPointAt', () => {
 });
 
 describe('isExpired', () => {
-  const note = createVoiceNoteFixture({ createdAt: toInstant('2026-11-01T00:00:00.000Z') });
+  const note = createSpokenVoiceNote({ createdAt: toInstant('2026-11-01T00:00:00.000Z') });
 
   it('만든 지 30일이 되기 직전까지는 만료되지 않는다', () => {
     // Given
@@ -292,7 +292,7 @@ describe('voiceNoteSchema', () => {
 
   it('저장한 순간은 ISO 문자열로 남고 읽으면 Date로 돌아온다', () => {
     // Given
-    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest() });
+    const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest() });
 
     // When
     const stored = voiceNoteSchema.encode(note);
@@ -305,7 +305,7 @@ describe('voiceNoteSchema', () => {
 
   it('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       planDraft: createPlanReviewDraft(plan),
     });
 
@@ -320,7 +320,7 @@ describe('voiceNoteSchema', () => {
 
   it('검토 초안이 깨졌으면 글자는 살리고 그 칸만 비운다', () => {
     // Given
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
 
     // When
@@ -340,7 +340,7 @@ describe('voiceNoteSchema', () => {
       omittedTodoCount: 1,
       actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
     });
-    const note = withPlanDraft(createVoiceNoteFixture(), createPlanReviewDraft(plan));
+    const note = withPlanDraft(createSpokenVoiceNote(), createPlanReviewDraft(plan));
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
     stored.planDraft.form.actions[0].title = '';
 
@@ -357,7 +357,7 @@ describe('voiceNoteSchema', () => {
 describe('createDigestInput', () => {
   it('문장을 글자와 시각 구간으로 만들고 길이는 초로 보낸다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       durationMs: 178_400,
       sentences: [
         createVoiceNoteSentence({ text: '첫 문장.', startMs: 0, endMs: 2_000 }),
@@ -395,7 +395,7 @@ describe('createDigestInput', () => {
         isBookmarked: index === 1,
       }),
     );
-    const note = createVoiceNoteFixture({ sentences });
+    const note = createSpokenVoiceNote({ sentences });
 
     // When
     const { segments } = createDigestInput(note);
@@ -417,7 +417,7 @@ describe('withDigestResult', () => {
 
   it('핵심 포인트 시각에 말한 문장에 중요 표시가 있으면 깃발을 옮기고 시각을 모르면 그대로 둔다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       sentences: [
         createVoiceNoteSentence({ startMs: 0, endMs: 10_000, isBookmarked: true }),
         createVoiceNoteSentence({ startMs: 10_000, endMs: 20_000 }),
@@ -454,7 +454,7 @@ describe('withDigestResult', () => {
 
   it('할 일이 하나도 없으면 요약은 남기고 할 일이 없다고 판단한다', () => {
     // Given
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
 
     // When
     const next = withDigestResult(
@@ -479,7 +479,7 @@ describe('withDigestResult', () => {
 describe('createDigestMemo', () => {
   it('요약과 핵심 포인트를 메모 한 장으로 만든다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       digest: createVoiceNoteDigest({
         title: '회의',
         summary: '요약',
@@ -499,7 +499,7 @@ describe('hasEmptyPlan', () => {
   it('할 일 카드를 읽을 수 없게 된 노트를 할 일이 없었던 노트로 치지 않는다', () => {
     // Given
     const note = {
-      ...createVoiceNoteFixture({ digest: createVoiceNoteDigest() }),
+      ...createSpokenVoiceNote({ digest: createVoiceNoteDigest() }),
       planDraft: null,
     };
 
@@ -531,7 +531,7 @@ describe('findRecordingIndexAt', () => {
 describe('getPlanStatus', () => {
   it('이미 추가했으면 카드가 남아 있어도 추가했다고 본다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
       planDraft: createPlanDraftWithTodo(),
     });
@@ -545,7 +545,7 @@ describe('getPlanStatus', () => {
 
   it('정리했는데 카드가 하나도 없으면 할 일이 없다고 본다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       digest: createVoiceNoteDigest(),
       planDraft: createPlanDraftWithoutActions(),
     });
@@ -559,7 +559,7 @@ describe('getPlanStatus', () => {
 
   it('카드를 읽지 못했으면 잃었다고 본다', () => {
     // Given
-    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest(), planDraft: null });
+    const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest(), planDraft: null });
 
     // When
     const status = VoiceNotePolicy.getPlanStatus(note);
@@ -571,7 +571,7 @@ describe('getPlanStatus', () => {
   it('고칠 카드가 있으면 초안을 함께 돌려준다', () => {
     // Given
     const planDraft = createPlanDraftWithTodo();
-    const note = createVoiceNoteFixture({ digest: createVoiceNoteDigest(), planDraft });
+    const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest(), planDraft });
 
     // When
     const status = VoiceNotePolicy.getPlanStatus(note);
@@ -589,7 +589,7 @@ const spokenSentences = [
 describe('getCharacterCount', () => {
   it('문장의 글자 수를 모두 더한다', () => {
     // Given
-    const note = createVoiceNoteFixture({ sentences: spokenSentences });
+    const note = createSpokenVoiceNote({ sentences: spokenSentences });
 
     // When
     const characterCount = VoiceNotePolicy.getCharacterCount(note);
@@ -602,7 +602,7 @@ describe('getCharacterCount', () => {
 describe('getMarkCount', () => {
   it('중요 표시한 문장만 센다', () => {
     // Given
-    const note = createVoiceNoteFixture({ sentences: spokenSentences });
+    const note = createSpokenVoiceNote({ sentences: spokenSentences });
 
     // When
     const markCount = VoiceNotePolicy.getMarkCount(note);
@@ -615,7 +615,7 @@ describe('getMarkCount', () => {
 describe('findSentenceIndexAt', () => {
   it('재생 위치의 문장을 찾고 첫 문장 앞이면 -1이다', () => {
     // Given
-    const note = createVoiceNoteFixture({ sentences: spokenSentences });
+    const note = createSpokenVoiceNote({ sentences: spokenSentences });
 
     // When
     const before = VoiceNotePolicy.findSentenceIndexAt(note, 500);
@@ -630,8 +630,8 @@ describe('findSentenceIndexAt', () => {
 describe('getPlannedTodoCount', () => {
   it('계획 카드 중 할 일만 센다. 카드가 없으면 0이다', () => {
     // Given
-    const withTodo = createVoiceNoteFixture({ planDraft: createPlanDraftWithTodo() });
-    const withoutDraft = createVoiceNoteFixture({ planDraft: null });
+    const withTodo = createSpokenVoiceNote({ planDraft: createPlanDraftWithTodo() });
+    const withoutDraft = createSpokenVoiceNote({ planDraft: null });
 
     // When
     const counted = VoiceNotePolicy.getPlannedTodoCount(withTodo);
@@ -646,7 +646,7 @@ describe('getPlannedTodoCount', () => {
 describe('hasAppliedOnlyMemo', () => {
   it('저장은 했는데 할 일이 0개면 메모만 저장한 노트다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
       appliedTodoCount: 0,
     });
@@ -660,7 +660,7 @@ describe('hasAppliedOnlyMemo', () => {
 
   it('할 일을 하나라도 저장했으면 메모만 저장한 노트가 아니다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
       appliedTodoCount: 1,
     });
@@ -674,7 +674,7 @@ describe('hasAppliedOnlyMemo', () => {
 
   it('아직 저장하지 않은 노트는 메모만 저장한 노트가 아니다', () => {
     // Given
-    const note = createVoiceNoteFixture({ appliedAt: null, appliedTodoCount: 0 });
+    const note = createSpokenVoiceNote({ appliedAt: null, appliedTodoCount: 0 });
 
     // When
     const result = VoiceNotePolicy.hasAppliedOnlyMemo(note);
@@ -685,7 +685,7 @@ describe('hasAppliedOnlyMemo', () => {
 
   it('저장한 할 일 수를 모르는 옛 초안은 메모만 저장한 노트로 보지 않는다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
       appliedTodoCount: null,
     });
@@ -702,7 +702,7 @@ describe('withAppliedAt', () => {
   it('저장한 시각과 할 일 수를 남기고 검토 초안과 저장 요청을 비운다', () => {
     // Given
     const appliedAt = toInstant('2026-11-05T12:00:00.000Z');
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       planDraft: createPlanDraftWithTodo(),
       planApplyRequest: { idempotencyKey: 'key-1', fingerprint: 'fingerprint-1' },
     });
@@ -721,7 +721,7 @@ describe('withAppliedAt', () => {
 });
 
 describe('getRecordingSizeBytes', () => {
-  const note = createVoiceNoteFixture({
+  const note = createSpokenVoiceNote({
     recordings: [
       { fileName: 'draft-1-0.wav', startMs: 0 },
       { fileName: 'draft-1-1.wav', startMs: 30_000 },
@@ -754,7 +754,7 @@ describe('getRecordingSizeBytes', () => {
 describe('toCaptureSeed', () => {
   it('저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다', () => {
     // Given
-    const note = createVoiceNoteFixture({
+    const note = createSpokenVoiceNote({
       durationMs: 90_000,
       sentences: [createVoiceNoteSentence({ text: '앞에서 한 말.' })],
     });

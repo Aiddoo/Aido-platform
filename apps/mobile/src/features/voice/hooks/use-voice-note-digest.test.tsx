@@ -24,7 +24,8 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
-import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
+import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
+import { createVoiceNoteDigestDto } from '../__tests__/voice.fixtures';
 import { VoiceNoteDigestButton } from '../components/note/voice-note-digest-button';
 import { useVoiceNoteDigest } from './use-voice-note-digest';
 
@@ -34,15 +35,6 @@ let logger: ReturnType<typeof createLoggerStub>;
 
 beforeEach(() => {
   logger = createLoggerStub();
-});
-
-const createDigestDto = (overrides: { actions?: unknown[] } = {}) => ({
-  title: '온보딩 회의',
-  summary: '요약이에요',
-  keyPoints: [{ text: '핵심', startMs: 12_000 }],
-  plan: { actions: overrides.actions ?? [], omittedTodoCount: 0 },
-  featureQuota: null,
-  charged: true,
 });
 
 function DigestProbe() {
@@ -66,7 +58,7 @@ async function renderDigest() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const storage = createVoiceNoteStorageFake();
-  storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID }));
+  storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID }));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -111,7 +103,7 @@ describe('useVoiceNoteDigest', () => {
   it('정리에 성공하면 요약과 카드 초안을 기기 초안에 담는다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();
-    httpClient.post.mockResolvedValue(ok(createDigestDto()));
+    httpClient.post.mockResolvedValue(ok(createVoiceNoteDigestDto()));
 
     // When
     await fireEvent.press(screen.getByTestId('digest'));
@@ -134,7 +126,7 @@ describe('useVoiceNoteDigest', () => {
     await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
     expect(screen.getByTestId('failure')).toHaveTextContent('consent-required:false');
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
-    httpClient.post.mockResolvedValueOnce(ok(createDigestDto()));
+    httpClient.post.mockResolvedValueOnce(ok(createVoiceNoteDigestDto()));
     httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
 
     // When
@@ -157,7 +149,7 @@ describe('useVoiceNoteDigest', () => {
     let respond = () => {};
     httpClient.post.mockReturnValue(
       new Promise((resolve) => {
-        respond = () => resolve(ok(createDigestDto()));
+        respond = () => resolve(ok(createVoiceNoteDigestDto()));
       }),
     );
     await act(async () => {
@@ -240,7 +232,7 @@ describe('useVoiceNoteDigest', () => {
     // Given
     const { httpClient, storage } = await renderDigest();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
-    httpClient.post.mockResolvedValueOnce(ok(createDigestDto()));
+    httpClient.post.mockResolvedValueOnce(ok(createVoiceNoteDigestDto()));
     await fireEvent.press(screen.getByTestId('digest'));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     await waitFor(() =>

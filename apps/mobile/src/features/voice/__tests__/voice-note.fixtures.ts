@@ -44,7 +44,7 @@ export const createVoiceNoteDigest = (
 
 type VoiceNoteOverrides = Partial<Omit<VoiceNote, 'draftId'>> & { draftId?: string };
 
-export const createVoiceNoteFixture = ({
+export const createSpokenVoiceNote = ({
   draftId = 'draft-1',
   ...overrides
 }: VoiceNoteOverrides = {}): VoiceNote => ({

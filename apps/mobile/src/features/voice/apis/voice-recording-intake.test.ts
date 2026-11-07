@@ -4,7 +4,7 @@ import {
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
 
-import { createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
+import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceRecordingIntake } from './voice-recording-intake';
 
 const ACCOUNT_ID = 'user-1';
@@ -89,7 +89,7 @@ describe('VoiceRecordingIntake', () => {
     const { files, storage, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
     intake.segmentStarted(uri, 0);
-    storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID, recordings: [] }));
+    storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }));
     intake.handOff();
 
     // When

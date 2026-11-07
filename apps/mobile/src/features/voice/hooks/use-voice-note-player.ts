@@ -5,10 +5,7 @@ import type {
 } from '@src/core/ports/audio-part-playlist';
 import type { Logger } from '@src/core/ports/logger';
 import { getErrorMessage } from '@src/shared/errors/to-error';
-import {
-  setPlaybackAudioMode,
-  useAudioPartPlaylist,
-} from '@src/shared/infra/audio/use-audio-part-playlist';
+import { useAudioPartPlaylist } from '@src/shared/infra/audio/use-audio-part-playlist';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -180,12 +177,12 @@ export function useVoiceNotePlayer({
   useEffect(() => player.attach(), [player]);
 
   useEffect(() => {
-    setPlaybackAudioMode().catch((error: unknown) => {
+    playlist.prepareForPlayback().catch((error: unknown) => {
       logger.warn(VOICE_LOG_EVENT.PLAYER_AUDIO_MODE_FAILED, {
         error: getErrorMessage(error),
       });
     });
-  }, [logger]);
+  }, [logger, playlist]);
 
   return player;
 }

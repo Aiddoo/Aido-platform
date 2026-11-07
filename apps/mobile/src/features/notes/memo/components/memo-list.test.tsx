@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createVoiceNoteFixture } from '@src/features/voice/__tests__/voice-note.fixtures';
+import { createSpokenVoiceNote } from '@src/features/voice/__tests__/voice-note.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createHttpClientStub,
@@ -32,7 +32,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const voiceNoteStorage = createVoiceNoteStorageFake();
   if (hasVoiceNote) {
-    voiceNoteStorage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture());
+    voiceNoteStorage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote());
   }
 
   await renderUi(

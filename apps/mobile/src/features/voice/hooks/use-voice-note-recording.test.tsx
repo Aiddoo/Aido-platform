@@ -14,7 +14,7 @@ import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
-import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
+import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import {
   createOfflineModelPromptRepository,
   type OfflineModelPromptRepository,
@@ -339,7 +339,7 @@ describe('useVoiceNoteRecording', () => {
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
     const analytics = createAnalyticsStub();
-    const seed = createVoiceNoteFixture({
+    const seed = createSpokenVoiceNote({
       draftId: 'seed-1',
       durationMs: 90_000,
       recordings: [],
@@ -1050,7 +1050,7 @@ describe('useVoiceNoteRecording', () => {
     const storage = createVoiceNoteStorageFake();
     storage.drafts.save(
       ACCOUNT_ID,
-      createVoiceNoteFixture({
+      createSpokenVoiceNote({
         draftId: 'restored-1',
         durationMs: 40_000,
         recordings: [],

@@ -30,7 +30,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
-import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
+import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
+import { createVoiceNoteDigestDto } from './voice.fixtures';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
@@ -74,21 +75,12 @@ const emptyPlanDraft = createPlanReviewDraft(
   }),
 );
 
-const createDigestDto = () => ({
-  title: '온보딩 회의',
-  summary: '요약이에요',
-  keyPoints: [],
-  plan: { actions: [], omittedTodoCount: 0 },
-  featureQuota: null,
-  charged: true,
-});
-
-async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], tab?: string) {
+async function renderScreen(note: Parameters<typeof createSpokenVoiceNote>[0], tab?: string) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const storage = createVoiceNoteStorageFake();
-  storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID, ...note }));
+  storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, ...note }));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -189,7 +181,7 @@ describe('말로 메모 화면', () => {
   it('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
     // Given
     const { httpClient } = await renderScreen({});
-    httpClient.post.mockResolvedValue(ok(createDigestDto()));
+    httpClient.post.mockResolvedValue(ok(createVoiceNoteDigestDto({ keyPoints: [] })));
 
     // When
     await fireEvent.press(await screen.findByText('정리하기'));
@@ -378,5 +370,44 @@ describe('말로 메모 화면', () => {
       expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).not.toBeNull(),
     );
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull();
+  });
+
+  it('응답을 놓친 뒤 메모로 저장을 다시 누르면 같은 키로 다시 보낸다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    httpClient.post.mockRejectedValue(new NetworkError());
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    // When
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+
+    // Then
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
+    expect(httpClient.post.mock.calls[1]?.[2]?.headers?.['Idempotency-Key']).toBe(
+      httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],
+    );
+  });
+
+  it('서버가 같은 키로 다른 내용이라고 거절하면 저장해 둔 키를 지운다', async () => {
+    // Given
+    const { httpClient, storage } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    httpClient.post.mockResolvedValue(err(new ApiError('AI_1318', '키 충돌', 409)));
+
+    // When
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+
+    // Then
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull(),
+    );
   });
 });

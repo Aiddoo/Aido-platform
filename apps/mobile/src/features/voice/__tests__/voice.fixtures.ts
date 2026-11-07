@@ -19,3 +19,18 @@ export function createCaptureState(input: CaptureStateInput): VoiceCaptureState 
     ...input,
   });
 }
+
+/** 말로 메모 정리 응답. 핵심 포인트와 계획 카드는 테스트가 정한다 */
+export function createVoiceNoteDigestDto({
+  actions = [],
+  keyPoints = [{ text: '핵심', startMs: 12_000 }],
+}: { actions?: unknown[]; keyPoints?: unknown[] } = {}) {
+  return {
+    title: '온보딩 회의',
+    summary: '요약이에요',
+    keyPoints,
+    plan: { actions, omittedTodoCount: 0 },
+    featureQuota: null,
+    charged: true,
+  };
+}

@@ -16,7 +16,7 @@ import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import VoiceStorageRoute from '../../../../app/(app)/(mypage-menu)/settings/voice-storage';
-import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.fixtures';
+import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
 const OWNER_DIRECTORY = ['voice-notes', ACCOUNT_ID];
@@ -31,7 +31,7 @@ async function renderScreen({
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', { sizeBytes: 2_500_000 });
     storage.drafts.save(
       ACCOUNT_ID,
-      createVoiceNoteFixture({
+      createSpokenVoiceNote({
         digest: createVoiceNoteDigest({ title: '주간 회의' }),
         recordings: [{ fileName: 'draft-1-0.wav', startMs: 0 }],
       }),

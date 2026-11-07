@@ -5,7 +5,7 @@ import {
 } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
-import { createVoiceNoteDigest, createVoiceNoteFixture } from '../__tests__/voice-note.fixtures';
+import { createVoiceNoteDigest, createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 import { VoiceNoteStorageService } from './voice-note-storage.service';
@@ -36,7 +36,7 @@ describe('VoiceNoteStorageService', () => {
     // Given
     const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav');
-    drafts.save('user-1', createVoiceNoteFixture());
+    drafts.save('user-1', createSpokenVoiceNote());
 
     // When
     service.discard('user-1', 'draft-1');
@@ -50,7 +50,7 @@ describe('VoiceNoteStorageService', () => {
     // Given
     jest.useFakeTimers();
     const { service, drafts } = createService();
-    drafts.scheduleSave('user-1', createVoiceNoteFixture());
+    drafts.scheduleSave('user-1', createSpokenVoiceNote());
 
     // When
     service.discard('user-1', 'draft-1');
@@ -70,10 +70,10 @@ describe('VoiceNoteStorageService', () => {
     files.addFile(OWNER_DIRECTORY, 'draft-2-0.wav', {
       modifiedAt: new Date('2026-12-01T00:00:00.000Z'),
     });
-    drafts.save('user-1', createVoiceNoteFixture());
+    drafts.save('user-1', createSpokenVoiceNote());
     drafts.save(
       'user-1',
-      createVoiceNoteFixture({
+      createSpokenVoiceNote({
         draftId: 'draft-2',
         createdAt: toInstant('2026-12-01T00:00:00.000Z'),
       }),
@@ -90,7 +90,7 @@ describe('VoiceNoteStorageService', () => {
 
   describe('녹음 저장 공간', () => {
     const createNoteWithRecording = (draftId: string, createdAt: string) =>
-      createVoiceNoteFixture({
+      createSpokenVoiceNote({
         draftId,
         createdAt: toInstant(createdAt),
         digest: createVoiceNoteDigest(),

@@ -1,6 +1,6 @@
 import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__';
 
-import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
+import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS } from '../constants/voice-note.constants';
 import { withSentences } from '../domains/voice-note.model';
@@ -67,7 +67,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('저장한 초안을 같은 계정에서 그대로 복원한다', () => {
     // Given
     const { repository } = createRepository();
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
 
     // When
     repository.save('user-1', note);
@@ -79,7 +79,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('다른 계정의 초안은 읽지도 목록에 넣지도 않는다', () => {
     // Given
     const { repository } = createRepository();
-    repository.save('user-1', createVoiceNoteFixture());
+    repository.save('user-1', createSpokenVoiceNote());
 
     // When
     const found = repository.find('user-2', 'draft-1');
@@ -93,8 +93,8 @@ describe('VoiceNoteDraftRepository', () => {
   it('계정 id가 다른 계정 id로 시작해도 초안이 섞이지 않는다', () => {
     // Given
     const { repository } = createRepository();
-    repository.save('1', createVoiceNoteFixture());
-    repository.save('10', createVoiceNoteFixture());
+    repository.save('1', createSpokenVoiceNote());
+    repository.save('10', createSpokenVoiceNote());
 
     // When
     const all = repository.findAll('1');
@@ -107,7 +107,7 @@ describe('VoiceNoteDraftRepository', () => {
     // Given
     const { storage, repository } = createRepository();
     const write = jest.spyOn(storage, 'set');
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
 
     // When
     repository.scheduleSave('user-1', note);
@@ -126,7 +126,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('모아 둔 쓰기는 시간이 지나기 전에도 flush로 끝낼 수 있다', () => {
     // Given
     const { repository } = createRepository();
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
     repository.scheduleSave('user-1', note);
 
     // When
@@ -139,7 +139,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('지운 초안은 모아 둔 쓰기가 뒤늦게 되살리지 않는다', () => {
     // Given
     const { repository } = createRepository();
-    const note = createVoiceNoteFixture();
+    const note = createSpokenVoiceNote();
     repository.scheduleSave('user-1', note);
 
     // When
@@ -185,8 +185,8 @@ describe('VoiceNoteDraftRepository', () => {
   it('다른 계정의 초안만 지우고 현재 계정의 초안은 남긴다', () => {
     // Given
     const { repository } = createRepository();
-    repository.save('user-1', createVoiceNoteFixture());
-    repository.save('user-2', createVoiceNoteFixture());
+    repository.save('user-1', createSpokenVoiceNote());
+    repository.save('user-2', createSpokenVoiceNote());
 
     // When
     repository.removeAllExceptOwner('user-1');
@@ -200,7 +200,7 @@ describe('VoiceNoteDraftRepository', () => {
     // Given
     const { storage, repository } = createRepository();
     storage.set('aido_draft_v1:user-1:memo', 'keep');
-    repository.save('user-1', createVoiceNoteFixture());
+    repository.save('user-1', createSpokenVoiceNote());
 
     // When
     repository.removeAll();
@@ -265,7 +265,7 @@ describe('VoiceNoteDraftRepository', () => {
 
     // When
     const unchanged = repository.getSnapshot('user-1');
-    repository.save('user-1', createVoiceNoteFixture());
+    repository.save('user-1', createSpokenVoiceNote());
 
     // Then
     expect(unchanged).toBe(before);
@@ -279,7 +279,7 @@ describe('VoiceNoteDraftRepository', () => {
 
     // When
     for (let elapsed = 0; elapsed < 6_000; elapsed += 500) {
-      repository.scheduleSave('user-1', createVoiceNoteFixture());
+      repository.scheduleSave('user-1', createSpokenVoiceNote());
       jest.advanceTimersByTime(500);
     }
 
@@ -290,13 +290,13 @@ describe('VoiceNoteDraftRepository', () => {
   it('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
     // Given
     const { storage, repository } = createRepository();
-    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1' }));
-    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-2' }));
+    repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1' }));
+    repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-2' }));
     const before = repository.getSnapshot('user-1');
     const getString = jest.spyOn(storage, 'get').mockClear();
 
     // When
-    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1', durationMs: 1_000 }));
+    repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1', durationMs: 1_000 }));
     const after = repository.getSnapshot('user-1');
 
     // Then
@@ -311,7 +311,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('저장소에 아직 없는 초안의 대기 쓰기도 전체 삭제 뒤에 되살아나지 않는다', () => {
     // Given
     const { repository } = createRepository();
-    repository.scheduleSave('user-1', createVoiceNoteFixture());
+    repository.scheduleSave('user-1', createSpokenVoiceNote());
 
     // When
     repository.removeAll();
@@ -324,7 +324,7 @@ describe('VoiceNoteDraftRepository', () => {
   it('다른 계정의 대기 쓰기는 소유자만 남길 때 함께 취소한다', () => {
     // Given
     const { repository } = createRepository();
-    repository.scheduleSave('user-2', createVoiceNoteFixture());
+    repository.scheduleSave('user-2', createSpokenVoiceNote());
 
     // When
     repository.removeAllExceptOwner('user-1');

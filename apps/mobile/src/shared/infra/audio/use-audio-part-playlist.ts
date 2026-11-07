@@ -18,6 +18,8 @@ function toAudioPartPlaylist(playlist: AudioPlaylist): AudioPartPlaylist {
       const subscription = playlist.addListener('playlistStatusUpdate', listener);
       return () => subscription.remove();
     },
+    prepareForPlayback: () =>
+      setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }),
   };
 }
 
@@ -38,9 +40,4 @@ export function useAudioPartPlaylist({
   });
 
   return useMemo(() => toAudioPartPlaylist(playlist), [playlist]);
-}
-
-/** 인식 중에 켜진 녹음 모드가 남아 있으면 무음 모드에서 소리가 안 난다 */
-export function setPlaybackAudioMode(): Promise<void> {
-  return setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
 }

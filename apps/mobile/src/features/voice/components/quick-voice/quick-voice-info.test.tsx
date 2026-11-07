@@ -4,14 +4,7 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createLoggerStub,
-  createTestDi,
-} from '@src/shared/__tests__';
+import { createHttpClientStub, createLoggerStub, createTestDi } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -44,14 +37,7 @@ describe('QuickVoiceInfo', () => {
             config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
           >
             <QueryClientProvider client={createTestQueryClient()}>
-              <StaticDIProvider
-                container={createTestDi({
-                  analytics: createAnalyticsStub(),
-                  errorReporter: createErrorReporterStub(),
-                  logger: silentLogger,
-                  entitlementService: new EntitlementService(httpClient, silentLogger),
-                })}
-              >
+              <StaticDIProvider container={createTestDi({ httpClient, logger: silentLogger })}>
                 <LocalDateProvider>
                   <QuickVoiceInfo />
                 </LocalDateProvider>
