@@ -62,6 +62,9 @@ describe('구독 가격 계산', () => {
   test.each([
     [68_000, 5666.67],
     [12_000, 1_000],
+    [59.88, 4.99],
+    [0.06, 0.01],
+    [8.89, 0.74],
   ])('연 %s원의 월 환산 금액은 %s원이다', (annualPrice, expected) => {
     // Given
     const price = annualPrice;
