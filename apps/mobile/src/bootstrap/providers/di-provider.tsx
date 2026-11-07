@@ -314,7 +314,7 @@ export function DIProvider({
 
     const userService = new UserService(authHttpClient);
 
-    const purchasesGateway = createRevenueCatPurchasesGateway({ isDebugLogEnabled: __DEV__ });
+    const purchasesGateway = createRevenueCatPurchasesGateway({ isLogEnabled: __DEV__ });
     const purchasesSession = new PurchasesSession({
       purchases: purchasesGateway,
       logger,
@@ -363,18 +363,22 @@ export function DIProvider({
     });
 
     return {
+      storage,
       logger,
       analytics,
       errorReporter,
       haptics: expoHapticsGateway,
       idGenerator: expoIdGenerator,
       speechRecognizer: expoSpeechRecognizer,
+      purchasesGateway,
       pushNotification,
       tokenStore,
       authSessionStore: createAuthSessionStore(),
       sessionEpoch,
+      sessionManager,
       sessionCleanupService,
       sessionRevocationService,
+      tokenRefresher,
       featureAttribution,
       draftService,
       queryCacheStorage,

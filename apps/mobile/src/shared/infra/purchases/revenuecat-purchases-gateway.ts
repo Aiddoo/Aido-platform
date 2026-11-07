@@ -118,11 +118,11 @@ function toPurchasePackage(rcPackage: PurchasesPackage): PurchasePackage {
 }
 
 interface RevenueCatPurchasesGatewayOptions {
-  isDebugLogEnabled: boolean;
+  isLogEnabled: boolean;
 }
 
 export function createRevenueCatPurchasesGateway({
-  isDebugLogEnabled,
+  isLogEnabled,
 }: RevenueCatPurchasesGatewayOptions): PurchasesGateway {
   return {
     configure: () => {
@@ -130,7 +130,7 @@ export function createRevenueCatPurchasesGateway({
       if (!apiKey) {
         return 'missing-api-key';
       }
-      if (isDebugLogEnabled) {
+      if (isLogEnabled) {
         Purchases.setLogLevel(LOG_LEVEL.WARN);
       }
       Purchases.configure({ apiKey });
@@ -182,7 +182,8 @@ export function createRevenueCatPurchasesGateway({
     restore: () =>
       withGatewayError(async () => toPurchaseStatus(await Purchases.restorePurchases())),
 
-    getStatus: async () => toPurchaseStatus(await Purchases.getCustomerInfo()),
+    getStatus: () =>
+      withGatewayError(async () => toPurchaseStatus(await Purchases.getCustomerInfo())),
 
     subscribe: (listener) => {
       const handleUpdate = (info: CustomerInfo) => listener(toPurchaseStatus(info));

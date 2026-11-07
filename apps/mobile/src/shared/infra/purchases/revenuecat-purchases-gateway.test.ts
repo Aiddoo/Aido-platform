@@ -101,7 +101,7 @@ describe('toPurchasesGatewayError', () => {
 });
 
 describe('createRevenueCatPurchasesGateway', () => {
-  const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({ isDebugLogEnabled: false });
+  const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({ isLogEnabled: false });
 
   afterEach(() => {
     delete mockExtra.revenueCatAppleApiKey;

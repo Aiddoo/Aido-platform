@@ -8,13 +8,12 @@ import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-ga
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
-import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createSessionManager } from '@src/core/session/session-manager';
 import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
 import { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
@@ -118,6 +117,7 @@ import { createSocialAuthGatewayStub } from './create-social-auth-gateway-stub';
 import { createSocialShareGatewayStub } from './create-social-share-gateway-stub';
 import { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 import { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
+import { createTokenRefresherStub } from './create-token-refresher-stub';
 import { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 import { createTestQueryClient } from './query-client';
 
@@ -142,10 +142,6 @@ interface TestDiPorts {
   syncStorage: DIContainer['syncStorage'];
   /** 위젯 진입 명령을 남기는 저장소. 운영의 `widgetStorage`와 같다 */
   widgetStorage: ObservableSyncStorage;
-  /** 키체인 대신 쓰는 기기 저장소. 대기 중인 로그아웃 기록을 담는다 */
-  storage: Storage;
-  /** 스토어 결제 SDK. 구독 Service와 결제 세션이 함께 쓴다 */
-  purchasesGateway: PurchasesGateway;
   /** 세션 정리가 비우는 조회 캐시를 가진 클라이언트. `renderUi`는 자기 클라이언트를 넘긴다 */
   queryClient: QueryClient;
 }
@@ -248,16 +244,19 @@ export function createTestDi({
   const weatherService = new WeatherService(httpClient);
 
   return {
+    storage,
     logger,
     analytics,
     errorReporter,
     haptics: createHapticsGatewayStub(),
     idGenerator,
     speechRecognizer: createSpeechRecognizerStub(),
+    purchasesGateway,
     pushNotification,
     tokenStore,
     authSessionStore: createAuthSessionStore(),
     sessionEpoch,
+    sessionManager: createSessionManager(tokenStore),
     sessionCleanupService: new SessionCleanupService({
       queryCache: createSessionQueryCache(queryClient),
       persistedQueryCache: disabledQueryCacheStorage,
@@ -269,6 +268,7 @@ export function createTestDi({
       logger,
     }),
     sessionRevocationService,
+    tokenRefresher: createTokenRefresherStub(),
     featureAttribution: createFeatureAttributionStore(syncStorage),
     draftService,
     queryCacheStorage: disabledQueryCacheStorage,
