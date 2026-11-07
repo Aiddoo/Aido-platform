@@ -15,7 +15,7 @@ import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/re
 import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { getFriendErrorDetails } from '../domains/friend.error';
+import { getFriendLimitFromError } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
 import type { FriendUser } from '../schemas/friend.schema';
 import type { ReorderFriendInput } from '../schemas/friend.schema';
@@ -212,11 +212,14 @@ export function useSendRequestByTagMutationOptions({
         haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
-        const details = getFriendErrorDetails(err);
         gate.handleError(
           err,
           match(
-            FriendPolicy.getFriendLimitDialog(details, openFriendLimitInvite != null, knownLimit),
+            FriendPolicy.getFriendLimitOffer({
+              isInviteAvailable: openFriendLimitInvite != null,
+              serverLimit: getFriendLimitFromError(err),
+              knownLimit,
+            }),
           )
             .with({ type: 'invite' }, ({ limit }) =>
               openFriendLimitInvite == null

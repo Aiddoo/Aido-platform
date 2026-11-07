@@ -8,9 +8,13 @@ import {
   searchUsersResponseSchema,
   type searchUserSchema,
   sendFriendRequestResponseSchema,
+  userTagParamSchema,
 } from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
+
+/** 서버 경로 검증(userTagParamSchema)과 같은 규칙이다 */
+export const userTagSchema = userTagParamSchema.shape.userTag;
 
 const friendUserSchema = friendUserContractSchema.extend({ friendsSince: instantSchema });
 export type FriendUser = z.infer<typeof friendUserSchema>;

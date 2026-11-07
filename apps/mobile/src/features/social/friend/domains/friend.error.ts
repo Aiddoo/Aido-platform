@@ -1,3 +1,4 @@
+import { friendLimitErrorDetailsSchema } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors';
 
 export const FRIEND_ERROR_CODE = {
@@ -8,7 +9,12 @@ export const FRIEND_ERROR_CODE = {
 
 export type FriendErrorCode = (typeof FRIEND_ERROR_CODE)[keyof typeof FRIEND_ERROR_CODE];
 
-/** 서버가 오류와 함께 준 상세(친구 한도 등). 서버 오류가 아니면 없다 */
-export function getFriendErrorDetails(error: unknown) {
-  return isApiError(error) ? error.details : undefined;
+/** 친구 한도(FOLLOW_0909)에 서버가 실어 보낸 인원. 초대로 늘어난 자리를 반영한다. 없으면 null */
+export function getFriendLimitFromError(error: unknown) {
+  if (!isApiError(error)) {
+    return null;
+  }
+  const parsed = friendLimitErrorDetailsSchema.safeParse(error.details);
+
+  return parsed.success ? parsed.data.limit : null;
 }
