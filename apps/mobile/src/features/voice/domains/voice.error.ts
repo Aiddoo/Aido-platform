@@ -45,7 +45,7 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   if (error.hasCode(ErrorCode.AI_1312)) {
     return 'too-long';
   }
-  if (error.hasCode(ErrorCode.AI_1314)) {
+  if (isPlanInProgressError(error)) {
     return 'in-progress';
   }
   if (error.hasCode(ErrorCode.AI_1315)) {

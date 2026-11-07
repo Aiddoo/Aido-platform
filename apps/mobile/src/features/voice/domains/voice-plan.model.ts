@@ -31,7 +31,7 @@ export function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
   return plan.actions.filter((action) => selection[action.actionId] === true);
 }
 
-export function countSelectedTodos(plan: VoicePlan, selection: PlanSelection) {
+export function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).filter(isTodoAction).length;
 }
 
@@ -117,7 +117,7 @@ export type PlanHeadline =
 
 /** 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다 */
 function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
-  const selectedTodoCount = countSelectedTodos(plan, selection);
+  const selectedTodoCount = getSelectedTodoCount(plan, selection);
   if (selectedTodoCount > 0) {
     return { kind: 'todos', count: selectedTodoCount };
   }
@@ -141,7 +141,7 @@ export const VoicePlanPolicy = {
   withScheduledTime,
   isDuplicateAction,
   getSelectedActions,
-  countSelectedTodos,
+  getSelectedTodoCount,
   getHeadline,
   canApplyPlan,
   getPlanActionGroups,

@@ -129,7 +129,7 @@ export function PlanReview({
   });
 
   const selection = toPlanSelection({ actions });
-  const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
+  const todoCount = VoicePlanPolicy.getSelectedTodoCount(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = VoicePlanPolicy.getHeadline(plan, selection);
   const ScrollFade = surface === 'sheet' ? SheetScrollShadow : ScreenScrollShadow;

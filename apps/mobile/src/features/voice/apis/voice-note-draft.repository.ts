@@ -41,14 +41,11 @@ interface PendingSave {
   run: ReturnType<typeof debounce<() => void>>;
 }
 
-function encodeSegment(segment: string) {
-  return encodeURIComponent(segment);
-}
 function createOwnerPrefix(accountId: string) {
-  return `${KEY_PREFIX}${encodeSegment(accountId)}${KEY_SEPARATOR}`;
+  return `${KEY_PREFIX}${encodeURIComponent(accountId)}${KEY_SEPARATOR}`;
 }
 function createKey(accountId: string, draftId: string) {
-  return `${createOwnerPrefix(accountId)}${encodeSegment(draftId)}`;
+  return `${createOwnerPrefix(accountId)}${encodeURIComponent(draftId)}`;
 }
 
 export function createVoiceNoteDraftRepository({
@@ -62,7 +59,7 @@ export function createVoiceNoteDraftRepository({
 
   const notifyListeners = () => listeners.forEach((listener) => listener());
 
-  const notify = () => {
+  const invalidateSnapshot = () => {
     snapshot = null;
     notifyListeners();
   };
@@ -192,7 +189,7 @@ export function createVoiceNoteDraftRepository({
       const key = createKey(accountId, draftId);
       cancelPending(key);
       storage.remove(key);
-      notify();
+      invalidateSnapshot();
     },
 
     removeAllExceptOwner: (accountId) => {
@@ -200,13 +197,13 @@ export function createVoiceNoteDraftRepository({
       const isOtherOwner = (candidate: string) => !candidate.startsWith(ownerPrefix);
       cancelPendingWhere(isOtherOwner);
       findKeys(isOtherOwner).forEach((key) => storage.remove(key));
-      notify();
+      invalidateSnapshot();
     },
 
     removeAll: () => {
       cancelPendingWhere(() => true);
       findKeys(() => true).forEach((key) => storage.remove(key));
-      notify();
+      invalidateSnapshot();
     },
   };
 }

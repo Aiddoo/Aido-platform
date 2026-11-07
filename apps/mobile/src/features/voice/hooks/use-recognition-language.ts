@@ -11,20 +11,20 @@ export function useRecognitionLanguage() {
   const repository = useRecognitionLanguageRepository();
   const { resolvedLanguage } = useLanguage();
   const { data: me } = useQuery(useGetMeQueryOptions());
-  const userId = me?.id;
+  const accountId = me?.id;
 
   const savedLocale = useSyncExternalStore(repository.subscribe, () =>
-    userId == null ? null : repository.find(userId),
+    accountId == null ? null : repository.find(accountId),
   );
   const locale = savedLocale ?? APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
 
   const setLocale = useCallback(
     (nextLocale: SpeechLocale) => {
-      if (userId != null) {
-        repository.save(userId, nextLocale);
+      if (accountId != null) {
+        repository.save(accountId, nextLocale);
       }
     },
-    [repository, userId],
+    [repository, accountId],
   );
 
   return [locale, setLocale] as const;

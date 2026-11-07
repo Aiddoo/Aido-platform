@@ -4,12 +4,12 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 const KEY_PREFIX = 'aido_offline_model_declined_v1';
 
 export interface OfflineModelPromptRepository {
-  hasDeclined(userId: string, locale: SpeechLocale): boolean;
-  saveDeclined(userId: string, locale: SpeechLocale): void;
+  hasDeclined(accountId: string, locale: SpeechLocale): boolean;
+  saveDeclined(accountId: string, locale: SpeechLocale): void;
 }
 
-function offlineModelDeclinedStorageKey(userId: string, locale: SpeechLocale) {
-  return `${KEY_PREFIX}:${encodeURIComponent(userId)}:${locale}`;
+function offlineModelDeclinedStorageKey(accountId: string, locale: SpeechLocale) {
+  return `${KEY_PREFIX}:${encodeURIComponent(accountId)}:${locale}`;
 }
 
 /**
@@ -20,16 +20,16 @@ export function createOfflineModelPromptRepository(
   storage: SyncStorage,
 ): OfflineModelPromptRepository {
   return {
-    hasDeclined: (userId, locale) => {
+    hasDeclined: (accountId, locale) => {
       try {
-        return storage.get(offlineModelDeclinedStorageKey(userId, locale)) != null;
+        return storage.get(offlineModelDeclinedStorageKey(accountId, locale)) != null;
       } catch {
         return false;
       }
     },
-    saveDeclined: (userId, locale) => {
+    saveDeclined: (accountId, locale) => {
       try {
-        storage.set(offlineModelDeclinedStorageKey(userId, locale), 'declined');
+        storage.set(offlineModelDeclinedStorageKey(accountId, locale), 'declined');
       } catch {
         // 저장하지 못하면 다음 녹음에 한 번 더 물을 뿐이다.
       }

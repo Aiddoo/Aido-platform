@@ -6,7 +6,7 @@ import {
 } from '../schemas/voice-plan.schema';
 import {
   canApplyPlan,
-  countSelectedTodos,
+  getSelectedTodoCount,
   getPlanActionGroups,
   getSelectedActions,
   sortPlanActionsByGroup,
@@ -91,13 +91,13 @@ describe('canApplyPlan', () => {
   });
 });
 
-describe('countSelectedTodos', () => {
+describe('getSelectedTodoCount', () => {
   it('메모는 할 일 개수에 세지 않는다', () => {
     // Given
     const plan = createPlan(todo(), memo());
 
     // When
-    const count = countSelectedTodos(plan, { a1: true, m1: true });
+    const count = getSelectedTodoCount(plan, { a1: true, m1: true });
 
     // Then
     expect(count).toBe(1);

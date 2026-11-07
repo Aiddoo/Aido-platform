@@ -34,10 +34,6 @@ export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWa
   return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
 }
 
-export function withStallRestart(now: number): VoiceStallWatch {
-  return createVoiceStallWatch(now, now);
-}
-
 function shouldRestartStalledRecognizer(
   state: VoiceCaptureState,
   watch: VoiceStallWatch,
@@ -132,7 +128,10 @@ export function reduceRecognizerLink(
       stallWatch: createVoiceStallWatch(at, link.stallWatch.lastRestartAt),
     }))
     .with({ type: 'stop-requested' }, () => ({ ...link, isStopRequested: true }))
-    .with({ type: 'stall-restarted' }, ({ at }) => ({ ...link, stallWatch: withStallRestart(at) }))
+    .with({ type: 'stall-restarted' }, ({ at }) => ({
+      ...link,
+      stallWatch: createVoiceStallWatch(at, at),
+    }))
     .with({ type: 'ended' }, () => ({ ...link, isRunning: false, isStopRequested: false }))
     .with({ type: 'text-heard' }, ({ transcript, at }) => ({
       ...link,

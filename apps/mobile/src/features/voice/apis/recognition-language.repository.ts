@@ -6,13 +6,13 @@ import { speechLocaleSchema } from '../schemas/speech-locale.schema';
 const KEY_PREFIX = 'aido_recognition_language_v1';
 
 export interface RecognitionLanguageRepository {
-  find(userId: string): SpeechLocale | null;
-  save(userId: string, locale: SpeechLocale): void;
+  find(accountId: string): SpeechLocale | null;
+  save(accountId: string, locale: SpeechLocale): void;
   subscribe(listener: () => void): () => void;
 }
 
-export function recognitionLanguageStorageKey(userId: string) {
-  return `${KEY_PREFIX}:${encodeURIComponent(userId)}`;
+export function recognitionLanguageStorageKey(accountId: string) {
+  return `${KEY_PREFIX}:${encodeURIComponent(accountId)}`;
 }
 
 /**
@@ -25,19 +25,19 @@ export function createRecognitionLanguageRepository(
   const listeners = new Set<() => void>();
 
   return {
-    find: (userId) => {
+    find: (accountId) => {
       try {
         const parsed = speechLocaleSchema.safeParse(
-          storage.get(recognitionLanguageStorageKey(userId)),
+          storage.get(recognitionLanguageStorageKey(accountId)),
         );
         return parsed.success ? parsed.data : null;
       } catch {
         return null;
       }
     },
-    save: (userId, locale) => {
+    save: (accountId, locale) => {
       try {
-        storage.set(recognitionLanguageStorageKey(userId), locale);
+        storage.set(recognitionLanguageStorageKey(accountId), locale);
       } catch {
         return;
       }

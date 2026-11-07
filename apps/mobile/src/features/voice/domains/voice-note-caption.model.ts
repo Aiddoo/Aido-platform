@@ -227,11 +227,11 @@ export function getCaptionSentences(
   const { sentences } = commitProvisional(captions, nowMs);
 
   return sentences.map((sentence, index) => {
-    const previousEnd = index === 0 ? Number.NEGATIVE_INFINITY : sentence.startMs;
+    const rangeStart = index === 0 ? Number.NEGATIVE_INFINITY : sentence.startMs;
     const nextStart = sentences[index + 1]?.startMs ?? Number.POSITIVE_INFINITY;
     return {
       ...sentence,
-      isBookmarked: captions.bookmarksMs.some((ms) => previousEnd <= ms && ms < nextStart),
+      isBookmarked: captions.bookmarksMs.some((ms) => rangeStart <= ms && ms < nextStart),
     };
   });
 }

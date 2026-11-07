@@ -120,7 +120,7 @@ export function useVoiceNoteRecording({
   };
 
   function persist(timing: 'later' | 'now') {
-    if (!intake.ownsDraft()) {
+    if (!intake.canWriteDraft()) {
       return;
     }
     const note = toNote();

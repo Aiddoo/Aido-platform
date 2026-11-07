@@ -6,7 +6,6 @@ import {
   createVoiceStallWatch,
   reduceRecognizerLink,
   VoiceRecognizerLinkPolicy,
-  withStallRestart,
   withTextHeard,
   withVolumeSample,
 } from './voice-recognizer-link.model';
@@ -110,7 +109,11 @@ describe('withVolumeSample', () => {
 describe('withTextHeard', () => {
   it('글자가 오면 들은 시간과 다시 연 시각을 지운다', () => {
     // Given
-    const stallWatch = withVolumeSample(withStallRestart(NOW), SPEAKING_VOLUME_THRESHOLD, NOW);
+    const stallWatch = withVolumeSample(
+      createVoiceStallWatch(NOW, NOW),
+      SPEAKING_VOLUME_THRESHOLD,
+      NOW,
+    );
 
     // When
     const next = withTextHeard({ ...stallWatch, voicedMs: 5_000 }, NOW + 7_000);

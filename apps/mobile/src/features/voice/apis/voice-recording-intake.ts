@@ -92,7 +92,7 @@ export class VoiceRecordingIntake {
   isDiscarded = (): boolean => this.#hasDiscarded;
 
   /** 넘기거나 지운 뒤에는 글자를 초안에 쓰지 않는다 */
-  ownsDraft = (): boolean => !this.#hasHandedOff && !this.#hasDiscarded;
+  canWriteDraft = (): boolean => !this.#hasHandedOff && !this.#hasDiscarded;
 
   /**
    * 화면이 내려간 뒤에 온 파일도 받는다. 초안에 더하고, 지운 초안이면 바로 지운다.
