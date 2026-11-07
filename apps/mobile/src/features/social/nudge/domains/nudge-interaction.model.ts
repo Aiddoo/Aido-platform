@@ -43,13 +43,6 @@ function isReceivedBy(nudge: Pick<NudgeInteraction, 'receiverId'>, userId: strin
   return nudge.receiverId === userId;
 }
 
-function canReply(
-  nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
-  userId: string,
-): boolean {
-  return isReceivedBy(nudge, userId) && nudge.isAvailable;
-}
-
 function hasThankableRecipients(
   preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
 ): boolean {
@@ -94,7 +87,7 @@ function getResponseStage(
     return 'unavailable';
   }
   const isReceived = isReceivedBy(nudge, userId);
-  if (isReceived && !nudge.isTodoCompleted && canReply(nudge, userId)) {
+  if (isReceived && !nudge.isTodoCompleted) {
     return 'reply';
   }
   if (isReceived && nudge.isTodoCompleted) {

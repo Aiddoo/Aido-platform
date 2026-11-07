@@ -6,6 +6,7 @@ import {
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
+import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { Instant } from '@src/shared/date/instant';
@@ -46,6 +47,7 @@ interface InviteServicePorts {
   authHttpClient: HttpClient;
   pendingRedemptionRepository: PendingRedemptionRepository;
   installReferrerRepository: InstallReferrerRepository;
+  installReferrerGateway: InstallReferrerGateway;
   installationIdGateway: InstallationIdGateway;
   logger: Pick<Logger, 'warn'>;
 }
@@ -60,6 +62,7 @@ export class InviteService {
   readonly #authHttpClient: HttpClient;
   readonly #pendingRedemptionRepository: PendingRedemptionRepository;
   readonly #installReferrerRepository: InstallReferrerRepository;
+  readonly #installReferrerGateway: InstallReferrerGateway;
   readonly #installationIdGateway: InstallationIdGateway;
   readonly #logger: Pick<Logger, 'warn'>;
 
@@ -68,6 +71,7 @@ export class InviteService {
     authHttpClient,
     pendingRedemptionRepository,
     installReferrerRepository,
+    installReferrerGateway,
     installationIdGateway,
     logger,
   }: InviteServicePorts) {
@@ -75,6 +79,7 @@ export class InviteService {
     this.#authHttpClient = authHttpClient;
     this.#pendingRedemptionRepository = pendingRedemptionRepository;
     this.#installReferrerRepository = installReferrerRepository;
+    this.#installReferrerGateway = installReferrerGateway;
     this.#installationIdGateway = installationIdGateway;
     this.#logger = logger;
   }
@@ -214,7 +219,7 @@ export class InviteService {
 
     // 읽기에 실패해도 다음 실행마다 다시 묻지 않는다
     this.#installReferrerRepository.markChecked();
-    const referrer = await this.#installReferrerRepository.read();
+    const referrer = await this.#installReferrerGateway.get();
     const inviteCode = referrer == null ? null : parseInstallReferrerInviteCode(referrer);
     if (inviteCode == null) {
       return null;

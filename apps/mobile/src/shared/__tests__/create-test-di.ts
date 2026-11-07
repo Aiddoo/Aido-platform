@@ -288,10 +288,8 @@ export function createTestDi({
       publicHttpClient: httpClient,
       authHttpClient: httpClient,
       pendingRedemptionRepository,
-      installReferrerRepository: createInstallReferrerRepository(
-        syncStorage,
-        installReferrerGateway,
-      ),
+      installReferrerRepository: createInstallReferrerRepository(syncStorage),
+      installReferrerGateway,
       installationIdGateway,
       logger,
     }),

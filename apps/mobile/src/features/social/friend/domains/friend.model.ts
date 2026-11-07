@@ -4,10 +4,7 @@ import { type SearchedUser, userTagSchema } from '../schemas/friend.schema';
 
 type RequestState = 'friend' | 'pending' | 'none';
 
-type FriendLimitOffer = { type: 'invite'; limit: number } | { type: 'subscribe' };
-
-interface FriendLimitOfferInput {
-  isInviteAvailable: boolean;
+interface FriendLimitInput {
   /** 친구 한도(FOLLOW_0909) 오류가 알려 준 인원 */
   serverLimit: number | null;
   /** 내 정보(entitlements)의 친구 한도 */
@@ -38,27 +35,13 @@ function getRequestState(user: Pick<SearchedUser, 'isFriend' | 'requestPending'>
  * 친구 한도에 닿았을 때 안내할 인원. 초대로 늘어난 자리는 서버가 오류로 알려 준다.
  * 없으면 내 정보의 친구 한도, 그것도 없으면 카탈로그의 무료 한도다
  */
-function getFriendLimit({
-  serverLimit,
-  knownLimit,
-}: Pick<FriendLimitOfferInput, 'serverLimit' | 'knownLimit'>) {
+function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
   return serverLimit ?? knownLimit ?? PREMIUM_FEATURES.FRIEND.free;
-}
-
-/** 친구 한도에서 초대를 쓸 수 있으면 구독 대신 친구 초대로 자리를 늘리는 길을 먼저 권한다 */
-function getFriendLimitOffer({
-  isInviteAvailable,
-  serverLimit,
-  knownLimit,
-}: FriendLimitOfferInput): FriendLimitOffer {
-  return isInviteAvailable
-    ? { type: 'invite', limit: getFriendLimit({ serverLimit, knownLimit }) }
-    : { type: 'subscribe' };
 }
 
 export const FriendPolicy = {
   isValidUserTag,
   isValidSearchQuery,
   getRequestState,
-  getFriendLimitOffer,
+  getFriendLimit,
 } as const;

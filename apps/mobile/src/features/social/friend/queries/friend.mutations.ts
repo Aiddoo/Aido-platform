@@ -12,7 +12,6 @@ import { t } from '@src/shared/i18n';
 import type { Page } from '@src/shared/types/page.types';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { getFriendLimitFromError } from '../domains/friend.error';
@@ -227,40 +226,31 @@ export function useSendRequestByTagMutationOptions({
       toast.success(t('friend:toast.requestSent'));
     },
     onError: (err) => {
+      haptics.notify('error');
       if (findLimitedFeature(err) != null) {
-        haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
         gate.promptIfBlockedError(
           err,
-          match(
-            FriendPolicy.getFriendLimitOffer({
-              isInviteAvailable: onFriendLimitInvite != null,
-              serverLimit: getFriendLimitFromError(err),
-              knownLimit,
-            }),
-          )
-            .with({ type: 'invite' }, ({ limit }) =>
-              onFriendLimitInvite == null
-                ? {}
-                : {
-                    description: t('invite:entry.friendLimitDescription', {
-                      limit,
-                      activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                    }),
-                    alternativeAction: {
-                      label: t('invite:entry.growFriendLimit'),
-                      onPress: onFriendLimitInvite,
-                    },
-                  },
-            )
-            .with({ type: 'subscribe' }, () => ({}))
-            .exhaustive(),
+          onFriendLimitInvite == null
+            ? {}
+            : {
+                description: t('invite:entry.friendLimitDescription', {
+                  limit: FriendPolicy.getFriendLimit({
+                    serverLimit: getFriendLimitFromError(err),
+                    knownLimit,
+                  }),
+                  activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+                }),
+                alternativeAction: {
+                  label: t('invite:entry.growFriendLimit'),
+                  onPress: onFriendLimitInvite,
+                },
+              },
         );
         return;
       }
 
-      haptics.notify('error');
       toast.error(getUserFacingMessage(err), { fallback: t('friend:toast.requestFailed') });
     },
   });

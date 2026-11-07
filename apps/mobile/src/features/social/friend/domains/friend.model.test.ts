@@ -56,51 +56,36 @@ describe('getRequestState', () => {
   );
 });
 
-describe('getFriendLimitOffer', () => {
-  it('초대를 쓸 수 있으면 서버가 알려 준 한도로 초대 안내를 반환한다', () => {
+describe('getFriendLimit', () => {
+  it('서버가 알려 준 한도를 먼저 반환한다', () => {
     // When
-    const offer = FriendPolicy.getFriendLimitOffer({
-      isInviteAvailable: true,
-      serverLimit: 6,
-      knownLimit: 5,
-    });
+    const limit = FriendPolicy.getFriendLimit({ serverLimit: 6, knownLimit: 5 });
 
     // Then
-    expect(offer).toEqual({ type: 'invite', limit: 6 });
+    expect(limit).toBe(6);
   });
 
-  it('초대를 쓸 수 있는데 오류에 한도가 없으면 내 정보의 한도로 초대 안내를 반환한다', () => {
+  it('오류에 한도가 없으면 내 정보의 한도를 반환한다', () => {
     // Given
     // 초대로 한 자리 늘어 서버 entitlements가 6명이다
-    const input = { isInviteAvailable: true, serverLimit: null, knownLimit: 6 };
+    const input = { serverLimit: null, knownLimit: 6 };
 
     // When
-    const offer = FriendPolicy.getFriendLimitOffer(input);
+    const limit = FriendPolicy.getFriendLimit(input);
 
     // Then
-    expect(offer).toEqual({ type: 'invite', limit: 6 });
+    expect(limit).toBe(6);
   });
 
-  it('내 정보에도 한도가 없는 구버전 서버면 카탈로그의 무료 한도로 안내한다', () => {
+  it('내 정보에도 한도가 없는 구버전 서버면 카탈로그의 무료 한도를 반환한다', () => {
     // Given
-    const input = { isInviteAvailable: true, serverLimit: null, knownLimit: null };
+    const input = { serverLimit: null, knownLimit: null };
 
     // When
-    const offer = FriendPolicy.getFriendLimitOffer(input);
+    const limit = FriendPolicy.getFriendLimit(input);
 
     // Then
     // PREMIUM_FEATURES.FRIEND.free
-    expect(offer).toEqual({ type: 'invite', limit: 5 });
-  });
-
-  it('초대를 쓸 수 없으면 구독 안내를 반환한다', () => {
-    // Given
-    const input = { isInviteAvailable: false, serverLimit: 6, knownLimit: 5 };
-
-    // When
-    const offer = FriendPolicy.getFriendLimitOffer(input);
-
-    // Then
-    expect(offer).toEqual({ type: 'subscribe' });
+    expect(limit).toBe(5);
   });
 });

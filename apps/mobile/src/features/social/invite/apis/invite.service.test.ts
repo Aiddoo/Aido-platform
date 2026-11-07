@@ -36,7 +36,8 @@ function createService({
     publicHttpClient,
     authHttpClient,
     pendingRedemptionRepository,
-    installReferrerRepository: createInstallReferrerRepository(storage, { get: readReferrer }),
+    installReferrerRepository: createInstallReferrerRepository(storage),
+    installReferrerGateway: { get: readReferrer },
     installationIdGateway: { get: readInstallationId },
     logger,
   });

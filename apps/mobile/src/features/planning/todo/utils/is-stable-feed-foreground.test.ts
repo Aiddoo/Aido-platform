@@ -3,7 +3,7 @@ import { isStableFeedForeground } from './is-stable-feed-foreground';
 const stableInput = {
   isAuthenticated: true,
   isFocused: true,
-  appState: 'active' as const,
+  isAppActive: true,
   isKeyboardVisible: false,
   hasActiveOverlay: false,
   hasPendingDeepLink: false,
@@ -22,7 +22,7 @@ describe('isStableFeedForeground', () => {
   it.each([
     [{ isAuthenticated: false }, '미인증'],
     [{ isFocused: false }, '다른 화면'],
-    [{ appState: 'background' as const }, '백그라운드'],
+    [{ isAppActive: false }, '백그라운드'],
     [{ isKeyboardVisible: true }, '키보드'],
     [{ hasActiveOverlay: true }, '피드 폼 또는 다른 오버레이'],
     [{ hasPendingDeepLink: true }, '딥 링크'],

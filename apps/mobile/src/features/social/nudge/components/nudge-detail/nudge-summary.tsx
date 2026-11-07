@@ -20,20 +20,21 @@ export function NudgeSummary() {
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
   const isReceived = NudgeInteractionPolicy.isReceivedBy(nudge, me.id);
+  const counterpart = isReceived
+    ? { name: nudge.senderName, profileImage: nudge.senderProfileImage }
+    : { name: nudge.receiverName, profileImage: nudge.receiverProfileImage };
 
   return (
     <VStack gap={24}>
       <HStack gap={12} align="center">
         <UserAvatar
-          alt={isReceived ? nudge.senderName : nudge.receiverName}
+          alt={counterpart.name}
           className="size-12"
-          profileImage={isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage}
+          profileImage={counterpart.profileImage}
         />
         <VStack flex={1} gap={4}>
           <Text size="b3" weight="semibold">
-            {t(isReceived ? 'interaction.from' : 'interaction.to', {
-              name: isReceived ? nudge.senderName : nudge.receiverName,
-            })}
+            {t(isReceived ? 'interaction.from' : 'interaction.to', { name: counterpart.name })}
           </Text>
           <Text size="e1" shade={5}>
             {formatRelativeTimeLabel(nudge.createdAt, now, dateFormatContext)}

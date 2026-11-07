@@ -53,7 +53,7 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
       useGetPreferenceQueryOptions(),
     ],
   });
-  const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos), [todos]);
+  const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos.todos), [todos]);
 
   if (categoryGroups.length === 0) {
     return <FriendTodoList.Empty action={emptyAction} />;

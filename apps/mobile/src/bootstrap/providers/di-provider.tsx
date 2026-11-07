@@ -239,10 +239,8 @@ export function DIProvider({
       publicHttpClient,
       authHttpClient,
       pendingRedemptionRepository,
-      installReferrerRepository: createInstallReferrerRepository(
-        deviceSyncStorage,
-        expoInstallReferrerGateway,
-      ),
+      installReferrerRepository: createInstallReferrerRepository(deviceSyncStorage),
+      installReferrerGateway: expoInstallReferrerGateway,
       installationIdGateway: expoInstallationIdGateway,
       logger,
     });

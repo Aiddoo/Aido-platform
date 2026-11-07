@@ -3,7 +3,6 @@ import { useHaptics, usePawPrintCelebrationRepository } from '@src/bootstrap/pro
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,7 +20,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -72,6 +71,18 @@ const NEW_PAW_PRINT_STAGGER_MS = 160;
 /** 기다리는 발자국이 흔들리기까지 쉬는 시간과 한 번 꺾는 데 걸리는 시간 */
 const WAITING_WIGGLE_REST_MS = 1700;
 const WAITING_WIGGLE_STEP_MS = 190;
+/** 기다리는 발자국이 차례로 꺾이는 각도 */
+const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
+/** 새 발자국이 찍히기 전에 떠 있는 모양. 눌리면서 크기는 1로, 기울기는 rotateTravelDeg만큼 돌아온다 */
+const PAW_PRINT_LIFTED = { scale: 1.7, rotateDeg: -20, rotateTravelDeg: 14 } as const;
+/** 눌린 뒤 delayMs 만에 테두리가 퍼지기 시작해 durationMs 동안 커지며 사라진다 */
+const PAW_PRINT_BURST = {
+  delayMs: 120,
+  durationMs: 480,
+  startScale: 0.7,
+  growScale: 0.85,
+  peakOpacity: 0.55,
+} as const;
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
@@ -437,9 +448,9 @@ function PressedPawPrint({ delay }: { delay: number }) {
     press.set(withDelay(delay, withSpring(1, PAW_PRINT_PRESS_SPRING)));
     burst.set(
       withDelay(
-        delay + 120,
+        delay + PAW_PRINT_BURST.delayMs,
         withTiming(1, {
-          duration: 480,
+          duration: PAW_PRINT_BURST.durationMs,
           easing: Easing.bezier(0.23, 1, 0.32, 1),
           reduceMotion: ReduceMotion.System,
         }),
@@ -454,11 +465,16 @@ function PressedPawPrint({ delay }: { delay: number }) {
 
   const pawPrintStyle = useAnimatedStyle(() => ({
     opacity: Math.min(press.get() * 2, 1),
-    transform: [{ scale: 1.7 - press.get() * 0.7 }, { rotate: `${-20 + press.get() * 14}deg` }],
+    transform: [
+      { scale: PAW_PRINT_LIFTED.scale - press.get() * (PAW_PRINT_LIFTED.scale - 1) },
+      {
+        rotate: `${PAW_PRINT_LIFTED.rotateDeg + press.get() * PAW_PRINT_LIFTED.rotateTravelDeg}deg`,
+      },
+    ],
   }));
   const burstStyle = useAnimatedStyle(() => ({
-    opacity: burst.get() === 0 ? 0 : 0.55 * (1 - burst.get()),
-    transform: [{ scale: 0.7 + burst.get() * 0.85 }],
+    opacity: burst.get() === 0 ? 0 : PAW_PRINT_BURST.peakOpacity * (1 - burst.get()),
+    transform: [{ scale: PAW_PRINT_BURST.startScale + burst.get() * PAW_PRINT_BURST.growScale }],
   }));
 
   return (
@@ -487,9 +503,9 @@ function WaitingPawPrint() {
     rotation.set(
       withRepeat(
         withSequence(
-          withDelay(WAITING_WIGGLE_REST_MS, withTiming(-7, step)),
-          withTiming(6, step),
-          withTiming(-3, step),
+          withDelay(WAITING_WIGGLE_REST_MS, withTiming(WAITING_WIGGLE_DEGREES[0], step)),
+          withTiming(WAITING_WIGGLE_DEGREES[1], step),
+          withTiming(WAITING_WIGGLE_DEGREES[2], step),
           withTiming(0, step),
         ),
         -1,
@@ -512,9 +528,7 @@ function WaitingPawPrint() {
 
 function InviteProgressMessage() {
   const { t } = useTranslation('invite');
-  const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
-    queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
-  });
+  const { data: myInvite } = useSuspenseQuery(useGetInviteQueryOptions());
   const remaining = InvitePolicy.getRemainingToNextMilestone(myInvite);
 
   return match(InvitePolicy.getProgress(myInvite))
@@ -536,7 +550,7 @@ function InviteProgressMessage() {
             days: INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS,
           })}
         </Text>
-        <KeepPremiumButton premiumAccess={me.premiumAccess} />
+        <KeepPremiumButton />
       </VStack>
     ))
     .with('total-cap-reached', () => (
@@ -551,7 +565,7 @@ function InviteProgressMessage() {
             days: INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL,
           })}
         </Text>
-        <KeepPremiumButton premiumAccess={me.premiumAccess} />
+        <KeepPremiumButton />
       </VStack>
     ))
     .with('in-progress', () => (
@@ -581,11 +595,12 @@ function InviteProgressMessage() {
  * 초대 보상 프리미엄 상한에 닿았을 때 구독 화면으로 가는 버튼. 이동만 하고 보상·상한은 서버가 정한다.
  * 이미 스토어 구독 중이면 권하지 않는다
  */
-function KeepPremiumButton({ premiumAccess }: { premiumAccess: PremiumAccess }) {
+function KeepPremiumButton() {
   const { t } = useTranslation('invite');
+  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const navigate = useSingleTap(router.navigate);
 
-  if (PremiumAccessPolicy.isStoreSubscribed(premiumAccess)) {
+  if (PremiumAccessPolicy.isStoreSubscribed(me.premiumAccess)) {
     return null;
   }
 

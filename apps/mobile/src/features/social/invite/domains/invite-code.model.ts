@@ -56,6 +56,5 @@ export const InviteCodePolicy = {
   normalizeInviteCodeInput,
   parseInviteCode,
   isFilledInviteCode,
-  classifyInvalidCharacter,
   findInvalidCharacters,
 } as const;

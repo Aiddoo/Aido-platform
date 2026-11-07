@@ -84,7 +84,7 @@ export function useStableFeedForeground({
   return isStableFeedForeground({
     isAuthenticated,
     isFocused,
-    appState,
+    isAppActive: appState === 'active',
     isKeyboardVisible,
     hasActiveOverlay,
     hasPendingDeepLink,

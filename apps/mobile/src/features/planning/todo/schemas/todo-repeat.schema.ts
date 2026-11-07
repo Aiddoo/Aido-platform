@@ -1,4 +1,9 @@
-import { DAYS_OF_WEEK, TODO_EDIT_SCOPES, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
+import {
+  DAYS_OF_WEEK,
+  TODO_EDIT_SCOPES,
+  TODO_UPDATE_SCOPES,
+  type TodoVisibility,
+} from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
@@ -48,7 +53,7 @@ export interface RepeatingTodoDraft {
   startDate: string;
   scheduledTime?: string | null;
   isAllDay: boolean;
-  visibility: 'PUBLIC' | 'PRIVATE';
+  visibility: TodoVisibility;
   repeat: TodoRepeat;
 }
 

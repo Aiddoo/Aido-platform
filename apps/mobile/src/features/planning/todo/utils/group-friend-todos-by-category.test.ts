@@ -1,5 +1,6 @@
 import { createTodoDto } from '../__tests__/todo.fixtures';
 import { toTodo } from '../apis/todo.mapper';
+import type { Todo } from '../schemas/todo.schema';
 import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 
 describe('친구 할 일 목록 표시', () => {
@@ -9,10 +10,10 @@ describe('친구 할 일 목록 표시', () => {
     const second = toTodo(
       createTodoDto({ id: 2, category: { id: 2, name: '스터디', color: '#123456', sortOrder: 1 } }),
     );
-    const result = { todos: [first, second], hasNext: false, nextCursor: null };
+    const todos = [first, second];
     // When
-    const twelveHour = groupFriendTodosByCategory(result);
-    const twentyFourHour = groupFriendTodosByCategory(result);
+    const twelveHour = groupFriendTodosByCategory(todos);
+    const twentyFourHour = groupFriendTodosByCategory(todos);
     // Then
     expect(twelveHour.map((group) => group.category.name)).toEqual(['기본', '스터디']);
     expect(twelveHour[0]?.todos[0]).toBe(first);
@@ -23,7 +24,7 @@ describe('친구 할 일 목록 표시', () => {
 
   it('할 일이 없는 경우 빈 카테고리 목록을 반환한다', () => {
     // Given
-    const todos = { todos: [], hasNext: false, nextCursor: null };
+    const todos: Todo[] = [];
     // When
     const result = groupFriendTodosByCategory(todos);
     // Then

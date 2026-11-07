@@ -1,9 +1,7 @@
-import type { AppStateStatus } from 'react-native';
-
 interface StableFeedForegroundInput {
   isAuthenticated: boolean;
   isFocused: boolean;
-  appState: AppStateStatus | null;
+  isAppActive: boolean;
   isKeyboardVisible: boolean;
   hasActiveOverlay: boolean;
   hasPendingDeepLink: boolean;
@@ -14,7 +12,7 @@ interface StableFeedForegroundInput {
 export function isStableFeedForeground({
   isAuthenticated,
   isFocused,
-  appState,
+  isAppActive,
   isKeyboardVisible,
   hasActiveOverlay,
   hasPendingDeepLink,
@@ -23,7 +21,7 @@ export function isStableFeedForeground({
   return (
     isAuthenticated &&
     isFocused &&
-    appState === 'active' &&
+    isAppActive &&
     !isKeyboardVisible &&
     !hasActiveOverlay &&
     !hasPendingDeepLink &&
