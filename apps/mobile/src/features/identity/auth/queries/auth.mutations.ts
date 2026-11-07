@@ -39,6 +39,7 @@ import type {
 import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
 import { logOutDevice } from '../utils/log-out-device';
 
+// 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const push = useSingleTap(router.push);
@@ -49,6 +50,7 @@ export function useEmailLoginMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.loginFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async ({ email, password }: { email: string; password: string }) =>
       unwrap(await authService.emailLogin(email, password)),
     onSuccess: (data) => {
@@ -200,6 +202,7 @@ export function useDeleteAccountMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.deleteAccountFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 전 세션과 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     mutationFn: async (input: DeleteAccountInput) => unwrap(await authService.deleteAccount(input)),
     onSuccess: () => {
@@ -239,6 +242,7 @@ export function useRegisterMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.registerFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: RegisterInput) => unwrap(await authService.register(input)),
     onSuccess: ({ isEmailSent }) => {
       trackEvent('auth_signup', { method: 'email' });
@@ -271,6 +275,7 @@ export function useVerifyEmailMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.codeInvalid'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: VerifyEmailInput) => unwrap(await authService.verifyEmail(input)),
     onSuccess: () => {
       signIn();
@@ -285,6 +290,7 @@ export function useResendVerificationMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.codeResendFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: ResendVerificationInput) =>
       unwrap(await authService.resendVerification(input)),
     onSuccess: () => {
@@ -299,6 +305,7 @@ export function useForgotPasswordMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.requestFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) =>
       unwrap(await authService.forgotPassword(input)),
     onError: (error) => showFailure(error),
@@ -313,6 +320,7 @@ export function useResetPasswordMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.passwordResetFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: ResetPasswordInput) => unwrap(await authService.resetPassword(input)),
     onSuccess: () => {
       haptics.notify('success');
@@ -344,6 +352,7 @@ export function useChangePasswordMutationOptions() {
   const showFailure = useMutationFailure(t('auth:toasts.passwordChangeFailed'));
 
   return mutationOptions({
+    networkMode: 'always',
     mutationFn: async (input: ChangePasswordInput) =>
       unwrap(await authService.changePassword(input)),
     onSuccess: () => {

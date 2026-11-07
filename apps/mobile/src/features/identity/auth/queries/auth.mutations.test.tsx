@@ -3,7 +3,7 @@ import { createAnalyticsStub, createHapticsStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { err, ok } from '@src/shared/errors/result';
 import { i18n } from '@src/shared/i18n';
-import { useMutation } from '@tanstack/react-query';
+import { onlineManager, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
@@ -15,6 +15,7 @@ import {
 import { useAuthStatus } from '../hooks/use-auth-status';
 import {
   useChangePasswordMutationOptions,
+  useEmailLoginMutationOptions,
   useExchangeCodeMutationOptions,
   useLinkAccountMutationOptions,
   useOpenAppleLoginMutationOptions,
@@ -29,6 +30,36 @@ beforeEach(() => {
 afterEach(() => {
   jest.clearAllTimers();
   jest.useRealTimers();
+});
+
+describe('이메일 로그인 오프라인', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it('스피너로 멈추지 않고 실패를 알리며 미인증으로 남는다', async () => {
+    // Given
+    const session = createAuthSession();
+    const error = new NetworkError();
+    session.publicHttp.post.mockRejectedValue(error);
+    const { result } = await session.renderSession(
+      () => ({ status: useAuthStatus(), login: useMutation(useEmailLoginMutationOptions()) }),
+      'unauthenticated',
+    );
+    onlineManager.setOnline(false);
+
+    // When
+    await act(async () => {
+      await result.current.login
+        .mutateAsync({ email: 'a@aido.app', password: 'password-1' })
+        .catch(() => undefined);
+    });
+
+    // Then
+    expect(result.current.login.isPending).toBe(false);
+    expect(result.current.status).toBe('unauthenticated');
+    expect(await screen.findAllByText(error.message)).not.toHaveLength(0);
+  });
 });
 
 describe('구글·카카오·네이버 코드 교환', () => {
