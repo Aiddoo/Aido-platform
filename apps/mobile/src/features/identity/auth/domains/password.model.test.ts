@@ -1,6 +1,6 @@
 import { PASSWORD_RULES } from '@aido/api/vocabulary';
 
-import { PasswordPolicy } from './auth.model';
+import { PasswordPolicy } from './password.model';
 
 describe('PasswordPolicy', () => {
   describe('hasLetter', () => {

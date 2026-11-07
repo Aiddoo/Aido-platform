@@ -2,7 +2,7 @@ import { PASSWORD_RULES } from '@aido/api/vocabulary';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 
-import { PasswordPolicy } from '../domains/auth.model';
+import { PasswordPolicy } from '../domains/password.model';
 
 export interface PasswordStrengthIndicatorProps {
   password: string | undefined;
