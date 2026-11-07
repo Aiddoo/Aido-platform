@@ -48,7 +48,7 @@ type GlassDropletLayerProps = {
 /** 옅은 물안개 위로 화면 유리에 맺힌 물방울이 가끔 주르륵 흘러내린다. */
 export function GlassDropletLayer({ width, height, isLowEndDevice, time }: GlassDropletLayerProps) {
   const texture = useGlassDropTexture();
-  const count = getAmbientCount('glassDrop', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('glassDrop', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, DROP_SEED);
   const sprites = range(count).map(() =>
     Skia.XYWHRect(0, 0, GLASS_DROP_SPRITE.width, GLASS_DROP_SPRITE.height),

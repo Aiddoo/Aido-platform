@@ -40,13 +40,13 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
       trackEvent('voice_capture_started', { mode, entry, locale, on_device: isOnDevice });
       addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
     },
-    finished: (outcome: VoiceCaptureOutcome, at: VoiceCaptureState) => {
-      const durationBucket = getDurationBucket(VoiceCapturePolicy.getElapsedMs(at, Date.now()));
+    finished: (outcome: VoiceCaptureOutcome, state: VoiceCaptureState) => {
+      const durationBucket = getDurationBucket(VoiceCapturePolicy.getElapsedMs(state, Date.now()));
       trackEvent('voice_capture_finished', {
         mode,
         outcome,
         duration_bucket: durationBucket,
-        pause_count: at.pauseCount,
+        pause_count: state.pauseCount,
       });
       addBreadcrumb('capture.finished', { mode, duration_bucket: durationBucket });
     },

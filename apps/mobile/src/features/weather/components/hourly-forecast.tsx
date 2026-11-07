@@ -19,10 +19,7 @@ import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
-import {
-  PRECIPITATION_CHANCE_TEXT_CLASS,
-  VISIBLE_PRECIPITATION_CHANCE,
-} from '../constants/weather-colors';
+import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors';
 import {
   PRECIPITATION_SUBJECT_LABEL_KEYS,
   SKY_AFTER_KEYS,
@@ -30,6 +27,7 @@ import {
   SKY_STEADY_KEYS,
   WEATHER_CONDITION_LABEL_KEYS,
 } from '../constants/weather-labels';
+import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
@@ -53,6 +51,8 @@ const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies 
   number
 >;
 const ICON_SIZE = 28;
+/** 아이콘 아래에 강수 확률 줄까지 포함한 칸 높이. 확률이 없는 칸도 같은 높이를 차지한다. */
+const CELL_ICON_HEIGHT = 50;
 const INITIAL_RENDER_COUNT = 8;
 const LOADING_CELL_COUNT = 6;
 /** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
@@ -74,7 +74,6 @@ function useHourlyValueTextStyle() {
 interface TimelineContext {
   dateFormat: DateFormatContext;
   timeFormat: TimeFormat;
-  now: Instant;
 }
 
 function getTimelineKey(item: HourlyTimelineItem): string {
@@ -94,9 +93,9 @@ export function HourlyForecast() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
   const timeline = toHourlyTimeline(data, now);
-  const summary = WeatherHourlyPolicy.summarizeHourly(data, now);
+  const summary = WeatherHourlyPolicy.getHourlySummary(data, now);
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
-  const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat, now };
+  const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat };
 
   if (timeline.length === 0) {
     return <HourlyForecast.Empty />;
@@ -107,7 +106,7 @@ export function HourlyForecast() {
       <WeatherCard className="gap-0 px-0 py-3.5">
         {summary != null && (
           <>
-            <HourlyForecast.Summary summary={summary} context={context} />
+            <HourlyForecast.Summary summary={summary} context={context} now={now} />
             <Separator thickness={0.5} className="mx-4 mt-3 bg-on-sky/[0.18]" />
           </>
         )}
@@ -131,10 +130,12 @@ export function HourlyForecast() {
 /** 문장 속 시각은 위치 벽시계가 기기와 다를 때만 '현지'를 붙인다. 칸마다 붙이면 좁은 칸이 넘쳐 문장에서만 밝힌다. */
 HourlyForecast.Summary = function Summary({
   summary,
-  context: { dateFormat, timeFormat, now },
+  context: { dateFormat, timeFormat },
+  now,
 }: {
   summary: HourlySummary;
   context: TimelineContext;
+  now: Instant;
 }) {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
@@ -335,7 +336,7 @@ function SunCell({
 /** 강수 확률이 없는 칸도 같은 높이를 차지해 온도 줄이 칸마다 어긋나지 않는다. */
 function CellIcon({ chance, children }: { chance: string | null; children: ReactNode }) {
   return (
-    <VStack align="center" justify="center" className="h-[50px]">
+    <VStack align="center" justify="center" style={{ height: CELL_ICON_HEIGHT }}>
       {children}
       <Text
         size="e1"
@@ -350,13 +351,14 @@ function CellIcon({ chance, children }: { chance: string | null; children: React
 
 HourlyForecast.Loading = function Loading() {
   return (
-    <WeatherCard className="px-0">
+    <WeatherCard className="gap-0 px-0 py-3.5">
       <TextSkeleton size="b3" className="mx-4 w-48 opacity-40" />
-      <Box className="flex-row px-1.5">
+      <Separator thickness={0.5} className="mx-4 mt-3 bg-on-sky/[0.18]" />
+      <Box className="mt-3 flex-row px-1.5">
         {range(LOADING_CELL_COUNT).map((index) => (
-          <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
+          <VStack key={index} align="center" style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
             <TextSkeleton size="b3" className="w-8 opacity-40" />
-            <Spacing size={ICON_SIZE} />
+            <Spacing size={CELL_ICON_HEIGHT} />
             <TextSkeleton size="b1" className="w-8 opacity-40" />
           </VStack>
         ))}

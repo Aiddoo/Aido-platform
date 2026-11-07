@@ -17,9 +17,11 @@ import { useWeatherLocation } from './use-weather-location';
  * 로그인 전에 연 초대처럼 이어서 열 화면이 남아 있으면 그 이동이 끝나 피드로 돌아올 때까지 미룬다.
  * 다른 자동 안내(기능 소개)가 겹치지 않도록 안내 여부가 정해지고 OS 권한 창이 끝날 때까지 isPending을 돌려준다.
  */
-export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
-  isPending: boolean;
-} {
+export function useWeatherIntroduction({
+  isStable,
+}: {
+  isStable: boolean;
+}): readonly [{ isPending: boolean }] {
   const location = useWeatherLocation();
   const introductionRepository = useWeatherIntroductionRepository();
   const inviteService = useInviteService();
@@ -115,5 +117,7 @@ export function useWeatherIntroduction({ isStable }: { isStable: boolean }): {
     t,
   ]);
 
-  return { isPending: location.status === 'checking' || shouldIntroduce || isRequesting };
+  return [
+    { isPending: location.status === 'checking' || shouldIntroduce || isRequesting },
+  ] as const;
 }

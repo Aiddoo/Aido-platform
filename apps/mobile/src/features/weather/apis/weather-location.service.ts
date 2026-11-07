@@ -70,7 +70,12 @@ export class WeatherLocationService {
     const revision = WeatherLocationPolicy.getReadingRevision(previous);
     const coordinates = await this.#readCoordinates(signal);
     if (coordinates == null) {
-      return ok(previousLocated ?? { status: 'unavailable', revision });
+      // 권한은 허용된 상태이므로 이전 위치를 보여 주더라도 허용 안내가 남지 않게 마지막 위치 표시를 푼다
+      return ok(
+        previousLocated == null
+          ? { status: 'unavailable', revision }
+          : { ...previousLocated, isLastKnown: false },
+      );
     }
     const place = await this.#gateway.getPlace(coordinates, signal);
 
@@ -97,6 +102,7 @@ export class WeatherLocationService {
       registered,
       place: place.name,
       countryCode: place.countryCode,
+      isLastKnown: false,
       revision: WeatherLocationPolicy.getNextRevision(revision, registered, reportLocation),
     });
   };

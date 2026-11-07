@@ -37,7 +37,7 @@ export function useWeatherLocation(): WeatherLocation {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
-  const location = WeatherLocationPolicy.resolveLocationStatus(data, { hasFailed: isError });
+  const location = WeatherLocationPolicy.getLocationStatus(data, { hasFailed: isError });
 
   const request = async () => {
     const permission = await gateway.requestPermission().catch((error) => {

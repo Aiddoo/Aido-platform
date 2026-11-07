@@ -1,4 +1,4 @@
-import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
+import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when-compact';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { noop } from 'es-toolkit';
@@ -40,7 +40,7 @@ export function useSelectedMemoId() {
 export function useMemoDetailHandoff() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
 
-  useCompactDetailHandoff(selectedMemoId, (memoId) => {
+  useOpenDetailWhenCompact(selectedMemoId, (memoId) => {
     setParams({ memoId: undefined });
     router.push({ pathname: '/memo/[memoId]', params: { memoId } });
   });

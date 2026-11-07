@@ -2,7 +2,7 @@ import { stubWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 
-import { useCompactDetailHandoff } from './use-compact-detail-handoff';
+import { useOpenDetailWhenCompact } from './use-open-detail-when-compact';
 
 const mockedUseIsFocused = jest.mocked(useIsFocused);
 
@@ -11,14 +11,14 @@ function givenScreen({ isFocused, width }: { isFocused: boolean; width: number }
   stubWindowDimensions(width);
 }
 
-describe('useCompactDetailHandoff', () => {
+describe('useOpenDetailWhenCompact', () => {
   it('앞에 보이는 화면이 compact가 되면 선택한 항목을 한 번 넘긴다', async () => {
     // Given
     givenScreen({ isFocused: true, width: 390 });
     const openDetail = jest.fn();
 
     // When
-    const { rerender } = await renderHook(() => useCompactDetailHandoff(7, openDetail));
+    const { rerender } = await renderHook(() => useOpenDetailWhenCompact(7, openDetail));
     await rerender({});
 
     // Then
@@ -32,7 +32,7 @@ describe('useCompactDetailHandoff', () => {
     const openDetail = jest.fn();
 
     // When
-    await renderHook(() => useCompactDetailHandoff(7, openDetail));
+    await renderHook(() => useOpenDetailWhenCompact(7, openDetail));
 
     // Then
     expect(openDetail).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('useCompactDetailHandoff', () => {
     const openDetail = jest.fn();
 
     // When
-    await renderHook(() => useCompactDetailHandoff(7, openDetail));
+    await renderHook(() => useOpenDetailWhenCompact(7, openDetail));
 
     // Then
     expect(openDetail).not.toHaveBeenCalled();

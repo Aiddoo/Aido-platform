@@ -145,7 +145,9 @@ function RescheduleTodoList({
   );
 
   const handleExclude = (todoId: number) => {
-    const remaining = todoIds.filter((id) => id !== todoId);
+    const remaining = affectedTodos.flatMap((todo) =>
+      todo.todoId === todoId ? [] : [todo.todoId],
+    );
     if (remaining.length === 0) {
       onEmpty();
       return;

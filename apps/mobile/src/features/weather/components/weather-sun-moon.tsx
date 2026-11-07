@@ -5,7 +5,7 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { isNotNil } from 'es-toolkit';
+import { isNotNil, range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -20,6 +20,8 @@ import { WeatherIcon } from './weather-icon';
 import { WeatherMoonIcon } from './weather-moon-icon';
 import { WeatherSunArc } from './weather-sun-arc';
 
+const SUN_FACT_COUNT = 3;
+
 /** 해·달 시각은 예보 위치 시간대로 읽고, 벽시계가 기기와 다를 때만 다음 해 시각에 '현지'를 붙인다. */
 export function WeatherSunMoon() {
   const { t } = useTranslation('weather');
@@ -33,12 +35,14 @@ export function WeatherSunMoon() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const localTime = useFormatLocalTime(data.location.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = WeatherReportPolicy.findTodayForecast(data, now);
+  const today = WeatherReportPolicy.getTodayOrFirstForecast(data, now);
   if (today == null) {
     return null;
   }
   const todayKey = WeatherReportPolicy.getTodayKey(data, now);
-  const sunEvents = WeatherReportPolicy.getSunEvents(today, data.current.isDaylight);
+  const sunEvents = WeatherReportPolicy.getSunEvents(today, {
+    isDaylight: data.current.isDaylight,
+  });
   const nextEvent = WeatherDetailPolicy.getNextSunEvent(
     today,
     WeatherDetailPolicy.findDayAfter(data.daily, todayKey),
@@ -178,13 +182,29 @@ WeatherSunMoon.Fact = function Fact({
   );
 };
 
+/** 받은 뒤와 같은 자리를 잡는다. 제목, 큰 시각, 호, 사실 세 칸, 구분선, 달 아이콘과 두 줄이다. */
 WeatherSunMoon.Loading = function Loading() {
   return (
-    <WeatherCard className="gap-2 px-4 pt-3.5 pb-4">
+    <WeatherCard className="gap-0 px-4 pt-3.5 pb-4">
       <TextSkeleton size="b4" className="w-16 opacity-40" />
-      <TextSkeleton size="t1" className="w-24 opacity-40" />
+      <TextSkeleton size="t1" className="mt-1.5 w-24 opacity-40" />
       <Box style={{ height: SUN_ARC_VIEWBOX.height }} />
-      <TextSkeleton size="b4" className="w-full opacity-40" />
+      <HStack gap={4} className="mt-2">
+        {range(SUN_FACT_COUNT).map((index) => (
+          <VStack key={index} className="min-w-0 flex-1">
+            <TextSkeleton size="b4" className="w-3/5 opacity-40" />
+            <TextSkeleton size="b4" className="w-4/5 opacity-40" />
+          </VStack>
+        ))}
+      </HStack>
+      <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
+      <HStack gap={12} align="center" className="mt-3.5">
+        <Box className="size-[46px] rounded-full bg-on-sky/[0.12]" />
+        <VStack className="min-w-0 flex-1">
+          <TextSkeleton size="b2" className="w-24 opacity-40" />
+          <TextSkeleton size="b4" className="w-40 opacity-40" />
+        </VStack>
+      </HStack>
     </WeatherCard>
   );
 };

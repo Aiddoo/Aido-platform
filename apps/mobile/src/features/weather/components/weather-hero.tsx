@@ -113,10 +113,11 @@ export function WeatherHero() {
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = WeatherReportPolicy.findTodayForecast(data, now);
-  const place = location.status === 'ready' ? location.place : null;
-  const countryCode = location.status === 'ready' ? location.countryCode : null;
-  const isLastKnown = location.status === 'ready' && location.isLastKnown;
+  const today = WeatherReportPolicy.getTodayOrFirstForecast(data, now);
+  const readyLocation = location.status === 'ready' ? location : null;
+  const place = readyLocation?.place ?? null;
+  const countryCode = readyLocation?.countryCode ?? null;
+  const isLastKnown = readyLocation?.isLastKnown === true;
   const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
   const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
   const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
@@ -201,7 +202,7 @@ WeatherHero.LocationLabel = function LocationLabel({
   const deviceLocale = useSystemLocale();
   const minimumFontScale = useMinimumFontScale('b4');
   const country = getForeignCountryName({ countryCode }, deviceLocale.regionCode, i18n.language);
-  const area = compact([country, district]);
+  const area = compact([country, district]).join(' · ');
 
   return (
     <HStack align="center" gap={5}>
@@ -215,11 +216,12 @@ WeatherHero.LocationLabel = function LocationLabel({
         className="text-on-sky/[0.78]"
         style={HERO_TEXT_SHADOW}
       >
-        {area.length === 0
-          ? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation')
-          : t(isLastKnown ? 'hero.lastLocationIn' : 'hero.currentLocationIn', {
-              area: area.join(' · '),
-            })}
+        {match({ isLastKnown, hasArea: area.length > 0 })
+          .with({ isLastKnown: true, hasArea: true }, () => t('hero.lastLocationIn', { area }))
+          .with({ isLastKnown: true, hasArea: false }, () => t('hero.lastLocation'))
+          .with({ isLastKnown: false, hasArea: true }, () => t('hero.currentLocationIn', { area }))
+          .with({ isLastKnown: false, hasArea: false }, () => t('hero.currentLocation'))
+          .exhaustive()}
       </Text>
     </HStack>
   );

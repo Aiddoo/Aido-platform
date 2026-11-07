@@ -14,7 +14,7 @@ import { useWeatherIntroduction } from './use-weather-introduction';
 const NOT_ASKED: LocationPermission = { isGranted: false, canAskAgain: true };
 
 function Probe({ isStable }: { isStable: boolean }) {
-  const { isPending } = useWeatherIntroduction({ isStable });
+  const [{ isPending }] = useWeatherIntroduction({ isStable });
 
   return <Text testID="pending">{String(isPending)}</Text>;
 }

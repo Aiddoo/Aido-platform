@@ -139,6 +139,7 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
   onPress,
 }: DayOfWeekChipProps) {
   const haptics = useHaptics();
+  const { i18n } = useTranslation();
 
   return (
     <PressableFeedback
@@ -159,7 +160,7 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
         className={isSelected ? 'text-white' : undefined}
         shade={isSelected ? undefined : 7}
       >
-        {getDayOfWeekLabel(day)}
+        {getDayOfWeekLabel(day, i18n.language)}
       </Text>
     </PressableFeedback>
   );
@@ -248,7 +249,7 @@ TodoRepeatPickerContent.DayOfWeekSelector = function DayOfWeekSelector({
 };
 
 TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form: RepeatForm }) {
-  const { t } = useTranslation('todo');
+  const { t, i18n } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
   const [weekdays, interval, isMonthly] = useWatch({
     control: form.control,
@@ -262,7 +263,7 @@ TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form:
     control: form.control,
     compute: (values) => getTodoRepeatFormIssue(values, timeZone),
   });
-  const days = formatDaysOfWeek(weekdays);
+  const days = formatDaysOfWeek(weekdays, i18n.language);
   const summary = match({ weekdays, interval, isMonthly })
     .returnType<string | null>()
     .with({ isMonthly: true }, () => t('picker.repeatMonthly', { day: monthDay }))

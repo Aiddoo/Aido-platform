@@ -11,14 +11,12 @@ import { useCurrentVoiceNote } from './use-current-voice-note';
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
 const UNUSED_CATEGORY_ID = 0;
 
-interface UseVoiceNoteSaveMemoParams {
+interface UseVoiceNoteSaveMemoOptions {
+  note: VoiceNote;
   onMemoChanged: () => void;
 }
 
-export function useVoiceNoteSaveMemo(
-  note: VoiceNote,
-  { onMemoChanged }: UseVoiceNoteSaveMemoParams,
-) {
+export function useVoiceNoteSaveMemo({ note, onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
   const [{ accountId, draftId }] = useCurrentVoiceNote();
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();

@@ -255,6 +255,22 @@ describe('getWeatherBriefing', () => {
     });
   });
 
+  it('남은 낮 시간 중 흐린 시간이 있으면 맑은 날로 알리지 않는다', () => {
+    // Given
+    const mixedReport = createWeatherReportWithHours([
+      { condition: 'CLEAR', apparentTemperature: 17 },
+      { condition: 'CLOUDY', apparentTemperature: 15 },
+      { condition: 'CLEAR', apparentTemperature: 14 },
+      { condition: 'CLEAR', apparentTemperature: 12, isDaylight: false },
+    ]);
+
+    // When
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(mixedReport, [], CLOCK);
+
+    // Then
+    expect(briefing).toEqual({ kind: 'noScheduledTodos' });
+  });
+
   it('저녁에 남은 할 일이 없으면 내일 아침 최저 기온을 알리고 10° 이하면 쌀쌀하다고 본다', () => {
     // Given
     // 서울 22시, 내일 최저 3°·최고 16°
@@ -378,24 +394,45 @@ describe('getSuggestedStartAt', () => {
     startsAt: toInstant('2026-11-02T06:00:00.000Z'),
     endsAt: toInstant('2026-11-02T08:00:00.000Z'),
   };
+  const { hourly: HOURLY } = createWeatherReport({
+    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10]),
+  });
 
-  it('추천 시간대가 이미 시작됐으면 다음 정시를 제안한다', () => {
+  it('추천 시간대가 이미 시작됐으면 다음 예보 시각을 제안한다', () => {
     // When
-    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, NOW);
+    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, HOURLY, NOW);
 
     // Then
     // 15~17시 추천을 15:26에 고르면 다음 정시는 16시다
     expect(startAt).toEqual('2026-11-02T07:00:00.000Z');
   });
 
-  it('추천 시간대의 정시가 모두 지났으면 제안하지 않는다', () => {
+  it('추천 시간대의 예보 시각이 모두 지났으면 제안하지 않는다', () => {
     // Given
     const lateNow = toInstant('2026-11-02T07:10:00.000Z');
 
     // When
-    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, lateNow);
+    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, HOURLY, lateNow);
 
     // Then
     expect(startAt).toBeNull();
+  });
+
+  it('30분 단위 시간대는 예보 칸의 시작 시각을 제안한다', () => {
+    // Given
+    // 인도처럼 예보 칸이 30분에 시작한다
+    const { hourly: offsetHourly } = createWeatherReport({
+      hourly: createHourlySeries('2026-11-02T06:30:00.000Z', [10, 10, 10]),
+    });
+    const offsetRange = {
+      startsAt: toInstant('2026-11-02T06:30:00.000Z'),
+      endsAt: toInstant('2026-11-02T08:30:00.000Z'),
+    };
+
+    // When
+    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(offsetRange, offsetHourly, NOW);
+
+    // Then
+    expect(startAt).toEqual('2026-11-02T06:30:00.000Z');
   });
 });

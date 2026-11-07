@@ -97,7 +97,7 @@ export function toQuickPlanResult(
   return {
     plan: toVoicePlan(planId, source, dto.plan),
     featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
-    charged: dto.charged,
+    isCharged: dto.charged,
   };
 }
 
@@ -175,6 +175,6 @@ export function toVoiceNoteDigestResult(
     summary: dto.summary,
     keyPoints: dto.keyPoints.map(({ text, startMs }) => ({ text, startMs })),
     featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
-    charged: dto.charged,
+    isCharged: dto.charged,
   };
 }

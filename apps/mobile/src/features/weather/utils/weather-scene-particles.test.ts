@@ -71,7 +71,7 @@ describe('입자 개수', () => {
     const isLowEndDevice = false;
 
     // When
-    const count = getParticleCount('rain', density, PHONE, isLowEndDevice);
+    const count = getParticleCount('rain', { density, screen: PHONE, isLowEndDevice });
 
     // Then
     expect(count).toBe(expected);
@@ -84,8 +84,8 @@ describe('입자 개수', () => {
     // When
     const counts = kinds.map((kind) => ({
       kind,
-      standard: getParticleCount(kind, 1, TABLET, false),
-      lowEnd: getParticleCount(kind, 1, TABLET, true),
+      standard: getParticleCount(kind, { density: 1, screen: TABLET, isLowEndDevice: false }),
+      lowEnd: getParticleCount(kind, { density: 1, screen: TABLET, isLowEndDevice: true }),
     }));
 
     // Then
@@ -103,7 +103,7 @@ describe('입자 개수', () => {
     const screen = { width: 0, height: 844 };
 
     // When
-    const count = getParticleCount('snow', 1, screen, false);
+    const count = getParticleCount('snow', { density: 1, screen, isLowEndDevice: false });
 
     // Then
     expect(count).toBe(0);
@@ -227,9 +227,9 @@ describe('대기 효과 입자 개수', () => {
     const kind = 'spindrift';
 
     // When
-    const phone = getAmbientCount(kind, PHONE, false);
-    const tablet = getAmbientCount(kind, TABLET, false);
-    const lowEndTablet = getAmbientCount(kind, TABLET, true);
+    const phone = getAmbientCount(kind, { screen: PHONE, isLowEndDevice: false });
+    const tablet = getAmbientCount(kind, { screen: TABLET, isLowEndDevice: false });
+    const lowEndTablet = getAmbientCount(kind, { screen: TABLET, isLowEndDevice: true });
 
     // Then
     expect(phone).toBe(PARTICLE_BUDGETS.spindrift.full);

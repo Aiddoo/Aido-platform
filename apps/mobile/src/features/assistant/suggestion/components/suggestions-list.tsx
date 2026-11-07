@@ -5,7 +5,7 @@ import {
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/date-format';
-import { formatDaysOfWeek } from '@src/shared/date/date-labels';
+import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -109,7 +109,7 @@ function formatSchedule(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  const days = formatDaysOfWeek(suggestion.daysOfWeek);
+  const days = formatDaysOfWeek(suggestion.daysOfWeek, toCatalogLanguage(context));
   const time =
     suggestion.scheduledTime == null
       ? tGlobal('ai:suggestions.list.allDay')

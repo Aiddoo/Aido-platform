@@ -23,6 +23,7 @@ async function getIosInstallationId() {
 
   const vendorId = await Application.getIosIdForVendorAsync();
   if (vendorId != null) {
+    // 저장에 실패해도 이번 값은 그대로 쓰고, 다음 실행 때 같은 vendor id로 다시 저장한다
     await SecureStore.setItemAsync(IOS_INSTALLATION_ID_KEY, vendorId, SECURE_STORE_OPTIONS).catch(
       noop,
     );

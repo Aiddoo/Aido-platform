@@ -4,14 +4,18 @@ import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-
 export function createConsoleErrorReporter(): ErrorReporter {
   return {
     captureException(error: Error, context?: ErrorReporterContext): void {
-      context
-        ? console.error('[ErrorReporter] captureException:', error.message, context)
-        : console.error('[ErrorReporter] captureException:', error.message);
+      if (context) {
+        console.error('[ErrorReporter] captureException:', error.message, context);
+        return;
+      }
+      console.error('[ErrorReporter] captureException:', error.message);
     },
     captureMessage(message: string, context?: ErrorReporterContext): void {
-      context
-        ? console.error('[ErrorReporter] captureMessage:', message, context)
-        : console.error('[ErrorReporter] captureMessage:', message);
+      if (context) {
+        console.error('[ErrorReporter] captureMessage:', message, context);
+        return;
+      }
+      console.error('[ErrorReporter] captureMessage:', message);
     },
     addBreadcrumb(breadcrumb: Breadcrumb): void {
       console.info(

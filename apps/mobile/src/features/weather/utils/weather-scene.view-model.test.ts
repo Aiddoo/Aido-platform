@@ -387,6 +387,18 @@ describe('바람과 강수 각도', () => {
 });
 
 describe('달의 위상', () => {
+  test('같은 날씨를 몇 분 뒤 다시 받아도 장면이 같다', () => {
+    // Given
+    const first = createInput({ observedAt: toInstant('2026-11-03T12:00:00.000Z') });
+    const later = createInput({ observedAt: toInstant('2026-11-03T12:07:00.000Z') });
+
+    // When
+    const [firstScene, laterScene] = [first, later].map(toWeatherScene);
+
+    // Then
+    expect(laterScene).toEqual(firstScene);
+  });
+
   test.each([
     ['2000-01-06T18:14:00.000Z', 0],
     ['2000-01-21T12:32:00.000Z', 0.5],

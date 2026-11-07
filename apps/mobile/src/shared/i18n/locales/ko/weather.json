@@ -314,6 +314,7 @@
     "noDryTime": "오늘은 비를 피하기 어려워요",
     "range": "{{start}}~{{end}}",
     "more": "외 {{count}}개 더 보기",
+    "hiddenCount": "외 {{count}}개",
     "stormy": {
       "title": "할 일 시간에 낙뢰가 칠 수 있어요",
       "body": "{{range}} 낙뢰 위험이 있어요. 시간을 옮기거나 실내에서 해보세요",
@@ -377,6 +378,7 @@
     "submit": "{{count}}개 옮기기",
     "moved": "할 일 {{count}}개를 옮겼어요",
     "undo": "되돌리기",
+    "expired": "시간이 지나서 다른 시간으로 바꿨어요. 확인하고 다시 눌러주세요",
     "undone": "원래 시간으로 되돌렸어요",
     "chartLabel": "오늘 남은 시간의 시간별 강수 확률 그래프",
     "todoNotFound": "옮길 할 일을 찾지 못했어요",

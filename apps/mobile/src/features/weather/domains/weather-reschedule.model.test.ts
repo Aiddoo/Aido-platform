@@ -81,7 +81,7 @@ describe('getRescheduleOptions', () => {
     const options = WeatherReschedulePolicy.getRescheduleOptions(
       hourly,
       { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
-      { now: NOW, timeZone: 'Asia/Seoul' },
+      { now: NOW, timeZone: 'Asia/Seoul', reason: 'rain' },
     );
 
     // Then
@@ -104,7 +104,7 @@ describe('getRescheduleOptions', () => {
     const options = WeatherReschedulePolicy.getRescheduleOptions(
       rainyHours,
       { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
-      { now: NOW, timeZone: 'Asia/Seoul' },
+      { now: NOW, timeZone: 'Asia/Seoul', reason: 'rain' },
     );
 
     // Then
@@ -121,7 +121,7 @@ describe('getRescheduleOptions', () => {
     const options = WeatherReschedulePolicy.getRescheduleOptions(
       lateHours,
       { scheduledAt: toInstant('2026-11-02T13:30:00.000Z') },
-      { now: toInstant('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul' },
+      { now: toInstant('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul', reason: 'rain' },
     );
 
     // Then
@@ -252,5 +252,37 @@ describe('getRescheduleTargets', () => {
 
     // Then
     expect(targets).toEqual([]);
+  });
+});
+
+describe('getExpiredTargets', () => {
+  const todo = { id: 12, completed: false };
+
+  it('시트를 연 채 정시를 넘겨 지난 시각이 된 선택만 가려낸다', () => {
+    // Given
+    const targets = [
+      { todo, startsAt: toInstant('2026-11-02T07:00:00.000Z') },
+      { todo: { id: 15, completed: false }, startsAt: toInstant('2026-11-02T09:00:00.000Z') },
+    ];
+
+    // When
+    const expired = WeatherReschedulePolicy.getExpiredTargets(
+      targets,
+      toInstant('2026-11-02T07:00:30.000Z'),
+    );
+
+    // Then
+    expect(expired.map(({ todo: expiredTodo }) => expiredTodo.id)).toEqual([12]);
+  });
+
+  it('아직 오지 않은 시각이면 아무것도 가려내지 않는다', () => {
+    // When
+    const expired = WeatherReschedulePolicy.getExpiredTargets(
+      [{ todo, startsAt: toInstant('2026-11-02T08:00:00.000Z') }],
+      toInstant('2026-11-02T07:59:59.000Z'),
+    );
+
+    // Then
+    expect(expired).toEqual([]);
   });
 });

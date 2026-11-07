@@ -17,16 +17,15 @@ describe('toMoonGeometry', () => {
   });
 
   it.each([
-    ['WAXING_CRESCENT', 12.73, 'M24 6a18 18 0 0 1 0 36a12.73 18 0 0 0 0 -36z'],
-    ['FIRST_QUARTER', 0, 'M24 6a18 18 0 0 1 0 36a0 18 0 0 0 0 -36z'],
-    ['WAXING_GIBBOUS', 12.73, 'M24 6a18 18 0 0 1 0 36a12.73 18 0 0 1 0 -36z'],
-    ['WANING_CRESCENT', 12.73, 'M24 6a18 18 0 0 0 0 36a12.73 18 0 0 1 0 -36z'],
-  ] as const)('%s 달의 명암 경계는 가로 반지름 %s인 반타원이다', (phase, rx, path) => {
+    ['WAXING_CRESCENT', 'M24 6a18 18 0 0 1 0 36a12.73 18 0 0 0 0 -36z'],
+    ['FIRST_QUARTER', 'M24 6a18 18 0 0 1 0 36a0 18 0 0 0 0 -36z'],
+    ['WAXING_GIBBOUS', 'M24 6a18 18 0 0 1 0 36a12.73 18 0 0 1 0 -36z'],
+    ['WANING_CRESCENT', 'M24 6a18 18 0 0 0 0 36a12.73 18 0 0 1 0 -36z'],
+  ] as const)('%s 달의 밝은 면은 명암 경계 반타원을 따라 그린다', (phase, path) => {
     // When
     const geometry = toMoonGeometry(phase, 37);
 
     // Then
-    expect(geometry.terminatorRx).toBe(rx);
     expect(geometry.litPath).toBe(path);
   });
 

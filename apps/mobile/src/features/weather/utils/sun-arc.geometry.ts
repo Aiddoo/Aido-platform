@@ -36,6 +36,26 @@ const NIGHT_AFTER_SUNSET: CubicCurve = [
   { x: 326, y: 84 },
 ];
 
+function toCurveTo([, p1, p2, p3]: CubicCurve): string {
+  return `C${p1.x} ${p1.y} ${p2.x} ${p2.y} ${p3.x} ${p3.y}`;
+}
+
+function toPath(...curves: readonly [CubicCurve, ...CubicCurve[]]): string {
+  const [{ x, y }] = curves[0];
+  return `M${x} ${y} ${curves.map(toCurveTo).join(' ')}`;
+}
+
+/** 해 궤적 path. 낮 구간은 밝게, 밤 구간은 흐리게 긋는다. 곡선 조정점에서 만들어 해 점이 선에서 벗어나지 않는다. */
+export const SUN_ARC_PATHS = {
+  dayFill: `${toPath(SUNRISE_TO_NOON, NOON_TO_SUNSET)}z`,
+  nightBefore: toPath(NIGHT_BEFORE_SUNRISE),
+  day: toPath(SUNRISE_TO_NOON, NOON_TO_SUNSET),
+  nightAfter: toPath(NIGHT_AFTER_SUNSET),
+} as const;
+
+/** 낮 곡선이 시작하고 끝나는 지평선의 높이 */
+export const SUN_ARC_HORIZON_Y = SUNRISE_TO_NOON[0].y;
+
 function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
   const u = 1 - t;
   const at = (a: number, b: number, c: number, d: number) =>

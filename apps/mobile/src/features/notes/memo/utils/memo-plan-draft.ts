@@ -16,7 +16,6 @@ export function createMemoPlanDraftKey({
 }) {
   return createPlanReviewDraftKey({
     userId,
-    scope: 'memo-plan',
     target: [memoId],
     timeZone,
   });

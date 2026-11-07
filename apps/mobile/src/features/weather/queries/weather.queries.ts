@@ -5,6 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage, isBusinessError, unwrap } from '@src/shared/errors';
 import {
   type Query,
@@ -26,7 +27,7 @@ import { type WeatherReport } from '../schemas/weather-report.schema';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import { removeOutdatedWeatherReports } from './weather-cache';
 
-const LOCATION_STALE_TIME_MS = 30 * 60_000;
+const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
 
 /** 권한이 없던 사용자가 설정에서 돌아오면 30분을 기다리지 않고 바로 다시 확인한다. */
 function refetchOnFocus(query: Query<LocationReading, Error>) {
@@ -88,9 +89,9 @@ export function useWeatherLocationRevision(): number {
   return WeatherLocationPolicy.getReadingRevision(data);
 }
 
-const REPORT_STALE_TIME_MS = 10 * 60_000;
+const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
 /** 화면을 켜 둔 동안에도 분 단위 강수 안내가 어긋나지 않게 주기적으로 다시 받는다. */
-const REPORT_REFETCH_INTERVAL_MS = 15 * 60_000;
+const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
 /** 공급자 장애(WEATHER_1901)는 오래 기다리기보다 다시 시도 화면을 빨리 보여 준다. */
 const REPORT_MAX_RETRIES = 2;
 

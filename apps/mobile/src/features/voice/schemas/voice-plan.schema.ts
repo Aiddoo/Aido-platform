@@ -73,11 +73,10 @@ export interface QuickPlanResult {
   /** 서버가 한도를 싣지 못했으면 null. 결과는 그대로 보여 주고 한도는 다시 묻는다 */
   featureQuota: FeatureQuota | null;
   /** 이 요청으로 횟수를 썼는지. false면 "횟수는 차감되지 않아요" */
-  charged: boolean;
+  isCharged: boolean;
 }
 
-export interface VoiceNoteDigestResult extends Omit<QuickPlanResult, 'plan'> {
-  plan: VoicePlan;
+export interface VoiceNoteDigestResult extends QuickPlanResult {
   title: string;
   summary: string;
   keyPoints: { text: string; startMs: number | null }[];

@@ -5,13 +5,18 @@ import { COMPASS_SHORT_LABEL_KEYS } from '../constants/weather-labels';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import {
   type CompassDial,
+  DIAL_CENTER,
+  DIAL_VIEWBOX_SIZE,
   type DialTicks,
   PRESSURE_GAUGE_LABELS,
   type PressureGauge,
 } from '../utils/weather-dial.geometry';
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
-const DIAL_VIEWBOX = '0 0 120 120';
+const DIAL_VIEWBOX = `0 0 ${DIAL_VIEWBOX_SIZE} ${DIAL_VIEWBOX_SIZE}`;
+/** 가운데 값은 중심보다 조금 위, 단위는 조금 아래에 둔다. */
+const VALUE_OFFSET_Y = -4;
+const UNIT_OFFSET_Y = 14;
 
 function DialTicksPaths({ minorTicks, majorTicks }: DialTicks) {
   const minorColor = useOnSkyColor('text-on-sky/32');
@@ -59,8 +64,8 @@ function DialCenter({ value, unit }: { value: string; unit: string }) {
   return (
     <>
       <SvgText
-        x={60}
-        y={56}
+        x={DIAL_CENTER}
+        y={DIAL_CENTER + VALUE_OFFSET_Y}
         textAnchor="middle"
         alignmentBaseline="central"
         fill={valueColor}
@@ -71,8 +76,8 @@ function DialCenter({ value, unit }: { value: string; unit: string }) {
         {value}
       </SvgText>
       <SvgText
-        x={60}
-        y={74}
+        x={DIAL_CENTER}
+        y={DIAL_CENTER + UNIT_OFFSET_Y}
         textAnchor="middle"
         alignmentBaseline="central"
         fill={unitColor}

@@ -5,20 +5,25 @@ import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } fr
 import { getCalendarWeek, isSameYearDateKey } from './date-key';
 import type { Instant } from './instant';
 
-function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
+export function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
 }
 
 /** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
-export function formatDaysOfWeek(daysOfWeek: DayOfWeek[], separator = ', '): string {
+export function formatDaysOfWeek(
+  daysOfWeek: DayOfWeek[],
+  language: string,
+  separator = ', ',
+): string {
   return [...daysOfWeek]
     .sort((a, b) => DAY_OF_WEEK_MAP[a] - DAY_OF_WEEK_MAP[b])
-    .map((day) => t(`common:daysOfWeek.${day}`))
+    .map((day) => getDayOfWeekLabel(day, language))
     .join(separator);
 }
 
-export function getDayOfWeekLabel(day: DayOfWeek): string {
-  return t(`common:daysOfWeek.${day}`);
+/** `language`를 넘기지 않으면 React Compiler가 첫 언어의 결과를 계속 쓰므로 컴포넌트는 앱 언어를 넘긴다 */
+export function getDayOfWeekLabel(day: DayOfWeek, language: string): string {
+  return t(`common:daysOfWeek.${day}`, { lng: language });
 }
 
 /**

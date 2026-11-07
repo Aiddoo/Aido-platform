@@ -257,7 +257,13 @@ export function useVoiceNoteRecording({
   };
 
   return {
-    ...session,
+    state: session.state,
+    level: session.level,
+    finish: session.finish,
+    pause: session.pause,
+    interrupt: session.interrupt,
+    resume: session.resume,
+    changeLocale: session.changeLocale,
     draftId: baseNote.draftId,
     sentences: captions.sentences,
     interimText: captions.interimText,

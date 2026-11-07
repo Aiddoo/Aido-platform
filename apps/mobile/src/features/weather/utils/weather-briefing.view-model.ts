@@ -69,7 +69,7 @@ export interface BriefingViewDeps {
   timeZone: string;
   formatClock: (date: Instant) => string;
   formatHour: (date: Instant) => string;
-  formatDegrees: (celsius: number) => string;
+  formatTemperature: (celsius: number) => string;
   formatChance: (percent: number) => string;
 }
 
@@ -88,7 +88,7 @@ export function toBriefingState(
   }
   if (
     WeatherReportPolicy.isNowcastExpired(report, now) ||
-    WeatherReportPolicy.isDifferentWallClock(report, deviceTimeZone, now)
+    WeatherReportPolicy.isDifferentWallClock(report.location.timezone, deviceTimeZone, now)
   ) {
     return 'hidden';
   }
@@ -97,7 +97,7 @@ export function toBriefingState(
 
 /** 브리핑 종류를 화면 문구·할 일 행·버튼으로 바꾼다. */
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
-  const { hourly, now, timeZone, formatClock, formatHour, formatDegrees, formatChance } = deps;
+  const { hourly, now, timeZone, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({
     key: 'briefing.range',
     values: { start: formatHour(hours.startsAt), end: formatHour(hours.endsAt) },
@@ -169,7 +169,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
           advice: { key: 'briefing.snowy.advice' },
           tone: 'warning',
           chipCondition: 'SNOW',
-          chipLabel: formatDegrees(todo.hour.temperature),
+          chipLabel: formatTemperature(todo.hour.temperature),
         })),
         action: null,
         mascotCondition: 'SNOW',
@@ -178,7 +178,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     .with({ kind: 'hot' }, ({ todos, range: hours, peakApparentTemperature }): BriefingView => {
       const [first] = todos;
       const coolHour = first == null ? null : firstOption(first, 'heat');
-      const peak = formatDegrees(peakApparentTemperature);
+      const peak = formatTemperature(peakApparentTemperature);
       return {
         headline: { key: 'briefing.hot.title' },
         body:
@@ -201,7 +201,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
                 : { key: 'briefing.hot.coolAt', values: { time: formatHour(cool) } },
             tone: 'heat',
             chipCondition: 'CLEAR',
-            chipLabel: formatDegrees(todo.hour.apparentTemperature),
+            chipLabel: formatTemperature(todo.hour.apparentTemperature),
           };
         }),
         action: reschedule(todos, 'heat', { key: 'briefing.hot.action' }),
@@ -241,7 +241,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
             },
             tone: 'calm',
             chipCondition: todo.hour.condition,
-            chipLabel: formatDegrees(todo.hour.temperature),
+            chipLabel: formatTemperature(todo.hour.temperature),
           })),
           action:
             day === 'tomorrow'
@@ -258,7 +258,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
       },
     )
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
-      const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, now);
+      const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, hourly, now);
       const isInRange = (todo: ForecastTodo) =>
         toEpochMs(hours.startsAt) <= toEpochMs(todo.scheduledAt) &&
         toEpochMs(todo.scheduledAt) < toEpochMs(hours.endsAt);
@@ -274,7 +274,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
           advice: { key: isInRange(todo) ? 'briefing.clear.bestTime' : 'briefing.clear.noRain' },
           tone: isInRange(todo) ? 'good' : 'neutral',
           chipCondition: todo.hour.condition,
-          chipLabel: formatDegrees(todo.hour.temperature),
+          chipLabel: formatTemperature(todo.hour.temperature),
         })),
         action:
           suggestedAt == null
@@ -294,11 +294,11 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
       ({ temperatureMin, temperatureMax, isChilly }): BriefingView => ({
         headline: {
           key: isChilly ? 'briefing.tomorrowMorning.chillyTitle' : 'briefing.tomorrowMorning.title',
-          values: { temperature: formatDegrees(temperatureMin) },
+          values: { temperature: formatTemperature(temperatureMin) },
         },
         body: {
           key: isChilly ? 'briefing.tomorrowMorning.chillyBody' : 'briefing.tomorrowMorning.body',
-          values: { temperature: formatDegrees(temperatureMax) },
+          values: { temperature: formatTemperature(temperatureMax) },
         },
         rows: [],
         action: null,
@@ -313,7 +313,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
         advice: { key: WEATHER_CONDITION_LABEL_KEYS[todo.hour.condition] },
         tone: 'neutral',
         chipCondition: todo.hour.condition,
-        chipLabel: formatDegrees(todo.hour.temperature),
+        chipLabel: formatTemperature(todo.hour.temperature),
       })),
       action: null,
       mascotCondition: 'CLOUDY',

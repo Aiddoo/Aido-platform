@@ -42,7 +42,7 @@ describe('getSunscreenWindow', () => {
   });
 });
 
-describe('sumNextDayPrecipitation', () => {
+describe('calculateNextDayPrecipitation', () => {
   it('지나간 시간은 빼고 남은 시간의 강수량을 더한다', () => {
     // Given
     // 06시 0.4mm, 07시 1.25mm, 08시 2mm
@@ -57,7 +57,7 @@ describe('sumNextDayPrecipitation', () => {
     const now = toInstant('2026-11-02T07:10:00.000Z');
 
     // When
-    const total = WeatherDetailPolicy.sumNextDayPrecipitation(hourly, now);
+    const total = WeatherDetailPolicy.calculateNextDayPrecipitation(hourly, now);
 
     // Then
     // 07시 1.25mm와 08시 2mm를 더한 3.25mm를 소수 첫째 자리로 맞춘다
@@ -66,7 +66,7 @@ describe('sumNextDayPrecipitation', () => {
 
   it('시간별 예보가 없으면 null이다', () => {
     // When
-    const total = WeatherDetailPolicy.sumNextDayPrecipitation([], getNowInstant());
+    const total = WeatherDetailPolicy.calculateNextDayPrecipitation([], getNowInstant());
 
     // Then
     expect(total).toBeNull();

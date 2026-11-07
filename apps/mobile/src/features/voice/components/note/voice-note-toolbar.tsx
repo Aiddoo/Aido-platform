@@ -34,7 +34,8 @@ export function VoiceNoteToolbar({ note, onMemoChanged }: VoiceNoteToolbarProps)
   const [{ accountId, draftId }] = useCurrentVoiceNote();
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
-  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo(note, {
+  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo({
+    note,
     onMemoChanged,
   });
   const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');

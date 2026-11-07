@@ -3,21 +3,31 @@ import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache'
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { t as translate, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
+import { WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
 import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
 import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutations';
+import {
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../../queries/weather.queries';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
-import { toRescheduleOutcome, toScheduleChanges } from '../../utils/weather-reschedule-form';
+import {
+  toRescheduleOutcome,
+  toScheduleChanges,
+  toSelectionKey,
+} from '../../utils/weather-reschedule-form';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
 export function WeatherRescheduleSubmitButton({
@@ -27,7 +37,7 @@ export function WeatherRescheduleSubmitButton({
   form: UseFormReturn<WeatherRescheduleFormValues>;
   onDone: () => void;
 }) {
-  const { t } = useTranslation('weather');
+  const { t } = useTranslation(['weather', 'todo']);
   const toast = useAppToast();
   const queryClient = useQueryClient();
   const { timeZone } = useDateFormatContext();
@@ -36,7 +46,12 @@ export function WeatherRescheduleSubmitButton({
   const { trackEvent } = useTrack();
   const [{ todoIds, reason }] = useWeatherRescheduleParams();
   const { isSubmitting } = useFormState({ control: form.control });
-  const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: useTodayKey() }));
+  const todayKey = useTodayKey();
+  const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: todayKey }));
+  const { data: report } = useQuery({
+    ...useGetWeatherReportQueryOptions(),
+    select: WeatherReportSelect.briefing,
+  });
   const updateSchedule = useMutation(useRescheduleTodoMutationOptions());
   const todayTodos = todoList?.todos ?? [];
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
@@ -46,13 +61,13 @@ export function WeatherRescheduleSubmitButton({
     todayTodos,
   ).length;
 
-  const settle = (failures: unknown[]) => {
+  const refreshAndReportFailures = (failures: unknown[]) => {
     invalidateTodos(queryClient);
     const [firstFailure] = failures;
     if (failures.length > 0) {
       haptics.notify('error');
       toast.error(getUserFacingMessage(firstFailure), {
-        fallback: translate('todo:toast.updateFailedRetry'),
+        fallback: t('todo:toast.updateFailedRetry'),
       });
     }
   };
@@ -70,10 +85,10 @@ export function WeatherRescheduleSubmitButton({
       todos.map((todo) => ({ todo })),
       results,
     );
-    settle(failures);
+    refreshAndReportFailures(failures);
     if (restored.length > 0) {
       trackEvent('weather_reschedule_undone', { moved_count: restored.length, reason });
-      toast.success(t('reschedule.undone'));
+      toast.success(t('weather:reschedule.undone'));
     }
   };
 
@@ -82,6 +97,30 @@ export function WeatherRescheduleSubmitButton({
       toScheduleChanges(values, todoIds),
       todayTodos,
     );
+    const now = getNowInstant();
+    const expired = WeatherReschedulePolicy.getExpiredTargets(targets, now);
+    if (expired.length > 0) {
+      // 시트를 연 채 정시를 넘겼다. 지난 시각으로 옮기지 않고 다음 유효 후보로 바꿔 다시 확인받는다
+      for (const { todo } of expired) {
+        const { scheduledAt } = WeatherBriefingPolicy.toBriefingTodo(todo, {
+          date: todayKey,
+          timeZone,
+        });
+        const [next] =
+          scheduledAt == null
+            ? []
+            : WeatherReschedulePolicy.getRescheduleOptions(
+                report?.hourly ?? [],
+                { scheduledAt },
+                { now, timeZone, reason },
+              );
+        if (next != null) {
+          form.setValue(`selections.${toSelectionKey(todo.id)}`, next.startsAt);
+        }
+      }
+      toast.warning(t('weather:reschedule.expired'));
+      return;
+    }
     const results = await Promise.allSettled(
       targets.map(({ todo, startsAt }) =>
         updateSchedule.mutateAsync({
@@ -91,14 +130,14 @@ export function WeatherRescheduleSubmitButton({
       ),
     );
     const { moved, failures } = toRescheduleOutcome(targets, results);
-    settle(failures);
+    refreshAndReportFailures(failures);
     if (moved.length === 0) {
       return;
     }
     trackEvent('weather_reschedule_applied', { moved_count: moved.length, reason });
-    toast.success(t('reschedule.moved', { count: moved.length }), {
+    toast.success(t('weather:reschedule.moved', { count: moved.length }), {
       action: {
-        label: t('reschedule.undo'),
+        label: t('weather:reschedule.undo'),
         onPress: () => {
           handleUndo(moved).catch((error) => {
             logger.warn(WEATHER_LOG_EVENT.RESCHEDULE_UNDO_FAILED, {
@@ -119,7 +158,7 @@ export function WeatherRescheduleSubmitButton({
       isDisabled={targetCount === 0}
       onPress={() => handleApply()}
     >
-      {t('reschedule.submit', { count: targetCount })}
+      {t('weather:reschedule.submit', { count: targetCount })}
     </Button>
   );
 }

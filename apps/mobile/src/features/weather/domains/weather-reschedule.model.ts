@@ -88,6 +88,14 @@ function getRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
   });
 }
 
+/** 시트를 연 채 정시를 넘겨 이미 지난 시각이 된 선택. 지난 시각으로는 옮기지 않는다. */
+function getExpiredTargets<TTodo>(
+  targets: readonly RescheduleTarget<TTodo>[],
+  now: Instant,
+): RescheduleTarget<TTodo>[] {
+  return targets.filter(({ startsAt }) => toEpochMs(startsAt) <= toEpochMs(now));
+}
+
 /** 아직 하지 않은 할 일 중 지금 이후 시각이 비 오는 시간에 걸린 것만 고른다. 종일·시간 없는 할 일은 뺀다. */
 function getRainyTodos(
   hourly: readonly HourlyForecastEntry[],
@@ -127,11 +135,7 @@ function getAffectedTodos(
 function getRescheduleOptions(
   hourly: readonly HourlyForecastEntry[],
   todo: Pick<ForecastTodo, 'scheduledAt'>,
-  {
-    now,
-    timeZone,
-    reason = 'rain',
-  }: { now: Instant; timeZone: string; reason?: WeatherRescheduleReason },
+  { now, timeZone, reason }: { now: Instant; timeZone: string; reason: WeatherRescheduleReason },
 ): RescheduleOption[] {
   const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
   const distance = (hour: HourlyForecastEntry) =>
@@ -171,4 +175,5 @@ export const WeatherReschedulePolicy = {
   getMovedScheduleInput,
   getOriginalScheduleInput,
   getRescheduleTargets,
+  getExpiredTargets,
 } as const;

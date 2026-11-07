@@ -172,17 +172,19 @@ interface TodoScheduleLineProps {
 }
 
 export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
-  const { t } = useTranslation('todo');
+  const { t, i18n } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
   const { repeat } = todo;
   const isRepeating = TodoPolicy.isRecurringTodo(todo);
-  const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat);
+  const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat, i18n.language);
   const spokenRule =
     repeat == null
       ? t('chip.repeat')
       : t('repeat.spokenRule', {
-          rule: formatRepeatCadence(repeat, { weekdaySeparator: SPOKEN_WEEKDAY_SEPARATOR }),
+          rule: formatRepeatCadence(repeat, i18n.language, {
+            weekdaySeparator: SPOKEN_WEEKDAY_SEPARATOR,
+          }),
         });
   const spokenLabel = [timeLabel, isRepeating ? spokenRule : null].filter(isNotNil).join(', ');
 

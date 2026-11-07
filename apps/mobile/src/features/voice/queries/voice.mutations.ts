@@ -168,12 +168,12 @@ export function useCreateQuickPlanMutationOptions({
     networkMode: 'always',
     mutationFn: async ({ input, idempotencyKey, signal }: CreateQuickPlanVariables) =>
       unwrap(await voiceService.createQuickPlan(input, idempotencyKey, signal)),
-    onSuccess: ({ plan, featureQuota, charged }) => {
+    onSuccess: ({ plan, featureQuota, isCharged }) => {
       reflectFeatureQuota(queryClient, featureQuota);
       trackEvent('voice_plan_generated', {
         source: toAnalyticsSource(plan.source),
         ...summarizePlanForAnalytics(plan),
-        charged,
+        charged: isCharged,
       });
     },
     onError: (error, { input, signal }) => {
@@ -204,17 +204,18 @@ export function useCreateVoiceNoteDigestMutationOptions() {
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ input, idempotencyKey, signal }: CreateVoiceNoteDigestVariables) => {
+      // 긴 글 정리는 응답 대기 시간이 길어 오프라인이 확실하면 연결 시도를 기다리지 않고 바로 실패시킨다
       if (!onlineManager.isOnline()) {
         throw new NetworkError();
       }
       return unwrap(await voiceService.createVoiceNoteDigest(input, idempotencyKey, signal));
     },
-    onSuccess: ({ plan, featureQuota, charged }) => {
+    onSuccess: ({ plan, featureQuota, isCharged }) => {
       reflectFeatureQuota(queryClient, featureQuota);
       trackEvent('voice_plan_generated', {
         source: toAnalyticsSource(plan.source),
         ...summarizePlanForAnalytics(plan),
-        charged,
+        charged: isCharged,
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId != null) {

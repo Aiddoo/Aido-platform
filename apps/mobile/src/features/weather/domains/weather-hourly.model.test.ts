@@ -10,14 +10,14 @@ const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;
 const RAIN = { condition: 'RAIN', precipitationChance: 80, precipitationType: 'RAIN' } as const;
 
-describe('summarizeHourly', () => {
+describe('getHourlySummary', () => {
   it('지금 비가 오면 처음 그치는 시간을 그침 시각으로 반환한다', () => {
     // Given
     // 지금부터 2시간 비, 그 뒤 갬
     const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN, DRY_CLOUDY]) });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     // 오후 5시에 그친다
@@ -41,7 +41,7 @@ describe('summarizeHourly', () => {
     } as const;
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toMatchObject({
@@ -56,7 +56,7 @@ describe('summarizeHourly', () => {
     const report = createWeatherReport({ hourly: createHourlyForecasts([RAIN, RAIN]) });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toMatchObject({ kind: 'precipitationOngoing', endsAt: null });
@@ -70,7 +70,7 @@ describe('summarizeHourly', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({
@@ -90,7 +90,7 @@ describe('summarizeHourly', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).not.toMatchObject({ kind: 'precipitationUpcoming' });
@@ -105,7 +105,7 @@ describe('summarizeHourly', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({
@@ -130,7 +130,7 @@ describe('summarizeHourly', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     // 오후 4시 16도가 정점이다
@@ -152,7 +152,7 @@ describe('summarizeHourly', () => {
     });
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, NOW);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, NOW);
 
     // Then
     expect(summary).toEqual({ kind: 'steady', sky: 'cloudy', peak: null });
@@ -164,7 +164,7 @@ describe('summarizeHourly', () => {
     const lateNow = toInstant('2026-11-02T08:00:00.000Z');
 
     // When
-    const summary = WeatherHourlyPolicy.summarizeHourly(report, lateNow);
+    const summary = WeatherHourlyPolicy.getHourlySummary(report, lateNow);
 
     // Then
     expect(summary).toBeNull();

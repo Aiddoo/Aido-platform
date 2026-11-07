@@ -268,7 +268,7 @@ export function createCloudSpriteRect(variant: number) {
   );
 }
 
-/** 뭉게구름은 부드러운 구름 알갱이 일곱 개를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
+/** 뭉게구름은 부드러운 구름 알갱이를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
 export function useCloudTexture() {
   const clusters = useMemo(createCloudClusters, []);
   return useOwnedTexture(
@@ -574,11 +574,7 @@ const MOON_TERMINATOR_SOFTNESS = 0.036;
 const MOON_EARTHSHINE = 0.09;
 /** 어두운 면은 반쯤 비쳐 밤하늘 색이 스며들게 한다. */
 const MOON_SHADOW_OPACITY = 0.55;
-/** 위상은 1/200 단위로 맞춰 새로 받을 때마다 다시 굽지 않게 한다. */
-const MOON_PHASE_STEPS = 200;
-
 export function useMoonTexture(phase: number) {
-  const step = Math.round(phase * MOON_PHASE_STEPS) / MOON_PHASE_STEPS;
   return useOwnedTexture(
     MOON_SURFACE == null ? (
       <Group />
@@ -588,7 +584,7 @@ export function useMoonTexture(phase: number) {
           source={MOON_SURFACE}
           uniforms={{
             size: MOON_TEXTURE_SIZE,
-            phase: step,
+            phase,
             earthshine: MOON_EARTHSHINE,
             softness: MOON_TERMINATOR_SOFTNESS,
             shadowOpacity: MOON_SHADOW_OPACITY,
@@ -597,6 +593,6 @@ export function useMoonTexture(phase: number) {
       </Rect>
     ),
     { width: MOON_TEXTURE_SIZE, height: MOON_TEXTURE_SIZE },
-    [step],
+    [phase],
   );
 }

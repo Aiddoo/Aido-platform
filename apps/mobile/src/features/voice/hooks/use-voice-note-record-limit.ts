@@ -2,9 +2,12 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { getPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery } from '@tanstack/react-query';
+
+const MINUTE_SECONDS = 60;
 
 export function useVoiceNoteRecordLimit() {
   const { t } = useTranslation('voiceNote');
@@ -15,7 +18,7 @@ export function useVoiceNoteRecordLimit() {
     snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
 
   const notifyLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
-    const minutes = Math.round((maxSeconds ?? 0) / 60);
+    const minutes = Math.round((maxSeconds ?? 0) / MINUTE_SECONDS);
     if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
       if (hasText) {
         toast.warning(t('limit.premium', { minutes }));
@@ -35,7 +38,7 @@ export function useVoiceNoteRecordLimit() {
 
   return {
     maxSeconds,
-    limitMs: maxSeconds == null ? null : maxSeconds * 1_000,
+    limitMs: maxSeconds == null ? null : maxSeconds * SECOND_MS,
     notifyLimit,
   };
 }

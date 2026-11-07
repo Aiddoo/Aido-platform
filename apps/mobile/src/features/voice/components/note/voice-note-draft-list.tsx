@@ -29,7 +29,7 @@ import { formatMediaTime } from '../../utils/format-media-time';
 export function VoiceNoteDraftList() {
   const { t } = useTranslation('voiceNote');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const notes = useVoiceNotes(me.id);
+  const [notes] = useVoiceNotes(me.id);
   const push = useSingleTap(router.push);
 
   if (notes.length === 0) {
@@ -65,7 +65,7 @@ export function VoiceNoteDraftList() {
 VoiceNoteDraftList.All = function All() {
   const { t } = useTranslation('voiceNote');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const notes = useVoiceNotes(me.id);
+  const [notes] = useVoiceNotes(me.id);
 
   return (
     <FlashList

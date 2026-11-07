@@ -84,7 +84,7 @@ export function IcePelletLayer({
   time,
 }: IcePelletLayerProps) {
   const texture = useParticleTexture();
-  const count = getParticleCount('pellet', density, { width, height }, isLowEndDevice);
+  const count = getParticleCount('pellet', { density, screen: { width, height }, isLowEndDevice });
   const pellets = createPellets(count, height);
   const { ice } = PARTICLE_SPRITES;
   const sprites = pellets.map(() => Skia.XYWHRect(ice.x, ice.y, ice.width, ice.height));

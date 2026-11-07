@@ -59,14 +59,11 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
 
     setFailure(null);
     const input = VoiceNotePolicy.createDigestInput(note);
-    const request = PlanRequestPolicy.preparePlanRequest<VoiceNoteDigestInput>({
-      previous:
-        note.digestRequest == null
-          ? null
-          : { fingerprint: JSON.stringify(input), input, ...note.digestRequest },
+    const request: PreparedPlanRequest<VoiceNoteDigestInput> = {
+      fingerprint: JSON.stringify(input),
       input,
-      createIdempotencyKey: idGenerator.create,
-    });
+      idempotencyKey: note.digestRequest?.idempotencyKey ?? idGenerator.create(),
+    };
     saveRequest(request);
 
     const abortController = new AbortController();

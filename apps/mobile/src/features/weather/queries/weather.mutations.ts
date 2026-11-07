@@ -1,11 +1,10 @@
-import { useWeatherService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useWeatherService } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { unwrap } from '@src/shared/errors';
+import { getUserFacingMessage, unwrap } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { isLocationUpdateRejectedError } from '../domains/weather.error';
 import { type Coordinates } from '../schemas/weather-location.schema';
 import { invalidateWeatherReports, setRegisteredWeatherLocation } from './weather-cache';
 
@@ -14,6 +13,7 @@ export function useUpdateWeatherLocationMutationOptions() {
   const weatherService = useWeatherService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const haptics = useHaptics();
 
   return mutationOptions({
     mutationFn: async (coordinates: Coordinates) =>
@@ -23,11 +23,10 @@ export function useUpdateWeatherLocationMutationOptions() {
       return invalidateWeatherReports(queryClient);
     },
     onError: (error) => {
-      if (isLocationUpdateRejectedError(error)) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(undefined, { fallback: t('weather:toasts.locationUpdateFailed') });
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), {
+        fallback: t('weather:toasts.locationUpdateFailed'),
+      });
     },
   });
 }

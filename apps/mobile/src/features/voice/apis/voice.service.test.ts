@@ -32,7 +32,7 @@ describe('VoiceService', () => {
       { text: '장보기', source: 'VOICE' },
       expect.objectContaining({ headers: { 'Idempotency-Key': 'key-1' } }),
     );
-    expect(result).toMatchObject({ ok: true, value: { featureQuota: null, charged: false } });
+    expect(result).toMatchObject({ ok: true, value: { featureQuota: null, isCharged: false } });
   });
 
   it('응답이 계약과 다르면 내용 없이 매핑 실패를 남기고 ParseError를 던진다', async () => {

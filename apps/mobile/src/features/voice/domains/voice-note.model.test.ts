@@ -437,7 +437,7 @@ describe('withDigestResult', () => {
           { text: '시각 모름', startMs: null },
         ],
         featureQuota: null,
-        charged: true,
+        isCharged: true,
       },
       createPlanReviewDraft(emptyPlan),
     );
@@ -465,7 +465,7 @@ describe('withDigestResult', () => {
         summary: '요약',
         keyPoints: [],
         featureQuota: null,
-        charged: true,
+        isCharged: true,
       },
       createPlanReviewDraft(emptyPlan),
     );

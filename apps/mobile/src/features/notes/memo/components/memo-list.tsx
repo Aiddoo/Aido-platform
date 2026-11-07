@@ -57,7 +57,8 @@ export function MemoList() {
     isFetchNextPageError,
   } = useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const hasVoiceNotes = useVoiceNotes(me.id).length > 0;
+  const [voiceNotes] = useVoiceNotes(me.id);
+  const hasVoiceNotes = voiceNotes.length > 0;
   const windowSizeClass = useWindowSizeClass();
 
   if (memos.length === 0) {

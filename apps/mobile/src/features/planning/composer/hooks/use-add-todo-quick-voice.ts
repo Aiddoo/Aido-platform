@@ -232,12 +232,12 @@ function useQuickPlanRequest({ aiConsent, onExit }: UseQuickPlanRequestOptions) 
     planAbortRef.current = abortController;
 
     try {
-      const { plan, charged } = await planMutation.mutateAsync({
+      const { plan, isCharged } = await planMutation.mutateAsync({
         ...request,
         signal: abortController.signal,
       });
       planRequestRef.current = null;
-      return { plan, isCharged: charged };
+      return { plan, isCharged };
     } catch (error) {
       planRequestRef.current = PlanRequestPolicy.getRequestToRetry(request, error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {

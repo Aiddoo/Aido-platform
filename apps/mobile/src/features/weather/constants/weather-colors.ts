@@ -20,8 +20,6 @@ export const ALERT_SURFACE_COLORS = {
 export const ALERT_GLYPH_COLORS = { triangle: '#FFC48F', mark: '#3A2210' } as const;
 
 /** 강수 확률 숫자 */
-/** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. 시간별·일별 예보가 함께 쓴다. */
-export const VISIBLE_PRECIPITATION_CHANCE = 20;
 export const PRECIPITATION_CHANCE_TEXT_CLASS = 'text-[#8FD0FF]';
 /** 할 일이 있는 날 점 */
 export const TODO_DOT_COLOR = '#FF8A65';

@@ -154,7 +154,7 @@ function MyFeed() {
     isAuthenticated: status === 'authenticated',
     hasPendingNavigation,
   });
-  const weatherIntroduction = useWeatherIntroduction({ isStable });
+  const [weatherIntroduction] = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useIsInviteAvailable();
   const whatsNew = useWhatsNewFeed({
     isStable,

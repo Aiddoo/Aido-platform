@@ -320,6 +320,8 @@
     "range": "{{start}}–{{end}}",
     "more_one": "{{count}} more",
     "more_other": "{{count}} more",
+    "hiddenCount_one": "and {{count}} more",
+    "hiddenCount_other": "and {{count}} more",
     "stormy": {
       "title": "Lightning is possible during your to-dos",
       "body": "Lightning risk {{range}}. Shift the time or do it indoors",
@@ -385,6 +387,7 @@
     "moved_one": "Moved {{count}} to-do",
     "moved_other": "Moved {{count}} to-dos",
     "undo": "Undo",
+    "expired": "That time has passed, so I picked another one. Check it and tap again",
     "undone": "Moved back to the original time",
     "chartLabel": "Hourly chance of precipitation for the rest of today",
     "todoNotFound": "Couldn't find the to-dos to move",

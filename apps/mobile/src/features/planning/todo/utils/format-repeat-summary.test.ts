@@ -33,7 +33,7 @@ describe('formatRepeatCadence', () => {
 
   it.each(CASES)('%j → %s', (repeat, expected) => {
     // When
-    const label = formatRepeatCadence(repeat);
+    const label = formatRepeatCadence(repeat, 'ko');
 
     // Then
     expect(label).toBe(expected);

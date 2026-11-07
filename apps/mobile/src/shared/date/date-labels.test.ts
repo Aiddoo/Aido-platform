@@ -20,7 +20,7 @@ describe('formatDaysOfWeek', () => {
     const days: DayOfWeek[] = ['FRI', 'MON', 'WED'];
 
     // When
-    const result = formatDaysOfWeek(days);
+    const result = formatDaysOfWeek(days, 'ko');
 
     // Then
     expect(result).toBe('월, 수, 금');
@@ -31,7 +31,7 @@ describe('formatDaysOfWeek', () => {
     const days: DayOfWeek[] = ['TUE'];
 
     // When
-    const result = formatDaysOfWeek(days);
+    const result = formatDaysOfWeek(days, 'ko');
 
     // Then
     expect(result).toBe('화');
@@ -42,7 +42,7 @@ describe('formatDaysOfWeek', () => {
     const days: DayOfWeek[] = ['SUN', 'SAT', 'FRI', 'THU', 'WED', 'TUE', 'MON'];
 
     // When
-    const result = formatDaysOfWeek(days);
+    const result = formatDaysOfWeek(days, 'ko');
 
     // Then
     expect(result).toBe('일, 월, 화, 수, 목, 금, 토');
@@ -53,7 +53,7 @@ describe('formatDaysOfWeek', () => {
     const days: DayOfWeek[] = [];
 
     // When
-    const result = formatDaysOfWeek(days);
+    const result = formatDaysOfWeek(days, 'ko');
 
     // Then
     expect(result).toBe('');
@@ -64,7 +64,7 @@ describe('formatDaysOfWeek', () => {
     const days: DayOfWeek[] = ['FRI', 'MON'];
 
     // When
-    formatDaysOfWeek(days);
+    formatDaysOfWeek(days, 'ko');
 
     // Then
     expect(days).toEqual(['FRI', 'MON']);
@@ -82,7 +82,7 @@ describe('getDayOfWeekLabel', () => {
     ['SUN', '일'],
   ] as const)('%s 요일은 %s 한 글자로 쓴다', (day, expected) => {
     // When
-    const result = getDayOfWeekLabel(day);
+    const result = getDayOfWeekLabel(day, 'ko');
 
     // Then
     expect(result).toBe(expected);
@@ -106,8 +106,8 @@ describe('로케일 인지 포맷 (i18n)', () => {
 
     // Then
     expect(getWeekdayLabels()).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
-    expect(formatDaysOfWeek(['MON', 'WED'])).toBe('Mon, Wed');
-    expect(getDayOfWeekLabel('SAT')).toBe('Sat');
+    expect(formatDaysOfWeek(['MON', 'WED'], 'en')).toBe('Mon, Wed');
+    expect(getDayOfWeekLabel('SAT', 'en')).toBe('Sat');
   });
 
   it('요일 라벨은 넘겨받은 언어로 만든다', () => {

@@ -17,10 +17,6 @@ export function useLocationDateFormat(timeZone: string): DateFormatContext {
 export function useFormatLocalTime(timeZone: string, now: Instant): (time: string) => string {
   const { t } = useTranslation('weather');
   const { timeZone: deviceTimeZone } = useDateFormatContext();
-  const isDifferent = WeatherReportPolicy.isDifferentWallClock(
-    { location: { timezone: timeZone } },
-    deviceTimeZone,
-    now,
-  );
+  const isDifferent = WeatherReportPolicy.isDifferentWallClock(timeZone, deviceTimeZone, now);
   return (time) => (isDifferent ? t('localTime', { time }) : time);
 }

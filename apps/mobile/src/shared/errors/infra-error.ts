@@ -10,11 +10,12 @@ import { t } from '@src/shared/i18n';
  * UI에서 개별 처리하지 않고 ErrorBoundary로 전파됨
  */
 export abstract class InfraError extends Error {
-  override readonly name = 'InfraError';
+  abstract override readonly name: string;
   abstract readonly statusCode: number | null;
 }
 
 export class NetworkError extends InfraError {
+  override readonly name = 'NetworkError';
   readonly statusCode = null;
 
   constructor() {
@@ -23,6 +24,7 @@ export class NetworkError extends InfraError {
 }
 
 export class TimeoutError extends InfraError {
+  override readonly name = 'TimeoutError';
   readonly statusCode = 504;
 
   constructor() {
@@ -31,6 +33,7 @@ export class TimeoutError extends InfraError {
 }
 
 export class ServerError extends InfraError {
+  override readonly name = 'ServerError';
   readonly statusCode: number;
   /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
   readonly requestId: string | null;
@@ -43,6 +46,7 @@ export class ServerError extends InfraError {
 }
 
 export class ParseError extends InfraError {
+  override readonly name = 'ParseError';
   readonly statusCode = null;
 
   constructor(message = t('common:infraErrors.invalidResponse')) {

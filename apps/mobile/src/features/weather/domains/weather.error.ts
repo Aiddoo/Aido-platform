@@ -1,11 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import {
-  type ApiError,
-  isApiError,
-  NetworkError,
-  ServerError,
-  TimeoutError,
-} from '@src/shared/errors';
+import { isApiError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 
 /** 클라이언트가 판단한 날씨 오류 사유. 오류 보고의 errorCode로만 쓴다. */
 export const WeatherErrorCode = {
@@ -17,11 +11,6 @@ const SERVICE_UNAVAILABLE_STATUS = 503;
 /** 서버에 등록한 위치가 없을 때(WEATHER_1902)는 다시 시도 대신 위치 등록을 안내한다. */
 export function isLocationNotRegisteredError(error: unknown): boolean {
   return isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902);
-}
-
-/** 위치 저장을 서버가 거절한 오류. 서버가 준 문구를 그대로 보여 준다. */
-export function isLocationUpdateRejectedError(error: unknown): error is ApiError {
-  return isApiError(error);
 }
 
 /** 공급자 장애(WEATHER_1901)는 503이라 HTTP 클라이언트가 ServerError로 던진다. */

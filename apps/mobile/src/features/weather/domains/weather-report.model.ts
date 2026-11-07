@@ -195,7 +195,8 @@ function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): str
   return toDateKey(now, report.location.timezone);
 }
 
-function findTodayForecast(
+/** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
+function getTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
   now: Instant,
 ): DailyForecastEntry | null {
@@ -224,7 +225,7 @@ type SunEvents =
  * 일출·일몰이 모두 없으면 극지의 백야·극야다. 둘을 가르는 값은 계약에 없으므로 지금 낮인지로 정한다.
  * 하나만 없으면(해가 뜨기만 하거나 지기만 하는 날) 있는 쪽만 보여 준다.
  */
-function getSunEvents(day: DailyForecastEntry, isDaylight: boolean): SunEvents {
+function getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boolean }): SunEvents {
   if (day.sunrise == null && day.sunset == null) {
     return { kind: isDaylight ? 'polarDay' : 'polarNight' };
   }
@@ -235,12 +236,8 @@ function getSunEvents(day: DailyForecastEntry, isDaylight: boolean): SunEvents {
  * 날씨 시각은 위치 시간대로 보여 준다. 지금 그 벽시계가 기기와 다를 때만 '현지' 시각임을 밝힌다.
  * 서울·도쿄처럼 이름만 다르고 오프셋이 같으면 다르지 않다.
  */
-function isDifferentWallClock(
-  report: { location: Pick<WeatherReport['location'], 'timezone'> },
-  deviceTimeZone: string,
-  now: Instant,
-): boolean {
-  return !hasSameWallClock(now, report.location.timezone, deviceTimeZone);
+function isDifferentWallClock(timeZone: string, deviceTimeZone: string, now: Instant): boolean {
+  return !hasSameWallClock(now, timeZone, deviceTimeZone);
 }
 
 export const WeatherReportPolicy = {
@@ -254,7 +251,7 @@ export const WeatherReportPolicy = {
   isReportStale,
   isNowcastExpired,
   getTodayKey,
-  findTodayForecast,
+  getTodayOrFirstForecast,
   getActiveAlerts,
   isAlertInEffect,
   getSunEvents,

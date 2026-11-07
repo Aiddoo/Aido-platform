@@ -122,7 +122,7 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   const skies = hours.slice(0, SKY_RANGE_HOURS).map((hour) => toHourlySky(hour.condition));
   const [from] = skies;
   const index = skies.findIndex(
-    (sky, position) => position > 0 && sky !== from && (skies[position + 1] ?? sky) === sky,
+    (sky, position) => position > 0 && sky !== from && skies[position + 1] === sky,
   );
   const hour = hours[index];
   const to = skies[index];
@@ -136,7 +136,7 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
  * 시간별 카드 맨 위 한 문장의 재료. 하루 안의 비·눈을 먼저 말하고, 없으면 하늘 변화, 그것도 없으면
  * 하늘과 기온 정점을 말한다. 문장은 화면이 i18n 키로 만든다.
  */
-function summarizeHourly(
+function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,
 ): HourlySummary | null {
@@ -187,5 +187,5 @@ function summarizeHourly(
 }
 
 export const WeatherHourlyPolicy = {
-  summarizeHourly,
+  getHourlySummary,
 } as const;

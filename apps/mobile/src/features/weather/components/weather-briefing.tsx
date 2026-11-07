@@ -16,8 +16,10 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   ArrowRightIcon,
+  Box,
   Button,
   HStack,
   MoreIcon,
@@ -56,10 +58,8 @@ import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 
-/** 앱 글자 크기가 가장 클 때(1.25배)는 칩을 제목 아래로 내린다. */
-const STACKED_CHIP_FONT_SCALE_RATIO = 1.25;
 const MORE_CHEVRON_SIZE = 13;
-/** 영향이 큰 할 일만 보이고 나머지는 시트에서 본다. */
+/** 영향이 큰 할 일만 보인다. 옮기기 시트가 있는 브리핑은 나머지를 시트에서 보고, 없으면 개수만 알린다. */
 const VISIBLE_TODO_LIMIT = 3;
 
 type RescheduleAction = Extract<BriefingAction, { kind: 'reschedule' }>;
@@ -144,7 +144,7 @@ WeatherBriefing.Contents = function Contents({
     timeZone: dateFormat.timeZone,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
-    formatDegrees: (celsius) => formatTemperature(celsius, unit),
+    formatTemperature: (celsius) => formatTemperature(celsius, unit),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
   });
   const visibleRows = view.rows.slice(0, VISIBLE_TODO_LIMIT);
@@ -192,10 +192,14 @@ WeatherBriefing.Contents = function Contents({
                 <WeatherBriefing.Item row={row} timeFormat={timeFormat} />
               </Fragment>
             ))}
-            {hiddenCount > 0 && action?.kind === 'reschedule' && (
+            {hiddenCount > 0 && (
               <>
                 <Separator className="bg-on-sky/[0.14]" />
-                <WeatherBriefing.More count={hiddenCount} action={action} />
+                {action?.kind === 'reschedule' ? (
+                  <WeatherBriefing.More count={hiddenCount} action={action} />
+                ) : (
+                  <WeatherBriefing.HiddenCount count={hiddenCount} />
+                )}
               </>
             )}
           </VStack>
@@ -235,7 +239,8 @@ WeatherBriefing.Item = function Item({
   const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
-  const isChipStacked = useFontScaleRatio() >= STACKED_CHIP_FONT_SCALE_RATIO;
+  // 앱 글자 크기가 가장 클 때는 칩을 제목 아래로 내린다
+  const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
   const time = formatClockTime(todo.scheduledAt, timeFormat, dateFormat);
   const advice = translate(row.advice);
@@ -355,6 +360,18 @@ WeatherBriefing.More = function More({
   );
 };
 
+/** 옮기기 시트가 없는 브리핑은 보이지 않는 할 일의 개수만 글자로 알린다. */
+WeatherBriefing.HiddenCount = function HiddenCount({ count }: { count: number }) {
+  const { t } = useTranslation('weather');
+  return (
+    <HStack align="center" className="min-h-12">
+      <Text size="b4" weight="medium" className="text-on-sky/[0.78]">
+        {t('briefing.hiddenCount', { count })}
+      </Text>
+    </HStack>
+  );
+};
+
 WeatherBriefing.RescheduleButton = function RescheduleButton({
   action,
 }: {
@@ -406,11 +423,19 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   );
 };
 
+/** 받은 뒤와 같은 자리를 잡는다. 제목 아래 머리글과 본문 줄이 있고 오른쪽에 고양이 자리가 있다. */
 WeatherBriefing.Loading = function Loading() {
   return (
-    <WeatherCard className="p-4">
+    <WeatherCard className="gap-0 p-4">
       <TextSkeleton size="b4" className="w-24 opacity-40" />
-      <TextSkeleton size="t3" className="w-full opacity-40" />
+      <Spacing size={10} />
+      <HStack gap={12} align="start">
+        <VStack flex={1} gap={6}>
+          <TextSkeleton size="t3" className="w-full opacity-40" />
+          <TextSkeleton size="b3" className="w-3/4 opacity-40" />
+        </VStack>
+        <Box className="-mt-1.5 -mr-1 size-[72px]" />
+      </HStack>
     </WeatherCard>
   );
 };

@@ -1,10 +1,10 @@
-import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import type {
   WeatherAirQualitySource,
   WeatherCondition,
   WeatherMoonPhase,
   WeatherPrecipitationType,
   WeatherPressureTrend,
+  WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
 
 import type { NextSunEvent } from '../domains/weather-detail.model';

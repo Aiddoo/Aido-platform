@@ -67,7 +67,7 @@ export function WeatherResult({
   );
 }
 
-type WeatherResultActionTone = 'primary' | 'light' | 'glass';
+type WeatherResultActionTone = 'primary' | 'light';
 
 interface WeatherResultActionProps extends Omit<
   ComponentProps<typeof Button>,
@@ -77,7 +77,7 @@ interface WeatherResultActionProps extends Omit<
   children: string;
 }
 
-/** 시안의 세 버튼 면: 주 동작은 코랄, 다시 시도는 밝은 면, 보조 동작은 하늘 위 유리 면. */
+/** 시안의 버튼 면: 주 동작은 코랄, 다시 시도는 밝은 면. */
 WeatherResult.Action = function Action({
   tone,
   children,
@@ -91,7 +91,6 @@ WeatherResult.Action = function Action({
         match(tone)
           .with('primary', () => '')
           .with('light', () => 'bg-on-sky/95')
-          .with('glass', () => 'bg-on-sky/15')
           .exhaustive(),
         className,
       )}

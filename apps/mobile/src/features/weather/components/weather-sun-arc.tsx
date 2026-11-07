@@ -5,16 +5,9 @@ import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { SUN_COLORS } from '../constants/weather-colors';
 import { useIsWeatherSceneRunning } from '../hooks/use-is-weather-scene-running';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
-import { SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
+import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import type { DialPoint } from '../utils/weather-dial.geometry';
 
-/** 시안의 해 궤적 path. 낮 구간은 밝게, 밤 구간은 흐리게 긋는다. */
-const SUN_ARC_PATHS = {
-  dayFill: 'M58 70 C100 70 130 14 163 14 C196 14 226 70 268 70z',
-  nightBefore: 'M0 84 C30 84 40 92 58 70',
-  day: 'M58 70 C100 70 130 14 163 14 C196 14 226 70 268 70',
-  nightAfter: 'M268 70 C286 92 296 84 326 84',
-} as const;
 const SUN_DOT_SIZE = 14;
 const NIGHT_SUN_DOT_SIZE = 10;
 const SUN_DOT_RING = 2;
@@ -92,8 +85,8 @@ export function WeatherSunArc({
         <Line
           x1={0}
           x2={SUN_ARC_VIEWBOX.width}
-          y1={70}
-          y2={70}
+          y1={SUN_ARC_HORIZON_Y}
+          y2={SUN_ARC_HORIZON_Y}
           stroke={horizonColor}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"

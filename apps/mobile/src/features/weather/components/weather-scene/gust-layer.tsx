@@ -129,7 +129,7 @@ export function GustLayer({ width, height, isLowEndDevice, time }: GustLayerProp
 
 GustLayer.Leaves = function Leaves({ width, height, isLowEndDevice, time }: GustLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('leaf', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('leaf', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, LEAF_SEED);
   const { leaf } = PARTICLE_SPRITES;
   const sprites = range(count).map(() => Skia.XYWHRect(leaf.x, leaf.y, leaf.width, leaf.height));

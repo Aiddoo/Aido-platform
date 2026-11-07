@@ -27,6 +27,7 @@ export const ERROR_REPORT_FEATURES = [
   'notification',
   'query_cache',
   'root_error_boundary',
+  'share_view_capture',
   'store_review',
   'subscription',
   'support_mail',

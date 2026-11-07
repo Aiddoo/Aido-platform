@@ -326,13 +326,13 @@ export function useVoiceCaptureSession({
     };
   }, [speechRecognizer]);
 
-  useTimeoutWhile(
-    state.status === 'listening',
-    () =>
+  useTimeoutWhile({
+    isActive: state.status === 'listening',
+    getDelayMs: () =>
       maxSeconds == null
         ? null
         : VoiceCapturePolicy.getRemainingCaptureMs(stateRef.current, maxSeconds, Date.now()),
-    () => {
+    onTimeout: () => {
       if (onLimitReached == null) {
         finish();
         return;
@@ -340,8 +340,8 @@ export function useVoiceCaptureSession({
       pause('limit');
       onLimitReached();
     },
-    maxSeconds,
-  );
+    restartKey: maxSeconds,
+  });
 
   const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
   const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
@@ -372,15 +372,15 @@ export function useVoiceCaptureSession({
   }, [isPlanning, dispatch]);
 
   // 시작 신호가 오지 않으면 듣는 중처럼 멈춰 있지 않고 글자를 든 실패 상태로 간다
-  useTimeoutWhile(
-    state.status === 'preparing',
-    () => VOICE_PREPARING_TIMEOUT_MS,
-    () => {
+  useTimeoutWhile({
+    isActive: state.status === 'preparing',
+    getDelayMs: () => VOICE_PREPARING_TIMEOUT_MS,
+    onTimeout: () => {
       speechRecognizer.abort();
       updateLink({ type: 'ended' });
       handleError('client');
     },
-  );
+  });
 
   /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
   const begin = async ({
@@ -597,12 +597,17 @@ function useSilenceAutoFinish({
 }
 
 /** `isActive`인 동안 시간이 지나면 한 번 부른다. `restartKey`가 바뀌면 다시 잰다. 지연이 null이면 걸지 않는다 */
-function useTimeoutWhile(
-  isActive: boolean,
-  getDelayMs: () => number | null,
-  onTimeout: () => void,
-  restartKey?: number | null,
-) {
+function useTimeoutWhile({
+  isActive,
+  getDelayMs,
+  onTimeout,
+  restartKey,
+}: {
+  isActive: boolean;
+  getDelayMs: () => number | null;
+  onTimeout: () => void;
+  restartKey?: number | null;
+}) {
   const readDelayMs = useEffectEvent(getDelayMs);
   const handleTimeout = useEffectEvent(onTimeout);
 

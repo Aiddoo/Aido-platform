@@ -29,10 +29,14 @@ const SHOOTING_STAR_DURATION_SECONDS = 0.9;
 export const MAX_STARS = 110;
 /** 해와 달은 헤더 버튼 줄 바로 아래, 지명 오른쪽(화면 폭 90%, 높이 11.8%)에 둔다. */
 const CELESTIAL_POSITION = { x: 0.9, y: 0.118 } as const;
-/** 헤더가 높은 기기에서도 달(가장 큰 원반, 폭의 5.8%)이 헤더 버튼에 가리지 않도록 띄우는 거리 */
-const CELESTIAL_HEADER_CLEARANCE = 0.058 * 1.6;
+/** 달(가장 큰 원반)의 지름이 기준 폭에서 차지하는 비율 */
+const MOON_DISC_WIDTH_RATIO = 0.058;
+/** 달 지름의 이 배수만큼 헤더 아래로 띄워 헤더가 높은 기기에서도 헤더 버튼에 가리지 않게 한다 */
+const MOON_HEADER_CLEARANCE_DISCS = 1.6;
+const CELESTIAL_HEADER_CLEARANCE = MOON_DISC_WIDTH_RATIO * MOON_HEADER_CLEARANCE_DISCS;
 export const CLOUD_DEPTH_LAYERS = 3;
 export const NO_LIGHTNING_WINDOW = -1;
+const NO_SHOOTING_STAR = -1;
 
 /** 기준 화면(390×844)에서 밀도 1일 때 개수. 넓은 화면은 넓이만큼 늘려 밀도를 유지하되 기기 등급별 상한을 넘지 않는다. */
 export const PARTICLE_BUDGETS = {
@@ -102,9 +106,11 @@ function hasArea(screen: { width: number; height: number }): boolean {
 
 export function getParticleCount(
   kind: ParticleBudgetKind,
-  density: number,
-  screen: { width: number; height: number },
-  isLowEndDevice: boolean,
+  {
+    density,
+    screen,
+    isLowEndDevice,
+  }: { density: number; screen: { width: number; height: number }; isLowEndDevice: boolean },
 ): number {
   if (!(density > 0) || !hasArea(screen)) {
     return 0;
@@ -116,10 +122,12 @@ export function getParticleCount(
 
 export function getAmbientCount(
   kind: AmbientBudgetKind,
-  screen: { width: number; height: number },
-  isLowEndDevice: boolean,
+  {
+    screen,
+    isLowEndDevice,
+  }: { screen: { width: number; height: number }; isLowEndDevice: boolean },
 ): number {
-  return getParticleCount(kind, 1, screen, isLowEndDevice);
+  return getParticleCount(kind, { density: 1, screen, isLowEndDevice });
 }
 
 export function getSceneReferenceWidth(width: number): number {
@@ -261,7 +269,7 @@ export function getLightningWindow(time: number): number {
   return Math.floor(time / LIGHTNING_WINDOW_SECONDS);
 }
 
-/** 별똥별은 7초 구간마다 한 번, 구간 안의 임의 시각에 0.9초 동안 지나간다. 지나가지 않으면 -1이다. */
+/** 별똥별은 7초 구간마다 한 번, 구간 안의 임의 시각에 0.9초 동안 지나간다. 지나가지 않으면 `NO_SHOOTING_STAR`다. */
 export function getShootingStarProgress(time: number): number {
   'worklet';
   const windowIndex = Math.floor(time / SHOOTING_STAR_WINDOW_SECONDS);
@@ -269,7 +277,7 @@ export function getShootingStarProgress(time: number): number {
   const start = hashToUnit(windowIndex * 3) * usable;
   const progress =
     (time - windowIndex * SHOOTING_STAR_WINDOW_SECONDS - start) / SHOOTING_STAR_DURATION_SECONDS;
-  return 0 <= progress && progress < 1 ? progress : -1;
+  return 0 <= progress && progress < 1 ? progress : NO_SHOOTING_STAR;
 }
 
 export function getShootingStarWindow(time: number): number {

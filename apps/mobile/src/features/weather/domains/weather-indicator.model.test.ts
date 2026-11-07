@@ -79,7 +79,7 @@ describe('toCompassDirection', () => {
   });
 });
 
-describe('compareFeelsLike', () => {
+describe('getFeelsLikeComparison', () => {
   it.each([
     [12, 9.9, 'colder'],
     [12, 10.1, 'similar'],
@@ -91,7 +91,7 @@ describe('compareFeelsLike', () => {
       const { current } = createWeatherReport();
 
       // When
-      const comparison = WeatherIndicatorPolicy.compareFeelsLike({
+      const comparison = WeatherIndicatorPolicy.getFeelsLikeComparison({
         ...current,
         temperature,
         apparentTemperature,

@@ -71,10 +71,10 @@ describe('getReadingRevision', () => {
   });
 });
 
-describe('resolveLocationStatus', () => {
+describe('getLocationStatus', () => {
   it('위치를 처음 읽는 중이면 확인 중 상태다', () => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(undefined, { hasFailed: false });
+    const status = WeatherLocationPolicy.getLocationStatus(undefined, { hasFailed: false });
 
     // Then
     expect(status).toEqual({ status: 'checking' });
@@ -82,7 +82,7 @@ describe('resolveLocationStatus', () => {
 
   it('위치 등록 요청이 실패하면 위치를 찾지 못한 상태다', () => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(undefined, { hasFailed: true });
+    const status = WeatherLocationPolicy.getLocationStatus(undefined, { hasFailed: true });
 
     // Then
     expect(status).toEqual({ status: 'unavailable' });
@@ -90,7 +90,7 @@ describe('resolveLocationStatus', () => {
 
   it('권한은 있지만 좌표를 얻지 못하면 위치를 찾지 못한 상태다', () => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(
+    const status = WeatherLocationPolicy.getLocationStatus(
       { status: 'unavailable', revision: 0 },
       { hasFailed: false },
     );
@@ -101,7 +101,7 @@ describe('resolveLocationStatus', () => {
 
   it('등록을 마치면 지명과 함께 준비 상태가 된다', () => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(
+    const status = WeatherLocationPolicy.getLocationStatus(
       {
         status: 'located',
         registered: { ...SEOUL, timezone: 'Asia/Seoul' },
@@ -123,7 +123,7 @@ describe('resolveLocationStatus', () => {
 
   it('권한을 확인하지 못해 직전 위치를 쓰는 중이면 마지막 위치임을 알린다', () => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(
+    const status = WeatherLocationPolicy.getLocationStatus(
       {
         status: 'located',
         registered: { ...SEOUL, timezone: 'Asia/Seoul' },
@@ -141,10 +141,7 @@ describe('resolveLocationStatus', () => {
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {
     // When
-    const status = WeatherLocationPolicy.resolveLocationStatus(
-      { status: state },
-      { hasFailed: false },
-    );
+    const status = WeatherLocationPolicy.getLocationStatus({ status: state }, { hasFailed: false });
 
     // Then
     expect(status).toEqual({ status: state });

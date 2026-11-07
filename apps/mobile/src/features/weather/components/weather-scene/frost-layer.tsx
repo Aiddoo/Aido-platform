@@ -138,7 +138,7 @@ FrostLayer.Spindrift = function Spindrift({
   time,
 }: FrostLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('spindrift', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('spindrift', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, SPINDRIFT_SEED);
   const { dot } = PARTICLE_SPRITES;
   const [minDepth, maxDepth] = SPINDRIFT.depth;
@@ -191,7 +191,7 @@ FrostLayer.Spindrift = function Spindrift({
 
 FrostLayer.Crystals = function Crystals({ width, height, isLowEndDevice, time }: FrostLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('iceCrystal', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('iceCrystal', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, CRYSTAL_SEED);
   const { crystal, dot } = PARTICLE_SPRITES;
   const crystalSprites = range(count).map(() =>

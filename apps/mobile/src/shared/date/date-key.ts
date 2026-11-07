@@ -14,20 +14,23 @@ function parseDateKey(dateKey: string) {
   return dayjs.utc(dateKey);
 }
 
+/** 잘못된 키에서 나온 날짜는 'Invalid Date' 글자 대신 빈 문자열이다. */
+function formatDateKey(date: dayjs.Dayjs): string {
+  return date.isValid() ? date.format(DATE_KEY_FORMAT) : '';
+}
+
 /** YYYY-MM-DD에 달력 일수를 더한다 (윤년·월말·연말 포함, 시간대 무관). */
 export function addDaysToDateKey(dateKey: string, days: number): string {
-  const shifted = parseDateKey(dateKey).add(days, 'day');
-  return shifted.isValid() ? shifted.format(DATE_KEY_FORMAT) : '';
+  return formatDateKey(parseDateKey(dateKey).add(days, 'day'));
 }
 
 /** YYYY-MM-DD에 달 수를 더한다. 말일을 넘기면 그 달의 마지막 날로 맞춘다 (1월 31일 + 1달 = 2월 28일). */
 export function addMonthsToDateKey(dateKey: string, months: number): string {
-  const shifted = parseDateKey(dateKey).add(months, 'month');
-  return shifted.isValid() ? shifted.format(DATE_KEY_FORMAT) : '';
+  return formatDateKey(parseDateKey(dateKey).add(months, 'month'));
 }
 
 export function getMonthStartDateKey(dateKey: string): string {
-  return parseDateKey(dateKey).startOf('month').format(DATE_KEY_FORMAT);
+  return formatDateKey(parseDateKey(dateKey).startOf('month'));
 }
 
 /** 두 YYYY-MM-DD의 달 차이 (to - from). 일은 보지 않고 달만 센다. */
@@ -47,7 +50,7 @@ export function getDayOfWeek(dateKey: string): number {
 
 /** 그 날이 속한 월요일 시작 주의 월요일. 일요일은 앞선 월요일로 간다. */
 export function getMondayOfDateKey(dateKey: string): string {
-  return parseDateKey(dateKey).isoWeekday(MONDAY).format(DATE_KEY_FORMAT);
+  return formatDateKey(parseDateKey(dateKey).isoWeekday(MONDAY));
 }
 
 export function getDayOfMonth(dateKey: string): number {
@@ -63,7 +66,7 @@ export function getDaysInDateKeyMonth(dateKey: string): number {
 }
 
 export function getMonthEndDateKey(dateKey: string): string {
-  return parseDateKey(dateKey).endOf('month').format(DATE_KEY_FORMAT);
+  return formatDateKey(parseDateKey(dateKey).endOf('month'));
 }
 
 export function isSameMonthDateKey(first: string, second: string): boolean {

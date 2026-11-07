@@ -1,6 +1,6 @@
-import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Box, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -8,8 +8,6 @@ import type { LayoutChangeEvent } from 'react-native';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon, type WeatherCardGlyph } from './weather-icon';
 
-/** 앱 글자 크기가 가장 클 때(1.25배)는 두 칸에 값이 잘리므로 한 칸으로 쌓는다. */
-const SINGLE_COLUMN_FONT_SCALE_RATIO = 1.25;
 /** 태블릿·펼친 폴더블처럼 부모 폭이 넓으면 타일을 네 칸으로 펼쳐 시안 비율을 지킨다. */
 const FOUR_COLUMN_MIN_WIDTH = 760;
 export const TILE_GRID_GAP = 12;
@@ -31,7 +29,8 @@ interface TileLayout {
 
 /** 애플 날씨처럼 모든 타일을 같은 크기로 맞춘다. 칸 폭은 부모 폭과 열 수로 구한다. */
 export function useTileLayout(): TileLayout {
-  const isLargeText = useFontScaleRatio() >= SINGLE_COLUMN_FONT_SCALE_RATIO;
+  // 앱 글자 크기가 가장 클 때는 두 칸에 값이 잘리므로 한 칸으로 쌓는다
+  const isLargeText = useFontScale().fontScale === 'xlarge';
   const [width, setWidth] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
   const wideColumns = width >= FOUR_COLUMN_MIN_WIDTH ? 4 : 2;
@@ -92,7 +91,7 @@ interface WeatherTextTileProps {
   title: string;
   minHeight: number;
   value: string;
-  sub: string;
+  subtitle: string;
   note: string;
   children?: ReactNode;
 }
@@ -102,7 +101,7 @@ export function WeatherTextTile({
   title,
   minHeight,
   value,
-  sub,
+  subtitle,
   note,
   children,
 }: WeatherTextTileProps) {
@@ -118,7 +117,7 @@ export function WeatherTextTile({
       note={note}
       accessibilityLabel={t('details.tile', {
         title,
-        value: t('details.tileValue', { value, sub }),
+        value: t('details.tileValue', { value, sub: subtitle }),
         note,
       })}
     >
@@ -141,7 +140,7 @@ export function WeatherTextTile({
           minimumFontScale={subMinScale}
           className="leading-[23px]"
         >
-          {sub}
+          {subtitle}
         </Text>
         {children}
       </VStack>

@@ -172,7 +172,7 @@ HeatLayer.Embers = function Embers({
   time,
 }: HeatAreaProps & { isLowEndDevice: boolean }) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('ember', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('ember', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, EMBER_SEED);
   const { warm } = PARTICLE_SPRITES;
   const sprites = range(count).map(() => Skia.XYWHRect(warm.x, warm.y, warm.width, warm.height));

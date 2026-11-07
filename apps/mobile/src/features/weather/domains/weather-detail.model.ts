@@ -34,7 +34,7 @@ function getSunscreenWindow(
 const NEXT_DAY_HOURS = 24;
 
 /** 지금 시간부터 24시간 동안의 예상 강수량(mm). 시간별 예보가 없으면 null이다. */
-function sumNextDayPrecipitation(
+function calculateNextDayPrecipitation(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): number | null {
@@ -107,7 +107,7 @@ function findNextFullMoon(daily: readonly DailyForecastEntry[], dateKey: string)
 
 export const WeatherDetailPolicy = {
   getSunscreenWindow,
-  sumNextDayPrecipitation,
+  calculateNextDayPrecipitation,
   getNextSunEvent,
   getDaylightDuration,
   findDayAfter,

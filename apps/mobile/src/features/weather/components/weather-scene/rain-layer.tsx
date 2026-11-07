@@ -82,7 +82,7 @@ export function RainLayer({
 }: RainLayerProps) {
   const texture = useParticleTexture();
   const style = RAIN_VARIANT_STYLES[variant];
-  const count = getParticleCount(variant, density, { width, height }, isLowEndDevice);
+  const count = getParticleCount(variant, { density, screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, style.seed);
   const depths = range(count).map(
     (index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,

@@ -10,10 +10,10 @@ function useStoredVoiceNotes(accountId: string) {
 
 export function useVoiceNotes(accountId: string) {
   const notes = useStoredVoiceNotes(accountId);
-  return VoiceNotePolicy.getListedNotes(notes);
+  return [VoiceNotePolicy.getListedNotes(notes)] as const;
 }
 
 export function useVoiceNote(accountId: string, draftId: string) {
   const notes = useStoredVoiceNotes(accountId);
-  return notes.find((note) => note.draftId === draftId) ?? null;
+  return [notes.find((note) => note.draftId === draftId) ?? null] as const;
 }

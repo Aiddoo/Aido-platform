@@ -23,12 +23,9 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import Animated, { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import {
-  PRECIPITATION_CHANCE_TEXT_CLASS,
-  TODO_DOT_COLOR,
-  VISIBLE_PRECIPITATION_CHANCE,
-} from '../constants/weather-colors';
+import { PRECIPITATION_CHANCE_TEXT_CLASS, TODO_DOT_COLOR } from '../constants/weather-colors';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
+import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';

@@ -276,6 +276,9 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
     .exhaustive();
 }
 
+/** 장면에 담는 위상은 1/200 단위로 맞춘다. 날씨가 같은데 다시 받을 때마다 값이 달라져 장면이 바뀐 것으로 보이지 않게 한다. */
+const MOON_PHASE_STEPS = 200;
+
 /** 기준 삭에서 지난 날수를 삭망월로 나눈 나머지로 그 시각의 위상(0~1)을 구한다. */
 export function getMoonPhase(observedAt: Instant): number {
   const days = (toEpochMs(observedAt) - KNOWN_NEW_MOON_MS) / DAY_MS;
@@ -342,19 +345,19 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const density = isDry
     ? 0
     : Math.max(profile.minDensity, normalizePrecipitationIntensity(input.precipitationIntensity));
-  const atmosphere = {
+  const visibleSky = {
     isDaylight: input.isDaylight,
     clouds: normalizeCloudCover(input.cloudCover, profile.clouds),
     fog: profile.fog,
   };
-  const sky: OpenSky = { ...atmosphere, isDry: isDry && !profile.lightning };
+  const sky: OpenSky = { ...visibleSky, isDry };
   const isNight = !input.isDaylight;
   const sun = resolveSun(sky, profile.sun);
   const moon = isNight && isSkyVisible(sky, MOON_MAX_CLOUDS);
 
   return {
     sky: input.isDaylight ? profile.sky.day : profile.sky.night,
-    ...atmosphere,
+    ...visibleSky,
     precipitation: {
       kind: profile.precipitation,
       density,
@@ -367,7 +370,7 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
     sun,
     lensFlare: profile.lensFlare && sun !== 'hidden',
     moon,
-    moonPhase: getMoonPhase(input.observedAt),
+    moonPhase: Math.round(getMoonPhase(input.observedAt) * MOON_PHASE_STEPS) / MOON_PHASE_STEPS,
     isSouthernHemisphere: input.latitude < 0,
     stars: isNight && isSkyVisible(sky, STARS_MAX_CLOUDS),
     shootingStars: moon && isSkyVisible(sky, SHOOTING_STARS_MAX_CLOUDS),

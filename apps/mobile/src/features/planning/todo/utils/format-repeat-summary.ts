@@ -1,5 +1,5 @@
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/date-format';
-import { formatDaysOfWeek } from '@src/shared/date/date-labels';
+import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
 import { t } from '@src/shared/i18n';
 import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -12,10 +12,13 @@ const SUMMARY_SEPARATOR = ' · ';
 
 export function formatRepeatCadence(
   repeat: TodoRepeat,
+  language: string,
   { weekdaySeparator = WEEKDAY_SEPARATOR }: { weekdaySeparator?: string } = {},
 ): string {
   const days =
-    repeat.frequency === 'WEEKLY' ? formatDaysOfWeek(repeat.weekdays, weekdaySeparator) : '';
+    repeat.frequency === 'WEEKLY'
+      ? formatDaysOfWeek(repeat.weekdays, language, weekdaySeparator)
+      : '';
 
   return match(TodoRepeatPolicy.getRepeatKind(repeat))
     .with('DAILY', () => t('todo:repeat.summary.DAILY'))
@@ -42,7 +45,8 @@ function formatEnd(end: TodoRepeatEnd, context: DateFormatContext): string | nul
 }
 
 export function formatRepeatSummary(repeat: TodoRepeat, context: DateFormatContext): string {
-  return compact([formatRepeatCadence(repeat), formatEnd(repeat.end, context)]).join(
-    SUMMARY_SEPARATOR,
-  );
+  return compact([
+    formatRepeatCadence(repeat, toCatalogLanguage(context)),
+    formatEnd(repeat.end, context),
+  ]).join(SUMMARY_SEPARATOR);
 }

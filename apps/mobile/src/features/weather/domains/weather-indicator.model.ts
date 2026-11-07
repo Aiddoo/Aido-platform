@@ -71,7 +71,7 @@ export type FeelsLikeComparison = 'colder' | 'similar' | 'warmer';
 /** 체감 온도와 실제 기온의 차이가 이 값(°C) 미만이면 비슷하다고 본다. */
 const FEELS_LIKE_SIMILAR_RANGE = 2;
 
-function compareFeelsLike(
+function getFeelsLikeComparison(
   current: Pick<CurrentWeather, 'temperature' | 'apparentTemperature'>,
 ): FeelsLikeComparison {
   const difference = current.apparentTemperature - current.temperature;
@@ -131,7 +131,7 @@ export const WeatherIndicatorPolicy = {
   getPollutantGrade,
   getUvLevel,
   toCompassDirection,
-  compareFeelsLike,
+  getFeelsLikeComparison,
   getVisibilityLevel,
   getCloudCoverLevel,
   getWindLevel,

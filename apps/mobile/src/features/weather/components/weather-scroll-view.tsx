@@ -12,6 +12,8 @@ import { refetchWeather } from '../queries/weather-cache';
 import { WeatherTopFade } from './weather-top-fade';
 
 const SCREEN_GUTTER = 16;
+/** 마지막 카드 아래 여백. 안전 영역과 `bottomInset`에 더한다. */
+const SCREEN_BOTTOM_PADDING = 24;
 /** 헤더 아래로 페이드가 이어지는 길이 */
 const TOP_FADE_EXTENT = 40;
 const IS_IOS = process.env.EXPO_OS === 'ios';
@@ -37,7 +39,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: IS_IOS ? 0 : headerHeight,
-          paddingBottom: insets.bottom + 24 + bottomInset,
+          paddingBottom: insets.bottom + SCREEN_BOTTOM_PADDING + bottomInset,
         }}
         refreshControl={
           <RefreshControl

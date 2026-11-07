@@ -200,7 +200,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
 }
 
 function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
-  const { t } = useTranslation('ai');
+  const { t, i18n } = useTranslation('ai');
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
@@ -213,7 +213,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
           return (
             <VStack key={item.day} align="center" gap={4}>
               <Text size="e2" shade={6}>
-                {getDayOfWeekLabel(item.day)}
+                {getDayOfWeekLabel(item.day, i18n.language)}
               </Text>
               <Box
                 className={cn(

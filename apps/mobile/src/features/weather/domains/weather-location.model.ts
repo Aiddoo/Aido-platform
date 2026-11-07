@@ -48,7 +48,7 @@ export type WeatherLocationStatus =
     };
 
 /** 권한은 있지만 위치를 읽지 못했거나 등록 요청이 실패하면 unavailable이다. */
-function resolveLocationStatus(
+function getLocationStatus(
   reading: LocationReading | undefined,
   { hasFailed }: { hasFailed: boolean },
 ): WeatherLocationStatus {
@@ -77,6 +77,6 @@ export const WeatherLocationPolicy = {
   shouldRelocate,
   getNextRevision,
   getReadingRevision,
-  resolveLocationStatus,
+  getLocationStatus,
   shouldFetchReport,
 } as const;

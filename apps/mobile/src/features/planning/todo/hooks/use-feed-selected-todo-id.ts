@@ -1,4 +1,4 @@
-import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
+import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when-compact';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { noop } from 'es-toolkit';
@@ -40,7 +40,7 @@ export function useFeedSelectedTodoId() {
 export function useFeedTodoDetailHandoff() {
   const [{ todoId: selectedTodoId, sort, comment }, setParams] = useRouteParams(feedParamsSchema);
 
-  useCompactDetailHandoff(selectedTodoId, (todoId) => {
+  useOpenDetailWhenCompact(selectedTodoId, (todoId) => {
     setParams(CLEARED_TODO_SELECTION);
     router.push({ pathname: '/todo/[todoId]', params: { todoId, sort, comment } });
   });

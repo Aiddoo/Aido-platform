@@ -13,7 +13,7 @@ import { maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
-import { isFrozenPrecipitation, isWetHour } from './weather-report.model';
+import { isFrozenPrecipitation, isWetHour, WeatherReportPolicy } from './weather-report.model';
 
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
@@ -23,7 +23,7 @@ const CHILLY_TEMPERATURE = WEATHER_BRIEFING_RULES.CHILLY_TEMPERATURE;
 const BEST_TIME_TOLERANCE = 1;
 /** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
-/** 새벽, 오전, 오후가 시작하는 시각(위치 시간대). 저녁은 EVENING_HOUR부터다. */
+/** 새벽, 오전, 오후가 시작하는 시각(기기 시간대. 위치 벽시계가 기기와 다르면 브리핑을 숨긴다). 저녁은 EVENING_HOUR부터다. */
 const MORNING_START_HOUR = 6;
 const AFTERNOON_START_HOUR = 12;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
@@ -294,21 +294,17 @@ function toClearBriefing(
   { now, timeZone }: BriefingClock,
 ): BriefingResult | null {
   const todayKey = toDateKey(now, timeZone);
-  const daylightHours = hourly.filter(
-    (hour) =>
-      toEpochMs(hour.startsAt) + HOUR_MS > toEpochMs(now) &&
-      hour.isDaylight &&
-      toDateKey(hour.startsAt, timeZone) === todayKey,
+  const daylightHours = WeatherReportPolicy.getUpcomingHours(hourly, now).filter(
+    (hour) => hour.isDaylight && toDateKey(hour.startsAt, timeZone) === todayKey,
   );
   if (daylightHours.length === 0 || daylightHours.some(isWetHour)) {
     return null;
   }
+  if (!daylightHours.every((hour) => CLEAR_CONDITIONS.includes(hour.condition))) {
+    return null;
+  }
   const best = maxBy(daylightHours, (hour) => hour.apparentTemperature);
-  if (
-    best == null ||
-    !CLEAR_CONDITIONS.includes(best.condition) ||
-    best.apparentTemperature >= HEAT_APPARENT_TEMPERATURE
-  ) {
+  if (best == null || best.apparentTemperature >= HEAT_APPARENT_TEMPERATURE) {
     return null;
   }
   const range = toHourRange(
@@ -372,11 +368,19 @@ function getWeatherBriefing(
   );
 }
 
-/** 추천 시간대 안에서 아직 시작하지 않은 첫 정시. 이미 모두 지났으면 제안하지 않는다. */
-function getSuggestedStartAt(range: HourRange, now: Instant): Instant | null {
-  const nextHour = Math.ceil(toEpochMs(now) / HOUR_MS) * HOUR_MS;
-  const startsAt = Math.max(toEpochMs(range.startsAt), nextHour);
-  return startsAt < toEpochMs(range.endsAt) ? fromEpochMs(startsAt) : null;
+/** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */
+function getSuggestedStartAt(
+  range: HourRange,
+  hourly: readonly HourlyForecastEntry[],
+  now: Instant,
+): Instant | null {
+  const next = hourly.find(
+    (hour) =>
+      toEpochMs(now) <= toEpochMs(hour.startsAt) &&
+      toEpochMs(range.startsAt) <= toEpochMs(hour.startsAt) &&
+      toEpochMs(hour.startsAt) < toEpochMs(range.endsAt),
+  );
+  return next?.startsAt ?? null;
 }
 
 export const WeatherBriefingPolicy = {

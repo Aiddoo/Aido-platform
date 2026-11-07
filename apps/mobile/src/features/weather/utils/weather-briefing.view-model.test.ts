@@ -25,7 +25,7 @@ const DEPS: BriefingViewDeps = {
   timeZone: 'Asia/Seoul',
   formatClock: (date) => `clock:${date}`,
   formatHour: (date) => `hour:${date}`,
-  formatDegrees: (celsius) => `${celsius}°`,
+  formatTemperature: (celsius) => `${celsius}°`,
   formatChance: (percent) => `${percent}%`,
 };
 

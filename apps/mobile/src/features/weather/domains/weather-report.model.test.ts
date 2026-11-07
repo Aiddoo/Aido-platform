@@ -424,7 +424,7 @@ describe('getSunEvents', () => {
     const [day] = createWeatherReport().daily;
 
     // When
-    const events = day == null ? null : WeatherReportPolicy.getSunEvents(day, true);
+    const events = day == null ? null : WeatherReportPolicy.getSunEvents(day, { isDaylight: true });
 
     // Then
     expect(events).toEqual({
@@ -445,7 +445,7 @@ describe('getSunEvents', () => {
     const events =
       day == null
         ? null
-        : WeatherReportPolicy.getSunEvents({ ...day, sunrise: null, sunset: null }, isDaylight);
+        : WeatherReportPolicy.getSunEvents({ ...day, sunrise: null, sunset: null }, { isDaylight });
 
     // Then
     expect(events).toEqual({ kind });
@@ -457,7 +457,9 @@ describe('getSunEvents', () => {
 
     // When
     const events =
-      day == null ? null : WeatherReportPolicy.getSunEvents({ ...day, sunset: null }, true);
+      day == null
+        ? null
+        : WeatherReportPolicy.getSunEvents({ ...day, sunset: null }, { isDaylight: true });
 
     // Then
     expect(events).toMatchObject({ kind: 'regular', sunset: null });
@@ -550,10 +552,12 @@ describe('isDifferentWallClock', () => {
     '기기 시간대가 $deviceTimeZone이면 서울 리포트의 벽시계가 다른지는 $expected다',
     ({ deviceTimeZone, expected }) => {
       // Given
-      const report = createWeatherReport();
-
       // When
-      const isDifferent = WeatherReportPolicy.isDifferentWallClock(report, deviceTimeZone, now);
+      const isDifferent = WeatherReportPolicy.isDifferentWallClock(
+        'Asia/Seoul',
+        deviceTimeZone,
+        now,
+      );
 
       // Then
       // 지금 시각의 UTC 오프셋이 서울과 다를 때만 다르다

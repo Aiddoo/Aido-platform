@@ -23,8 +23,6 @@ const MOON_PENUMBRA = 0.12;
 export interface MoonGeometry {
   /** 밝게 보이는 면적 비율(0~1) */
   illumination: number;
-  /** 명암 경계 반타원의 가로 반지름 */
-  terminatorRx: number;
   /** 북반구에서 본 밝은 면. 삭이면 null이다. */
   litPath: string | null;
   /** 명암 경계 바깥쪽으로 조금 넓힌 반그림자 면 */
@@ -54,7 +52,6 @@ export function toMoonGeometry(phase: WeatherMoonPhase, latitude: number): MoonG
   const isNew = phase === 'NEW';
   return {
     illumination: round((1 + terminator) / 2, 3),
-    terminatorRx: round(MOON_RADIUS * Math.abs(terminator), 2),
     litPath: isNew ? null : toLitPath(terminator, isWaxing),
     penumbraPath: isNew ? null : toLitPath(terminator + MOON_PENUMBRA, isWaxing),
     rotation: latitude < 0 ? 180 : 0,
