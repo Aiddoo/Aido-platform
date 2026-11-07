@@ -46,7 +46,7 @@ src/
                                   # infra(어댑터), observability, preferences, providers, types, ui, utils
 ```
 
-- 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
+- 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. `create{Name}Repository` 함수 하나가 `{Name}Repository` 인터페이스를 돌려주고 메서드는 화살표 속성이다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
 - 다른 피처는 `@src/features/{area}/{feature}/…` 절대 경로로 import한다.
 
 ### 기능을 어디에 두나

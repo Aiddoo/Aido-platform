@@ -18,7 +18,7 @@ export function createPendingRedemptionRepository(
   storage: SyncStorage,
 ): PendingRedemptionRepository {
   return {
-    get() {
+    get: () => {
       const raw = storage.get(PENDING_REDEMPTION_KEY);
       if (raw == null) {
         return null;
@@ -32,10 +32,10 @@ export function createPendingRedemptionRepository(
         return null;
       }
     },
-    save(pending) {
+    save: (pending) => {
       storage.set(PENDING_REDEMPTION_KEY, JSON.stringify(pending));
     },
-    clear() {
+    clear: () => {
       storage.remove(PENDING_REDEMPTION_KEY);
     },
   };

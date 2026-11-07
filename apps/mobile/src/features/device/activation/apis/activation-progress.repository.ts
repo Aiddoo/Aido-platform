@@ -69,7 +69,7 @@ export function createActivationProgressRepository(
 
   return {
     get,
-    markTodoCreated(identity, at) {
+    markTodoCreated: (identity, at) => {
       const current = get(identity);
       if (current.todoCreatedAt) {
         return current;
@@ -77,7 +77,7 @@ export function createActivationProgressRepository(
       const next = { ...current, todoCreatedAt: at };
       return save(identity, next) ? next : current;
     },
-    claimActivated(identity, at) {
+    claimActivated: (identity, at) => {
       const current = get(identity);
       if (!current.todoCreatedAt || current.activatedAt) {
         return { isClaimed: false, progress: current };
@@ -88,7 +88,7 @@ export function createActivationProgressRepository(
         ? { isClaimed: true, progress: next }
         : { isClaimed: false, progress: current };
     },
-    unlockPushRegistration(identity, at) {
+    unlockPushRegistration: (identity, at) => {
       const current = get(identity);
       if (current.pushRegistrationUnlockedAt) {
         return current;

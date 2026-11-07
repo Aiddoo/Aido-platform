@@ -4,9 +4,17 @@ import { ANDROID_WIDGET_STORAGE_KEYS } from '../bridge/android-widget';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import { storedWidgetSnapshotSchema, type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
-export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
+export interface AndroidWidgetSnapshotRepository {
+  getSnapshot: () => WidgetSnapshot | null;
+  getUserId: () => string | null;
+  writeSnapshot: (snapshot: WidgetSnapshot, userId: string | null) => void;
+}
+
+export function createAndroidWidgetSnapshotRepository(
+  storage: SyncStorage,
+): AndroidWidgetSnapshotRepository {
   return {
-    getSnapshot(): WidgetSnapshot | null {
+    getSnapshot: () => {
       const raw = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot);
       if (raw == null) {
         return null;
@@ -19,11 +27,11 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
         return null;
       }
     },
-    getUserId(): string | null {
+    getUserId: () => {
       const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
       return userId && userId.trim().length > 0 ? userId : null;
     },
-    writeSnapshot(snapshot: WidgetSnapshot, userId: string | null): void {
+    writeSnapshot: (snapshot, userId) => {
       storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, JSON.stringify(snapshot));
       if (WidgetSnapshotPolicy.isLoggedOut(snapshot) || userId == null) {
         storage.remove(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);

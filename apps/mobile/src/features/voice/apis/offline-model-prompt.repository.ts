@@ -20,14 +20,14 @@ export function createOfflineModelPromptRepository(
   storage: SyncStorage,
 ): OfflineModelPromptRepository {
   return {
-    hasDeclined(userId, locale) {
+    hasDeclined: (userId, locale) => {
       try {
         return storage.get(offlineModelDeclinedStorageKey(userId, locale)) != null;
       } catch {
         return false;
       }
     },
-    saveDeclined(userId, locale) {
+    saveDeclined: (userId, locale) => {
       try {
         storage.set(offlineModelDeclinedStorageKey(userId, locale), 'declined');
       } catch {

@@ -25,7 +25,7 @@ export function createRecognitionLanguageRepository(
   const listeners = new Set<() => void>();
 
   return {
-    find(userId) {
+    find: (userId) => {
       try {
         const parsed = speechLocaleSchema.safeParse(
           storage.get(recognitionLanguageStorageKey(userId)),
@@ -35,7 +35,7 @@ export function createRecognitionLanguageRepository(
         return undefined;
       }
     },
-    save(userId, locale) {
+    save: (userId, locale) => {
       try {
         storage.set(recognitionLanguageStorageKey(userId), locale);
       } catch {
@@ -43,7 +43,7 @@ export function createRecognitionLanguageRepository(
       }
       listeners.forEach((listener) => listener());
     },
-    subscribe(listener) {
+    subscribe: (listener) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);

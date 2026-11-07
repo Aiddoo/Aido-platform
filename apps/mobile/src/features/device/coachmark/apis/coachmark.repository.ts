@@ -43,21 +43,21 @@ export function createCoachmarkRepository(
   now: () => Instant = () => fromEpochMs(Date.now()),
 ): CoachmarkRepository {
   return {
-    isSeen(input) {
+    isSeen: (input) => {
       try {
         return storage.get(coachmarkStorageKey(input)) != null;
       } catch {
         return true;
       }
     },
-    markSeen(input) {
+    markSeen: (input) => {
       try {
         storage.set(coachmarkStorageKey(input), now());
       } catch {
         // 저장하지 못하면 다음에 한 번 더 보일 뿐이다.
       }
     },
-    removeRetiredKeys() {
+    removeRetiredKeys: () => {
       storage
         .keys()
         .filter(
@@ -67,7 +67,7 @@ export function createCoachmarkRepository(
         )
         .forEach((key) => storage.remove(key));
     },
-    removeAccount(accountId) {
+    removeAccount: (accountId) => {
       storage
         .keys()
         .filter(

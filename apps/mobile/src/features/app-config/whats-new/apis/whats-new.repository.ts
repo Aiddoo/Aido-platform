@@ -44,7 +44,7 @@ export function createWhatsNewRepository(
      * MMKV의 동기 get/set을 한 JS 런루프에서 연속 수행해 같은 계정·캠페인을 한 번만 claim한다.
      * 본 상태를 먼저 기록하므로 화면이 열리기 전에 재진입 호출도 차단된다.
      */
-    claimSeen(identity, at) {
+    claimSeen: (identity, at) => {
       try {
         if (storage.get(whatsNewSeenKey(identity)) != null) {
           return false;
@@ -58,7 +58,7 @@ export function createWhatsNewRepository(
     },
 
     /** 본 기록은 남아 다시 claim되지 않으므로 같은 캠페인의 카드는 돌아오지 않고, 새 캠페인은 자기 키로 보인다 */
-    dismissReentry(identity) {
+    dismissReentry: (identity) => {
       try {
         storage.remove(whatsNewReentryKey(identity));
       } catch {
@@ -66,7 +66,7 @@ export function createWhatsNewRepository(
       }
     },
 
-    removeRetiredKeys({ campaignIds, now }) {
+    removeRetiredKeys: ({ campaignIds, now }) => {
       storage
         .keys()
         .filter((key) => {
@@ -84,7 +84,7 @@ export function createWhatsNewRepository(
         .forEach((key) => storage.remove(key));
     },
 
-    removeAccount(userId) {
+    removeAccount: (userId) => {
       storage
         .keys()
         .filter(
