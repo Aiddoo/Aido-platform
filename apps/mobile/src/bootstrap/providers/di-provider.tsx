@@ -226,11 +226,7 @@ export function DIProvider({
 
     // 소개 캠페인 설정: app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
     const featureCampaignService = new FeatureCampaignService(publicJsonFetcher);
-    const appVersionService = new AppVersionService(
-      publicJsonFetcher,
-      expoApplicationMetadataGateway,
-      expoAppStoreGateway,
-    );
+    const appVersionService = new AppVersionService(publicJsonFetcher);
     const whatsNewRepository = createWhatsNewRepository(mmkvSyncStorage);
 
     const pendingRedemptionRepository = createPendingRedemptionRepository(mmkvSyncStorage);
@@ -430,6 +426,8 @@ export function DIProvider({
       weatherIntroductionRepository: createWeatherIntroductionRepository(mmkvSyncStorage),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
+      applicationMetadata: expoApplicationMetadataGateway,
+      appStoreListing: expoAppStoreGateway,
       externalLink: expoExternalLinkGateway,
       incomingLink: expoIncomingLinkGateway,
       networkStatus: expoNetworkStatusGateway,

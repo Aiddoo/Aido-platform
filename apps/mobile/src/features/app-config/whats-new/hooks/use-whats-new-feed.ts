@@ -1,4 +1,4 @@
-import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
+import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -10,7 +10,6 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 
-import { getNativeAppVersion } from '../apis/native-app-version';
 import {
   parseReentryOpenedAt,
   whatsNewReentryKey,
@@ -39,7 +38,11 @@ export function useWhatsNewFeed({
     enabled: isAuthenticated,
   });
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const appVersion = useMemo(getNativeAppVersion, []);
+  const applicationMetadata = useApplicationMetadata();
+  const appVersion = useMemo(
+    () => applicationMetadata.getInstallation()?.currentVersion,
+    [applicationMetadata],
+  );
   const repository = useWhatsNewRepository();
   const now = useMinuteNow();
   const push = useSingleTap(router.push);

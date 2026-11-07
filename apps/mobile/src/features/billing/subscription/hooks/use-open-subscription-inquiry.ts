@@ -1,5 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
-import { useAppVersionService } from '@src/bootstrap/providers/di-context';
+import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
 import { t } from '@src/shared/i18n';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -9,7 +9,7 @@ import { toSubscriptionInquiryDraft } from '../utils/subscription-inquiry-draft'
 
 /** 구독 실패를 문의 화면으로 넘긴다. 무엇이 실패했는지와 오류 코드를 미리 채워 되묻는 일을 줄인다 */
 export function useOpenSubscriptionInquiry() {
-  const appVersionService = useAppVersionService();
+  const applicationMetadata = useApplicationMetadata();
 
   return useCallback(
     ({
@@ -19,13 +19,13 @@ export function useOpenSubscriptionInquiry() {
       const content = toSubscriptionInquiryDraft({
         subject: t(titleKey),
         diagnosticCode,
-        installation: appVersionService.getInstallation(),
+        installation: applicationMetadata.getInstallation(),
       });
       router.push({
         pathname: '/settings/inquiry',
         params: { category: INQUIRY_CATEGORY.PAYMENT, content },
       });
     },
-    [appVersionService],
+    [applicationMetadata],
   );
 }

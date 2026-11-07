@@ -334,16 +334,7 @@ const SDK_INFRA_ROOT = 'apps/mobile/src/shared/infra/';
 // 규칙을 넣기 전부터 있던 위반. 출시 후 첫 스택에서 모두 옮겨 비운다. 새 위반을 여기 더하지 않는다.
 const SDK_IMPORT_ALLOWLIST = new Map([
   ['apps/mobile/app/auth/[provider].tsx', ['expo-web-browser']],
-  [
-    'apps/mobile/src/features/app-config/whats-new/apis/native-app-version.ts',
-    ['expo-application'],
-  ],
-  [
-    'apps/mobile/src/features/billing/subscription/hooks/use-open-subscription-management.ts',
-    ['expo-application'],
-  ],
   ['apps/mobile/src/shared/hooks/use-share-view.ts', ['expo-sharing']],
-  ['apps/mobile/src/shared/ui/query-error-boundary/query-error-actions.tsx', ['expo-application']],
 ]);
 
 // es-toolkit/compat은 lodash 호환 계층이라 메인 패키지보다 무겁다. 메인에 없는 기능만 이유와 함께 허용한다.

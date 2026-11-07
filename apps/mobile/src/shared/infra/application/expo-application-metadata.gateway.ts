@@ -11,6 +11,7 @@ export const expoApplicationMetadataGateway: NativeApplicationMetadataGateway = 
       platform: process.env.EXPO_OS,
       currentVersion: Application.nativeApplicationVersion ?? undefined,
       currentBuild: Application.nativeBuildVersion ?? undefined,
+      applicationId: Application.applicationId ?? undefined,
     };
   },
 };

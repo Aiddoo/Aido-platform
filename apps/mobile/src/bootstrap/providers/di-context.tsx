@@ -1,6 +1,8 @@
+import type { AppStoreListingGateway } from '@src/core/ports/app-store';
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
+import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
@@ -65,6 +67,8 @@ export interface DIContainer extends SharedDependencies {
   storage: Storage;
   locationGateway: LocationGateway;
   clipboard: ClipboardGateway;
+  applicationMetadata: NativeApplicationMetadataGateway;
+  appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
@@ -174,6 +178,12 @@ function useDI(): DIContainer {
 
 export function useLocationGateway() {
   return useDI().locationGateway;
+}
+export function useApplicationMetadata() {
+  return useDI().applicationMetadata;
+}
+export function useAppStoreListing() {
+  return useDI().appStoreListing;
 }
 export function useClipboard() {
   return useDI().clipboard;

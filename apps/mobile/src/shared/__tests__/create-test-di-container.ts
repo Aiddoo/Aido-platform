@@ -72,6 +72,12 @@ export function createTestDiContainer(overrides: Partial<DIContainer> = {}): DIC
     get locationGateway() {
       return dependency('locationGateway');
     },
+    get applicationMetadata() {
+      return dependency('applicationMetadata');
+    },
+    get appStoreListing() {
+      return dependency('appStoreListing');
+    },
     get clipboard() {
       return dependency('clipboard');
     },

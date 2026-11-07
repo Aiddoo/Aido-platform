@@ -1,4 +1,5 @@
 import {
+  useApplicationMetadata,
   useErrorReporter,
   useExternalLink,
   useSubscriptionService,
@@ -7,7 +8,6 @@ import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import * as Application from 'expo-application';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.view-model';
@@ -16,6 +16,7 @@ import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 /** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
 export function useOpenSubscriptionManagement() {
   const subscriptionService = useSubscriptionService();
+  const applicationMetadata = useApplicationMetadata();
   const externalLink = useExternalLink();
   const errorReporter = useErrorReporter();
   const toast = useAppToast();
@@ -28,7 +29,7 @@ export function useOpenSubscriptionManagement() {
         : null;
     const url = SubscriptionPolicy.getManagementUrl(process.env.EXPO_OS, {
       productId,
-      applicationId: Application.applicationId,
+      applicationId: applicationMetadata.getInstallation()?.applicationId ?? null,
     });
 
     try {

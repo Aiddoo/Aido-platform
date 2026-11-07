@@ -73,11 +73,11 @@ export function createTestDi({
     inquiryService: new InquiryService(httpClient),
     achievementService: new AchievementService(httpClient),
     appIconService: new AppIconService(createAppIconGatewayStub()),
-    appVersionService: new AppVersionService(
-      { get: jest.fn() },
-      { getInstallation: () => ({ platform: 'ios', currentVersion: '1.15.0' }) },
-      { openListing: jest.fn() },
-    ),
+    appVersionService: new AppVersionService({ get: jest.fn() }),
+    applicationMetadata: {
+      getInstallation: () => ({ platform: 'ios', currentVersion: '1.15.0' }),
+    },
+    appStoreListing: { openListing: jest.fn() },
     userService: new UserService(httpClient),
     preferenceService: new PreferenceService(httpClient),
     entitlementService: new EntitlementService(httpClient, logger),

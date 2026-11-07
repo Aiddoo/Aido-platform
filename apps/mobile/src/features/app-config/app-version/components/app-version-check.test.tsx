@@ -26,14 +26,14 @@ async function renderCheck({
   const listing: jest.Mocked<AppStoreListingGateway> = { openListing: jest.fn() };
   listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
-  const service = new AppVersionService(
-    jsonFetcher,
-    { getInstallation: () => ({ platform: 'ios', currentVersion }) },
-    listing,
-  );
   await renderUi(<AppVersionCheck />, {
     withOverlay: true,
-    di: { appVersionService: service, errorReporter },
+    di: {
+      appVersionService: new AppVersionService(jsonFetcher),
+      applicationMetadata: { getInstallation: () => ({ platform: 'ios', currentVersion }) },
+      appStoreListing: listing,
+      errorReporter,
+    },
   });
 
   return { listing, errorReporter };

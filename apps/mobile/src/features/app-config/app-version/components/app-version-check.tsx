@@ -1,4 +1,4 @@
-import { useAppVersionService, useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useApplicationMetadata, useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,11 +13,11 @@ import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 /** 설치된 버전을 보여 주고, 누르면 스토어 업데이트가 필요한지 확인한다. */
 export function AppVersionCheck() {
   const { t } = useTranslation('appVersion');
-  const appVersionService = useAppVersionService();
+  const applicationMetadata = useApplicationMetadata();
   const errorReporter = useErrorReporter();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
-  const installation = appVersionService.getInstallation();
+  const installation = applicationMetadata.getInstallation();
   const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
   const openStoreListing = useMutation(useOpenStoreListingMutationOptions());
 
