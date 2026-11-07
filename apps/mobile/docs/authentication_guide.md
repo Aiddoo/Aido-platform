@@ -61,7 +61,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 - 클라이언트 refresh 타임아웃 8초(`REFRESH_TIMEOUT_MS`)는 서버 reuse grace 10초보다 짧게 둔다. 회전 성공 뒤 응답이 유실돼도 재시도할 여백이다.
 
-## 세션 종료 사유의 두 축 (`core/ports/telemetry-event.ts`)
+## 세션 종료 사유의 두 축 (`core/observability/telemetry-event.ts`)
 
 세션 유효성의 진실의 원천은 서버다. 그러나 왜 클라이언트가 세션을 끝냈는지는 서버가 모를 수 있어 두 축을 나눠 관측한다.
 

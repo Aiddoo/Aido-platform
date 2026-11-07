@@ -46,7 +46,7 @@ function RecordingProbe(props: ProbeProps) {
       <Pressable
         testID="start"
         onPress={() => {
-          recording.start({ startLocale: 'ko-KR', contextualStrings: [] }).catch(jest.fn());
+          recording.start({ startLocale: 'ko-KR', hintWords: [] }).catch(jest.fn());
         }}
       />
       <Pressable testID="pause" onPress={recording.pause} />

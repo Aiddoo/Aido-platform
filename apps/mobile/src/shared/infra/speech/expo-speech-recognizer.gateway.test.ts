@@ -41,7 +41,7 @@ const nativeModule = jest.mocked(ExpoSpeechRecognitionModule);
 const START_OPTIONS: SpeechStartOptions = {
   locale: 'ko-KR',
   mode: 'dictation',
-  contextualStrings: [],
+  hintWords: [],
   isOnDevice: false,
   recordingDirectory: null,
 };
@@ -90,7 +90,7 @@ describe('expoSpeechRecognizerGateway', () => {
     expoSpeechRecognizerGateway.start({
       ...START_OPTIONS,
       mode: 'note',
-      contextualStrings: ['기획팀', '민지'],
+      hintWords: ['기획팀', '민지'],
       isOnDevice: true,
       recordingDirectory: 'file:///documents/voice-notes',
     });

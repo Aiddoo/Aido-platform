@@ -1,4 +1,4 @@
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 
 type SessionExpiredListener = (details: SessionExpiredDetails) => void;
 

@@ -1,5 +1,5 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { createMemoryTokenStore } from '@src/shared/__tests__';
 
 import { createSessionManager } from './session-manager';

@@ -1,9 +1,9 @@
+import type { Breadcrumb } from '@src/core/observability/breadcrumb';
+import type { Severity } from '@src/core/observability/severity';
 import type {
   ErrorReportFeature,
   ErrorReportMessage,
 } from '@src/core/observability/telemetry-keys';
-import type { Breadcrumb } from '@src/core/ports/breadcrumb';
-import type { Severity } from '@src/core/ports/severity';
 
 export interface ErrorReporterContext {
   endpoint?: string;

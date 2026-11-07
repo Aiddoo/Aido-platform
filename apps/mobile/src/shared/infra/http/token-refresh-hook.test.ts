@@ -1,4 +1,4 @@
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
 import { createMemoryTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';

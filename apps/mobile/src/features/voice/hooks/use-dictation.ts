@@ -101,7 +101,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
       speechRecognizer.start({
         locale,
         mode: 'dictation',
-        contextualStrings: [],
+        hintWords: [],
         isOnDevice: false,
         recordingDirectory: null,
       });

@@ -68,7 +68,7 @@ interface UseVoiceCaptureSessionOptions {
 
 export interface BeginOptions {
   locale: SpeechLocale;
-  contextualStrings: readonly string[];
+  hintWords: readonly string[];
   recordingDirectory?: string | null;
   seed?: VoiceCaptureSeed;
 }
@@ -385,7 +385,7 @@ export function useVoiceCaptureSession({
   /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
   const begin = async ({
     locale,
-    contextualStrings,
+    hintWords,
     recordingDirectory = null,
     seed,
   }: BeginOptions): Promise<boolean> => {
@@ -406,7 +406,7 @@ export function useVoiceCaptureSession({
       startOptionsRef.current = {
         locale,
         mode,
-        contextualStrings,
+        hintWords,
         isOnDevice,
         recordingDirectory,
       };

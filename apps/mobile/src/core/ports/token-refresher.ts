@@ -1,4 +1,4 @@
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 
 /** 리프레시 요청 포트. 소비자(갱신기)가 선언하고 인프라(`refresh-tokens-request`)가 구현한다. */
 export type RefreshTokensRequest = (refreshToken: string) => Promise<Response>;

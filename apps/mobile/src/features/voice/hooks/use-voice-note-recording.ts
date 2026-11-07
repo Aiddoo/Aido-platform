@@ -187,10 +187,10 @@ export function useVoiceNoteRecording({
 
   const start = async ({
     startLocale,
-    contextualStrings,
+    hintWords,
   }: {
     startLocale: SpeechLocale;
-    contextualStrings: readonly string[];
+    hintWords: readonly string[];
   }) => {
     await offerOnDeviceModel(startLocale);
     if (isStartAbandoned()) {
@@ -198,7 +198,7 @@ export function useVoiceNoteRecording({
     }
     const hasBegun = await session.begin({
       locale: startLocale,
-      contextualStrings,
+      hintWords,
       recordingDirectory: recordingRepository.prepareDirectory(accountId),
       seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
     });

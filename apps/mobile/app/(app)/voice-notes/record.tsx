@@ -68,7 +68,7 @@ function VoiceNoteRecordScreen() {
   const { state } = recording;
 
   useEffect(() => {
-    recording.start({ startLocale: locale, contextualStrings: getSpeechContext() }).catch(() => {
+    recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch(() => {
       toast.error(t('record.failedTitle'));
     });
   }, []);

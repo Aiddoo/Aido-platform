@@ -9,12 +9,8 @@ import {
   createLimitApiError,
   MONTHLY_RESETS_AT,
 } from '../__tests__/entitlement.fixtures';
-import {
-  findLimitedFeature,
-  isNotChargedError,
-  toEntitlementSnapshot,
-  toFeatureQuota,
-} from './entitlement.mapper';
+import { toFeatureQuota } from '../schemas/entitlement.schema';
+import { findLimitedFeature, isNotChargedError, toEntitlementSnapshot } from './entitlement.mapper';
 
 describe('toEntitlementSnapshot', () => {
   it('초기화 시각을 Instant로 옮기고 모든 기능 한도를 옮긴다', () => {

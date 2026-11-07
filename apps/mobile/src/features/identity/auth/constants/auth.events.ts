@@ -1,4 +1,4 @@
-import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredReason } from '@src/core/observability/telemetry-event';
 
 import type { OAuthProviderSlug } from '../schemas/oauth.schema';
 

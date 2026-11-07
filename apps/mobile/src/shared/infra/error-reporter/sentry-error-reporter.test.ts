@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-native';
-import type { Severity } from '@src/core/ports/severity';
+import type { Severity } from '@src/core/observability/severity';
 
 import { createSentryErrorReporter } from './sentry-error-reporter';
 

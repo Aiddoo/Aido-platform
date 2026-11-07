@@ -1,5 +1,5 @@
 import type { Result } from '@src/core/errors/result';
-import type { Severity } from '@src/core/ports/severity';
+import type { Severity } from '@src/core/observability/severity';
 import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';

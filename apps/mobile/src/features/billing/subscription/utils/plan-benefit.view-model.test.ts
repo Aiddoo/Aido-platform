@@ -4,8 +4,8 @@ import {
   createEntitlementSnapshot,
   createFeatureQuotaDto,
 } from '../__tests__/entitlement.fixtures';
-import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { toFeatureQuota } from '../schemas/entitlement.schema';
 import { getPlanBenefitAmounts } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {

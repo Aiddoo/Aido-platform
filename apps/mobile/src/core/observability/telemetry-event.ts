@@ -1,5 +1,5 @@
 import type { ErrorCodeType } from '@aido/api/errors';
-import type { Severity } from '@src/core/ports/severity';
+import type { Severity } from '@src/core/observability/severity';
 
 /**
  * 클라이언트가 세션을 종료한 **결정 경로**.

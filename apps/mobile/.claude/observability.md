@@ -111,7 +111,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### Severity
 
-`debug` < `info` < `warning` < `error` < `fatal`. `core/ports/severity.ts`의 union이고 어댑터가 Sentry level로 매핑한다. 알림 규칙과 우선순위에 쓴다.
+`debug` < `info` < `warning` < `error` < `fatal`. `core/observability/severity.ts`의 union이고 어댑터가 Sentry level로 매핑한다. 알림 규칙과 우선순위에 쓴다.
 
 `session_expired`는 `sessionExpiredSeverity`로 정한다. 사유의 뜻은 [인증 가이드](../docs/authentication_guide.md#세션-종료-사유의-두-축-coreportstelemetry-eventts)에 있다.
 

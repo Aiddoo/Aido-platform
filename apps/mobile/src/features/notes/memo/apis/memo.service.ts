@@ -11,8 +11,10 @@ import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
-import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
-import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import {
+  type FeatureQuota,
+  toFeatureQuota,
+} from '@src/features/billing/subscription/schemas/entitlement.schema';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import type { VoicePlan } from '@src/features/voice/schemas/voice-plan.schema';
 import { ParseError } from '@src/shared/errors/infra-error';

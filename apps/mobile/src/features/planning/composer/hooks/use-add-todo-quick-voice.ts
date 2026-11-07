@@ -113,7 +113,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       moveTranscriptToTitle();
       session.cancel();
     }
-    await session.begin({ locale, contextualStrings: getSpeechContext() });
+    await session.begin({ locale, hintWords: getSpeechContext() });
   };
 
   const restart = async () => {

@@ -1,5 +1,5 @@
 import { emitSessionExpired } from '@src/core/events/session-expired';
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
 
 /**

@@ -15,7 +15,7 @@ describe('getRecognizerStartOptions', () => {
   const baseOptions: SpeechStartOptions = {
     locale: 'ko-KR',
     mode: 'quick',
-    contextualStrings: ['기획팀', '민지'],
+    hintWords: ['기획팀', '민지'],
     isOnDevice: false,
     recordingDirectory: null,
   };
@@ -28,7 +28,7 @@ describe('getRecognizerStartOptions', () => {
     const result = getRecognizerStartOptions(options);
 
     // Then
-    expect(result.contextualStrings).toEqual([]);
+    expect(result.hintWords).toEqual([]);
   });
 
   it('기기 안 인식이면 내 카테고리·할 일 이름을 그대로 준다', () => {
@@ -39,7 +39,7 @@ describe('getRecognizerStartOptions', () => {
     const result = getRecognizerStartOptions(options);
 
     // Then
-    expect(result.contextualStrings).toEqual(['기획팀', '민지']);
+    expect(result.hintWords).toEqual(['기획팀', '민지']);
   });
 });
 

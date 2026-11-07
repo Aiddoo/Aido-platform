@@ -1,5 +1,6 @@
+import type { FeatureQuota as FeatureQuotaDto } from '@aido/api';
 import { ACCESS_TIERS, PLAN_FEATURE_KEYS, PLAN_QUOTA_PERIODS } from '@aido/api/vocabulary';
-import { instantSchema } from '@src/shared/date/instant';
+import { instantSchema, toNullableInstant } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
@@ -12,7 +13,7 @@ const quotaPeriodSchema = z.enum(PLAN_QUOTA_PERIODS);
 export type QuotaPeriod = z.infer<typeof quotaPeriodSchema>;
 
 /** 서버가 계산한 기능 하나의 한도·사용량. 앱은 이 값을 그대로 쓰고 다시 계산하지 않는다 */
-export const featureQuotaSchema = z.object({
+const featureQuotaSchema = z.object({
   feature: entitlementFeatureSchema,
   allowed: z.boolean(),
   /** null은 정말 무제한(ADMIN, 켜진 flag)일 때만이다. 프리미엄의 넉넉한 한도는 숫자 + isFairUse다 */
@@ -27,6 +28,23 @@ export const featureQuotaSchema = z.object({
     .nullable(),
 });
 export type FeatureQuota = z.infer<typeof featureQuotaSchema>;
+
+export function toFeatureQuota(dto: FeatureQuotaDto): FeatureQuota {
+  return featureQuotaSchema.parse({
+    feature: dto.feature,
+    allowed: dto.allowed,
+    limit: dto.limit,
+    used: dto.used,
+    remaining: dto.remaining,
+    period: dto.period,
+    resetsAt: toNullableInstant(dto.resetsAt),
+    isFairUse: dto.isFairUse,
+    perUse:
+      dto.perUse == null
+        ? null
+        : { maxSeconds: dto.perUse.maxSeconds, maxCharacters: dto.perUse.maxCharacters },
+  } satisfies Record<keyof FeatureQuotaDto, unknown>);
+}
 
 export const entitlementSnapshotSchema = z.object({
   /** 유효한 스토어 구독·보상 기간이 있는지. ADMIN은 반영하지 않는다 */

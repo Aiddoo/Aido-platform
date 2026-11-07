@@ -1,5 +1,5 @@
 import { refreshTokensSchema } from '@aido/api';
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type {
   RefreshOutcome,
   RefreshTokensRequest,

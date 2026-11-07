@@ -1,4 +1,4 @@
-import type { Breadcrumb } from '@src/core/ports/breadcrumb';
+import type { Breadcrumb } from '@src/core/observability/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 
 export function createConsoleErrorReporter(): ErrorReporter {

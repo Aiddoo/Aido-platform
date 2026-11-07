@@ -1,7 +1,8 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { ExternalLinkGateway, IncomingLinkGateway } from '@src/core/ports/external-link';
+import type { ExternalLinkGateway } from '@src/core/ports/external-link';
 import type { HapticsGateway } from '@src/core/ports/haptics';
+import type { IncomingLinkGateway } from '@src/core/ports/incoming-link';
 import type { Logger } from '@src/core/ports/logger';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share';

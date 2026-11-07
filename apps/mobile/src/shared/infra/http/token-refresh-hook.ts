@@ -1,5 +1,5 @@
+import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
-import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';

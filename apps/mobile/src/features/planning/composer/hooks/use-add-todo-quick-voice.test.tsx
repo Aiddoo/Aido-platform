@@ -89,7 +89,7 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
     <>
       <Pressable
         testID="begin"
-        onPress={() => quickVoice.begin({ locale: 'ko-KR', contextualStrings: [] })}
+        onPress={() => quickVoice.begin({ locale: 'ko-KR', hintWords: [] })}
       />
       <Pressable testID="finish" onPress={quickVoice.finish} />
       <Pressable testID="retry" onPress={quickVoice.retryPlanning} />

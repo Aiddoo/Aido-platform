@@ -107,11 +107,11 @@ function normalizeVolume(value: number) {
 function toRecognitionOptions({
   locale,
   mode,
-  contextualStrings,
+  hintWords,
   isOnDevice,
   recordingDirectory,
 }: SpeechStartOptions): ExpoSpeechRecognitionOptions {
-  const hints = getSpeechHints(locale, contextualStrings);
+  const hints = getSpeechHints(locale, hintWords);
   const common: ExpoSpeechRecognitionOptions = {
     lang: locale,
     interimResults: true,

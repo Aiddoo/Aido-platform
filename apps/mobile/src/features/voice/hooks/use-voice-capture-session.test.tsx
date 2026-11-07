@@ -45,12 +45,12 @@ function SessionProbe({
     <>
       <Pressable
         testID="begin"
-        onPress={() => session.begin({ locale: 'ko-KR', contextualStrings: ['기획팀'] })}
+        onPress={() => session.begin({ locale: 'ko-KR', hintWords: ['기획팀'] })}
       />
       <Pressable
         testID="begin-without-waiting"
         onPress={() => {
-          session.begin({ locale: 'ko-KR', contextualStrings: [] }).catch(jest.fn());
+          session.begin({ locale: 'ko-KR', hintWords: [] }).catch(jest.fn());
         }}
       />
       <Pressable
@@ -135,7 +135,7 @@ describe('useVoiceCaptureSession', () => {
 
     // Then
     expect(speechRecognizer.start).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'quick', isOnDevice: true, contextualStrings: ['기획팀'] }),
+      expect.objectContaining({ mode: 'quick', isOnDevice: true, hintWords: ['기획팀'] }),
     );
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       'voice_capture_started',
@@ -910,7 +910,7 @@ describe('useVoiceCaptureSession', () => {
 
     // Then
     expect(speechRecognizer.start).toHaveBeenLastCalledWith(
-      expect.objectContaining({ isOnDevice: false, contextualStrings: [] }),
+      expect.objectContaining({ isOnDevice: false, hintWords: [] }),
     );
   });
 

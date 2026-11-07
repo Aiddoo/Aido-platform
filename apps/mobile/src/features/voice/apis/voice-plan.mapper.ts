@@ -8,7 +8,7 @@ import {
   type QuickPlanRequest,
   type VoiceNoteDigestRequest,
 } from '@aido/api';
-import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { toFeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { match } from 'ts-pattern';
 

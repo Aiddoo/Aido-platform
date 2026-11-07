@@ -1,6 +1,6 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
+import { sessionExpiredSeverity } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
-import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import { isAuthBootPending } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';

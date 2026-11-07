@@ -323,7 +323,7 @@ function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
  * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
  */
 export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
-  return options.isOnDevice ? options : { ...options, contextualStrings: [] };
+  return options.isOnDevice ? options : { ...options, hintWords: [] };
 }
 
 export const VoiceCapturePolicy = {

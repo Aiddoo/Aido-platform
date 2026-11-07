@@ -1,4 +1,5 @@
-import type { ExternalLinkGateway, IncomingLinkGateway } from '@src/core/ports/external-link';
+import type { ExternalLinkGateway } from '@src/core/ports/external-link';
+import type { IncomingLinkGateway } from '@src/core/ports/incoming-link';
 
 export const createExternalLinkGatewayStub = (): jest.Mocked<ExternalLinkGateway> => ({
   open: jest.fn().mockResolvedValue(undefined),
