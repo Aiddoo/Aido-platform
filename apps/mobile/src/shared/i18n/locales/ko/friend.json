@@ -56,6 +56,7 @@
     "meLabel": "내 할 일 보기",
     "friendLabel": "{{name}}님의 할 일 보기",
     "findFriends": "친구 찾기",
+    "findFriendsLabel": "친구 찾기",
     "loadMoreFailed": "다시 시도",
     "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
     "emptyInvite": "초대하기",

@@ -330,7 +330,7 @@ function ListEnd({
     <Box pl={ITEM_GAP}>
       <PressableFeedback
         accessibilityRole="button"
-        accessibilityLabel={t('friendStrip.findFriends')}
+        accessibilityLabel={t('friendStrip.findFriendsLabel')}
         onPress={() => push('/friends/search')}
       >
         <ActionCell
