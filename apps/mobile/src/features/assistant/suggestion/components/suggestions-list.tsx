@@ -36,6 +36,8 @@ import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import type { AiSuggestion } from '../schemas/suggestion.schema';
 
 const SUGGESTION_LOADING_COUNT = 2;
+/** 소개의 고양이와 로딩 자리가 같은 크기라 함께 쓴다 */
+const INTRO_IMAGE_SIZE = 100;
 
 interface SuggestionsIntroProps {
   title: string;
@@ -47,7 +49,7 @@ function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
     <Box className="items-center px-5 pt-4">
       <Image
         source={require('@assets/images/ido_cat_suggestion.webp')}
-        style={{ width: 100, height: 100 }}
+        style={{ width: INTRO_IMAGE_SIZE, height: INTRO_IMAGE_SIZE }}
         contentFit="contain"
       />
       <Spacing size={8} />
@@ -276,7 +278,7 @@ SuggestionsList.Loading = function Loading() {
       <Box className="items-center px-5 pt-4">
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
-          style={{ width: 100, height: 100 }}
+          style={{ width: INTRO_IMAGE_SIZE, height: INTRO_IMAGE_SIZE }}
           contentFit="contain"
         />
         <Spacing size={8} />

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+const COOLDOWN_TICK_MS = 1_000;
+
 export function useCooldown(initialValue = 0) {
   const [cooldown, setCooldown] = useState(initialValue);
 
@@ -10,7 +12,7 @@ export function useCooldown(initialValue = 0) {
 
     const timer = setTimeout(() => {
       setCooldown((prev) => Math.max(0, prev - 1));
-    }, 1000);
+    }, COOLDOWN_TICK_MS);
 
     return () => clearTimeout(timer);
   }, [cooldown]);

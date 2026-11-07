@@ -5,6 +5,8 @@ import { Menu, type MenuKey, PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, useState } from 'react';
 import { match } from 'ts-pattern';
 
+const SORT_MENU_WIDTH = 208;
+
 interface TodoCommentSortBarProps extends Omit<
   ComponentProps<typeof Menu>,
   'children' | 'isOpen' | 'onOpenChange'
@@ -62,7 +64,7 @@ export function TodoCommentSortBar({
           presentation="popover"
           placement="bottom"
           align="end"
-          width={208}
+          width={SORT_MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
           <Menu.Group

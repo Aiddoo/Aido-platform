@@ -24,6 +24,8 @@ import { useState } from 'react';
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 
 /** 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없고, 선택 해제는 목록 pane이 맡는다 */
+const ACTION_MENU_WIDTH = 180;
+
 export function TodoCommentTitleBar({ date }: { date: string }) {
   const { t } = useTranslation('todo');
 
@@ -146,7 +148,7 @@ function TodoModerationMenu() {
           presentation="popover"
           placement="bottom"
           align="end"
-          width={180}
+          width={ACTION_MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
           <MenuActionItem Icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />

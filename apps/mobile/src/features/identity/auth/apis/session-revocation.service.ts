@@ -22,6 +22,8 @@ import type { PendingRevocationRepository } from './pending-revocation.repositor
 export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
+const TOO_MANY_REQUESTS_STATUS = 429;
+const SERVER_ERROR_STATUS = 500;
 
 interface SessionRevocationServicePorts {
   repository: PendingRevocationRepository;
@@ -117,7 +119,7 @@ export class SessionRevocationService {
   #issueAccessToken = async (pending: PendingRevocation): Promise<string | null> => {
     const response = await this.#requestRefresh(pending.refreshToken);
 
-    if (response.status === 429 || response.status >= 500) {
+    if (response.status === TOO_MANY_REQUESTS_STATUS || response.status >= SERVER_ERROR_STATUS) {
       throw new Error(`refresh status ${response.status}`);
     }
     if (!response.ok) {

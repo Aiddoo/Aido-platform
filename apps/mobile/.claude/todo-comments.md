@@ -50,7 +50,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
   - 권한: `canLikeComment`, `canReplyToComment`, `isEditableComment`, `canDeleteComment`, `isDeletingOthersComment`,
     `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`, `leavesTombstoneOnDelete`
   - 묶음: `getHiddenReplyCount`, `hasRepliesToShow`, `flattenThreads`, `flattenReplies`, `findCommentInThread`
-  - 캐시 변환: `withLikeToggled`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`, `withRepliesRemoved`
+  - 캐시 변환: `withLiked`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`, `withRepliesRemoved`
 - 화면 상태인 답글 아래 줄(`getReplyFooter`)과 펼침(`expandThread`)은 `utils/todo-comment-replies.view-model.ts`에 둔다.
 - 화면 분기는 `getDisplayState`·`getReplyFooter`를 ts-pattern으로만 나눈다. 개수와 숨김을 화면에서 다시 세지 않는다.
 
