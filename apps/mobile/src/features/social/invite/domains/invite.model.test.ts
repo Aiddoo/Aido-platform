@@ -275,3 +275,40 @@ describe('hasInvitedAnyone', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('hasNewPawPrints', () => {
+  it('지난번 축하한 수보다 사용을 시작한 친구가 늘었으면 true를 반환한다', () => {
+    // Given
+    // 3명 > 2명
+    const invite = createInvite({ qualifiedCount: 3 });
+
+    // When
+    const result = InvitePolicy.hasNewPawPrints(invite, 2);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('축하한 수와 같으면 false를 반환한다', () => {
+    // Given
+    const invite = createInvite({ qualifiedCount: 2 });
+
+    // When
+    const result = InvitePolicy.hasNewPawPrints(invite, 2);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it('보상에서 빠져 수가 줄었으면 false를 반환한다', () => {
+    // Given
+    // 1명 < 2명
+    const invite = createInvite({ qualifiedCount: 1 });
+
+    // When
+    const result = InvitePolicy.hasNewPawPrints(invite, 2);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});

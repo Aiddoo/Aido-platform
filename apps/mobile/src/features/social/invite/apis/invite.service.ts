@@ -1,6 +1,7 @@
 import {
   type GetInvitedFriendsQuery,
   inviteAvailabilityResponseSchema,
+  invitedFriendsListResponseSchema,
   invitePreviewResponseSchema,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -11,15 +12,21 @@ import type { Logger } from '@src/core/ports/logger';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import type { Page } from '@src/shared/types/page.types';
-import { identity } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
+import { parseInviteCode } from '../domains/invite-code.model';
+import type { InvitePreview } from '../domains/invite-preview.model';
+import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { INVITE_ERROR_CODE, type InviteErrorCode } from '../domains/invite.error';
-import type { InvitePreview } from '../schemas/invite-preview.schema';
-import { type RedemptionResult, redemptionResultSchema } from '../schemas/invite-redemption.schema';
-import { type Invite, inviteSchema, parseInviteCode } from '../schemas/invite.schema';
-import { type InvitedFriend, invitedFriendsPageSchema } from '../schemas/invited-friend.schema';
-import { toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
+import type { Invite } from '../domains/invite.model';
+import type { InvitedFriend } from '../domains/invited-friend.model';
+import { inviteResponseSchema, redeemResponseSchema } from '../schemas/invite-response.schema';
+import {
+  toInvite,
+  toInvitedFriendsPage,
+  toInvitePreview,
+  toRedemptionResult,
+} from './invite.mapper';
 import type { PendingRedemptionService } from './pending-redemption.service';
 
 type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;
@@ -105,8 +112,8 @@ export class InviteService {
         `v1/invites/${inviteCode}/redeem`,
         installationId == null ? {} : { installationId },
       ),
-      redemptionResultSchema,
-      identity,
+      redeemResponseSchema,
+      toRedemptionResult,
       '[InviteService] Invalid redeem response',
     );
   };
@@ -115,8 +122,8 @@ export class InviteService {
   getInvite = async (signal?: AbortSignal): Promise<Result<Invite, ApiError>> =>
     parseApiResponse(
       await this.#authHttpClient.get('v1/invites/me', { signal }),
-      inviteSchema,
-      identity,
+      inviteResponseSchema,
+      toInvite,
       '[InviteService] Invalid getInvite response',
     );
 
@@ -124,8 +131,8 @@ export class InviteService {
   rotateInviteCode = async (): Promise<Result<Invite, ApiError>> =>
     parseApiResponse(
       await this.#authHttpClient.post('v1/invites/me/rotate'),
-      inviteSchema,
-      identity,
+      inviteResponseSchema,
+      toInvite,
       '[InviteService] Invalid rotateInviteCode response',
     );
 
@@ -138,7 +145,7 @@ export class InviteService {
         signal,
         params: { cursor: params.cursor, limit: params.limit, status: params.status },
       }),
-      invitedFriendsPageSchema,
+      invitedFriendsListResponseSchema,
       toInvitedFriendsPage,
       '[InviteService] Invalid getInvitedFriends response',
     );

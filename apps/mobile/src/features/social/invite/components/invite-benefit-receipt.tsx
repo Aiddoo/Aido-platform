@@ -17,9 +17,9 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 
 import { INVITEE_PREMIUM_DAYS, FIRST_INVITER_PREMIUM_DAYS } from '../constants/invite.constants';
+import type { InviteCode } from '../domains/invite-code.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
-import type { InviteCode } from '../schemas/invite.schema';
 
 /** 가입하면 받는 혜택을 구독 화면과 같은 영수증 톤으로 보여 준다 */
 export function InviteBenefitReceipt() {

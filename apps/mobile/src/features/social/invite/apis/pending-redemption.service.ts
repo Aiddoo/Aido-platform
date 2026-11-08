@@ -1,10 +1,10 @@
 import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
 import type { Instant } from '@src/shared/date/instant';
 
+import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import { type InviteLinkSource, type PendingRedemption } from '../domains/invite-redemption.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
-import { type InviteLinkSource, type PendingRedemption } from '../schemas/invite-redemption.schema';
-import type { InviteCode } from '../schemas/invite.schema';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
 import type { InstallReferrerRepository } from './install-referrer.repository';
 import type { PendingRedemptionRepository } from './pending-redemption.repository';

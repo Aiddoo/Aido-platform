@@ -375,7 +375,7 @@ function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
   const [celebratedCount] = useState(() =>
     pawPrintCelebrationRepository.getCelebratedCount(userId),
   );
-  const hasNewPawPrint = qualifiedCount > celebratedCount;
+  const hasNewPawPrint = InvitePolicy.hasNewPawPrints({ qualifiedCount }, celebratedCount);
 
   useEffect(() => {
     if (qualifiedCount === celebratedCount) {

@@ -23,7 +23,7 @@ import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import type { InvitedFriend } from '../schemas/invited-friend.schema';
+import type { InvitedFriend } from '../domains/invited-friend.model';
 import { invitedFriendChipVariants } from './invited-friend-row.variants';
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {

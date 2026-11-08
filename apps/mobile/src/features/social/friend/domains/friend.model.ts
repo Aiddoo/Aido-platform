@@ -67,6 +67,7 @@ export function isValidSearchQuery(input: { query: string }) {
   return input.query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
+// 이미 친구면 요청 대기보다 먼저다
 export function getRequestState(
   user: Pick<SearchedUser, 'isFriend' | 'requestPending'>,
 ): RequestState {

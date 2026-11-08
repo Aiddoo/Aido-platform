@@ -1,24 +1,31 @@
 import {
   type InvitedFriendResponse,
+  invitedFriendResponseSchema,
   type InvitePreviewResponse,
   invitePreviewResponseSchema,
   type MyInviteResponse,
+  myInviteResponseSchema,
+  type RedeemInviteResponse,
+  redeemInviteResponseSchema,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
-import { toInstant } from '@src/shared/date/instant';
 
-import type { RedemptionResult } from '../schemas/invite-redemption.schema';
-import type { PendingRedemption } from '../schemas/invite-redemption.schema';
-import type { Invite } from '../schemas/invite.schema';
-import type { InvitedFriend } from '../schemas/invited-friend.schema';
+import {
+  type PendingRedemption,
+  pendingRedemptionSchema,
+  type RedemptionResult,
+  redemptionResultSchema,
+} from '../domains/invite-redemption.model';
+import { type Invite, inviteSchema } from '../domains/invite.model';
+import { type InvitedFriend, invitedFriendSchema } from '../domains/invited-friend.model';
 
 export function createPendingRedemption(overrides?: Partial<PendingRedemption>): PendingRedemption {
-  return {
+  return pendingRedemptionSchema.parse({
     inviteCode: 'K7M2QX',
     source: 'universal_link',
-    savedAt: toInstant('2028-02-23T00:00:00Z'),
+    savedAt: '2028-02-23T00:00:00Z',
     ...overrides,
-  };
+  });
 }
 
 // 공개 미리보기에서 태그가 빠져도 그대로 쓰이게 서버 계약 스키마로 만든다(모르는 필드는 버린다)
@@ -40,7 +47,7 @@ export function createInviteApiError({
 export const INVALID_DTO = { invalid: 'data' };
 
 export function createInviteDto(overrides?: Partial<MyInviteResponse>): MyInviteResponse {
-  return {
+  return myInviteResponseSchema.parse({
     code: 'K7M2QX',
     link: 'https://aido.kr/i/K7M2QX',
     waitingCount: 1,
@@ -61,11 +68,11 @@ export function createInviteDto(overrides?: Partial<MyInviteResponse>): MyInvite
     ],
     createdAt: '2026-11-01T09:00:00.000Z',
     ...overrides,
-  };
+  });
 }
 
 export function createInvite(overrides?: Partial<Invite>): Invite {
-  return {
+  return inviteSchema.parse({
     code: 'K7M2QX',
     link: 'https://aido.kr/i/K7M2QX',
     waitingCount: 0,
@@ -81,15 +88,15 @@ export function createInvite(overrides?: Partial<Invite>): Invite {
       ],
     },
     rewardsEarned: [],
-    createdAt: toInstant('2026-11-01T09:00:00.000Z'),
+    createdAt: '2026-11-01T09:00:00.000Z',
     ...overrides,
-  };
+  });
 }
 
 export function createInvitedFriendDto(
   overrides?: Partial<InvitedFriendResponse>,
 ): InvitedFriendResponse {
-  return {
+  return invitedFriendResponseSchema.parse({
     userId: 'clz7x5p8k0005qz0z8z8z8z8z',
     name: '준호',
     userTag: 'B7TZ2NPD',
@@ -99,11 +106,11 @@ export function createInvitedFriendDto(
     joinedAt: '2026-11-02T10:30:00.000Z',
     qualifiedAt: null,
     ...overrides,
-  };
+  });
 }
 
 export function createInvitedFriend(overrides?: Partial<InvitedFriend>): InvitedFriend {
-  return {
+  return invitedFriendSchema.parse({
     userId: 'clz7x5p8k0005qz0z8z8z8z8z',
     name: '준호',
     userTag: 'B7TZ2NPD',
@@ -111,25 +118,39 @@ export function createInvitedFriend(overrides?: Partial<InvitedFriend>): Invited
     status: 'JOINED',
     activeDayCount: 1,
     rejectionReason: null,
-    joinedAt: toInstant('2026-11-02T10:30:00.000Z'),
+    joinedAt: '2026-11-02T10:30:00.000Z',
     qualifiedAt: null,
     ...overrides,
-  };
+  });
 }
 
 type RedeemedResult = Extract<RedemptionResult, { outcome: 'REDEEMED' }>;
 
+const INVITER = {
+  userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+  name: '민지',
+  userTag: 'K3MQ9XWA',
+  profileImage: 'orange_tabby',
+};
+
 export function createRedemptionResult(overrides?: Partial<RedeemedResult>): RedeemedResult {
-  return {
+  const [redeemedSchema] = redemptionResultSchema.options;
+  return redeemedSchema.parse({
     outcome: 'REDEEMED',
-    inviter: {
-      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
-      name: '민지',
-      userTag: 'K3MQ9XWA',
-      profileImage: 'orange_tabby',
-    },
+    inviter: INVITER,
+    friendship: 'FRIENDS',
+    rewards: [{ rewardType: 'PREMIUM_DAYS', quantity: 7 }],
+    isReplay: false,
+    ...overrides,
+  });
+}
+
+export function createRedeemResponseDto(overrides?: object): RedeemInviteResponse {
+  return redeemInviteResponseSchema.parse({
+    outcome: 'REDEEMED',
+    inviter: INVITER,
     friendship: 'FRIENDS',
     rewards: [{ rewardType: 'PREMIUM_DAYS', quantity: 7 }],
     ...overrides,
-  };
+  });
 }

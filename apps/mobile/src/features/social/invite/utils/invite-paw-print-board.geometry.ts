@@ -1,7 +1,7 @@
 import { chunk, clamp, range } from 'es-toolkit';
 
 import { ONE_TIME_MILESTONE_COUNTS } from '../constants/invite.constants';
-import type { Invite } from '../schemas/invite.schema';
+import type { Invite } from '../domains/invite.model';
 
 export type PawPrintState = 'stamped' | 'waiting' | 'empty' | 'milestone';
 

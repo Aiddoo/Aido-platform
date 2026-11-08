@@ -1,8 +1,8 @@
 import type { InviteFriendship, RedeemOutcome } from '@aido/api/vocabulary';
 
+import type { InviteLinkSource } from '../domains/invite-redemption.model';
 import type { RedeemFailureReason } from '../domains/invite.error';
 import type { InviteEntrySource } from '../schemas/invite-entry.schema';
-import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
 declare module '@src/shared/analytics/event-map' {

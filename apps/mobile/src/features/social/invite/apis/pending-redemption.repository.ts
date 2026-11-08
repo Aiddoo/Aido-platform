@@ -4,7 +4,7 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import {
   type PendingRedemption,
   pendingRedemptionSchema,
-} from '../schemas/invite-redemption.schema';
+} from '../domains/invite-redemption.model';
 
 const PENDING_REDEMPTION_KEY = 'aido_invite_pending_v1';
 

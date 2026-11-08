@@ -1,6 +1,6 @@
 import { REWARD_TYPE_UNKNOWN } from '@aido/api/vocabulary';
 
-import type { InviteReward } from '../schemas/invite-reward.schema';
+import type { InviteReward } from '../domains/invite-reward.model';
 import { InviteRewardPolicy } from './invite-reward.model';
 
 describe('calculateRewardQuantity', () => {

@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 
 import InviteCodeEntryRoute from '../../../../../app/invite';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
-import { parseInviteCode } from '../schemas/invite.schema';
+import { parseInviteCode } from '../domains/invite-code.model';
 import { createInvitePreviewDto } from './invite.fixtures';
 
 const CODE = parseInviteCode('K7M2QX') ?? '';

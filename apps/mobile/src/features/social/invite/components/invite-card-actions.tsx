@@ -13,13 +13,13 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
 import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
+import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import type { InviteLinkSource } from '../domains/invite-redemption.model';
 import { toRedeemFailureReason } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
-import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
-import type { InviteCode } from '../schemas/invite.schema';
 
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 export function InviteCardActions() {

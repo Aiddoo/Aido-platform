@@ -16,11 +16,11 @@ import { orderBy } from 'es-toolkit';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
+import type { InviteCode } from '../domains/invite-code.model';
+import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import type { RedemptionResult } from '../schemas/invite-redemption.schema';
-import type { InviteCode } from '../schemas/invite.schema';
-import type { InvitedFriend } from '../schemas/invited-friend.schema';
+import type { InvitedFriend } from '../domains/invited-friend.model';
 import { invalidateInviteAvailability } from './invite-cache';
 
 // 화면에 들어올 때마다 다시 확인하고, 떠나면 남기지 않는다

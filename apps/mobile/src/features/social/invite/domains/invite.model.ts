@@ -1,55 +1,85 @@
 import { PREMIUM_CAP_STATE } from '@aido/api/vocabulary';
+import { instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
-import type { Invite, InviterRewardMilestone } from '../schemas/invite.schema';
-import { InviteRewardPolicy } from './invite-reward.model';
+import { InviteRewardPolicy, inviteRewardSchema } from './invite-reward.model';
+
+export const inviteMilestoneSchema = z.object({
+  qualifiedCount: z.int().positive(),
+  rewards: z.array(inviteRewardSchema),
+});
+export type InviteMilestone = z.infer<typeof inviteMilestoneSchema>;
+
+export const inviterRewardMilestoneSchema = inviteMilestoneSchema.extend({
+  repeatEvery: z.int().positive().nullable(),
+});
+export type InviterRewardMilestone = z.infer<typeof inviterRewardMilestoneSchema>;
+
+export const inviteSchema = z.object({
+  code: z.string(),
+  link: z.url(),
+  waitingCount: z.int().nonnegative(),
+  qualifiedCount: z.int().nonnegative(),
+  premiumDaysInWindow: z.int().nonnegative(),
+  totalPremiumDays: z.int().nonnegative(),
+  premiumCapState: z.enum(PREMIUM_CAP_STATE),
+  nextMilestone: inviteMilestoneSchema.nullable(),
+  rewardsEarned: z.array(inviteRewardSchema),
+  createdAt: instantSchema,
+});
+export type Invite = z.infer<typeof inviteSchema>;
 
 function calculateRemainingInvites(qualifiedCount: number, targetCount: number) {
   return Math.max(targetCount - qualifiedCount, 0);
-}
-
-// 반복하지 않는 단계(3·5·10명 등)만 발자국 판에 생선 칸으로 미리 보여 준다
-function isOneTimeMilestone(milestone: Pick<InviterRewardMilestone, 'repeatEvery'>) {
-  return milestone.repeatEvery == null;
 }
 
 function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
   return qualifiedCount + waitingCount;
 }
 
-function getRemainingToNextMilestone(invite: Pick<Invite, 'qualifiedCount' | 'nextMilestone'>) {
+// 반복하지 않는 단계(3·5·10명 등)만 발자국 판에 생선 칸으로 미리 보여 준다
+export function isOneTimeMilestone(milestone: Pick<InviterRewardMilestone, 'repeatEvery'>) {
+  return milestone.repeatEvery == null;
+}
+
+export function getRemainingToNextMilestone(
+  invite: Pick<Invite, 'qualifiedCount' | 'nextMilestone'>,
+) {
   return invite.nextMilestone == null
     ? null
     : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
 }
 
-/** 다음 발자국에서 받는 프리미엄 일수(없으면 0) */
-function getNextPremiumDays(invite: Pick<Invite, 'nextMilestone'>) {
+// 다음 발자국에서 받는 프리미엄 일수(없으면 0)
+export function getNextPremiumDays(invite: Pick<Invite, 'nextMilestone'>) {
   return InviteRewardPolicy.getPremiumDays(invite.nextMilestone?.rewards ?? []);
 }
 
-function getNextFriendSlots(invite: Pick<Invite, 'nextMilestone'>) {
+export function getNextFriendSlots(invite: Pick<Invite, 'nextMilestone'>) {
   return InviteRewardPolicy.getFriendSlots(invite.nextMilestone?.rewards ?? []);
 }
 
-function getEarnedPremiumDays(invite: Pick<Invite, 'rewardsEarned'>) {
+export function getEarnedPremiumDays(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getPremiumDays(invite.rewardsEarned);
 }
 
-function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
+export function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
 }
 
-/** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
-function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
+// 시작 체크리스트 완료 기준: 가입까지 마친 초대 친구가 한 명이라도 있다
+export function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
   return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
 }
 
-/**
- * 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다).
- * 프리미엄 상한은 서버가 정한 premiumCapState를 그대로 따른다
- */
-function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>) {
+// 지난번 축하한 뒤로 사용을 시작한 친구가 늘었다
+export function hasNewPawPrints(invite: Pick<Invite, 'qualifiedCount'>, celebratedCount: number) {
+  return invite.qualifiedCount > celebratedCount;
+}
+
+// 진행 안내가 말할 상황(문구는 화면이 고른다). 상한은 서버의 premiumCapState를 따른다
+export function getProgress(invite: Pick<Invite, 'premiumCapState' | 'qualifiedCount'>) {
   return match({
     premiumCapState: invite.premiumCapState,
     hasPawPrint: invite.qualifiedCount > 0,
@@ -71,6 +101,7 @@ export const InvitePolicy = {
   getEarnedPremiumDays,
   getEarnedFriendSlots,
   hasInvitedAnyone,
+  hasNewPawPrints,
   getProgress,
   isOneTimeMilestone,
 } as const;

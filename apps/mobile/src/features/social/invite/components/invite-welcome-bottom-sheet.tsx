@@ -43,9 +43,9 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
-import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,

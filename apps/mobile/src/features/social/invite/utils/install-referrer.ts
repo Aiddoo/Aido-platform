@@ -1,4 +1,4 @@
-import { parseInviteCode } from '../schemas/invite.schema';
+import { parseInviteCode } from '../domains/invite-code.model';
 
 const INVITE_CODE_PARAM = 'inviteCode';
 

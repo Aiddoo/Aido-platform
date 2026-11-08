@@ -1,6 +1,6 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
 
-import type { InviteCode } from '../schemas/invite.schema';
+import type { InviteCode } from '../domains/invite-code.model';
 
 export const INVITE_QUERY_KEYS = {
   all: ['invite'] as const,
