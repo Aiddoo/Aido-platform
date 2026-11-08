@@ -1,5 +1,6 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -179,6 +180,10 @@ function TodoCreateForm({
   useOnScreenBlur(voice.interrupt);
   const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
   const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
+  // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
+  const canSuggestVoice = aiParseQuotaType !== 'used-up';
+  const isVoiceHintShown = canSuggestVoice && (isVoiceHintRequested || isVoiceHintPending);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
@@ -341,7 +346,7 @@ function TodoCreateForm({
                   <BottomSheetInput
                     ref={ref}
                     // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
-                    autoFocus={!isVoiceHintRequested && !isVoiceHintPending && !voice.isRestarting}
+                    autoFocus={!isVoiceHintShown && !voice.isRestarting}
                     onFocus={() => setIsTitleFocused(true)}
                     onBlur={() => setIsTitleFocused(false)}
                     placeholder={t('add.placeholder')}
@@ -369,7 +374,7 @@ function TodoCreateForm({
                 description={tVoice('coach.quickStart.description')}
                 placement="left"
                 align="center"
-                isEnabled={!isTitleFocused}
+                isEnabled={canSuggestVoice && !isTitleFocused}
                 isPassThrough
                 isDismissed={hasTouchedForm}
                 isForced={isVoiceHintForced}

@@ -5,13 +5,13 @@ import {
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   LockIcon,
+  Meter,
   RepeatIcon,
   Text,
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { tv } from '@src/shared/utils/tv';
 import { isNotNil } from 'es-toolkit';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -214,17 +214,6 @@ export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
 
 type TodoProgressTone = 'surface' | 'onSky';
 
-const todoProgress = tv({
-  slots: { track: 'h-1 w-10 overflow-hidden rounded-full', label: '' },
-  variants: {
-    tone: {
-      surface: { track: 'bg-gray-2' },
-      onSky: { track: 'bg-on-sky/20', label: 'text-on-sky/60 tabular-nums' },
-    },
-  },
-  defaultVariants: { tone: 'surface' },
-});
-
 interface TodoProgressProps {
   value: number;
   total: number;
@@ -233,19 +222,21 @@ interface TodoProgressProps {
 }
 
 export function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
-  const percentage = total > 0 ? (value / total) * 100 : 0;
-  const styles = todoProgress({ tone });
-
   return (
     <HStack gap={6} align="center">
-      <Box className={styles.track()}>
-        <Box className="h-full rounded-full bg-main" style={{ width: `${percentage}%` }} />
-      </Box>
+      <Meter
+        value={value}
+        max={total}
+        tone={tone}
+        className="w-10"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
       <Text
         size="e1"
         tone={tone === 'onSky' ? 'onSky' : undefined}
         shade={tone === 'onSky' ? undefined : 6}
-        className={styles.label()}
+        className={tone === 'onSky' ? 'text-on-sky/60 tabular-nums' : undefined}
       >
         {value}/{total}
       </Text>

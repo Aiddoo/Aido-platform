@@ -1,4 +1,5 @@
-import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
+import { match } from 'ts-pattern';
 
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
@@ -27,4 +28,58 @@ export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
     },
     premium: getPremiumBenefitAmounts(),
   } as const;
+}
+
+interface PlanComparison {
+  unit: 'perMonth' | 'perDay' | 'people' | 'items';
+  free: number;
+  /** null은 무제한이다 */
+  premium: number | null;
+}
+
+/** 막힌 기능 하나의 "무료 → 프리미엄" 숫자 */
+export function getPlanComparison(
+  snapshot: EntitlementSnapshot,
+  feature: PlanLimitFeatureKey,
+): PlanComparison {
+  return match(feature)
+    .with(
+      'AI_PARSE',
+      'VOICE_NOTE',
+      (quotaFeature) =>
+        ({
+          unit: 'perMonth',
+          free: EntitlementPolicy.getFreeLimit(snapshot, quotaFeature),
+          premium: PLAN_CATALOG[quotaFeature].fairUse.premium,
+        }) satisfies PlanComparison,
+    )
+    .with(
+      'CHEER',
+      'NUDGE',
+      (quotaFeature) =>
+        ({
+          unit: 'perDay',
+          free: EntitlementPolicy.getFreeLimit(snapshot, quotaFeature),
+          premium: PLAN_CATALOG[quotaFeature].premium,
+        }) satisfies PlanComparison,
+    )
+    .with(
+      'FRIEND',
+      (resourceFeature) =>
+        ({
+          unit: 'people',
+          free: EntitlementPolicy.getFreeLimit(snapshot, resourceFeature),
+          premium: PLAN_CATALOG[resourceFeature].premium,
+        }) satisfies PlanComparison,
+    )
+    .with(
+      'TODO_CATEGORY',
+      (resourceFeature) =>
+        ({
+          unit: 'items',
+          free: EntitlementPolicy.getFreeLimit(snapshot, resourceFeature),
+          premium: PLAN_CATALOG[resourceFeature].premium,
+        }) satisfies PlanComparison,
+    )
+    .exhaustive();
 }

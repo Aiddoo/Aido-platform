@@ -1,3 +1,4 @@
+import type { UpsellPresentation } from '../domains/upsell.model';
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import type {
   PremiumGateAnalyticsFeature,
@@ -15,7 +16,6 @@ export type EntitlementGateSurface =
   | 'notification_center'
   | 'app_icon_settings'
   | 'reminder_settings'
-  | 'report_detail'
   | 'voice_note';
 
 /** precheck: 시작 전에 남은 횟수 0을 보고 막았다 · server: 서버가 한도 오류로 막았다 */
@@ -26,9 +26,20 @@ declare module '@src/shared/analytics/event-map' {
     /** 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다 */
     subscription_started: { product_id: string };
     subscription_restored: undefined;
-    premium_gate_shown: { feature: PremiumGateAnalyticsFeature; surface: EntitlementGateSurface };
-    /** 게이트 다이얼로그에서 구독하기를 눌렀다 */
+    /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast다 */
+    premium_gate_shown: {
+      feature: PremiumGateAnalyticsFeature;
+      surface: EntitlementGateSurface;
+      presentation: UpsellPresentation;
+    };
+    /** 안내 시트·토스트에서 프리미엄 보기를 눌렀다 */
     premium_gate_cta_tapped: {
+      feature: PremiumGateAnalyticsFeature;
+      surface: EntitlementGateSurface;
+      presentation: UpsellPresentation;
+    };
+    /** 시트를 프리미엄 보기·대안 동작 없이 닫았다(나중에·밀어 닫기). 그날 같은 기능은 토스트로 바뀐다 */
+    premium_upsell_dismissed: {
       feature: PremiumGateAnalyticsFeature;
       surface: EntitlementGateSurface;
     };

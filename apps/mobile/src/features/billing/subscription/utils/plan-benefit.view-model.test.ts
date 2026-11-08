@@ -6,7 +6,7 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import { getPlanBenefitAmounts } from './plan-benefit.view-model';
+import { getPlanBenefitAmounts, getPlanComparison } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
   it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 카탈로그를 쓴다', () => {
@@ -49,4 +49,35 @@ describe('getPlanBenefitAmounts', () => {
       });
     },
   );
+});
+
+describe('getPlanComparison', () => {
+  it('AI 할 일 만들기는 무료 한도와 프리미엄 공정 사용 상한을 월 단위로 견준다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot();
+
+    // When
+    const comparison = getPlanComparison(snapshot, 'AI_PARSE');
+
+    // Then
+    expect(comparison).toEqual({
+      unit: 'perMonth',
+      free: PLAN_CATALOG.AI_PARSE.free,
+      premium: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+    });
+  });
+
+  it('친구는 초대로 늘어난 서버 한도를 무료 쪽에 쓰고 프리미엄은 무제한이다', () => {
+    // Given
+    const snapshot = EntitlementPolicy.withFeatureQuota(
+      createEntitlementSnapshot(),
+      toFeatureQuota({ ...createFeatureQuotaDto('FRIEND'), limit: 7 }),
+    );
+
+    // When
+    const comparison = getPlanComparison(snapshot, 'FRIEND');
+
+    // Then
+    expect(comparison).toEqual({ unit: 'people', free: 7, premium: null });
+  });
 });

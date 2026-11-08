@@ -159,25 +159,19 @@
   },
   "gate": {
     "aiParseTitle": "You've used all your AI to-dos this month",
-    "aiParsePremium": "With Premium, you get up to {{amount}} a month.",
     "voiceNoteTitle": "You've used all your voice notes this month",
-    "voiceNotePremium": "With Premium, you get {{amount}} a month, up to {{minutes}} minutes each.",
     "nudgeTitle": "You've used all your nudges today",
-    "nudgePremium": "With Premium, you can nudge as much as you like.",
     "cheerTitle": "You've used all your cheers today",
-    "cheerPremium": "With Premium, you can cheer as much as you like.",
     "friendTitle": "You've reached your friend limit",
-    "friendPremium": "With Premium, you can add as many friends as you like.",
     "categoryTitle": "You can't add more categories",
-    "categoryPremium": "With Premium, you can make up to {{amount}} categories.",
     "aiReportTitle": "AI reports are a Premium feature",
-    "aiReportDescription": "Subscribe to get weekly and monthly reports analyzed by AI.",
+    "aiReportDescription": "Get weekly and monthly reports analyzed by AI.",
     "aiSuggestionTitle": "AI repeat suggestions are a Premium feature",
-    "aiSuggestionDescription": "Subscribe and AI will suggest the to-dos you keep repeating.",
+    "aiSuggestionDescription": "AI suggests the to-dos you keep repeating.",
     "reminderTimeTitle": "Custom reminder times are a Premium feature",
-    "reminderTimeDescription": "Subscribe to get reminders at the times you choose.",
+    "reminderTimeDescription": "Get reminders at the times you choose. Default-time reminders keep coming.",
     "appIconTitle": "Custom app icons are a Premium feature",
-    "appIconDescription": "Subscribe to give the app icon your own style.",
+    "appIconDescription": "Give the app icon your own style.",
     "refillToday": "You'll get {{amount}} more later today.",
     "refillTomorrow": "You'll get {{amount}} more tomorrow.",
     "refillOn": "You'll get {{amount}} more on {{date}}.",
@@ -190,11 +184,26 @@
     "voiceNote": "Voice note summaries",
     "remaining": "{{amount}} left",
     "usedUpMonth": "Used up this month",
-    "usedUpDay": "Used up today"
+    "usedUpDay": "Used up today",
+    "remainingOfLimit": "{{remaining}} / {{limit}}"
   },
   "tier": {
     "admin": "Admin",
     "premium": "Premium",
     "basic": "Basic"
+  },
+  "upsell": {
+    "viewPremium": "See Premium",
+    "later": "Not now",
+    "usage": "{{used}} of {{limit}} used",
+    "free": "Free",
+    "premium": "Premium",
+    "unlimited": "Unlimited",
+    "amount": {
+      "perMonth": "{{amount}} a month",
+      "perDay": "{{amount}} a day",
+      "people": "{{amount}} friends",
+      "items": "{{amount}} categories"
+    }
   }
 }

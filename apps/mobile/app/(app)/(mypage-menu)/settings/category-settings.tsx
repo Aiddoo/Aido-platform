@@ -1,3 +1,4 @@
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { CategoryList } from '@src/features/planning/category/components/category-list';
 import {
   CATEGORY_SETTINGS_VIEW,
@@ -31,6 +32,15 @@ export default function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
   const [view, setView] = useView('view', categorySettingsViewSchema);
+  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'category_create' });
+
+  // 이름을 다 쓴 뒤에 막히지 않게 시트를 열기 전에 확인한다
+  const handleAddPress = () => {
+    if (gate.promptIfBlocked()) {
+      return;
+    }
+    push('/todo-categories/new');
+  };
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
@@ -64,7 +74,7 @@ export default function TodoCategorySettingsScreen() {
               color="primary"
               display="inline"
               radius="full"
-              onPress={() => push('/todo-categories/new')}
+              onPress={handleAddPress}
             >
               <HStack align="center" gap={4}>
                 <PlusIcon

@@ -34,11 +34,11 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 
 부족한 부품을 `shared/ui`에 더하면 같은 커밋에서 폴더의 문서(`{name}.md`), 테스트, 아래 목록을 갱신한다.
 
-### 한도 안내는 `PremiumDialog` 하나
+### 한도·잠금 안내는 `useEntitlementGate` 하나
 
-AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDialog` 하나로 안내한다. `PremiumDialog`는 `useEntitlementGate`만 쓰므로 `features/billing/subscription/components/premium-dialog.tsx`에 있다. 기능 화면은 직접 렌더하지 않고 `useEntitlementGate(feature, { surface })`의 `promptIfBlocked`·`promptIfBlockedError`를 쓴다. 기능별 `LimitReachedDialog`나
-인라인 한도 배너를 새로 만들지 않고, 게이트가 기능별 `title`·`description`(리셋 날짜는 `entitlement.model.ts`의 `resetsAt`으로 계산)과
-필요하면 대체 행동을 넘긴다.
+기능 한도에 닿았거나 프리미엄 기능을 눌렀을 때는 `useEntitlementGate(feature, { surface })`의 `promptIfBlocked`·`promptIfBlockedError`만 쓴다. 게이트가 `features/billing/subscription/components/premium-upsell-bottom-sheet.tsx`를 `useOverlay`로 띄운다. 시트는 사용량 막대(`Meter`)와 다시 생기는 날, "무료 → 프리미엄" 숫자를 서버 스냅샷에서 직접 읽고, 버튼은 [프리미엄 보기]와 글자 버튼 [나중에] 둘이다. 무료 대안(친구 초대, 지금까지 정리하기)이 있으면 대안이 주 버튼이고 [프리미엄 보기]가 글자 버튼이다.
+
+같은 기능을 그날 [나중에]로 닫았으면 다음부터는 시트 대신 "프리미엄 보기" 행동이 붙은 토스트로 알린다(`UpsellPolicy.getPromptSurface`, 기록은 `UpsellDismissalRepository`). 기능 화면은 시트를 직접 렌더하지 않고, 기능별 `LimitReachedDialog`나 인라인 한도 배너를 새로 만들지 않는다. 앱 실행·홈·할 일 완료 축하에서는 권하지 않는다.
 
 ---
 
@@ -94,6 +94,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `FormStepLayout`                                                                                | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                                                                           | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `ActionButton`                                                                                  | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                    |
 | `ListRow`                                                                                       | 목록 행 (`left`·`contents`·`right`, `.Texts`·`.Image`, `onPress`면 행 전체가 버튼)                                                         | `src/shared/ui/list-row/list-row.md`                              |
+| `Meter`                                                                                         | 쓴 양 가로 막대(하위 할 일 진행, 남은 AI 횟수). 숫자 글자는 옆에 따로 둔다                                                                 | `src/shared/ui/meter/meter.md`                                    |
 | `OverlayProvider`, `useOverlay`                                                                 | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                                                                                 | `src/shared/ui/overlay/overlay.md`                                |
 | `OfflineBanner`                                                                                 | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                                                                                | `src/shared/ui/offline-banner/offline-banner.md`                  |
 | `QueryErrorBoundary`                                                                            | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                                                                                 | `src/shared/ui/query-error-boundary/query-error-boundary.md`      |
@@ -605,5 +606,5 @@ MyComponent.Loading = function Loading() {
 ## AI 기능 표시
 
 - AI를 쓰는 실행 지점에는 `AiIcon`을 두고, 횟수를 쓰면 남은 횟수를 함께 보인다. 문구는 `useQuotaStatus`(글자), `QuotaChip`(알약)에서 가져온다.
-- 쓸 때마다 묻는 Dialog는 두지 않는다. 처음 한 번 AI 동의, 횟수를 다 쓰면 `useEntitlementGate`의 `PremiumDialog`만 띄운다. 실패해서 차감되지 않으면 그 자리에서 알린다.
+- 쓸 때마다 묻는 Dialog는 두지 않는다. 처음 한 번 AI 동의, 횟수를 다 쓰면 `useEntitlementGate`의 프리미엄 안내 시트(그날 두 번째부터 토스트)만 띄운다. 실패해서 차감되지 않으면 그 자리에서 알린다.
 - 프리미엄·관리자에게는 남은 횟수를 보이지 않는다. 전체 횟수는 내 정보의 `QuotaSummary`에서 본다.

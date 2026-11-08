@@ -157,18 +157,19 @@
 
 **한도·결제 유도 / 구독**
 
-`feature` 값은 `ai_parse`·`cheer_limit`·`nudge_limit`·`friend_limit`·`category_limit`·`ai_report`·`ai_suggestion`·`reminder_time`·`app_icon`·`voice_note`다. 빠른 말하기와 메모 AI는 `ai_parse`, 긴 녹음은 `voice_note`로 센다. `surface`(`EntitlementGateSurface`)는 `add_todo_sheet`·`memo_detail`·`category_create`·`friend_request`·`poke_banner`·`todo_nudge`·`suggestions`·`notification_center`·`app_icon_settings`·`reminder_settings`·`report_detail`·`voice_note`다.
+`feature` 값은 `ai_parse`·`cheer_limit`·`nudge_limit`·`friend_limit`·`category_limit`·`ai_report`·`ai_suggestion`·`reminder_time`·`app_icon`·`voice_note`다. 빠른 말하기와 메모 AI는 `ai_parse`, 긴 녹음은 `voice_note`로 센다. `surface`(`EntitlementGateSurface`)는 `add_todo_sheet`·`memo_detail`·`category_create`·`friend_request`·`poke_banner`·`todo_nudge`·`suggestions`·`notification_center`·`app_icon_settings`·`reminder_settings`·`voice_note`다. `presentation`(`UpsellPresentation`)은 `sheet`·`toast`다. 같은 기능을 그날 시트에서 [나중에]로 닫았으면 `toast`다.
 
-| 이벤트                     | 파라미터                                                       | 시점과 의미                                           |
-| -------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
-| `premium_gate_shown`       | `feature` · `surface`                                          | 한도·프리미엄 안내 다이얼로그(`useEntitlementGate`)   |
-| `premium_gate_cta_tapped`  | `feature` · `surface`                                          | 그 다이얼로그에서 구독하기                            |
-| `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server`         | 횟수·개수 한도 안내                                   |
-| `limit_reached_cta_tapped` | `feature` · `surface`                                          | 한도 안내에서 구독하기                                |
-| `paywall_viewed`           | `view`: `status`·`plans`                                       | 요금제를 받아 페이월이 보였을 때                      |
-| `purchase_failed`          | `reason`: `network`·`server`·`store_unavailable`·`store_error` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다 |
-| `subscription_started`     | `product_id`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                      |
-| `subscription_restored`    | –                                                              | 복원                                                  |
+| 이벤트                     | 파라미터                                                       | 시점과 의미                                              |
+| -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `premium_gate_shown`       | `feature` · `surface` · `presentation`                         | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)     |
+| `premium_gate_cta_tapped`  | `feature` · `surface` · `presentation`                         | 그 시트·토스트에서 프리미엄 보기                         |
+| `premium_upsell_dismissed` | `feature` · `surface`                                          | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다 |
+| `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server`         | 횟수·개수 한도 안내                                      |
+| `limit_reached_cta_tapped` | `feature` · `surface`                                          | 한도 안내에서 프리미엄 보기                              |
+| `paywall_viewed`           | `view`: `status`·`plans`                                       | 요금제를 받아 페이월이 보였을 때                         |
+| `purchase_failed`          | `reason`: `network`·`server`·`store_unavailable`·`store_error` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다    |
+| `subscription_started`     | `product_id`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                         |
+| `subscription_restored`    | –                                                              | 복원                                                     |
 
 **알림 / 배지 / 설정 / 생명주기**
 
@@ -312,7 +313,7 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `subscription_status` | 구독 상태     |
 | `premium_source`      | 프리미엄 출처 |
 
-**이벤트 범위 (22 / 50)**
+**이벤트 범위 (23 / 50)**
 
 | 파라미터         | 표시 이름       | 주로 쓰는 이벤트                                                      |
 | ---------------- | --------------- | --------------------------------------------------------------------- |
@@ -338,6 +339,7 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `result`         | 권한 결과       | weather_location_permission_result                                    |
 | `severity`       | 특보 등급       | weather_alert_opened                                                  |
 | `product_id`     | 상품 ID         | subscription_started (RC `purchase`의 상품 파라미터명은 확인 후 추가) |
+| `presentation`   | 안내 모양       | premium_gate_shown, premium_gate_cta_tapped                           |
 
 등록하지 않음: `*_id`(엔터티 id), `field`, `value`, `color`, `week_label`, `query_length_bucket`·`hint`·`trigger`(필요하면 추가).
 

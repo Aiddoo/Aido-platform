@@ -103,6 +103,11 @@ function getLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.limit ?? null;
 }
 
+/** 서버가 센 사용량. 세지 않는 기능·무제한은 null이다 */
+function getUsedCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
+  return findFeatureQuota(snapshot, feature)?.used ?? null;
+}
+
 /** 세지 않는 기능·무제한은 null이다 */
 function getRemainingCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.remaining ?? null;
@@ -187,6 +192,7 @@ export const EntitlementPolicy = {
   canUseFeature,
   getAccessDecision,
   getLimit,
+  getUsedCount,
   getRemainingCount,
   getMaxSeconds,
   getQuotaStatus,

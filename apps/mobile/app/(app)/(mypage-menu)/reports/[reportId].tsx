@@ -1,8 +1,8 @@
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { SavedActivityReport } from '@src/features/insights/report/components/saved-activity-report';
 import { getSampleReport } from '@src/features/insights/report/constants/sample-reports.constants';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -12,7 +12,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
@@ -20,7 +20,7 @@ import { match } from 'ts-pattern';
 export default function ReportDetailScreen() {
   const params = reportParamsSchema.safeParse(useLocalSearchParams());
   const { t } = useTranslation('ai');
-  const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
+  const push = useSingleTap(router.push);
 
   if (!params.success) {
     return <Redirect href="/reports" />;
@@ -47,7 +47,15 @@ export default function ReportDetailScreen() {
                     {t('report.lockedDetail.description')}
                   </Text>
                   <Spacing size={4} />
-                  <Button size="medium" onPress={() => gate.promptLocked()}>
+                  <Button
+                    size="medium"
+                    onPress={() =>
+                      push({
+                        pathname: '/settings/subscription',
+                        params: { feature: 'AI_REPORT' },
+                      })
+                    }
+                  >
                     {t('report.lockedDetail.subscribe')}
                   </Button>
                 </VStack>

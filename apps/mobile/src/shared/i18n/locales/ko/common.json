@@ -42,12 +42,6 @@
     "hoursAgo": "{{count}}시간 전",
     "daysAgo": "{{count}}일 전"
   },
-  "premiumDialog": {
-    "title": "프리미엄 기능",
-    "close": "닫기",
-    "subscribe": "구독하기",
-    "subscribeUnlimited": "프리미엄으로 넉넉하게 쓰기"
-  },
   "errorBoundary": {
     "title": "문제가 생겼어요",
     "description": "잠시 후 다시 시도해주세요. 계속되면 알려주세요",

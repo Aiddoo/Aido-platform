@@ -21,6 +21,7 @@ import { SuggestionService } from '@src/features/assistant/suggestion/apis/sugge
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import { createUpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -206,6 +207,7 @@ export function createTestDi({
   });
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
+  const upsellDismissalRepository = createUpsellDismissalRepository(syncStorage);
   const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
   const pendingRedemptionService = new PendingRedemptionService({
     pendingRedemptionRepository,
@@ -279,7 +281,7 @@ export function createTestDi({
       voiceNotes: voiceNoteStorage.service,
       deviceTimezone: deviceTimezoneService,
       pendingRedemption: pendingRedemptionRepository,
-      accountGuides: [whatsNewRepository, coachmarkRepository],
+      accountGuides: [whatsNewRepository, coachmarkRepository, upsellDismissalRepository],
       logger,
     }),
     sessionRevocationService,
@@ -349,6 +351,7 @@ export function createTestDi({
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, purchasesGateway, logger),
     entitlementService: new EntitlementService(httpClient, logger),
+    upsellDismissalRepository,
     weatherService,
     weatherLocationService: new WeatherLocationService({
       gateway: deviceLocation,

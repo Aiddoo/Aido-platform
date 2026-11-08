@@ -156,25 +156,19 @@
   },
   "gate": {
     "aiParseTitle": "이번 달 AI 할 일 만들기를 다 썼어요",
-    "aiParsePremium": "프리미엄은 월 {{amount}}회까지 넉넉하게 쓸 수 있어요.",
     "voiceNoteTitle": "이번 달 말로 메모하기를 다 썼어요",
-    "voiceNotePremium": "프리미엄은 월 {{amount}}회, 한 번에 {{minutes}}분까지 쓸 수 있어요.",
     "nudgeTitle": "오늘 콕 찌르기를 다 썼어요",
-    "nudgePremium": "프리미엄은 콕 찌르기를 무제한으로 쓸 수 있어요.",
     "cheerTitle": "오늘 응원을 다 썼어요",
-    "cheerPremium": "프리미엄은 응원을 무제한으로 보낼 수 있어요.",
     "friendTitle": "친구를 더 추가할 수 없어요",
-    "friendPremium": "프리미엄은 친구를 무제한으로 추가할 수 있어요.",
     "categoryTitle": "카테고리를 더 만들 수 없어요",
-    "categoryPremium": "프리미엄은 카테고리를 {{amount}}개까지 만들 수 있어요.",
     "aiReportTitle": "AI 리포트는 프리미엄 기능이에요",
-    "aiReportDescription": "구독하면 매주·매월 AI가 분석한 리포트를 받아볼 수 있어요.",
+    "aiReportDescription": "매주·매월 AI가 분석한 리포트를 받아볼 수 있어요.",
     "aiSuggestionTitle": "AI 반복 제안은 프리미엄 기능이에요",
-    "aiSuggestionDescription": "구독하면 반복되는 할 일을 AI가 알아서 제안해드려요.",
+    "aiSuggestionDescription": "반복되는 할 일을 AI가 알아서 제안해드려요.",
     "reminderTimeTitle": "리마인드 시간 변경은 프리미엄 기능이에요",
-    "reminderTimeDescription": "구독하면 원하는 시간에 리마인드 알림을 받을 수 있어요.",
+    "reminderTimeDescription": "원하는 시간에 리마인드를 받을 수 있어요. 기본 시간 알림은 계속 와요.",
     "appIconTitle": "앱 아이콘 변경은 프리미엄 기능이에요",
-    "appIconDescription": "구독하면 나만의 스타일로 앱 아이콘을 바꿀 수 있어요.",
+    "appIconDescription": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요.",
     "refillToday": "오늘 중에 다시 {{amount}}번 생겨요.",
     "refillTomorrow": "내일 다시 {{amount}}번 생겨요.",
     "refillOn": "{{date}}에 다시 {{amount}}번 생겨요.",
@@ -187,11 +181,26 @@
     "voiceNote": "말로 메모 정리",
     "remaining": "{{amount}}번 남음",
     "usedUpMonth": "이번 달 다 씀",
-    "usedUpDay": "오늘 다 씀"
+    "usedUpDay": "오늘 다 씀",
+    "remainingOfLimit": "{{remaining}} / {{limit}}"
   },
   "tier": {
     "admin": "어드민",
     "premium": "프리미엄",
     "basic": "베이직"
+  },
+  "upsell": {
+    "viewPremium": "프리미엄 보기",
+    "later": "나중에",
+    "usage": "{{used}} / {{limit}}번 사용",
+    "free": "무료",
+    "premium": "프리미엄",
+    "unlimited": "무제한",
+    "amount": {
+      "perMonth": "월 {{amount}}번",
+      "perDay": "하루 {{amount}}번",
+      "people": "{{amount}}명",
+      "items": "{{amount}}개"
+    }
   }
 }

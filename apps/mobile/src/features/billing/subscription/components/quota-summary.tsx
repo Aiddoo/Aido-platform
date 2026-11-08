@@ -1,9 +1,17 @@
+import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
+import { toDateFormatLocale } from '@src/shared/date/date-format';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, HStack, Text, VStack, WordWrapText } from '@src/shared/ui';
+import { useLanguage } from '@src/shared/providers/language-provider';
+import { AiFilledIcon, HStack, Meter, Text, VStack, WordWrapText } from '@src/shared/ui';
+import { formatCount } from '@src/shared/utils/number-format';
+import { useQuery } from '@tanstack/react-query';
 
+import { EntitlementPolicy } from '../domains/entitlement.model';
+import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
-import { QuotaChip } from './quota-chip';
+import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
+/** 무료 사용자의 남은 AI 횟수. 구독 권유는 이 카드가 아니라 막힌 순간의 안내가 맡는다 */
 export function QuotaSummary() {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');
@@ -14,30 +22,83 @@ export function QuotaSummary() {
   }
 
   return (
-    <VStack gap={12} className="rounded-2xl bg-gray-1 p-4" testID="quota-summary">
+    <VStack gap={16} className="rounded-2xl bg-gray-1 p-4" testID="quota-summary">
       <HStack gap={6} align="center">
         <AiFilledIcon width={16} height={16} colorClassName="text-main" />
         <Text size="b4" weight="semibold" shade={7}>
           {t('quota.summaryTitle')}
         </Text>
       </HStack>
-      <HStack gap={12} align="center">
-        <VStack flex={1} gap={2}>
-          <Text size="b3" weight="medium">
-            {t('quota.aiParse')}
-          </Text>
-          <WordWrapText size="e1" shade={6}>
-            {t('quota.aiParseHint')}
-          </WordWrapText>
-        </VStack>
-        <QuotaChip feature="AI_PARSE" />
-      </HStack>
+      <QuotaRow feature="AI_PARSE" label={t('quota.aiParse')} hint={t('quota.aiParseHint')} />
+      <QuotaRow feature="VOICE_NOTE" label={t('quota.voiceNote')} />
+    </VStack>
+  );
+}
+
+interface QuotaRowProps {
+  feature: PlanQuotaFeatureKey;
+  label: string;
+  hint?: string;
+}
+
+/** 막대는 쓴 만큼 찬다. 다 쓴 항목만 주황으로 칠하고 다시 생기는 날을 붙인다 */
+function QuotaRow({ feature, label, hint }: QuotaRowProps) {
+  const { t } = useTranslation('subscription');
+  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
+  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
+  const { type } = useQuotaStatus(feature);
+  const formatRefillSentence = useFormatRefillSentence();
+
+  if (snapshot == null || type === 'untracked') {
+    return null;
+  }
+  const used = EntitlementPolicy.getUsedCount(snapshot, feature);
+  const limit = EntitlementPolicy.getLimit(snapshot, feature);
+  const remaining = EntitlementPolicy.getRemainingCount(snapshot, feature);
+  if (used == null || limit == null || remaining == null) {
+    return null;
+  }
+
+  const isUsedUp = type === 'used-up';
+  const refill = isUsedUp ? formatRefillSentence(snapshot, feature) : null;
+
+  return (
+    <VStack gap={6}>
       <HStack gap={12} align="center">
         <Text size="b3" weight="medium" className="flex-1">
-          {t('quota.voiceNote')}
+          {label}
         </Text>
-        <QuotaChip feature="VOICE_NOTE" />
+        <Text
+          size="b4"
+          weight="semibold"
+          tone={isUsedUp ? 'brand' : undefined}
+          shade={isUsedUp ? undefined : 7}
+          className="tabular-nums"
+        >
+          {t('quota.remainingOfLimit', {
+            remaining: formatCount(remaining, locale),
+            limit: formatCount(limit, locale),
+          })}
+        </Text>
       </HStack>
+      <Meter
+        value={used}
+        max={limit}
+        size="medium"
+        color={isUsedUp ? 'primary' : 'neutral'}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+      {refill != null && (
+        <Text size="e1" weight="semibold" shade={7}>
+          {refill}
+        </Text>
+      )}
+      {hint != null && (
+        <WordWrapText size="e1" shade={6}>
+          {hint}
+        </WordWrapText>
+      )}
     </VStack>
   );
 }

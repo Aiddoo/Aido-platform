@@ -1,6 +1,8 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -12,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
   Image,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
@@ -25,6 +27,9 @@ export function NudgeLimitBanner() {
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
+  // 다시 생기는 때는 서버 한도 스냅샷이 원본이다. 아직 없으면 제목만 보인다
+  const { data: entitlements } = useQuery(useGetEntitlementsQueryOptions());
+  const refill = useFormatRefillSentence()(entitlements, 'NUDGE');
 
   const defaultTitle = (
     <>
@@ -54,9 +59,9 @@ export function NudgeLimitBanner() {
   const bannerText = match({ ...limitInfo, isLimitReached })
     .with({ isLimitReached: true }, () => ({
       title: t('nudge.limitSpentTitle'),
-      description: (
+      description: refill != null && (
         <Text size="e1" shade={6}>
-          {t('nudge.subscribeUnlimited')}
+          {refill}
         </Text>
       ),
     }))

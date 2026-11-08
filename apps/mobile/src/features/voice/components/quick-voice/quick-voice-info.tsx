@@ -1,6 +1,7 @@
 import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
+import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toDateFormatLocale } from '@src/shared/date/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -22,6 +23,7 @@ export function QuickVoiceInfo() {
   const remaining =
     snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE');
   const refill = formatRefillSentence(snapshot, 'AI_PARSE');
+  const { type: quotaType } = useQuotaStatus('AI_PARSE');
   // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
 
@@ -43,7 +45,7 @@ export function QuickVoiceInfo() {
                 colorClassName="text-main"
               />
               <Text size="e2" weight="medium" shade={6} numberOfLines={1} className="shrink">
-                {t('info.label')}
+                {quotaType === 'used-up' ? t('info.typeStillFree') : t('info.label')}
               </Text>
               <InfoIcon
                 width={fontScaledSize(16)}

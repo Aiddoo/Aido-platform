@@ -3,10 +3,10 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { AiFilledIcon, ListRow, type QueryErrorFallbackProps, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
+import { Chip, PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
@@ -37,7 +37,13 @@ export function SuggestionEntry() {
   }
 
   if (!EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_SUGGESTION')) {
-    return <InfoCard label={t('feed.routineSuggestion')} onPress={() => push('/suggestions')} />;
+    return (
+      <InfoCard
+        label={t('feed.routineSuggestion')}
+        isPremiumOnly
+        onPress={() => push('/suggestions')}
+      />
+    );
   }
 
   return <PremiumSuggestionEntry name={userQuery.data.name} />;
@@ -57,7 +63,9 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}
-        onPress={() => push('/settings/subscription')}
+        onPress={() =>
+          push({ pathname: '/settings/subscription', params: { feature: 'AI_SUGGESTION' } })
+        }
       />
     );
   }
@@ -86,9 +94,13 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
 
 interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   label: string;
+  /** 무료 사용자가 눌러 보기 전에 프리미엄 기능임을 알린다 */
+  isPremiumOnly?: boolean;
 }
 
-function InfoCard({ label, ...props }: InfoCardProps) {
+function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
+  const { t } = useTranslation('subscription');
+
   return (
     <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
@@ -99,6 +111,15 @@ function InfoCard({ label, ...props }: InfoCardProps) {
             top={label}
             topProps={{ size: 'b3', weight: 'medium', shade: 8 }}
           />
+        }
+        right={
+          isPremiumOnly && (
+            <Chip size="sm" variant="soft" color="accent">
+              <Text size="e1" weight="semibold" tone="brand" numberOfLines={1}>
+                {t('tier.premium')}
+              </Text>
+            </Chip>
+          )
         }
       />
     </PressableFeedback>

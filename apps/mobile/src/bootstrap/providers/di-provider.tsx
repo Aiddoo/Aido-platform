@@ -9,6 +9,7 @@ import { SuggestionService } from '@src/features/assistant/suggestion/apis/sugge
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import { createUpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -336,6 +337,7 @@ export function DIProvider({
     });
     const subscriptionService = new SubscriptionService(purchasesSession, purchasesGateway, logger);
     const entitlementService = new EntitlementService(authHttpClient, logger);
+    const upsellDismissalRepository = createUpsellDismissalRepository(deviceSyncStorage);
 
     const weatherService = new WeatherService(authHttpClient);
 
@@ -367,7 +369,7 @@ export function DIProvider({
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: deviceTimezoneService,
       pendingRedemption: pendingRedemptionRepository,
-      accountGuides: [whatsNewRepository, coachmarkRepository],
+      accountGuides: [whatsNewRepository, coachmarkRepository, upsellDismissalRepository],
       logger,
     });
 
@@ -438,6 +440,7 @@ export function DIProvider({
       purchasesSession,
       subscriptionService,
       entitlementService,
+      upsellDismissalRepository,
       weatherService,
       weatherLocationService: new WeatherLocationService({
         gateway: expoLocationGateway,

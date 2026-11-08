@@ -45,12 +45,6 @@
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago"
   },
-  "premiumDialog": {
-    "title": "Premium feature",
-    "close": "Close",
-    "subscribe": "Subscribe",
-    "subscribeUnlimited": "Get more with Premium"
-  },
   "errorBoundary": {
     "title": "Something went wrong",
     "description": "Please try again. If it keeps happening, let us know.",

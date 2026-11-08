@@ -73,7 +73,7 @@ export function useCreateTodoCategoryMutationOptions() {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      // 카테고리 한도는 시트의 한도 게이트가 PremiumDialog로 안내한다
+      // 카테고리 한도는 시트의 한도 게이트가 프리미엄 안내 시트로 안내한다
       if (findLimitedFeature(error) != null) {
         return;
       }

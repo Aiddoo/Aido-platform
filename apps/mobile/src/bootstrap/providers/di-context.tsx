@@ -21,6 +21,7 @@ import type { SuggestionService } from '@src/features/assistant/suggestion/apis/
 import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import type { UpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
 import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -148,6 +149,7 @@ export interface DIContainer extends SharedDependencies {
   purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
   entitlementService: EntitlementService;
+  upsellDismissalRepository: UpsellDismissalRepository;
   weatherService: WeatherService;
   weatherLocationService: WeatherLocationService;
   weatherIntroductionRepository: WeatherIntroductionRepository;
@@ -371,6 +373,9 @@ export function useSubscriptionService() {
 }
 export function useEntitlementService() {
   return useDI().entitlementService;
+}
+export function useUpsellDismissalRepository() {
+  return useDI().upsellDismissalRepository;
 }
 export function useWeatherIntroductionRepository() {
   return useDI().weatherIntroductionRepository;

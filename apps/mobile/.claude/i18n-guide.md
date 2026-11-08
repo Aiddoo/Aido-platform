@@ -148,7 +148,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 ### 기능 이름·한도·결제 유도
 
-기능 이름은 "무엇을 + 어떻게" 동사형으로 쓰고 기술 용어(AI 파싱, AI 사용 횟수, 인식, 쿼터, 크레딧)는 쓰지 않는다. 숫자는 서버 스냅샷(`GET /v1/entitlements`)·`PLAN_CATALOG`를 보간 변수로 받는다. 한도 안내는 `useEntitlementGate` → `PremiumDialog` 하나로만 하고 화면마다 토스트·배너 문구를 따로 만들지 않는다. AI 표시 규칙은 [UI 규칙](ui-components.md#ai-기능-표시)에 있다.
+기능 이름은 "무엇을 + 어떻게" 동사형으로 쓰고 기술 용어(AI 파싱, AI 사용 횟수, 인식, 쿼터, 크레딧)는 쓰지 않는다. 숫자는 서버 스냅샷(`GET /v1/entitlements`)·`PLAN_CATALOG`를 보간 변수로 받는다. 한도 안내는 `useEntitlementGate` → `PremiumUpsellBottomSheet`(그날 두 번째부터 토스트) 하나로만 하고 화면마다 토스트·배너 문구를 따로 만들지 않는다. AI 표시 규칙은 [UI 규칙](ui-components.md#ai-기능-표시)에 있다.
 
 | 개념                                     | ko                                       | en                                |
 | ---------------------------------------- | ---------------------------------------- | --------------------------------- |
