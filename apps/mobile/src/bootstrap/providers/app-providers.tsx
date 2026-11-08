@@ -44,7 +44,7 @@ function BootQueryErrorFallback({ reset }: Pick<QueryErrorFallbackProps, 'reset'
   return <QueryErrorFallback reset={reset} onInquiry={openSupportMail} />;
 }
 
-/** 화면이 바뀌면 열려 있던 오버레이를 걷는다. 경로는 여기서만 읽어 화면 이동마다 다른 Provider가 다시 그려지지 않게 한다 */
+/** 경로는 여기서만 읽어 화면 이동마다 다른 Provider가 다시 그려지지 않게 한다 */
 function RouteOverlayProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
 

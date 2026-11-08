@@ -3,32 +3,17 @@ import { isCodedError, NetworkError, ServerError, TimeoutError } from '@src/shar
 /** 재시도 상한(그 외 — 예: 응답 파싱 실패). */
 const MAX_RETRIES = 3;
 
-/**
- * 일시 인프라 장애 재시도 상한. 서버 재시작(≈5-10초)을 덮도록 넉넉히 잡는다.
- * `query-provider`의 상한 백오프와 합치면 재시도 창 ≈ 22초.
- */
+/** 서버 재시작(≈5-10초)을 덮도록 넉넉히 잡는다 */
 const TRANSIENT_INFRA_RETRIES = 6;
 
-/**
- * "일시적 인프라 장애" — 서버 재시작·배포 구간에 자동 복구시킬 대상.
- * - `NetworkError`: 연결 거부(서버 재실행 시 대부분 이 형태). 토큰 갱신의 일시 실패도 포함.
- * - `ServerError`(5xx)·`TimeoutError`: 서버 부팅 중 502/503·느린 응답.
- * `ParseError`(응답 파싱 실패)는 재시도해도 안 낫으므로 제외 — 기본 상한(MAX_RETRIES)로.
- */
+/** 서버 재시작·배포 구간에 자동 복구시킬 대상(NetworkError, ServerError, TimeoutError). ParseError는 재시도해도 안 낫아 제외한다 */
 function isRetryableInfraError(error: unknown): boolean {
   return (
     error instanceof NetworkError || error instanceof ServerError || error instanceof TimeoutError
   );
 }
 
-/**
- * React Query 쿼리 재시도 술어.
- *
- * - 서버 4xx와 앱 오류(`ApiError` 등 `code`가 있는 오류): 재시도하지 않는다 — 호출부와 `QueryErrorBoundary`가 처리한다.
- * - 일시 인프라 장애(네트워크·5xx·타임아웃): 넉넉한 상한까지 재시도해 서버 복귀를
- *   기다린다(콜드스타트/배포 재시작 구간에 재시도 화면 대신 로딩 유지).
- * - 나머지: 기본 상한까지 재시도한다.
- */
+/** 서버 4xx와 `code`가 있는 앱 오류는 호출부와 `QueryErrorBoundary`가 처리하므로 재시도하지 않는다. 일시 인프라 장애는 재시도 화면 대신 로딩을 유지한다 */
 export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
   if (isCodedError(error)) {
     return false;

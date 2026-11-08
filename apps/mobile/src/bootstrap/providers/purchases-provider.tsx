@@ -53,17 +53,14 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
     }
   }, [isAuthenticated, user, status, session]);
 
-  // CustomerInfo 변경 리스너 — 이 기기 구매/복원, 다른 기기 변경, 스토어 직접 취소를 모두 받는다.
-  // 프리미엄은 스토어 구독과 보상 기간을 합친 서버 값이 단일 원천이라 캐시에 쓰지 않고 내 정보·권한만 다시 불러온다.
+  // 프리미엄은 스토어 구독과 보상 기간을 합친 서버 값이 단일 원천이라 캐시에 쓰지 않고 내 정보·권한만 다시 불러온다
   const onCustomerInfoUpdated = useCallback(
     (customerInfo: CustomerInfo) => {
       if (CustomerInfoPolicy.hasStoreEntitlement(customerInfo)) {
-        // 구독 활성화: 웹훅 처리 대기 후 서버 동기화
         syncServerAfterWebhook();
         return;
       }
 
-      // 구독 비활성화 (취소/환불/만료): 즉시 서버 동기화
       syncServerAfterWebhook.cancel();
       invalidateMe(queryClient);
       invalidateEntitlements(queryClient);

@@ -60,9 +60,7 @@ export function AuthGateLayout() {
     return () => clearTimeout(timer);
   }, [isEntryPending]);
 
-  // Stack을 항상 렌더링하여 expo-router의 navigationRef가 즉시 ready 상태가 되도록 함.
-  // 이를 통해 cold start 시 push notification 탭으로 인한
-  // "Attempted to navigate before mounting the Root Layout" 크래시를 방지.
+  // Stack을 항상 렌더링해 navigationRef가 즉시 ready가 되도록 한다. cold start의 push 알림 탭에서 "Attempted to navigate before mounting the Root Layout" 크래시를 막는다
   return (
     <Stack
       screenOptions={{

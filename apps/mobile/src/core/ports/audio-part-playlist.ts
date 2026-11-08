@@ -1,8 +1,6 @@
 export interface AudioPartPlaylistStatus {
   currentIndex: number;
-  /** 지금 조각 안에서의 위치(초) */
   currentTime: number;
-  /** 지금 조각의 길이(초) */
   duration: number;
   isPlaying: boolean;
   isLoaded: boolean;
@@ -18,7 +16,6 @@ export interface AudioPartPlaylist {
   play(): void;
   pause(): void;
   skipTo(index: number): void;
-  /** 지금 조각 안에서 옮긴다(초) */
   seekTo(seconds: number): Promise<void>;
   subscribe(listener: (status: AudioPartPlaylistStatus) => void): () => void;
   /** 인식 중에 켜진 녹음 모드가 남아 있으면 무음 모드에서 소리가 안 나므로 재생용 오디오 모드로 돌린다 */

@@ -2,7 +2,6 @@ import type { SUBSCRIPTION_STATUS } from '@aido/api/vocabulary';
 
 // 포트가 쓰는 관측 키의 단일 원본. 오류 보고 feature·breadcrumb 카테고리·사용자 속성을 여기서만 정의한다.
 
-/** 오류 보고의 `feature` 값. snake_case만 쓰고 새 값은 여기에 먼저 추가한다. */
 export const ERROR_REPORT_FEATURES = [
   'accessibility',
   'ai',
@@ -45,7 +44,7 @@ export const ERROR_REPORT_FEATURES = [
 ] as const;
 export type ErrorReportFeature = (typeof ERROR_REPORT_FEATURES)[number];
 
-/** `captureMessage`로 보내는 이슈 제목. 알림 규칙이 이 값을 볼 수 있어 값을 바꾸지 않는다. */
+/** 알림 규칙이 이 값을 볼 수 있어 값을 바꾸지 않는다 */
 export const ERROR_REPORT_MESSAGES = {
   AUTH_REFRESH_RETRY_REJECTED: 'auth_refresh_retry_rejected',
   QUERY_BOUNDARY_AUTH_CONTAINED: 'query_boundary_auth_contained',
@@ -56,12 +55,6 @@ export const ERROR_REPORT_MESSAGES = {
 } as const;
 export type ErrorReportMessage = (typeof ERROR_REPORT_MESSAGES)[keyof typeof ERROR_REPORT_MESSAGES];
 
-/**
- * breadcrumb 카테고리(벤더 중립).
- *
- * 이벤트/크래시 직전의 행적을 분류해 대시보드에서 필터할 수 있게 한다.
- * 자유 문자열 대신 union으로 고정해 오탈자·미정의 카테고리를 컴파일 타임에 막는다.
- */
 const BREADCRUMB_CATEGORIES = [
   'http',
   'navigation',
@@ -76,10 +69,7 @@ const BREADCRUMB_CATEGORIES = [
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 
-/**
- * 개발·프리뷰 빌드의 모든 이벤트(네이티브 자동 수집 포함)에 붙이는 기본 파라미터.
- * GA 데이터 필터 "내부 트래픽"이 `traffic_type = internal`을 수집 시점에 제외한다.
- */
+/** GA 데이터 필터 "내부 트래픽"이 `traffic_type = internal`을 수집 시점에 제외한다 */
 export const INTERNAL_TRAFFIC_EVENT_PARAMETERS = { traffic_type: 'internal' } as const;
 
 /** 프리미엄 출처. `is_premium`은 ADMIN·보상 기간(GRANT)을 포함하므로 유료 전환은 `store`로만 센다 */

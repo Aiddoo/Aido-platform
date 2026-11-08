@@ -1,4 +1,3 @@
-/** 링크로 앱에 들어온다 */
 export interface IncomingLinkGateway {
   /** 앱을 띄운 링크. 없으면 null */
   getInitialUrl(): Promise<string | null>;

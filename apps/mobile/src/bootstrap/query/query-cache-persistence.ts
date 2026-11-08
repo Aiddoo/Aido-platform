@@ -109,10 +109,7 @@ export interface PersistedQuerySchema {
   schema: z.ZodType;
 }
 
-/**
- * 복원한 값의 모양을 믿지 않는다. 버전이 같아도 저장값이 깨졌으면 화면이 죽으므로 그 조회만 버리고
- * 서버에서 다시 받는다. 값은 바꾸지 않는다. 표에 없는 조회도 검증할 수 없어 버린다.
- */
+/** 버전이 같아도 저장값이 깨졌으면 화면이 죽으므로 그 조회만 버리고 서버에서 다시 받는다. 값은 바꾸지 않는다 */
 function keepValidPersistedQueries(
   client: PersistedClient,
   schemas: readonly PersistedQuerySchema[],
@@ -140,10 +137,7 @@ function keepValidPersistedQueries(
   };
 }
 
-/**
- * 앱 버전이 바뀌면 모델 모양이 달라질 수 있어 캐시를 버린다.
- * 날씨·알림·AI 결과처럼 서버가 표시 언어로 만든 값도 담겨, 다른 언어로 저장한 캐시도 복원하지 않는다
- */
+/** 앱 버전이 바뀌면 모델 모양이 달라질 수 있고, 서버가 표시 언어로 만든 값(날씨·알림·AI 결과)이 있어 다른 언어의 캐시도 복원하지 않는다 */
 export function createQueryCacheBuster({
   appVersion,
   language,

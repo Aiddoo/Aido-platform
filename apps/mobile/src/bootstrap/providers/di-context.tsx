@@ -165,10 +165,6 @@ interface StaticDIProviderProps extends PropsWithChildren {
   container: DIContainer;
 }
 
-/**
- * 미리 구성된 컨테이너를 그대로 주입하는 Provider.
- * 구현체 모듈(vendor 초기화 포함)을 로드하지 않으므로 테스트에서 사용한다.
- */
 export function StaticDIProvider({ container, children }: StaticDIProviderProps) {
   return (
     <DIContext.Provider value={container}>

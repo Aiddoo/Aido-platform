@@ -7,7 +7,6 @@ import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/
 import type { QueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
-/** 앱이 켜진 동안 받은 알림이 바꾸는 다른 기능의 화면을 다시 받는다 */
 export function invalidateOnNotificationReceived(
   queryClient: QueryClient,
   type: NotificationType,

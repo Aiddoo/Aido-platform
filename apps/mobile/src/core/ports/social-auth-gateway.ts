@@ -1,8 +1,6 @@
 /** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
 export interface OAuthSessionRequest {
-  /** API 서버의 로그인 시작 경로 */
   startPath: string;
-  /** 앱으로 돌아올 경로 */
   callbackPath: string;
   /** `redirect_uri` 뒤에 붙일 시작 쿼리 */
   params: Record<string, string>;

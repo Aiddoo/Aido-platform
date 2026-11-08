@@ -10,12 +10,7 @@ interface OnlineManagerDeps {
   analytics: Analytics;
 }
 
-/**
- * 기기 연결 상태를 React Query `onlineManager`에 연결한다.
- * 오프라인이면 쿼리·뮤테이션이 멈추고(networkMode 'online'), 다시 연결되면 이어서 실행된다.
- *
- * @see https://tanstack.com/query/latest/docs/framework/react/react-native#online-status-management
- */
+/** 오프라인이면 쿼리·뮤테이션이 멈추고(networkMode 'online') 다시 연결되면 이어서 실행된다 */
 export function connectOnlineManager({
   networkStatus,
   errorReporter,

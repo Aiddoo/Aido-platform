@@ -183,7 +183,6 @@ export function DIProvider({
     const publicHttpClient = new KyHttpClient(publicKyInstance);
     const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
-    // 세션 종료(토큰 삭제 + 이벤트)의 유일한 소유자. 갱신기는 세션을 끝낼 수 없다.
     const sessionManager = createSessionManager(tokenStore);
 
     // 단일 리프레셔: 인스턴스가 갈라지면 single-flight mutex가 분리되어
@@ -353,7 +352,6 @@ export function DIProvider({
       getNowInstant,
     );
 
-    // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
     const widgetBridge = createWidgetBridge();
     const widgetSyncService = new WidgetSyncService(
       widgetBridge,

@@ -18,14 +18,7 @@ import {
 } from '../query/query-cache-persistence';
 import { shouldRetryQuery } from '../query/query-retry';
 
-/**
- * React Native에서는 브라우저의 `visibilitychange` 이벤트가 없으므로,
- * `AppState`를 React Query의 `focusManager`에 수동 연동한다.
- *
- * 앱이 백그라운드 → 포그라운드로 전환되면 stale 쿼리가 자동 refetch된다.
- *
- * @see https://tanstack.com/query/latest/docs/framework/react/react-native#refetch-on-app-focus
- */
+/** RN에는 `visibilitychange`가 없어 `AppState`를 `focusManager`에 수동 연동한다 */
 focusManager.setEventListener((handleFocus) => {
   const subscription = AppState.addEventListener('change', (status: AppStateStatus) => {
     handleFocus(status === 'active');
@@ -38,11 +31,7 @@ const MIN_GC_TIME = 6 * MINUTE_MS;
 /** 재시도 백오프 상한. 죽은 서버를 과하게 두드리지 않는다 */
 const MAX_RETRY_DELAY = 5 * SECOND_MS;
 
-/**
- * 상한 지수 백오프: 1s → 2s → 4s → 5s → 5s → 5s.
- * `shouldRetryQuery`의 일시 인프라 장애 6회와 합치면 재시도 창 ≈ 22초로,
- * 서버 재시작(≈5-10초)을 덮어 재시도 화면 대신 로딩을 유지한다.
- */
+/** 상한 지수 백오프(1s → 2s → 4s → 5s…). `shouldRetryQuery`의 일시 장애 6회와 합치면 재시도 창이 약 22초라 서버 재시작(5-10초)을 덮어 재시도 화면 대신 로딩을 유지한다 */
 function retryDelay(attempt: number): number {
   return Math.min(SECOND_MS * 2 ** attempt, MAX_RETRY_DELAY);
 }
@@ -75,12 +64,6 @@ interface QueryProviderProps extends PropsWithChildren {
   cacheStorage: QueryCacheStorage | null;
 }
 
-/**
- * 앱 전역 React Query 캐시 및 기본 옵션을 제공하는 Provider.
- * opt-in한 조회는 기기(암호화 MMKV)에 저장해 오프라인으로 다시 열어도 마지막 데이터를 먼저 보여 준다.
- *
- * @see https://tanstack.com/query/latest/docs/framework/react/plugins/persistQueryClient
- */
 export function QueryProvider({ children, cacheStorage }: QueryProviderProps) {
   const { resolvedLanguage } = useLanguage();
   const [persistOptions] = useState(() => {

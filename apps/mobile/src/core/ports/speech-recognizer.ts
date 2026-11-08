@@ -87,9 +87,7 @@ export interface SpeechRecognizer {
   getCapabilities(mode: SpeechMode, locale: SpeechLocale): Promise<SpeechCapabilities>;
   requestOfflineModel(locale: SpeechLocale): Promise<OfflineModelResult>;
   start(options: SpeechStartOptions): void;
-  /** 듣기를 멈추고 남은 결과를 마지막으로 보낸다 */
   stop(): void;
-  /** 결과 없이 바로 끝낸다 */
   abort(): void;
   subscribe(listener: (event: SpeechEvent) => void): () => void;
 }

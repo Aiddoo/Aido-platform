@@ -2,10 +2,7 @@ import type { Href } from 'expo-router';
 
 type AppPath = Extract<Href, string>;
 
-/**
- * 첫 화면이 스스로 받는 경로는 맡지 않는다. 초대는 인증 밖에서 열리고, 인증·로그인은 콜백과 화면이
- * 처리하며, 피드의 위젯 요청은 `useWidgetAppEntry`가 받는다.
- */
+/** 첫 화면이 스스로 받는 경로(초대·인증·로그인·피드의 위젯 요청)는 맡지 않는다 */
 const SELF_HANDLED_SEGMENTS: ReadonlySet<string> = new Set([
   '',
   'auth',

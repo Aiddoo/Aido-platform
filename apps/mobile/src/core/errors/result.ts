@@ -1,11 +1,4 @@
-/**
- * Result 타입 (객체 기반)
- * - 성공: { ok: true, value: T }
- * - 실패: { ok: false, error: E }
- *
- * 4xx 에러는 Result.err로 반환하여 UI에서 처리
- * 5xx/네트워크/타임아웃은 throw해서 ErrorBoundary가 처리
- */
+/** 4xx 에러는 Result.err로 반환해 UI에서 처리하고, 5xx/네트워크/타임아웃은 throw해 ErrorBoundary가 처리한다 */
 
 export interface CodedError {
   readonly code: string;
@@ -25,11 +18,6 @@ export function err<E extends CodedError>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 
-/**
- * Result를 unwrap하여 성공 시 데이터 반환, 실패 시 throw
- * - React Query mutationFn에서 사용
- * - 에러는 onError 콜백에서 처리
- */
 export function unwrap<T, E extends CodedError>(result: Result<T, E>): T {
   if (result.ok) {
     return result.value;
