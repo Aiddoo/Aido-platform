@@ -1,12 +1,13 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
+import { cn } from '@src/shared/utils/cn';
 import { Popover, usePopover } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HStack } from '../h-stack';
-import { CloseIcon, type MicIcon } from '../icon';
+import { CloseIcon, type StyledIcon } from '../icon';
 import { Text } from '../text';
 import { VStack } from '../v-stack';
 
@@ -29,7 +30,7 @@ export interface HintPopoverContentProps extends Omit<
   PopoverContentProps,
   'presentation' | 'children' | 'title'
 > {
-  icon?: typeof MicIcon;
+  icon?: StyledIcon;
   title?: string;
   description?: string;
   isPassThrough?: boolean;
@@ -167,7 +168,7 @@ export function HintPopoverContent({
             offset,
           })
         }
-        className={className ?? 'rounded-2xl border border-border px-4 py-3'}
+        className={cn('rounded-2xl border border-border px-4 py-3', className)}
         testID="hint-popover"
         {...contentProps}
       >

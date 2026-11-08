@@ -2,7 +2,7 @@ import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { t, useTranslation } from '@src/shared/i18n';
+import { t as translate, useTranslation } from '@src/shared/i18n';
 import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { logger } from '@src/shared/infra/logger/global-logger';
@@ -40,8 +40,8 @@ export function openSupportMail() {
     occurredAt: getNowInstant(),
   });
   const url = createSupportMailUrl({
-    subject: t('common:errorBoundary.mailSubject', { code }),
-    body: t('common:errorBoundary.mailBody', { code }),
+    subject: translate('common:errorBoundary.mailSubject', { code }),
+    body: translate('common:errorBoundary.mailBody', { code }),
   });
   return expoExternalLinkGateway.open(url).catch((error: unknown) =>
     logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, {

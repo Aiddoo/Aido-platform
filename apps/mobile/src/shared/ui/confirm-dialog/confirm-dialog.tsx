@@ -8,13 +8,9 @@ import { H4, Text } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
 import { WordWrapText } from '@src/shared/ui/word-wrap-text';
 import { Dialog } from 'heroui-native';
-import { cloneElement, isValidElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import type { ConfirmDialogProps } from './confirm-dialog.types';
-
-function withFullWidth(action: ReactNode): ReactNode {
-  return isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
-}
 
 export function ConfirmDialog({
   isOpen,
@@ -68,8 +64,8 @@ function ConfirmDialogActions({
   if (secondaryButton != null) {
     return (
       <VStack gap={8} className="w-full">
-        <Box className="w-full">{withFullWidth(confirmButton)}</Box>
-        <Box className="w-full">{withFullWidth(secondaryButton)}</Box>
+        <Box className="w-full">{confirmButton}</Box>
+        <Box className="w-full">{secondaryButton}</Box>
         {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
       </VStack>
     );
@@ -80,8 +76,8 @@ function ConfirmDialogActions({
   if (fontScale === 'xlarge') {
     return (
       <VStack gap={8} className="w-full">
-        <Box className="w-full">{withFullWidth(confirmButton)}</Box>
-        <Box className="w-full">{withFullWidth(cancelButton)}</Box>
+        <Box className="w-full">{confirmButton}</Box>
+        <Box className="w-full">{cancelButton}</Box>
       </VStack>
     );
   }

@@ -1,5 +1,6 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { Button } from '@src/shared/ui/button';
 import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
 import { TextButton } from '@src/shared/ui/text-button';
 
@@ -41,9 +42,15 @@ export function PremiumDialog({
           </ConfirmDialog.ConfirmButton>
         }
         secondaryButton={
-          <ConfirmDialog.CancelButton onPress={handleSubscribe}>
+          <Button
+            variant="weak"
+            color="dark"
+            size="large"
+            display="inline"
+            onPress={handleSubscribe}
+          >
             {t('premiumDialog.subscribeUnlimited')}
-          </ConfirmDialog.CancelButton>
+          </Button>
         }
         cancelButton={
           <TextButton size="medium" onPress={() => onOpenChange(false)} className="self-center">

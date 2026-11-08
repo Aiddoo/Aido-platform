@@ -18,7 +18,9 @@ const STICKY_OFFSET = 0;
  */
 export const KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET = 100;
 
-interface KeyboardAdaptiveButtonProps extends ButtonProps {
+/** 모양(둥근 모서리·여백)은 키보드에 맞춰 이 부품이 정하므로 `className`·`style`은 받지 않는다 */
+interface KeyboardAdaptiveButtonProps extends Omit<ButtonProps, 'className' | 'style'> {
+  /** 키보드를 따라 올라갈지. `KeyboardStickyView`의 같은 이름 prop으로 넘긴다 */
   enabled?: boolean;
 }
 
