@@ -8,10 +8,7 @@ import { match, P } from 'ts-pattern';
 
 import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params.schema';
 
-/**
- * 피드 URL의 `todoId`를 선택된 할 일로 읽는다. 접힌 화면은 상세 화면으로 push하고, 펼친 화면은 상세 칸을 바꾼다.
- * 칸의 할 일이 바뀌면 그 할 일에 딸린 댓글 위치와 정렬은 버린다. 이미 고른 할 일을 다시 누르면 그대로 둔다.
- */
+/** 접힌 화면은 상세로 push, 펼친 화면은 칸을 바꾼다. 할 일이 바뀌면 댓글 위치·정렬을 버리고 같은 할 일은 그대로 둔다 */
 export function useFeedSelectedTodoId() {
   const [{ todoId: selectedTodoId }, setParams] = useRouteParams(feedParamsSchema);
   const windowSizeClass = useWindowSizeClass();

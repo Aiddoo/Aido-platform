@@ -29,7 +29,6 @@ export function useFeedDate() {
   return [selectedDate, setSelectedDate] as const;
 }
 
-/** 피드에서 고른 날짜의 YYYY-MM-DD */
 export function useFeedDateKey() {
   const [{ date }] = useRouteParams(feedParamsSchema);
   const todayKey = useTodayKey();

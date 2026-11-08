@@ -141,15 +141,12 @@ describe('EditSubTodoBottomSheet', () => {
     const { httpClient, settleRequests } = await renderEditSheet();
 
     // Given
-    // 제목을 앞뒤 공백과 함께 고친다
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '  우유 사기  ');
 
     // When
-    // 전송한다
     fireEvent.press(submitButton()).catch(() => undefined);
 
     // Then
-    // 공백을 지운 제목으로 수정을 요청한다
     await waitFor(() => {
       expect(httpClient.patch).toHaveBeenCalledWith(expect.any(String), { title: '우유 사기' });
     });

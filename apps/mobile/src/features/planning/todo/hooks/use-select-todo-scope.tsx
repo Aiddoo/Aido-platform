@@ -11,10 +11,7 @@ export interface ScopeRequest {
   resolve: (scope: TodoEditScope | null) => void;
 }
 
-/**
- * 반복 할 일을 고치거나 지울 때 범위를 묻는다. 새 시트를 올리지 않고 쓰는 시트 안에서 내용을 갈아 끼우며,
- * 앞 화면은 그대로 두어(숨김) 입력값이 남는다. 뒤로 가면 null이다.
- */
+/** 새 시트 없이 쓰는 시트 안에서 내용을 갈아 끼워 앞 화면의 입력값이 남는다. 뒤로 가면 null이다 */
 export function useSelectTodoScope() {
   const [request, setRequest] = useState<ScopeRequest | null>(null);
   const requestRef = useRef(request);

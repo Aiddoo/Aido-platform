@@ -16,8 +16,6 @@ function createSut() {
 }
 
 describe('TodoCategoryService', () => {
-  // ── getCategories ────────────────────────────
-
   describe('getCategories', () => {
     it('응답을 받으면 TodoCategoriesResult를 반환한다', async () => {
       // Given
@@ -48,8 +46,6 @@ describe('TodoCategoryService', () => {
       await expect(result).rejects.toThrow('Invalid getCategories response');
     });
   });
-
-  // ── createCategory ───────────────────────────
 
   describe('createCategory', () => {
     it('응답을 받으면 TodoCategory를 반환한다', async () => {
@@ -101,8 +97,6 @@ describe('TodoCategoryService', () => {
     });
   });
 
-  // ── updateCategory ───────────────────────────
-
   describe('updateCategory', () => {
     it('응답을 받으면 TodoCategory를 반환한다', async () => {
       // Given
@@ -146,8 +140,6 @@ describe('TodoCategoryService', () => {
       await expect(result).rejects.toThrow('Invalid updateCategory response');
     });
   });
-
-  // ── deleteCategory ───────────────────────────
 
   describe('deleteCategory', () => {
     it('moveToCategoryId를 query params로 전달', async () => {
@@ -196,8 +188,6 @@ describe('TodoCategoryService', () => {
       await expect(result).rejects.toThrow('Invalid deleteCategory response');
     });
   });
-
-  // ── reorderCategory ──────────────────────────
 
   describe('reorderCategory', () => {
     it('응답을 받으면 TodoCategory를 반환한다', async () => {

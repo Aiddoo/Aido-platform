@@ -105,10 +105,7 @@ export function useGetFriendTodosQueryOptions({
   });
 }
 
-/**
- * 미리 만들어 둔 범위 안에 반복 회차가 있는지. 계정 전체의 반복 목록을 주는 API가 없어 회차로 판단한다.
- * 범위 전체를 봐서 다음 달부터 시작하는 규칙만 있는 계정도 놓치지 않는다.
- */
+/** 계정 전체 반복 목록 API가 없어 미리 만든 범위의 회차로 본다. 다음 달부터 시작하는 규칙도 놓치지 않게 범위 전체를 본다 */
 export function useGetHasUpcomingRepeatQueryOptions() {
   const todoService = useTodoService();
   const todayKey = useTodayKey();
@@ -178,16 +175,7 @@ export function getTodoSummaryRefetchInterval(
   return attempt < DATE_CATCH_UP_MAX_ATTEMPTS ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt : false;
 }
 
-/**
- * 하루의 할 일 요약 (홈 위젯 스냅샷 소스). 위젯은 오늘과 내일 두 날짜를 조회한다.
- *
- * 키가 completions() 하위라 할 일 토글/생성/삭제 뮤테이션의 기존 invalidation을
- * 그대로 상속받고, staleTime 1분으로 포그라운드 복귀(focusManager) 시 재조회된다.
- * date 키 회전(LocalDateProvider)이 자정 넘김을 새 쿼리로 만든다.
- *
- * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 다른 날짜를 돌려줌)
- * foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
- */
+/** 홈 위젯(오늘·내일)용. 자정 직후 기기·서버 날짜가 어긋나면 foreground를 기다리지 않고 5s→10s→20s→40s로 다시 묻는다 */
 export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryInput) {
   const todoService = useTodoService();
 
@@ -196,8 +184,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQuery
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoSummary(date, signal)),
     staleTime: MINUTE_MS,
     refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
-    // AuthBootProvider(전 화면 상위)에서 도는 백그라운드 쿼리 — 실패가 절대 ErrorBoundary로
-    // 전파되면 안 된다(콜드 스타트 fallback 재발 방지). 실패 시 위젯만 갱신되지 않는다.
+    // 전 화면 위(AuthBootProvider)의 백그라운드 쿼리라 실패를 ErrorBoundary로 보내면 콜드 스타트 fallback이 뜬다. 실패하면 위젯만 갱신되지 않는다
     throwOnError: false,
   });
 }

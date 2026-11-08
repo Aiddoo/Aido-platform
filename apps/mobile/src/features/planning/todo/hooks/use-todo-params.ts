@@ -9,7 +9,6 @@ export function useTodoId() {
   return [todoId] as const;
 }
 
-/** `/todo/[todoId]/sub-todos/[subTodoId]` 경로의 하위 항목 */
 export function useSubTodoId() {
   const [{ subTodoId }] = useRouteParams(subTodoParamsSchema);
 

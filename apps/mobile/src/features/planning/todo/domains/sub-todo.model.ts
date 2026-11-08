@@ -17,7 +17,7 @@ export type SubTodoStats = z.infer<typeof subTodoStatsSchema>;
 
 type SubTodoParent = { subTodos: readonly SubTodo[]; subTodoStats: SubTodoStats };
 
-/** 서버 응답 전의 임시 항목. 임시 id로는 체크·수정·순서 변경 요청을 보낼 수 없다 */
+// 서버 응답 전의 임시 항목. 임시 id로는 체크·수정·순서 변경 요청을 보낼 수 없다
 export function isOptimisticSubTodo(subTodo: SubTodo): boolean {
   return subTodo.id < 0;
 }
@@ -68,7 +68,7 @@ export function withSubTodoCompleted<T extends SubTodoParent>(
   return withSubTodos(parent, setSubTodoCompleted(parent.subTodos, subTodoId, completed));
 }
 
-/** 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다 */
+// 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다
 export function withSubTodoAdded<T extends SubTodoParent & { completed: boolean }>(
   parent: T,
   subTodo: SubTodo,
@@ -106,7 +106,7 @@ export function withSubTodoRestored<T extends SubTodoParent>(
   ]);
 }
 
-/** 받은 순서대로 놓는다. 순서를 정할 때 없던 항목(그 사이 추가)은 뒤에 남긴다 */
+// 받은 순서대로 놓는다. 순서를 정할 때 없던 항목(그 사이 추가)은 뒤에 남긴다
 export function withSubTodosOrdered<T extends SubTodoParent>(
   parent: T,
   subTodoIds: readonly number[],
@@ -116,7 +116,7 @@ export function withSubTodosOrdered<T extends SubTodoParent>(
   return withSubTodos(parent, [...listed, ...rest]);
 }
 
-/** 임시 항목을 응답에 새로 생긴 같은 제목의 항목으로 바꾼다. 다른 항목의 진행 중인 변경은 지킨다 */
+// 임시 항목을 응답에 새로 생긴 같은 제목의 항목으로 바꾼다. 다른 항목의 진행 중인 변경은 지킨다
 export function withSubTodoConfirmed<T extends SubTodoParent>(
   parent: T,
   optimisticId: number,
@@ -141,7 +141,7 @@ export function canReorderSubTodos(parent: Pick<SubTodoParent, 'subTodos'>): boo
   return parent.subTodos.every((subTodo) => !isOptimisticSubTodo(subTodo));
 }
 
-/** 제목이 그대로면 요청을 보내지 않는다 */
+// 제목이 그대로면 요청을 보내지 않는다
 export function hasTitleChanged(subTodo: Pick<SubTodo, 'title'>, title: string): boolean {
   return subTodo.title !== title;
 }

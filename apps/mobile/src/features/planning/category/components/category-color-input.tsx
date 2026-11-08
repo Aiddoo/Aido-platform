@@ -17,7 +17,6 @@ interface CategoryColorInputProps extends Omit<
 /** 32px 색 칸을 터치 기준 44px에 맞춘다 */
 const COLOR_ITEM_HIT_SLOP = 6;
 
-/** 카테고리 색상 팔레트에서 하나를 고르는 입력. 생성·수정 시트가 함께 쓴다. */
 export function CategoryColorInput({
   value,
   onValueChange,

@@ -26,7 +26,7 @@ export type OptimisticTodoCategoryWithCount = z.infer<typeof optimisticTodoCateg
 
 const MIN_REORDERABLE_COUNT = 2;
 
-/** id가 가리키는 카테고리(시트 route, 칩, 분석이 쓴다). 목록에서 사라졌으면(삭제된 뒤) null */
+// id가 가리키는 카테고리(시트 route, 칩, 분석이 쓴다). 목록에서 사라졌으면(삭제된 뒤) null
 export function findCategory<T extends Pick<TodoCategory, 'id'>>(
   categories: readonly T[],
   categoryId: number,
@@ -34,7 +34,6 @@ export function findCategory<T extends Pick<TodoCategory, 'id'>>(
   return categories.find((category) => category.id === categoryId) ?? null;
 }
 
-// 지우는 카테고리의 할 일은 남은 다른 카테고리로만 옮길 수 있다
 export function getMoveTargetCategories<T extends Pick<TodoCategory, 'id'>>(
   categories: readonly T[],
   deletingCategoryId: number,
@@ -42,7 +41,7 @@ export function getMoveTargetCategories<T extends Pick<TodoCategory, 'id'>>(
   return categories.filter((category) => category.id !== deletingCategoryId);
 }
 
-/** 요청한 카테고리가 아직 있으면 그것을, 없으면 첫 카테고리를 처음 선택값으로 쓴다 */
+// 요청한 카테고리가 아직 있으면 그것을, 없으면 첫 카테고리를 처음 선택값으로 쓴다
 export function getInitialCategoryId(
   categories: readonly Pick<TodoCategory, 'id'>[],
   requestedCategoryId: number | null | undefined,
@@ -57,7 +56,7 @@ export function getInitialCategoryId(
   return categories[0]?.id ?? null;
 }
 
-/** 바뀐 값이 없으면 요청을 보내지 않는다 */
+// 바뀐 값이 없으면 요청을 보내지 않는다
 export function hasChanges(
   category: Pick<TodoCategory, 'name' | 'color'>,
   values: Pick<TodoCategory, 'name' | 'color'>,
@@ -65,12 +64,12 @@ export function hasChanges(
   return category.name !== values.name || category.color !== values.color;
 }
 
-/** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
+// 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다
 export function isTodoMoveRequired(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
   return category.todoCount > 0;
 }
 
-/** 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다 */
+// 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다
 export function isOptimisticCategory(category: Pick<TodoCategory, 'id'>) {
   return category.id < 0;
 }

@@ -14,7 +14,7 @@ export const dailyCompletionSummarySchema = z.object({
 });
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;
 
-/** 여러 날 할 일은 mapper가 기간 안의 날에 펼쳐 넣어 결과에 따로 두지 않는다 */
+// 여러 날 할 일은 mapper가 기간 안의 날에 펼쳐 넣어 결과에 따로 두지 않는다
 export const dailyCompletionsResultSchema = z.object({
   completions: z.array(dailyCompletionSummarySchema),
   totalCompleteDays: z.int().min(0),
@@ -56,10 +56,7 @@ function withCompletions(
   };
 }
 
-/**
- * 서버 요약은 출시 앱이 읽는 대로 여러 날 할 일을 시작일에만 센다.
- * 그날 목록에 보이는 할 일과 달력 점이 같도록 기간 안의 나머지 날에 더한다.
- */
+// 서버 요약은 출시 앱 호환으로 여러 날 할 일을 시작일에만 센다. 달력 점이 목록과 같도록 나머지 날에 더한다
 export function withMultiDayTodoSpans(
   result: DailyCompletionsResult,
   spans: readonly MultiDayTodoSpan[],

@@ -31,7 +31,7 @@ import {
 
 export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
-/** 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다 */
+// 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다
 export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
@@ -129,7 +129,7 @@ export function withRepeatStartDate(
     : adjusted;
 }
 
-/** 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다 */
+// 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다
 export function hasSameRepeat(repeat: TodoRepeat | null, other: TodoRepeat | null): boolean {
   return isEqual(normalizeRepeat(repeat), normalizeRepeat(other));
 }
@@ -152,10 +152,7 @@ interface TodoEditScopeInput {
   isDateOnly: boolean;
 }
 
-/**
- * 수정할 때 범위를 어떻게 정할지. 서버는 반복 회차의 규칙 변경을 THIS_AND_FOLLOWING으로만 받고(그 밖은 TODO_0845)
- * 반복 끝내기는 범위 없이 받으며, 날짜 이동은 범위와 상관없이 이 회차에만 적용한다.
- */
+// 서버는 회차 규칙 변경을 THIS_AND_FOLLOWING으로만(TODO_0845), 끝내기는 범위 없이 받고 날짜 이동은 이 회차에만 적용한다
 export function getTodoEditScopeDecision({
   isSeries,
   repeat,
@@ -176,20 +173,17 @@ interface RepeatOccurrence {
   repeat: TodoRepeat | null;
 }
 
-/**
- * 규칙이 있는 반복 회차인지. 묶음은 있는데 규칙이 없으면 이관에서 패턴을 알 수 없던
- * 묶음이다. 서버는 이런 묶음의 범위 수정과 반복 끝내기를 받지 않아 "이 할 일만"으로 다룬다.
- */
+// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
 export function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
   return recurrenceGroupId != null && repeat != null;
 }
 
-/** 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845) */
+// 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845)
 export function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
   return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
 }
 
-/** 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다 */
+// 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
 export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
   if (occurrence.recurrenceGroupId == null) {
     return [];
@@ -197,7 +191,7 @@ export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEdit
   return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
 }
 
-/** 서버 RepeatRule과 같은 규칙: 격주는 시작일이 속한 월요일 시작 주 기준, 매월 n일은 없는 달이면 말일 */
+// 서버 RepeatRule과 같은 규칙: 격주는 시작일이 속한 월요일 시작 주 기준, 매월 n일은 없는 달이면 말일
 function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: string): boolean {
   return match(repeat)
     .with({ frequency: 'DAILY' }, () => true)
@@ -231,10 +225,10 @@ function* walkOccurrenceDateKeys(
   }
 }
 
-/** 두 회차 사이 최대 간격(격주 2주, 매월 말일 보정 포함)보다 넉넉한 탐색 한도 */
+// 두 회차 사이 최대 간격(격주 2주, 매월 말일 보정 포함)보다 넉넉한 탐색 한도
 const OCCURRENCE_SEARCH_DAYS = 62;
 
-/** from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다 */
+// from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다
 export function getRepeatOccurrenceDateKeys(
   repeat: TodoRepeat,
   startDate: string,
@@ -243,7 +237,7 @@ export function getRepeatOccurrenceDateKeys(
   return [...walkOccurrenceDateKeys(repeat, startDate, to)].filter((date) => date >= from);
 }
 
-/** 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null */
+// 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null
 export function findFirstRepeatOccurrenceDateKey(
   repeat: TodoRepeat,
   startDate: string,
@@ -273,12 +267,12 @@ export function findLastRepeatOccurrenceDateKey(
   return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
 }
 
-/** 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지 */
+// 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지
 export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
   return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
 }
 
-/** 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다 */
+// 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다
 export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
   return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
 }

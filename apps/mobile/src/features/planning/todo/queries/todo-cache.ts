@@ -140,7 +140,6 @@ export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
   );
 }
 
-/** 조회 옵션이 `meta.refreshOnTodoChange`로 할 일에 따라 보이는 값이 달라진다고 밝힌 쿼리 */
 function isTodoDependentQuery(query: Pick<Query, 'meta'>) {
   return query.meta?.refreshOnTodoChange === true;
 }
@@ -163,10 +162,7 @@ export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { to
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }) });
 }
 
-/**
- * 그날 목록으로 달력 요약을 맞춘다. 증감이 아니라 목록에서 계산해 낙관적 반영·되돌리기가 같은 함수로 끝난다.
- * 목록이 잘려 있으면(서버 한도 초과) 셀 수 없으니 서버 값을 기다린다.
- */
+/** 증감 대신 목록에서 계산해 낙관적 반영·되돌리기가 같다. 목록이 잘려 있으면(서버 한도 초과) 서버 값을 기다린다 */
 export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: { date: string }) {
   const list = queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }));
   if (list == null || list.hasNext) {
@@ -178,11 +174,7 @@ export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: 
   );
 }
 
-/**
- * 목록을 고친 뮤테이션이 끝날 때 서버 값으로 맞춘다. 앞선 응답으로 다시 받으면 뒤따라 진행 중인 낙관적 값이
- * 되돌아가므로 마지막 하나가 끝날 때만 받는다. 여러 날 할 일은 다른 날짜 목록에도 있어 날짜를 가리지 않는다
- * (화면에 붙은 조회만 다시 받고 나머지는 낡음 표시만 남는다).
- */
+/** 앞선 응답으로 받으면 뒤따르는 낙관적 값이 되돌아가 마지막 하나가 끝날 때만 받는다. 여러 날 할 일 때문에 날짜를 가리지 않는다 */
 export function settleTodoListWrite(queryClient: QueryClient) {
   if (queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) !== 1) {
     return;

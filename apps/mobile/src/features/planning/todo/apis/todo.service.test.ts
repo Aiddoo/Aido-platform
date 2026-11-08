@@ -17,8 +17,6 @@ function createSut() {
 }
 
 describe('TodoService', () => {
-  // ── getTodos ─────────────────────────────────
-
   describe('getTodos', () => {
     it('응답을 받으면 TodoListResult를 반환한다', async () => {
       // Given
@@ -134,8 +132,6 @@ describe('TodoService', () => {
     });
   });
 
-  // ── getTodoSummary ───────────────────────────
-
   describe('getTodoSummary', () => {
     it('요약할 날짜를 date 쿼리로 보내고 응답 날짜를 그대로 반환한다', async () => {
       // Given
@@ -165,8 +161,6 @@ describe('TodoService', () => {
       expect(result.ok && result.value.date).toBe('2026-07-13');
     });
   });
-
-  // ── createTodo ───────────────────────────────
 
   describe('createTodo', () => {
     it('응답을 받으면 Todo를 반환한다', async () => {
@@ -230,8 +224,6 @@ describe('TodoService', () => {
     });
   });
 
-  // ── toggleTodoComplete ───────────────────────
-
   describe('toggleTodoComplete', () => {
     it('응답에 모르는 반복 빈도가 있어도 완료 처리는 성공으로 읽고 규칙만 비운다', async () => {
       // Given
@@ -285,8 +277,6 @@ describe('TodoService', () => {
       await expect(result).rejects.toThrow('Invalid toggleTodoComplete response');
     });
   });
-
-  // ── deleteTodo ───────────────────────────────
 
   describe('deleteTodo', () => {
     it('응답을 받으면 void를 반환한다', async () => {
@@ -511,8 +501,6 @@ describe('TodoService', () => {
     });
   });
 
-  // ── reorderTodo ──────────────────────────────
-
   describe('reorderTodo', () => {
     it('응답을 받으면 Todo를 반환한다', async () => {
       // Given
@@ -547,8 +535,6 @@ describe('TodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── changeTodoCategory ──────────────────────
 
   describe('changeTodoCategory', () => {
     it('응답을 받으면 Todo를 반환한다 (카테고리 변경됨)', async () => {

@@ -2,11 +2,7 @@ import { dateSchema, TODO_COMMENT_SORT, todoCommentIdSchema, userIdParamSchema }
 import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
-/**
- * `/feed` 한 화면의 URL 값. 내 피드와 친구 피드, 펼친 화면의 상세 칸이 모두 이 값으로 움직인다.
- * `?date` YYYY-MM-DD 또는 today, 나머지는 오늘이다. `?friendId` 없으면 내 피드, `?todoId` 상세 칸의 할 일,
- * `?sort`·`?comment` 그 할 일의 댓글 정렬과 알림·링크로 연 위치다.
- */
+/** `/feed` 한 화면의 URL 값. `?date` 없으면 오늘, `?friendId` 없으면 내 피드, `?comment`는 알림·링크로 연 댓글 위치다 */
 export const feedParamsSchema = z.object({
   date: z
     .union([dateSchema, z.literal('today')])

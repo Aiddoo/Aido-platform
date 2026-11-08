@@ -80,10 +80,7 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
     [pageWidth, children],
   );
 
-  // 시작 위치는 네이티브가 뷰를 만들 때 바로 적용하는 contentOffset으로 준다. initialScrollIndex만 두면
-  // 목록이 콘텐츠 크기를 받은 뒤 JS가 scrollTo를 보내는데, 앱을 다시 열 때처럼 네이티브 contentSize가
-  // 아직 0이면 그 명령이 0으로 잘려 260번째 주가 화면 밖에 그려지고 날짜 줄이 빈다.
-  // 목록은 너비마다 새로 만들므로 이 값도 너비가 바뀔 때만 다시 계산한다.
+  // initialScrollIndex만 두면 다시 열 때 네이티브 contentSize가 0이라 scrollTo가 잘려 날짜 줄이 빈다. contentOffset으로 준다
   const initialContentOffset = useMemo(
     // oxlint-disable-next-line react/refs -- 목록을 새로 만들 때 한 번만 지금 쪽을 시작 위치로 읽는다
     () => ({ x: currentPageRef.current * pageWidth, y: 0 }),
@@ -92,8 +89,7 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
 
   return (
     <Box onLayout={handleLayout}>
-      {/* 너비가 바뀌면(측정·접기·펼치기) 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 그대로 두면
-          콘텐츠가 줄어들 때 네이티브가 마지막 페이지(+260주)로 잘라 내 몇 년 뒤 날짜가 선택된다. */}
+      {/* 너비마다 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 두면 네이티브가 +260주로 잘라 몇 년 뒤가 선택된다 */}
       <FlatList
         key={pageWidth}
         ref={flatListRef}

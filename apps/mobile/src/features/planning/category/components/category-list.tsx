@@ -31,7 +31,6 @@ import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { CategoryDeleteDialog } from './category-delete-dialog';
 
-/** 고치기·지우기 탭의 목록 */
 export function CategoryList() {
   const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -46,7 +45,7 @@ export function CategoryList() {
   );
 }
 
-/** 순서 탭의 목록. 길게 눌러 옮긴다 */
+/** 길게 눌러 옮긴다 */
 CategoryList.Reorder = function Reorder() {
   const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
