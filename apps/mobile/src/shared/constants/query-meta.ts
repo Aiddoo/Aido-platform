@@ -9,6 +9,8 @@ export type AppQueryMeta = {
   refreshOnPremiumChange?: boolean;
   /** 할 일이 바뀌면 보이는 값이 달라지는 조회(콕 상태 등). 할 일을 바꾼 뒤 다시 불러온다 */
   refreshOnTodoChange?: boolean;
+  /** 차단·해제에 따라 서버가 가리는 사람이 달라지는 조회(친구, 댓글, 콕). 차단을 바꾼 뒤 다시 불러온다 */
+  refreshOnBlockChange?: boolean;
 };
 
 declare module '@tanstack/react-query' {

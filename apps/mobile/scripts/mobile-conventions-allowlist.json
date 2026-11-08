@@ -10,10 +10,6 @@
   "feature-bidirectional": {
     "reason": "끊지 못한 쌍. 항목마다 이유를 적고 새 쌍은 막는다",
     "entries": {
-      "engagement/comment <-> social/moderation": {
-        "count": 1,
-        "reason": "comment→moderation은 제목 바의 신고·차단 동작 훅, moderation→comment는 차단 뒤 댓글 캐시 정리"
-      },
       "identity/auth <-> identity/user": {
         "count": 1,
         "reason": "같은 영역. auth→user는 탈퇴 뒤 정리에 쓸 내 정보 캐시 읽기, user→auth는 계정 버튼의 로그아웃·탈퇴 mutation"

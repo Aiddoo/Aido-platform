@@ -68,6 +68,7 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
         : TODO_COMMENT_QUERY_TIMING.latestStaleTime,
     gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
     select: selectTodoCommentThreads,
+    meta: { refreshOnBlockChange: true },
   });
 }
 
@@ -97,5 +98,6 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
     staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTime,
     gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
     select: selectTodoCommentReplies,
+    meta: { refreshOnBlockChange: true },
   });
 }

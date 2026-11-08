@@ -1,14 +1,18 @@
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
-import { invalidateAllTodoComments } from '@src/features/engagement/comment/queries/todo-comment-cache';
 import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
-import type { QueryClient } from '@tanstack/react-query';
+import type { Query, QueryClient } from '@tanstack/react-query';
 
 import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
+
+/** 조회 옵션이 `meta.refreshOnBlockChange`로 차단에 따라 보이는 사람이 달라진다고 밝힌 쿼리 */
+function isBlockDependentQuery(query: Pick<Query, 'meta'>) {
+  return query.meta?.refreshOnBlockChange === true;
+}
 
 /**
  * 차단·해제가 바꾸는 화면을 다시 받는다. 무엇을 가릴지는 서버가 정하므로 목록을 여기서 거르지 않는다.
@@ -21,7 +25,7 @@ export function invalidateAfterBlockChange(queryClient: QueryClient) {
     invalidateFriends(queryClient),
     invalidateFriendTodos(queryClient),
     invalidateFeedTodos(queryClient),
-    invalidateAllTodoComments(queryClient),
+    queryClient.invalidateQueries({ predicate: isBlockDependentQuery }),
     invalidateNudges(queryClient),
   ]);
 }

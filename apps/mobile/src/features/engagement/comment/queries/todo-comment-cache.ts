@@ -140,8 +140,3 @@ export function invalidateTodoCommentCount({ queryClient, todoId }: TodoCommentC
 export function refreshTodoComments({ queryClient, todoId }: TodoCommentCacheParams) {
   return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }) });
 }
-
-/** 차단처럼 여러 할 일의 댓글 표시가 함께 바뀔 때 불러 둔 모든 댓글 목록을 다시 받는다 */
-export function invalidateAllTodoComments(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.all });
-}
