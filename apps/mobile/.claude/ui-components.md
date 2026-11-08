@@ -90,7 +90,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `SheetHeaderLayout`                                                                             | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤                                                                           | `src/shared/ui/bottom-sheet/bottom-sheet.md`                      |
 | `SheetRouteScreen`, `useSheetRoute`                                                             | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기                                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                      |
 | `useStackScreenOptions`, `useStackBackToolbar`                                                  | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기                                                                     | `src/shared/ui/stack-header/stack-header.md`                      |
-| `FormScrollView`                                                                                | 화면 폼 스크롤 (`KeyboardAwareScrollView` + 키보드 버튼 높이 `bottomOffset`)                                                               | `src/shared/ui/form-step-layout/form-step-layout.md`              |
+| `FormScrollView`                                                                                | 화면 폼 스크롤 (포커스한 칸 전체를 `footer` 버튼 위로)                                                                                     | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `FormStepLayout`                                                                                | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                                                                           | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `ActionButton`                                                                                  | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                    |
 | `ListRow`                                                                                       | 목록 행 (`left`·`contents`·`right`, `.Texts`·`.Image`, `onPress`면 행 전체가 버튼)                                                         | `src/shared/ui/list-row/list-row.md`                              |
@@ -242,11 +242,11 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 | 곳                                     | 스크롤                                                         | 주 동작 버튼                                   |
 | -------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
-| 화면 폼                                | `FormStepLayout`·`FormScrollView`(`KeyboardAwareScrollView`)   | `KeyboardAdaptiveButton`(`KeyboardStickyView`) |
+| 화면 폼                                | `FormStepLayout`·`FormScrollView`(칸 전체 스크롤)              | `KeyboardAdaptiveButton`(`KeyboardStickyView`) |
 | 시트                                   | `KeyboardBottomSheet`(gorhom `keyboardBehavior="interactive"`) | `footer`                                       |
 | 전체 화면 편집기·목록(메모, 친구 찾기) | `KeyboardAvoidingView behavior="padding"`                      | 화면 머리글 버튼                               |
 
-- 화면 폼은 `bottomOffset`을 `KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET`보다 키우지 않는다. 다음 칸은 `returnKeyType="next"`로 넘어간다.
+- 화면 폼은 버튼을 `footer`로 넘긴다. 칸 전체(라벨·오류 문구·글자 수)를 버튼 위로 올리며, `KeyboardAwareScrollView`는 커서 줄만 올려 쓰지 않는다([FormStepLayout](../src/shared/ui/form-step-layout/form-step-layout.md#키보드)). 다음 칸은 `returnKeyType="next"`로 넘어간다.
 - 시트의 주 버튼과 입력을 돕는 칩 줄은 `footer`에 둔다. 키보드 위 높이가 좁은 기기(접은 Duo·SE·가로)에서는 내용이 스크롤되고 `footer`는 키보드 위에 남는다.
 - 댓글처럼 목록 아래에 붙는 작성 바만 `KeyboardStickyView`를 직접 쓴다.
 

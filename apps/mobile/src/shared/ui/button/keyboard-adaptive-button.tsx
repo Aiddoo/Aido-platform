@@ -1,7 +1,9 @@
+import { use } from 'react';
 import { KeyboardStickyView, useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { KeyboardFooterHeightContext } from '../form-step-layout/keyboard-footer-height';
 import { Button } from './button';
 import type { ButtonProps } from './button.types';
 
@@ -10,9 +12,6 @@ const CONTAINER_PADDING_X = 16;
 const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
 const STICKY_OFFSET = 0;
-
-/** 키보드 컨트롤러는 칸 전체가 아니라 안쪽 TextInput을 재므로, 버튼(`xlarge` 56)에 글자 줄 아래 칸 여백(17)과 오류 문구 줄(22), 간격(5)을 더한다 */
-export const KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET = 100;
 
 /** 모양(둥근 모서리·여백)은 키보드에 맞춰 이 부품이 정하므로 `className`·`style`은 받지 않는다 */
 interface KeyboardAdaptiveButtonProps extends Omit<ButtonProps, 'className' | 'style'> {
@@ -26,6 +25,7 @@ export function KeyboardAdaptiveButton({
   ...buttonProps
 }: KeyboardAdaptiveButtonProps) {
   const insets = useSafeAreaInsets();
+  const reportFooterHeight = use(KeyboardFooterHeightContext);
   const isKeyboardOpen = useSharedValue(false);
 
   useKeyboardHandler({
@@ -56,7 +56,12 @@ export function KeyboardAdaptiveButton({
   return (
     <KeyboardStickyView offset={{ closed: STICKY_OFFSET, opened: STICKY_OFFSET }} enabled={enabled}>
       <Animated.View style={containerStyle}>
-        <Animated.View style={buttonStyle} className="overflow-hidden">
+        {/* 키보드가 열리면 바깥 여백이 0이 되어 버튼 높이만 키보드 위를 덮는다. 바깥 여백은 애니메이션 중 매 프레임 바뀌므로 버튼만 잰다 */}
+        <Animated.View
+          style={buttonStyle}
+          className="overflow-hidden"
+          onLayout={(event) => reportFooterHeight?.(event.nativeEvent.layout.height)}
+        >
           <Button {...buttonProps} className="rounded-none" style={{ borderRadius: undefined }}>
             {children}
           </Button>

@@ -71,7 +71,18 @@ export function NewPasswordStep({
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={title}>
+      <FormStepLayout
+        title={title}
+        footer={
+          <KeyboardAdaptiveButton
+            onPress={handleNext}
+            isDisabled={!isNextEnabled}
+            isLoading={isSubmitting}
+          >
+            {step === 'newPasswordConfirm' ? submitLabel : nextLabel}
+          </KeyboardAdaptiveButton>
+        }
+      >
         {step === 'newPasswordConfirm' && (
           <RevealedField onRevealed={focusConfirmInput}>
             <VStack mb={8}>
@@ -121,14 +132,6 @@ export function NewPasswordStep({
           </VStack>
         </Animated.View>
       </FormStepLayout>
-
-      <KeyboardAdaptiveButton
-        onPress={handleNext}
-        isDisabled={!isNextEnabled}
-        isLoading={isSubmitting}
-      >
-        {step === 'newPasswordConfirm' ? submitLabel : nextLabel}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

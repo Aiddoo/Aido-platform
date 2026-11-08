@@ -46,58 +46,57 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
   });
 
   return (
-    <>
-      <FormScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
-        keyboardShouldPersistTaps="always"
-        bounces={false}
-        alwaysBounceVertical={false}
-        overScrollMode="never"
-      >
-        <StyledSafeAreaView edges={['left', 'right']}>
-          {children}
+    <FormScrollView
+      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
+      keyboardShouldPersistTaps="always"
+      bounces={false}
+      alwaysBounceVertical={false}
+      overScrollMode="never"
+      footer={
+        <KeyboardAdaptiveButton
+          onPress={() => submit()}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+          testID="friend-tag-submit"
+        >
+          {t('add.submit')}
+        </KeyboardAdaptiveButton>
+      }
+    >
+      <StyledSafeAreaView edges={['left', 'right']}>
+        {children}
 
-          <Controller
-            control={form.control}
-            name="userTag"
-            render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
-              <Input
-                ref={ref}
-                testID="friend-tag-input"
-                label={t('add.tagLabel')}
-                placeholder="ABC12345"
-                value={value}
-                // 태그는 영문 대문자·숫자라 한글 자판 대신 영문 자판을 띄우고, 소문자로 쳐도 대문자로 맞춘다
-                onChange={(text) => onChange(text.toUpperCase())}
-                autoFocus
-                {...ASCII_CODE_TEXT_INPUT_PROPS}
-                maxLength={USER_TAG_MAX_LENGTH}
-                submitBehavior="submit"
-                returnKeyType="done"
-                isInvalid={error != null}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'userTag.pattern',
-                  byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
-                })}
-                onSubmitEditing={() => {
-                  if (isValid && !isSubmitting) {
-                    submit();
-                  }
-                }}
-              />
-            )}
-          />
-        </StyledSafeAreaView>
-      </FormScrollView>
-
-      <KeyboardAdaptiveButton
-        onPress={() => submit()}
-        isDisabled={!isValid}
-        isLoading={isSubmitting}
-        testID="friend-tag-submit"
-      >
-        {t('add.submit')}
-      </KeyboardAdaptiveButton>
-    </>
+        <Controller
+          control={form.control}
+          name="userTag"
+          render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
+            <Input
+              ref={ref}
+              testID="friend-tag-input"
+              label={t('add.tagLabel')}
+              placeholder="ABC12345"
+              value={value}
+              // 태그는 영문 대문자·숫자라 한글 자판 대신 영문 자판을 띄우고, 소문자로 쳐도 대문자로 맞춘다
+              onChange={(text) => onChange(text.toUpperCase())}
+              autoFocus
+              {...ASCII_CODE_TEXT_INPUT_PROPS}
+              maxLength={USER_TAG_MAX_LENGTH}
+              submitBehavior="submit"
+              returnKeyType="done"
+              isInvalid={error != null}
+              errorMessage={resolveValidationMessage(error, {
+                default: 'userTag.pattern',
+                byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
+              })}
+              onSubmitEditing={() => {
+                if (isValid && !isSubmitting) {
+                  submit();
+                }
+              }}
+            />
+          )}
+        />
+      </StyledSafeAreaView>
+    </FormScrollView>
   );
 }

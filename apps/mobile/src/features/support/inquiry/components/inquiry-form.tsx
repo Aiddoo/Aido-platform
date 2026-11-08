@@ -8,13 +8,11 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   FormStepLayout,
-  HStack,
   IconRadioItem,
   KeyboardAdaptiveButton,
   Spacing,
   Text,
   TextArea,
-  VStack,
 } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
@@ -61,82 +59,81 @@ export function InquiryForm({ title }: InquiryFormProps) {
   const handleSubmit = useSingleTap(() => submitInquiry());
 
   return (
-    <>
-      <FormStepLayout title={title}>
-        <Controller
-          control={form.control}
-          name="category"
-          render={({ field: { value, onChange } }) => (
-            <RadioGroup
-              value={value}
-              onValueChange={onChange}
-              className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
-            >
-              <IconRadioItem
-                value="BUG_REPORT"
-                label={t('category.bugReport')}
-                testID="inquiry-category-BUG_REPORT"
-              />
-              <IconRadioItem
-                value="FEATURE_REQUEST"
-                label={t('category.featureRequest')}
-                testID="inquiry-category-FEATURE_REQUEST"
-              />
-              <IconRadioItem
-                value="PAYMENT"
-                label={t('category.payment')}
-                testID="inquiry-category-PAYMENT"
-              />
-              <IconRadioItem
-                value="OTHER"
-                label={t('category.other')}
-                testID="inquiry-category-OTHER"
-              />
-            </RadioGroup>
-          )}
-        />
+    <FormStepLayout
+      title={title}
+      footer={
+        <KeyboardAdaptiveButton
+          onPress={handleSubmit}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+          testID="inquiry-submit"
+        >
+          {t('form.submit')}
+        </KeyboardAdaptiveButton>
+      }
+    >
+      <Controller
+        control={form.control}
+        name="category"
+        render={({ field: { value, onChange } }) => (
+          <RadioGroup
+            value={value}
+            onValueChange={onChange}
+            className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
+          >
+            <IconRadioItem
+              value="BUG_REPORT"
+              label={t('category.bugReport')}
+              testID="inquiry-category-BUG_REPORT"
+            />
+            <IconRadioItem
+              value="FEATURE_REQUEST"
+              label={t('category.featureRequest')}
+              testID="inquiry-category-FEATURE_REQUEST"
+            />
+            <IconRadioItem
+              value="PAYMENT"
+              label={t('category.payment')}
+              testID="inquiry-category-PAYMENT"
+            />
+            <IconRadioItem
+              value="OTHER"
+              label={t('category.other')}
+              testID="inquiry-category-OTHER"
+            />
+          </RadioGroup>
+        )}
+      />
 
-        <Spacing size={24} />
+      <Spacing size={24} />
 
-        <Controller
-          control={form.control}
-          name="content"
-          render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
-            <VStack gap={4}>
-              <TextArea
-                ref={ref}
-                testID="inquiry-content-input"
-                label={t('form.contentLabel')}
-                placeholder={t('form.contentPlaceholder')}
-                value={value}
-                onChange={onChange}
-                isInvalid={error != null}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'inquiryContent.tooShort',
-                  byType: { too_big: 'inquiryContent.tooLong' },
-                })}
-                maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
-                className="min-h-40"
-              />
-              <HStack justify="end" className="-mt-4">
-                <Text size="e1" weight="medium" className="text-gray-5">
-                  {formatCount(value.length, locale)}/
-                  {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
-                </Text>
-              </HStack>
-            </VStack>
-          )}
-        />
-      </FormStepLayout>
-
-      <KeyboardAdaptiveButton
-        onPress={handleSubmit}
-        isDisabled={!isValid}
-        isLoading={isSubmitting}
-        testID="inquiry-submit"
-      >
-        {t('form.submit')}
-      </KeyboardAdaptiveButton>
-    </>
+      <Controller
+        control={form.control}
+        name="content"
+        render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
+          <TextArea
+            ref={ref}
+            testID="inquiry-content-input"
+            label={t('form.contentLabel')}
+            placeholder={t('form.contentPlaceholder')}
+            value={value}
+            onChange={onChange}
+            isInvalid={error != null}
+            errorMessage={resolveValidationMessage(error, {
+              default: 'inquiryContent.tooShort',
+              byType: { too_big: 'inquiryContent.tooLong' },
+            })}
+            counter={
+              <Text size="e1" weight="medium" className="text-gray-5">
+                {formatCount(value.length, locale)}/
+                {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
+              </Text>
+            }
+            maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
+            className="min-h-40"
+          />
+        )}
+      />
+    </FormStepLayout>
   );
 }

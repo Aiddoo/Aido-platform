@@ -129,81 +129,82 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   };
 
   return (
-    <>
-      <FormScrollView contentInsetAdjustmentBehavior="automatic">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <ReadableContent px={24} pt={20}>
-            {children}
+    <FormScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      footer={
+        <KeyboardAdaptiveButton
+          testID="invite-code-submit"
+          onPress={() => submitInviteCode()}
+          isDisabled={!InviteCodePolicy.isFilledInviteCode(draft)}
+          isLoading={isSubmitting}
+        >
+          {errorMessage == null ? t('codeEntry.submit') : t('codeEntry.retry')}
+        </KeyboardAdaptiveButton>
+      }
+    >
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <ReadableContent px={24} pt={20}>
+          {children}
 
-            <Controller
-              control={form.control}
-              name="inviteCode"
-              render={({ field: { value, onChange } }) => (
-                <InviteCodeInput
-                  ref={inviteCodeInputRef}
-                  value={value}
-                  onChange={(next) => {
-                    form.clearErrors('inviteCode');
-                    onChange(next);
-                  }}
-                  // 틀린 글자가 있으면 그 칸만, 없는 코드처럼 전체가 틀렸으면 모든 칸을 빨갛게 그린다
-                  isInvalid={errorMessage != null && invalidIndexes.length === 0}
-                  invalidIndexes={invalidIndexes}
-                  submitCount={submitCount}
-                  textInputProps={{
-                    autoFocus: true,
-                    returnKeyType: 'done',
-                    // 틀렸을 때 바로 고쳐 쓰도록 제출해도 키보드를 내리지 않는다
-                    submitBehavior: 'submit',
-                    onSubmitEditing: () => {
-                      if (InviteCodePolicy.isFilledInviteCode(draft) && !isSubmitting) {
-                        submitInviteCode();
-                      }
-                    },
-                    accessibilityLabel: t('codeEntry.inputLabel'),
-                  }}
-                  testID="invite-code-input"
-                />
-              )}
-            />
-
-            <Spacing size={12} />
-
-            {errorMessage == null ? (
-              <PasteInviteCodeChip onPaste={handlePaste} />
-            ) : (
-              <HStack
-                gap={6}
-                align="center"
-                accessibilityRole="alert"
-                testID="invite-code-error"
-                accessibilityLiveRegion="polite"
-              >
-                <InfoIcon width={16} height={16} colorClassName="text-error" />
-                <Text
-                  size="b4"
-                  weight="semibold"
-                  tone="danger"
-                  lineBreakStrategyIOS="hangul-word"
-                  className="flex-1"
-                >
-                  {errorMessage}
-                </Text>
-              </HStack>
+          <Controller
+            control={form.control}
+            name="inviteCode"
+            render={({ field: { value, onChange } }) => (
+              <InviteCodeInput
+                ref={inviteCodeInputRef}
+                value={value}
+                onChange={(next) => {
+                  form.clearErrors('inviteCode');
+                  onChange(next);
+                }}
+                // 틀린 글자가 있으면 그 칸만, 없는 코드처럼 전체가 틀렸으면 모든 칸을 빨갛게 그린다
+                isInvalid={errorMessage != null && invalidIndexes.length === 0}
+                invalidIndexes={invalidIndexes}
+                submitCount={submitCount}
+                textInputProps={{
+                  autoFocus: true,
+                  returnKeyType: 'done',
+                  // 틀렸을 때 바로 고쳐 쓰도록 제출해도 키보드를 내리지 않는다
+                  submitBehavior: 'submit',
+                  onSubmitEditing: () => {
+                    if (InviteCodePolicy.isFilledInviteCode(draft) && !isSubmitting) {
+                      submitInviteCode();
+                    }
+                  },
+                  accessibilityLabel: t('codeEntry.inputLabel'),
+                }}
+                testID="invite-code-input"
+              />
             )}
-          </ReadableContent>
-        </StyledSafeAreaView>
-      </FormScrollView>
+          />
 
-      <KeyboardAdaptiveButton
-        testID="invite-code-submit"
-        onPress={() => submitInviteCode()}
-        isDisabled={!InviteCodePolicy.isFilledInviteCode(draft)}
-        isLoading={isSubmitting}
-      >
-        {errorMessage == null ? t('codeEntry.submit') : t('codeEntry.retry')}
-      </KeyboardAdaptiveButton>
-    </>
+          <Spacing size={12} />
+
+          {errorMessage == null ? (
+            <PasteInviteCodeChip onPaste={handlePaste} />
+          ) : (
+            <HStack
+              gap={6}
+              align="center"
+              accessibilityRole="alert"
+              testID="invite-code-error"
+              accessibilityLiveRegion="polite"
+            >
+              <InfoIcon width={16} height={16} colorClassName="text-error" />
+              <Text
+                size="b4"
+                weight="semibold"
+                tone="danger"
+                lineBreakStrategyIOS="hangul-word"
+                className="flex-1"
+              >
+                {errorMessage}
+              </Text>
+            </HStack>
+          )}
+        </ReadableContent>
+      </StyledSafeAreaView>
+    </FormScrollView>
   );
 }
 

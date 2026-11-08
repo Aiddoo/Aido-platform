@@ -105,7 +105,14 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={title}>
+      <FormStepLayout
+        title={title}
+        footer={
+          <KeyboardAdaptiveButton onPress={onNext} isDisabled={!isValid}>
+            {t('changePassword.next')}
+          </KeyboardAdaptiveButton>
+        }
+      >
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <Controller
             control={control}
@@ -136,10 +143,6 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
           />
         </Animated.View>
       </FormStepLayout>
-
-      <KeyboardAdaptiveButton onPress={onNext} isDisabled={!isValid}>
-        {t('changePassword.next')}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

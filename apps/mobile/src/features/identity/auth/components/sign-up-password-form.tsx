@@ -65,7 +65,19 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
   return (
     <>
       <Box className="flex-1">
-        <FormStepLayout title={t('signUp.passwordTitle')}>
+        <FormStepLayout
+          title={t('signUp.passwordTitle')}
+          footer={
+            <KeyboardAdaptiveButton
+              color="dark"
+              onPress={handleNext}
+              isDisabled={!isNextEnabled}
+              enabled={!isTermsOpen}
+            >
+              {t('signUp.next')}
+            </KeyboardAdaptiveButton>
+          }
+        >
           {step === 'passwordConfirm' && (
             <RevealedField onRevealed={focusPasswordConfirmInput}>
               <VStack mb={20}>
@@ -136,15 +148,6 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
             />
           </Animated.View>
         </FormStepLayout>
-
-        <KeyboardAdaptiveButton
-          color="dark"
-          onPress={handleNext}
-          isDisabled={!isNextEnabled}
-          enabled={!isTermsOpen}
-        >
-          {t('signUp.next')}
-        </KeyboardAdaptiveButton>
       </Box>
 
       <TermsBottomSheet

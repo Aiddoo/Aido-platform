@@ -208,19 +208,19 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 코드 구조보다 사용성이 먼저다. 구조를 고치다 사용성이 나빠지면 구조를 양보한다.
 
-| 상황                       | 기대                                                    | 쓰는 것                                                                                                                                              |
-| -------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 입력칸을 누름              | 칸과 오류 문구가 키보드 위에 보임                       | 폼 `FormStepLayout`(`KeyboardAwareScrollView`), 전체 화면 입력 `KeyboardAvoidingView behavior="padding" automaticOffset`, 시트 `KeyboardBottomSheet` |
-| 저장 버튼                  | 키보드에 가리지 않음                                    | `KeyboardAdaptiveButton`, 시트 `footer`                                                                                                              |
-| 키보드가 열린 채 버튼 탭   | 첫 탭에 바로 동작                                       | 스크롤 폼·검색 `keyboardShouldPersistTaps="handled"`. 칩 줄, 시트, 댓글 작성처럼 입력을 이어 가는 곳만 `"always"`                                    |
-| 키보드를 따라 움직임       | 실제 키보드 위치와 같이 움직임                          | `react-native-keyboard-controller`. `Keyboard.addListener` + 타이밍으로 위치를 흉내 내지 않는다                                                      |
-| 키보드의 다음·완료 키      | 다음 칸 이동 또는 제출                                  | `returnKeyType`, `onSubmitEditing`, `setFocus`                                                                                                       |
-| 이메일·비밀번호            | 맞는 키보드와 자동 완성                                 | `keyboardType`, `textContentType`, `autoComplete`                                                                                                    |
-| 검증 실패                  | 틀린 칸으로 포커스                                      | `Controller`의 `field.ref`                                                                                                                           |
-| 시트 위에 피커를 열고 닫음 | 키보드 내린 뒤 열림, 닫으면 입력으로 포커스 복귀        | `ModalBottomSheet`가 열릴 때 키보드를 내린다. 복귀는 `onCloseStart`에서 한다([시트](./ui-components.md#시트))                                        |
-| 저장 중·실패               | 중복 제출 없음, 성공 전에 닫지 않음, 실패해도 글자 유지 | `isSubmitting`, `isPending`, 초안                                                                                                                    |
-| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useFontScaledSize`                                                                                                                |
-| 뒤로 가기                  | 작성 중 글자를 잃지 않음                                | 초안 또는 확인                                                                                                                                       |
+| 상황                       | 기대                                                    | 쓰는 것                                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 입력칸을 누름              | 칸과 오류 문구가 키보드 위에 보임                       | 폼 `FormStepLayout`·`FormScrollView`(칸 전체 스크롤), 전체 화면 입력 `KeyboardAvoidingView behavior="padding" automaticOffset`, 시트 `KeyboardBottomSheet` |
+| 저장 버튼                  | 키보드에 가리지 않음                                    | `KeyboardAdaptiveButton`, 시트 `footer`                                                                                                                    |
+| 키보드가 열린 채 버튼 탭   | 첫 탭에 바로 동작                                       | 스크롤 폼·검색 `keyboardShouldPersistTaps="handled"`. 칩 줄, 시트, 댓글 작성처럼 입력을 이어 가는 곳만 `"always"`                                          |
+| 키보드를 따라 움직임       | 실제 키보드 위치와 같이 움직임                          | `react-native-keyboard-controller`. `Keyboard.addListener` + 타이밍으로 위치를 흉내 내지 않는다                                                            |
+| 키보드의 다음·완료 키      | 다음 칸 이동 또는 제출                                  | `returnKeyType`, `onSubmitEditing`, `setFocus`                                                                                                             |
+| 이메일·비밀번호            | 맞는 키보드와 자동 완성                                 | `keyboardType`, `textContentType`, `autoComplete`                                                                                                          |
+| 검증 실패                  | 틀린 칸으로 포커스                                      | `Controller`의 `field.ref`                                                                                                                                 |
+| 시트 위에 피커를 열고 닫음 | 키보드 내린 뒤 열림, 닫으면 입력으로 포커스 복귀        | `ModalBottomSheet`가 열릴 때 키보드를 내린다. 복귀는 `onCloseStart`에서 한다([시트](./ui-components.md#시트))                                              |
+| 저장 중·실패               | 중복 제출 없음, 성공 전에 닫지 않음, 실패해도 글자 유지 | `isSubmitting`, `isPending`, 초안                                                                                                                          |
+| 큰 글꼴·긴 문구·작은 화면  | 주요 버튼에 닿을 수 있음                                | 스크롤 가능한 틀, `useFontScaledSize`                                                                                                                      |
+| 뒤로 가기                  | 작성 중 글자를 잃지 않음                                | 초안 또는 확인                                                                                                                                             |
 
 화면을 끝내기 전에 주요 흐름 한 번, 실패와 재시도 한 번, 키보드, 뒤로 가기, 긴 문구, 큰 글꼴을 직접 해 보고 실행한 것과 못 한 것을 나눠 보고한다.
 
@@ -489,7 +489,7 @@ MemoList.Loading = function Loading() {
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
-**유지하는 Context:** `di-context`, `shared-di-context`(`shared`가 쓰는 포트만 나눈 DI), `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`).
+**유지하는 Context:** `di-context`, `shared-di-context`(`shared`가 쓰는 포트만 나눈 DI), `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`), 키보드 위 칸 맞춤(`focused-field`: 입력이 칸 전체 뷰를 시트·화면 폼 스크롤에 알린다, `keyboard-footer-height`: 키보드 버튼이 제 높이를 화면 폼에 알린다. 둘 다 바뀌지 않는 알림 함수라 소비자가 다시 그려지지 않는다).
 
 **UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 

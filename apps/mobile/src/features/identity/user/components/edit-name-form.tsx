@@ -48,7 +48,19 @@ export function EditNameForm({ title }: EditNameFormProps) {
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={title}>
+      <FormStepLayout
+        title={title}
+        footer={
+          <KeyboardAdaptiveButton
+            testID="edit-name-submit"
+            onPress={handleSubmit}
+            isDisabled={!canSubmit}
+            isLoading={isSubmitting}
+          >
+            {t('editName.submit')}
+          </KeyboardAdaptiveButton>
+        }
+      >
         <Controller
           control={form.control}
           name="name"
@@ -78,14 +90,6 @@ export function EditNameForm({ title }: EditNameFormProps) {
           )}
         />
       </FormStepLayout>
-      <KeyboardAdaptiveButton
-        testID="edit-name-submit"
-        onPress={handleSubmit}
-        isDisabled={!canSubmit}
-        isLoading={isSubmitting}
-      >
-        {t('editName.submit')}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

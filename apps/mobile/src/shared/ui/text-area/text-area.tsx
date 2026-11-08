@@ -5,6 +5,7 @@ import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box';
+import { HStack } from '../h-stack/h-stack';
 import { type FocusedFieldNode, useReportFocusedField } from '../input/focused-field';
 import { Text } from '../text/text';
 import { TEXT_SIZE_CLASSES } from '../text/text.variants';
@@ -26,6 +27,7 @@ export function TextArea({
   isDisabled = false,
   isInvalid = false,
   errorMessage,
+  counter,
   preserveErrorSpace = true,
   textSize,
   growsWithContent = false,
@@ -77,7 +79,16 @@ export function TextArea({
   );
 
   return (
-    <Box ref={fieldRef} className={cn('gap-2', variant === 'bare' && 'flex-1')}>
+    <Box
+      ref={fieldRef}
+      className={cn('gap-2', variant === 'bare' && 'flex-1')}
+      onLayout={() => {
+        // 내용에 맞춰 자라거나 오류 문구가 늘면 칸 전체를 다시 알린다
+        if (isFocused) {
+          reportFocusedField(true);
+        }
+      }}
+    >
       {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={textAreaLabelVariants({ isFocused, isInvalid })}>
           {label}
@@ -134,10 +145,13 @@ export function TextArea({
             {...props}
           />
         </Box>
-        {(preserveErrorSpace || errorMessage != null) && (
-          <Text size="e1" className={cn('text-error', !errorMessage && 'opacity-0')}>
-            {errorMessage ?? ' '}
-          </Text>
+        {(preserveErrorSpace || errorMessage != null || counter != null) && (
+          <HStack className="gap-2">
+            <Text size="e1" className={cn('flex-1 text-error', !errorMessage && 'opacity-0')}>
+              {errorMessage ?? ' '}
+            </Text>
+            {counter}
+          </HStack>
         )}
       </VStack>
     </Box>

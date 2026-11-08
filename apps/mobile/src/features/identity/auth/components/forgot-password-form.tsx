@@ -136,7 +136,14 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={title}>
+      <FormStepLayout
+        title={title}
+        footer={
+          <KeyboardAdaptiveButton onPress={onSubmit} isDisabled={!isValid} isLoading={isSubmitting}>
+            {t('forgotPassword.next')}
+          </KeyboardAdaptiveButton>
+        }
+      >
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <VStack gap={8}>
             <Controller
@@ -176,10 +183,6 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
           </VStack>
         </Animated.View>
       </FormStepLayout>
-
-      <KeyboardAdaptiveButton onPress={onSubmit} isDisabled={!isValid} isLoading={isSubmitting}>
-        {t('forgotPassword.next')}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

@@ -1,16 +1,12 @@
 import { ANIMATION } from '@src/shared/constants/animation';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET } from '../button';
 import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { H3 } from '../text';
-import { FormScrollView } from './form-scroll-view';
+import { FormScrollView, type FormScrollViewProps } from './form-scroll-view';
 
-export interface FormStepLayoutProps extends Omit<
-  ComponentProps<typeof FormScrollView>,
-  'children'
-> {
+export interface FormStepLayoutProps extends Omit<FormScrollViewProps, 'children'> {
   /** 단계 제목. 바뀌면 제목만 다시 페이드인한다. */
   title: string;
   children: ReactNode;
@@ -28,7 +24,7 @@ export function FormStepLayout({
         {
           paddingHorizontal: 16,
           paddingTop: 24,
-          paddingBottom: KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
+          paddingBottom: 24,
         },
         contentContainerStyle,
       ]}

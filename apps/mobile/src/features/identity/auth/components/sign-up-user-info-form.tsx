@@ -60,7 +60,18 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={t(STEP_DESCRIPTION_KEYS[step])}>
+      <FormStepLayout
+        title={t(STEP_DESCRIPTION_KEYS[step])}
+        footer={
+          <KeyboardAdaptiveButton
+            color="dark"
+            onPress={handleNext}
+            isDisabled={!isNextButtonEnabled}
+          >
+            {t('auth:signUp.next')}
+          </KeyboardAdaptiveButton>
+        }
+      >
         {step === 'email' && (
           <RevealedField onRevealed={focusEmailInput}>
             <Controller
@@ -132,10 +143,6 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
           />
         </Animated.View>
       </FormStepLayout>
-
-      <KeyboardAdaptiveButton color="dark" onPress={handleNext} isDisabled={!isNextButtonEnabled}>
-        {t('auth:signUp.next')}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

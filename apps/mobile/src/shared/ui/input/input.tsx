@@ -44,7 +44,16 @@ export function Input({
   const { resolveSize } = useFontScale();
 
   return (
-    <Box ref={fieldRef} className="gap-1">
+    <Box
+      ref={fieldRef}
+      className="gap-1"
+      onLayout={() => {
+        // 오류 문구가 여러 줄이 되는 등 칸 높이가 바뀌면 칸 전체를 다시 알린다
+        if (isFocused) {
+          reportFocusedField(true);
+        }
+      }}
+    >
       {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
           {label}

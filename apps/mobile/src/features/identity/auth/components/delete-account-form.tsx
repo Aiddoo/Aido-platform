@@ -44,7 +44,19 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
 
   return (
     <Box className="flex-1">
-      <FormStepLayout title={title}>
+      <FormStepLayout
+        title={title}
+        footer={
+          <KeyboardAdaptiveButton
+            color="danger"
+            onPress={() => handleDeletePress()}
+            isDisabled={!isValid}
+            isLoading={deleteAccountMutation.isPending}
+          >
+            {t('deleteAccount.submit')}
+          </KeyboardAdaptiveButton>
+        }
+      >
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <Controller
             control={form.control}
@@ -70,15 +82,6 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
 
         {footer}
       </FormStepLayout>
-
-      <KeyboardAdaptiveButton
-        color="danger"
-        onPress={() => handleDeletePress()}
-        isDisabled={!isValid}
-        isLoading={deleteAccountMutation.isPending}
-      >
-        {t('deleteAccount.submit')}
-      </KeyboardAdaptiveButton>
     </Box>
   );
 }

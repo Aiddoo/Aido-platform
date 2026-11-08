@@ -44,6 +44,7 @@ import { TextArea } from '@src/shared/ui';
 | `isDisabled`         | `boolean`                                 | `false`    | 비활성화 상태                                                                         |
 | `isInvalid`          | `boolean`                                 | `false`    | 에러 상태                                                                             |
 | `errorMessage`       | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
+| `counter`            | `ReactNode`                               | -          | 오류 문구 줄 오른쪽(글자 수). 칸에 함께 있어야 키보드가 올라올 때 같이 보입니다.      |
 | `preserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
 | `textSize`           | `TextSize`                                | -          | 줄 간격과 자간 토큰입니다. 글자 크기는 `variant`가 정합니다.                          |
 | `growsWithContent`   | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
