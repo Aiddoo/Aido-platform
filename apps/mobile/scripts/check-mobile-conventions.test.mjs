@@ -1132,6 +1132,49 @@ test('xxxOf 함수 이름을 거부한다', () => {
   );
 });
 
+test('출처를 붙인 xxxFrom과 tryX 함수 이름을 거부하고 빼는 곳을 말하는 이름은 둔다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/friend/domains/friend.error.ts': `
+        export function getFriendLimitFromError(error) { return null; }
+        export function tryUnlock() { return true; }
+        export function findFriendLimit(error) { return null; }
+        export function removeFriendFromList(list) { return list; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors[0], /getFriendLimitFromError/u);
+      assert.match(errors[1], /tryUnlock/u);
+    },
+  );
+});
+
+test('폼 값의 *FormInput과 mutation 인자의 *Params·*Args 타입 이름을 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/nudge/schemas/nudge-form.schema.ts': `
+        export type NudgeFormInput = { message: string };
+        export type NudgeFormValues = { message: string };
+      `,
+      'apps/mobile/src/features/planning/todo/queries/todo.mutations.ts': `
+        interface ToggleTodoMutationParams { todoId: number }
+        type UpdatePreferenceArgs = { theme: string };
+        interface ToggleTodoVariables { todoId: number }
+      `,
+      'apps/mobile/src/features/planning/todo/schemas/todo-params.schema.ts': `
+        export type TodoParams = { todoId: number };
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 3);
+      assert.match(errors.join('\n'), /NudgeFormInput/u);
+      assert.match(errors.join('\n'), /ToggleTodoMutationParams/u);
+      assert.match(errors.join('\n'), /UpdatePreferenceArgs/u);
+    },
+  );
+});
+
 test('Chip.Label을 거부하고 자식 Text는 허용한다', () => {
   withFixture(
     {

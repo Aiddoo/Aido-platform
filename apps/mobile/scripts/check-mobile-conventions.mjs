@@ -1353,6 +1353,14 @@ const FEATURE_LAYERS = new Map([
 const ANY_LAYER_IMPORT_PATTERN = /\/(?:domains\/[^/]+\.model|queries\/[^/]+-cache)$/u;
 const FORBIDDEN_COMPONENT_NAME = /(?:Body|Bodies|Frames?|Sections?|Blocks?|Wrappers?)$/u;
 const XXX_OF_NAME = /^[a-z][A-Za-z0-9]*[a-z0-9]Of$/u;
+// `getLimitFromError`·`toPlanFromDraft`처럼 값을 만드는 동사 뒤에 출처를 붙이는 꼴. `removeTodoFromList`·`openFromReentry`처럼
+// 동작이 일어나는 곳을 말하는 이름은 뜻이 달라 둔다
+const XXX_FROM_NAME =
+  /^(?:get|to|create|find|with|calculate|parse|format|resolve|use)[A-Z][A-Za-z0-9]*From[A-Z][A-Za-z0-9]*$/u;
+const TRY_NAME = /^try[A-Z]/u;
+const FORM_INPUT_TYPE_NAME = /FormInput$/u;
+const MUTATION_VARIABLES_TYPE_NAME = /(?:Params|Args)$/u;
+const MUTATIONS_FILE = /\/queries\/[^/]+\.mutations\.ts$/u;
 const POLICY_NAME = /Policy$/u;
 const QUERY_KEY_FILE = /\/constants\/[^/]*query-keys\.ts$/u;
 const ROLE_CONSTANTS = new Set(['USER_ROLE', 'PREMIUM_SOURCE']);
@@ -1813,6 +1821,31 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
         rule: 'xxx-of-name',
         key: relativePath,
         message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: xxxOf 대신 동사로 시작하는 이름을 씁니다.`,
+      });
+    }
+
+    if (
+      (ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) &&
+      node.name !== undefined &&
+      ts.isIdentifier(node.name) &&
+      (XXX_FROM_NAME.test(node.name.text) || TRY_NAME.test(node.name.text))
+    ) {
+      findings.push({
+        rule: 'function-name',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: xxxFrom·tryX 대신 동사로 시작하고 결과를 말하는 이름을 씁니다(없으면 null은 find*, 변환은 to*).`,
+      });
+    }
+
+    if (
+      (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
+      (FORM_INPUT_TYPE_NAME.test(node.name.text) ||
+        (MUTATIONS_FILE.test(relativePath) && MUTATION_VARIABLES_TYPE_NAME.test(node.name.text)))
+    ) {
+      findings.push({
+        rule: 'type-name',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: 폼 값은 *FormValues, mutation 인자는 *Variables로 짓습니다. Params는 route 값에만 씁니다.`,
       });
     }
 

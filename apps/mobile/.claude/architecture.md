@@ -163,6 +163,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
 | Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`)                                                      |
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |
+| 함수 이름            | 값을 만드는 동사 뒤에 출처를 붙인 `getXFromY`·`toXFromY`·`useXFromY`류와 `tryX`(테스트 제외). `removeXFromY`처럼 동작이 일어나는 곳을 말하는 이름은 통과한다                                  |
+| 타입 이름            | 폼 값 `*FormInput`(`*FormValues`로), `queries/*.mutations.ts`의 `*Params`·`*Args`(`*Variables`로). `Params`는 route 값에만 쓴다                                                               |
 | 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                            |
 | 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                   |
 | mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                |
@@ -729,16 +731,17 @@ const saveMemo = (onFailed: (error: unknown) => void) =>
 
 날짜 값·시간대·떠 있는 시각의 규칙은 [dates](../../../docs/conventions/dates.md)가 원본이다. 앱의 도구는 다음뿐이다. 새 `Intl` 포매터나 날짜 유틸을 만들지 않는다.
 
-| 필요한 것   | 도구                                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| 오늘·자정   | `LocalDateProvider` + `useToday`·`useTodayKey`. render 중 `new Date()`를 기준으로 쓰지 않는다 |
-| 분 단위     | `useMinuteNow`                                                                                |
-| 날짜 key    | `shared/date/date-key.ts`(`addDaysToDateKey`, `diffDateKeysInDays`, `getDayOfWeek`)           |
-| 주          | `shared/date/date-key.ts`(`getCalendarWeek`)                                                  |
-| 순간 → 값   | `shared/date/instant.ts`(`toDateKey(d, tz)`, `toHHmm(d, tz)`). 시간대는 인자다                |
-| 표시        | `shared/date/date-format.ts`, `date-labels.ts` + `useDateFormatContext`                       |
-| 시각        | `shared/date/time-of-day.ts`                                                                  |
-| 기기 시간대 | `shared/infra/localization/device-timezone.ts`(`getDeviceTimezone`)                           |
+| 필요한 것      | 도구                                                                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 오늘·자정      | `LocalDateProvider` + `useToday`·`useTodayKey`. render 중 `new Date()`를 기준으로 쓰지 않는다                                                                                                                          |
+| 분 단위        | `useMinuteNow`                                                                                                                                                                                                         |
+| 날짜 key       | `shared/date/date-key.ts`(`addDaysToDateKey`, `diffDateKeysInDays`, `getDayOfWeek`)                                                                                                                                    |
+| 주             | `shared/date/date-key.ts`(`getCalendarWeek`)                                                                                                                                                                           |
+| 순간 → 값      | `shared/date/instant.ts`(`toDateKey(d, tz)`, `toHHmm(d, tz)`). 시간대는 인자다                                                                                                                                         |
+| 표시           | `shared/date/date-format.ts`, `date-labels.ts` + `useDateFormatContext`                                                                                                                                                |
+| 시각           | `shared/date/time-of-day.ts`                                                                                                                                                                                           |
+| 기기 시간대    | `shared/infra/localization/device-timezone.ts`(`getDeviceTimezone`)                                                                                                                                                    |
+| 지금 시각 주입 | Service·저장소 생성자에 함수로 넘긴다. 순간을 다루면 `getNowInstant`, 저장 값이 epoch ms인 곳(초안 `DraftService`, 세션 해제 대기 `SessionRevocationService`)만 `Date.now`다. 저장 형식이 바뀌지 않게 둘을 섞지 않는다 |
 
 ---
 
