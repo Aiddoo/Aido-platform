@@ -7,6 +7,7 @@ import type { PushPermission } from '../domains/push-permission.model';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
+/** `notificationId`가 없으면 모든 알림을 읽음으로 바꾼다 */
 function markPagesRead(
   cachedPages: InfiniteData<NotificationListResult> | undefined,
   notificationId?: number,

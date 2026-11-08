@@ -11,6 +11,7 @@ export class DeviceTimezoneService {
     this.#repository = repository;
   }
 
+  /** 지금 값을 남기고, 남겨 둔 시간대와 다르면 바뀐 내용을 돌려준다. 처음 남길 때는 없다 */
   record = (userId: string, current: DeviceTimezone): DeviceTimezoneChange | null => {
     const previous = this.#repository.find(userId);
     if (previous == null || !isEqual(previous, current)) {

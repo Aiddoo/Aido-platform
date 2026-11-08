@@ -9,7 +9,10 @@ import { createWidgetNavigationRepository } from '../apis/widget-navigation.repo
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 
-/** 위젯만 깨어난 프로세스에는 앱 트리(DIProvider)가 없다 */
+/**
+ * 위젯만 깨어난 프로세스에는 앱 트리(DIProvider)가 없다. 실패는 저장소에 남기고,
+ * 다음 앱 시작 때 `WidgetSyncService.reportHeadlessFailure`가 오류 보고기로 보낸다.
+ */
 export function registerWidgetTaskHandler(): void {
   registerNativeWidgetTaskHandler(
     createAndroidWidgetTaskHandler({

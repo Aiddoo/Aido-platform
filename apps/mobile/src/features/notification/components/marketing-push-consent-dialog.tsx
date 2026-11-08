@@ -10,7 +10,14 @@ interface MarketingPushConsentDialogProps {
   onDismiss: () => void;
 }
 
-/** 광고성 앱 푸시 수신 동의 다이얼로그 */
+/**
+ * 광고성 앱 푸시 수신 동의 다이얼로그.
+ *
+ * 수신 내용·철회 방법·법정 표기를 명시한 뒤 명시적으로 동의받는다(정보통신망법 opt-in).
+ * "동의"는 서버 동의 기록 mutation을 호출하고, **성공한 뒤에만** 다이얼로그를 닫는다 —
+ * 요청 실패 시 조용히 롤백돼 유저가 오해하는 것을 막고, 처리 중 버튼을 비활성화해
+ * 중복 제출을 방지한다.
+ */
 export function MarketingPushConsentDialog({
   isOpen,
   onAgree,

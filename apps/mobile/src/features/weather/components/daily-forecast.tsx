@@ -49,7 +49,9 @@ import {
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
+/** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
+/** 예보 일수. 할 일 점을 찍을 날 수와 로딩 행 수도 같다 */
 const FORECAST_DAYS = 10;
 const ICON_SIZE = 26;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
@@ -61,10 +63,14 @@ const ROW_LAYOUT = LinearTransition.duration(250);
 interface RowFormat {
   dateFormat: DateFormatContext;
   timeFormat: TimeFormat;
+  /** 글자 배율에 맞춰 고정 폭 열을 늘린다. */
   columnScale: number;
 }
 
-/** 할 일 점은 날짜별 완료 현황(캘린더 표시와 같은 캐시)으로 찍는다 */
+/**
+ * 할 일 점은 날짜별 완료 현황(캘린더 표시와 같은 캐시)으로 찍는다. 리포트와 함께 받기 시작하되
+ * 할 일 조회가 실패해도 예보는 그대로 보이도록 suspend하지 않고 점만 뺀다.
+ */
 export function DailyForecast() {
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
@@ -156,6 +162,7 @@ interface DailyForecastItemProps {
   day: DailyForecastEntry;
   bar: TemperatureBar | undefined;
   label: string;
+  /** 오늘 행에만 있는 지금 기온 점의 위치(0~1) */
   nowPosition: number | null;
   hasTodo: boolean;
   format: RowFormat;
@@ -304,6 +311,7 @@ DailyForecast.Item = memo(function Item({
   );
 });
 
+/** 예보 기간 전체의 최저~최고 위에 하루의 범위를 기온 색 그라데이션으로 겹쳐 그린다. */
 DailyForecast.TemperatureBar = function TemperatureBar({
   day,
   bar,

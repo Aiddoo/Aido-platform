@@ -36,6 +36,7 @@ export function createStoredAndroidWidgetRenderer<Rendered>({
     const props =
       snapshot == null
         ? {
+            // 첫 동기화 전에는 앱 언어 설정을 알 수 없으므로 기기 언어(ko, 그 밖은 en)를 따른다
             ...createInitialWidgetProps(toResolvedLanguage(readDeviceLanguage())),
             openAppUrl: `${appScheme}://feed?date=today`,
           }

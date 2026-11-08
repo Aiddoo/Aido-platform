@@ -13,7 +13,11 @@ function getReportKeyParams(queryKey: readonly unknown[]) {
   return parsed.success ? parsed.data : null;
 }
 
-/** 위치를 먼저 다시 읽는다 */
+/**
+ * 위치를 먼저 다시 읽는다. 위치가 바뀌면 리포트 key가 바뀌어 새 리포트만 받고,
+ * 그대로면 보고 있는 리포트를 다시 받는다. 이전 위치의 리포트를 한 번 더 받지 않는다.
+ * 헤더 버튼과 당겨서 새로고침을 연달아 쓰면 진행 중인 요청을 취소하고 다시 시작하지 않고 그 요청을 기다린다.
+ */
 export async function refetchWeather(queryClient: QueryClient) {
   const getRevision = () =>
     WeatherLocationPolicy.getReadingRevision(
@@ -33,7 +37,10 @@ export async function refetchWeather(queryClient: QueryClient) {
   );
 }
 
-/** 위치가 바뀌어 리비전이 올라가면 이전 위치의 리포트를 캐시에서 뺀다 */
+/**
+ * 위치가 바뀌어 리비전이 올라가면 이전 위치의 리포트를 캐시에서 뺀다.
+ * 다시 볼 일이 없는 리포트가 기기 캐시에 남아 콜드 스타트 복원을 키우지 않게 한다.
+ */
 export function removeOutdatedWeatherReports(
   queryClient: QueryClient,
   { locationRevision }: { locationRevision: number },
@@ -55,6 +62,7 @@ export function refetchWeatherLocation(queryClient: QueryClient) {
   return queryClient.refetchQueries({ queryKey: WEATHER_QUERY_KEYS.location() });
 }
 
+/** 리포트를 받는 중인지 볼 때 쓰는 필터 */
 export function getWeatherReportsFilters() {
   return { queryKey: WEATHER_QUERY_KEYS.reports() };
 }

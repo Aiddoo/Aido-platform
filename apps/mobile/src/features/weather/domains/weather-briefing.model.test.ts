@@ -10,6 +10,7 @@ import {
 } from '../__tests__/weather-report.fixtures';
 import { WeatherBriefingPolicy } from './weather-briefing.model';
 
+/** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const CLOCK = { now: NOW, timeZone: 'Asia/Seoul' };
 const report = createWeatherReport({
@@ -477,6 +478,7 @@ describe('isHot', () => {
 });
 
 describe('getForecastTodos', () => {
+  /** 06:00Z부터 4시간 예보 */
   const { hourly } = createWeatherReportWithHours(DRY_HOURS.slice(0, 4));
 
   it('시각이 정한 할 일을 그 시각이 속한 시간 예보와 묶는다', () => {
@@ -520,6 +522,7 @@ describe('getForecastTodos', () => {
   it('시각이 없거나 예보 범위 밖인 할 일은 뺀다', () => {
     // Given
     const unscheduled = createBriefingTodo({ id: 1, scheduledAt: null });
+    // 예보 마지막 시간은 09:00Z~10:00Z다
     const beyond = createBriefingTodo({
       id: 2,
       scheduledAt: toInstant('2026-11-02T10:00:00.000Z'),

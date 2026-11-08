@@ -13,17 +13,20 @@ import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weath
 
 const SNOW_SEED = 0x5a0f;
 const EDGE_MARGIN = 30;
+/** 깊이는 0(먼 층)~1(가까운 층). 먼 송이가 더 많도록 치우친다. */
 const DEPTH_BIAS = 1.6;
 const RADIUS = { base: 0.8, depth: 3.6 } as const;
 const FALL = { base: 24, speed: 60, near: 0.35 } as const;
 const SWAY_AMPLITUDE = [6, 22] as const;
 const SWAY_DEPTH_BASE = 0.4;
 const SWAY_FREQUENCY = [0.4, 1.1] as const;
+/** 눈 결정은 흔들림 빈도가 가운데 값에서 벗어난 만큼 결정마다 다르게 돈다. */
 const SWAY_FREQUENCY_MIDPOINT = (SWAY_FREQUENCY[0] + SWAY_FREQUENCY[1]) / 2;
 const CRYSTAL_SPIN_SPREAD = 2;
 const ALPHA = { base: 0.35, depth: 0.6 } as const;
 const WIND_DRIFT = 60;
 const DOT_SIZE_RATIO = 3.6;
+/** 이 깊이보다 가까운 송이는 결정 모양이 보이고 천천히 돈다. */
 const CRYSTAL_DEPTH = 0.75;
 const CRYSTAL_SIZE_RATIO = 3.2;
 const CRYSTAL_ALPHA = 0.4;
@@ -72,6 +75,7 @@ function createFlakes(count: number): Flake[] {
   });
 }
 
+/** 멀고 가까운 깊이마다 크기·속도·투명도가 다르고, 가까운 송이는 결정 모양으로 돌며 흔들린다. 바람이 세면 비스듬히 몰아친다. */
 export function SnowLayer({
   density,
   speed,

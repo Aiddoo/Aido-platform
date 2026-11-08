@@ -21,6 +21,7 @@ interface WeatherRescheduleTimeInputProps extends Omit<
   timeFormat: TimeFormat;
 }
 
+/** 옮길 시각 후보. 값은 후보 정시의 ISO 문자열이고 첫 후보가 추천이다. */
 export function WeatherRescheduleTimeInput({
   value,
   onValueChange,

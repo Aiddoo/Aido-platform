@@ -3,9 +3,11 @@ import type { WeatherSceneSky } from '../utils/weather-scene.view-model';
 type SkyStops = readonly [top: string, upper: string, lower: string, bottom: string];
 
 type ScenePalette = {
+  /** 장면별 배경 그라데이션. 라이트·다크 테마마다 다르고, 다크 테마에서도 낮은 밤보다 밝은 하늘색이다. */
   sky: { light: SkyStops; dark: SkyStops };
   cloud: string;
   fog: string;
+  /** 카드·눈금 링을 하늘과 같은 색조로 물들이는 RGB */
   tint: string;
 };
 

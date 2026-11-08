@@ -16,6 +16,7 @@ export function useChangeAppIconMutationOptions() {
   const reportUnexpectedError = useReportUnexpectedError('app_icon');
 
   return mutationOptions({
+    // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
     mutationFn: (key: AppIconKey) => appIconService.changeIcon(key),
     onMutate: () => queryClient.cancelQueries({ queryKey: APP_ICON_QUERY_KEYS.current() }),

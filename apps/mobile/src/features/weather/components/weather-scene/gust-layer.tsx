@@ -24,6 +24,7 @@ import {
 
 const STREAK_SEED = 0x6057;
 const LEAF_SEED = 0x1eaf;
+/** 줄기는 화면 왼쪽 밖(폭의 1.4배)에서 들어와 오른쪽 밖(1.2배)으로 빠져나간다. */
 const STREAK_TRAVEL = { start: -1.4, end: 1.2 } as const;
 const STREAK_LANES = [0.05, 0.95] as const;
 const STREAK_LENGTH = [0.35, 0.9] as const;
@@ -41,6 +42,7 @@ type GustTone = 'air' | 'icy';
 
 type StreakStyle = {
   count: number;
+  /** 화면 폭 대비 초당 이동 */
   speed: readonly [min: number, max: number];
   alpha: readonly [min: number, max: number];
   rgb: string;
@@ -61,6 +63,7 @@ type GustStreaksProps = {
   time: SharedValue<number>;
 };
 
+/** 돌풍 리듬에 맞춰 세졌다 약해지며 화면을 가로지르는 물결 모양 바람 줄기 */
 export function GustStreaks({ tone, width, height, time }: GustStreaksProps) {
   const texture = useWindStreakTexture();
   const style = getStreakStyle(tone);
@@ -114,6 +117,7 @@ type GustLayerProps = {
   time: SharedValue<number>;
 };
 
+/** 강한 바람: 바람 줄기 사이로 마른 잎이 뒤집히며 날아간다. */
 export function GustLayer({ width, height, isLowEndDevice, time }: GustLayerProps) {
   return (
     <Group>

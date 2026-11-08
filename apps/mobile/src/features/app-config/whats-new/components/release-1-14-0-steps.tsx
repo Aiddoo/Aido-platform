@@ -62,6 +62,7 @@ export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
   );
 }
 
+/** 찍힌 발자국과 기다리는 발자국, 인사하는 고양이 */
 function FriendInviteMedia() {
   return (
     <Box

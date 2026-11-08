@@ -5,6 +5,7 @@ import { interpolate, type SharedValue, useDerivedValue } from 'react-native-rea
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 
+/** 시안 wxHaze: 6초 주기로 12px 떠오르며 0.3→0.55로 짙어지는 띠 */
 const HAZE_PERIOD_SECONDS = 6;
 const HAZE_RISE = 12;
 const HAZE_OPACITY = [0.3, 0.55];
@@ -20,6 +21,7 @@ type FogLayerProps = {
   time: SharedValue<number>;
 };
 
+/** 화면 아래쪽에 낮게 깔린 물안개와 천천히 떠오르는 옅은 띠 */
 export function FogLayer({ amount, sky, width, height, time }: FogLayerProps) {
   const rgb = WEATHER_SCENE_PALETTES[sky].fog;
   const bandStrength = clamp(amount / HAZE_FULL_AMOUNT, 0, 1);

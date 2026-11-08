@@ -8,6 +8,7 @@ import {
 } from '../__tests__/weather-report.fixtures';
 import { WeatherReschedulePolicy } from './weather-reschedule.model';
 
+/** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const { hourly } = createWeatherReport({
   hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),

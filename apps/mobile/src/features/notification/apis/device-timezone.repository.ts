@@ -12,6 +12,7 @@ export interface DeviceTimezoneRepository {
   clear(): void;
 }
 
+/** 이 기기에서 쓰는 계정 하나의 값만 남긴다. 다른 계정의 값은 없는 것으로 읽는다 */
 export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTimezoneRepository {
   return {
     find: (userId) => {

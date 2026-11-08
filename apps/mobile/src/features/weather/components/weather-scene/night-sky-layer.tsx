@@ -47,9 +47,12 @@ const MOON = {
   breath: { amount: 0.03, periodSeconds: 10 },
   cloudDimming: 0.45,
   occlusionDimming: 0.55,
+  /** 22° 달무리: 달 반지름의 5.2배 고리 */
   ring: { minClouds: 0.25, alpha: 0.18, radius: 5.2, width: 0.35, blur: 4 },
 } as const;
+/** 다크 모드에서는 달빛 무리를 조금 낮춘다. */
 const THEME_MOON_GLOW = { light: 1, dark: 0.85 } as const;
+/** 별똥별은 화면 폭 10~60%, 높이 4~25%에서 출발해 오른쪽 아래로 0.9초 동안 220×90pt를 지나간다. */
 const SHOOTING_STAR = {
   startX: [0.1, 0.6],
   startY: [0.04, 0.25],
@@ -74,6 +77,7 @@ type NightSkyLayerProps = {
   time: SharedValue<number>;
 };
 
+/** 박자가 제각각인 별, 위상대로 차오른 달과 달무리, 가끔 지나가는 별똥별 */
 export function NightSkyLayer({
   hasMoon,
   celestialCenter,
@@ -173,6 +177,10 @@ type MoonProps = Omit<SkyAreaProps, 'height'> & {
   occlusion: SharedValue<number>;
 };
 
+/**
+ * 날짜로 구한 위상만큼 차오른 달. 구운 표면 텍스처를 살짝 기울여 그리고, 10초 주기로 숨 쉬는 은빛 무리를 두른다.
+ * 구름이 끼면 흐려지고, 구름이 25%를 넘으면 22° 달무리 고리가 비친다.
+ */
 NightSkyLayer.Moon = function Moon({
   center,
   phase,

@@ -16,6 +16,7 @@ function parseRelativeUrl(url: string): URL | null {
   }
 }
 
+/** 날씨 알림이 싣는 `/weather/reschedule?todoIds=…&reason=…` 링크를 읽는다. 다른 경로·잘못된 값이면 null이다. */
 export function parseWeatherRescheduleUrl(url: string | undefined) {
   if (url == null || !url.startsWith('/')) {
     return null;
@@ -31,6 +32,7 @@ export function parseWeatherRescheduleUrl(url: string | undefined) {
   return toWeatherRescheduleHref(params.data);
 }
 
+/** 옮기기 시트 경로. 읽을 때와 같은 형식으로 URL 값을 만든다. */
 export function toWeatherRescheduleHref(params: WeatherRescheduleParams) {
   return {
     pathname: WEATHER_RESCHEDULE_DEEP_LINK,

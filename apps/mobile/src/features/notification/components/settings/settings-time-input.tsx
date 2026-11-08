@@ -171,6 +171,7 @@ interface SettingsTimeInputProps extends Omit<
   onBeforeOpen?: () => boolean;
 }
 
+/** 설정 행을 누르면 시각 피커를 열고, 확인한 시각을 onChange로 돌려준다. */
 export function SettingsTimeInput({
   value,
   onChange,

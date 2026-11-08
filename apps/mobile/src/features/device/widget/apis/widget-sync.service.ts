@@ -68,6 +68,7 @@ export class WidgetSyncService {
   ): Promise<void> => {
     const generation = ++this.#generation;
 
+    // Native writes are serialized so an in-flight account snapshot cannot overwrite logout.
     this.#pendingWrite = this.#pendingWrite.then(async () => {
       if (generation !== this.#generation) {
         return;

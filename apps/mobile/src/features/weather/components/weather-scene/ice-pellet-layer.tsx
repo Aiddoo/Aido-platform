@@ -18,6 +18,7 @@ const DEPTH = [0.4, 1] as const;
 const RADIUS = { base: 1, depth: 1.6 } as const;
 const FALL = { base: 160, depth: 380 } as const;
 const DRIFT_RATIO = 0.06;
+/** 바닥은 화면 높이 97% 지점이고, 먼 알갱이일수록 40pt까지 위에 닿는다. */
 const GROUND = 0.97;
 const FAR_GROUND_LIFT = 40;
 const GRAVITY = 900;
@@ -45,6 +46,7 @@ type Pellet = {
   offset: number;
 };
 
+/** 바닥에서 한 번 튄 뒤 화면 아래로 빠져나갈 때까지 걸리는 시간 */
 function getReboundDuration(velocity: number, drop: number): number {
   return (velocity + Math.sqrt(velocity * velocity + 2 * GRAVITY * drop)) / GRAVITY;
 }
@@ -73,6 +75,7 @@ function createPellets(count: number, height: number): Pellet[] {
   });
 }
 
+/** 진눈깨비: 빗줄기 사이로 반투명한 얼음 알갱이가 떨어져 바닥에서 톡 튄다. */
 export function IcePelletLayer({
   density,
   width,

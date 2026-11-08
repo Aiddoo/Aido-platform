@@ -12,7 +12,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { useWeatherLocation } from './use-weather-location';
 
-/** 위치 권한을 아직 묻지 않은 사용자에게 피드에서 한 번만 날씨 위치 등록을 권한다 */
+/**
+ * 위치 권한을 아직 묻지 않은 사용자에게 피드에서 한 번만 날씨 위치 등록을 권한다.
+ * 로그인 전에 연 초대처럼 이어서 열 화면이 남아 있으면 그 이동이 끝나 피드로 돌아올 때까지 미룬다.
+ * 다른 자동 안내(기능 소개)가 겹치지 않도록 안내 여부가 정해지고 OS 권한 창이 끝날 때까지 isPending을 돌려준다.
+ */
 export function useWeatherIntroduction({
   isStable,
 }: {
@@ -96,6 +100,7 @@ export function useWeatherIntroduction({
           { dismissedValue: null },
         )
         .then((accepted) => {
+          // 답 없이 사라진 다이얼로그는 본 것이 아니다. 피드로 돌아오면 다시 권한다
           if (accepted == null) {
             hasClaimedRef.current = false;
             return undefined;

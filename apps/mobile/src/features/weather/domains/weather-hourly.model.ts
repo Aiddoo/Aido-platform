@@ -6,7 +6,9 @@ import { match } from 'ts-pattern';
 import type { HourlyForecastEntry, WeatherReport } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
+/** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
+/** 하늘 변화·기온 정점은 반나절 안에서만 찾는다. */
 const SKY_RANGE_HOURS = 12;
 /** 지금과 1°C도 차이 나지 않으면 오르내린다고 말하지 않는다. */
 const MIN_PEAK_DIFFERENCE = 1;
@@ -43,6 +45,7 @@ export type HourlySummary =
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
 
+/** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(WeatherReportPolicy.isWetHour)로만 정한다. */
 function toHourlySky(condition: WeatherCondition): HourlySky {
   return match<WeatherCondition, HourlySky>(condition)
     .with('CLEAR', 'MOSTLY_CLEAR', 'HOT', () => 'clear')
@@ -65,6 +68,7 @@ function toHourlySky(condition: WeatherCondition): HourlySky {
     .exhaustive();
 }
 
+/** 지금 내리는 강수를 상태로 읽는다. 비·눈이 아닌 상태면 null이다. */
 function toCurrentPrecipitationType(condition: WeatherCondition): WeatherPrecipitationType | null {
   return match<WeatherCondition, WeatherPrecipitationType | null>(condition)
     .with('DRIZZLE', 'RAIN', 'HEAVY_RAIN', 'THUNDERSTORMS', () => 'RAIN')
@@ -92,6 +96,7 @@ function getDominantSky(hours: readonly HourlyForecastEntry[]): HourlySky {
   return maxBy(HOURLY_SKIES, (sky) => counts[sky] ?? 0) ?? 'clear';
 }
 
+/** 낮이면 남은 낮의 최고, 밤이면 남은 밤의 최저 기온을 찾는다. */
 function findTemperaturePeak(hours: readonly HourlyForecastEntry[]): TemperaturePeak | null {
   const [first] = hours;
   if (first == null) {
@@ -112,6 +117,7 @@ function findTemperaturePeak(hours: readonly HourlyForecastEntry[]): Temperature
   return { extreme, at: peak.startsAt, temperature: peak.temperature };
 }
 
+/** 한 시간짜리 깜빡임은 변화로 보지 않고, 두 시간 이상 이어지는 다른 하늘을 찾는다. */
 function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   const skies = hours.slice(0, SKY_RANGE_HOURS).map((hour) => toHourlySky(hour.condition));
   const [from] = skies;
@@ -126,6 +132,10 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   return { from, to, changesAt: hour.startsAt };
 }
 
+/**
+ * 시간별 카드 맨 위 한 문장의 재료. 하루 안의 비·눈을 먼저 말하고, 없으면 하늘 변화, 그것도 없으면
+ * 하늘과 기온 정점을 말한다. 문장은 화면이 i18n 키로 만든다.
+ */
 function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,
@@ -141,6 +151,7 @@ function getHourlySummary(
   const todayKey = toDateKey(now, report.location.timezone);
   const isLaterDay = (date: Instant) => toDateKey(date, report.location.timezone) !== todayKey;
 
+  // 지금 관측된 강수가 있으면 시간별 확률이 낮아도 '내리는 중'으로 말한다.
   const currentPrecipitation =
     report.current.precipitationIntensity > 0
       ? toCurrentPrecipitationType(report.current.condition)

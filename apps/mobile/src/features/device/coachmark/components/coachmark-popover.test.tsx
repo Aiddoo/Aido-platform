@@ -38,6 +38,7 @@ const KEYBOARD_DID_SHOW: KeyboardEvent = {
   isEventFromThisApp: true,
 };
 
+/** 말풍선은 포커스 뒤 450ms를 기다렸다가 연다 */
 const POPOVER_WAIT = { timeout: 2_000 };
 
 async function renderCoachmarkOnHiddenTab() {
@@ -70,6 +71,7 @@ async function renderCoachmarkOnHiddenTab() {
 }
 
 describe('CoachmarkPopover', () => {
+  // RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못한다. 쓰고 나면 직접 비운다
   beforeEach(() => {
     jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
       if (typeof callback === 'function') {

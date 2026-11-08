@@ -7,6 +7,7 @@ import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 
 const DEV_BADGE_BOTTOM = 8;
 
+/** 개발 QA로 지금 날씨를 바꿔 보는 중임을 알려 실제 데이터로 착각하지 않게 한다. */
 export function DevOverrideBadge() {
   const [override] = useDevWeatherOverride();
   const { t } = useTranslation('weather');

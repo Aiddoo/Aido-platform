@@ -9,11 +9,17 @@ import { type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
 interface WidgetTimelineContext {
   now: Date;
+  /** LocalDateProvider와 같은 기기 시간대 — 자정 경계를 이 시간대로 계산한다 */
   timeZone: string;
   appScheme: string;
 }
 
-/** snapshot → iOS timeline */
+/**
+ * snapshot → iOS timeline.
+ *
+ * [지금: 오늘] → [다음 자정: 내일(잠정)] → [그다음 자정: stale] 순서다. 내일 요약이 없으면
+ * 다음 자정부터 stale이다. WidgetKit이 앱 없이 자정에 다음 entry로 넘긴다.
+ */
 export function toWidgetTimelineEntries(
   snapshot: WidgetSnapshot,
   { now, timeZone, appScheme }: WidgetTimelineContext,

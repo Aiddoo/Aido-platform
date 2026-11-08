@@ -18,6 +18,7 @@ import {
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
 
+/** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
 function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
   return match(type)
     .with('SNOW', 'SLEET', 'HAIL', () => 'SNOW' as const)
@@ -25,6 +26,7 @@ function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondit
     .exhaustive();
 }
 
+/** 화면 문구 한 줄. 컴포넌트가 번역하며, 값에 다른 문구를 넣으면 그 문구도 번역해 넣는다. */
 export interface BriefingCopy {
   key: ParseKeys<'weather'>;
   values?: Record<string, string | number | BriefingCopy>;
@@ -38,6 +40,7 @@ export interface BriefingRow {
   chipLabel: string;
 }
 
+/** 날씨에 맞춰 제안하는 할 일의 계기. Analytics 값으로도 쓴다. */
 export type TodoSuggestionReason = 'rain_later' | 'clear';
 
 export type BriefingAction =
@@ -58,6 +61,7 @@ export interface BriefingView {
   mascotCondition: WeatherCondition;
 }
 
+/** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 시각은 할 일과 같은 기기 시간대다. */
 export interface BriefingViewDeps {
   hourly: readonly HourlyForecastEntry[];
   now: Instant;
@@ -68,6 +72,7 @@ export interface BriefingViewDeps {
   formatChance: (percent: number) => string;
 }
 
+/** 브리핑 종류를 화면 문구·할 일 행·버튼으로 바꾼다. */
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
   const { hourly, now, timeZone, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({

@@ -31,6 +31,7 @@ export function PushPermissionStatusRow() {
     .with(PUSH_PERMISSION_STATUS.NOT_DETERMINED, () => t('permission.status.notDetermined'))
     .exhaustive();
 
+  // 이 줄은 기기 권한만 보여 준다. 앱 안 알림 설정과 상관없이 다음 단계를 고르려고 켜진 것으로 넘긴다
   const action = match(PushPermissionPolicy.getNextStep(permission, { pushEnabled: true }))
     .with(PUSH_PERMISSION_STEP.ASK, () => (
       <Button size="small" variant="weak" display="inline" onPress={() => setIsDialogOpen(true)}>

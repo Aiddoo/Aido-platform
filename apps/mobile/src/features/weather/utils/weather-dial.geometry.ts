@@ -7,6 +7,7 @@ export interface DialPoint {
   y: number;
 }
 
+/** 다이얼은 120×120 viewBox의 가운데(60, 60)를 기준으로 그린다. */
 export const DIAL_VIEWBOX_SIZE = 120;
 export const DIAL_CENTER = DIAL_VIEWBOX_SIZE / 2;
 const TICK_OUTER_RADIUS = 54;
@@ -34,6 +35,7 @@ export interface DialTicks {
   majorTicks: string;
 }
 
+/** from~to 각도를 step 간격으로 나누고 majorEvery번째마다 긴 눈금을 그린다. */
 function toDialTicks({
   from,
   to,
@@ -69,6 +71,7 @@ const CARDINAL_DIRECTIONS = ['n', 'e', 's', 'w'] as const;
 type CardinalDirection = (typeof CARDINAL_DIRECTIONS)[number];
 
 interface CompassNeedle {
+  /** 바람이 불어오는 쪽 꼬리와 불어 가는 쪽 머리를 잇는 두 선분 */
   stroke: string;
   head: string;
   tail: DialPoint;
@@ -80,13 +83,19 @@ export interface CompassDial extends DialTicks {
 }
 
 const CARDINAL_LABEL_RADIUS = 37;
+/** 나침반 눈금은 5도 간격, 30도마다 긴 눈금이다. */
 const COMPASS_TICKS = { from: 0, to: 355, step: 5, majorEvery: 6 } as const;
+/** 바늘 꼬리와 머리, 화살촉이 놓이는 반지름 */
 const NEEDLE_TAIL_RADIUS = 44;
 const NEEDLE_STROKE_INNER_RADIUS = 28;
 const NEEDLE_STROKE_OUTER_RADIUS = 38;
 const NEEDLE_TIP_RADIUS = 46;
 const NEEDLE_HEAD_HALF_ANGLE = 9;
 
+/**
+ * 풍향(북=0도)은 바람이 불어오는 쪽이므로 꼬리를 그 방향에, 화살촉을 반대쪽(불어 가는 쪽)에 둔다.
+ * 무풍처럼 방향이 없으면 바늘 없이 눈금만 그린다.
+ */
 export function toCompassDial(windDirection: number | null): CompassDial {
   const cardinals = CARDINAL_DIRECTIONS.map((direction, index) => ({
     direction,
@@ -128,14 +137,17 @@ const PRESSURE_GAUGE_MIN_HPA = 980;
 const PRESSURE_GAUGE_RANGE_HPA = 60;
 const PRESSURE_GAUGE_SWEEP = 270;
 const PRESSURE_GAUGE_START = -PRESSURE_GAUGE_SWEEP / 2;
+/** 기압 눈금은 7.5도 간격, 4번째마다 긴 눈금이다. */
 const PRESSURE_TICK_STEP = 7.5;
 const PRESSURE_TICK_MAJOR_EVERY = 4;
+/** 기압 바늘 선분과 화살촉이 놓이는 반지름 */
 const GAUGE_NEEDLE_OUTER_RADIUS = 56;
 const GAUGE_NEEDLE_INNER_RADIUS = 42;
 const GAUGE_HEAD_TIP_RADIUS = 40;
 const GAUGE_HEAD_BASE_RADIUS = 33;
 const GAUGE_HEAD_HALF_ANGLE = 6;
 
+/** 아래가 트인 270도 눈금판에 980~1040hPa를 펼치고, 범위를 넘는 값은 양 끝에 둔다. */
 export function toPressureGauge(pressure: number): PressureGauge {
   const ratio = toUnitPosition(
     pressure,
@@ -162,6 +174,7 @@ export function toPressureGauge(pressure: number): PressureGauge {
   };
 }
 
+/** 눈금판 아래 트인 곳 양쪽에 저·고를 적는다. */
 export const PRESSURE_GAUGE_LABELS = {
   low: { x: 30, y: 98 },
   high: { x: 90, y: 98 },

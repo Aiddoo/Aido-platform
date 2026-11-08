@@ -41,6 +41,7 @@ export const WEATHER_CONDITION_LABEL_KEYS = {
   FRIGID: 'condition.frigid',
 } as const satisfies Record<WeatherCondition, string>;
 
+/** 분 단위 예보는 강수 형태가 NONE이어도 강수 구간일 수 있어 비로 읽는다. */
 export const PRECIPITATION_SUBJECT_LABEL_KEYS = {
   NONE: 'precipitationSubject.rain',
   RAIN: 'precipitationSubject.rain',
@@ -99,6 +100,7 @@ export const FEELS_LIKE_LABEL_KEYS = {
   warmer: 'details.feelsWarmer',
 } as const satisfies Record<FeelsLikeComparison, string>;
 
+/** 공공데이터(에어코리아) 이용 조건: 대기질을 보여 주는 곳에 출처를 함께 표기한다. */
 export const AIR_QUALITY_SOURCE_LABEL_KEYS = {
   AIRKOREA: 'airQualitySource.AIRKOREA',
 } as const satisfies Record<WeatherAirQualitySource, string>;
@@ -127,6 +129,7 @@ export const SUN_EVENT_LABEL_KEYS = {
   sunriseTomorrow: 'sunMoon.sunriseTomorrow',
 } as const satisfies Record<NextSunEvent['kind'], string>;
 
+/** 다이얼처럼 좁은 자리에는 한두 글자 방위를 쓴다. */
 export const COMPASS_SHORT_LABEL_KEYS = {
   n: 'compassShort.n',
   ne: 'compassShort.ne',

@@ -29,7 +29,10 @@ export type WeatherLocation =
       request: () => Promise<void>;
     };
 
-/** 위치 권한·위치 읽기·서버 등록을 화면이 그릴 상태 하나로 모은다 */
+/**
+ * 위치 권한·위치 읽기·서버 등록을 화면이 그릴 상태 하나로 모은다.
+ * 설정에서 권한을 켜고 돌아오면 위치 query가 포커스에서 다시 확인해 재시작 없이 ready로 바뀐다.
+ */
 export function useWeatherLocation(): WeatherLocation {
   const gateway = useDeviceLocation();
   const openSettings = useOpenAppSettings();

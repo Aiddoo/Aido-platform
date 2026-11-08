@@ -17,6 +17,7 @@ import { WeatherMeter } from './weather-meter';
 const GRADE_FONT_SIZE = 24;
 const POLLUTANT_COUNT = 2;
 
+/** 대기질을 주지 않는 지역(null)은 카드째 숨긴다. 보여 줄 때는 공공데이터 이용 조건대로 출처를 함께 적는다. */
 export function WeatherAirQuality() {
   const { t } = useTranslation('weather');
   const { data: airQuality } = useSuspenseQuery({

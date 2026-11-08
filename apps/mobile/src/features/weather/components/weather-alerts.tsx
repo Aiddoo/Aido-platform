@@ -22,7 +22,10 @@ import { WeatherIcon } from './weather-icon';
 const GLYPH_SIZE = 18;
 const CHEVRON_SIZE = 14;
 
-/** 서버가 심각도 순으로 보내므로 가장 심각한 특보 하나만 카드로 보이고 나머지는 개수로 알린다 */
+/**
+ * 서버가 심각도 순으로 보내므로 가장 심각한 특보 하나만 카드로 보이고 나머지는 개수로 알린다.
+ * 국내처럼 특보를 주지 않는 지역이나 특보가 없을 때는 아무것도 그리지 않는다.
+ */
 export function WeatherAlerts() {
   const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [

@@ -27,6 +27,7 @@ export function createHourlyForecastDto(
   };
 }
 
+/** 시작 시각부터 1시간 간격의 예보. chances[i]가 i번째 시간의 강수 확률이다. */
 export function createHourlySeries(startsAt: string, chances: readonly number[]) {
   const start = Date.parse(startsAt);
   return chances.map((chance, index) =>
@@ -123,6 +124,7 @@ export function createWeatherReport(overrides: Partial<WeatherReportResponse> = 
   return toWeatherReport(createWeatherReportDto(overrides));
 }
 
+/** 국내: WeatherKit이 분 단위 예보·특보를 주지 않는다. 16시(07:00Z)부터 두 시간 비. */
 export function createSeoulReportDto(): WeatherReportResponse {
   return createWeatherReportDto({
     nextHour: null,
@@ -131,6 +133,7 @@ export function createSeoulReportDto(): WeatherReportResponse {
   });
 }
 
+/** 일본: 분 단위 예보와 특보가 함께 온다. 17분 뒤 비가 시작된다. */
 export function createTokyoReportDto(): WeatherReportResponse {
   return createWeatherReportDto({
     location: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
@@ -174,6 +177,7 @@ export function createTokyoReportDto(): WeatherReportResponse {
   });
 }
 
+/** 베트남: 분 단위 예보와 대기질이 없다. */
 export function createHanoiReportDto(): WeatherReportResponse {
   return createWeatherReportDto({
     location: { latitude: 21.0278, longitude: 105.8342, timezone: 'Asia/Bangkok' },
@@ -183,6 +187,7 @@ export function createHanoiReportDto(): WeatherReportResponse {
   });
 }
 
+/** 06:00Z부터 1시간 간격 예보. 각 항목이 그 시간의 값을 덮어쓴다. */
 export function createHourlyForecasts(rows: readonly Partial<WeatherHourlyForecast>[]) {
   return rows.map((row, index) =>
     createHourlyForecastDto({

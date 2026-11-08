@@ -8,22 +8,28 @@ import type { LayoutChangeEvent } from 'react-native';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon, type WeatherCardGlyph } from './weather-icon';
 
+/** 태블릿·펼친 폴더블처럼 부모 폭이 넓으면 타일을 네 칸으로 펼쳐 시안 비율을 지킨다. */
 const FOUR_COLUMN_MIN_WIDTH = 760;
 export const TILE_GRID_GAP = 12;
 const TILE_PADDING = 14;
 const TILE_BORDER = 1;
+/** 제목 줄(leading 18) 높이. 본문 최소 높이에서 뺀다. */
 const TILE_HEADER_HEIGHT = 18;
+/** 한 칸으로 쌓는 큰 글자에서는 정사각형 대신 이 높이를 최소로 맞춘다. */
 const LARGE_TEXT_TILE_HEIGHT = 200;
 const DIAL_MAX_SIZE = 140;
 const VALUE_FONT_SIZE = 32;
 
 interface TileLayout {
   columns: number;
+  /** 타일 안쪽(여백·테두리 제외) 최소 높이. 두 칸 이상이면 타일이 정사각형이 되는 값이다. */
   bodyMinHeight: number;
   onLayout: (event: LayoutChangeEvent) => void;
 }
 
+/** 애플 날씨처럼 모든 타일을 같은 크기로 맞춘다. 칸 폭은 부모 폭과 열 수로 구한다. */
 export function useTileLayout(): TileLayout {
+  // 앱 글자 크기가 가장 클 때는 두 칸에 값이 잘리므로 한 칸으로 쌓는다
   const isLargeText = useFontScale().fontScale === 'xlarge';
   const [width, setWidth] = useState(0);
   const handleLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
@@ -148,6 +154,7 @@ interface WeatherDialTileProps {
   minHeight: number;
   accessibilityValue: string;
   note: string;
+  /** 본문 칸 크기에 맞춘 다이얼 한 변(dp)을 받아 그린다. */
   children: (size: number) => ReactNode;
 }
 

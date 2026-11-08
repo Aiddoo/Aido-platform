@@ -33,13 +33,19 @@ interface WeatherCardProps extends Omit<
 > {
   title?: string;
   icon?: ReactNode;
+  /** alert는 특보처럼 주의를 끄는 주황 유리 면이다. */
   tone?: WeatherCardTone;
   density?: 'default' | 'tile';
+  /** 카드 면이 아니라 안쪽(body) 여백·간격을 시안의 카드별 값으로 바꿀 때 쓴다. */
   className?: string;
   children: ReactNode;
 }
 
-/** 하늘 장면 위에 놓이는 유리 카드 */
+/**
+ * 하늘 장면 위에 놓이는 유리 카드. 면은 장면 색조로 반투명하게 물들이고 iOS에서만 뒤를 흐린다.
+ * Android는 블러 없이 같은 반투명 면만 그리고, 투명도 줄이기에서는 불투명 면으로 그린다.
+ * 격자 칸처럼 부모가 높이를 정하면 그 높이를 채워 같은 줄 카드의 높이가 맞는다.
+ */
 export function WeatherCard({
   title,
   icon,
@@ -56,6 +62,7 @@ export function WeatherCard({
   const alertBackground = isOpaque
     ? ALERT_SURFACE_COLORS.opaque
     : ALERT_SURFACE_COLORS[theme === 'dark' ? 'dark' : 'light'];
+  /** 기본은 하늘 장면 색조, alert는 주황으로 물들이고 투명도 줄이기에서는 불투명하게 그린다. */
   const background = tone === 'default' ? surface.card : alertBackground;
   const edge = tone === 'default' ? surface.cardEdge : ALERT_SURFACE_COLORS.edge;
   const minimumFontScale = useMinimumFontScale('b4');

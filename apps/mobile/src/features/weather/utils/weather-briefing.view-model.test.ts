@@ -8,6 +8,7 @@ import {
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import { type BriefingViewDeps, toBriefingView } from './weather-briefing.view-model';
 
+/** 서울 15:26. 16~17시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const report = createWeatherReport({
   fetchedAt: '2026-11-02T06:20:00.000Z',

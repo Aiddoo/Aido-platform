@@ -9,6 +9,7 @@ import {
 } from '../domains/weather.error';
 import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
 
+/** 진입점 파라미터가 없으면(딥 링크·다른 화면에서 되돌아옴) other로 센다 */
 export type WeatherOpenedEntry = WeatherEntry | 'other';
 
 export type WeatherBriefingKind =
@@ -46,6 +47,7 @@ export function toWeatherBriefingKind(kind: BriefingResult['kind']): WeatherBrie
   return BRIEFING_KINDS[kind];
 }
 
+/** 위치 확인이 끝난 결과만 센다. 확인 중이거나 권한을 아직 묻지 않았으면 null이다 */
 export function toWeatherLocationRegisteredResult(
   status: WeatherLocationStatus['status'],
 ): WeatherLocationRegisteredResult | null {
@@ -70,6 +72,7 @@ export function toWeatherReportFailedCause(error: unknown): WeatherReportFailedC
 
 export type WeatherPermissionResult = 'granted' | 'needs_permission' | 'denied';
 
+/** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
 export function toPermissionResult(
   permission: { isGranted: boolean; canAskAgain: boolean } | null,
 ): WeatherPermissionResult {

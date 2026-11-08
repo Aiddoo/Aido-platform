@@ -68,6 +68,7 @@ export class PushDeviceService {
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
 
+    // 보고가 실패해도 권한 요청 결과는 그대로 돌려준다. 보고는 다음 포그라운드에 다시 보낸다
     await this.report().then(
       (result) => {
         if (!result.ok) {
@@ -84,7 +85,11 @@ export class PushDeviceService {
     return permission;
   };
 
-  /** 이 기기의 권한과 토큰을 서버에 알린다 */
+  /**
+   * 이 기기의 권한과 토큰을 서버에 알린다. 이번 세션에 같은 값을 이미 보냈으면 요청하지 않는다.
+   * 서버는 시간대를 요청 헤더에서 읽으므로 기기 시간대가 바뀌어도 다시 보낸다.
+   * 권한과 토큰을 읽는 동안도 진행 중으로 잡아 해제가 기다리게 하고, 그사이 세션이 끝났으면 보내지 않는다.
+   */
   report = (options: { force?: boolean } = {}): Promise<Result<PushDevice | null, ApiError>> => {
     const reporting = this.#report(options);
     this.#reportsInFlight.add(reporting);
@@ -151,6 +156,8 @@ export class PushDeviceService {
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
     this.#unregisterCount += 1;
+    // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다.
+    // 토큰 발급이 느려도 로그아웃을 붙잡지 않게 기다리는 시간은 요청 제한과 같게 둔다
     await withTimeout(
       () => Promise.allSettled(this.#reportsInFlight),
       config?.timeout ?? REPORT_WAIT_TIMEOUT_MS,
@@ -173,6 +180,7 @@ export class PushDeviceService {
     return ok(undefined);
   };
 
+  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */
   #issueToken = async (): Promise<string | null> => {
     try {
       return await this.#gateway.getToken();

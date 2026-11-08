@@ -28,6 +28,7 @@ import {
 const DROP_SEED = 0x91a5;
 const MIST_COLORS = ['rgba(210,220,232,0.06)', 'rgba(210,220,232,0.2)'];
 const TRAIL_COLOR = 'rgba(230,238,248,0.12)';
+/** 물방울은 1~8초 맺혀 있다가 초속 60pt로 80pt 흘러내린 뒤 다른 자리에 다시 맺힌다. */
 const WAIT_SECONDS = [1, 8] as const;
 const SLIDE_SPEED = 60;
 const SLIDE_DISTANCE = 80;
@@ -44,6 +45,7 @@ type GlassDropletLayerProps = {
   time: SharedValue<number>;
 };
 
+/** 옅은 물안개 위로 화면 유리에 맺힌 물방울이 가끔 주르륵 흘러내린다. */
 export function GlassDropletLayer({ width, height, isLowEndDevice, time }: GlassDropletLayerProps) {
   const texture = useGlassDropTexture();
   const count = getAmbientCount('glassDrop', { screen: { width, height }, isLowEndDevice });

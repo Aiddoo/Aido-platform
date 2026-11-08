@@ -34,6 +34,7 @@ function isWithinRequestWindow(requestedAt: Instant, now: Instant) {
   return diffMs(now, requestedAt) < STORE_REVIEW_REQUEST_WINDOW_DAYS * DAY_MS;
 }
 
+/** 할 일을 하나라도 끝낸 날을 남긴다. 같은 날은 한 번만 센다 */
 function withActiveDay(state: StoreReviewState, localDate: string): StoreReviewState {
   return state.activeDays.includes(localDate)
     ? state

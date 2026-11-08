@@ -53,7 +53,10 @@ const HOURLY_OUTLOOK_ICON_SIZE = 30;
 const TITLE_ICON_SIZE = 13;
 const GUIDE_LABEL_FONT_SIZE = 10;
 
-/** 분 단위 예보가 있으면 그래프로, 없는 지역(국내 등)은 시간 단위 한 줄 카드로 알린다 */
+/**
+ * 분 단위 예보가 있으면 그래프로, 없는 지역(국내 등)은 시간 단위 한 줄 카드로 알린다. 비 소식이 없으면 카드를 만들지 않는다.
+ * 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비를 안내하지 않는다.
+ */
 export function NextHourPrecipitation() {
   const { t } = useTranslation('weather');
   const [{ data }, { data: preference }] = useSuspenseQueries({
@@ -118,6 +121,7 @@ export function NextHourPrecipitation() {
   );
 }
 
+/** 분 단위 예보가 없는 지역(국내 등)은 그래프 대신 6시간 안에 비가 오는 첫 시간을 한 줄로 알린다. */
 NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   outlook,
   timeZone,
@@ -177,6 +181,10 @@ NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   );
 };
 
+/**
+ * 부모 폭에 맞춰 viewBox를 같은 비율로 늘리므로 회전·창 크기 변경에도 다시 계산할 것이 없다.
+ * 선은 왼쪽부터 그려지고 면은 함께 서서히 나타난다. 동작 줄이기에서는 완성된 그래프를 바로 보인다.
+ */
 NextHourPrecipitation.Chart = function Chart({
   minutes,
   summary,
@@ -196,6 +204,7 @@ NextHourPrecipitation.Chart = function Chart({
   const { width, height, baseline } = NEXT_HOUR_CHART_SIZE;
   const hasChart = chart != null;
 
+  // 그래프가 처음 나타날 때만 그린다. 재조회로 선만 바뀌면 지웠다 다시 그리지 않고 그대로 바꾼다
   useEffect(() => {
     if (!hasChart) {
       return;
@@ -303,6 +312,11 @@ interface PrecipitationMessage {
   detail: string | null;
 }
 
+/**
+ * 강수 구간을 "17분 뒤 비가 시작돼요 / 7시쯤 그쳐요"처럼 위치 시간대의 문장으로 바꾼다.
+ * 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 말한다.
+ * 위치 벽시계가 기기와 다르면 시각에 '현지'를 붙인다.
+ */
 function useFormatPrecipitationMessage({
   timeZone,
   timeFormat,
@@ -324,6 +338,7 @@ function useFormatPrecipitationMessage({
         .exhaustive(),
     );
 
+  /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
   const toSubject = (type: WeatherPrecipitationType | null) =>
     t(PRECIPITATION_SUBJECT_LABEL_KEYS[type ?? 'MIXED']);
 

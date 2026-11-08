@@ -40,6 +40,7 @@ const WEATHER_SCENE_PRECIPITATION_KINDS = [
 
 type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
 
+/** 날씨마다 하나씩 두는 대표 대기 효과 */
 const WEATHER_SCENE_ATMOSPHERES = [
   'calm',
   'fogBands',
@@ -78,6 +79,7 @@ export interface WeatherScene {
     angle: number;
   };
   clouds: number;
+  /** 화면 아래에 낮게 깔리는 물안개 양 */
   fog: number;
   wind: number;
   atmosphere: WeatherSceneAtmosphere;
@@ -85,7 +87,9 @@ export interface WeatherScene {
   sun: WeatherSceneSun;
   hasLensFlare: boolean;
   hasMoon: boolean;
+  /** 달의 위상. 0은 삭, 0.5는 보름, 1에 가까울수록 그믐이다. */
   moonPhase: number;
+  /** 남반구에서는 달의 밝은 면이 반대로 보인다. */
   isSouthernHemisphere: boolean;
   hasStars: boolean;
   hasShootingStars: boolean;
@@ -270,6 +274,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
     .exhaustive();
 }
 
+/** 위상에서 밝게 보이는 면적 비율(0~1) */
 export function getMoonIllumination(phase: number): number {
   return (1 - Math.cos(phase * Math.PI * 2)) / 2;
 }
@@ -310,6 +315,7 @@ function isSkyVisible(sky: OpenSky, maxClouds: number): boolean {
   return sky.isDry && sky.clouds < maxClouds && sky.fog < CELESTIAL_MAX_FOG;
 }
 
+/** 뿌연 하늘은 구름과 상관없이 흐릿한 해가 비친다. */
 function resolveSun(sky: OpenSky, sun: VisibleSun): WeatherSceneSun {
   if (!sky.isDaylight) {
     return 'hidden';

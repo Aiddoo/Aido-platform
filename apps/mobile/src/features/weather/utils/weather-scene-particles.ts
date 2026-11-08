@@ -19,6 +19,7 @@ const BRIGHT_STAR_RATIO = 0.12;
 const STAR_TWINKLE_FREQUENCY = [0.8, 2.4] as const;
 const MIN_VISIBLE_CLOUDS = 0.05;
 const CLOUDS_PER_LAYER = 4;
+/** 돌풍은 0.65배에서 1배 사이로 약 3.5초마다 몰아친다. */
 const GUST_BASE = 0.65;
 const GUST_SWELL = 0.35;
 const GUST_FREQUENCY = 0.9;
@@ -26,8 +27,11 @@ const SHOOTING_STAR_WINDOW_SECONDS = 7;
 const SHOOTING_STAR_DURATION_SECONDS = 0.9;
 
 export const MAX_STARS = 110;
+/** 해와 달은 헤더 버튼 줄 바로 아래, 지명 오른쪽(화면 폭 90%, 높이 11.8%)에 둔다. */
 const CELESTIAL_POSITION = { x: 0.9, y: 0.118 } as const;
+/** 달(가장 큰 원반)의 지름이 기준 폭에서 차지하는 비율 */
 const MOON_DISC_WIDTH_RATIO = 0.058;
+/** 달 지름의 이 배수만큼 헤더 아래로 띄워 헤더가 높은 기기에서도 헤더 버튼에 가리지 않게 한다 */
 const MOON_HEADER_CLEARANCE_DISCS = 1.6;
 const CELESTIAL_HEADER_CLEARANCE = MOON_DISC_WIDTH_RATIO * MOON_HEADER_CLEARANCE_DISCS;
 export const NO_LIGHTNING_WINDOW = -1;
@@ -50,11 +54,13 @@ export const PARTICLE_BUDGETS = {
 
 export type ParticleBudgetKind = keyof typeof PARTICLE_BUDGETS;
 
+/** 강수와 무관하게 대기 효과마다 늘 깔리는 입자 */
 export type AmbientBudgetKind = Exclude<
   ParticleBudgetKind,
   'rain' | 'drizzle' | 'pellet' | 'snow' | 'hail'
 >;
 
+/** 해·구름·띠 같은 큰 요소는 이 폭까지만 화면에 맞춰 키워 태블릿·가로 화면에서 과하게 커지지 않게 한다. */
 const SCENE_MAX_REFERENCE_WIDTH = 600;
 
 function mixToUnit(state: number): number {
@@ -70,6 +76,7 @@ export function hashToUnit(index: number): number {
   return mixToUnit(Math.imul(index + 1, MIXING_INCREMENT));
 }
 
+/** 같은 입자가 다시 나타날 때마다(주기마다) 다른 자리를 고르도록 입자·주기·항목으로 섞는다. */
 export function hashCycle(index: number, cycle: number, salt: number): number {
   'worklet';
   return hashToUnit((index * CYCLE_HASH_STRIDE + cycle) * PARTICLE_SEED_STRIDE + salt);
@@ -143,6 +150,7 @@ export type Star = {
   isBright: boolean;
 };
 
+/** 별은 지평선(아래)으로 갈수록 드물고, 일부만 크게 빛나며 저마다 다른 박자로 반짝인다. */
 export function createStarField(width: number, height: number, seed: number): Star[] {
   if (!(width > 0) || !(height > 0)) {
     return [];
@@ -160,6 +168,10 @@ export function createStarField(width: number, height: number, seed: number): St
   });
 }
 
+/**
+ * 해·달의 가운데. 지명·기온이 놓인 단(heroLeft부터 heroWidth만큼, 넓은 화면에서는 왼쪽 단)의 오른쪽에 두고,
+ * 헤더 아래 내용이 시작하는 높이(contentTop)보다 원반 하나만큼 더 내려 둔다.
+ */
 export function getCelestialCenter(
   screen: { width: number; height: number },
   { contentTop, heroLeft, heroWidth }: { contentTop: number; heroLeft: number; heroWidth: number },
@@ -178,6 +190,7 @@ export function wrap(value: number, length: number): number {
   return value - Math.floor(value / length) * length;
 }
 
+/** 프레임마다 입자 수만큼 도는 worklet이라 객체를 만들지 않으려고 위치 인자를 유지한다 */
 export function placeSprite(
   transform: SkRSXform,
   scaledCos: number,
@@ -207,6 +220,7 @@ export function getGust(time: number): number {
   return GUST_BASE + GUST_SWELL * swell * swell;
 }
 
+/** 돌풍 세기를 시간에 대해 적분한 값. 속도 × 이 값이 그 시각까지 바람에 실려 간 거리다. */
 export function getGustTravel(time: number): number {
   'worklet';
   return (
@@ -246,6 +260,7 @@ export function getLightningIntensity(time: number): number {
   );
 }
 
+/** 번개가 치는 구간의 번호. 같은 구간에는 같은 모양의 번개 줄기를 그린다. */
 export function getLightningWindow(time: number): number {
   'worklet';
   if (getLightningIntensity(time) <= 0) {
@@ -254,6 +269,7 @@ export function getLightningWindow(time: number): number {
   return Math.floor(time / LIGHTNING_WINDOW_SECONDS);
 }
 
+/** 별똥별은 7초 구간마다 한 번, 구간 안의 임의 시각에 0.9초 동안 지나간다. 지나가지 않으면 `NO_SHOOTING_STAR`다. */
 export function getShootingStarProgress(time: number): number {
   'worklet';
   const windowIndex = Math.floor(time / SHOOTING_STAR_WINDOW_SECONDS);
@@ -276,7 +292,10 @@ export type BouncePhase =
   | { phase: 'bouncing'; bounce: number; elapsed: number }
   | { phase: 'resting' };
 
-/** 바닥까지 떨어진 뒤 주어진 초속으로 차례로 튀어 오르는 입자의 지금 단계 */
+/**
+ * 바닥까지 떨어진 뒤 주어진 초속으로 차례로 튀어 오르는 입자의 지금 단계.
+ * 위치를 매 프레임 누적하지 않고 시각만으로 계산해, 멈춘 화면과 다시 움직일 때 어긋나지 않는다.
+ */
 export function getBouncePhase(
   elapsed: number,
   fallDuration: number,

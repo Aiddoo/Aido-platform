@@ -21,6 +21,7 @@ interface WeatherRescheduleTodoProps {
   onExclude: () => void;
 }
 
+/** 할 일 하나의 옮길 시각 선택. 기본 선택(추천 시간)은 Controller의 defaultValue로 처음 그릴 때 한 번 정한다. */
 export function WeatherRescheduleTodo({
   form,
   todo,

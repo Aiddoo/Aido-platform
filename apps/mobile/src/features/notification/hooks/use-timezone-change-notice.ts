@@ -21,7 +21,10 @@ import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
 const UPCOMING_TODO_WINDOW_DAYS = 31;
 const UPCOMING_TODO_PAGE_SIZE = 200;
 
-/** 시간대 변경을 서버에 알린 뒤 한 번 안내한다 */
+/**
+ * 시간대 변경을 서버에 알린 뒤 한 번 안내한다. 보고가 성공해야 재계산이 돌므로 보고 전에는 말하지 않는다.
+ * 앞으로 울릴 시간 있는 할 일이 없거나 이름만 바뀌었으면 안내하지 않는다.
+ */
 export function useTimezoneChangeNotice({
   accountId,
   reportCount,

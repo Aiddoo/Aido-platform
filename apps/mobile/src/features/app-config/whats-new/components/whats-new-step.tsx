@@ -11,6 +11,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
+/** 화면 캡처 WebP의 가로 ÷ 세로 */
 const MEDIA_RATIO = 3 / 4;
 const MEDIA_MIN_HEIGHT = 160;
 const CLOSE_ICON_SIZE = 22;
@@ -24,6 +25,7 @@ interface WhatsNewStepProps {
   onAction?: () => void;
 }
 
+/** 큰 글꼴이나 작은 화면에서는 미디어가 먼저 줄고, 그래도 넘치면 스크롤해 바로 써 보기에 닿는다 */
 export function WhatsNewStep({
   media,
   title,
@@ -104,6 +106,10 @@ WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onCl
   );
 };
 
+/**
+ * 받은 자리 안에서 비율을 지키는 가장 큰 크기로 그린다. 세로 공간은 글꼴과 기기마다 달라
+ * 폭을 세로에서 거꾸로 구한다. 폴드를 펴거나 접을 때만 다시 잰다.
+ */
 WhatsNewStep.Media = function Media({
   sources,
   alt,

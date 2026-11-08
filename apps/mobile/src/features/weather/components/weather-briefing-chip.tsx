@@ -20,6 +20,7 @@ interface WeatherBriefingChipProps extends Omit<
   tone: BriefingRowTone;
 }
 
+/** 할 일 시각의 날씨를 아이콘과 강수 확률·기온 한 값으로 줄여 보여 준다. */
 export function WeatherBriefingChip({
   condition,
   isDaylight,

@@ -11,6 +11,7 @@ import {
 import type { HourlyForecastEntry } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
+/** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
 
 export interface RescheduleOption {
@@ -39,6 +40,10 @@ interface TodoScheduleInput {
   isAllDay: boolean;
 }
 
+/**
+ * 후보 시각은 할 일과 같은 날(기기 시간대)이라 날짜는 그대로 두고 시각만 바꾼다.
+ * 할 일 시각은 기기 시간대의 HH:mm으로 저장한다.
+ */
 function getMovedScheduleInput(
   todo: Pick<TodoScheduleSnapshot, 'startDate' | 'endDate'>,
   startsAt: Instant,
@@ -52,6 +57,7 @@ function getMovedScheduleInput(
   };
 }
 
+/** 되돌리기: 옮기기 전 날짜·시각·종일 여부를 그대로 다시 저장한다. */
 function getOriginalScheduleInput(todo: TodoScheduleSnapshot): TodoScheduleInput {
   return {
     startDate: todo.startDate,
@@ -66,7 +72,10 @@ interface RescheduleTarget<TTodo> {
   startsAt: Instant;
 }
 
-/** 실제로 옮길 할 일과 시각 */
+/**
+ * 실제로 옮길 할 일과 시각. 시트를 연 사이 지워졌거나 완료된 할 일(다른 기기·알림 동작·날짜가 바뀐 목록)은 옮기지 않는다.
+ * 비어 있으면 옮길 것이 없으므로 주 버튼을 끈다.
+ */
 function getRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
   changes: readonly ScheduleChange[],
   todos: readonly TTodo[],
@@ -86,6 +95,7 @@ function getExpiredTargets<TTodo>(
   return targets.filter(({ startsAt }) => toEpochMs(startsAt) <= toEpochMs(now));
 }
 
+/** 아직 하지 않은 할 일 중 지금 이후 시각이 비 오는 시간에 걸린 것만 고른다. 종일·시간 없는 할 일은 뺀다. */
 function getRainyTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
@@ -96,6 +106,7 @@ function getRainyTodos(
   );
 }
 
+/** 아직 하지 않은 할 일 중 체감 온도가 위험한 낮 시간에 걸린 것만 고른다. */
 function getHotTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
@@ -117,6 +128,11 @@ function getAffectedTodos(
     .exhaustive();
 }
 
+/**
+ * 같은 날(기기 시간대) 안에서 지금 이후의 정시를 옮길 후보로 고른다. 할 일 날짜는 기기 시간대로 저장되므로
+ * 위치 시간대가 아니라 기기 시간대로 날짜를 맞춘다.
+ * 비는 비 안 오는 시간을 강수 확률이 낮은 순으로, 더위는 덥지 않은 시간을 원래 시각과 가까운 순으로 고른다.
+ */
 function getRescheduleOptions(
   hourly: readonly HourlyForecastEntry[],
   todo: Pick<ForecastTodo, 'scheduledAt'>,

@@ -25,6 +25,7 @@ import { scheduleOnUI } from 'react-native-worklets';
 
 import { createSeededRandom } from '../../utils/weather-scene-particles';
 
+/** 작은 입자 텍스처는 3배 크기로 구워 두고 1/3로 줄여 그린다. */
 export const PARTICLE_TEXTURE_SCALE = 3;
 
 export const PARTICLE_SPRITES = {
@@ -64,6 +65,7 @@ const ICE_HIGHLIGHT = { x: 0.38, y: 0.36 } as const;
 
 export const CLOUD_SPRITE = { width: 400, height: 220 } as const;
 export const CLOUD_VARIANTS = 3;
+/** 구름 덩이 하나가 화면 폭에 대해 차지하는 비율(크기 1일 때) */
 export const CLOUD_SPAN_RATIO = 0.58;
 
 const CLOUD_PUFFS_PER_CLUSTER = 9;
@@ -91,6 +93,7 @@ const GLASS_DROP = {
   highlightRadius: 0.22,
 } as const;
 
+/** 한 번만 구운 텍스처를 캔버스가 사라질 때 UI 스레드에서 해제한다. */
 function useOwnedTexture(element: ReactElement, size: SkSize, deps: DependencyList = []) {
   const texture = useTexture(element, size, deps);
   useAnimatedReaction(
@@ -265,6 +268,7 @@ export function createCloudSpriteRect(variant: number) {
   );
 }
 
+/** 뭉게구름은 부드러운 구름 알갱이를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
 export function useCloudTexture() {
   const clusters = useMemo(() => createCloudClusters(), []);
   return useOwnedTexture(
@@ -328,6 +332,7 @@ function buildWavePath(
   return builder.detach();
 }
 
+/** 바람 줄기는 가운데가 가장 크게 물결치고 양 끝이 사라지는 선이다. */
 export function useWindStreakTexture() {
   const { width, height } = WIND_STREAK_SPRITE;
   const path = useMemo(
@@ -379,6 +384,7 @@ export function useHeatWaveTexture() {
   );
 }
 
+/** 유리에 맺힌 물방울: 어두운 몸통, 위쪽 테두리 반사, 왼쪽 위 하이라이트 */
 export function useGlassDropTexture() {
   const center = vec(GLASS_DROP_SPRITE.width / 2, GLASS_DROP_SPRITE.height / 2);
   const rim = useMemo(() => {
@@ -440,6 +446,7 @@ function createSunRays(): SunRay[] {
   }));
 }
 
+/** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
 export function useSunRaysTexture() {
   const rays = useMemo(() => createSunRays(), []);
   const center = SUN_RAYS_SIZE / 2;
@@ -485,6 +492,10 @@ function SunRayShape({ ray, center }: { ray: SunRay; center: number }) {
 
 const MOON_TEXTURE_SIZE = 384;
 
+/**
+ * 달 표면: 여러 겹 값 잡음으로 만든 바다, 격자마다 하나씩 흩어 둔 크레이터와 테두리 밝은 면, 가장자리 어둡기.
+ * 위상에 맞춰 명암 경계를 흐리게 칠하고, 어두운 면에는 지구 반사광을 남긴다. 위상이 바뀔 때만 다시 굽는다.
+ */
 const MOON_SURFACE = Skia.RuntimeEffect.Make(`
 uniform float size;
 uniform float phase;
@@ -558,8 +569,10 @@ half4 main(float2 position) {
 }
 `);
 
+/** 명암 경계는 달 지름의 1.8%만큼 흐리게, 어두운 면에는 지구 반사광 9%를 남긴다. */
 const MOON_TERMINATOR_SOFTNESS = 0.036;
 const MOON_EARTHSHINE = 0.09;
+/** 어두운 면은 반쯤 비쳐 밤하늘 색이 스며들게 한다. */
 const MOON_SHADOW_OPACITY = 0.55;
 export function useMoonTexture(phase: number) {
   return useOwnedTexture(

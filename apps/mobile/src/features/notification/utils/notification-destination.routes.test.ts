@@ -21,6 +21,7 @@ function findRouteFiles(directory: string): string[] {
   );
 }
 
+/** 라우트 파일을 URL 모양으로 바꾼다. 그룹 폴더와 index는 URL에 없다. */
 function getRoutePathnames(): Set<string> {
   const pathnames = findRouteFiles(APP_DIRECTORY)
     .filter((file) => file.endsWith('.tsx') && !file.endsWith('_layout.tsx'))
@@ -41,6 +42,7 @@ function getHrefPathname(href: Href): string | undefined {
   return pathname?.split('?')[0];
 }
 
+/** 화면으로 가는 목적지만 남겨 그 경로를 돌려준다. */
 function getRouteDestinationPathnames(
   destinations: readonly ReturnType<typeof resolveNotificationDestination>[],
 ): (string | undefined)[] {

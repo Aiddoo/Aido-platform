@@ -609,6 +609,7 @@ export function renderAndroidWidget(
     width / (isSmall ? SMALL_WIDTH : WIDE_WIDTH),
     cardHeight / (isLarge ? LARGE_HEIGHT : BASE_HEIGHT),
   );
+  // Include WidgetKit's content margins so all three cards keep the same visual spacing.
   const padding = (isSmall ? 28 : 32) * scale;
   const base = {
     props,

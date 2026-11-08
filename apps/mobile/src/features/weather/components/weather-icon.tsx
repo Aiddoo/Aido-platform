@@ -10,6 +10,7 @@ import { ALERT_GLYPH_COLORS } from '../constants/weather-colors.constants';
 
 const StyledSvg = createStyledIcon(Svg);
 
+/** 흰 면은 currentColor로 그려 on-sky 토큰(colorClassName)을 따른다. */
 const WHITE = 'currentColor';
 const SUN_YELLOW = '#FFD54A';
 const RAIN_BLUE = '#6CC0FF';
@@ -22,6 +23,7 @@ const GLYPH_ICON_SIZE = 24;
 
 const PATH_PRECISION = 2;
 
+/** 겹치는 도형이 nonzero 규칙으로 합쳐지도록 원·사각형·귀를 모두 시계 방향으로 그린다. */
 function circlePath(cx: number, cy: number, r: number) {
   const left = round(cx - r, PATH_PRECISION);
   return `M${left} ${round(cy, PATH_PRECISION)}a${round(r, PATH_PRECISION)} ${round(r, PATH_PRECISION)} 0 1 1 ${round(2 * r, PATH_PRECISION)} 0a${round(r, PATH_PRECISION)} ${round(r, PATH_PRECISION)} 0 1 1 ${round(-2 * r, PATH_PRECISION)} 0z`;
@@ -47,6 +49,7 @@ interface GlyphPart {
   strokeWidth?: number;
 }
 
+/** color는 하늘 카드 위 채움형(시안 V2Screen), mono는 단색 선형(시안 Icons의 흰색 단색 행)이다. */
 interface Glyph {
   color: GlyphPart[];
   mono: string;
@@ -154,6 +157,7 @@ const GLYPHS = {
   },
 } satisfies Record<string, Glyph>;
 
+/** 카드 제목 옆 단색 아이콘(시안 카드 아이콘). 위치 표시만 채움형이다. */
 const CARD_GLYPHS = {
   briefing: { d: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' },
   sunMoon: { d: 'M3 18h18M7 18a5 5 0 0 1 10 0M12 9V5M5.6 11.6l-1.4-1.4M18.4 11.6l1.4-1.4' },
@@ -204,6 +208,7 @@ const CONDITION_ICONS = {
   HAIL: 'snow',
 } satisfies Record<WeatherCondition, ConditionIcon>;
 
+/** 밤에는 해 대신 달을 그린다. 구름 조금 낀 밤도 하늘이 대체로 열려 있어 달로 보여 준다. */
 function toGlyphName({
   condition,
   isDaylight,
@@ -228,6 +233,7 @@ interface GlyphIconProps extends Omit<
   ComponentProps<typeof StyledSvg>,
   'color' | 'viewBox' | 'children'
 > {
+  /** color는 하늘 카드 위 채움형(기본), mono는 테마 표면 위 colorClassName 단색 선형이다. */
   variant?: WeatherIconVariant;
 }
 
@@ -236,6 +242,10 @@ interface WeatherIconProps extends GlyphIconProps {
   isDaylight: boolean;
 }
 
+/**
+ * 고양이 귀가 달린 날씨 아이콘. 상태 이름은 옆의 글자가 읽어 주므로 보조 기술에서 숨긴다.
+ * 시안은 앱 안 아이콘을 움직이지 않으므로(움직임은 배경 장면이 맡는다) 정지 아이콘으로 그린다.
+ */
 export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProps) {
   return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }
@@ -257,9 +267,11 @@ interface CardIconProps extends Omit<
   'color' | 'viewBox' | 'children' | 'width' | 'height'
 > {
   glyph: WeatherCardGlyph;
+  /** 앱 글자 크기 배율을 곱하기 전 크기 */
   size?: number;
 }
 
+/** 카드 제목·작은 표시 옆 아이콘. 제목 글자와 함께 앱 글자 크기를 따라 커진다. */
 WeatherIcon.Card = function Card({
   glyph,
   size = CARD_ICON_SIZE,

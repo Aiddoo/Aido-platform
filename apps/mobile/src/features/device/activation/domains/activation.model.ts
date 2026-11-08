@@ -34,6 +34,7 @@ const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
   WHATS_NEW_CAMPAIGN_ID,
 ]);
+// 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다
 const PUSH_REGISTRATION_DEFERRED_SINCE = toInstant('2026-08-01T00:00:00.000Z');
 const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
@@ -88,6 +89,7 @@ function calculateElapsedDays(createdAt: number, now: number): number {
   return Math.max(0, Math.floor((now - createdAt) / DAY_MS));
 }
 
+/** 체크리스트 대상인지. 신규 코호트이고 활성화 전이며 가입 후 7일 안이어야 한다 */
 function shouldOfferChecklist({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
   if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
     return false;
@@ -100,7 +102,10 @@ function shouldOfferChecklist({ config, user, progress, now }: ChecklistEligibil
   );
 }
 
-/** 시작 체크리스트 단계 */
+/**
+ * 시작 체크리스트 단계. 서버의 할 일 기록(재설치·다른 기기·웹에서 만든 할 일 포함)과
+ * 이 기기에서 기록한 진행 중 하나라도 있으면 끝난 단계다. 서버 기록을 아직 못 읽었으면 기기 기록만 본다.
+ */
 function getChecklistSteps(
   progress: ActivationProgress,
   todoExistence: TodoExistence | undefined,
@@ -114,6 +119,7 @@ function getChecklistSteps(
   };
 }
 
+/** 필수 단계(만들기·완료)만 본다. 친구 초대는 선택 단계라 끝내지 않아도 된다 */
 function hasFinishedRequiredSteps(steps: ActivationChecklistSteps): boolean {
   return steps.hasCreatedTodo && steps.hasCompletedTodo;
 }

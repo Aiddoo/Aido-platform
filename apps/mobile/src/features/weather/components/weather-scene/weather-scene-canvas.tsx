@@ -44,6 +44,7 @@ const IS_LOW_END_DEVICE =
 const STATIC_SCENE_SECONDS = 12;
 const MAX_FRAME_STEP_MS = 100;
 const SCENE_FADE = { duration: 900, easing: Easing.inOut(Easing.quad) };
+/** 진눈깨비는 빗줄기를 비보다 조금 성기게 내린다. */
 const SLEET_RAIN_SHARE = 0.67;
 const SUN_LIGHT_RGB = '255,236,205';
 const MOON_LIGHT_RGB = '215,225,250';
@@ -52,6 +53,10 @@ type SceneEntry = { id: number; scene: WeatherScene };
 
 type SceneSize = { width: number; height: number };
 
+/**
+ * 장면이 바뀌면 이전 장면을 지우지 않고 남겨 두었다가 새 장면과 교차해 사라지게 한다.
+ * 사라지는 도중 또 바뀌면 사라지던 장면은 그 자리에서 끊긴다. 날씨가 같으면 장면이 같아 드물고, 장면을 쌓을 만큼은 아니다.
+ */
 function useSceneCrossFade(scene: WeatherScene) {
   const [current, setCurrent] = useState<SceneEntry>({ id: 0, scene });
   const [outgoing, setOutgoing] = useState<SceneEntry | null>(null);
@@ -67,7 +72,9 @@ function useSceneCrossFade(scene: WeatherScene) {
 
 type WeatherSceneCanvasProps = {
   scene: WeatherScene;
+  /** 투명 헤더 아래 내용이 시작하는 높이. 해·달을 헤더 버튼 아래에 둔다. */
   contentTop: number;
+  /** 지명·기온이 놓인 단의 시작과 폭. 넓은 화면에서는 왼쪽 단, 옆 레일이 있으면 레일을 뺀 영역이다. */
   heroLeft: number;
   heroWidth: number;
 };
@@ -109,6 +116,7 @@ export function WeatherSceneCanvas({
     );
   };
 
+  // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (
     <View
       style={StyleSheet.absoluteFill}
@@ -154,6 +162,7 @@ export function WeatherSceneCanvas({
   );
 }
 
+/** 해·달이 떠 있으면 그 자리와 빛 색을 구름에 알려 가장자리가 빛나고 가린 정도를 잴 수 있게 한다. */
 function findCloudLight(
   scene: WeatherScene,
   position: { x: number; y: number },

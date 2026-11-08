@@ -17,6 +17,7 @@ interface ClaimActivationResult {
 }
 
 export interface ActivationProgressRepository {
+  /** 저장값이 그대로면 같은 객체를 돌려준다(`useSyncExternalStore`의 스냅샷) */
   get(identity: ActivationIdentity): ActivationProgress;
   subscribe(identity: ActivationIdentity, listener: () => void): () => void;
   markTodoCreated(identity: ActivationIdentity, at: Instant): ActivationProgress;

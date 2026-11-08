@@ -48,6 +48,7 @@ function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
   return diffMs(now, dismissedAt) < PUSH_PROMPT_SNOOZE_DAYS * DAY_MS;
 }
 
+/** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
 function getNextStep(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },

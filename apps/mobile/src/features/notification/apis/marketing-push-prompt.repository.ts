@@ -13,6 +13,7 @@ const MARKETING_PUSH_PROMPT_KEY = 'aido_marketing_push_prompt';
 const EMPTY_STATE: MarketingPushPromptState = { lastPromptedAt: null, count: 0 };
 
 export interface MarketingPushPromptRepository {
+  /** 저장값이 그대로면 같은 객체를 돌려준다(`useSyncExternalStore`의 스냅샷) */
   get(): MarketingPushPromptState;
   /** 닫은 시각을 남기고 닫은 횟수를 하나 늘린다. 저장 필드 이름 `lastPromptedAt`은 출시된 앱 그대로다 */
   dismiss(dismissedAt: Instant): void;
