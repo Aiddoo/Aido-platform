@@ -83,6 +83,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
           isAllDay: todo.isAllDay,
         }}
         onCancel={onClose}
+        isConfirmDisabled={updateSchedule.isPending}
         onChange={async ({ scheduledTime, isAllDay }) => {
           const isUnchanged = !TodoPolicy.hasScheduleChanged(
             { isAllDay, scheduledTime },
@@ -94,21 +95,24 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
             return;
           }
           const saveTime = (scope?: TodoUpdateScope) =>
-            updateSchedule.mutate({
-              todoId: todo.id,
-              changedField: 'time',
-              ...(scope != null && { scope }),
-              input: {
-                startDate: toDateKey(editValues.startDate, timeZone),
-                endDate:
-                  editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
-                scheduledTime: isAllDay ? null : scheduledTime,
-                isAllDay,
+            updateSchedule.mutate(
+              {
+                todoId: todo.id,
+                changedField: 'time',
+                ...(scope != null && { scope }),
+                input: {
+                  startDate: toDateKey(editValues.startDate, timeZone),
+                  endDate:
+                    editValues.endDate == null ? null : toDateKey(editValues.endDate, timeZone),
+                  scheduledTime: isAllDay ? null : scheduledTime,
+                  isAllDay,
+                },
               },
-            });
+              // 실패하면 시트를 남겨 고른 시간으로 다시 저장할 수 있게 한다
+              { onSuccess: () => onClose() },
+            );
           if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
             saveTime();
-            onClose();
 
             return;
           }
@@ -118,7 +122,6 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
             return;
           }
           saveTime(scope);
-          onClose();
         }}
       />
     </TodoScopeStep>

@@ -73,24 +73,32 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
     <TodoDatePickerContent
       value={toDate(editValues.startDate)}
       onCancel={onClose}
+      isConfirmDisabled={updateSchedule.isPending}
       onChange={(startDate) => {
+        // 빠른 날짜 행도 같은 길로 오므로 저장 중에는 다시 보내지 않는다
+        if (updateSchedule.isPending) {
+          return;
+        }
         const startDateKey = toDateKey(startDate, timeZone);
         if (startDateKey === todo.startDate) {
           onClose();
 
           return;
         }
-        updateSchedule.mutate({
-          todoId: todo.id,
-          changedField: 'date',
-          input: {
-            startDate: startDateKey,
-            endDate: TodoPolicy.getShiftedEndDate(todo, startDateKey),
-            scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
-            isAllDay: todo.isAllDay,
+        updateSchedule.mutate(
+          {
+            todoId: todo.id,
+            changedField: 'date',
+            input: {
+              startDate: startDateKey,
+              endDate: TodoPolicy.getShiftedEndDate(todo, startDateKey),
+              scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
+              isAllDay: todo.isAllDay,
+            },
           },
-        });
-        onClose();
+          // 실패하면 시트를 남겨 고른 날짜로 다시 저장할 수 있게 한다
+          { onSuccess: () => onClose() },
+        );
       }}
     />
   );

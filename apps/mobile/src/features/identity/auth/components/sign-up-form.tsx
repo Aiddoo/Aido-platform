@@ -46,20 +46,28 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
 
-  const submitValidRegister = form.handleSubmit(
-    async ({ termsAgreed, privacyAgreed, ...input }) => {
-      if (!termsAgreed || !privacyAgreed) {
-        return;
-      }
+  // 가입 요청이 실패하면 false를 돌려 약관 시트를 열어 둔다. 바로 다시 누를 수 있다
+  const submitValidRegister = () =>
+    new Promise<boolean>((resolve) => {
+      form.handleSubmit(
+        async ({ termsAgreed, privacyAgreed, ...input }) => {
+          if (!termsAgreed || !privacyAgreed) {
+            resolve(false);
+            return;
+          }
 
-      try {
-        await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
-        stepper.history.replace('verification', { email: input.email });
-      } catch (error) {
-        reportUnexpectedError(error);
-      }
-    },
-  );
+          try {
+            await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
+            stepper.history.replace('verification', { email: input.email });
+            resolve(true);
+          } catch (error) {
+            reportUnexpectedError(error);
+            resolve(false);
+          }
+        },
+        () => resolve(false),
+      )();
+    });
 
   const submitRegister = async () => {
     const isUserInfoValid = await form.trigger(['name', 'email']);
@@ -74,8 +82,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
       return false;
     }
 
-    await submitValidRegister();
-    return true;
+    return submitValidRegister();
   };
 
   return stepper.Render({

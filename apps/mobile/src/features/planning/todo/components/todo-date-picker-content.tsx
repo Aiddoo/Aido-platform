@@ -21,9 +21,16 @@ interface TodoDatePickerContentProps {
   value: Date;
   onChange: (date: Date) => void;
   onCancel: () => void;
+  /** 고른 날짜를 저장하는 동안 확인을 막는다 */
+  isConfirmDisabled?: boolean;
 }
 
-export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePickerContentProps) {
+export function TodoDatePickerContent({
+  value,
+  onChange,
+  onCancel,
+  isConfirmDisabled = false,
+}: TodoDatePickerContentProps) {
   const picker = useDatePicker({ initialDate: value });
   const { t } = useTranslation('todo');
 
@@ -35,7 +42,12 @@ export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePic
     <SheetHeaderLayout
       gap={20}
       header={
-        <PickerHeader title={t('picker.dateTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
+        <PickerHeader
+          title={t('picker.dateTitle')}
+          onCancel={onCancel}
+          onConfirm={handleConfirm}
+          isConfirmDisabled={isConfirmDisabled}
+        />
       }
     >
       <VStack gap={20}>

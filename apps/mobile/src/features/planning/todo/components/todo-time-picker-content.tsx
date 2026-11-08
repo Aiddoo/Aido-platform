@@ -37,6 +37,8 @@ interface TodoTimePickerContentProps {
   value: TodoTimeValue;
   onChange: (value: TodoTimeValue) => void;
   onCancel: () => void;
+  /** 고른 시간을 저장하는 동안 확인을 막는다 */
+  isConfirmDisabled?: boolean;
 }
 
 export function TodoTimePickerContent({
@@ -44,6 +46,7 @@ export function TodoTimePickerContent({
   value,
   onChange,
   onCancel,
+  isConfirmDisabled = false,
 }: TodoTimePickerContentProps) {
   const { scheduledTime, isAllDay } = value;
   const { t } = useTranslation('todo');
@@ -62,7 +65,12 @@ export function TodoTimePickerContent({
     <SheetHeaderLayout
       gap={24}
       header={
-        <PickerHeader title={t('picker.timeTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
+        <PickerHeader
+          title={t('picker.timeTitle')}
+          onCancel={onCancel}
+          onConfirm={handleConfirm}
+          isConfirmDisabled={isConfirmDisabled}
+        />
       }
     >
       <VStack>
