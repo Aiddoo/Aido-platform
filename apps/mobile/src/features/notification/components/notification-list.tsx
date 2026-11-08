@@ -1,6 +1,12 @@
+import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { useTrack } from '@src/shared/analytics';
+import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
@@ -11,19 +17,22 @@ import {
   Result,
   VStack,
 } from '@src/shared/ui';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category';
-import { useOpenNotification } from '../hooks/use-open-notification';
+import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { invalidateNotifications } from '../queries/notification-cache';
+import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import type { Notification } from '../schemas/notification.schema';
 import { toDateSectionedListItems } from '../utils/date-section';
+import { resolveNotificationDestination } from '../utils/notification-destination';
 import { NotificationListRow } from './notification-list-row';
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -146,3 +155,50 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
     />
   );
 };
+
+/**
+ * 알림 센터에서 알림 하나를 연다. 읽음 처리 → 프리미엄 확인 → 목적지 계산 → 기록 → 이동 순서다.
+ * 목록이 한 번 부르고 행에 넘겨 행마다 게이트·mutation을 만들지 않는다
+ */
+function useOpenNotification() {
+  const { t } = useTranslation('notification');
+  const navigateToDestination = useNotificationNavigation();
+  const windowSizeClass = useWindowSizeClass();
+  const logger = useLogger();
+  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
+
+  return (notification: Notification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    if (
+      NotificationPolicy.isAiFeature(notification) &&
+      gate.promptIfBlocked({ description: t('list.premiumDescription') })
+    ) {
+      return;
+    }
+
+    const destination = resolveNotificationDestination(
+      {
+        type: notification.type,
+        context: notification.context,
+        routing: notification.routing,
+        action: notification.action,
+      },
+      { shouldOpenToday: true, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
+    );
+    trackEvent('notification_center_opened', {
+      type: notification.type,
+      destination: destination.kind,
+    });
+    navigateToDestination(destination).catch((error) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
+  };
+}

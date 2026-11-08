@@ -332,6 +332,8 @@ export default function MemoDetailRoute() {
 | 부모 없이 의미 없는 조각   | 부모 파일의 네임스페이스(`MemoList.Item`) |
 | 함께 바뀌는 목록·행·작성기 | 같은 하위 폴더                            |
 
+hook과 유틸도 같은 기준이다. 한 파일만 쓰면 그 파일 아래 지역 hook·함수이고, `shared`는 두 피처 이상이 쓸 때만 둔다. 업무 규칙만 쓰는 곳과 상관없이 `domains/*.model.ts`로 모은다. 파일이 길다는 이유로 나누지 않는다. 한 컴포넌트·hook이 여러 책임을 지면 같은 파일 안에서 책임별 지역 hook·지역 컴포넌트·네임스페이스로 나눈다(`MemoEditor`, `useVoiceCaptureSession`).
+
 **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내리면 Suspense 경계를 블록 단위로 나눌 수 없다. 지역 컴포넌트에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`). 목록의 재사용 인터페이스(`filters`, `orderBy`, `limit`)는 실제 쓰는 곳이 있을 때만 둔다. 안 쓰는 옵션은 만들지 않는다.
 
 **화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 튜플 훅(`const [memoId] = useMemoId()`)이나 `useRouteParams`에서 직접 읽는다. 예외는 목록 행의 id다.
@@ -1055,29 +1057,29 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 
 전체 목록은 `core/ports/`에 있다.
 
-| 포트                      | 메서드 이름                                                                                                     | 어댑터 (`shared/infra/`)                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                                                             | `http/ky-client.ts`                                   |
-| `Storage`                 | `get`·`set`·`remove`                                                                                            | `storage/secure-storage.ts`                           |
-| `SyncStorage`             | `get`·`set`·`remove`                                                                                            | `storage/encrypted-draft-storage.ts`                  |
-| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                     | `storage/device-sync-storage.ts`                      |
-| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                                                                  | `storage/encrypted-draft-storage.ts`                  |
-| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                                                     | `clipboard/expo-clipboard-gateway.ts`                 |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                                                        | `linking/expo-external-link-gateway.ts`               |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                                                     | `linking/expo-incoming-link-gateway.ts`               |
-| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                                                    | `share/expo-system-share-gateway.ts`                  |
-| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`requestPermission`·`recheckPermission`·`getCoordinates`·`getPlace` | `location/expo-location-gateway.ts`                   |
-| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`                                          | `purchases/revenuecat-purchases-gateway.ts`           |
-| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                                                           | `speech/expo-speech-recognizer.ts`                    |
-| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등                                                  | `notification/expo-push-notification-gateway.ts`      |
-| `HapticsGateway`          | `selection`·`impact`·`notify`                                                                                   | `haptics/expo-haptics-gateway.ts`                     |
-| `NetworkStatusGateway`    | `subscribe`                                                                                                     | `network/expo-network-status-gateway.ts`              |
-| `ViewCaptureGateway`      | `capture`(찍을 영역은 `shared/infra/view-capture/capturable-view.tsx`의 `CapturableView`가 만든다)              | `view-capture/view-shot-view-capture-gateway.ts`      |
-| `AppLifecycleGateway`     | `getCurrentState`·`subscribe`(`useIsAppActive`, `useAppForegroundEffect`는 `shared/hooks`)                      | `app-lifecycle/react-native-app-lifecycle-gateway.ts` |
-| `IdGenerator`             | `create`                                                                                                        | `id-generator/expo-id-generator.ts`                   |
-| `Logger`                  | `debug`·`info`·`warn`·`error`                                                                                   | `logger/`                                             |
-| `Analytics`               | `trackEvent`·`trackScreenView` 등                                                                               | `analytics/`                                          |
-| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                                                             | `error-reporter/`                                     |
+| 포트                      | 메서드 이름                                                                                                                                             | 어댑터 (`shared/infra/`)                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                                                                                                     | `http/ky-client.ts`                                   |
+| `Storage`                 | `get`·`set`·`remove`                                                                                                                                    | `storage/secure-storage.ts`                           |
+| `SyncStorage`             | `get`·`set`·`remove`                                                                                                                                    | `storage/encrypted-draft-storage.ts`                  |
+| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                                                             | `storage/device-sync-storage.ts`                      |
+| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                                                                                                          | `storage/encrypted-draft-storage.ts`                  |
+| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                                                                                             | `clipboard/expo-clipboard-gateway.ts`                 |
+| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                                                                                                | `linking/expo-external-link-gateway.ts`               |
+| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                                                                                             | `linking/expo-incoming-link-gateway.ts`               |
+| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                                                                                            | `share/expo-system-share-gateway.ts`                  |
+| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`requestPermission`·`recheckPermission`·`getCoordinates`·`getPlace`                                         | `location/expo-location-gateway.ts`                   |
+| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`                                                                                  | `purchases/revenuecat-purchases-gateway.ts`           |
+| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                                                                                                   | `speech/expo-speech-recognizer.ts`                    |
+| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등                                                                                          | `notification/expo-push-notification-gateway.ts`      |
+| `HapticsGateway`          | `selection`·`impact`·`notify`                                                                                                                           | `haptics/expo-haptics-gateway.ts`                     |
+| `NetworkStatusGateway`    | `subscribe`                                                                                                                                             | `network/expo-network-status-gateway.ts`              |
+| `ViewCaptureGateway`      | `capture`(찍을 영역은 `shared/infra/view-capture/capturable-view.tsx`의 `CapturableView`가 만든다)                                                      | `view-capture/view-shot-view-capture-gateway.ts`      |
+| `AppLifecycleGateway`     | `getCurrentState`·`subscribe`. 화면은 `useSyncExternalStore(subscribe, getCurrentState)`로 읽고, 앞으로 돌아올 때만 하는 일은 쓰는 hook 안에서 구독한다 | `app-lifecycle/react-native-app-lifecycle-gateway.ts` |
+| `IdGenerator`             | `create`                                                                                                                                                | `id-generator/expo-id-generator.ts`                   |
+| `Logger`                  | `debug`·`info`·`warn`·`error`                                                                                                                           | `logger/`                                             |
+| `Analytics`               | `trackEvent`·`trackScreenView` 등                                                                                                                       | `analytics/`                                          |
+| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                                                                                                     | `error-reporter/`                                     |
 
 `core/`는 `shared`와 feature를 import하지 않는다. 포트가 쓰는 관측 키와 오류 타입은 `core/observability/telemetry-keys`, `core/errors`에 있다.
 
