@@ -1,5 +1,6 @@
 import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -8,7 +9,11 @@ import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
-import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
+import {
+  formatDateKeyLabel,
+  formatDateKeyRange,
+  formatHHmmTime,
+} from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -181,6 +186,8 @@ function DateChip({ form }: PlanTodoChipProps) {
 function TimeChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
+  const dateFormatContext = useDateFormatContext();
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const [startDate, scheduledTime] = useWatch({
     control: form.control,
     name: ['todo.startDate', 'todo.scheduledTime'],
@@ -224,7 +231,11 @@ function TimeChip({ form }: PlanTodoChipProps) {
           colorClassName={scheduledTime == null ? 'text-gray-5' : 'text-main'}
         />
       }
-      label={scheduledTime ?? t('chip.allDay')}
+      label={
+        scheduledTime == null
+          ? t('chip.allDay')
+          : formatHHmmTime(scheduledTime, preference.timeFormat, dateFormatContext)
+      }
       isActive={scheduledTime != null}
       onPress={handlePress}
     />
