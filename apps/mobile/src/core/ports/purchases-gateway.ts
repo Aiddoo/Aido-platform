@@ -59,8 +59,10 @@ export class PurchasesGatewayError extends Error {
   }
 }
 
-/** `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다 */
-/** 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public */
+/**
+ * `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다.
+ * 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public
+ */
 export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
 
 export interface PurchasesGateway {

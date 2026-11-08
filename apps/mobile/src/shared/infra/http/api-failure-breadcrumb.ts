@@ -6,17 +6,6 @@ import { errorEnvelopeSchema } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
 import { getPathname } from './request-path';
 
-/**
- * 실패 응답 관측 훅.
- *
- * **관측만 한다 — 절대 throw하지 않는다.** 에러 분류(4xx→Result.err(ApiError),
- * 5xx→ServerError throw)는 `KyHttpClient`가 단일 소유한다. 훅이 분류까지 하면
- * 책임이 두 곳으로 갈라져 5xx가 비재시도 ApiError로 둔갑하는 버그가 재발한다.
- *
- * 코드별 사용자 문구는 i18n 'errors' 네임스페이스에 있다
- * (locales/{ko,en}/errors.json — 키는 ErrorCode 그대로, 보안 마스킹 그룹은 동일 문구 유지).
- */
-
 /** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). clone으로 원본 스트림 보존. */
 async function readBody(response: Response): Promise<unknown> {
   try {
@@ -52,7 +41,13 @@ async function recordFailureBreadcrumb(
   });
 }
 
-/** auth-client용: 401은 갱신 흐름(token-refresh-hook)의 정상 경로라 소음 방지를 위해 건너뜀 */
+/**
+ * 실패 응답 관측 훅. auth-client용이라 401은 갱신 흐름(token-refresh-hook)의 정상 경로로 보고 건너뛴다.
+ *
+ * **관측만 한다 — 절대 throw하지 않는다.** 에러 분류(4xx→Result.err(ApiError),
+ * 5xx→ServerError throw)는 `KyHttpClient`가 단일 소유한다. 훅이 분류까지 하면
+ * 책임이 두 곳으로 갈라져 5xx가 비재시도 ApiError로 둔갑하는 버그가 재발한다.
+ */
 export function createApiFailureBreadcrumbHook(
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
 ) {

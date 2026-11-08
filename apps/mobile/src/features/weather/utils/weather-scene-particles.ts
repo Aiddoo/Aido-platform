@@ -190,6 +190,7 @@ export function wrap(value: number, length: number): number {
   return value - Math.floor(value / length) * length;
 }
 
+/** 프레임마다 입자 수만큼 도는 worklet이라 객체를 만들지 않으려고 위치 인자를 유지한다 */
 export function placeSprite(
   transform: SkRSXform,
   scaledCos: number,

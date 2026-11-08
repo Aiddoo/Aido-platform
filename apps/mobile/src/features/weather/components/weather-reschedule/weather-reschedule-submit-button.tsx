@@ -29,7 +29,7 @@ import {
   toSelectionKey,
 } from '../../utils/weather-reschedule-form';
 
-/** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
+/** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패도 이 버튼이 모아 한 번만 알린다. */
 export function WeatherRescheduleSubmitButton({
   form,
   onDone,

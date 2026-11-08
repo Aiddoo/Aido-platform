@@ -68,6 +68,7 @@ export function FriendStrip({ onInvite }: FriendStripProps) {
   const [isListLoaded, setIsListLoaded] = useState(false);
   const { width, height } = useFriendStripItemSize();
   const friendsQueryOptions = useGetFriendsInfiniteQueryOptions();
+  // 아래에서 내 정보를 기다리며 멈추기 전에 친구 목록도 함께 받기 시작한다
   usePrefetchInfiniteQuery(friendsQueryOptions);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {

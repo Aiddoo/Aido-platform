@@ -14,7 +14,7 @@ import { readJsonBody, toApiError, toTransportError } from './ky-error';
  * - 5xx: throw ServerError (React Query가 자동 재시도)
  * - 네트워크/타임아웃: throw NetworkError/TimeoutError (동일하게 재시도)
  *
- * afterResponse 훅(error-handler)은 관측(breadcrumb)만 하고 절대 throw하지 않는다.
+ * afterResponse 훅(`api-failure-breadcrumb`)은 관측(breadcrumb)만 하고 절대 throw하지 않는다.
  */
 export class KyHttpClient implements HttpClient {
   readonly #client: KyInstance;

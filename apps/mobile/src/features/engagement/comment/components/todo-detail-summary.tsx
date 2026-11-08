@@ -284,6 +284,7 @@ TodoDetailSummary.Thanks = function Thanks() {
 
   return (
     <QueryErrorBoundary resetKeys={[todoId]} fallback={ThanksSummaryRow.Error}>
+      {/* 보낼 대상이 있는지 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다(ThanksSummaryRow 머리 주석) */}
       <Suspense fallback={null}>
         <ThanksSummaryRow
           todoId={todoId}

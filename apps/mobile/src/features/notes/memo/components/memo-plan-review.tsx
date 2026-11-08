@@ -6,7 +6,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
 import { voicePlanIdSchema } from '@src/features/voice/schemas/voice-plan.schema';
-import { toVoicePlanFromDraft } from '@src/features/voice/utils/plan-review-draft';
+import { toDraftVoicePlan } from '@src/features/voice/utils/plan-review-draft';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -44,6 +44,7 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
       useGetMemoQueryOptions({ memoId }),
       useGetMeQueryOptions(),
       useGetTodoCategoriesQueryOptions(),
+      // 결과는 쓰지 않는다. 아래 카드 행이 읽는 설정을 함께 받아 두 번 기다리지 않게 한다
       useGetPreferenceQueryOptions(),
     ],
   });
@@ -93,7 +94,7 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
     <PlanReview
       className={className}
       form={form}
-      plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
+      plan={toDraftVoicePlan(createMemoPlanIdentity(memoId), restoredDraft)}
       fallbackCategoryId={fallbackCategoryId}
       onMemoChanged={refreshMemos}
       onApplied={() => {
