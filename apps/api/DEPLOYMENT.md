@@ -26,11 +26,39 @@ CI 검증 → 같은 SHA의 API/migrate 이미지 → Deploy to EC2
 
 deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. SSH host key는 `EC2_SSH_HOST_FINGERPRINT` secret(`ssh-keygen -lf`의 `SHA256:…` 값)이 있을 때만 검증하므로 등록해 둔다.
 
-서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 현재 이미지를 rollback 태그로 보존한다. 기본은 GHCR pull이며 `--build` 또는 토큰 부재에서는 서버에서 migrate/API를 순차 빌드한다.
+서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 현재 이미지를 rollback 태그로 보존한다. 이미지는 GHCR에서 pull만 한다. 토큰이 없으면 서버에서 빌드하지 않고 중단하며, 서버 빌드는 `--build`를 준 비상 폴백뿐이다.
 
 production compose는 host API 포트를 `127.0.0.1:${PORT:-8080}`에만 bind한다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다. API container 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB는 현재 구성값이다.
 
-migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는 Docker healthy와 `/health` 연속 3회 성공을 함께 요구하고, workflow는 공개 `/health`도 확인한다. 실패하면 이전 API image로 복구한다. 성공 뒤 dangling 이미지와 BuildKit cache 6GB 초과분만 정리하며 `prune -a`로 rollback image를 제거하지 않는다.
+migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는 Docker healthy와 `/health` 연속 3회 성공을 함께 요구하고, workflow는 공개 `/health`도 확인한다. 실패하면 이전 API image로 복구한다. 성공 뒤 dangling 이미지와 BuildKit cache 전체를 정리하며 `image prune -a`로 rollback image를 제거하지 않는다.
+
+## 수동 배포 (Actions 없이)
+
+서버(t4g.small, 메모리 2GB)에서 이미지를 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 그래서 수동 배포도 Mac에서 CI image job과 같은 설정(Dockerfile·target·linux/arm64·SHA 태그)으로 빌드해 GHCR에 올리고, 서버는 pull만 한다.
+
+1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../scripts/release/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
+
+   ```sh
+   git switch main && git pull --ff-only
+   bash scripts/release/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
+   ```
+
+2. 서버: script가 출력한 명령을 실행한다.
+
+   ```sh
+   cd ~/apps/Aido-platform && git fetch origin main \
+     && git merge-base --is-ancestor <sha> origin/main && git reset --hard <sha> \
+     && DEPLOY_SHA=<sha> bash scripts/deploy.sh
+   ```
+
+수동 이미지에는 CI attestation이 없고, GHCR 보존 개수 정리는 다음 CI image job이 한다. `bash scripts/deploy.sh --build`는 GHCR를 쓸 수 없을 때만 쓰는 비상 서버 빌드이며 끝나면 빌드 캐시를 모두 지운다.
+
+**서버 GHCR 읽기 토큰 (1회)**: `read:packages`만 가진 classic PAT를 만료일을 정해 만들고 서버에 소유자 전용 파일로 둔다. 토큰을 명령 인자·shell history에 남기지 않는다. 파일이 없으면 터미널 실행 시 입력을 묻는다. 로그인에 실패하면 `GHCR_USER=<GitHub 로그인>`을 앞에 붙인다.
+
+```sh
+install -m 600 /dev/null ~/apps/deploy-state/ghcr-read-token
+read -rs t && printf '%s\n' "$t" > ~/apps/deploy-state/ghcr-read-token; unset t
+```
 
 ## DB 전환: API보다 먼저 적용
 
