@@ -5,6 +5,7 @@ import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box';
+import { type FocusedFieldNode, useReportFocusedField } from '../input/focused-field';
 import { Text } from '../text/text';
 import { TEXT_SIZE_CLASSES } from '../text/text.variants';
 import { VStack } from '../v-stack/v-stack';
@@ -40,6 +41,8 @@ export function TextArea({
   ...props
 }: TextAreaInternalProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const fieldRef = useRef<FocusedFieldNode | null>(null);
+  const reportFocusedField = useReportFocusedField(fieldRef);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [verticalChromeHeight, setVerticalChromeHeight] = useState<number | null>(null);
   const layoutMeasurementsRef = useRef<{
@@ -74,7 +77,7 @@ export function TextArea({
   );
 
   return (
-    <Box className={cn('gap-2', variant === 'bare' && 'flex-1')}>
+    <Box ref={fieldRef} className={cn('gap-2', variant === 'bare' && 'flex-1')}>
       {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={textAreaLabelVariants({ isFocused, isInvalid })}>
           {label}
@@ -110,10 +113,12 @@ export function TextArea({
             )}
             onFocus={(event) => {
               setIsFocused(true);
+              reportFocusedField(true);
               onFocus?.(event);
             }}
             onBlur={(event) => {
               setIsFocused(false);
+              reportFocusedField(false);
               onBlur?.(event);
             }}
             onLayout={(event) => {

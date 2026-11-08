@@ -5,6 +5,7 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  BottomSheet,
   Button,
   INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
@@ -12,10 +13,8 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   useSheetRoute,
-  VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
@@ -32,34 +31,19 @@ type CategoryEditBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
+/** 주 동작 버튼을 키보드 위 고정 영역(`footer`)에 두려면 폼이 시트를 가져야 하므로, 할 일 고치기 시트처럼 읽는 동안에는 시트를 띄우지 않는다 */
 export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
-  const sheet = useSheetRoute('/settings/category-settings');
-
   return (
-    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <CategoryEditBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<CategoryEditBottomSheet.Loading />}>
-          <CategoryEditBottomSheet.Contents onClose={() => sheet.close()} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </KeyboardBottomSheet>
+    <QueryErrorBoundary fallback={CategoryEditBottomSheet.Error}>
+      <Suspense fallback={null}>
+        <CategoryEditBottomSheet.Contents {...props} />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }
 
-interface CategoryEditBottomSheetContentsProps {
-  onClose: () => void;
-}
-
-CategoryEditBottomSheet.Contents = function Contents({
-  onClose,
-}: CategoryEditBottomSheetContentsProps) {
+CategoryEditBottomSheet.Contents = function Contents(props: CategoryEditBottomSheetProps) {
+  const sheet = useSheetRoute('/settings/category-settings');
   const [{ categoryId }] = useRouteParams(todoCategoryParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useRetainedValue(
@@ -68,38 +52,49 @@ CategoryEditBottomSheet.Contents = function Contents({
 
   useEffect(() => {
     if (category == null) {
-      onClose();
+      sheet.close();
     }
-  }, [category, onClose]);
+  }, [category, sheet]);
 
   if (category == null) {
     return null;
   }
 
-  return <CategoryEditForm category={category} onClose={onClose} />;
-};
-
-CategoryEditBottomSheet.Loading = function Loading() {
   return (
-    <VStack gap={40} pb={12}>
-      <CategoryFormFields.Loading />
-      <Skeleton className="h-14 w-full rounded-xl" />
-    </VStack>
+    <CategoryEditForm
+      {...props}
+      category={category}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      onClose={() => sheet.close()}
+    />
   );
 };
 
-CategoryEditBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
+CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const sheet = useSheetRoute('/settings/category-settings');
+
+  return (
+    <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+    </BottomSheet>
+  );
 };
 
-interface CategoryEditFormProps extends CategoryEditBottomSheetContentsProps {
+interface CategoryEditFormProps extends CategoryEditBottomSheetProps {
   category: TodoCategory;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onClose: () => void;
 }
 
-function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
+function CategoryEditForm({
+  category,
+  isOpen,
+  onOpenChange,
+  onClose,
+  ...props
+}: CategoryEditFormProps) {
   const { t } = useTranslation('common');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
@@ -127,12 +122,17 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
   const handleSubmit = useSingleTap(() => submitCategory());
 
   return (
-    <VStack gap={40} pb={12}>
+    <KeyboardBottomSheet
+      {...props}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      footer={
+        <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
+          {t('actions.confirm')}
+        </Button>
+      }
+    >
       <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
-
-      <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
-        {t('actions.confirm')}
-      </Button>
-    </VStack>
+    </KeyboardBottomSheet>
   );
 }

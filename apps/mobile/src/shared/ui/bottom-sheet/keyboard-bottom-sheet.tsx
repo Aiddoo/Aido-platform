@@ -36,6 +36,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
+import { FocusedFieldContext } from '../input/focused-field';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
@@ -111,12 +112,13 @@ export function KeyboardBottomSheet({
   // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비운다. 키보드가 오르내릴 때 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
-  const { scrollViewRef, handleScrollBeginDrag } = useScrollFocusedInputIntoView({
-    isOpen,
-    animatedPosition,
-    bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
-    viewportTopLimit: topInset + HANDLE_HEIGHT,
-  });
+  const { scrollViewRef, handleScrollBeginDrag, reportFocusedField } =
+    useScrollFocusedInputIntoView({
+      isOpen,
+      animatedPosition,
+      bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
+      viewportTopLimit: topInset + HANDLE_HEIGHT,
+    });
 
   const closeSheet = useCallback(() => {
     isClosingRef.current = true;
@@ -358,7 +360,6 @@ export function KeyboardBottomSheet({
               enableContentPanningGesture={isContentPanEnabled}
               keyboardBehavior="interactive"
               keyboardBlurBehavior="restore"
-              enableBlurKeyboardOnGesture
               android_keyboardInputMode="adjustPan"
               topInset={topInset}
               style={{ marginLeft: margins.left, marginRight: margins.right }}
@@ -387,7 +388,7 @@ export function KeyboardBottomSheet({
                 showsVerticalScrollIndicator={false}
                 bounces={false}
               >
-                {children}
+                <FocusedFieldContext value={reportFocusedField}>{children}</FocusedFieldContext>
               </BottomSheetScrollView>
             </GorhomBottomSheet>
           </SheetFooterContext>

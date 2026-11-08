@@ -1,11 +1,12 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box';
 import { Text } from '../text/text';
+import { type FocusedFieldNode, useReportFocusedField } from './focused-field';
 import type { InputInternalProps } from './input.types';
 import {
   INPUT_TEXT_SIZES,
@@ -37,11 +38,13 @@ export function Input({
   ...props
 }: InputInternalProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const fieldRef = useRef<FocusedFieldNode | null>(null);
+  const reportFocusedField = useReportFocusedField(fieldRef);
   const InputComponent = textInputComponent ?? StyledTextInput;
   const { resolveSize } = useFontScale();
 
   return (
-    <Box className="gap-1">
+    <Box ref={fieldRef} className="gap-1">
       {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
           {label}
@@ -67,10 +70,12 @@ export function Input({
           })}
           onFocus={(event) => {
             setIsFocused(true);
+            reportFocusedField(true);
             onFocus?.(event);
           }}
           onBlur={(event) => {
             setIsFocused(false);
+            reportFocusedField(false);
             onBlur?.(event);
           }}
           {...props}

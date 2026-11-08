@@ -3,7 +3,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, KeyboardBottomSheet, useSheetRoute, VStack } from '@src/shared/ui';
+import { Button, KeyboardBottomSheet, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
@@ -45,14 +45,17 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
   const handleSubmit = useSingleTap(() => submitCategory());
 
   return (
-    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <VStack gap={40} pb={12}>
-        <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
-
+    <KeyboardBottomSheet
+      {...props}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      footer={
         <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
           {t('common:actions.confirm')}
         </Button>
-      </VStack>
+      }
+    >
+      <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
     </KeyboardBottomSheet>
   );
 }

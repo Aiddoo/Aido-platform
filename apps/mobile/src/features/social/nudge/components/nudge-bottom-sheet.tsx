@@ -134,8 +134,23 @@ function NudgeMessageSheet({
   };
 
   return (
-    <KeyboardBottomSheet {...sheetProps} onOpenChange={handleOpenChange}>
-      <VStack gap={16} pb={16}>
+    <KeyboardBottomSheet
+      {...sheetProps}
+      onOpenChange={handleOpenChange}
+      footer={
+        <Button
+          color="primary"
+          size="large"
+          display="block"
+          onPress={() => form.handleSubmit(handleSubmitNudge)()}
+          isDisabled={!isValid}
+          isLoading={isSubmitting}
+        >
+          {t('nudge.send')}
+        </Button>
+      }
+    >
+      <VStack gap={16}>
         <VStack gap={2}>
           <Text size="b3" shade={6}>
             {caption}
@@ -170,17 +185,6 @@ function NudgeMessageSheet({
             )}
           />
         </Box>
-
-        <Button
-          color="primary"
-          size="large"
-          display="block"
-          onPress={() => form.handleSubmit(handleSubmitNudge)()}
-          isDisabled={!isValid}
-          isLoading={isSubmitting}
-        >
-          {t('nudge.send')}
-        </Button>
       </VStack>
     </KeyboardBottomSheet>
   );

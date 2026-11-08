@@ -73,48 +73,52 @@ export function PlanTodoEditBottomSheet({
   const handleConfirm = form.handleSubmit((values) => onConfirm(values.todo));
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={12}>
-        <Controller
-          control={form.control}
-          name="todo.title"
-          render={({ field: { value, onChange } }) => (
-            <BottomSheetInput
-              accessibilityLabel={t('edit.titleLabel')}
-              value={value}
-              onChange={onChange}
-              maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
-              size="medium"
-              renderErrorMessage={false}
-              returnKeyType="done"
-              onSubmitEditing={() => handleConfirm()}
-            />
-          )}
-        />
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      footer={
+        <VStack gap={12}>
+          {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+          >
+            <DateChip form={form} />
+            <TimeChip form={form} />
+            <RepeatChip form={form} />
+            <VisibilityChip form={form} />
+            <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
+          </ScrollView>
 
-        {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-          contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-        >
-          <DateChip form={form} />
-          <TimeChip form={form} />
-          <RepeatChip form={form} />
-          <VisibilityChip form={form} />
-          <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
-        </ScrollView>
-
-        <Button
-          isDisabled={!isValid}
-          onPress={() => handleConfirm()}
-          testID="plan-todo-edit-confirm"
-        >
-          {t('edit.confirm')}
-        </Button>
-      </VStack>
+          <Button
+            isDisabled={!isValid}
+            onPress={() => handleConfirm()}
+            testID="plan-todo-edit-confirm"
+          >
+            {t('edit.confirm')}
+          </Button>
+        </VStack>
+      }
+    >
+      <Controller
+        control={form.control}
+        name="todo.title"
+        render={({ field: { value, onChange } }) => (
+          <BottomSheetInput
+            accessibilityLabel={t('edit.titleLabel')}
+            value={value}
+            onChange={onChange}
+            maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
+            size="medium"
+            renderErrorMessage={false}
+            returnKeyType="done"
+            onSubmitEditing={() => handleConfirm()}
+          />
+        )}
+      />
     </KeyboardBottomSheet>
   );
 }

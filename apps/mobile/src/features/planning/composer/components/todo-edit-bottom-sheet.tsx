@@ -223,6 +223,13 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       onOpenChange={onOpenChange}
       footer={
         <VStack gap={12}>
+          {/* 키보드 위 남는 높이가 좁으면(접은 Duo) 내용이 스크롤되며 고정 영역에 가리므로 칩 줄은 키보드 위 고정 영역에 둔다 */}
+          <TodoComposerChips
+            form={form}
+            isSeriesOccurrence={TodoPolicy.isRecurringTodo(todo)}
+            canChangeRepeat={canChangeRepeat}
+          />
+
           <Separator thickness={1} className="bg-gray-2" />
 
           <HStack gap={8} align="center" justify="end">
@@ -253,12 +260,6 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
               onSubmitEditing={handleTitleSubmit}
             />
           )}
-        />
-
-        <TodoComposerChips
-          form={form}
-          isSeriesOccurrence={TodoPolicy.isRecurringTodo(todo)}
-          canChangeRepeat={canChangeRepeat}
         />
       </VStack>
     </KeyboardBottomSheet>

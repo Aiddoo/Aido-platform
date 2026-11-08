@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   type HostInstance,
   Keyboard,
@@ -15,13 +15,14 @@ import {
   useSharedValue,
 } from 'react-native-reanimated';
 
+import type { FocusedFieldNode } from '../input/focused-field';
 import {
   getFocusedInputScrollOffset,
   getLayoutAboveKeyboard,
   type VerticalRect,
 } from './get-focused-input-scroll-offset';
 
-// 포커스는 입력 칸 안쪽 TextInput에 있으므로 위로는 라벨, 아래로는 입력 칸 테두리·안쪽 여백까지 함께 보이게 한다
+// 칸 전체를 알리지 않는 입력은 안쪽 TextInput만 잴 수 있으므로 위로는 라벨, 아래로는 입력 칸 테두리·안쪽 여백까지 함께 보이게 한다
 const FOCUSED_INPUT_MARGIN_ABOVE = 40;
 const FOCUSED_INPUT_MARGIN_BELOW = 14;
 
@@ -84,6 +85,16 @@ export function useScrollFocusedInputIntoView({
 }: ScrollFocusedInputOptions) {
   const scrollViewRef = useAnimatedRef<typeof ScrollView>();
   const scrollPlan = useSharedValue<ScrollPlan | null>(null);
+  const keyboardTopRef = useRef<number | null>(null);
+  const focusedFieldRef = useRef<FocusedFieldNode | null>(null);
+
+  const reportFocusedField = useCallback((node: FocusedFieldNode, isFocused: boolean) => {
+    if (isFocused) {
+      focusedFieldRef.current = node;
+    } else if (focusedFieldRef.current === node) {
+      focusedFieldRef.current = null;
+    }
+  }, []);
 
   useAnimatedReaction(
     () => animatedPosition.get(),
@@ -118,10 +129,11 @@ export function useScrollFocusedInputIntoView({
         return;
       }
 
+      const field = focusedFieldRef.current;
       const [viewport, contentRect, inputRect] = await Promise.all([
         measureInWindow(scrollView),
         measureInWindow(content),
-        measureInWindow(input),
+        measureInWindow(field ?? input),
       ]);
       const layoutAboveKeyboard = getLayoutAboveKeyboard(
         { viewport, content: contentRect, input: inputRect },
@@ -131,8 +143,8 @@ export function useScrollFocusedInputIntoView({
       const offset = getFocusedInputScrollOffset({
         ...layoutAboveKeyboard,
         bottomInset,
-        marginAbove: FOCUSED_INPUT_MARGIN_ABOVE,
-        marginBelow: FOCUSED_INPUT_MARGIN_BELOW,
+        marginAbove: field == null ? FOCUSED_INPUT_MARGIN_ABOVE : 0,
+        marginBelow: field == null ? FOCUSED_INPUT_MARGIN_BELOW : 0,
       });
       const sheetShift = layoutAboveKeyboard.viewport.top - viewport.top;
       if (Math.abs(sheetShift) < 1) {
@@ -166,20 +178,34 @@ export function useScrollFocusedInputIntoView({
       return;
     }
     const handleKeyboardShow = (event: KeyboardEvent) => {
+      keyboardTopRef.current = event.endCoordinates.screenY;
       scrollFocusedInputIntoView(event.endCoordinates.screenY).catch(releasePlan);
+    };
+    const handleKeyboardHide = () => {
+      keyboardTopRef.current = null;
+      releasePlan();
     };
     const subscriptions = [
       ...KEYBOARD_SHOW_EVENTS.map((eventName) =>
         Keyboard.addListener(eventName, handleKeyboardShow),
       ),
-      Keyboard.addListener(KEYBOARD_HIDE_EVENT, releasePlan),
+      Keyboard.addListener(KEYBOARD_HIDE_EVENT, handleKeyboardHide),
     ];
     return () => {
       subscriptions.forEach((subscription) => subscription.remove());
+      keyboardTopRef.current = null;
       releasePlan();
     };
   }, [isOpen, releasePlan, scrollFocusedInputIntoView]);
 
+  // 고정 영역 높이는 키보드가 올라온 뒤에 재어질 수 있으므로, 바뀌면 떠 있는 키보드 기준으로 다시 맞춘다(KeyboardAwareScrollView가 bottomOffset 변경에 하듯)
+  useEffect(() => {
+    const keyboardTop = keyboardTopRef.current;
+    if (keyboardTop != null) {
+      scrollFocusedInputIntoView(keyboardTop).catch(releasePlan);
+    }
+  }, [bottomInset, releasePlan, scrollFocusedInputIntoView]);
+
   // 사용자가 직접 스크롤하기 시작하면 더는 붙잡지 않는다
-  return { scrollViewRef, handleScrollBeginDrag: releasePlan };
+  return { scrollViewRef, handleScrollBeginDrag: releasePlan, reportFocusedField };
 }

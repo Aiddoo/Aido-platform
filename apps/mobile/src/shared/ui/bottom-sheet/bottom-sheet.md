@@ -21,12 +21,13 @@
 
 공식 방식을 그대로 쓰지 않는 곳과 이유:
 
-| 위치                                                                     | 이유                                                                                                                                           |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 키보드 때문에 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다                            |
-| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                               |
-| 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다              |
-| `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다 |
+| 위치                                                                     | 이유                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 포커스 입력 스크롤은 `use-scroll-focused-input-into-view`                | keyboard-controller 문서의 `BottomSheetKeyboardAwareScrollView`는 스크롤 뷰가 제자리라고 보고 키보드 시작 때의 입력 위치로 스크롤 양을 정한다. gorhom `interactive`는 시트를 키보드만큼 함께 올리므로 그 양만큼 더 스크롤된다 |
+| `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 키보드 때문에 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다                                                                                                           |
+| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                                                                                                              |
+| 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다                                                                                             |
+| `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다                                                                                |
 
 ## 사용법
 
@@ -73,8 +74,13 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
 (키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
 
-입력에 포커스해 키보드가 올라오면 시트가 포커스된 입력(위로 라벨, 아래로 입력 칸 테두리까지)을 `footer`·키보드 위로
-스크롤한다. 키보드가 다 올라온 뒤의 배치를 미리 구해 시트가 키보드를 따라 움직이는 프레임마다 UI 스레드에서 맞추므로
+키보드 위에 남는 높이는 기기마다 다르다(접은 Duo는 레일 occlusion 아래부터라 약 200pt). 그래서 주 동작 버튼과 입력을 돕는 칩 줄은
+`children`이 아니라 `footer`에 둔다. `children`에 두면 내용이 넘칠 때 키보드 뒤로 밀린다(1.15.0 카테고리 만들기·할 일 칩 줄).
+키보드가 떠 있어도 내용을 위로 끌면 시트 안에서 스크롤되고, 시트를 끌어내리면 gorhom이 키보드를 내린다.
+
+입력에 포커스해 키보드가 올라오면 시트가 포커스된 입력 칸 전체(라벨·테두리·오류 문구)를 `footer`·키보드 위로
+스크롤한다. `Input`·`TextArea`가 포커스될 때 칸 전체 뷰를 `FocusedFieldContext`로 알리고, 알리지 않는 입력은 안쪽 TextInput에
+라벨·테두리 몫을 더해 잰다. `footer` 높이가 키보드가 올라온 뒤에 바뀌면 다시 맞춘다. 키보드가 다 올라온 뒤의 배치를 미리 구해 시트가 키보드를 따라 움직이는 프레임마다 UI 스레드에서 맞추므로
 키보드·시트·스크롤이 한 동작으로 움직인다. 보이는 높이가 라벨까지 담기엔 좁으면(접은 Duo·SE) 입력 칸 전체가 버튼 위에
 오는 쪽을 우선한다. 시트가 위쪽 한계까지 올라가 높이가 모자랄 때만 `footer` 아래 safe area 여백을 줄인다.
 
