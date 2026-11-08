@@ -130,8 +130,8 @@ describe('할 일 쓰기 정리', () => {
       date: DAY,
       todoId: 1,
       span: { startDate: DAY, endDate: DAY },
-      affectsCompletion: true,
-      failed: false,
+      isCompletionAffected: true,
+      hasFailed: false,
       ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
     });
 
@@ -153,8 +153,8 @@ describe('할 일 쓰기 정리', () => {
     await settleTodoWrite(client, {
       date: DAY,
       span: { startDate: DAY, endDate: NEXT_DAY },
-      affectsCompletion: true,
-      failed: false,
+      isCompletionAffected: true,
+      hasFailed: false,
       ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
     });
 
@@ -176,8 +176,8 @@ describe('할 일 쓰기 정리', () => {
       date: DAY,
       todoId: 1,
       span: { startDate: DAY, endDate: DAY },
-      affectsCompletion: true,
-      failed: true,
+      isCompletionAffected: true,
+      hasFailed: true,
       ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
     });
 
@@ -219,8 +219,8 @@ describe('할 일 쓰기 정리', () => {
       date: DAY,
       todoId: 1,
       span: { startDate: DAY, endDate: DAY },
-      affectsCompletion: false,
-      failed: true,
+      isCompletionAffected: false,
+      hasFailed: true,
       ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
     });
 

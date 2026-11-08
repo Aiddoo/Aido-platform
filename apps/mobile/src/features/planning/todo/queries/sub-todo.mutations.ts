@@ -45,7 +45,7 @@ export function useToggleSubTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: false,
+        isCompletionAffected: false,
       });
       const span = getSnapshotDateSpan(snapshotTodo(queryClient, { date, todoId }), date);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -73,8 +73,8 @@ export function useToggleSubTodoMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: false,
-        failed: error != null,
+        isCompletionAffected: false,
+        hasFailed: error != null,
         ticket: context?.ticket,
       });
     },
@@ -107,7 +107,7 @@ export function useDeleteSubTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: false,
+        isCompletionAffected: false,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       const subTodos = snapshot?.todo.subTodos ?? [];
@@ -143,8 +143,8 @@ export function useDeleteSubTodoMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: false,
-        failed: error != null,
+        isCompletionAffected: false,
+        hasFailed: error != null,
         ticket: context?.ticket,
       });
     },
@@ -177,7 +177,7 @@ export function useReorderSubTodosMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: false,
+        isCompletionAffected: false,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       const previousIds = snapshot?.todo.subTodos.map((subTodo) => subTodo.id);
@@ -205,8 +205,8 @@ export function useReorderSubTodosMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: false,
-        failed: error != null,
+        isCompletionAffected: false,
+        hasFailed: error != null,
         ticket: context?.ticket,
       });
     },

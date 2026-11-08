@@ -81,7 +81,7 @@ export function useCreateTodoMutationOptions() {
       const span = getTodoDateSpan({ startDate, endDate: input.endDate ?? null });
       const ticket = await beginTodoWrite(queryClient, {
         date: startDate,
-        affectsCompletion: true,
+        isCompletionAffected: true,
       });
 
       const category = TodoCategoryPolicy.findCategory(
@@ -166,8 +166,8 @@ export function useCreateTodoMutationOptions() {
       settleTodoWrite(queryClient, {
         date: input.startDate,
         span: context?.span ?? getTodoDateSpan({ startDate: input.startDate, endDate: null }),
-        affectsCompletion: true,
-        failed: error != null || context?.optimisticId == null,
+        isCompletionAffected: true,
+        hasFailed: error != null || context?.optimisticId == null,
         ticket: context?.ticket,
       });
     },
@@ -200,7 +200,7 @@ export function useAddSubTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: true,
+        isCompletionAffected: true,
       });
       const optimisticId = createOptimisticId();
       const snapshot = snapshotTodo(queryClient, { date, todoId });
@@ -247,8 +247,8 @@ export function useAddSubTodoMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: true,
-        failed: error != null,
+        isCompletionAffected: true,
+        hasFailed: error != null,
         ticket: context?.ticket,
       });
     },
@@ -353,7 +353,7 @@ export function useUpdateSubTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: false,
+        isCompletionAffected: false,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       const previous = snapshot?.todo.subTodos.find((subTodo) => subTodo.id === subTodoId);
@@ -387,8 +387,8 @@ export function useUpdateSubTodoMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: false,
-        failed: error != null,
+        isCompletionAffected: false,
+        hasFailed: error != null,
         ticket: context?.ticket,
       });
     },

@@ -285,8 +285,8 @@ export async function beginTodoWrite(
   {
     date,
     todoId,
-    affectsCompletion,
-  }: { date: string; todoId?: number; affectsCompletion: boolean },
+    isCompletionAffected,
+  }: { date: string; todoId?: number; isCompletionAffected: boolean },
 ): Promise<TodoWriteTicket> {
   const sequence = (todoWriteSequences.get(queryClient) ?? 0) + 1;
   todoWriteSequences.set(queryClient, sequence);
@@ -295,7 +295,7 @@ export async function beginTodoWrite(
     queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }), exact: true }),
     todoId != null &&
       queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }), exact: true }),
-    affectsCompletion &&
+    isCompletionAffected &&
       queryClient.cancelQueries(completionRangesFilter({ startDate: date, endDate: date })),
   ]);
 
@@ -322,9 +322,9 @@ async function settleTodoQueries(
 
 interface SettleTodoWriteOptions extends TodoWriteTarget {
   /** 완료 기록(달력·위젯 요약)까지 바뀌는지 */
-  affectsCompletion: boolean;
+  isCompletionAffected: boolean;
   /** 실패해 되돌렸거나 낙관적으로 쓰지 못했는지 */
-  failed: boolean;
+  hasFailed: boolean;
   /** `beginTodoWrite`가 돌려준 표. 낙관적으로 쓰기 전에 실패했으면 없다 */
   ticket: TodoWriteTicket | undefined;
   /** 이 쓰기만 아는 다른 할 일 조회(존재 여부 등) */
@@ -334,9 +334,9 @@ interface SettleTodoWriteOptions extends TodoWriteTarget {
 /** 서버 응답으로 확정된 낙관적 값은 다시 받지 않고, 클라이언트가 계산하지 못한 값만 다시 맞춘다 */
 export function settleTodoWrite(
   queryClient: QueryClient,
-  { affectsCompletion, failed, ticket, extra = [], ...target }: SettleTodoWriteOptions,
+  { isCompletionAffected, hasFailed, ticket, extra = [], ...target }: SettleTodoWriteOptions,
 ) {
-  const needsReconcile = failed || overlapsOtherWrites(queryClient, ticket);
+  const needsReconcile = hasFailed || overlapsOtherWrites(queryClient, ticket);
   const filters: InvalidateQueryFilters[] = [otherTodoListsFilter(target), ...extra];
   if (needsReconcile) {
     filters.push({ queryKey: TODO_QUERY_KEYS.listByDate({ date: target.date }), exact: true });
@@ -344,7 +344,7 @@ export function settleTodoWrite(
       filters.push({ queryKey: TODO_QUERY_KEYS.page({ todoId: target.todoId }) });
     }
   }
-  if (affectsCompletion) {
+  if (isCompletionAffected) {
     // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다
     const list = queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: target.date }));
     const isSingleDay = target.span.startDate === target.span.endDate;

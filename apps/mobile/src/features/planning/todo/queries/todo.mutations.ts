@@ -74,7 +74,7 @@ export function useToggleTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: true,
+        isCompletionAffected: true,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
@@ -124,8 +124,8 @@ export function useToggleTodoMutationOptions() {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        affectsCompletion: true,
-        failed: error != null,
+        isCompletionAffected: true,
+        hasFailed: error != null,
         ticket: context?.ticket,
         // 완료를 풀면 완료한 할 일이 하나도 남지 않았는지 서버만 안다
         extra: body.completed ? [] : [{ queryKey: TODO_QUERY_KEYS.existence() }],
@@ -212,7 +212,7 @@ export function useDeleteTodoMutationOptions() {
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        affectsCompletion: true,
+        isCompletionAffected: true,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       removeTodoFromList(queryClient, { date, todoId });
@@ -268,8 +268,8 @@ export function useDeleteTodoMutationOptions() {
         date,
         todoId,
         span: getSnapshotDateSpan(snapshot ?? null, date),
-        affectsCompletion: true,
-        failed: error != null,
+        isCompletionAffected: true,
+        hasFailed: error != null,
         ticket: context?.ticket,
         extra: [
           // 마지막 할 일을 지웠는지는 서버만 안다
