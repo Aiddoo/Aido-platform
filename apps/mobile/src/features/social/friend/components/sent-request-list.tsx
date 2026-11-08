@@ -1,3 +1,7 @@
+import {
+  USER_LIST_CONTENT_STYLE,
+  UserList,
+} from '@src/features/identity/user/components/user-list';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
@@ -7,7 +11,6 @@ import { Skeleton } from 'heroui-native';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useGetSentRequestsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendRequest } from '../schemas/friend.schema';
-import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function SentRequestList() {
   const { t } = useTranslation('friend');

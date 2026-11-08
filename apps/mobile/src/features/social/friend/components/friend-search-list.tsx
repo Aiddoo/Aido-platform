@@ -1,3 +1,7 @@
+import {
+  USER_LIST_CONTENT_STYLE,
+  UserList,
+} from '@src/features/identity/user/components/user-list';
 import { formatUserHashtag } from '@src/features/identity/user/utils/user-hashtag';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -25,7 +29,6 @@ import {
 } from '../queries/friend.mutations';
 import { useGetUserSearchInfiniteQueryOptions } from '../queries/friend.queries';
 import type { SearchedUser } from '../schemas/friend.schema';
-import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 interface FriendSearchListProps {
   query: string;

@@ -1,5 +1,6 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { UserList } from '@src/features/identity/user/components/user-list';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import type { BlockTarget } from '@src/features/social/moderation/schemas/user-block.schema';
 import { ANIMATION } from '@src/shared/constants/animation';
@@ -55,7 +56,6 @@ import {
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendUser } from '../schemas/friend.schema';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
-import { UserList } from './user-list';
 
 interface FriendListProps {
   /** 초대를 쓸 수 있으면 빈 목록에서 링크로 데려오는 길을 먼저 보인다. 없으면 태그 찾기만 안내한다 */

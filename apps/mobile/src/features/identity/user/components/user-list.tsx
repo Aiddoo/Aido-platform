@@ -1,4 +1,3 @@
-import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Flex,
@@ -12,6 +11,8 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
+
+import { UserAvatar } from './user-avatar';
 
 export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
 

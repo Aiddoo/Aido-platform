@@ -1,7 +1,7 @@
 import {
   USER_LIST_CONTENT_STYLE,
   UserList,
-} from '@src/features/social/friend/components/user-list';
+} from '@src/features/identity/user/components/user-list';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';

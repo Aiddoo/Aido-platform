@@ -1,3 +1,7 @@
+import {
+  USER_LIST_CONTENT_STYLE,
+  UserList,
+} from '@src/features/identity/user/components/user-list';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, HStack, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
@@ -10,7 +14,6 @@ import {
 } from '../queries/friend.mutations';
 import { useGetReceivedRequestsInfiniteQueryOptions } from '../queries/friend.queries';
 import type { FriendRequest } from '../schemas/friend.schema';
-import { USER_LIST_CONTENT_STYLE, UserList } from './user-list';
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');
