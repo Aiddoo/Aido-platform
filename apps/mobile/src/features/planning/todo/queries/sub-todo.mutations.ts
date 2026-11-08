@@ -28,8 +28,11 @@ export function useToggleSubTodoMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const toast = useAppToast();
 
   return mutationOptions({
+    // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoParams) => {
       const result = await subTodoService.updateSubTodo(todoId, subTodoId, {
@@ -50,11 +53,12 @@ export function useToggleSubTodoMutationOptions() {
         is_completed: isCompleted,
       });
     },
-    onError: (_error, { todoId, subTodoId, isCompleted, date }) => {
-      haptics.notify('error');
+    onError: (error, { todoId, subTodoId, isCompleted, date }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, !isCompleted),
       );
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.subTodoUpdateFailed') });
     },
     onSettled: () => {
       settleTodoListWrite(queryClient);
@@ -127,8 +131,11 @@ export function useReorderSubTodosMutationOptions() {
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const toast = useAppToast();
 
   return mutationOptions({
+    // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoIds }: ReorderSubTodosParams) => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
@@ -148,14 +155,15 @@ export function useReorderSubTodosMutationOptions() {
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
-    onError: (_error, { todoId, date }, context) => {
-      haptics.notify('error');
+    onError: (error, { todoId, date }, context) => {
       const previousIds = context?.previousIds;
       if (previousIds != null) {
         updateCachedTodo(queryClient, { date, todoId }, (todo) =>
           SubTodoPolicy.withSubTodosOrdered(todo, previousIds),
         );
       }
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: () => {
       settleTodoListWrite(queryClient);

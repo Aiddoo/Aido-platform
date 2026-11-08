@@ -215,8 +215,11 @@ export function useReorderTodoCategoryMutationOptions() {
   const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const toast = useAppToast();
 
   return mutationOptions({
+    // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
+    networkMode: 'always',
     mutationFn: async ({ id, input }: ReorderTodoCategoryParams) =>
       unwrap(await todoCategoryService.reorderCategory(id, input)),
     onSuccess: () => {
@@ -228,9 +231,10 @@ export function useReorderTodoCategoryMutationOptions() {
         trackAttributedFeatureSuccess({ accountId, feature: 'category_reorder' });
       }
     },
-    onError: () => {
-      haptics.notify('error');
+    onError: (error) => {
       invalidateTodoCategories(queryClient);
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
   });
 }
