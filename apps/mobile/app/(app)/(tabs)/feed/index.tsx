@@ -11,7 +11,7 @@ import { TodoDetailSummary } from '@src/features/engagement/comment/components/t
 import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
+import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
@@ -74,7 +74,7 @@ export default function FeedScreen() {
 
   return (
     <>
-      <NotificationBell.Toolbar />
+      <NotificationBellToolbar />
       <AdaptivePane
         primary={
           <Box flex={1} className="bg-white">

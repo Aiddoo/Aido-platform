@@ -9,7 +9,7 @@ import {
   useMemoDetailHandoff,
   useSelectedMemoId,
 } from '@src/features/notes/memo/hooks/use-memo-params';
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
+import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -41,7 +41,7 @@ export default function MemoScreen() {
 
   return (
     <>
-      <NotificationBell.Toolbar />
+      <NotificationBellToolbar />
 
       <AdaptivePane
         primary={

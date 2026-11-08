@@ -1,35 +1,17 @@
 import { useIsFocused } from 'expo-router';
-import {
-  type ComponentRef,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
+import { type ComponentRef, useEffect, useLayoutEffect, useRef } from 'react';
 import type { NativeScrollEvent, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createMyPagePaneLayoutStore } from '../utils/my-page-pane-layout-store';
 
 const myPagePaneLayoutStore = createMyPagePaneLayoutStore();
 
 export function useMyPagePaneLayout() {
-  const paneId = useId();
-  const sharedTopInset = useSyncExternalStore(
-    myPagePaneLayoutStore.subscribe,
-    myPagePaneLayoutStore.getTopInset,
-  );
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const restoreOffsetRef = useRef<number | null>(null);
   const isFocused = useIsFocused();
-  const { top } = useSafeAreaInsets();
 
-  useEffect(() => {
-    myPagePaneLayoutStore.publishTopInset(paneId, top);
-  }, [paneId, top]);
-
-  useEffect(() => () => myPagePaneLayoutStore.removeTopInset(paneId), [paneId]);
+  useEffect(() => myPagePaneLayoutStore.attach(), []);
 
   useLayoutEffect(() => {
     if (!isFocused) {
@@ -75,6 +57,5 @@ export function useMyPagePaneLayout() {
     handleScroll,
     handleContentSizeChange,
     handleScrollBeginDrag,
-    topInset: Math.max(top, sharedTopInset),
   };
 }

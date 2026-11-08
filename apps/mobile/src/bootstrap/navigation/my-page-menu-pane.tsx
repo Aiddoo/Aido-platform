@@ -6,7 +6,6 @@ import { AccountActionButtons } from '@src/features/identity/auth/components/acc
 import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useTranslation } from '@src/shared/i18n';
@@ -34,21 +33,12 @@ import {
 import { Suspense } from 'react';
 
 /** 내 정보 탭과 메뉴 화면(`(mypage-menu)/_layout`)이 같은 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
-export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
+export function MyPageMenuPane() {
   const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
-    <MyPagePaneLayout
-      isSplit={isSplit}
-      headerAction={
-        <QueryErrorBoundary fallback={NotificationBell.Error}>
-          <Suspense fallback={<NotificationBell.Loading />}>
-            <NotificationBell />
-          </Suspense>
-        </QueryErrorBoundary>
-      }
-    >
+    <MyPagePaneLayout>
       <H3>{t('mypage.header')}</H3>
 
       <Spacing size={20} />

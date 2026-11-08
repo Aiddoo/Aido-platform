@@ -6,7 +6,13 @@ import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/au
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
+import {
+  HStack,
+  Result,
+  SHEET_ROUTE_SCREEN_OPTIONS,
+  StyledSafeAreaView,
+  useStackScreenOptions,
+} from '@src/shared/ui';
 import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import { type ErrorBoundaryProps, Stack } from 'expo-router';
 import { useEffect } from 'react';
@@ -40,6 +46,7 @@ export const unstable_settings = {
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isCompact = useWindowSizeClass() === 'compact';
+  const headerOptions = useStackScreenOptions();
   useRecordTodoCompletion();
 
   return (
@@ -56,10 +63,16 @@ function AppLayout() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="nudges" />
         <Stack.Screen name="suggestions" />
-        {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다 */}
+        {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 헤더 아래 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다. 뒤로 가기는 오른쪽 칸 헤더가 맡는다 */}
         <Stack.Screen
           name="(mypage-menu)"
-          options={{ animation: isCompact ? 'slide_from_right' : 'none' }}
+          options={{
+            ...headerOptions,
+            title: '',
+            headerShown: !isCompact,
+            headerBackVisible: false,
+            animation: isCompact ? 'slide_from_right' : 'none',
+          }}
         />
         <Stack.Screen name="weather" />
         <Stack.Screen name="whats-new" />
