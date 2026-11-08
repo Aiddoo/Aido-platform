@@ -14,6 +14,7 @@ import {
   QueryErrorBoundary,
   ReadableContent,
   SegmentTabTrigger,
+  Spacing,
   StyledSafeAreaView,
   Text,
   ViewTabs,
@@ -33,10 +34,12 @@ export default function TodoCategorySettingsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1} className="px-4">
-        <VStack gap={8} flex={1}>
-          <H3 className="my-4">{t('categorySettings.header')}</H3>
+        <VStack flex={1}>
+          <Spacing size={16} />
+          <H3>{t('categorySettings.header')}</H3>
+          <Spacing size={24} />
 
-          <HStack justify="between" align="center" className="mb-3">
+          <HStack justify="between" align="center">
             <ViewTabs
               schema={categorySettingsViewSchema}
               value={view}
@@ -54,7 +57,11 @@ export default function TodoCategorySettingsScreen() {
               </Tabs.List>
             </ViewTabs>
 
-            <PressableFeedback onPress={() => push('/todo-categories/new')}>
+            <PressableFeedback
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => push('/todo-categories/new')}
+            >
               <HStack align="center" gap={4}>
                 <PlusIcon
                   width={fontScaledSize(18)}
@@ -67,6 +74,8 @@ export default function TodoCategorySettingsScreen() {
               </HStack>
             </PressableFeedback>
           </HStack>
+
+          <Spacing size={20} />
 
           <QueryErrorBoundary>
             <Suspense fallback={<CategoryList.Loading />}>
