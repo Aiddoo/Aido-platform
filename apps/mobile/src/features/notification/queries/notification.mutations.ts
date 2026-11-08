@@ -118,6 +118,8 @@ export function useMarkAsReadMutationOptions() {
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
         );
+      // 알림을 누르면 목적지로 이동이 이어진다. 읽음 표시는 되돌아가고 다음에 누를 때 다시 보내므로
+      // 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
   });
@@ -127,6 +129,8 @@ export function useMarkAsReadMutationOptions() {
 export function useOpenPushSettingsMutationOptions() {
   const externalLink = useExternalLink();
   const logger = useLogger();
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: () => externalLink.openSettings(),
@@ -135,6 +139,8 @@ export function useOpenPushSettingsMutationOptions() {
       logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_SETTINGS_OPEN_FAILED, {
         error: getErrorMessage(error),
       });
+      haptics.notify('error');
+      toast.error(t('notification:permission.toasts.settingsOpenFailed'));
     },
   });
 }
@@ -165,6 +171,8 @@ export function useRequestPushPermissionMutationOptions() {
   const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
   const queryClient = useQueryClient();
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: () => pushDeviceService.requestPermission(),
@@ -177,6 +185,8 @@ export function useRequestPushPermissionMutationOptions() {
       logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
         error: getErrorMessage(error),
       });
+      haptics.notify('error');
+      toast.error(t('notification:permission.toasts.requestFailed'));
     },
   });
 }

@@ -103,6 +103,10 @@
       "provisional": "Delivered quietly",
       "denied": "Off · Turn on in device settings",
       "notDetermined": "Not chosen yet"
+    },
+    "toasts": {
+      "requestFailed": "Couldn't ask for notification permission. Turn it on in device settings",
+      "settingsOpenFailed": "Couldn't open Settings. Turn notifications on in device settings"
     }
   },
   "bell": {
