@@ -1,8 +1,8 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 
-type SessionExpiredListener = (details: SessionExpiredDetails) => void;
+import { createEventChannel } from './event-channel';
 
-const listeners = new Set<SessionExpiredListener>();
+const channel = createEventChannel<SessionExpiredDetails>();
 
 /**
  * 세션 만료(세션 종료 확정) 이벤트 구독.
@@ -11,19 +11,12 @@ const listeners = new Set<SessionExpiredListener>();
  * 관측 이벤트를 리포팅할 수 있도록 연결하는 단방향 채널.
  * 인프라는 React/DI를 모르므로 Context 대신 모듈 레벨 옵저버를 사용한다.
  */
-export function subscribeSessionExpired(listener: SessionExpiredListener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+export function subscribeSessionExpired(
+  listener: (details: SessionExpiredDetails) => void,
+): () => void {
+  return channel.subscribe(listener);
 }
 
 export function emitSessionExpired(details: SessionExpiredDetails): void {
-  for (const listener of Array.from(listeners)) {
-    try {
-      listener(details);
-    } catch {
-      // 한 리스너의 실패가 다른 리스너 알림을 막으면 안 됨
-    }
-  }
+  channel.emit(details);
 }

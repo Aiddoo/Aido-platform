@@ -1,8 +1,10 @@
+import { createEventChannel } from './event-channel';
+
 interface TodoCompletionChange {
   isCompleted: boolean;
 }
 
-const listeners = new Set<(change: TodoCompletionChange) => void>();
+const channel = createEventChannel<TodoCompletionChange>();
 
 /**
  * 서버가 할 일 완료 변경을 받았다는 단방향 채널.
@@ -11,14 +13,9 @@ const listeners = new Set<(change: TodoCompletionChange) => void>();
 export function subscribeTodoCompletionChanged(
   listener: (change: TodoCompletionChange) => void,
 ): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return channel.subscribe(listener);
 }
 
 export function emitTodoCompletionChanged(change: TodoCompletionChange): void {
-  for (const listener of Array.from(listeners)) {
-    listener(change);
-  }
+  channel.emit(change);
 }
