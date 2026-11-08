@@ -18,7 +18,7 @@ import type { ComponentProps } from 'react';
 import { APP_ICONS } from '../constants/app-icon.constants';
 import type { AppIconKey } from '../schemas/app-icon.schema';
 
-interface AppIconPickerProps extends Omit<
+interface AppIconInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,
   'children' | 'value' | 'onValueChange'
 > {
@@ -28,7 +28,7 @@ interface AppIconPickerProps extends Omit<
   isLocked?: (key: AppIconKey) => boolean;
 }
 
-export function AppIconPicker({ value, onValueChange, isLocked, ...props }: AppIconPickerProps) {
+export function AppIconInput({ value, onValueChange, isLocked, ...props }: AppIconInputProps) {
   return (
     <RadioGroup
       value={value ?? 'default'}
@@ -43,7 +43,7 @@ export function AppIconPicker({ value, onValueChange, isLocked, ...props }: AppI
       <Grid columns={3}>
         {APP_ICONS.map((icon) => (
           <GridItem key={icon.key} className="items-center p-2">
-            <AppIconPicker.Item icon={icon} isLocked={isLocked?.(icon.key)} />
+            <AppIconInput.Item icon={icon} isLocked={isLocked?.(icon.key)} />
           </GridItem>
         ))}
       </Grid>
@@ -51,7 +51,7 @@ export function AppIconPicker({ value, onValueChange, isLocked, ...props }: AppI
   );
 }
 
-interface AppIconPickerItemProps extends Omit<
+interface AppIconInputItemProps extends Omit<
   ComponentProps<typeof RadioGroup.Item>,
   'children' | 'value'
 > {
@@ -59,7 +59,7 @@ interface AppIconPickerItemProps extends Omit<
   isLocked?: boolean;
 }
 
-AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerItemProps) {
+AppIconInput.Item = function Item({ icon, isLocked, ...props }: AppIconInputItemProps) {
   const { t } = useTranslation('appIcon');
   const label = t(icon.labelKey);
 
@@ -96,7 +96,7 @@ AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerIt
   );
 };
 
-AppIconPicker.Loading = function Loading() {
+AppIconInput.Loading = function Loading() {
   return (
     <Grid columns={3}>
       {range(APP_ICONS.length).map((index) => (
@@ -111,7 +111,7 @@ AppIconPicker.Loading = function Loading() {
   );
 };
 
-AppIconPicker.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+AppIconInput.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['appIcon', 'common']);
   return (
     <QueryErrorFallback

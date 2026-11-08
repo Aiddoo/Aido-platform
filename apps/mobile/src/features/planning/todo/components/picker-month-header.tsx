@@ -6,14 +6,14 @@ import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton, Text } from '@src/sh
 
 interface PickerMonthHeaderProps {
   displayMonth: Date;
-  onPreviousPress: () => void;
-  onNextPress: () => void;
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
 }
 
 export function PickerMonthHeader({
   displayMonth,
-  onPreviousPress,
-  onNextPress,
+  onPreviousMonth,
+  onNextMonth,
 }: PickerMonthHeaderProps) {
   const { t } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
@@ -25,7 +25,7 @@ export function PickerMonthHeader({
         icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
         className="min-h-0 min-w-0"
         hitSlop={12}
-        onPress={onPreviousPress}
+        onPress={onPreviousMonth}
       />
       <Text size="b2" weight="semibold" tone="neutral" shade={9}>
         {formatDateKeyLabel(
@@ -39,7 +39,7 @@ export function PickerMonthHeader({
         icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
         className="min-h-0 min-w-0"
         hitSlop={12}
-        onPress={onNextPress}
+        onPress={onNextMonth}
       />
     </HStack>
   );

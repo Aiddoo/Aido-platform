@@ -49,7 +49,7 @@ import {
 } from '../../schemas/plan-review-form.schema';
 import { type PlannedTodo } from '../../schemas/voice-plan.schema';
 
-interface PlanTodoEditSheetProps {
+interface PlanTodoEditBottomSheetProps {
   todo: PlanTodoFormValues;
   fallbackCategoryId: number;
   isOpen: boolean;
@@ -57,13 +57,13 @@ interface PlanTodoEditSheetProps {
   onConfirm: (todo: PlanTodoFormValues) => void;
 }
 
-export function PlanTodoEditSheet({
+export function PlanTodoEditBottomSheet({
   todo,
   fallbackCategoryId,
   isOpen,
   onOpenChange,
   onConfirm,
-}: PlanTodoEditSheetProps) {
+}: PlanTodoEditBottomSheetProps) {
   const { t } = useTranslation('voicePlan');
   const form = useForm({
     resolver: zodResolver(planTodoEditFormSchema),

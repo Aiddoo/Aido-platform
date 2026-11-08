@@ -27,7 +27,7 @@ export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
       <Suspense fallback={null}>
         <ThanksSummaryRow
           todoId={todo.id}
-          onThanksPress={() =>
+          onOpenThanks={() =>
             onClose({
               type: 'replace',
               href: { pathname: '/todo/[todoId]/thanks', params: { todoId: todo.id } },

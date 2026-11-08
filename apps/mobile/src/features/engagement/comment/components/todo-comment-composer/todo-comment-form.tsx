@@ -141,7 +141,7 @@ export function TodoCommentForm({ user, style, ...scrollViewProps }: TodoComment
       nestedScrollEnabled
       showsVerticalScrollIndicator={fields.length > 2}
     >
-      <ComposerDraft
+      <TodoCommentDraftAutosave
         userId={user.id}
         mode={mode}
         key={createTodoCommentDraftKey({ userId: user.id, todoId, mode }).id}
@@ -264,7 +264,13 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 }
 
 /** 작성 중인 글을 모드별 초안으로 저장하고 다시 열면 이어 쓴다 */
-function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComposerMode }) {
+function TodoCommentDraftAutosave({
+  userId,
+  mode,
+}: {
+  userId: string;
+  mode: TodoCommentComposerMode;
+}) {
   const [todoId] = useTodoId();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();

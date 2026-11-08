@@ -400,7 +400,7 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
       endDate={endDate}
       isOpenEnded={endType === 'NEVER' && repeat != null}
       occurrenceKeys={occurrenceKeys}
-      onDatePress={handleCalendarPress}
+      onDateSelect={handleCalendarPress}
     />
   );
 };

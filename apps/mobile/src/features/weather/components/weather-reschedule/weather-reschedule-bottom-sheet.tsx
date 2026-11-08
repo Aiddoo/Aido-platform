@@ -50,7 +50,7 @@ const LOADING_TODO_COUNT = 2;
  * 폼은 시트가 소유한다. 주 버튼을 시트 footer에 고정하려면 버튼과 목록이 같은 폼을 봐야 하기 때문이다.
  * 시트를 연 사이 완료·삭제·시각 경과로 목록에서 빠진 할 일의 선택은 함께 지워 옮기지 않는다.
  */
-export function WeatherRescheduleSheet() {
+export function WeatherRescheduleBottomSheet() {
   const sheet = useSheetRoute(WEATHER_HREF);
   const form = useForm({
     resolver: zodResolver(weatherRescheduleFormSchema),
@@ -67,13 +67,13 @@ export function WeatherRescheduleSheet() {
       {sheet.isOpen && (
         <QueryErrorBoundary
           fallback={(fallbackProps) => (
-            <WeatherRescheduleSheet.Error
+            <WeatherRescheduleBottomSheet.Error
               {...fallbackProps}
               onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
             />
           )}
         >
-          <Suspense fallback={<WeatherRescheduleSheet.Loading />}>
+          <Suspense fallback={<WeatherRescheduleBottomSheet.Loading />}>
             <RescheduleTodoList form={form} onEmpty={() => sheet.close()} />
           </Suspense>
         </QueryErrorBoundary>
@@ -82,7 +82,7 @@ export function WeatherRescheduleSheet() {
   );
 }
 
-WeatherRescheduleSheet.Loading = function Loading() {
+WeatherRescheduleBottomSheet.Loading = function Loading() {
   return (
     <VStack px={20} gap={12} pb={8}>
       <TextSkeleton size="t3" className="w-40" />
@@ -94,7 +94,7 @@ WeatherRescheduleSheet.Loading = function Loading() {
   );
 };
 
-WeatherRescheduleSheet.Error = function ErrorFallback({
+WeatherRescheduleBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {

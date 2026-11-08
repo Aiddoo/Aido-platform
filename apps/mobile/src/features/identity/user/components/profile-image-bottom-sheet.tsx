@@ -1,4 +1,4 @@
-import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
+import { AppIconInput } from '@src/features/device/app-icon/components/app-icon-input';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -78,7 +78,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
             profileImage={selectedIcon}
           />
         </VStack>
-        <AppIconPicker
+        <AppIconInput
           value={selectedIcon}
           onValueChange={setChosenIcon}
           isDisabled={updateProfileMutation.isPending}

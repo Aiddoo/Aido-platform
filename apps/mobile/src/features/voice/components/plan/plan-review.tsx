@@ -47,7 +47,7 @@ import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema
 import { type VoicePlan } from '../../schemas/voice-plan.schema';
 import { toPlanSelection, toPlannedActions } from '../../utils/plan-review-draft';
 import { getPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
-import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
+import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';
 
 const LOADING_ROW_COUNT = 3;
 const DUPLICATE_ICON_SIZE = 13;
@@ -368,7 +368,7 @@ PlanReview.TodoRow = function PlanTodoRow({
       <QueryErrorBoundary fallback={() => null}>
         {/* 카테고리와 설정을 읽은 뒤에야 시트가 올라온다. 닫힌 시트라 밀릴 화면이 없고 조회는 이 화면에서 이미 받아 둔 캐시다 */}
         <Suspense fallback={null}>
-          <PlanTodoEditSheet
+          <PlanTodoEditBottomSheet
             todo={todo}
             fallbackCategoryId={fallbackCategoryId}
             isOpen={isOpen}

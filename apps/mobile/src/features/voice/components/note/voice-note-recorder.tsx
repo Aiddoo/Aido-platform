@@ -31,7 +31,7 @@ import { RecordingTimer } from './recording-timer';
 import { SentenceCaptionList } from './sentence-caption-list';
 import { VoiceNoteOffline } from './voice-note-offline';
 import { VoiceNoteRecordFooter } from './voice-note-record-footer';
-import { VoiceNoteRecordLanguageToggle } from './voice-note-record-language-toggle';
+import { VoiceNoteRecordLanguageTabs } from './voice-note-record-language-tabs';
 
 const MARK_HINT_HEIGHT = 124;
 
@@ -88,9 +88,7 @@ export function VoiceNoteRecorder() {
       <Stack.Screen
         options={{
           headerTitle: () => (
-            <VoiceNoteRecordLanguageToggle
-              onLocaleChange={(next) => changeLocaleRef.current(next)}
-            />
+            <VoiceNoteRecordLanguageTabs onLocaleChange={(next) => changeLocaleRef.current(next)} />
           ),
         }}
       />

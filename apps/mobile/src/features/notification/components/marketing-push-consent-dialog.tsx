@@ -25,13 +25,13 @@ export function MarketingPushConsentDialog({
 }: MarketingPushConsentDialogProps) {
   const { t } = useTranslation('notification');
   const mutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
-  const settledRef = useRef(false);
+  const hasSettledRef = useRef(false);
 
   const settle = (action: () => void) => {
-    if (settledRef.current) {
+    if (hasSettledRef.current) {
       return;
     }
-    settledRef.current = true;
+    hasSettledRef.current = true;
     action();
   };
 

@@ -288,7 +288,7 @@ TodoDetailSummary.Thanks = function Thanks() {
       <Suspense fallback={null}>
         <ThanksSummaryRow
           todoId={todoId}
-          onThanksPress={() => push({ pathname: '/todo/[todoId]/thanks', params: { todoId } })}
+          onOpenThanks={() => push({ pathname: '/todo/[todoId]/thanks', params: { todoId } })}
         />
       </Suspense>
     </QueryErrorBoundary>

@@ -54,7 +54,7 @@ export function NudgeResponse() {
         <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={ThanksSummaryRow.Error}>
           {/* 쓸 수 있는지·보낼 대상이 있는지 조회한 뒤에야 보일지 알아, 자리를 잡으면 나타났다 사라져 아래가 움직인다 */}
           <Suspense fallback={null}>
-            <ThanksSummaryRow todoId={nudge.todoId} onThanksPress={openThanksSheet} />
+            <ThanksSummaryRow todoId={nudge.todoId} onOpenThanks={openThanksSheet} />
           </Suspense>
         </QueryErrorBoundary>
       </VStack>

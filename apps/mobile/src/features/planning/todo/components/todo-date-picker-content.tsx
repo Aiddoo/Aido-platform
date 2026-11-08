@@ -54,7 +54,7 @@ export function TodoDatePickerContent({
       <VStack gap={20}>
         <QuickDateOptions picker={picker} onChange={onChange} />
 
-        <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
+        <DatePickerCalendar picker={picker} onDateSelect={picker.selectDate} />
       </VStack>
     </SheetHeaderLayout>
   );
@@ -135,10 +135,10 @@ function QuickDateRow({ label, date, isSelected, onChange }: QuickDateRowProps) 
 
 interface DatePickerCalendarProps {
   picker: DatePicker;
-  onDatePress: (date: Date) => void;
+  onDateSelect: (date: Date) => void;
 }
 
-function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
+function DatePickerCalendar({ picker, onDateSelect }: DatePickerCalendarProps) {
   const { displayMonth, weeks, selectedDate, goToPrevMonth, goToNextMonth } = picker;
   const dateFormatContext = useDateFormatContext();
 
@@ -146,8 +146,8 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
     <VStack gap={16}>
       <PickerMonthHeader
         displayMonth={displayMonth}
-        onPreviousPress={goToPrevMonth}
-        onNextPress={goToNextMonth}
+        onPreviousMonth={goToPrevMonth}
+        onNextMonth={goToNextMonth}
       />
 
       <CalendarWeekdayHeader />
@@ -162,7 +162,7 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
                   key={date.toISOString()}
                   date={date}
                   selectedDate={selectedDate}
-                  onPress={onDatePress}
+                  onPress={onDateSelect}
                 />
               ) : (
                 <Box

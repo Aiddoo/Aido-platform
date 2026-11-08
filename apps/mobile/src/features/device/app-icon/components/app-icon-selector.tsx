@@ -9,7 +9,7 @@ import { AppIconPolicy } from '../domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from '../queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';
 import type { AppIconKey } from '../schemas/app-icon.schema';
-import { AppIconPicker } from './app-icon-picker';
+import { AppIconInput } from './app-icon-input';
 
 export function AppIconSelector() {
   const { t } = useTranslation(['appIcon', 'common']);
@@ -46,7 +46,7 @@ export function AppIconSelector() {
   };
 
   return (
-    <AppIconPicker
+    <AppIconInput
       value={currentIcon}
       onValueChange={handleIconPress}
       isDisabled={isChanging}
@@ -55,5 +55,5 @@ export function AppIconSelector() {
   );
 }
 
-AppIconSelector.Loading = AppIconPicker.Loading;
-AppIconSelector.Error = AppIconPicker.Error;
+AppIconSelector.Loading = AppIconInput.Loading;
+AppIconSelector.Error = AppIconInput.Error;

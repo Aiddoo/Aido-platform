@@ -55,7 +55,7 @@ export function TodoTimePickerContent({
   const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TODO_TIME);
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
+  const [isAndroidPickerOpen, setIsAndroidPickerOpen] = useState(false);
 
   const handleConfirm = () => {
     onChange({ scheduledTime: localIsAllDay ? null : localTime, isAllDay: localIsAllDay });
@@ -114,21 +114,21 @@ export function TodoTimePickerContent({
               .otherwise(() => (
                 <>
                   <PressableFeedback
-                    onPress={() => setShowAndroidPicker(true)}
+                    onPress={() => setIsAndroidPickerOpen(true)}
                     className="h-[34px] justify-center"
                   >
                     <Text size="b1" tone="brand" weight="medium">
                       {formatHHmmTime(localTime, preference.timeFormat, dateFormatContext)}
                     </Text>
                   </PressableFeedback>
-                  {showAndroidPicker && (
+                  {isAndroidPickerOpen && (
                     <DateTimePicker
                       value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
                       mode="time"
                       display="spinner"
                       is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
                       onChange={(_event, pickedTime) => {
-                        setShowAndroidPicker(false);
+                        setIsAndroidPickerOpen(false);
                         if (pickedTime) {
                           setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
                         }

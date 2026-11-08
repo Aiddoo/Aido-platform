@@ -41,7 +41,7 @@ const HEART_SPRING = { damping: 12, stiffness: 320 } as const;
 
 interface ThanksSummaryRowProps {
   todoId: number;
-  onThanksPress: () => void;
+  onOpenThanks: () => void;
 }
 
 /**
@@ -57,7 +57,7 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   return <ThanksSummaryRow.Contents {...props} />;
 }
 
-ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksSummaryRowProps) {
+ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
   const { data } = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
@@ -90,7 +90,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
           <ThanksButton
             variant="fill"
             accessibilityLabel={thanksButtonLabel}
-            onPress={onThanksPress}
+            onPress={onOpenThanks}
           >
             <HStack align="center" gap={6}>
               <HeartFilledIcon
@@ -136,7 +136,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
           <ThanksButton
             variant="weak"
             accessibilityLabel={thanksButtonLabel}
-            onPress={onThanksPress}
+            onPress={onOpenThanks}
           >
             {t('interaction.thanksSendMore')}
           </ThanksButton>

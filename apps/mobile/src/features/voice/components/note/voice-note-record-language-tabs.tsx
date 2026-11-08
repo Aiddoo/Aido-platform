@@ -9,14 +9,12 @@ import { useEnsureMicrophonePermission } from '../../hooks/use-ensure-microphone
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
 
-interface VoiceNoteRecordLanguageToggleProps {
+interface VoiceNoteRecordLanguageTabsProps {
   onLocaleChange: (next: SpeechLocale) => Promise<void>;
 }
 
 /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
-export function VoiceNoteRecordLanguageToggle({
-  onLocaleChange,
-}: VoiceNoteRecordLanguageToggleProps) {
+export function VoiceNoteRecordLanguageTabs({ onLocaleChange }: VoiceNoteRecordLanguageTabsProps) {
   const { t } = useTranslation('voiceNote');
   const toast = useAppToast();
   const logger = useLogger();
