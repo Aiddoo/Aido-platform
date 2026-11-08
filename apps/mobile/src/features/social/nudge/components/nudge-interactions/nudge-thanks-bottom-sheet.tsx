@@ -23,11 +23,13 @@ import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import {
+  NudgeInteractionPolicy,
+  type NudgeThanksPreview,
+} from '../../domains/nudge-interaction.model';
 import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../../queries/todo-nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/todo-nudge.queries';
-import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;

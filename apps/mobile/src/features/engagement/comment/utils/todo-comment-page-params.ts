@@ -1,4 +1,4 @@
-import type { TodoCommentPagination } from '../schemas/todo-comment.schema';
+import type { TodoCommentPagination } from '../domains/todo-comment.model';
 import type { TodoCommentPageParam } from './todo-comment-cache-pages';
 
 export const INITIAL_TODO_COMMENT_PAGE_PARAM: TodoCommentPageParam = null;

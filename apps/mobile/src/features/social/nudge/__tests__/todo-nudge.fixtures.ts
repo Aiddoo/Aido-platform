@@ -8,6 +8,11 @@ import {
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
+import {
+  type NudgeLimitInfo as NudgeLimitInfoModel,
+  nudgeLimitInfoSchema as nudgeLimitInfoModelSchema,
+} from '../domains/todo-nudge.model';
+
 function generateNudgeLimitInfoDto(): NudgeLimitInfo {
   return {
     dailyLimit: 5,
@@ -67,3 +72,15 @@ export function createNudgeApiError(
 }
 
 export const INVALID_DTO = { invalid: 'data' };
+
+export function createNudgeLimitInfo(
+  overrides?: Partial<NudgeLimitInfoModel>,
+): NudgeLimitInfoModel {
+  return nudgeLimitInfoModelSchema.parse({
+    dailyLimit: 3,
+    usedToday: 0,
+    remainingToday: 3,
+    isUnlimited: false,
+    ...overrides,
+  });
+}

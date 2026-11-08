@@ -1,16 +1,8 @@
-import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
+import { createNudgeLimitInfo } from '../__tests__/todo-nudge.fixtures';
 import { TodoNudgePolicy } from './todo-nudge.model';
 
 const TODAY_KEY = '2026-02-25';
 const NEXT_DAY_KEY = '2026-02-26';
-
-const createLimitInfo = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo => ({
-  dailyLimit: 3,
-  usedToday: 0,
-  remainingToday: 3,
-  isUnlimited: false,
-  ...overrides,
-});
 
 describe('canNudgeTodoOnDate', () => {
   it('미완료 + 오늘이면 true를 반환한다', () => {
@@ -191,7 +183,7 @@ describe('isMessageTooLong', () => {
 describe('isLimitReached', () => {
   it('remainingToday가 0이면 true를 반환한다', () => {
     // Given
-    const limitInfo = createLimitInfo({ remainingToday: 0 });
+    const limitInfo = createNudgeLimitInfo({ remainingToday: 0 });
 
     // When
     const result = TodoNudgePolicy.isLimitReached(limitInfo);
@@ -202,7 +194,18 @@ describe('isLimitReached', () => {
 
   it('remainingToday가 양수이면 false를 반환한다', () => {
     // Given
-    const limitInfo = createLimitInfo({ remainingToday: 2 });
+    const limitInfo = createNudgeLimitInfo({ remainingToday: 2 });
+
+    // When
+    const result = TodoNudgePolicy.isLimitReached(limitInfo);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it('remainingToday가 1이면 마지막 한 번이 남아 false를 반환한다', () => {
+    // Given
+    const limitInfo = createNudgeLimitInfo({ remainingToday: 1 });
 
     // When
     const result = TodoNudgePolicy.isLimitReached(limitInfo);
@@ -213,7 +216,7 @@ describe('isLimitReached', () => {
 
   it('remainingToday가 null (무제한)이면 false를 반환한다', () => {
     // Given
-    const limitInfo = createLimitInfo({ remainingToday: null });
+    const limitInfo = createNudgeLimitInfo({ remainingToday: null });
 
     // When
     const result = TodoNudgePolicy.isLimitReached(limitInfo);

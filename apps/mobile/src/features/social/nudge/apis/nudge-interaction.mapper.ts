@@ -9,7 +9,7 @@ import type {
   NudgeInteraction,
   NudgeInteractionPage,
   NudgeThanksPreview,
-} from '../schemas/nudge-interaction.schema';
+} from '../domains/nudge-interaction.model';
 
 export function toNudgeInteraction(dto: NudgeInteractionResponse): NudgeInteraction {
   return {

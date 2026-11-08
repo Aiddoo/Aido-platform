@@ -1,9 +1,8 @@
-import type { createTodoCommentChainSchema, updateTodoCommentSchema } from '@aido/api';
 import { todoCommentContentSchema } from '@aido/api';
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
-import type { TodoComment } from './todo-comment.schema';
+import type { TodoComment } from '../domains/todo-comment.model';
 
 // 고른 댓글은 서버가 준 값을 그대로 들고 있어 다시 읽지 않는다. 입력과 출력의 타입을 같게 둔다
 const todoCommentTargetSchema = z.custom<TodoComment>();
@@ -23,9 +22,6 @@ export const todoCommentFormSchema = z.object({
     .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
 });
 export type TodoCommentFormValues = z.infer<typeof todoCommentFormSchema>;
-
-export type TodoCommentChainInput = z.infer<typeof createTodoCommentChainSchema>;
-export type TodoCommentUpdateInput = z.infer<typeof updateTodoCommentSchema>;
 
 const EMPTY_ITEMS: TodoCommentFormValues['items'] = [{ content: '' }];
 

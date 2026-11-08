@@ -5,7 +5,8 @@ import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { TODO_NUDGE_QUERY_KEYS } from '../constants/todo-nudge-query-keys';
-import type { NudgeDirection, NudgeInteractionPage } from '../schemas/nudge-interaction.schema';
+import type { NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 

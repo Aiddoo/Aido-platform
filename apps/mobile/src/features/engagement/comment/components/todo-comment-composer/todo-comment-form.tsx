@@ -36,6 +36,7 @@ import {
   findTodoCommentErrorStatus,
   isTodoCommentRejectedError,
 } from '../../domains/todo-comment.error';
+import type { TodoCommentAuthor } from '../../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import { useTodoCommentForm } from '../../hooks/use-todo-comment-form';
 import {
@@ -49,7 +50,6 @@ import {
   toReplyFormValues,
   toEditFormValues,
 } from '../../schemas/todo-comment-form.schema';
-import type { TodoCommentAuthor } from '../../schemas/todo-comment.schema';
 import {
   createTodoCommentDraftKey,
   getTodoCommentDraftSourceUpdatedAt,

@@ -1,4 +1,4 @@
-import type { NudgeDirection } from '../schemas/nudge-interaction.schema';
+import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 
 export const TODO_NUDGE_QUERY_KEYS = {
   all: ['nudge'] as const,

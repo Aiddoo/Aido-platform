@@ -9,13 +9,13 @@ import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import {
+  type TodoComment,
+  TodoCommentPolicy,
+  type TodoCommentThread,
+  type TodoCommentThreadAnchor,
+} from '../domains/todo-comment.model';
 import { useGetTodoCommentRepliesInfiniteQueryOptions } from '../queries/todo-comment.queries';
-import type {
-  TodoComment,
-  TodoCommentThread,
-  TodoCommentThreadAnchor,
-} from '../schemas/todo-comment.schema';
 import { getReplyFooter } from '../utils/todo-comment-replies.view-model';
 import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
@@ -50,7 +50,6 @@ export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCo
     isEnabled: isExpanded,
   });
   const repliesQuery = useInfiniteQuery(repliesOptions);
-  const totalCount = thread.replySummary.totalCount;
 
   // 펼친 뒤 실제로 불러온 답글 수를 페이지가 도착한 다음에 보낸다
   const trackLoadedCount = (loadedCount: number) =>
@@ -58,7 +57,7 @@ export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCo
 
   if (!isExpanded) {
     const preview = thread.previewReply;
-    const hiddenCount = preview == null ? totalCount : thread.replySummary.hiddenCount;
+    const hiddenCount = TodoCommentPolicy.getCollapsedHiddenReplyCount(thread);
 
     return (
       <VStack>

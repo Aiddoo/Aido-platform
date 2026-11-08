@@ -5,6 +5,7 @@ import {
   todoCommentV2Schema,
 } from '@aido/api';
 
+import { todoCommentSchema, todoCommentThreadPageSchema } from '../domains/todo-comment.model';
 import {
   toRepliesQuery,
   toThreadsQuery,
@@ -83,6 +84,34 @@ describe('todo comment mapper', () => {
     expect(page.items[0]?.previewReply?.editedAt).toBe('2026-08-26T00:02:00.000Z');
     expect(page.items[0]?.replySummary).toEqual(dto.items[0]?.replySummary);
     expect(page.anchor).toEqual(dto.anchor);
+  });
+
+  it('계약을 통과한 묶음 페이지는 앱 댓글 모델도 통과한다', () => {
+    // Given
+    const dto = todoCommentThreadsResponseSchema.parse({
+      items: [
+        {
+          comment: createV2Dto(),
+          previewReply: null,
+          replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
+        },
+      ],
+      pagination: {
+        previousCursor: null,
+        nextCursor: null,
+        hasPrevious: false,
+        hasNext: false,
+        size: 30,
+      },
+      anchor: null,
+    });
+
+    // When
+    const page = toTodoCommentThreadPage(dto);
+
+    // Then
+    expect(todoCommentThreadPageSchema.parse(page)).toEqual(page);
+    expect(todoCommentSchema.parse(page.items[0]?.comment)).toEqual(page.items[0]?.comment);
   });
 
   it('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {

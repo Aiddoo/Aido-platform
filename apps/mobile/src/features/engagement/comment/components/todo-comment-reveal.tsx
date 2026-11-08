@@ -14,7 +14,7 @@ import type { View } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 
-import type { TodoCommentThread } from '../schemas/todo-comment.schema';
+import type { TodoCommentThread } from '../domains/todo-comment.model';
 
 const REVEAL_MARGIN = 16;
 

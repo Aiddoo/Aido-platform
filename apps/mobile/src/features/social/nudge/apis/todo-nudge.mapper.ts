@@ -11,7 +11,7 @@ import type {
   NudgeCooldownInfo,
   NudgeLimitInfo,
   SendTodoNudgeResult,
-} from '../schemas/todo-nudge.schema';
+} from '../domains/todo-nudge.model';
 
 export function toNudgeLimitInfo(dto: NudgeLimitInfoDto): NudgeLimitInfo {
   return pick(dto, ['dailyLimit', 'usedToday', 'remainingToday', 'isUnlimited']);

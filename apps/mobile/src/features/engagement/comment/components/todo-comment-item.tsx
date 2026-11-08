@@ -51,7 +51,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
 import {
   useDeleteTodoCommentMutationOptions,
@@ -62,7 +62,6 @@ import {
   toEditFormValues,
   toReplyFormValues,
 } from '../schemas/todo-comment-form.schema';
-import type { TodoComment } from '../schemas/todo-comment.schema';
 import { findComposerTarget } from '../utils/todo-comment-form-fields';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {

@@ -1,12 +1,15 @@
-import { toInstant } from '@src/shared/date/instant';
+import {
+  type TodoComment,
+  type TodoCommentThread,
+  todoCommentSchema,
+  todoCommentThreadSchema,
+} from '../domains/todo-comment.model';
 
-import type { TodoComment, TodoCommentThread } from '../schemas/todo-comment.schema';
-
-const CREATED_AT = toInstant('2026-08-15T09:00:00.000Z');
+const CREATED_AT = '2026-08-15T09:00:00.000Z';
 export const TODO_ID = 42;
 
 export function createTodoComment(overrides?: Partial<TodoComment>): TodoComment {
-  return {
+  return todoCommentSchema.parse({
     id: 'comment-1',
     todoId: TODO_ID,
     threadCommentId: null,
@@ -35,7 +38,7 @@ export function createTodoComment(overrides?: Partial<TodoComment>): TodoComment
     createdAt: CREATED_AT,
     editedAt: null,
     ...overrides,
-  };
+  });
 }
 
 export function createTodoCommentReply(
@@ -74,7 +77,7 @@ export function createTodoCommentThread(overrides?: Partial<TodoCommentThread>):
       ? createTodoCommentReply(comment)
       : overrides.previewReply;
 
-  return {
+  return todoCommentThreadSchema.parse({
     comment,
     previewReply,
     replySummary: {
@@ -83,5 +86,5 @@ export function createTodoCommentThread(overrides?: Partial<TodoCommentThread>):
       participantAuthors: [],
     },
     ...overrides,
-  };
+  });
 }

@@ -4,6 +4,7 @@ import {
   createNudgeCooldownInfoDto,
   createNudgeLimitInfoDto,
 } from '../__tests__/todo-nudge.fixtures';
+import { nudgeCooldownInfoSchema, nudgeLimitInfoSchema } from '../domains/todo-nudge.model';
 import { toNudgeCooldownInfo, toNudgeLimitInfo } from './todo-nudge.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
@@ -54,5 +55,25 @@ describe('toNudgeCooldownInfo', () => {
     // Then
     expect(result.cooldownEndsAt).toBeNull();
     expect(result.remainingSeconds).toBeNull();
+  });
+});
+
+describe('계약과 앱 모델', () => {
+  it('계약을 통과한 한도·쿨다운 응답은 앱 모델도 통과한다', () => {
+    // Given
+    const limitDto = createNudgeLimitInfoDto({ dailyLimit: null, remainingToday: null });
+    const cooldownDto = createNudgeCooldownInfoDto({
+      canNudge: false,
+      cooldownEndsAt: '2026-03-08T01:00:00.000Z',
+      remainingSeconds: 3600,
+    });
+
+    // When
+    const limit = toNudgeLimitInfo(limitDto);
+    const cooldown = toNudgeCooldownInfo(cooldownDto);
+
+    // Then
+    expect(nudgeLimitInfoSchema.parse(limit)).toEqual(limit);
+    expect(nudgeCooldownInfoSchema.parse(cooldown)).toEqual(cooldown);
   });
 });

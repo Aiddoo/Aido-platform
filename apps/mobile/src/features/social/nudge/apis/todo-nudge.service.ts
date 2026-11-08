@@ -17,24 +17,24 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { TODO_NUDGE_ERROR_CODE, type TodoNudgeErrorCode } from '../domains/todo-nudge.error';
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import type {
   NudgeInteraction,
   NudgeInteractionPage,
   NudgeThanksPreview,
-} from '../schemas/nudge-interaction.schema';
+} from '../domains/nudge-interaction.model';
+import { TODO_NUDGE_ERROR_CODE, type TodoNudgeErrorCode } from '../domains/todo-nudge.error';
+import {
+  type NudgeCooldownInfo,
+  type NudgeLimitInfo,
+  type SendTodoNudgeResult,
+  TodoNudgePolicy,
+} from '../domains/todo-nudge.model';
 import type {
   CreateNudgeInput,
   CreateRemindNudgeInput,
   ReplyToNudgeInput,
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
-import type {
-  NudgeCooldownInfo,
-  NudgeLimitInfo,
-  SendTodoNudgeResult,
-} from '../schemas/todo-nudge.schema';
 import {
   toNudgeInteraction,
   toNudgeInteractionPage,

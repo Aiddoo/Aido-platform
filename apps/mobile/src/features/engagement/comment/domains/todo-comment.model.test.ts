@@ -560,3 +560,43 @@ describe('withRepliesRemoved', () => {
     expect(next).not.toBe(replies);
   });
 });
+
+describe('getCollapsedHiddenReplyCount', () => {
+  it('대표 답글이 있으면 서버가 센 숨은 답글 수를 반환한다', () => {
+    // Given
+    // 답글 4개 중 대표 1개를 보여 3개가 숨는다
+    const thread = createTodoCommentThread({ comment: createTodoComment({ replyCount: 4 }) });
+
+    // When
+    const result = TodoCommentPolicy.getCollapsedHiddenReplyCount(thread);
+
+    // Then
+    expect(result).toBe(3);
+  });
+
+  it('대표 답글이 없으면 답글 전체가 숨은 수다', () => {
+    // Given
+    const thread = createTodoCommentThread({
+      comment: createTodoComment({ replyCount: 2 }),
+      previewReply: null,
+    });
+
+    // When
+    const result = TodoCommentPolicy.getCollapsedHiddenReplyCount(thread);
+
+    // Then
+    expect(result).toBe(2);
+  });
+
+  it('대표 답글 하나뿐이면 숨은 답글이 없다', () => {
+    // Given
+    // 답글 1개 - 대표 1개 = 0
+    const thread = createTodoCommentThread({ comment: createTodoComment({ replyCount: 1 }) });
+
+    // When
+    const result = TodoCommentPolicy.getCollapsedHiddenReplyCount(thread);
+
+    // Then
+    expect(result).toBe(0);
+  });
+});

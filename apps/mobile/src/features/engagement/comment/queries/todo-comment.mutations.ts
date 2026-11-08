@@ -24,12 +24,11 @@ import {
   isTodoCommentRateLimitedError,
   isTodoCommentUnavailableError,
 } from '../domains/todo-comment.error';
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
+import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import type {
   TodoCommentChainInput,
   TodoCommentUpdateInput,
-} from '../schemas/todo-comment-form.schema';
-import type { TodoComment } from '../schemas/todo-comment.schema';
+} from '../schemas/todo-comment-request.schema';
 import {
   addTodoCommentRepliesToCaches,
   cancelTodoCommentQueries,

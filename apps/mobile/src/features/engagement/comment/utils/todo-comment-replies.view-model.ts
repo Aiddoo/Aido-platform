@@ -1,7 +1,6 @@
 import { match, P } from 'ts-pattern';
 
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import type { TodoCommentThread } from '../schemas/todo-comment.schema';
+import { TodoCommentPolicy, type TodoCommentThread } from '../domains/todo-comment.model';
 
 /** 사용자가 직접 펼쳤는지(user), 답글을 올려 앱이 펼쳤는지(auto) */
 export interface ThreadExpansion {

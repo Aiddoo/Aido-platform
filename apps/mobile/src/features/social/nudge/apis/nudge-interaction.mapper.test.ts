@@ -1,4 +1,5 @@
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
+import { nudgeInteractionSchema } from '../domains/nudge-interaction.model';
 import { toNudgeInteraction, toNudgeThanksPreview } from './nudge-interaction.mapper';
 
 describe('콕 응답을 클라이언트 모델로 변환', () => {
@@ -16,6 +17,17 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
     });
     expect(nudge.thankedAt).toBe('2026-10-04T00:00:00.000Z');
     expect(nudge).not.toHaveProperty('sender');
+  });
+
+  it('계약을 통과한 콕 응답은 앱 콕 모델도 통과한다', () => {
+    // Given
+    const dto = createNudgeInteractionDto({ replyKind: 'THANKFUL' });
+
+    // When
+    const nudge = toNudgeInteraction(dto);
+
+    // Then
+    expect(nudgeInteractionSchema.parse(nudge)).toEqual(nudge);
   });
 
   it('비공개로 가려진 할 일이나 없는 이름을 추측하지 않는다', () => {

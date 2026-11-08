@@ -13,6 +13,7 @@ import type {
 } from '@aido/api';
 import type { TodoCommentSort } from '@aido/api/vocabulary';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
+import { pick } from 'es-toolkit';
 
 import { TODO_COMMENT_PAGE_SIZE } from '../constants/todo-comment.constants';
 import type {
@@ -22,12 +23,25 @@ import type {
   TodoCommentReplyPage,
   TodoCommentThread,
   TodoCommentThreadPage,
-} from '../schemas/todo-comment.schema';
+} from '../domains/todo-comment.model';
 import type { TodoCommentPageParam } from '../utils/todo-comment-cache-pages';
 
 function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
-    ...dto,
+    ...pick(dto, [
+      'id',
+      'todoId',
+      'threadCommentId',
+      'replyTo',
+      'author',
+      'content',
+      'likeCount',
+      'replyCount',
+      'isDeleted',
+      'isAuthorBlocked',
+      'isEdited',
+      'viewer',
+    ]),
     createdAt: toInstant(dto.createdAt),
     editedAt: toNullableInstant(dto.editedAt),
   };

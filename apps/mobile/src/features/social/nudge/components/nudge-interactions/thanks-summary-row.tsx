@@ -28,12 +28,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import {
+  NudgeInteractionPolicy,
+  type NudgeThanksPreview,
+} from '../../domains/nudge-interaction.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
   useGetNudgeThanksPreviewInfiniteQueryOptions,
 } from '../../queries/todo-nudge.queries';
-import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;
