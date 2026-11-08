@@ -1,5 +1,10 @@
 import { useErrorReporter, useLogger } from '@src/bootstrap/providers/di-context';
-import type { SpeechErrorCode, SpeechLocale, SpeechMode } from '@src/core/ports/speech-recognizer';
+import type {
+  OfflineModelResult,
+  SpeechErrorCode,
+  SpeechLocale,
+  SpeechMode,
+} from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 
@@ -81,6 +86,13 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
         speech_error: code,
         on_device: isOnDevice,
       });
+    },
+    offlineModelDeclined: (locale: SpeechLocale) => {
+      trackEvent('voice_offline_model_requested', { locale, result: 'declined' });
+    },
+    offlineModelRequested: (locale: SpeechLocale, result: OfflineModelResult) => {
+      trackEvent('voice_offline_model_requested', { locale, result });
+      addBreadcrumb('offline-model.requested', { locale, result });
     },
     capabilityCheckFailed: (error: unknown) => {
       logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {

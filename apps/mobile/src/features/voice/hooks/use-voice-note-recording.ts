@@ -1,18 +1,12 @@
 import {
-  useErrorReporter,
   useIdGenerator,
-  useOfflineModelPromptRepository,
   useSpeechRecognizer,
   useVoiceNoteDraftRepository,
   useVoiceNoteStorageService,
   useVoiceRecordingRepository,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
-import { t } from '@src/shared/i18n';
-import { useConfirmDialog } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
@@ -21,6 +15,7 @@ import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { type VoiceNote } from '../schemas/voice-note.schema';
+import { useOfferOnDeviceModel } from './use-offer-on-device-model';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 import { useVoiceNoteCaptions } from './use-voice-note-captions';
@@ -52,11 +47,7 @@ export function useVoiceNoteRecording({
   const draftRepository = useVoiceNoteDraftRepository();
   const recordingRepository = useVoiceRecordingRepository();
   const idGenerator = useIdGenerator();
-  const offlineModelPrompt = useOfflineModelPromptRepository();
-  const toast = useAppToast();
-  const confirmDialog = useConfirmDialog();
-  const errorReporter = useErrorReporter();
-  const { trackEvent } = useTrack();
+  const offerOnDeviceModel = useOfferOnDeviceModel({ accountId, entry });
 
   const [seedNote] = useState(() =>
     seedDraftId == null ? null : draftRepository.find(accountId, seedDraftId),
@@ -191,48 +182,6 @@ export function useVoiceNoteRecording({
   /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
   const isStartAbandoned = () => isUnmountedRef.current || intake.isDiscarded();
 
-  // Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
-  // 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
-  const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
-    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(
-      'note',
-      startLocale,
-    );
-    if (isStartAbandoned()) {
-      return;
-    }
-    if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
-      return;
-    }
-    const shouldDownload = await confirmDialog.openAsync({
-      title: t('voiceNote:offlineModel.title'),
-      description: t('voiceNote:offlineModel.description'),
-      confirmLabel: t('voiceNote:offlineModel.confirm'),
-      cancelLabel: t('voiceNote:offlineModel.cancel'),
-    });
-    if (isStartAbandoned()) {
-      return;
-    }
-    if (!shouldDownload) {
-      offlineModelPrompt.saveDeclined(accountId, startLocale);
-      trackEvent('voice_offline_model_requested', { locale: startLocale, result: 'declined' });
-      return;
-    }
-    const result = await speechRecognizer.requestOfflineModel(startLocale);
-    if (result !== 'downloaded') {
-      offlineModelPrompt.saveDeclined(accountId, startLocale);
-    }
-    trackEvent('voice_offline_model_requested', { locale: startLocale, result });
-    errorReporter.addBreadcrumb({
-      category: 'voice',
-      message: 'offline-model.requested',
-      data: { locale: startLocale, result },
-    });
-    if (result === 'scheduled') {
-      toast.toast(t('voiceNote:offlineModel.scheduled'));
-    }
-  };
-
   const start = async ({
     startLocale,
     hintWords,
@@ -240,7 +189,7 @@ export function useVoiceNoteRecording({
     startLocale: SpeechLocale;
     hintWords: readonly string[];
   }) => {
-    await offerOnDeviceModel(startLocale);
+    await offerOnDeviceModel(startLocale, { isAbandoned: isStartAbandoned });
     if (isStartAbandoned()) {
       return;
     }
