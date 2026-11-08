@@ -1,11 +1,12 @@
+import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { useTranslation } from '@src/shared/i18n';
+import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
   Box,
   DashedDivider,
@@ -23,10 +24,10 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useRef } from 'react';
-import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
+import { useShareViewCapture } from '../hooks/use-share-view-capture';
 import { useGetWeeklyAchievementQueryOptions } from '../queries/achievement.queries';
 import { achievementParamsSchema } from '../schemas/achievement-params.schema';
 import { BadgeIcon } from './badge-icon';
@@ -44,7 +45,7 @@ export function WeeklyAchievementCertificate() {
   const dateFormatContext = useDateFormatContext();
 
   const { trackEvent } = useTrack();
-  const viewShotRef = useRef<ViewShotRef>(null);
+  const viewShotRef = useRef<ViewCaptureHandle>(null);
   const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
 
   const badgeType = AchievementPolicy.getBadgeType(achievement);
@@ -57,7 +58,7 @@ export function WeeklyAchievementCertificate() {
 
   return (
     <>
-      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
+      <CapturableView ref={viewShotRef}>
         <Certificate subtitle={<Certificate.Subtitle>{badgeName}</Certificate.Subtitle>}>
           <Spacing size={16} />
 
@@ -121,7 +122,7 @@ export function WeeklyAchievementCertificate() {
             </Text>
           </VStack>
         </Certificate>
-      </ViewShot>
+      </CapturableView>
 
       <Spacing size={8} />
 

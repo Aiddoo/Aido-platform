@@ -115,6 +115,7 @@ import { secureDeviceIdStore } from '@src/shared/infra/storage/secure-device-id-
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
+import { viewShotViewCaptureGateway } from '@src/shared/infra/view-capture/view-shot-view-capture-gateway';
 import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
@@ -447,6 +448,7 @@ export function DIProvider({
       syncStorage: deviceSyncStorage,
       networkStatus: createExpoNetworkStatusGateway(logger),
       appLifecycle: reactNativeAppLifecycleGateway,
+      viewCapture: viewShotViewCaptureGateway,
       widgetSyncService,
       widgetNavigationRepository,
       logOutDeviceService: new LogOutDeviceService({

@@ -340,6 +340,7 @@ const SDK_MODULES = [
   'expo-updates',
   'expo-localization',
   'expo-crypto',
+  'react-native-view-shot',
   '@sentry/react-native',
   '@react-native-firebase/app',
   '@react-native-firebase/analytics',

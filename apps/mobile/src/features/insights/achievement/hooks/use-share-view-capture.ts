@@ -1,14 +1,16 @@
+import { useViewCapture } from '@src/bootstrap/providers/di-context';
+import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useLogger, useSystemShare } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { type RefObject, useCallback, useRef, useState } from 'react';
-import type { ViewShotRef } from 'react-native-view-shot';
 
-import { SHARE_VIEW_CAPTURE_LOG_EVENT } from './share-view-capture-log-events';
+import { SHARE_VIEW_CAPTURE_LOG_EVENT } from '../constants/share-view-capture-log-events';
 
-export function useShareViewCapture(viewShotRef: RefObject<ViewShotRef | null>) {
+export function useShareViewCapture(viewShotRef: RefObject<ViewCaptureHandle | null>) {
   const systemShare = useSystemShare();
+  const viewCapture = useViewCapture();
   const logger = useLogger();
   const { warning, error } = useAppToast();
   const [isSharing, setIsSharing] = useState(false);
@@ -28,7 +30,7 @@ export function useShareViewCapture(viewShotRef: RefObject<ViewShotRef | null>) 
         return;
       }
 
-      const uri = await viewShotRef.current?.capture?.();
+      const uri = await viewCapture.capture(viewShotRef.current);
       if (!uri) {
         error(t('common:share.prepareFailed'));
         return;
@@ -44,7 +46,7 @@ export function useShareViewCapture(viewShotRef: RefObject<ViewShotRef | null>) 
       isSharingRef.current = false;
       setIsSharing(false);
     }
-  }, [systemShare, logger, viewShotRef, warning, error]);
+  }, [systemShare, viewCapture, logger, viewShotRef, warning, error]);
 
   return { shareCapture, isSharing };
 }

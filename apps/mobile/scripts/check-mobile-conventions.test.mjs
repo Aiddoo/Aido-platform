@@ -513,6 +513,23 @@ test('SDK를 shared/infra 밖에서 import하면 거부한다', () => {
   );
 });
 
+test('react-native-view-shot을 shared/infra 밖에서 import하면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/insights/achievement/components/new-summary.tsx': `
+        import ViewShot from 'react-native-view-shot';
+      `,
+      'apps/mobile/src/shared/infra/view-capture/capturable-view.tsx': `
+        import ViewShot from 'react-native-view-shot';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /react-native-view-shot는 shared\/infra에서만/);
+    },
+  );
+});
+
 test('feature의 useAnalytics 직접 사용을 거부하고 bootstrap은 통과한다', () => {
   withFixture(
     {

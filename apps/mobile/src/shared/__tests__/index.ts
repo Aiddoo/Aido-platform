@@ -45,6 +45,7 @@ export { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 export { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
 export { createTestDi } from './create-test-di';
 export { createTokenRefresherStub } from './create-token-refresher-stub';
+export { createViewCaptureGatewayStub } from './create-view-capture-gateway-stub';
 export { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 export { createTestQueryClient } from './query-client';
 export { renderUi, renderUiHook } from './render-ui';

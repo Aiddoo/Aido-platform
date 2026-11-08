@@ -1,13 +1,14 @@
+import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
   Box,
   Button,
@@ -33,10 +34,10 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
-import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
+import { useShareViewCapture } from '../hooks/use-share-view-capture';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
@@ -55,7 +56,7 @@ export function AchievementSummary() {
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
-  const viewShotRef = useRef<ViewShotRef>(null);
+  const viewShotRef = useRef<ViewCaptureHandle>(null);
   const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
@@ -90,7 +91,7 @@ export function AchievementSummary() {
 
   return (
     <Box>
-      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
+      <CapturableView ref={viewShotRef}>
         <Certificate
           subtitle={
             <Certificate.Subtitle>
@@ -164,7 +165,7 @@ export function AchievementSummary() {
             <Stat label={t('card.statAverage')} value={`${formatPercent(summary.averageRate)}%`} />
           </HStack>
         </Certificate>
-      </ViewShot>
+      </CapturableView>
 
       <Spacing size={8} />
 

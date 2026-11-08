@@ -120,6 +120,7 @@ import { createSocialShareGatewayStub } from './create-social-share-gateway-stub
 import { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 import { createSystemShareGatewayStub } from './create-system-share-gateway-stub';
 import { createTokenRefresherStub } from './create-token-refresher-stub';
+import { createViewCaptureGatewayStub } from './create-view-capture-gateway-stub';
 import { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 import { createTestQueryClient } from './query-client';
 
@@ -357,6 +358,7 @@ export function createTestDi({
     syncStorage,
     networkStatus: createNetworkStatusGatewayStub(),
     appLifecycle: createAppLifecycleGatewayStub(),
+    viewCapture: createViewCaptureGatewayStub(),
     widgetSyncService: new WidgetSyncService(
       widgetBridge,
       errorReporter,

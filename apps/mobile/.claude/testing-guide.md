@@ -143,6 +143,7 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 | `SocialShareGateway`                   | `createSocialShareGatewayStub()`                                                                               |
 | `LocationGateway`                      | `createLocationGatewayStub()`                                                                                  |
 | `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()`                                                                             |
+| `ViewCaptureGateway`                   | `createViewCaptureGatewayStub()` (항상 파일 uri 하나를 찍은 것으로 답함)                                       |
 | `AppLifecycleGateway`                  | `createAppLifecycleGatewayStub(initial)` (`emit(state)`로 전환을 흘림, 앱 상태를 `AppState` spy로 잡지 않는다) |
 | `AppStoreReviewGateway`                | `createAppStoreReviewGatewayStub()`                                                                            |
 | `AppStoreListingGateway`               | `createAppStoreListingGatewayStub()`                                                                           |

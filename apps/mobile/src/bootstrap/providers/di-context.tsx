@@ -11,6 +11,7 @@ import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { SessionManager } from '@src/core/session/session-manager';
 import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
@@ -79,6 +80,7 @@ export interface DIContainer extends SharedDependencies {
   socialAuth: SocialAuthGateway;
   appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
+  viewCapture: ViewCaptureGateway;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
@@ -209,6 +211,9 @@ export function useAppStoreListing() {
 }
 export function useClipboard() {
   return useDI().clipboard;
+}
+export function useViewCapture() {
+  return useDI().viewCapture;
 }
 export function useNetworkStatus() {
   return useDI().networkStatus;
