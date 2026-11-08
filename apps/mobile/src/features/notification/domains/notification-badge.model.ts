@@ -1,4 +1,4 @@
-export type UnreadCount = number;
+type UnreadCount = number;
 
 function hasUnread(unreadCount: UnreadCount) {
   return unreadCount > 0;
