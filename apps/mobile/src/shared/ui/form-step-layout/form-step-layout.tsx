@@ -1,12 +1,15 @@
 import { ANIMATION } from '@src/shared/constants/animation';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { H3 } from '../text';
-import { FormScrollView, type FormScrollViewProps } from './form-scroll-view';
+import { FormScrollView } from './form-scroll-view';
 
-export interface FormStepLayoutProps extends Omit<FormScrollViewProps, 'children'> {
+export interface FormStepLayoutProps extends Omit<
+  ComponentProps<typeof FormScrollView>,
+  'children'
+> {
   /** 단계 제목. 바뀌면 제목만 다시 페이드인한다. */
   title: string;
   children: ReactNode;

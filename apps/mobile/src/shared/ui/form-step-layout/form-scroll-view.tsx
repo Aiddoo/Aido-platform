@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react';
-import type { ScrollViewProps } from 'react-native';
+import type { ComponentProps, ReactNode } from 'react';
+import type { ScrollView } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { FocusedFieldContext } from '../input/focused-field';
 import { KeyboardFooterHeightContext } from './keyboard-footer-height';
 import { useFocusedFieldKeyboardScroll } from './use-focused-field-keyboard-scroll';
 
-export interface FormScrollViewProps extends ScrollViewProps {
+// 스크롤 위치를 UI 스레드에서 맞추므로 ref는 이 부품이 가진다
+interface FormScrollViewProps extends Omit<ComponentProps<typeof ScrollView>, 'ref'> {
   /** 키보드에 붙는 주 동작 버튼(`KeyboardAdaptiveButton`). 스크롤 밖 아래에 두고, 포커스한 칸은 이 버튼 위로 올린다 */
   footer?: ReactNode;
 }
