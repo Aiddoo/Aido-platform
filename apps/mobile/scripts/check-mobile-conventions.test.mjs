@@ -1340,3 +1340,22 @@ test('댓글 model 테스트는 공용 도구 index에서도 renderUi를 가져�
     },
   );
 });
+
+test('한 태그에 spacing prop과 className을 섞으면 막는다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/components/ok.tsx': `
+        export function Ok() {
+          return <><VStack gap={8} className="p-4" /><Box px={16} /></>;
+        }
+      `,
+      'apps/mobile/app/bad.tsx': `
+        export default function Bad() { return <Box px={16} className="grow" />; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /bad\.tsx.*spacing prop\(px\)/u);
+    },
+  );
+});

@@ -943,6 +943,44 @@ const SHARED_UI_NAMES_OVER_HEROUI = new Set([
   'TextArea',
 ]);
 
+const SPACING_PROP_NAMES = new Set([
+  'p',
+  'px',
+  'py',
+  'pt',
+  'pb',
+  'pl',
+  'pr',
+  'm',
+  'mx',
+  'my',
+  'mt',
+  'mb',
+  'ml',
+  'mr',
+]);
+
+function checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors) {
+  if (!sourceFile.fileName.endsWith('.tsx')) {
+    return;
+  }
+  function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const names = node.attributes.properties
+        .filter(ts.isJsxAttribute)
+        .map((attribute) => attribute.name.getText(sourceFile));
+      const spacingNames = names.filter((name) => SPACING_PROP_NAMES.has(name));
+      if (spacingNames.length > 0 && names.includes('className')) {
+        errors.push(
+          `${getLocation(sourceFile, node, repositoryRoot)} spacing prop(${spacingNames.join(', ')})과 className을 한 태그에 섞지 않습니다. 여백은 className으로 씁니다.`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+}
+
 function checkHerouiSharedNameImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName);
   if (
@@ -2053,6 +2091,7 @@ export function checkMobileConventions(
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
     checkRangeComparisonOrder(sourceFile, repositoryRoot, errors);
     checkPredicateNames(sourceFile, repositoryRoot, errors);
+    checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors);
   }
 
   applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);
