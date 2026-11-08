@@ -408,6 +408,8 @@ function MyComponent() {
 }
 ```
 
+Skia 캔버스나 SVG `stroke`·`fill`처럼 문자열 하나만 받는 곳은 `useResolvedColor('text-main')`(`shared/hooks/use-resolved-color`)를 씁니다. 색을 읽지 못하면 `'transparent'`를 돌려줘 `undefined`가 그리기 코드로 가지 않습니다. 같은 일을 하는 feature 훅을 따로 만들지 않습니다.
+
 ### SVG 아이콘 색상: createStyledIcon
 
 SVG 아이콘에 `colorClassName`으로 색상을 적용하려면 `createStyledIcon`으로 래핑합니다.

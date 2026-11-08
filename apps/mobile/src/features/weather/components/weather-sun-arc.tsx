@@ -1,10 +1,10 @@
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
 import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { SUN_COLORS } from '../constants/weather-colors';
 import { useIsWeatherSceneRunning } from '../hooks/use-is-weather-scene-running';
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import type { DialPoint } from '../utils/weather-dial.geometry';
 
@@ -38,9 +38,9 @@ export function WeatherSunArc({
   isNight: boolean;
 }) {
   const dotSize = isNight ? NIGHT_SUN_DOT_SIZE : SUN_DOT_SIZE;
-  const dayColor = useOnSkyColor('text-on-sky/85');
-  const nightColor = useOnSkyColor('text-on-sky/28');
-  const horizonColor = useOnSkyColor('text-on-sky/35');
+  const dayColor = useResolvedColor('text-on-sky/85');
+  const nightColor = useResolvedColor('text-on-sky/28');
+  const horizonColor = useResolvedColor('text-on-sky/35');
 
   return (
     <Box className="relative mt-2" style={{ height: SUN_ARC_VIEWBOX.height }}>

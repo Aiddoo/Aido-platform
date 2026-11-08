@@ -5,6 +5,7 @@ import type { Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherRainIcon } from '@src/shared/ui/icon';
@@ -34,7 +35,6 @@ import {
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { MinuteForecast } from '../schemas/weather-report.schema';
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
@@ -195,9 +195,9 @@ NextHourPrecipitation.Chart = function Chart({
   const { t } = useTranslation('weather');
   const isReducedMotion = useIsReduceMotionEnabled();
   const chart = toNextHourChart(minutes);
-  const guideColor = useOnSkyColor('text-on-sky/22');
-  const guideLabelColor = useOnSkyColor('text-on-sky/50');
-  const baselineColor = useOnSkyColor('text-on-sky/35');
+  const guideColor = useResolvedColor('text-on-sky/22');
+  const guideLabelColor = useResolvedColor('text-on-sky/50');
+  const baselineColor = useResolvedColor('text-on-sky/35');
   const length = chart?.length ?? 0;
   const lineProgress = useSharedValue(isReducedMotion ? 1 : 0);
   const areaOpacity = useSharedValue(isReducedMotion ? 1 : 0);

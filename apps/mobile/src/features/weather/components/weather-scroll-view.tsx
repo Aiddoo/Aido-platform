@@ -1,4 +1,5 @@
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { IOS_MAJOR_VERSION } from '@src/shared/infra/device/device-info';
 import { Box, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,7 +8,6 @@ import { type PropsWithChildren } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { refetchWeather } from '../queries/weather-cache';
 import { WeatherTopFade } from './weather-top-fade';
 
@@ -29,7 +29,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const [isRefreshing, refresh] = useRefresh(() => refetchWeather(queryClient));
-  const refreshTint = useOnSkyColor('text-on-sky');
+  const refreshTint = useResolvedColor('text-on-sky');
 
   return (
     <Box flex={1}>

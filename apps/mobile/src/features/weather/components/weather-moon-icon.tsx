@@ -1,4 +1,5 @@
 import type { WeatherMoonPhase } from '@aido/api/vocabulary';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useId } from 'react';
 import Svg, {
   Circle,
@@ -11,7 +12,6 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import {
   MOON_CENTER,
   MOON_RADIUS,
@@ -57,8 +57,8 @@ export function WeatherMoonIcon({
     litClip: `${id}litClip`,
   };
   const toUnit = (ratio: number) => MOON_CENTER + ratio * MOON_RADIUS;
-  const outlineColor = useOnSkyColor('text-on-sky/10');
-  const craterColor = useOnSkyColor('text-on-sky');
+  const outlineColor = useResolvedColor('text-on-sky/10');
+  const craterColor = useResolvedColor('text-on-sky');
 
   return (
     <Svg

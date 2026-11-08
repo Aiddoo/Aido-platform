@@ -7,6 +7,7 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { SHEET_RADIUS } from '@src/shared/ui';
 import { useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -19,7 +20,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.constants';
-import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import { followLevel } from '../../utils/waveform.geometry';
@@ -33,7 +33,7 @@ interface SheetEdgeGlowProps {
 
 export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
-  const mainColor = useSkiaColor('text-main');
+  const mainColor = useResolvedColor('text-main');
   const densityScale = useSkiaDensityScale();
   const [size, setSize] = useState({ width: 0, height: 0 });
   const angle = useSharedValue(0);

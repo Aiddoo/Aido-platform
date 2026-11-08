@@ -1,12 +1,12 @@
 import Notifications from '@expo/material-symbols/notifications.xml';
 import Refresh from '@expo/material-symbols/refresh.xml';
 import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
-import { useOnSkyColor } from '@src/features/weather/hooks/use-on-sky-color';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import {
   refetchWeather,
   getWeatherReportsFilters,
 } from '@src/features/weather/queries/weather-cache';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
@@ -20,7 +20,7 @@ const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh
 export default function WeatherLayout() {
   const { t } = useTranslation('weather');
   /** 하늘 장면 위 헤더 버튼의 둥근 유리 면. iOS는 네이티브 유리 버튼이 그린다. */
-  const headerButtonContainerColor = useOnSkyColor('text-on-sky/16');
+  const headerButtonContainerColor = useResolvedColor('text-on-sky/16');
   const backToolbar = useStackBackToolbar({
     fallbackHref: '/feed',
     buttonContainerColor: headerButtonContainerColor,
@@ -30,7 +30,7 @@ export default function WeatherLayout() {
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const location = useWeatherLocation();
   const canRefresh = WeatherLocationPolicy.shouldFetchReport(location);
-  const tintColor = useOnSkyColor('text-on-sky');
+  const tintColor = useResolvedColor('text-on-sky');
   const { backgroundColor } = useResolveClassNames('bg-gray-10');
 
   return (

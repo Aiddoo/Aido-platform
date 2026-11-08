@@ -12,6 +12,7 @@ import {
 } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
 import { useEffect, useState } from 'react';
@@ -33,7 +34,6 @@ import {
   VOICE_VISUAL,
   VOICE_VISUAL_BARS,
 } from '../../constants/voice.constants';
-import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget';
@@ -94,7 +94,7 @@ interface VoiceVisualProps {
 export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const { theme } = useUniwind();
-  const mainColor = useSkiaColor('text-main');
+  const mainColor = useResolvedColor('text-main');
   const densityScale = useSkiaDensityScale();
   const [isLightOrb, setIsLightOrb] = useState(ORB_SHADER == null);
   const width = useSharedValue(0);

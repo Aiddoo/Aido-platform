@@ -1,5 +1,6 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -15,7 +16,6 @@ import {
 } from 'react-native-reanimated';
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {
@@ -126,9 +126,9 @@ function WaveformTimeline({
   ...boxProps
 }: WaveformTimelineProps) {
   const { t } = useTranslation('voiceNote');
-  const mainColor = useSkiaColor('text-main');
-  const quietColor = useSkiaColor('text-gray-4');
-  const idleColor = useSkiaColor('text-gray-3');
+  const mainColor = useResolvedColor('text-main');
+  const quietColor = useResolvedColor('text-gray-4');
+  const idleColor = useResolvedColor('text-gray-3');
   const layout = useSharedValue({ width: 0, height: 0 });
   const { bars, barCount, shift } = waveform;
 

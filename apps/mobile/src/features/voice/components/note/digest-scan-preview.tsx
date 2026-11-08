@@ -1,5 +1,6 @@
 import { Canvas, Group, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { type ComponentProps, useEffect, useState } from 'react';
@@ -12,8 +13,6 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useSkiaColor } from '../../hooks/use-skia-color';
-
 const BEAM = { height: 90, opacity: 0.45, durationMs: 2_200 } as const;
 
 interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
@@ -22,7 +21,7 @@ interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'child
 
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
-  const beamColor = useSkiaColor('text-main');
+  const beamColor = useResolvedColor('text-main');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const offset = useSharedValue(-BEAM.height);
 

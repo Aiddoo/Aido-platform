@@ -1,4 +1,5 @@
 import { useIsReduceTransparencyEnabled } from '@src/shared/hooks/use-is-reduce-transparency-enabled';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
@@ -6,7 +7,6 @@ import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toWeatherScene, type WeatherSceneSky } from '../utils/weather-scene.view-model';
-import { useOnSkyColor } from './use-on-sky-color';
 
 const DEFAULT_SKY: WeatherSceneSky = 'clearDay';
 const OPAQUE_DARK_CARD = 'rgb(30,33,40)';
@@ -43,9 +43,9 @@ export function useWeatherSurface(): WeatherSurface {
   });
   const { tint } = WEATHER_SCENE_PALETTES[sky];
   const isDark = theme === 'dark';
-  const darkEdge = useOnSkyColor('text-on-sky/10') ?? '';
-  const lightEdge = useOnSkyColor('text-on-sky/16') ?? '';
-  const darkCard = useOnSkyColor('text-on-sky/7') ?? '';
+  const darkEdge = useResolvedColor('text-on-sky/10') ?? '';
+  const lightEdge = useResolvedColor('text-on-sky/16') ?? '';
+  const darkCard = useResolvedColor('text-on-sky/7') ?? '';
   const cardEdge = isDark ? darkEdge : lightEdge;
 
   if (isOpaque) {

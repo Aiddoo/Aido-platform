@@ -1,5 +1,6 @@
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -8,7 +9,6 @@ import type { ComponentProps } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { useSkiaColor } from '../../hooks/use-skia-color';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 
@@ -30,8 +30,8 @@ export function RecordingTimer({
   ...boxProps
 }: RecordingTimerProps) {
   const { t } = useTranslation('voiceNote');
-  const trackColor = useSkiaColor('text-gray-2');
-  const progressColor = useSkiaColor('text-main');
+  const trackColor = useResolvedColor('text-gray-2');
+  const progressColor = useResolvedColor('text-main');
   const { height: windowHeight } = useWindowDimensions();
   const ring = getRecordingRingLayout(windowHeight);
   const center = ring.size / 2;

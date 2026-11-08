@@ -1,5 +1,6 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -18,7 +19,6 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useSkiaColor } from '../../hooks/use-skia-color';
 import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { getPlayedBarCount, resampleLevels } from '../../utils/waveform.geometry';
@@ -194,8 +194,8 @@ function Scrubber({
   className,
   ...boxProps
 }: ScrubberProps) {
-  const playedColor = useSkiaColor('text-main');
-  const restColor = useSkiaColor('text-gray-4');
+  const playedColor = useResolvedColor('text-main');
+  const restColor = useResolvedColor('text-gray-4');
   const [{ width, height }, setSize] = useState({ width: 0, height: 0 });
   const barCount = Math.floor(width / STEP);
   const bars = useMemo(() => resampleLevels(levels, barCount), [levels, barCount]);
