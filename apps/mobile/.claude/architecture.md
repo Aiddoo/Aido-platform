@@ -568,7 +568,7 @@ effect는 개발 모드에서 마운트-정리-마운트를 한 번 더 돌려 �
 - 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의 튜플(`useRouteParams`, `useTodoId`)로 좁혀진 값을 읽는다. 스크린의 `safeParse`는 경계 분기라 튜플로 바꾸지 않는다.
 - 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` param으로 바뀐다. 친구 전환은 `useFeedFriendId`의 세터(`router.setParams`)라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 메모(`memo`)와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다(`gestureEnabled: false`). 시스템 모달은 토스트·한도 안내가 뒤로 가려져 쓰지 않는다.
-- 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView는 없다. 예전 `aido://webview/…` 링크는 `+not-found`로 간다.
+- 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView는 없다. `aido://webview/…` 링크는 `+not-found`로 간다.
 
 ---
 
@@ -1169,11 +1169,7 @@ await clipboard.copy(comment.content ?? '');
 
 ## 넓은 화면과 기기
 
-- **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
-- **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 접힘선은 경계 위치만 맞춘다(`findVerticalFold`). 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
-- **Duo 세로 레일은 safe area inset으로 피한다.** [가로 safe area](./ui-components.md#가로-safe-area-iphone-duo-세로-레일)를 따른다.
-- **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
-- **`SplitView`·`ArrangementView`는 쓰지 않는다.** 1.15.0에서 시험했고 다음 버전에 다시 본다. [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).
+배치는 창 폭 class(`useWindowSizeClass`)와 `AdaptivePane` 하나로 정한다. 규칙은 [ui-components](./ui-components.md#넓은-화면과-기기)에, 구현은 [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md)에 있다.
 
 ---
 

@@ -34,7 +34,7 @@
 
 ## Analytics
 
-- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다(메모가 첫 사례). 특정 feature에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`의 `AppEventMap`에 직접 있다. `useTrack`·`track`은 `AppEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 테스트까지 함께 검사하는 앱 tsconfig에서 인식된다. 오류 보고 feature·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`이고, Sentry 태그 키는 어댑터의 `shared/infra/error-reporter/sentry-tags.ts`다.
+- 이벤트는 feature의 `constants/{feature}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 특정 feature에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`의 `AppEventMap`에 직접 있다. `useTrack`·`track`은 `AppEventMap`을 받는다. 이벤트 이름과 값은 옮겨도 바꾸지 않는다. 확장은 테스트까지 함께 검사하는 앱 tsconfig에서 인식된다. 오류 보고 feature·breadcrumb 카테고리·사용자 속성의 원본은 `core/observability/telemetry-keys.ts`이고, Sentry 태그 키는 어댑터의 `shared/infra/error-reporter/sentry-tags.ts`다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 이벤트 이름과 payload가 컴파일 때 검증되지 않기 때문이다.
 
@@ -90,7 +90,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', data: { from, to } });
 ```
 
-- DI 밖(HTTP 훅, 전역 코드)은 `shared/infra/error-reporter/global-error-reporter`의 `errorReporter`를 쓴다. `global-logger`와 같은 방식이다.
+- DI 밖(HTTP 훅, 전역 코드)은 `shared/infra/logger/global-logger`의 `logger`를 쓴다. `errorReporter`는 DI 포트로만 받는다.
 - `logger.info`·`warn`도 breadcrumb로 남지만 카테고리가 없다. 카테고리가 필요하면 `addBreadcrumb`를 쓴다.
 
 ### User
@@ -113,7 +113,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 `debug` < `info` < `warning` < `error` < `fatal`. `core/observability/severity.ts`의 union이고 어댑터가 Sentry level로 매핑한다. 알림 규칙과 우선순위에 쓴다.
 
-`session_expired`는 `sessionExpiredSeverity`로 정한다. 사유의 뜻은 [인증 가이드](../docs/authentication_guide.md#세션-종료-사유의-두-축-coreportstelemetry-eventts)에 있다.
+`session_expired`는 `sessionExpiredSeverity`로 정한다. 사유의 뜻은 [인증 가이드](../docs/authentication_guide.md#세션-종료-사유의-두-축-coreobservabilitytelemetry-eventts)에 있다.
 
 | reason                     | severity  |
 | -------------------------- | --------- |

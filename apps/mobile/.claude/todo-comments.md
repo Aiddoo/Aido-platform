@@ -41,9 +41,9 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 
 ## 모델과 Policy
 
-`schemas/todo-comment.schema.ts`가 앱 모델을, `domains/todo-comment.model.ts`가 규칙을 소유한다.
+`domains/todo-comment.model.ts`가 앱 모델과 규칙을 소유하고, `apis/todo-comment.mapper.ts`가 계약 DTO를 모델로 바꾼다.
 
-- zod: 스키마는 `schemas/`에 모으고 계약에서 `extend`로 유도해 시각만 `Instant`로 바꾼다. 폼 스키마도 계약을 그대로 검사한다.
+- zod: 모델 스키마는 `domains/`에서 앱 모양으로 직접 정의하고 시각은 `Instant`다. `schemas/`는 폼·params·초안·요청 모양만 둔다.
   `@aido/api` 루트는 `apis/`와 `schemas/`만 import한다(`check:conventions`가 검사).
 - 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
   - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`
@@ -91,7 +91,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
   할 일 본문·정렬·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
-- 체크는 내 할 일(`TodoPolicy.isOwnTodo`, `permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
+- 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
 
 ## 묶음과 답글
@@ -173,18 +173,19 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 
 ```
 features/engagement/comment/
-  domains/ todo-comment.model.ts  todo-comment-composer.model.ts
+  domains/ todo-comment.model.ts  todo-comment-composer.model.ts  todo-comment.error.ts
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
-  hooks/ use-todo-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts
+  hooks/ use-todo-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
               todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-summary.tsx  todo-detail-header.tsx
               comment-report-bottom-sheet.tsx
-  utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts  comment-form-*.ts
-  schemas/ todo-comment.schema.ts  todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts
+  utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts
+         todo-comment-form-fields.ts  todo-comment-form-layout.ts  get-todo-comment-back-action.ts
+  schemas/ todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts  todo-comment-request.schema.ts
 ```
 
 ## 검증

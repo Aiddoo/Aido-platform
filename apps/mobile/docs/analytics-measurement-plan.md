@@ -441,4 +441,3 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `push_notification_opened.type`              | `NotificationType` union                                         |
 | `todo_edited.field` / `profile_edited.field` | 다중 필드면 `multiple` 버킷 또는 첫 필드만                       |
 | `local_day_changed`                          | Sentry breadcrumb로만 이동 검토                                  |
-| `paywall_viewed.source`                      | 필요하면 `subscriptionHref({ source })`로 진입 경로를 싣는다     |

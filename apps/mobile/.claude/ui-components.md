@@ -37,7 +37,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 ### 한도 안내는 `PremiumDialog` 하나
 
 AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDialog` 하나로 안내한다. `PremiumDialog`는 `useEntitlementGate`만 쓰므로 `features/billing/subscription/components/premium-dialog.tsx`에 있다. 기능 화면은 직접 렌더하지 않고 `useEntitlementGate(feature, { surface })`의 `promptIfBlocked`·`promptIfBlockedError`를 쓴다. 기능별 `LimitReachedDialog`나
-인라인 한도 배너를 새로 만들지 않고, 게이트가 기능별 `title`·`description`(리셋 날짜는 `premiumDialog.resetsOn`)과
+인라인 한도 배너를 새로 만들지 않고, 게이트가 기능별 `title`·`description`(리셋 날짜는 `entitlement.model.ts`의 `resetsAt`으로 계산)과
 필요하면 대체 행동을 넘긴다.
 
 ---
@@ -205,10 +205,14 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
   `shrink`·`numberOfLines`로 줄인다([레이아웃 안전](i18n-guide.md#레이아웃-안전-영어-장문)).
 - **간격**: 스크린의 구역 간격은 `Spacing`, 묶음 안 간격은 `HStack`·`VStack`의 `gap` prop이다. 그 밖의 여백은 `className`으로 쓴다. spacing prop(`p`, `pb` 등)과 `className`을 한 태그에 섞지 않는다(`check:conventions`가 막는다).
 - **시트·다이얼로그**: 새로 만들지 않고 아래 [시트](#시트)와 `ConfirmDialog`를 쓴다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
-- **iPhone Duo·큰 창**: 배치는 기기 종류가 아니라 창 크기 class(`useWindowSizeClass`: `compact`·`medium`·`expanded`)로
-  정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. 레이아웃을 힌지로 나누지 않는다. 접힘선은 경계 위치만 맞추고 reserved region의 실제 위치를 쓴다.
-  세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 처리한다(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일), [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)).
-  Expo `SplitView`·`ArrangementView`는 시험 후 넣지 않았다([이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유)).
+
+## 넓은 화면과 기기
+
+- **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
+- **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 접힘선은 경계 위치만 맞춘다(`findVerticalFold`). 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
+- **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.
+- **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
+- **`SplitView`·`ArrangementView`는 쓰지 않는다.** [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).
 
 ## 시트
 

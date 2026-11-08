@@ -4,7 +4,7 @@
 
 ## 출시마다 할 일
 
-1. `schemas/release.schema.ts`의 `RELEASE_ID`에 한 줄 더한다.
+1. `schemas/release-entry.schema.ts`의 `RELEASE_ID`에 한 줄 더한다.
 2. `constants/releases.ts`에 `RELEASE_x_y_z`와 `RELEASES` 항목을 더한다. 캠페인 id가 새로 생기면 `feature-campaign.constants.ts`에도 더한다. 활성화가 그 캠페인을 이어야 하면 `ACTIVATION_CAMPAIGN_IDS`에 올린다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. id를 더하면 `exhaustive()`가 컴파일 에러로 알려 준다.
 4. `app/(app)/whats-new/releases.tsx`에 `<ReleaseRow />` 한 줄을 더한다.
