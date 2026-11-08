@@ -4,7 +4,7 @@ import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Card } from 'heroui-native';
-import { useEffect } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
@@ -22,7 +22,10 @@ import { SubscriptionResult } from './subscription-result';
 
 const PLAN_ROW_COUNT = 2;
 
-interface PlanPickerProps {
+interface PlanPickerProps extends Omit<
+  ComponentProps<typeof SubscriptionPlanInput>,
+  'value' | 'onValueChange'
+> {
   value: string | undefined;
   onValueChange: (planId: string) => void;
 }
@@ -45,6 +48,7 @@ PlanPicker.Plans = function Plans({
   offering,
   value,
   onValueChange,
+  ...props
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
   const [view] = useSubscriptionView();
   const { trackEvent } = useTrack();
@@ -58,6 +62,7 @@ PlanPicker.Plans = function Plans({
     <SubscriptionPlanInput
       value={SubscriptionPolicy.findSelectedPlan(offering, value)?.identifier}
       onValueChange={onValueChange}
+      {...props}
     />
   );
 };

@@ -45,7 +45,7 @@ export function CategoryFormFields({ control, onSubmit }: CategoryFormFieldsProp
         control={control}
         name="color"
         render={({ field: { value, onChange } }) => (
-          <CategoryColorInput value={value} onChange={onChange} />
+          <CategoryColorInput value={value} onValueChange={onChange} />
         )}
       />
     </VStack>

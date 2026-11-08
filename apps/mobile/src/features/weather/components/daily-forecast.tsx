@@ -18,9 +18,9 @@ import { CalendarIcon } from '@src/shared/ui/icon';
 import { cn } from '@src/shared/utils/cn';
 import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { compact, range, round, zip } from 'es-toolkit';
-import { PressableFeedback } from 'heroui-native';
-import { memo, useCallback, useMemo, useState } from 'react';
-import Animated, { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { Accordion, PressableFeedback } from 'heroui-native';
+import { memo, useMemo } from 'react';
+import { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import {
@@ -87,11 +87,6 @@ export function DailyForecast() {
   });
   const { data: completions } = useQuery(completionsQuery);
   const fontScaleRatio = useFontScaleRatio();
-  const [expandedDate, setExpandedDate] = useState<string | null>(null);
-  const toggle = useCallback(
-    (date: string) => setExpandedDate((current) => (current === date ? null : date)),
-    [],
-  );
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
   const forecastTodayKey = WeatherReportPolicy.getTodayKey(data, now);
@@ -113,7 +108,7 @@ export function DailyForecast() {
   return (
     <WeatherCard className="gap-0 pb-1.5">
       <DailyForecast.Header count={data.daily.length} />
-      <VStack className="mt-2">
+      <Accordion hideSeparator className="mt-2">
         {zip(data.daily, bars).map(([day, bar]) => {
           const isToday = day.date === forecastTodayKey;
           return (
@@ -128,13 +123,11 @@ export function DailyForecast() {
                   : formatDateKeyLabel(day.date, 'weekday', format.dateFormat)
               }
               hasTodo={(completions?.[day.date]?.totalTodos ?? 0) > 0}
-              isExpanded={expandedDate === day.date}
-              onToggle={toggle}
               format={format}
             />
           );
         })}
-      </VStack>
+      </Accordion>
     </WeatherCard>
   );
 }
@@ -172,8 +165,6 @@ interface DailyForecastItemProps {
   /** 오늘 행에만 있는 지금 기온 점의 위치(0~1) */
   nowPosition: number | null;
   hasTodo: boolean;
-  isExpanded: boolean;
-  onToggle: (date: string) => void;
   format: RowFormat;
 }
 
@@ -183,8 +174,6 @@ DailyForecast.Item = memo(function Item({
   label,
   nowPosition,
   hasTodo,
-  isExpanded,
-  onToggle,
   format,
 }: DailyForecastItemProps) {
   const { t } = useTranslation('weather');
@@ -199,60 +188,126 @@ DailyForecast.Item = memo(function Item({
     low,
     chance: day.precipitationChance,
   });
+  const degrees = (celsius: number) => formatTemperature(celsius, unit);
+  const clock = (date: Instant) => formatClockTime(date, format.timeFormat, format.dateFormat);
+  const hour = (value: number) => formatHourLabel(value, format.timeFormat, format.dateFormat);
+  const wind = day.windSpeedMax ?? day.windGustMax;
+  // 계약에 없는 값은 칸째 뺀다
+  const facts = compact([
+    t('daily.precipitation', { amount: round(day.precipitationAmount, 1) }),
+    t('daily.uvMax', { value: day.uvIndexMax }),
+    wind == null ? null : t('daily.windMax', { speed: round(wind, 1) }),
+    day.sunrise == null || day.sunset == null
+      ? null
+      : t('daily.sun', { sunrise: clock(day.sunrise), sunset: clock(day.sunset) }),
+  ]);
 
   return (
-    <Animated.View layout={ROW_LAYOUT} className="border-t-[0.5px] border-on-sky/[0.16]">
-      <PressableFeedback
-        onPress={() => onToggle(day.date)}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isExpanded }}
-        accessibilityLabel={hasTodo ? t('daily.itemWithTodo', { item: description }) : description}
-        accessibilityHint={t('daily.expandHint')}
-        className="min-h-14 flex-row items-center"
-      >
-        <HStack align="center" gap={5} style={{ width: width('day') }}>
-          <Text size="b1" weight="medium" tone="onSky" numberOfLines={1} className="shrink">
-            {label}
+    <Accordion.Item
+      value={day.date}
+      layout={ROW_LAYOUT}
+      className="border-t-[0.5px] border-on-sky/[0.16]"
+    >
+      <Accordion.Trigger asChild>
+        <PressableFeedback
+          accessibilityRole="button"
+          accessibilityLabel={
+            hasTodo ? t('daily.itemWithTodo', { item: description }) : description
+          }
+          accessibilityHint={t('daily.expandHint')}
+          className="min-h-14 flex-row items-center justify-start gap-0 p-0"
+        >
+          <HStack align="center" gap={5} style={{ width: width('day') }}>
+            <Text size="b1" weight="medium" tone="onSky" numberOfLines={1} className="shrink">
+              {label}
+            </Text>
+            {hasTodo && (
+              <Box className="size-1.5 rounded-full" style={{ backgroundColor: TODO_DOT_COLOR }} />
+            )}
+          </HStack>
+          <VStack align="center" style={{ width: width('icon') }}>
+            <WeatherIcon
+              condition={day.condition}
+              isDaylight
+              width={ICON_SIZE}
+              height={ICON_SIZE}
+            />
+            {day.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE && (
+              <Text
+                size="e2"
+                weight="semibold"
+                className={cn('tabular-nums', PRECIPITATION_CHANCE_TEXT_CLASS)}
+              >
+                {t('details.percentValue', { value: day.precipitationChance })}
+              </Text>
+            )}
+          </VStack>
+          <Text
+            size="b1"
+            weight="medium"
+            numberOfLines={1}
+            className="text-right text-on-sky/50 tabular-nums"
+            style={{ width: width('low') }}
+          >
+            {formatDegrees(low)}
           </Text>
-          {hasTodo && (
-            <Box className="size-1.5 rounded-full" style={{ backgroundColor: TODO_DOT_COLOR }} />
+          <DailyForecast.TemperatureBar day={day} bar={bar} nowPosition={nowPosition} />
+          <Text
+            size="b1"
+            weight="medium"
+            tone="onSky"
+            numberOfLines={1}
+            className="text-right tabular-nums"
+            style={{ width: width('high') }}
+          >
+            {formatDegrees(high)}
+          </Text>
+        </PressableFeedback>
+      </Accordion.Trigger>
+
+      <Accordion.Content
+        animation={{ entering: { value: EXPAND_ENTERING } }}
+        className="gap-2 px-0 pb-3.5 pt-0.5"
+      >
+        <HStack gap={8}>
+          {day.daytime != null && (
+            <PartCard
+              title={t('daily.daytime', {
+                start: hour(DAYTIME_HOURS.start),
+                end: hour(DAYTIME_HOURS.end),
+              })}
+              value={t('daily.dayPart', {
+                condition: t(WEATHER_CONDITION_LABEL_KEYS[day.daytime.condition]),
+                temperature: degrees(day.daytime.temperatureMax ?? day.temperatureMax),
+              })}
+            />
+          )}
+          {day.overnight != null && (
+            <PartCard
+              title={t('daily.overnight', {
+                start: hour(DAYTIME_HOURS.end),
+                end: hour(DAYTIME_HOURS.start),
+              })}
+              value={t('daily.nightPart', {
+                condition: t(WEATHER_CONDITION_LABEL_KEYS[day.overnight.condition]),
+                temperature: degrees(day.overnight.temperatureMin ?? day.temperatureMin),
+              })}
+            />
           )}
         </HStack>
-        <VStack align="center" style={{ width: width('icon') }}>
-          <WeatherIcon condition={day.condition} isDaylight width={ICON_SIZE} height={ICON_SIZE} />
-          {day.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE && (
+        <HStack className="flex-wrap gap-x-3 gap-y-1">
+          {facts.map((fact) => (
             <Text
-              size="e2"
-              weight="semibold"
-              className={cn('tabular-nums', PRECIPITATION_CHANCE_TEXT_CLASS)}
+              key={fact}
+              size="b4"
+              className="min-w-[45%] flex-1 text-on-sky/[0.78] tabular-nums"
             >
-              {t('details.percentValue', { value: day.precipitationChance })}
+              {fact}
             </Text>
-          )}
-        </VStack>
-        <Text
-          size="b1"
-          weight="medium"
-          numberOfLines={1}
-          className="text-right text-on-sky/50 tabular-nums"
-          style={{ width: width('low') }}
-        >
-          {formatDegrees(low)}
-        </Text>
-        <DailyForecast.TemperatureBar day={day} bar={bar} nowPosition={nowPosition} />
-        <Text
-          size="b1"
-          weight="medium"
-          tone="onSky"
-          numberOfLines={1}
-          className="text-right tabular-nums"
-          style={{ width: width('high') }}
-        >
-          {formatDegrees(high)}
-        </Text>
-      </PressableFeedback>
-      {isExpanded && <DailyForecast.Details day={day} format={format} />}
-    </Animated.View>
+          ))}
+        </HStack>
+      </Accordion.Content>
+    </Accordion.Item>
   );
 });
 
@@ -296,68 +351,6 @@ DailyForecast.TemperatureBar = function TemperatureBar({
         </Box>
       )}
     </Box>
-  );
-};
-
-/** 펼친 날의 낮·밤 예보와 강수량·자외선·바람·해 시각. 계약에 없는 값은 칸째 뺀다. */
-DailyForecast.Details = function Details({
-  day,
-  format,
-}: {
-  day: DailyForecastEntry;
-  format: RowFormat;
-}) {
-  const { t } = useTranslation('weather');
-  const unit = useTemperatureUnit();
-  const degrees = (celsius: number) => formatTemperature(celsius, unit);
-  const clock = (date: Instant) => formatClockTime(date, format.timeFormat, format.dateFormat);
-  const hour = (value: number) => formatHourLabel(value, format.timeFormat, format.dateFormat);
-  const wind = day.windSpeedMax ?? day.windGustMax;
-  const facts = compact([
-    t('daily.precipitation', { amount: round(day.precipitationAmount, 1) }),
-    t('daily.uvMax', { value: day.uvIndexMax }),
-    wind == null ? null : t('daily.windMax', { speed: round(wind, 1) }),
-    day.sunrise == null || day.sunset == null
-      ? null
-      : t('daily.sun', { sunrise: clock(day.sunrise), sunset: clock(day.sunset) }),
-  ]);
-
-  return (
-    <Animated.View entering={EXPAND_ENTERING} className="gap-2 pb-3.5 pt-0.5">
-      <HStack gap={8}>
-        {day.daytime != null && (
-          <PartCard
-            title={t('daily.daytime', {
-              start: hour(DAYTIME_HOURS.start),
-              end: hour(DAYTIME_HOURS.end),
-            })}
-            value={t('daily.dayPart', {
-              condition: t(WEATHER_CONDITION_LABEL_KEYS[day.daytime.condition]),
-              temperature: degrees(day.daytime.temperatureMax ?? day.temperatureMax),
-            })}
-          />
-        )}
-        {day.overnight != null && (
-          <PartCard
-            title={t('daily.overnight', {
-              start: hour(DAYTIME_HOURS.end),
-              end: hour(DAYTIME_HOURS.start),
-            })}
-            value={t('daily.nightPart', {
-              condition: t(WEATHER_CONDITION_LABEL_KEYS[day.overnight.condition]),
-              temperature: degrees(day.overnight.temperatureMin ?? day.temperatureMin),
-            })}
-          />
-        )}
-      </HStack>
-      <HStack className="flex-wrap gap-x-3 gap-y-1">
-        {facts.map((fact) => (
-          <Text key={fact} size="b4" className="min-w-[45%] flex-1 text-on-sky/[0.78] tabular-nums">
-            {fact}
-          </Text>
-        ))}
-      </HStack>
-    </Animated.View>
   );
 };
 

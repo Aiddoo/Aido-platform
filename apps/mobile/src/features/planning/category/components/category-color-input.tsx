@@ -11,7 +11,7 @@ interface CategoryColorInputProps extends Omit<
   'children' | 'value' | 'onValueChange'
 > {
   value: string;
-  onChange: (color: string) => void;
+  onValueChange: (color: string) => void;
 }
 
 /** 32px 색 칸을 터치 기준 44px에 맞춘다 */
@@ -20,7 +20,7 @@ const COLOR_ITEM_HIT_SLOP = 6;
 /** 카테고리 색상 팔레트에서 하나를 고르는 입력. 생성·수정 시트가 함께 쓴다. */
 export function CategoryColorInput({
   value,
-  onChange,
+  onValueChange,
   className,
   ...props
 }: CategoryColorInputProps) {
@@ -29,7 +29,7 @@ export function CategoryColorInput({
   return (
     <RadioGroup
       value={value}
-      onValueChange={onChange}
+      onValueChange={onValueChange}
       className={cn('flex-row flex-wrap items-center justify-center gap-2.5', className)}
       {...props}
     >
