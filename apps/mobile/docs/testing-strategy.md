@@ -22,7 +22,7 @@
 
 - 서비스 단위는 실제 Service에 포트 stub을 끼운다. 화면은 `renderUi` + `createTestDi` + `createHttpClientStub`이다. 공용 도구는 `src/shared/__tests__`에 포트마다 하나씩 있다(이름은 `create{Port}Stub`, `create{Port}Fake`, `createMemory{X}`).
 - `jest.mock`은 `shared/infra` 어댑터 테스트의 SDK에만 쓴다.
-- 테스트끼리 상태를 나누지 않는다. stub, fake, `QueryClient`, 저장소는 테스트마다 새로 만들고 fake timer는 되돌린다. `test:random`(`jest --randomize`)을 통과해야 한다.
+- 테스트끼리 상태를 나누지 않는다. stub, fake, `QueryClient`, 저장소는 테스트마다 새로 만들고 fake timer는 되돌린다. 테스트는 늘 무작위 순서로 돈다(`randomize: true`). fake timer는 `setupFakeTimersPerTest`로 켜고 끈다.
 
 ## 실제 앱 확인
 

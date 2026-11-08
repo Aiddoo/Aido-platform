@@ -56,6 +56,9 @@ const base = {
 module.exports = {
   // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
   watchman: false,
+  // 매 실행이 순서 의존을 검사한다. 실패하면 출력된 seed로 `pnpm test --seed <seed>` 재현
+  randomize: true,
+  showSeed: true,
   projects: [
     {
       ...base,

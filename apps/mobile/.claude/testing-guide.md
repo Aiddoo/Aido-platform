@@ -65,9 +65,11 @@
 
 - 상태를 가진 stub·fake, `QueryClient`, 저장소는 테스트마다 새로 만든다. 모듈 수준 `const logger = createLoggerStub()`처럼 공유 인스턴스를 두지 않는다.
 - 모듈 수준 `let`은 `beforeEach`에서 다시 만든다. `jest.mock` factory가 참조해야 하는 `mock*` 변수만 예외로 두고 `beforeEach`에서 초기화한다.
-- `jest.useFakeTimers`는 `beforeEach`에서 켜고 `afterEach`에서 `jest.useRealTimers()`로 되돌린다. 모듈 수준에서 켜지 않는다.
+- fake timer는 `setupFakeTimersPerTest(config)`(`src/shared/__tests__`)로만 켠다. `describe` 안에서 부르면 `beforeEach`에서 켜고, `afterEach`에서 ① fake timer가 켜진 채 화면을 내리고(`cleanup`) ② 남은 타이머를 한 번 흘린 뒤(`jest.runOnlyPendingTimers`) ③ 진짜 타이머로 되돌린다. Jest는 안쪽 `afterEach`를 공용 `jest.setup.ts`보다 먼저 부르므로, 파일에서 바로 `jest.useRealTimers()`를 부르면 화면을 내릴 때 생긴 타이머(토스트 자동 닫힘, 늦은 녹음 대기)가 진짜 타이머로 남아 worker가 끝나지 못한다([Jest Timer Mocks](https://jestjs.io/docs/timer-mocks), [Testing Library: Using Fake Timers](https://testing-library.com/docs/using-fake-timers/)). 모듈 수준에서 켜지 않는다.
+- 화면을 떠난 뒤 오는 응답·토스트처럼 테스트가 끝난 다음에 이어지는 비동기 흐름이 있으면, 그 결과(토스트 문구 등)를 `findBy*`로 기다려 확인하거나 위 도우미로 fake timer 안에 가둔다. 결과를 확인하지 않고 끝내지 않는다.
 - 이미 `jest.fn()`인 대상(RN의 `View.prototype.measure` 등)에 `jest.spyOn(...).mockImplementation`을 걸면 `restoreMocks`가 되돌리지 못한다. `afterEach`에서 `mockReset()`한다.
-- 순서를 바꿔도 통과해야 한다. `pnpm --filter @aido/mobile test:random`(`jest --randomize`)로 확인하고, 실패하면 `--seed`로 재현해 순서 의존을 고친다.
+- 순서를 바꿔도 통과해야 한다. `jest.config.js`가 `randomize: true`·`showSeed: true`라 매 실행이 무작위 순서다. 실패하면 출력된 seed로 `pnpm --filter @aido/mobile test --seed <seed>`를 실행해 재현하고 순서 의존을 고친다.
+- 끝난 뒤 "worker process has failed to exit gracefully"나 "Jest did not exit"가 나오면 누수다. 영역별로 나눠 실행해 파일을 좁히고, 그 파일에서 남은 타이머를 만든 테스트를 찾아 위 두 규칙으로 고친다. `workerIdleMemoryLimit`·`forceExit`로 덮지 않는다.
 
 ## Fixture
 
@@ -308,9 +310,15 @@ pnpm --filter @aido/mobile test --runInBand
 # 특정 파일
 pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
 
-# 순서 의존 확인(수동). 실패하면 같은 --seed로 재현한다
-pnpm --filter @aido/mobile test:random
-pnpm --filter @aido/mobile test --randomize --seed <number> --showSeed
+# 작업 중: 마지막 커밋 이후 바뀐 파일에 닿는 테스트만(수 초)
+pnpm --filter @aido/mobile test:changed
+# 커밋 전: 지정한 소스 파일을 import하는 테스트만
+pnpm --filter @aido/mobile test:related src/features/notes/memo/domains/memo.model.ts
+# 감시 모드
+pnpm --filter @aido/mobile test:watch
+
+# 무작위 순서는 기본값이다. 실패한 순서를 같은 seed로 재현한다
+pnpm --filter @aido/mobile test --seed <seed>
 
 # 종료 핸들
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles

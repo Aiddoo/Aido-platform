@@ -106,6 +106,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 - **[문구](.claude/i18n-guide.md)**: 하드코딩하지 않고 ko·en 카탈로그에 함께 넣는다. 해요체, 앱 이름은 "아이두"/"Aido"다.
 - **[관측](.claude/observability.md)**: Sentry는 `ErrorReporter`·`Logger` 포트, GA는 타입 카탈로그 `useTrack`이다.
 - **인증**: `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`, `signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다. OAuth 클라이언트 ID는 API 서버가 관리한다.
+- **테스트**: 주요 비즈니스 로직(Policy·모델·mutation·캐시·권한·버그 재현)만 쓴다. 늘 무작위 순서로 돈다. fake timer는 `setupFakeTimersPerTest`로만 켜고 끄고, 테스트가 일으킨 비동기 결과(토스트 등)는 기다려 확인한 뒤 끝낸다. 상세: [testing-guide](.claude/testing-guide.md#테스트-격리)
 - **코드 스타일**: `void` 연산자를 쓰지 않는다(Oxlint). 포맷은 Oxfmt다. 린트 설정은 `apps/mobile/.oxlintrc.json`(루트 상속 + correctness, React Hooks·Compiler, Jest 규칙)이다. 규칙을 끌 때는 그 줄에서만 `oxlint-disable-next-line 규칙 -- 이유`로 끈다.
 
 `check:conventions`가 막는 범위는 [이 표](.claude/architecture.md#checkconventions가-막는-것)가 전부다. 그 밖의 규칙은 리뷰로 지킨다.
