@@ -56,6 +56,6 @@ describe('QuickVoiceInfo', () => {
     await fireEvent.press(await screen.findByTestId('todo-ai-feature-tooltip'));
 
     // Then
-    expect(await screen.findByText(/이번 달 \d+번 남았어요/)).toBeTruthy();
+    expect(await screen.findByText(/이번 달 \d+회 남았어요/)).toBeTruthy();
   });
 });

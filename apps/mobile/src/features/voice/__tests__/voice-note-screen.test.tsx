@@ -135,7 +135,7 @@ describe('말로 메모 화면', () => {
     // Then
     expect(button).toBeOnTheScreen();
     expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
-      '1번 사용 · 이번 달 3번 남음',
+      '1회 사용 · 이번 달 3회 남음',
     );
   });
 

@@ -220,20 +220,19 @@
     "reminderTimeDescription": "Get reminders at the times you choose. Default-time reminders keep coming.",
     "appIconTitle": "Custom app icons are a Premium feature",
     "appIconDescription": "Give the app icon your own style.",
-    "refillToday": "You'll get {{amount}} more later today.",
-    "refillTomorrow": "You'll get {{amount}} more tomorrow.",
-    "refillOn": "You'll get {{amount}} more on {{date}}.",
+    "refillToday": "Resets to {{amount}} later today",
+    "refillTomorrow": "Resets to {{amount}} tomorrow",
+    "refillOn": "Resets to {{amount}} on {{date}}",
     "notCharged": "This didn't count"
   },
   "quota": {
-    "summaryTitle": "AI uses left this month",
+    "summaryTitle": "AI usage this month",
     "aiParse": "AI to-dos",
     "aiParseHint": "Shared by speaking to add and splitting memos",
     "voiceNote": "Voice note summaries",
     "remaining": "{{amount}} left",
     "usedUpMonth": "Used up this month",
-    "usedUpDay": "Used up today",
-    "remainingOfLimit": "{{remaining}} / {{limit}}"
+    "usedUpDay": "Used up today"
   },
   "tier": {
     "admin": "Admin",

@@ -179,7 +179,7 @@
     "promptSuffix": "응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
     "hintSuffix": "을 눌러 마음을 전해보세요",
-    "remaining": "오늘 {{count}}번 남았어요",
+    "remaining": "오늘 {{count}}회 남았어요",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
     "placeholder": "(선택) 네 속도로 해도 괜찮아. 응원할게!",

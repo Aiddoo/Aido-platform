@@ -40,12 +40,12 @@ describe('QuotaChip', () => {
     await renderChip(snapshot, 'AI_PARSE');
 
     // Then
-    expect(screen.getByText('7번 남음')).toBeTruthy();
+    expect(screen.getByText('7회 남음')).toBeTruthy();
   });
 
   it.each([
-    ['AI_PARSE', PLAN_CATALOG.AI_PARSE.free, '이번 달 다 씀'],
-    ['NUDGE', PLAN_CATALOG.NUDGE.free, '오늘 다 씀'],
+    ['AI_PARSE', PLAN_CATALOG.AI_PARSE.free, '이번 달 모두 사용'],
+    ['NUDGE', PLAN_CATALOG.NUDGE.free, '오늘 모두 사용'],
   ] as const)('%s를 다 쓰면 기간에 맞춰 다 썼다고 보여 준다', async (feature, used, label) => {
     // Given
     const snapshot = createEntitlementSnapshot({ used: { [feature]: used } });
@@ -65,6 +65,6 @@ describe('QuotaChip', () => {
     await renderChip(snapshot, 'AI_PARSE');
 
     // Then
-    expect(screen.queryByText(/남음|다 씀/)).toBeNull();
+    expect(screen.queryByText(/남음|모두 사용/)).toBeNull();
   });
 });

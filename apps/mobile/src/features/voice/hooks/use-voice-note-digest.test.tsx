@@ -277,7 +277,7 @@ describe('VoiceNoteDigestButton', () => {
     // Then
     expect(screen.getByText('정리하기')).toBeTruthy();
     expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
-      '1번 사용 · 이번 달 2번 남음',
+      '1회 사용 · 이번 달 2회 남음',
     );
   });
 

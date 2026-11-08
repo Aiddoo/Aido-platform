@@ -144,7 +144,7 @@ describe('canUseFeature', () => {
 
 describe('getQuotaStatus', () => {
   it.each([
-    ['FREE 7번 남음', 'FREE', 3, { type: 'remaining', count: 7, period: 'month' }],
+    ['FREE 7회 남음', 'FREE', 3, { type: 'remaining', count: 7, period: 'month' }],
     ['FREE 다 씀', 'FREE', 10, { type: 'used-up', period: 'month' }],
     ['PREMIUM 공정 사용', 'PREMIUM', 3, { type: 'untracked' }],
     ['ADMIN 무제한', 'ADMIN', undefined, { type: 'untracked' }],

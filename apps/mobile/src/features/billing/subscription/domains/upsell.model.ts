@@ -1,5 +1,3 @@
-import { sortBy } from 'es-toolkit';
-
 import { type EntitlementFeature } from './entitlement.model';
 
 /** 막힌 순간의 안내 모양. sheet는 화면을 막고, toast는 하던 일을 막지 않는다 */
@@ -17,15 +15,15 @@ function getPromptSurface(
   return dismissedOn === todayKey ? 'toast' : 'sheet';
 }
 
-/** 막힌 기능을 맨 앞으로 올리고 나머지는 원래 순서를 지킨다 */
-function sortBenefits<TBenefit extends { feature: EntitlementFeature }>(
+/** 막힌 기능은 페이월 맨 위 카드가 이미 설명하므로 아래 혜택 목록에서 한 번 더 보이지 않게 뺀다 */
+function excludeBlockedBenefit<TBenefit extends { feature: EntitlementFeature }>(
   benefits: readonly TBenefit[],
-  feature: EntitlementFeature | undefined,
+  blockedFeature: EntitlementFeature | undefined,
 ): TBenefit[] {
-  return sortBy(benefits, [(benefit) => (benefit.feature === feature ? 0 : 1)]);
+  return benefits.filter((benefit) => benefit.feature !== blockedFeature);
 }
 
 export const UpsellPolicy = {
   getPromptSurface,
-  sortBenefits,
+  excludeBlockedBenefit,
 } as const;

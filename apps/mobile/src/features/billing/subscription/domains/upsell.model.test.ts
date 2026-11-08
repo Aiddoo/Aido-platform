@@ -32,7 +32,7 @@ describe('getPromptSurface', () => {
   });
 });
 
-describe('sortBenefits', () => {
+describe('excludeBlockedBenefit', () => {
   const benefits = [
     { feature: 'AI_PARSE' },
     { feature: 'CUSTOM_REMINDER_TIME' },
@@ -40,13 +40,12 @@ describe('sortBenefits', () => {
     { feature: 'APP_ICON' },
   ] as const;
 
-  it('막힌 기능을 맨 앞에 두고 나머지 순서는 그대로 둔다', () => {
+  it('막힌 기능은 빼고 나머지 순서는 그대로 둔다', () => {
     // When
-    const sorted = UpsellPolicy.sortBenefits(benefits, 'NUDGE');
+    const visible = UpsellPolicy.excludeBlockedBenefit(benefits, 'NUDGE');
 
     // Then
-    expect(sorted.map(({ feature }) => feature)).toEqual([
-      'NUDGE',
+    expect(visible.map(({ feature }) => feature)).toEqual([
       'AI_PARSE',
       'CUSTOM_REMINDER_TIME',
       'APP_ICON',
@@ -56,11 +55,11 @@ describe('sortBenefits', () => {
   it.each([
     ['막힌 기능을 모르면', undefined],
     ['목록에 없는 기능이면', 'FRIEND'],
-  ] as const)('%s 원래 순서를 지킨다', (_case, feature) => {
+  ] as const)('%s 모두 보여 준다', (_case, feature) => {
     // When
-    const sorted = UpsellPolicy.sortBenefits(benefits, feature);
+    const visible = UpsellPolicy.excludeBlockedBenefit(benefits, feature);
 
     // Then
-    expect(sorted).toEqual(benefits);
+    expect(visible).toEqual(benefits);
   });
 });

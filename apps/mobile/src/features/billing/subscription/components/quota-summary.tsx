@@ -11,7 +11,7 @@ import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
-/** 무료 사용자의 남은 AI 횟수. 구독 권유는 이 카드가 아니라 막힌 순간의 안내가 맡는다 */
+/** 무료 사용자의 이번 달 AI 사용량. 구독 권유는 이 카드가 아니라 막힌 순간의 안내가 맡는다 */
 export function QuotaSummary() {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');
@@ -54,8 +54,7 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
   }
   const used = EntitlementPolicy.getUsedCount(snapshot, feature);
   const limit = EntitlementPolicy.getLimit(snapshot, feature);
-  const remaining = EntitlementPolicy.getRemainingCount(snapshot, feature);
-  if (used == null || limit == null || remaining == null) {
+  if (used == null || limit == null) {
     return null;
   }
 
@@ -75,8 +74,8 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
           shade={isUsedUp ? undefined : 7}
           className="tabular-nums"
         >
-          {t('quota.remainingOfLimit', {
-            remaining: formatCount(remaining, locale),
+          {t('upsell.usage', {
+            used: formatCount(Math.min(used, limit), locale),
             limit: formatCount(limit, locale),
           })}
         </Text>

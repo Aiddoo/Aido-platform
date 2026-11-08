@@ -91,7 +91,7 @@ Paywall.Benefits = function Benefits({ feature }: { feature?: EntitlementFeature
 
   return (
     <VStack gap={20}>
-      {UpsellPolicy.sortBenefits(IMAGE_BENEFITS, feature).map((benefit) => (
+      {UpsellPolicy.excludeBlockedBenefit(IMAGE_BENEFITS, feature).map((benefit) => (
         <BenefitCard
           key={benefit.feature}
           {...formatBenefit(benefit.feature)}
@@ -124,7 +124,7 @@ Paywall.AdditionalBenefits = function AdditionalBenefits({
         {t('paywall.moreBenefits')}
       </Text>
 
-      {UpsellPolicy.sortBenefits(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
+      {UpsellPolicy.excludeBlockedBenefit(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
         <Fragment key={benefit.feature}>
           {index > 0 && <Separator className="bg-gray-3" />}
           <AdditionalBenefit feature={benefit.feature} {...formatBenefit(benefit.feature)} />

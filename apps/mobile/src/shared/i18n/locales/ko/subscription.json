@@ -89,7 +89,7 @@
     "startAnnual": "연간으로 시작하기",
     "startMonthly": "월간으로 시작하기",
     "startFreeTrial": "{{period}} 무료로 시작하기",
-    "trialDisclosure": "{{date}}부터 {{price}} · 언제든 해지할 수 있어요",
+    "trialDisclosure": "{{date}}부터 {{price}} 정기결제 · 언제든 해지할 수 있어요",
     "renewalNotice": {
       "appStore": "구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 가격으로 자동 갱신돼요. App Store 구독 설정에서 언제든 해지할 수 있어요.",
       "googlePlay": "구독은 해지하지 않으면 기간이 끝날 때 같은 가격으로 자동 갱신돼요. Google Play 구독 설정에서 언제든 해지할 수 있어요."
@@ -213,20 +213,19 @@
     "reminderTimeDescription": "원하는 시간에 리마인드를 받을 수 있어요. 기본 시간 알림은 계속 와요.",
     "appIconTitle": "앱 아이콘 변경은 프리미엄 기능이에요",
     "appIconDescription": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요.",
-    "refillToday": "오늘 중에 다시 {{amount}}번 생겨요.",
-    "refillTomorrow": "내일 다시 {{amount}}번 생겨요.",
-    "refillOn": "{{date}}에 다시 {{amount}}번 생겨요.",
+    "refillToday": "오늘 중 {{amount}}회로 초기화돼요",
+    "refillTomorrow": "내일 {{amount}}회로 초기화돼요",
+    "refillOn": "{{date}}에 {{amount}}회로 초기화돼요",
     "notCharged": "횟수는 차감되지 않았어요"
   },
   "quota": {
-    "summaryTitle": "이번 달 남은 AI 횟수",
+    "summaryTitle": "이번 달 AI 사용량",
     "aiParse": "AI 할 일 만들기",
     "aiParseHint": "말로 할 일 만들기와 메모 나누기에 함께 써요",
     "voiceNote": "말로 메모 정리",
-    "remaining": "{{amount}}번 남음",
-    "usedUpMonth": "이번 달 다 씀",
-    "usedUpDay": "오늘 다 씀",
-    "remainingOfLimit": "{{remaining}} / {{limit}}"
+    "remaining": "{{amount}}회 남음",
+    "usedUpMonth": "이번 달 모두 사용",
+    "usedUpDay": "오늘 모두 사용"
   },
   "tier": {
     "admin": "어드민",
@@ -236,13 +235,13 @@
   "upsell": {
     "viewPremium": "프리미엄 보기",
     "later": "나중에",
-    "usage": "{{used}} / {{limit}}번 사용",
+    "usage": "{{used}} / {{limit}}회 사용",
     "free": "무료",
     "premium": "프리미엄",
     "unlimited": "무제한",
     "amount": {
-      "perMonth": "월 {{amount}}번",
-      "perDay": "하루 {{amount}}번",
+      "perMonth": "월 {{amount}}회",
+      "perDay": "하루 {{amount}}회",
       "people": "{{amount}}명",
       "items": "{{amount}}개"
     }

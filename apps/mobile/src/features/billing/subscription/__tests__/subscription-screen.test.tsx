@@ -297,7 +297,7 @@ describe('구독 화면', () => {
     expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
   });
 
-  it('막혀서 들어오면 그 기능을 요금제보다 먼저, 연간 요금제를 월간보다 먼저 보여 준다', async () => {
+  it('막혀서 들어오면 그 기능을 요금제보다 먼저 한 번만, 연간 요금제를 월간보다 먼저 보여 준다', async () => {
     // Given
     jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'AI_PARSE' });
 
@@ -314,7 +314,7 @@ describe('구독 화면', () => {
       screen
         .getAllByText(/^(AI 할 일 만들기 넉넉하게|연간 구독|월간 구독)$/)
         .map((element) => element.props.children),
-    ).toEqual(['AI 할 일 만들기 넉넉하게', '연간 구독', '월간 구독', 'AI 할 일 만들기 넉넉하게']);
+    ).toEqual(['AI 할 일 만들기 넉넉하게', '연간 구독', '월간 구독']);
     expect(screen.getByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
     expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', {
       view: 'status',
@@ -402,7 +402,7 @@ describe('구독 화면', () => {
       expect(screen.getByText('₩29,900')).toBeTruthy();
       expect(screen.getByRole('button', { name: '1개월 무료로 시작하기' })).toBeTruthy();
       expect(screen.getByTestId('subscription-trial-disclosure').props.children).toMatch(
-        /부터 연 ₩29,900 · 언제든 해지할 수 있어요$/,
+        /부터 연 ₩29,900 정기결제 · 언제든 해지할 수 있어요$/,
       );
       const timeline = screen.getByTestId('subscription-trial-timeline');
       expect(within(timeline).getByText('무료 체험 시작')).toBeTruthy();
