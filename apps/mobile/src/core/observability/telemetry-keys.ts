@@ -15,6 +15,7 @@ export const ERROR_REPORT_FEATURES = [
   'entitlement',
   'env',
   'error_boundary',
+  'event_channel',
   'feature_attribution',
   'feature_discovery',
   'firebase_analytics',

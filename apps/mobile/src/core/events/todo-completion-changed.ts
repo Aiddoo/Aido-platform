@@ -4,7 +4,7 @@ interface TodoCompletionChange {
   isCompleted: boolean;
 }
 
-const channel = createEventChannel<TodoCompletionChange>();
+const channel = createEventChannel<TodoCompletionChange>('todo-completion-changed');
 
 /**
  * 서버가 할 일 완료 변경을 받았다는 단방향 채널.

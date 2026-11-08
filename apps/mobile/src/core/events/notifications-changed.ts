@@ -1,6 +1,6 @@
 import { createEventChannel } from './event-channel';
 
-const channel = createEventChannel();
+const channel = createEventChannel('notifications-changed');
 
 /**
  * 서버의 알림 목록이 바뀌었을 수 있다는 단방향 채널.

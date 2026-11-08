@@ -2,7 +2,7 @@ import type { SessionExpiredDetails } from '@src/core/observability/telemetry-ev
 
 import { createEventChannel } from './event-channel';
 
-const channel = createEventChannel<SessionExpiredDetails>();
+const channel = createEventChannel<SessionExpiredDetails>('session-expired');
 
 /**
  * 세션 만료(세션 종료 확정) 이벤트 구독.
