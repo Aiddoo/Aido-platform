@@ -1506,3 +1506,34 @@ test('한 태그에 spacing prop과 className을 섞으면 막는다', () => {
     },
   );
 });
+
+test('아이콘 컴포넌트를 받는 prop이 Icon이 아니면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/ui/bad/bad.tsx': `
+        interface HintProps { icon?: StyledIcon }
+        function Chip({ as }: { as: StyledIcon }) { return null; }
+        interface PopoverProps { icon: typeof MicIcon | undefined }
+      `,
+    },
+    (errors) => {
+      const names = errors.map((error) => /(?:\d+:\d+) (\w+):/u.exec(error)?.[1]);
+      assert.deepEqual(names, ['icon', 'as', 'icon']);
+    },
+  );
+});
+
+test('Icon 컴포넌트 prop과 그려 둔 icon 요소, 아이콘이 아닌 icon 값은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/ui/ok/ok.tsx': `
+        interface MenuProps { Icon: StyledIcon; LeadingIcon?: StyledIcon }
+        interface ButtonProps { icon: ReactNode }
+        interface TileProps { icon: WeatherCardGlyph }
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});

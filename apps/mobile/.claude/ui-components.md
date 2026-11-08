@@ -433,6 +433,8 @@ import { createStyledIcon } from './create-styled-icon';
 export const NewIcon = createStyledIcon(NewIconSvg);
 ```
 
+**아이콘을 받는 prop:** 크기·색을 부품이 정하면 컴포넌트를 받아 `Icon: StyledIcon`(`<MenuActionItem Icon={TrashIcon} />`, `<ActionButton.Icon Icon={CalendarIcon} />`), 호출부가 그려 넘기면 `icon: ReactNode`(`<IconButton icon={<CloseIcon />} />`)로 둘만 쓴다. `check:conventions`가 막는다.
+
 ---
 
 ## 애니메이션과 Expo 공식 스킬

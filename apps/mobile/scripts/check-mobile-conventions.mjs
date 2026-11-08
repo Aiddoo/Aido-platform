@@ -1496,6 +1496,37 @@ function checkPredicateNames(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+function isIconComponentType(type) {
+  if (type === undefined) {
+    return false;
+  }
+  if (ts.isUnionTypeNode(type) || ts.isParenthesizedTypeNode(type)) {
+    return (ts.isUnionTypeNode(type) ? type.types : [type.type]).some(isIconComponentType);
+  }
+  if (ts.isTypeReferenceNode(type)) {
+    return ts.isIdentifier(type.typeName) && type.typeName.text === 'StyledIcon';
+  }
+  return ts.isTypeQueryNode(type) && /Icon$/u.test(type.exprName.getText());
+}
+
+function checkIconPropNames(sourceFile, repositoryRoot, errors) {
+  function visit(node) {
+    if (
+      ts.isPropertySignature(node) &&
+      ts.isIdentifier(node.name) &&
+      isIconComponentType(node.type) &&
+      !/^(?:[A-Z][A-Za-z]*)?Icon$/u.test(node.name.text)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node.name, repositoryRoot)} ${node.name.text}: 아이콘 컴포넌트를 받는 prop은 \`Icon: StyledIcon\`으로 쓰세요. 그려 둔 요소를 받으면 \`icon: ReactNode\`입니다.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   function visit(node) {
     if (ts.isPropertyAccessExpression(node)) {
@@ -2214,6 +2245,7 @@ export function checkMobileConventions(
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);
     checkRangeComparisonOrder(sourceFile, repositoryRoot, errors);
     checkPredicateNames(sourceFile, repositoryRoot, errors);
+    checkIconPropNames(sourceFile, repositoryRoot, errors);
     checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors);
   }
 
