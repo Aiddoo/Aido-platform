@@ -267,7 +267,7 @@ function useOpenReadyEntry(
           error: getErrorMessage(error),
         });
       }
-      if (NotificationPolicy.hasServerRecord(data.notificationId)) {
+      if (NotificationPolicy.hasServerRecord(data)) {
         recordOpened(data.notificationId);
       }
     } catch (error) {

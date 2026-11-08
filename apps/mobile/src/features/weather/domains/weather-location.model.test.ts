@@ -1,8 +1,13 @@
 import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
+import type { LocationReading } from '../schemas/weather-location.schema';
 import { WeatherLocationPolicy } from './weather-location.model';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
+
+function createUnavailableReading(revision: number): LocationReading {
+  return { status: 'unavailable', revision };
+}
 
 describe('shouldRelocate', () => {
   it('등록한 위치가 없으면 다시 등록한다', () => {
@@ -38,27 +43,46 @@ describe('shouldRelocate', () => {
 
 describe('getNextRevision', () => {
   it('등록한 위치가 이미 받은 리포트와 같은 격자면 리비전을 그대로 둬 다시 받지 않는다', () => {
+    // Given
+    const previous = createUnavailableReading(0);
+
     // When
-    const revision = WeatherLocationPolicy.getNextRevision(0, SEOUL, SEOUL);
+    const revision = WeatherLocationPolicy.getNextRevision(previous, SEOUL, SEOUL);
 
     // Then
     expect(revision).toBe(0);
   });
 
   it('등록한 위치가 리포트와 다른 격자면 리비전을 올려 다시 받는다', () => {
+    // Given
+    const previous = createUnavailableReading(0);
+
     // When
-    const revision = WeatherLocationPolicy.getNextRevision(0, BUSAN, SEOUL);
+    const revision = WeatherLocationPolicy.getNextRevision(previous, BUSAN, SEOUL);
 
     // Then
+    // 0 + 1 = 1
     expect(revision).toBe(1);
   });
 
   it('비교할 리포트가 없으면(서버에 위치가 없던 경우) 리비전을 올려 등록 뒤 다시 받는다', () => {
+    // Given
+    const previous = createUnavailableReading(2);
+
     // When
-    const revision = WeatherLocationPolicy.getNextRevision(2, SEOUL, null);
+    const revision = WeatherLocationPolicy.getNextRevision(previous, SEOUL, null);
 
     // Then
+    // 2 + 1 = 3
     expect(revision).toBe(3);
+  });
+
+  it('위치를 읽기 전이면 서버 저장 위치 리비전에서 올린다', () => {
+    // When
+    const revision = WeatherLocationPolicy.getNextRevision(undefined, BUSAN, SEOUL);
+
+    // Then
+    expect(revision).toBe(SAVED_LOCATION_REVISION + 1);
   });
 });
 

@@ -90,7 +90,7 @@ export class NotificationService {
    * 서버 알림 기록이 없는 푸시는 묻지 않는다.
    */
   markAsReadAndCheckOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
-    if (!NotificationPolicy.hasServerRecord(notificationId)) {
+    if (!NotificationPolicy.hasServerRecord({ notificationId })) {
       return 'ok';
     }
     try {

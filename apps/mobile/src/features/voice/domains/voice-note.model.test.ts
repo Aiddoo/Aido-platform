@@ -229,7 +229,7 @@ describe('isRecordingFileExpired', () => {
 
   it('수정 시각을 모르는 파일은 기한이 지난 것으로 본다', () => {
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired(null, now);
+    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt: null }, now);
 
     // Then
     expect(result).toBe(true);
@@ -240,7 +240,7 @@ describe('isRecordingFileExpired', () => {
     const modifiedAt = new Date('2026-11-05T00:00:00.001Z');
 
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired(modifiedAt, now);
+    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt }, now);
 
     // Then
     expect(result).toBe(false);
@@ -251,7 +251,7 @@ describe('isRecordingFileExpired', () => {
     const modifiedAt = new Date('2026-11-05T00:00:00.000Z');
 
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired(modifiedAt, now);
+    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt }, now);
 
     // Then
     expect(result).toBe(true);

@@ -46,7 +46,7 @@ const UV_LEVELS = [
 /** WHO 자외선 지수 기준. 각 값 이하가 해당 단계다. */
 const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
 
-function getUvLevel(uvIndex: number): UvLevel {
+function getUvLevel({ uvIndex }: Pick<CurrentWeather, 'uvIndex'>): UvLevel {
   return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
 }
 
@@ -56,11 +56,13 @@ export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
 const DEGREES_PER_DIRECTION = FULL_TURN_DEGREES / COMPASS_DIRECTIONS.length;
 
 /** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
-function toCompassDirection(degrees: number | null): CompassDirection | null {
-  if (degrees == null) {
+function getCompassDirection({
+  windDirection,
+}: Pick<CurrentWeather, 'windDirection'>): CompassDirection | null {
+  if (windDirection == null) {
     return null;
   }
-  const normalized = ((degrees % FULL_TURN_DEGREES) + FULL_TURN_DEGREES) % FULL_TURN_DEGREES;
+  const normalized = ((windDirection % FULL_TURN_DEGREES) + FULL_TURN_DEGREES) % FULL_TURN_DEGREES;
   const index = Math.round(normalized / DEGREES_PER_DIRECTION) % COMPASS_DIRECTIONS.length;
   return COMPASS_DIRECTIONS[index] ?? null;
 }
@@ -85,8 +87,8 @@ const METERS_PER_KILOMETER = 1000;
 const CLEAR_VISIBILITY_KM = 10;
 const MODERATE_VISIBILITY_KM = 5;
 
-function getVisibilityLevel(meters: number): VisibilityLevel {
-  const kilometers = meters / METERS_PER_KILOMETER;
+function getVisibilityLevel({ visibility }: Pick<CurrentWeather, 'visibility'>): VisibilityLevel {
+  const kilometers = visibility / METERS_PER_KILOMETER;
   if (kilometers >= CLEAR_VISIBILITY_KM) {
     return 'clear';
   }
@@ -98,7 +100,7 @@ const MOSTLY_CLOUDY_CLOUD_COVER = 40;
 
 export type CloudCoverLevel = 'overcast' | 'mostlyCloudy' | 'mostlyClear';
 
-function getCloudCoverLevel(cloudCover: number): CloudCoverLevel {
+function getCloudCoverLevel({ cloudCover }: Pick<CurrentWeather, 'cloudCover'>): CloudCoverLevel {
   if (cloudCover >= OVERCAST_CLOUD_COVER) {
     return 'overcast';
   }
@@ -111,7 +113,7 @@ export type WindLevel = 'calm' | 'breeze' | 'strong';
 const CALM_WIND_MPS = 1.5;
 const STRONG_WIND_MPS = 5.5;
 
-function getWindLevel(windSpeed: number): WindLevel {
+function getWindLevel({ windSpeed }: Pick<CurrentWeather, 'windSpeed'>): WindLevel {
   if (windSpeed < CALM_WIND_MPS) {
     return 'calm';
   }
@@ -121,14 +123,14 @@ function getWindLevel(windSpeed: number): WindLevel {
 /** 상대 습도가 이 값(%) 이상이면 눅눅하다고 안내한다. */
 const MUGGY_HUMIDITY = 80;
 
-function isMuggy(humidity: number): boolean {
+function isMuggy({ humidity }: Pick<CurrentWeather, 'humidity'>): boolean {
   return humidity >= MUGGY_HUMIDITY;
 }
 
 export const WeatherIndicatorPolicy = {
   getPollutantGrade,
   getUvLevel,
-  toCompassDirection,
+  getCompassDirection,
   getFeelsLikeComparison,
   getVisibilityLevel,
   getCloudCoverLevel,

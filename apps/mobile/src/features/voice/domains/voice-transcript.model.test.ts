@@ -142,10 +142,27 @@ describe('mergeHeardTextIntoTitle', () => {
       '치과 가기 약국 가기',
     ],
   ])('%s', (_name, title, heardText, expected) => {
+    // Given
+    const transcript = VoiceTranscriptPolicy.createVoiceTranscript({ interim: heardText });
+
     // When
-    const merged = VoiceTranscriptPolicy.mergeHeardTextIntoTitle(title, heardText);
+    const merged = VoiceTranscriptPolicy.mergeHeardTextIntoTitle(transcript, title);
 
     // Then
     expect(merged).toBe(expected);
+  });
+
+  it('확정된 문장과 듣던 글자를 이어 붙인 글자를 합친다', () => {
+    // Given
+    const transcript = VoiceTranscriptPolicy.createVoiceTranscript({
+      sentences: ['치과 가기'],
+      interim: '약국 가기',
+    });
+
+    // When
+    const merged = VoiceTranscriptPolicy.mergeHeardTextIntoTitle(transcript, '장보기');
+
+    // Then
+    expect(merged).toBe('장보기 치과 가기 약국 가기');
   });
 });

@@ -7,7 +7,11 @@ import {
   MARKETING_OPT_OUT_ACTION,
   NOTIFICATION_TYPE_TRAITS,
 } from '../constants/notification.constants';
-import type { Notification, PendingNotificationResponse } from '../schemas/notification.schema';
+import type {
+  Notification,
+  PendingNotificationResponse,
+  PushNotificationPayload,
+} from '../schemas/notification.schema';
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
 const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
@@ -61,7 +65,7 @@ function getResponseAction(
 }
 
 /** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
-function hasServerRecord(notificationId: number) {
+function hasServerRecord({ notificationId }: Pick<PushNotificationPayload, 'notificationId'>) {
   return notificationId > 0;
 }
 

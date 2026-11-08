@@ -45,9 +45,9 @@ function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
  * 들은 글자를 입력 칸의 글자 뒤에 합친다. 친 글자는 지우지 않는다.
  * 실패로 이미 옮긴 글자가 겹치지 않게, 칸에 들어 있으면 그대로 두고 이어 말해 늘어났으면 늘어난 글자로 바꾼다.
  */
-function mergeHeardTextIntoTitle(title: string, heardText: string): string {
+function mergeHeardTextIntoTitle(transcript: VoiceTranscript, title: string): string {
   const typed = title.trim();
-  const heard = heardText.trim();
+  const heard = getTranscriptText(transcript).trim();
   if (heard.length === 0 || typed.includes(heard)) {
     return title;
   }

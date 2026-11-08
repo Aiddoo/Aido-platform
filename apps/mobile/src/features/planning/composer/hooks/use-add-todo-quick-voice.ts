@@ -92,8 +92,8 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     form.setValue(
       'title',
       VoiceTranscriptPolicy.mergeHeardTextIntoTitle(
+        session.state.transcript,
         form.getValues('title'),
-        VoiceTranscriptPolicy.getTranscriptText(session.state.transcript),
       ),
       { shouldDirty: true },
     );

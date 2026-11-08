@@ -1,4 +1,5 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
+import type { LocalFileEntry } from '@src/core/ports/local-file-system';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -263,7 +264,7 @@ function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>): Voice
 }
 
 function findRecordingIndexAt(
-  recordings: readonly { startMs: number }[],
+  recordings: readonly Pick<VoiceNoteRecording, 'startMs'>[],
   positionMs: number,
 ): number {
   return Math.max(
@@ -279,7 +280,10 @@ function isExpired(note: VoiceNote, now: Instant): boolean {
 }
 
 /** 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다 */
-function isRecordingFileExpired(modifiedAt: Date | null, now: Instant): boolean {
+function isRecordingFileExpired(
+  { modifiedAt }: Pick<LocalFileEntry, 'modifiedAt'>,
+  now: Instant,
+): boolean {
   return (
     modifiedAt == null ||
     toEpochMs(now) - modifiedAt.getTime() >= VOICE_RECORDING_ORPHAN_RETENTION_MS

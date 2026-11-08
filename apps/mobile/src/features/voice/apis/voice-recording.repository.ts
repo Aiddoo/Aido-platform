@@ -136,8 +136,7 @@ export function createVoiceRecordingRepository(
       const directory = createOwnerDirectory(accountId);
       const expired = listSafely(directory).filter(
         (file) =>
-          !referencedFileNames.has(file.name) &&
-          VoiceNotePolicy.isRecordingFileExpired(file.modifiedAt, now),
+          !referencedFileNames.has(file.name) && VoiceNotePolicy.isRecordingFileExpired(file, now),
       );
       expired.forEach((file) => removeSafely(directory, file.name));
     },

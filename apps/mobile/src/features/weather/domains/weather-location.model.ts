@@ -16,22 +16,23 @@ function shouldRelocate(next: Coordinates, previous: Coordinates | null): boolea
   );
 }
 
-/**
- * 등록한 위치가 이미 받은 리포트의 위치와 같은 격자면 리비전을 유지해 같은 요청을 두 번 보내지 않는다.
- * 비교할 리포트가 없으면(아직 받는 중이거나 서버에 위치가 없던 경우) 새 리비전으로 다시 받는다.
- */
-function getNextRevision(
-  revision: number,
-  registered: Coordinates,
-  reportLocation: Coordinates | null,
-): number {
-  return shouldRelocate(registered, reportLocation) ? revision + 1 : revision;
-}
-
 function getReadingRevision(reading: LocationReading | undefined): number {
   return reading?.status === 'located' || reading?.status === 'unavailable'
     ? reading.revision
     : SAVED_LOCATION_REVISION;
+}
+
+/**
+ * 등록한 위치가 이미 받은 리포트의 위치와 같은 격자면 직전 읽기의 리비전을 유지해 같은 요청을 두 번 보내지 않는다.
+ * 비교할 리포트가 없으면(아직 받는 중이거나 서버에 위치가 없던 경우) 새 리비전으로 다시 받는다.
+ */
+function getNextRevision(
+  previous: LocationReading | undefined,
+  registered: Coordinates,
+  reportLocation: Coordinates | null,
+): number {
+  const revision = getReadingRevision(previous);
+  return shouldRelocate(registered, reportLocation) ? revision + 1 : revision;
 }
 
 export type WeatherLocationStatus =

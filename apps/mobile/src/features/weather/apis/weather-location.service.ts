@@ -103,7 +103,7 @@ export class WeatherLocationService {
       place: place.name,
       countryCode: place.countryCode,
       isLastKnown: false,
-      revision: WeatherLocationPolicy.getNextRevision(revision, registered, reportLocation),
+      revision: WeatherLocationPolicy.getNextRevision(previous, registered, reportLocation),
     });
   };
 
