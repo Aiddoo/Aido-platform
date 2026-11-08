@@ -160,6 +160,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                            |
 | 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                             |
 | 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                           |
+| 시트 route           | `SheetRouteScreen`을 그리는 `app/` route가 `safeParse` 결과의 `.data`를 읽음. route는 검증과 `Redirect`만, 대상은 시트가 route 훅으로 읽는다                                                  |
 | 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
 | Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`)                                                      |
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |

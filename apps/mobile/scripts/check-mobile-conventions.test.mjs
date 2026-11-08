@@ -693,6 +693,46 @@ test('스키마로 parse한 값의 구조 분해는 통과한다', () => {
   );
 });
 
+test('시트 route가 검증한 값을 꺼내 시트에 넘기면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/app/(app)/users/[userId]/report.tsx': `
+        const params = userReportParamsSchema.safeParse(useLocalSearchParams());
+        if (!params.success) {
+          return <Redirect href="/feed" />;
+        }
+        const { userId } = params.data;
+        return <SheetRouteScreen><ReportSheet userId={userId} /></SheetRouteScreen>;
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /시트 route는 safeParse로 검증하고 Redirect만/u);
+    },
+  );
+});
+
+test('검증과 Redirect만 하는 시트 route와 시트가 아닌 화면의 safeParse 값은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/app/(app)/users/[userId]/block.tsx': `
+        const params = blockUserParamsSchema.safeParse(useLocalSearchParams());
+        if (!params.success) {
+          return <Redirect href="/feed" />;
+        }
+        return <SheetRouteScreen><BlockUserConfirmDialog /></SheetRouteScreen>;
+      `,
+      'apps/mobile/app/(app)/invite/[code].tsx': `
+        const params = inviteParamsSchema.safeParse(useLocalSearchParams());
+        return <InviteScreen code={params.data.code} />;
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
 test('파라미터 훅 파일에서 z.object를 정의하면 거부한다', () => {
   withFixture(
     {

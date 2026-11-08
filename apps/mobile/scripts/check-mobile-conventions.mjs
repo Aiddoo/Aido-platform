@@ -1257,13 +1257,49 @@ function isZodObjectCall(node) {
 }
 
 /** URL 값은 `useRouteParams`와 `schemas/`의 스키마로 읽고 쓴다. 플랫폼 값과 이미지도 한 가지로 쓴다 */
+/** 파일 안에서 `name = X.safeParse(…)`로 만든 변수인가 */
+function isSafeParseResult(sourceFile, name) {
+  let isFound = false;
+  function visit(node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name &&
+      node.initializer !== undefined &&
+      ts.isCallExpression(node.initializer) &&
+      ts.isPropertyAccessExpression(node.initializer.expression) &&
+      node.initializer.expression.name.text === 'safeParse'
+    ) {
+      isFound = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return isFound;
+}
+
 function checkRouteParamConventions(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (isTestSource(relativePath)) {
     return;
   }
 
+  const isSheetRoute =
+    relativePath.startsWith('apps/mobile/app/') && sourceFile.text.includes('<SheetRouteScreen');
+
   function visit(node) {
+    if (
+      isSheetRoute &&
+      ts.isPropertyAccessExpression(node) &&
+      node.name.text === 'data' &&
+      ts.isIdentifier(node.expression) &&
+      isSafeParseResult(sourceFile, node.expression.text)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} 시트 route는 safeParse로 검증하고 Redirect만 합니다. 대상은 시트가 같은 스키마의 route 훅으로 읽습니다.`,
+      );
+    }
     if (
       isRouterSetParamsCall(node) &&
       !SHARED_ROUTE_HOOKS.has(relativePath) &&
