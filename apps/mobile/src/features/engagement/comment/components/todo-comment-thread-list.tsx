@@ -1,5 +1,4 @@
-import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -19,7 +18,7 @@ import {
   InlineAlert,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
@@ -37,7 +36,7 @@ import Animated, {
 import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useCommentParams } from '../hooks/use-comment-params';
-import { refreshTodoComments } from '../queries/todo-comment-cache';
+import { invalidateTodoComments } from '../queries/todo-comment-cache';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import type { TodoCommentThread, TodoCommentThreadAnchor } from '../schemas/todo-comment.schema';
 import { TodoCommentItem } from './todo-comment-item';
@@ -103,7 +102,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
       () =>
         Promise.all([
           invalidateTodoDetails(queryClient, { todoId }),
-          refreshTodoComments({ queryClient, todoId }),
+          invalidateTodoComments(queryClient, { todoId }),
         ]),
       [queryClient, todoId],
     ),
@@ -301,25 +300,9 @@ function LoadPrevious({ isLoading, onPress }: { isLoading: boolean; onPress: () 
 
 /** 계정당 한 번. 처음 두 번 탭하거나 닫으면 다시 보이지 않는다 */
 function DoubleTapHint({ className }: { className?: string }) {
-  const { data: user } = useQuery(useGetMeQueryOptions());
-
-  if (user == null) {
-    return null;
-  }
-
-  return <DoubleTapHint.Contents accountId={user.id} className={className} />;
-}
-
-DoubleTapHint.Contents = function Contents({
-  accountId,
-  className,
-}: {
-  accountId: string;
-  className?: string;
-}) {
   const { t } = useTranslation('todoComment');
   const { trackEvent } = useTrack();
-  const [isPending, complete] = usePendingCoachmark({ accountId, kind: 'comment-double-tap' });
+  const [isPending, complete] = useMyPendingCoachmark('comment-double-tap');
 
   if (!isPending) {
     return null;
@@ -339,7 +322,7 @@ DoubleTapHint.Contents = function Contents({
       closeLabel={t('hint.dismiss')}
     />
   );
-};
+}
 
 function PulsingHeart() {
   const isReducedMotion = useIsReduceMotionEnabled();

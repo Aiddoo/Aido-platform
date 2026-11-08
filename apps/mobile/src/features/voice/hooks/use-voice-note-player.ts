@@ -142,7 +142,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
     },
     getPlayback: () => playback,
     togglePlay: async () => {
-      if (status.playing) {
+      if (status.isPlaying) {
         playlist.pause();
         return;
       }

@@ -1,6 +1,5 @@
 import { useClipboard, useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
-import { usePendingCoachmark } from '@src/features/device/coachmark/hooks/use-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
@@ -31,7 +30,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Menu, PressableFeedback, Separator, Skeleton } from 'heroui-native';
@@ -59,12 +58,12 @@ import {
   useSetTodoCommentLikeMutationOptions,
 } from '../queries/todo-comment.mutations';
 import {
-  NEW_TODO_COMMENT_FORM_VALUES,
+  EMPTY_TODO_COMMENT_FORM_VALUES,
   toEditFormValues,
   toReplyFormValues,
 } from '../schemas/todo-comment-form.schema';
 import type { TodoComment } from '../schemas/todo-comment.schema';
-import { getComposerTarget } from '../utils/todo-comment-form-fields';
+import { findComposerTarget } from '../utils/todo-comment-form-fields';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   playTodoCommentHeartBurst,
@@ -221,19 +220,15 @@ function CommentText({
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );
-  const { data: user } = useQuery(useGetMeQueryOptions());
   const { trackEvent } = useTrack();
-  const [isHintPending, completeHint] = usePendingCoachmark({
-    accountId: user?.id ?? '',
-    kind: 'comment-double-tap',
-  });
+  const [isHintPending, completeHint] = useMyPendingCoachmark('comment-double-tap');
   const mention = comment.replyTo?.authorName;
   const gesture = useCommentBodyGesture({
     burst,
     likeButtonScale,
     canLike: TodoCommentPolicy.canLikeComment(comment),
     onDoubleTap: () => {
-      if (user != null && isHintPending) {
+      if (isHintPending) {
         completeHint();
         trackEvent('todo_comment_hint_dismissed', { kind: 'double_tap', reason: 'used' });
       }
@@ -478,8 +473,8 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     });
     if (isConfirmed) {
       // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-      if (getComposerTarget(getValues('mode'))?.id === comment.id) {
-        reset(NEW_TODO_COMMENT_FORM_VALUES);
+      if (findComposerTarget(getValues('mode'))?.id === comment.id) {
+        reset(EMPTY_TODO_COMMENT_FORM_VALUES);
       }
       deleteComment.mutate({ comment });
     }

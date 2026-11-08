@@ -90,7 +90,7 @@ function Pane({ slot, isSplit, style, children }: PaneProps) {
   const windowInsets = useSafeAreaInsets();
   const frame = useSafeAreaFrame();
   const insets = isSplit
-    ? getPaneInitialInsets(windowInsets, slot, I18nManager.isRTL)
+    ? getPaneInitialInsets(windowInsets, slot, { isRTL: I18nManager.isRTL })
     : windowInsets;
 
   return (

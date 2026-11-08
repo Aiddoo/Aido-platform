@@ -38,7 +38,7 @@ export function getVoiceNotePlayback(
     memory: { ...memory, resolvedDurationMs },
     playback: {
       isLoaded: memory.hasFinished || status.isLoaded,
-      isPlaying: !memory.hasFinished && status.playing,
+      isPlaying: !memory.hasFinished && status.isPlaying,
       positionMs: memory.hasFinished
         ? resolvedDurationMs
         : Math.min(partStartMs + Math.round(status.currentTime * SECOND_MS), resolvedDurationMs),

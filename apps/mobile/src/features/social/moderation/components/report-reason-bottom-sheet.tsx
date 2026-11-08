@@ -25,7 +25,7 @@ import { type Control, Controller, useForm, useFormState, useWatch } from 'react
 import { isReportTargetUnavailableError } from '../domains/moderation.error';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
 import {
-  type UserReportFormInput,
+  type UserReportFormValues,
   userReportFormSchema,
   type UserReportTarget,
   type UserReportTargetType,
@@ -68,7 +68,7 @@ export function ReportReasonBottomSheet({
     mode: 'onChange',
   });
 
-  const handleReport = async (values: UserReportFormInput) => {
+  const handleReport = async (values: UserReportFormValues) => {
     try {
       await reportContent.mutateAsync({ target, form: values });
     } catch (error) {
@@ -125,7 +125,7 @@ export function ReportReasonBottomSheet({
   );
 }
 
-function ReasonField({ control }: { control: Control<UserReportFormInput> }) {
+function ReasonField({ control }: { control: Control<UserReportFormValues> }) {
   const { t } = useTranslation('moderation');
 
   return (
@@ -161,7 +161,7 @@ function ReasonField({ control }: { control: Control<UserReportFormInput> }) {
   );
 }
 
-function DetailField({ control }: { control: Control<UserReportFormInput> }) {
+function DetailField({ control }: { control: Control<UserReportFormValues> }) {
   const { t } = useTranslation('moderation');
 
   return (
@@ -187,7 +187,7 @@ function DetailField({ control }: { control: Control<UserReportFormInput> }) {
 }
 
 /** 상세 내용 길이만 구독해 글자를 칠 때 시트 전체가 다시 그려지지 않게 한다 */
-function DetailLengthCounter({ control }: { control: Control<UserReportFormInput> }) {
+function DetailLengthCounter({ control }: { control: Control<UserReportFormValues> }) {
   const detail = useWatch({ control, name: 'detail' });
   const { locale } = useDateFormatContext();
 
@@ -202,7 +202,7 @@ function DetailLengthCounter({ control }: { control: Control<UserReportFormInput
 }
 
 interface SubmitButtonProps extends Pick<ComponentProps<typeof Button>, 'onPress'> {
-  control: Control<UserReportFormInput>;
+  control: Control<UserReportFormValues>;
 }
 
 function SubmitButton({ control, onPress }: SubmitButtonProps) {

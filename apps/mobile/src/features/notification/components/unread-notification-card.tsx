@@ -4,6 +4,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
+import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 import { useMarkAllAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
@@ -14,7 +15,7 @@ export function UnreadNotificationCard(props: UnreadNotificationCardProps) {
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
   const { t } = useTranslation('notification');
 
-  if (unreadCount === 0) {
+  if (!NotificationBadgePolicy.hasUnread(unreadCount)) {
     return null;
   }
 

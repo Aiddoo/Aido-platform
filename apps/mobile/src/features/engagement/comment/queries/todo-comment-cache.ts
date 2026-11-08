@@ -17,8 +17,7 @@ import {
   type TodoCommentTransform,
 } from '../utils/todo-comment-cache-pages';
 
-interface TodoCommentCacheParams {
-  queryClient: QueryClient;
+interface TodoCommentCacheInput {
   todoId: number;
 }
 
@@ -39,7 +38,10 @@ function replyQueries(todoId: number) {
 }
 
 /** 이미 받은 데이터가 있는 쿼리만 멈춘다. 첫 로드를 끊으면 idle로 되돌아가 다시 받지 않아 스켈레톤에 멈춘다 */
-export function cancelTodoCommentQueries({ queryClient, todoId }: TodoCommentCacheParams) {
+export function cancelTodoCommentQueries(
+  queryClient: QueryClient,
+  { todoId }: TodoCommentCacheInput,
+) {
   return queryClient.cancelQueries({
     queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }),
     // nullish-strict: 데이터가 아직 없음(undefined)만 첫 로드로 본다
@@ -47,10 +49,10 @@ export function cancelTodoCommentQueries({ queryClient, todoId }: TodoCommentCac
   });
 }
 
-export function snapshotTodoCommentCaches({
-  queryClient,
-  todoId,
-}: TodoCommentCacheParams): TodoCommentCacheSnapshot {
+export function snapshotTodoCommentCaches(
+  queryClient: QueryClient,
+  { todoId }: TodoCommentCacheInput,
+): TodoCommentCacheSnapshot {
   return {
     threads: queryClient.getQueriesData<TodoCommentThreadPages>(threadQueries(todoId)),
     replies: queryClient.getQueriesData<TodoCommentReplyPages>(replyQueries(todoId)),
@@ -65,11 +67,10 @@ export function restoreTodoCommentCaches(
   snapshot.replies.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
 }
 
-export function findCachedTodoComment({
-  queryClient,
-  todoId,
-  commentId,
-}: TodoCommentCacheParams & { commentId: string }): TodoComment | null {
+export function findCachedTodoComment(
+  queryClient: QueryClient,
+  { todoId, commentId }: TodoCommentCacheInput & { commentId: string },
+): TodoComment | null {
   const fromReplies = queryClient
     .getQueriesData<TodoCommentReplyPages>(replyQueries(todoId))
     .map(([_queryKey, data]) => findCommentInReplyPages(data, commentId))
@@ -85,12 +86,14 @@ export function findCachedTodoComment({
   );
 }
 
-export function patchTodoCommentCaches({
-  queryClient,
-  todoId,
-  commentId,
-  transform,
-}: TodoCommentCacheParams & { commentId: string; transform: TodoCommentTransform }) {
+export function patchTodoCommentCaches(
+  queryClient: QueryClient,
+  {
+    todoId,
+    commentId,
+    transform,
+  }: TodoCommentCacheInput & { commentId: string; transform: TodoCommentTransform },
+) {
   queryClient.setQueriesData<TodoCommentThreadPages>(threadQueries(todoId), (data) =>
     patchCommentInThreadPages(data, commentId, transform),
   );
@@ -99,11 +102,10 @@ export function patchTodoCommentCaches({
   );
 }
 
-export function removeTodoCommentFromCaches({
-  queryClient,
-  todoId,
-  comment,
-}: TodoCommentCacheParams & { comment: TodoComment }) {
+export function removeTodoCommentFromCaches(
+  queryClient: QueryClient,
+  { todoId, comment }: TodoCommentCacheInput & { comment: TodoComment },
+) {
   queryClient.setQueriesData<TodoCommentThreadPages>(threadQueries(todoId), (data) =>
     removeCommentFromThreadPages(data, comment),
   );
@@ -113,12 +115,14 @@ export function removeTodoCommentFromCaches({
 }
 
 /** 새 답글은 그 묶음의 답글 끝과 묶음 수에만 반영한다. 다른 묶음은 다시 받지 않는다 */
-export function addTodoCommentRepliesToCaches({
-  queryClient,
-  todoId,
-  threadCommentId,
-  replies,
-}: TodoCommentCacheParams & { threadCommentId: string; replies: readonly TodoComment[] }) {
+export function addTodoCommentRepliesToCaches(
+  queryClient: QueryClient,
+  {
+    todoId,
+    threadCommentId,
+    replies,
+  }: TodoCommentCacheInput & { threadCommentId: string; replies: readonly TodoComment[] },
+) {
   queryClient.setQueriesData<TodoCommentThreadPages>(threadQueries(todoId), (data) =>
     addRepliesToThreadPages(data, threadCommentId, replies),
   );
@@ -129,14 +133,23 @@ export function addTodoCommentRepliesToCaches({
 }
 
 /** 새 댓글의 자리(정렬·페이지)는 서버가 정하므로 묶음 목록만 다시 받는다 */
-export function invalidateTodoCommentThreads({ queryClient, todoId }: TodoCommentCacheParams) {
+export function invalidateTodoCommentThreads(
+  queryClient: QueryClient,
+  { todoId }: TodoCommentCacheInput,
+) {
   return queryClient.invalidateQueries(threadQueries(todoId));
 }
 
-export function invalidateTodoCommentCount({ queryClient, todoId }: TodoCommentCacheParams) {
+export function invalidateTodoCommentCount(
+  queryClient: QueryClient,
+  { todoId }: TodoCommentCacheInput,
+) {
   return invalidateTodoSummaries(queryClient, { todoId });
 }
 
-export function refreshTodoComments({ queryClient, todoId }: TodoCommentCacheParams) {
+export function invalidateTodoComments(
+  queryClient: QueryClient,
+  { todoId }: TodoCommentCacheInput,
+) {
   return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }) });
 }

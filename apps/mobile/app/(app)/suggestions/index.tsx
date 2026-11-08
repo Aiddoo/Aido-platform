@@ -16,17 +16,18 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
   const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
-  const canViewSuggestions =
-    entitlementsQuery.data == null
-      ? undefined
-      : EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_SUGGESTION');
+  const view = match(entitlementsQuery.data)
+    .with(P.nullish, () => (entitlementsQuery.isError ? 'error' : 'loading'))
+    .otherwise((entitlements) =>
+      EntitlementPolicy.canUseFeature(entitlements, 'AI_SUGGESTION') ? 'premium' : 'free',
+    );
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
   return (
@@ -35,7 +36,7 @@ export default function SuggestionsScreen() {
         className="flex-1"
         contentContainerClassName="grow pb-8"
         refreshControl={
-          canViewSuggestions === true ? (
+          view === 'premium' ? (
             <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           ) : undefined
         }
@@ -44,8 +45,8 @@ export default function SuggestionsScreen() {
           <ReadableContent className="grow px-4">
             <Spacing size={16} />
 
-            {match(canViewSuggestions)
-              .with(true, () => (
+            {match(view)
+              .with('premium', () => (
                 <VStack gap={12}>
                   <AiConsentNotice title={t('consent.notice.suggestions')} />
 
@@ -56,17 +57,14 @@ export default function SuggestionsScreen() {
                   </QueryErrorBoundary>
                 </VStack>
               ))
-              .with(false, () => <SuggestionsList.PremiumPreview />)
-              .with(undefined, () =>
-                entitlementsQuery.isError ? (
-                  <SuggestionsList.Error
-                    error={entitlementsQuery.error}
-                    reset={() => entitlementsQuery.refetch()}
-                  />
-                ) : (
-                  <SuggestionsList.Loading />
-                ),
-              )
+              .with('free', () => <SuggestionsList.PremiumPreview />)
+              .with('error', () => (
+                <SuggestionsList.Error
+                  error={entitlementsQuery.error}
+                  reset={() => entitlementsQuery.refetch()}
+                />
+              ))
+              .with('loading', () => <SuggestionsList.Loading />)
               .exhaustive()}
           </ReadableContent>
         </StyledSafeAreaView>

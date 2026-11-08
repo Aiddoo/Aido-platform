@@ -4,7 +4,7 @@ export interface AudioPartPlaylistStatus {
   currentTime: number;
   /** 지금 조각의 길이(초) */
   duration: number;
-  playing: boolean;
+  isPlaying: boolean;
   isLoaded: boolean;
   /** 마지막 조각까지 다 들은 순간의 이벤트 하나에만 실린다 */
   didJustFinish: boolean;

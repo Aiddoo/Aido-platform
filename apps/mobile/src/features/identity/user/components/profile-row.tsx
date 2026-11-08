@@ -1,4 +1,5 @@
-import { useClipboard } from '@src/bootstrap/providers/di-context';
+import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
+import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,6 +18,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 
+import { USER_LOG_EVENT } from '../constants/user-log-events';
 import { useMyPageMenuNavigation } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
@@ -34,12 +36,14 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
   const toast = useAppToast();
   const { t } = useTranslation('user');
   const clipboard = useClipboard();
+  const logger = useLogger();
 
   const handleCopyUserTag = async () => {
     try {
       await clipboard.copy(user.userTag);
       toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
-    } catch {
+    } catch (error) {
+      logger.warn(USER_LOG_EVENT.TAG_COPY_FAILED, { error: getErrorMessage(error) });
       toast.error(t('profile.tagCopyFailed'));
     }
   };

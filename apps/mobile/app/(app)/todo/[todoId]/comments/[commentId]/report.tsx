@@ -21,7 +21,7 @@ export default function CommentReportSheetRoute() {
   }
 
   const { todoId, commentId } = params.data;
-  const author = findCachedTodoComment({ queryClient, todoId, commentId })?.author;
+  const author = findCachedTodoComment(queryClient, { todoId, commentId })?.author;
 
   return (
     <SheetRouteScreen>

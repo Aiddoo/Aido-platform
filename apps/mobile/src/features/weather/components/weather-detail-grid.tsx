@@ -27,6 +27,7 @@ import { WeatherIndicatorPolicy } from '../domains/weather-indicator.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toVisibilityKilometers } from '../utils/to-visibility-kilometers';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
@@ -48,7 +49,10 @@ import { WeatherMeter } from './weather-meter';
 const LOADING_TILE_COUNT = 8;
 
 /** 구름 단계에 낮밤을 더해 안내 문구 키를 고른다. 흐림은 낮밤이 같다. */
-function getCloudCoverNoteKey(cloudCover: number, isDaylight: boolean) {
+function getCloudCoverNoteKey({
+  cloudCover,
+  isDaylight,
+}: Pick<WeatherReport['current'], 'cloudCover' | 'isDaylight'>) {
   return match(WeatherIndicatorPolicy.getCloudCoverLevel(cloudCover))
     .with('overcast', () => CLOUD_COVER_NOTE_KEYS.overcast)
     .with('mostlyCloudy', () =>
@@ -82,13 +86,13 @@ export function WeatherDetailGrid() {
     toDisplayTemperature(current.apparentTemperature, unit) -
       toDisplayTemperature(current.temperature, unit),
   );
-  const sunscreen = WeatherDetailPolicy.getSunscreenWindow(hourly, now, data.location.timezone);
+  const sunscreen = WeatherDetailPolicy.findSunscreenWindow(hourly, now, data.location.timezone);
   const direction = WeatherIndicatorPolicy.toCompassDirection(current.windDirection);
   const windSpeed = formatSpeed(current.windSpeed);
   const pressure = String(Math.round(current.pressure));
   const nextDayPrecipitation = WeatherDetailPolicy.calculateNextDayPrecipitation(hourly, now);
   const visibilityLevel = WeatherIndicatorPolicy.getVisibilityLevel(current.visibility);
-  const cloudCoverNoteKey = getCloudCoverNoteKey(current.cloudCover, current.isDaylight);
+  const cloudCoverNoteKey = getCloudCoverNoteKey(current);
 
   return (
     <Box onLayout={onLayout}>

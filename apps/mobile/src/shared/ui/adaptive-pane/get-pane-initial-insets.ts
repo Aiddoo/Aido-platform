@@ -5,7 +5,7 @@ export type PaneSlot = 'primary' | 'secondary';
 export function getPaneInitialInsets(
   windowInsets: EdgeInsets,
   pane: PaneSlot,
-  isRTL: boolean,
+  { isRTL }: { isRTL: boolean },
 ): EdgeInsets {
   const touchesLeftEdge = (pane === 'primary') !== isRTL;
 

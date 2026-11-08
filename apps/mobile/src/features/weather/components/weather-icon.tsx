@@ -209,7 +209,13 @@ const CONDITION_ICONS = {
 } satisfies Record<WeatherCondition, ConditionIcon>;
 
 /** 밤에는 해 대신 달을 그린다. 구름 조금 낀 밤도 하늘이 대체로 열려 있어 달로 보여 준다. */
-function toGlyphName(condition: WeatherCondition, isDaylight: boolean): GlyphName {
+function toGlyphName({
+  condition,
+  isDaylight,
+}: {
+  condition: WeatherCondition;
+  isDaylight: boolean;
+}): GlyphName {
   return match([CONDITION_ICONS[condition], isDaylight] as const)
     .with(['clear', true], () => 'sun' as const)
     .with(['partlyCloudy', true], () => 'partlyCloudy' as const)
@@ -241,7 +247,7 @@ interface WeatherIconProps extends GlyphIconProps {
  * 시안은 앱 안 아이콘을 움직이지 않으므로(움직임은 배경 장면이 맡는다) 정지 아이콘으로 그린다.
  */
 export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProps) {
-  return <GlyphIcon glyph={GLYPHS[toGlyphName(condition, isDaylight)]} {...props} />;
+  return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }
 
 WeatherIcon.Sunrise = function Sunrise(props: GlyphIconProps) {

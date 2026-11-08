@@ -9,7 +9,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { toUserReportRequest } from '../apis/user-report.mapper';
 import type { BlockTarget } from '../schemas/user-block.schema';
-import type { UserReportFormInput, UserReportTarget } from '../schemas/user-report.schema';
+import type { UserReportFormValues, UserReportTarget } from '../schemas/user-report.schema';
 import { invalidateAfterBlockChange } from './moderation-cache';
 
 export function useBlockUserMutationOptions() {
@@ -67,7 +67,7 @@ export function useUnblockUserMutationOptions() {
 
 export interface ReportContentVariables {
   target: UserReportTarget;
-  form: UserReportFormInput;
+  form: UserReportFormValues;
 }
 
 /** 성공 안내(토스트·차단 바로가기)는 시트가 맡는다. 시트가 닫히는 순서와 함께 정해야 해서다 */

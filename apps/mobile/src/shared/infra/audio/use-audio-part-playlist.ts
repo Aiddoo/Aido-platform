@@ -1,11 +1,30 @@
-import type { AudioPartPlaylist } from '@src/core/ports/audio-part-playlist';
-import { type AudioPlaylist, setAudioModeAsync, useAudioPlaylist } from 'expo-audio';
+import type {
+  AudioPartPlaylist,
+  AudioPartPlaylistStatus,
+} from '@src/core/ports/audio-part-playlist';
+import {
+  type AudioPlaylist,
+  type AudioPlaylistStatus,
+  setAudioModeAsync,
+  useAudioPlaylist,
+} from 'expo-audio';
 import { useMemo } from 'react';
+
+function toAudioPartPlaylistStatus(status: AudioPlaylistStatus): AudioPartPlaylistStatus {
+  return {
+    currentIndex: status.currentIndex,
+    currentTime: status.currentTime,
+    duration: status.duration,
+    isPlaying: status.playing,
+    isLoaded: status.isLoaded,
+    didJustFinish: status.didJustFinish,
+  };
+}
 
 function toAudioPartPlaylist(playlist: AudioPlaylist): AudioPartPlaylist {
   return {
     get currentStatus() {
-      return playlist.currentStatus;
+      return toAudioPartPlaylistStatus(playlist.currentStatus);
     },
     get isLoaded() {
       return playlist.isLoaded;
@@ -15,7 +34,9 @@ function toAudioPartPlaylist(playlist: AudioPlaylist): AudioPartPlaylist {
     skipTo: (index) => playlist.skipTo(index),
     seekTo: (seconds) => playlist.seekTo(seconds),
     subscribe: (listener) => {
-      const subscription = playlist.addListener('playlistStatusUpdate', listener);
+      const subscription = playlist.addListener('playlistStatusUpdate', (status) =>
+        listener(toAudioPartPlaylistStatus(status)),
+      );
       return () => subscription.remove();
     },
     prepareForPlayback: () =>

@@ -5,7 +5,7 @@ const STATUS = {
   currentIndex: 0,
   currentTime: 0,
   duration: 0,
-  playing: false,
+  isPlaying: false,
   isLoaded: true,
 };
 const MEMORY = { hasFinished: false, resolvedDurationMs: 120_000 };
@@ -39,7 +39,7 @@ describe('getVoiceNotePlayback', () => {
   it('다 들었으면 항목이 사라져도 끝 위치에 멈춰 있다', () => {
     // When
     const { playback } = getVoiceNotePlayback(
-      { ...STATUS, currentIndex: 1, playing: true, isLoaded: false },
+      { ...STATUS, currentIndex: 1, isPlaying: true, isLoaded: false },
       PARTS,
       { ...MEMORY, hasFinished: true },
     );

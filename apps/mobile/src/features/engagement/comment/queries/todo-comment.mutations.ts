@@ -46,24 +46,24 @@ const MAX_RETRY_COUNT = 2;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 1_000;
 
-interface CreateTodoCommentChainMutationParams {
+interface CreateTodoCommentChainVariables {
   input: TodoCommentChainInput;
   /** 답글을 달 때 그 대상. 이미 지워졌으면 행을 캐시에서 뺀다 */
   target: TodoComment | null;
 }
 
-interface UpdateTodoCommentMutationParams {
+interface UpdateTodoCommentVariables {
   target: TodoComment;
   input: TodoCommentUpdateInput;
 }
 
-interface DeleteTodoCommentMutationParams {
+interface DeleteTodoCommentVariables {
   comment: TodoComment;
 }
 
 type TodoCommentLikeVia = 'button' | 'double_tap';
 
-interface SetTodoCommentLikeMutationParams {
+interface SetTodoCommentLikeVariables {
   isLiked: boolean;
   via: TodoCommentLikeVia;
 }
@@ -110,7 +110,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
     retry: (failureCount, error) =>
       failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
-    mutationFn: async ({ input }: CreateTodoCommentChainMutationParams) =>
+    mutationFn: async ({ input }: CreateTodoCommentChainVariables) =>
       unwrap(await todoCommentService.createCommentChain(todoId, input)),
     onSuccess: async ({ comments }, { input }) => {
       const [first] = comments;
@@ -122,18 +122,17 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
 
       await match(first)
         .with({ threadCommentId: P.string }, ({ threadCommentId }) => {
-          addTodoCommentRepliesToCaches({
-            queryClient,
+          addTodoCommentRepliesToCaches(queryClient, {
             todoId,
             threadCommentId,
             replies: comments,
           });
-          return invalidateTodoCommentCount({ queryClient, todoId });
+          return invalidateTodoCommentCount(queryClient, { todoId });
         })
         .otherwise(() =>
           Promise.all([
-            invalidateTodoCommentThreads({ queryClient, todoId }),
-            invalidateTodoCommentCount({ queryClient, todoId }),
+            invalidateTodoCommentThreads(queryClient, { todoId }),
+            invalidateTodoCommentCount(queryClient, { todoId }),
           ]),
         );
     },
@@ -168,13 +167,12 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
     // 새 댓글과 같은 이유로 오프라인에서 멈추지 않는다
     networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.updateComment(todoId),
-    mutationFn: async ({ target, input }: UpdateTodoCommentMutationParams) =>
+    mutationFn: async ({ target, input }: UpdateTodoCommentVariables) =>
       unwrap(await todoCommentService.updateComment(todoId, target.id, input)),
     onMutate: async ({ target, input }) => {
-      await cancelTodoCommentQueries({ queryClient, todoId });
-      const snapshot = snapshotTodoCommentCaches({ queryClient, todoId });
-      patchTodoCommentCaches({
-        queryClient,
+      await cancelTodoCommentQueries(queryClient, { todoId });
+      const snapshot = snapshotTodoCommentCaches(queryClient, { todoId });
+      patchTodoCommentCaches(queryClient, {
         todoId,
         commentId: target.id,
         transform: (comment) => TodoCommentPolicy.withContentEdited(comment, input.content),
@@ -202,8 +200,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.updateFailed') });
     },
     onSuccess: (updated) => {
-      patchTodoCommentCaches({
-        queryClient,
+      patchTodoCommentCaches(queryClient, {
         todoId,
         commentId: updated.id,
         transform: (comment) => ({ ...updated, replyCount: comment.replyCount }),
@@ -224,12 +221,12 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   return mutationOptions({
     // 지우는 동안 메뉴 버튼이 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌린다
     networkMode: 'always',
-    mutationFn: async ({ comment }: DeleteTodoCommentMutationParams) =>
+    mutationFn: async ({ comment }: DeleteTodoCommentVariables) =>
       unwrap(await todoCommentService.deleteComment(todoId, comment.id)),
     onMutate: async ({ comment }) => {
-      await cancelTodoCommentQueries({ queryClient, todoId });
-      const snapshot = snapshotTodoCommentCaches({ queryClient, todoId });
-      removeTodoCommentFromCaches({ queryClient, todoId, comment });
+      await cancelTodoCommentQueries(queryClient, { todoId });
+      const snapshot = snapshotTodoCommentCaches(queryClient, { todoId });
+      removeTodoCommentFromCaches(queryClient, { todoId, comment });
       return { snapshot };
     },
     onError: (error, { comment }, context) => {
@@ -257,7 +254,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
         todo_id: todoId,
         is_reply: TodoCommentPolicy.isReply(comment),
       });
-      return invalidateTodoCommentCount({ queryClient, todoId });
+      return invalidateTodoCommentCount(queryClient, { todoId });
     },
   });
 }
@@ -280,14 +277,13 @@ export function useSetTodoCommentLikeMutationOptions({
   return mutationOptions({
     // 하트는 먼저 바뀌고 버튼이 잠기지 않는다. 오프라인이면 멈춰 두었다가 연결되면 같은 순서로 보낸다
     scope: { id: `todo-comment-like:${commentId}` },
-    mutationFn: async ({ isLiked }: SetTodoCommentLikeMutationParams) =>
+    mutationFn: async ({ isLiked }: SetTodoCommentLikeVariables) =>
       unwrap(await todoCommentService.setCommentLike(todoId, commentId, isLiked)),
     onMutate: async ({ isLiked }) => {
-      await cancelTodoCommentQueries({ queryClient, todoId });
-      const snapshot = snapshotTodoCommentCaches({ queryClient, todoId });
-      const target = findCachedTodoComment({ queryClient, todoId, commentId });
-      patchTodoCommentCaches({
-        queryClient,
+      await cancelTodoCommentQueries(queryClient, { todoId });
+      const snapshot = snapshotTodoCommentCaches(queryClient, { todoId });
+      const target = findCachedTodoComment(queryClient, { todoId, commentId });
+      patchTodoCommentCaches(queryClient, {
         todoId,
         commentId,
         transform: (comment) => TodoCommentPolicy.withLiked(comment, isLiked),
@@ -316,8 +312,7 @@ export function useSetTodoCommentLikeMutationOptions({
     },
     onSuccess: (result, { via }) => {
       trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked, via });
-      patchTodoCommentCaches({
-        queryClient,
+      patchTodoCommentCaches(queryClient, {
         todoId,
         commentId: result.commentId,
         transform: (comment) => TodoCommentPolicy.withLikeResult(comment, result),
