@@ -7,6 +7,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup, Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import type { ComponentProps } from 'react';
 
 function SummaryText({ isEnabled, children }: { isEnabled: boolean; children: string }) {
   return (
@@ -16,7 +17,10 @@ function SummaryText({ isEnabled, children }: { isEnabled: boolean; children: st
   );
 }
 
-export function NotificationSettingsLinks() {
+type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
+
+/** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
+export function NotificationSettingsLinks(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const push = useSingleTap(router.push);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -25,7 +29,7 @@ export function NotificationSettingsLinks() {
   const isWeatherEnabled = PreferencePolicy.isWeatherEnabled(preference);
 
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Item
         label={t('settings.pushLabel')}
         value={

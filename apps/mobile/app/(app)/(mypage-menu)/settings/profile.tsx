@@ -22,12 +22,12 @@ export default function ProfileScreen() {
       </QueryErrorBoundary>
 
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-        <Suspense fallback={<AccountSettingsList.Loading />}>
-          <AccountSettingsList />
+        <Suspense fallback={<AccountSettingsList.Loading label={t('sections.account')} />}>
+          <AccountSettingsList label={t('sections.account')} />
         </Suspense>
       </QueryErrorBoundary>
 
-      <SettingsListGroup>
+      <SettingsListGroup label={t('sections.signIn')}>
         <SettingsListGroup.Item
           label={t('titles.linkedAccounts')}
           onPress={() => push('/settings/linked-accounts')}

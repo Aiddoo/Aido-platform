@@ -8,10 +8,14 @@ import { useLanguage } from '@src/shared/providers/language-provider';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
+import type { ComponentProps } from 'react';
 
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
-export function TermsAgreementList() {
+type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
+
+/** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
+export function TermsAgreementList(props: SettingsSectionProps) {
   const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const openUrl = useOpenInAppBrowser();
@@ -32,7 +36,7 @@ export function TermsAgreementList() {
     ]).join('\n');
 
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Item
         label={t('terms.termsOfService')}
         description={getConsentDescription(consent.termsAgreedAt)}

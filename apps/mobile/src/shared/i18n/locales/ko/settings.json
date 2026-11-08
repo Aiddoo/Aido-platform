@@ -70,5 +70,13 @@
     "removeConfirm": "삭제",
     "removeCancel": "취소",
     "removeAll": "녹음 모두 삭제"
+  },
+  "sections": {
+    "timeDisplay": "시간 표시",
+    "notifications": "알림",
+    "agreements": "약관 동의",
+    "dataUse": "데이터 활용",
+    "account": "계정",
+    "signIn": "로그인"
   }
 }

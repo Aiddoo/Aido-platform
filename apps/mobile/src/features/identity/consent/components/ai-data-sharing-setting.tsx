@@ -4,6 +4,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SettingsListGroup, Text, TextButton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { ConsentPolicy } from '../domains/consent.model';
@@ -14,7 +15,10 @@ import { useGetConsentQueryOptions } from '../queries/consent.queries';
  * AI 기능 데이터 제공 동의. 켜면 동의, 끄면 결과를 확인받고 철회한다.
  * 아직 답하지 않은 사용자는 꺼진 채로 두고, 묻기 전에 미리 "사용 안 함"을 고를 수 있다.
  */
-export function AiDataSharingSetting() {
+type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
+
+/** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
+export function AiDataSharingSetting(props: SettingsSectionProps) {
   const { t } = useTranslation(['settings', 'common']);
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const updateConsent = useMutation(useUpdateAiDataSharingConsentMutationOptions());
@@ -40,7 +44,7 @@ export function AiDataSharingSetting() {
   };
 
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Toggle
         label={t('settings:terms.aiDataSharing.label')}
         description={

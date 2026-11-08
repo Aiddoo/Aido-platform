@@ -70,5 +70,13 @@
     "removeConfirm": "Delete",
     "removeCancel": "Cancel",
     "removeAll": "Delete all recordings"
+  },
+  "sections": {
+    "timeDisplay": "Time display",
+    "notifications": "Notifications",
+    "agreements": "Agreements",
+    "dataUse": "Data use",
+    "account": "Account",
+    "signIn": "Sign-in"
   }
 }

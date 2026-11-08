@@ -1,16 +1,19 @@
 import { NotificationSettingsLinks } from '@src/features/notification/components/settings/notification-settings-links';
 import { TimeFormatSetting } from '@src/features/notification/components/settings/time-format-setting';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function NotificationSettingsScreen() {
+  const { t } = useTranslation('settings');
+
   return (
     <SettingsScreenLayout>
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<NotificationSettingsScreen.Loading />}>
-          <TimeFormatSetting />
+          <TimeFormatSetting label={t('sections.timeDisplay')} />
 
-          <NotificationSettingsLinks />
+          <NotificationSettingsLinks label={t('sections.notifications')} />
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>
@@ -18,13 +21,15 @@ export default function NotificationSettingsScreen() {
 }
 
 NotificationSettingsScreen.Loading = function Loading() {
+  const { t } = useTranslation('settings');
+
   return (
     <>
-      <SettingsListGroup>
+      <SettingsListGroup label={t('sections.timeDisplay')}>
         <SettingsListGroup.Toggle.Loading />
       </SettingsListGroup>
 
-      <SettingsListGroup>
+      <SettingsListGroup label={t('sections.notifications')}>
         <SettingsListGroup.Item.Loading hasValue />
         <SettingsListGroup.Separator />
         <SettingsListGroup.Item.Loading hasValue />
