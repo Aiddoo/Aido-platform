@@ -1,19 +1,22 @@
+import {
+  nudgeCooldownInfoSchema as nudgeCooldownInfoContractSchema,
+  nudgeLimitInfoSchema as nudgeLimitInfoContractSchema,
+} from '@aido/api';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-const nudgeLimitInfoSchema = z.object({
-  dailyLimit: z.number().nullable(),
-  usedToday: z.number(),
-  remainingToday: z.number().nullable(),
-  isUnlimited: z.boolean(),
+const nudgeLimitInfoSchema = nudgeLimitInfoContractSchema.pick({
+  dailyLimit: true,
+  usedToday: true,
+  remainingToday: true,
+  isUnlimited: true,
 });
 export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
 
-const nudgeCooldownInfoSchema = z.object({
-  canNudge: z.boolean(),
-  cooldownEndsAt: instantSchema.nullable(),
-  remainingSeconds: z.number().nullable(),
-});
+/** 쿨다운 끝 시각은 응답 문자열 대신 Instant로 읽는다 */
+const nudgeCooldownInfoSchema = nudgeCooldownInfoContractSchema
+  .pick({ canNudge: true, remainingSeconds: true })
+  .extend({ cooldownEndsAt: instantSchema.nullable() });
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
 const sendTodoNudgeResultSchema = z.object({

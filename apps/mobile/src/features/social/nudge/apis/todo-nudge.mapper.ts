@@ -1,4 +1,9 @@
-import type { CreateNudgeResponse, CreateRemindNudgeResponse } from '@aido/api';
+import type {
+  CreateNudgeResponse,
+  CreateRemindNudgeResponse,
+  NudgeCooldownInfo as NudgeCooldownInfoDto,
+  NudgeLimitInfo as NudgeLimitInfoDto,
+} from '@aido/api';
 import { toNullableInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
@@ -8,13 +13,11 @@ import type {
   SendTodoNudgeResult,
 } from '../schemas/todo-nudge.schema';
 
-export function toNudgeLimitInfo(dto: NudgeLimitInfo): NudgeLimitInfo {
+export function toNudgeLimitInfo(dto: NudgeLimitInfoDto): NudgeLimitInfo {
   return pick(dto, ['dailyLimit', 'usedToday', 'remainingToday', 'isUnlimited']);
 }
 
-export function toNudgeCooldownInfo(
-  dto: Omit<NudgeCooldownInfo, 'cooldownEndsAt'> & { cooldownEndsAt: string | null },
-): NudgeCooldownInfo {
+export function toNudgeCooldownInfo(dto: NudgeCooldownInfoDto): NudgeCooldownInfo {
   return {
     ...pick(dto, ['canNudge', 'remainingSeconds']),
     cooldownEndsAt: toNullableInstant(dto.cooldownEndsAt),

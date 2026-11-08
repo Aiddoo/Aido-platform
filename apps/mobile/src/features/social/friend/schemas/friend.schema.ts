@@ -2,9 +2,11 @@ import {
   friendRequestUserSchema as friendRequestUserContractSchema,
   friendsListResponseSchema,
   friendUserSchema as friendUserContractSchema,
+  getFollowsQuerySchema,
   type ReorderFriendInput as ReorderFriendContractInput,
   receivedRequestsResponseSchema,
   reorderFriendResponseSchema,
+  searchUsersQuerySchema,
   searchUsersResponseSchema,
   type searchUserSchema,
   sendFriendRequestResponseSchema,
@@ -64,13 +66,15 @@ export const reorderedFriendSchema = reorderFriendResponseSchema.extend({
 });
 
 /** 친구·요청 목록 페이지 입력. 생략하면 서버 기본값(limit 20)을 쓴다 */
-export interface PaginationQuery {
-  cursor?: string;
-  limit?: number;
-}
+/** 계약은 문자열 query를 숫자로 바꾼다. 앱은 바꾼 뒤의 값을 보내고 기본값이 있는 칸은 생략한다 */
+const paginationQuerySchema = getFollowsQuerySchema.partial();
+export type PaginationQuery = z.output<typeof paginationQuerySchema>;
 
-export interface SearchUsersQuery extends PaginationQuery {
-  query: string;
-}
+/** 서버의 검색어 칸 `q`를 앱에서는 `query`로 부른다 */
+const searchUsersAppQuerySchema = searchUsersQuerySchema
+  .pick({ cursor: true, limit: true })
+  .partial()
+  .extend({ query: searchUsersQuerySchema.shape.q });
+export type SearchUsersQuery = z.output<typeof searchUsersAppQuerySchema>;
 
 export type ReorderFriendInput = ReorderFriendContractInput;

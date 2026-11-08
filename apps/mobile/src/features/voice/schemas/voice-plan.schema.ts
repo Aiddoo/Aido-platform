@@ -1,3 +1,4 @@
+import { quickPlanRequestSchema } from '@aido/api';
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
@@ -63,10 +64,11 @@ export const voicePlanSchema = z.object({
 });
 export type VoicePlan = z.infer<typeof voicePlanSchema>;
 
-export interface CreateQuickPlanInput {
-  text: string;
-  source: 'voice' | 'text';
-}
+/** 입력 경로는 앱의 말(`voice`·`text`)로 받고 mapper가 계약 값으로 바꾼다 */
+const createQuickPlanInputSchema = quickPlanRequestSchema
+  .pick({ text: true })
+  .extend({ source: z.enum(['voice', 'text']) });
+export type CreateQuickPlanInput = z.infer<typeof createQuickPlanInputSchema>;
 
 export interface QuickPlanResult {
   plan: VoicePlan;

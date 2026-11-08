@@ -1,9 +1,13 @@
+import { dailyCompletionsRangeResponseSchema, todoListResponseSchema } from '@aido/api';
+
 import {
   createDailyCompletionsDto,
   createTodoDto,
   createTodoItemResponseDto,
+  createTodoListResponseDto,
 } from '../__tests__/todo.fixtures';
-import { toDailyCompletionsResult, toTodo } from './todo.mapper';
+import { dailyCompletionsResultSchema, todoListResultSchema } from '../schemas/todo.schema';
+import { toDailyCompletionsResult, toTodo, toTodoListResult } from './todo.mapper';
 
 beforeEach(() => {
   jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
@@ -138,5 +142,53 @@ describe('toTodo의 반복 규칙', () => {
     // Then
     expect(todo.repeat).toBeNull();
     expect(todo.recurrenceGroupId).toBe('series-1');
+  });
+});
+
+describe('계약 응답과 앱 스키마', () => {
+  it('계약을 통과한 할 일 목록을 매핑하면 앱 목록 스키마를 통과한다', () => {
+    // Given
+    const dto = todoListResponseSchema.parse(
+      createTodoListResponseDto({
+        items: [
+          createTodoDto({
+            scheduledLocalTime: '09:00',
+            repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+            items: [createTodoItemResponseDto({ completed: true })],
+            itemStats: { total: 1, completed: 1 },
+          }),
+          createTodoDto({ id: 2, isAllDay: true, scheduledTime: null, repeat: undefined }),
+        ],
+        pagination: { hasNext: true, nextCursor: 2, size: 20 },
+      }),
+    );
+
+    // When
+    const result = toTodoListResult(dto);
+
+    // Then
+    expect(todoListResultSchema.parse(result)).toEqual(result);
+  });
+
+  it('계약을 통과한 달성 기간을 매핑하면 앱 달성 스키마를 통과한다', () => {
+    // Given
+    const dto = dailyCompletionsRangeResponseSchema.parse(
+      createDailyCompletionsDto({
+        multiDayTodos: [
+          {
+            startDate: '2026-03-01',
+            endDate: '2026-03-03',
+            completed: false,
+            categoryColor: '#4A90D9',
+          },
+        ],
+      }),
+    );
+
+    // When
+    const result = toDailyCompletionsResult(dto);
+
+    // Then
+    expect(dailyCompletionsResultSchema.parse(result)).toEqual(result);
   });
 });

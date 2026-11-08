@@ -1,15 +1,14 @@
-import { z } from 'zod';
+import { todoItemResponseSchema, todoItemStatsSchema } from '@aido/api';
+import type { z } from 'zod';
 
-export const subTodoSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  completed: z.boolean(),
-  sortOrder: z.number(),
+/** 서버의 하위 항목(`items`)에서 앱이 쓰는 칸만 고른다 */
+export const subTodoSchema = todoItemResponseSchema.pick({
+  id: true,
+  title: true,
+  completed: true,
+  sortOrder: true,
 });
 export type SubTodo = z.infer<typeof subTodoSchema>;
 
-export const subTodoStatsSchema = z.object({
-  total: z.number(),
-  completed: z.number(),
-});
+export const subTodoStatsSchema = todoItemStatsSchema.pick({ total: true, completed: true });
 export type SubTodoStats = z.infer<typeof subTodoStatsSchema>;

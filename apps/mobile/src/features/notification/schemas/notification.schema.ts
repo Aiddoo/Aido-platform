@@ -1,4 +1,5 @@
 import {
+  getNotificationsQuerySchema,
   notificationActionSchema,
   notificationContextSchema,
   notificationInboxResponseSchema,
@@ -14,7 +15,6 @@ import { z } from 'zod';
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
-type NotificationCategory = z.infer<typeof notificationCategorySchema>;
 
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
@@ -66,12 +66,9 @@ const notificationListResultSchema = notificationInboxResponseSchema
   .extend({ notifications: z.array(notificationSchema) });
 export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
 
-export interface GetNotificationsQuery {
-  limit?: number;
-  cursor?: number;
-  category?: NotificationCategory;
-  unreadOnly?: boolean;
-}
+/** 계약은 문자열 query를 바꿔 읽어 입력 타입이 unknown이다. 앱은 바꾼 뒤의 값을 보내고 모든 칸을 생략할 수 있다 */
+const getNotificationsAppQuerySchema = getNotificationsQuerySchema.partial();
+export type GetNotificationsQuery = z.output<typeof getNotificationsAppQuerySchema>;
 
 /** 서버(1.13.0+)가 할 일 알림에 싣는 할 일 주인·날짜. 예전 알림에는 없다. */
 const todoTargetShape = {

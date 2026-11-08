@@ -100,10 +100,10 @@ const ISSUE_PATH = {
 } as const satisfies Record<TodoRepeatFormIssue, keyof TodoRepeatFormValues>;
 
 export function createTodoRepeatFormSchema(timeZone: string) {
-  return todoRepeatFormShape.superRefine((values, context) => {
-    const issue = getTodoRepeatFormIssue(values, timeZone);
+  return todoRepeatFormShape.check(({ value, issues }) => {
+    const issue = getTodoRepeatFormIssue(value, timeZone);
     if (issue != null) {
-      context.addIssue({ code: 'custom', message: issue, path: [ISSUE_PATH[issue]] });
+      issues.push({ code: 'custom', input: value, message: issue, path: [ISSUE_PATH[issue]] });
     }
   });
 }

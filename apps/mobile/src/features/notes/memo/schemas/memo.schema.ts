@@ -8,6 +8,7 @@ import {
   parseMemoResponseSchema,
 } from '@aido/api';
 import { AI_PARSE_LIMITS } from '@aido/api/vocabulary';
+import type { QuickPlanResult } from '@src/features/voice/schemas/voice-plan.schema';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -39,3 +40,6 @@ export const parseMemoPlanResponseSchema = parseMemoResponseSchema.extend({
   meta: parseMemoMetaSchema.required({ omittedTodoCount: true }),
 });
 export type ParseMemoPlanResponse = z.infer<typeof parseMemoPlanResponseSchema>;
+
+/** 메모 정리 결과. 계획과, 이 요청을 반영한 AI 할 일 만들기 한도(서버가 한도를 읽지 못하면 싣지 않아 null) */
+export type ParsedMemoPlan = Pick<QuickPlanResult, 'plan' | 'featureQuota'>;

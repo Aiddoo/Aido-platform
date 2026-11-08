@@ -25,17 +25,18 @@ const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeat
 });
 
 describe('todoRepeatFormSchema', () => {
-  const CASES: [string, Partial<TodoRepeatFormValues>, TodoRepeatFormIssue][] = [
-    ['요일 없음', { weekdays: [] }, 'no-weekdays'],
-    ['날짜 종료인데 종료일 없음', { endType: 'UNTIL' }, 'until-required'],
+  const CASES: [string, Partial<TodoRepeatFormValues>, TodoRepeatFormIssue, string][] = [
+    ['요일 없음', { weekdays: [] }, 'no-weekdays', 'weekdays'],
+    ['날짜 종료인데 종료일 없음', { endType: 'UNTIL' }, 'until-required', 'untilDate'],
     [
       '기간 안에 회차 없음',
       { weekdays: ['MON'], endType: 'UNTIL', untilDate: fromDate(new Date(2026, 10, 6, 12)) },
       'no-occurrence',
+      'untilDate',
     ],
   ];
 
-  it.each(CASES)('%s는 확인할 수 없다', (_title, overrides, issue) => {
+  it.each(CASES)('%s는 확인할 수 없다', (_title, overrides, issue, path) => {
     // Given
     const values = createValues(overrides);
 
@@ -46,6 +47,7 @@ describe('todoRepeatFormSchema', () => {
     expect(getTodoRepeatFormIssue(values, TIME_ZONE)).toBe(issue);
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe(issue);
+    expect(result.error?.issues[0]?.path).toEqual([path]);
   });
 
   it('요일이 비어도 매월이면 확인할 수 있다', () => {
