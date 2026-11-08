@@ -16,11 +16,9 @@ import {
 } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
-import { type WeatherService } from '../apis/weather.service';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { applyDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type LocationReading } from '../schemas/weather-location.schema';
 import { type WeatherReport } from '../schemas/weather-report.schema';
@@ -100,31 +98,6 @@ function shouldRetryReport(failureCount: number, error: unknown): boolean {
 }
 
 /**
- * 서버가 위치를 잃었다고(WEATHER_1902) 답하면 마지막으로 읽은 위치를 한 번만 다시 등록하고 다시 받는다.
- * 다시 등록도 실패하면 처음의 1902를 그대로 던져 위치 안내를 보여 준다.
- */
-async function getReportWithRegistration(
-  weatherService: WeatherService,
-  client: QueryClient,
-  signal: AbortSignal,
-): Promise<WeatherReport> {
-  const result = await weatherService.getReport(signal);
-  if (result.ok || !isLocationNotRegisteredError(result.error)) {
-    return unwrap(result);
-  }
-  const reading = client.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location());
-  if (reading?.status !== 'located') {
-    return unwrap(result);
-  }
-  const { latitude, longitude } = reading.registered;
-  const registration = await weatherService.updateLocation({ latitude, longitude }, signal);
-  if (!registration.ok) {
-    return unwrap(result);
-  }
-  return unwrap(await weatherService.getReport(signal));
-}
-
-/**
  * 개발 QA의 날씨 덮어쓰기는 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며
  * 기기에 저장하지 않는다. 실제 리포트가 이미 있으면 처음부터 그 값으로 그려 화면이 로딩으로 돌아가지 않는다.
  */
@@ -136,10 +109,19 @@ export function useGetWeatherReportQueryOptions() {
 
   const reportOptions = queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision }),
-    queryFn: ({ signal, client: queryClient }) => {
+    queryFn: async ({ signal, client: queryClient }) => {
       // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
       removeOutdatedWeatherReports(queryClient, { locationRevision });
-      return getReportWithRegistration(weatherService, queryClient, signal);
+      const reading = queryClient.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location());
+      return unwrap(
+        await weatherService.getReportWithReregistration({
+          lastRegistered:
+            reading?.status === 'located'
+              ? pick(reading.registered, ['latitude', 'longitude'])
+              : null,
+          signal,
+        }),
+      );
     },
     staleTime: REPORT_STALE_TIME_MS,
     refetchInterval: REPORT_REFETCH_INTERVAL_MS,
