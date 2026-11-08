@@ -18,14 +18,13 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { orderBy, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Separator, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { isReportUnavailableError } from '../domains/report.error';
-import { ReportPolicy } from '../domains/report.model';
-import type { AiReport } from '../schemas/report.schema';
+import { type AiReport, ReportPolicy } from '../domains/report.model';
 import { ReportTypeChip } from './report-type-chip';
 
 /** 활동이 많았던 시간대를 몇 개까지 보여 줄지 */
@@ -66,7 +65,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
           <>
             <DashedDivider />
             <Box className="py-4">
-              <TimePatternSummary items={report.timePatterns} />
+              <TimePatternSummary report={report} />
             </Box>
           </>
         )}
@@ -236,11 +235,11 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
   );
 }
 
-function TimePatternSummary({ items }: { items: AiReport['timePatterns'] }) {
+function TimePatternSummary({ report }: { report: Pick<AiReport, 'timePatterns'> }) {
   const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const topHours = orderBy(items, ['count'], ['desc']).slice(0, TOP_HOUR_COUNT);
+  const topHours = ReportPolicy.getMostActiveHours(report, TOP_HOUR_COUNT);
 
   return (
     <VStack gap={16}>

@@ -1,4 +1,4 @@
-import type { ReportType } from '../schemas/report.schema';
+import type { ReportType } from '../domains/report.model';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

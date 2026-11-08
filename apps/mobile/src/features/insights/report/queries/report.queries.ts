@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
 import { REPORT_QUERY_KEYS } from '../constants/report-query-keys';
-import type { GetAiReportsQuery } from '../schemas/report.schema';
+import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
 
 export function useGetReportsQueryOptions(query: GetAiReportsQuery) {
   const reportService = useReportService();

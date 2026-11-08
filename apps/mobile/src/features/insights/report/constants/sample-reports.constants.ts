@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { t } from '@src/shared/i18n';
 
-import type { AiReport, ReportType } from '../schemas/report.schema';
+import type { AiReport, ReportType } from '../domains/report.model';
 
 export const SAMPLE_REPORT_IDS = {
   WEEKLY: 'sample-weekly',

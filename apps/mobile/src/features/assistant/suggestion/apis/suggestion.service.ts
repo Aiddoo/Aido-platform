@@ -1,13 +1,11 @@
+import { suggestionActionResponseSchema, suggestionListResponseSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
-import {
-  type AiSuggestionActionInput,
-  suggestionActionResultSchema,
-  suggestionListResultSchema,
-} from '../schemas/suggestion.schema';
+import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
+import { toAiSuggestion } from './suggestion.mapper';
 
 export class SuggestionService {
   readonly #httpClient: HttpClient;
@@ -21,8 +19,8 @@ export class SuggestionService {
   getSuggestions = async (signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/ai/suggestions', { signal }),
-      suggestionListResultSchema,
-      (dto) => dto.suggestions,
+      suggestionListResponseSchema,
+      (dto) => dto.suggestions.map(toAiSuggestion),
       '[SuggestionService] Invalid getSuggestions response',
       this.#logInvalid('getSuggestions'),
     );
@@ -30,8 +28,8 @@ export class SuggestionService {
   actOnSuggestion = async (suggestionId: number, input: AiSuggestionActionInput) =>
     parseApiResponse(
       await this.#httpClient.patch(`v1/ai/suggestions/${suggestionId}`, input),
-      suggestionActionResultSchema,
-      (dto) => dto,
+      suggestionActionResponseSchema,
+      (dto) => toAiSuggestion(dto.suggestion),
       '[SuggestionService] Invalid actOnSuggestion response',
       this.#logInvalid('actOnSuggestion'),
     );

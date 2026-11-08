@@ -30,9 +30,9 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
+import type { AiSuggestion } from '../domains/suggestion.model';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import type { AiSuggestion } from '../schemas/suggestion.schema';
 
 const SUGGESTION_LOADING_COUNT = 2;
 /** 소개의 고양이와 로딩 자리가 같은 크기라 함께 쓴다 */

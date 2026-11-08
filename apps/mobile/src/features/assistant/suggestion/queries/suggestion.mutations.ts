@@ -17,7 +17,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
 import { isSuggestionUnavailableError } from '../domains/suggestion.error';
-import type { AiSuggestionActionInput } from '../schemas/suggestion.schema';
+import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
 
 interface ActOnSuggestionVariables {

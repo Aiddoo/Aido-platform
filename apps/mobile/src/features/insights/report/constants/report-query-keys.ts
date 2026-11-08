@@ -1,4 +1,4 @@
-import type { GetAiReportsQuery } from '../schemas/report.schema';
+import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
 
 // 'ai' 접두어는 제안과 같은 서버 모듈(ai) 키 공간을 쓰던 옛 키라 그대로 둔다
 export const REPORT_QUERY_KEYS = {

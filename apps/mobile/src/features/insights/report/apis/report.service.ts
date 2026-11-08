@@ -1,14 +1,15 @@
+import {
+  aiReportListResponseSchema,
+  aiReportResponseSchema,
+  reportStatusResponseSchema,
+} from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { REPORT_LOG_EVENT } from '../constants/report-log-events';
-import {
-  type GetAiReportsQuery,
-  reportDetailResultSchema,
-  reportListResultSchema,
-  reportStatusResultSchema,
-} from '../schemas/report.schema';
+import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
+import { toAiReport, toReportStatus } from './report.mapper';
 
 export class ReportService {
   readonly #httpClient: HttpClient;
@@ -22,8 +23,8 @@ export class ReportService {
   getReportStatus = async (signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/ai/reports/status', { signal }),
-      reportStatusResultSchema,
-      (dto) => dto.status,
+      reportStatusResponseSchema,
+      (dto) => toReportStatus(dto.status),
       '[ReportService] Invalid getReportStatus response',
       this.#logInvalid('getReportStatus'),
     );
@@ -34,8 +35,8 @@ export class ReportService {
         signal,
         params: { type: params?.type, limit: params?.limit },
       }),
-      reportListResultSchema,
-      (dto) => dto.reports,
+      aiReportListResponseSchema,
+      (dto) => dto.reports.map(toAiReport),
       '[ReportService] Invalid getReports response',
       this.#logInvalid('getReports'),
     );
@@ -43,8 +44,8 @@ export class ReportService {
   getReportById = async (id: number, signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get(`v1/ai/reports/${id}`, { signal }),
-      reportDetailResultSchema,
-      (dto) => dto.report,
+      aiReportResponseSchema,
+      (dto) => toAiReport(dto.report),
       '[ReportService] Invalid getReportById response',
       this.#logInvalid('getReportById'),
     );

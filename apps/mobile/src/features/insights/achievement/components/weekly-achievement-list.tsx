@@ -28,9 +28,9 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import { AchievementPolicy } from '../domains/achievement.model';
+import type { WeeklyAchievement } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
-import type { WeeklyAchievement } from '../schemas/achievement.schema';
 import { BadgeIcon } from './badge-icon';
 
 const LOADING_ROW_COUNT = 5;

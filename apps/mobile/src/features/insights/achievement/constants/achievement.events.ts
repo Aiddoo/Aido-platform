@@ -1,4 +1,4 @@
-import type { BadgeType } from '../schemas/achievement.schema';
+import type { BadgeType } from '../domains/achievement.model';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

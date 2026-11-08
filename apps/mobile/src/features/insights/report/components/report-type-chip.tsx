@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
-import type { ReportType } from '../schemas/report.schema';
+import type { ReportType } from '../domains/report.model';
 
 type ReportTypeChipProps = Omit<ComponentProps<typeof Chip>, 'children' | 'color'> & {
   type: ReportType;

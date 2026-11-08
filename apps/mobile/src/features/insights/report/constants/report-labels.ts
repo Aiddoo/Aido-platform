@@ -1,4 +1,4 @@
-import type { ReportType } from '../schemas/report.schema';
+import type { ReportType } from '../domains/report.model';
 
 export const REPORT_TYPE_LABEL_KEYS = {
   WEEKLY: 'report.typeWeekly',

@@ -1,8 +1,9 @@
-import { aiReportIdParamSchema, reportTypeSchema } from '@aido/api';
+import { aiReportIdParamSchema } from '@aido/api';
 import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
 import { isSampleReportId } from '../constants/sample-reports.constants';
+import { reportTypeSchema } from '../domains/report.model';
 
 const sampleReportSchema = z
   .string()

@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
 
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
-import type { AiReport } from '../schemas/report.schema';
+import type { AiReport } from '../domains/report.model';
 import { ReportTypeChip } from './report-type-chip';
 
 interface ReportRowProps {

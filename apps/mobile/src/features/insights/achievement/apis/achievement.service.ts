@@ -5,8 +5,8 @@ import {
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { GetAchievementsQuery } from '../schemas/achievement.schema';
-import { toWeeklyAchievement, toWeeklyAchievementsResult } from './achievement.mapper';
+import type { GetAchievementsQuery } from '../schemas/achievement-list-request.schema';
+import { toWeeklyAchievement, toWeeklyAchievementPage } from './achievement.mapper';
 
 export class AchievementService {
   readonly #httpClient: HttpClient;
@@ -25,7 +25,7 @@ export class AchievementService {
         params: { year, cursor, size },
       }),
       weeklyAchievementListResponseSchema,
-      toWeeklyAchievementsResult,
+      toWeeklyAchievementPage,
       '[AchievementService] Invalid getWeeklyAchievements response',
     );
 

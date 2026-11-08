@@ -3,12 +3,12 @@ import { unwrap } from '@src/core/errors/result';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
-import type { WeeklyAchievementsResult } from '../schemas/achievement.schema';
+import type { WeeklyAchievementPage } from '../domains/achievement.model';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
 function selectWeeklyAchievements(
-  infinitePages: InfiniteData<WeeklyAchievementsResult, number | undefined>,
+  infinitePages: InfiniteData<WeeklyAchievementPage, number | undefined>,
 ) {
   return {
     items: infinitePages.pages.flatMap((page) => page.items),

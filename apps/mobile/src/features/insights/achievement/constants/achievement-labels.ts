@@ -1,4 +1,4 @@
-import type { BadgeType } from '../schemas/achievement.schema';
+import type { BadgeType } from '../domains/achievement.model';
 
 export const ACHIEVEMENT_BADGE_NAME_KEYS = {
   perfect: 'badgeNames.perfect',
