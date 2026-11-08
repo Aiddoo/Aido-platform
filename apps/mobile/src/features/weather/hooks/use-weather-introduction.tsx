@@ -34,8 +34,17 @@ export function useWeatherIntroduction({
   );
   const [isRequesting, setIsRequesting] = useState(false);
   const hasClaimedRef = useRef(false);
+  const isUnmountedRef = useRef(false);
   const shouldIntroduce = location.status === 'needsPermission' && !hasSeen;
   const request = location.status === 'needsPermission' ? location.request : null;
+
+  // 다이얼로그 답이나 권한 요청이 화면이 사라진 뒤에 끝나도 상태를 바꾸지 않는다
+  useEffect(() => {
+    isUnmountedRef.current = false;
+    return () => {
+      isUnmountedRef.current = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isStable || !shouldIntroduce || request == null) {
@@ -97,11 +106,15 @@ export function useWeatherIntroduction({
             return undefined;
           }
           introductionRepository.markIntroductionSeen();
-          if (!accepted) {
+          if (!accepted || isUnmountedRef.current) {
             return undefined;
           }
           setIsRequesting(true);
-          return request().finally(() => setIsRequesting(false));
+          return request().finally(() => {
+            if (!isUnmountedRef.current) {
+              setIsRequesting(false);
+            }
+          });
         })
         .catch((error) => {
           logger.warn(WEATHER_LOG_EVENT.INTRODUCTION_FAILED, { error: getErrorMessage(error) });

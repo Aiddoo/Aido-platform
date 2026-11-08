@@ -165,6 +165,26 @@ describe('VoiceRecordingIntake', () => {
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 
+  it('늦은 파일 듣기를 다시 걸면 앞의 구독을 풀어 하나만 남긴다', () => {
+    // Given
+    const { intake } = createIntake();
+    const speechRecognizer = createSpeechRecognizerStub();
+    intake.segmentStarted('file:///documents/voice-notes/user-1/a.wav', 0);
+
+    // When
+    intake.listenForLate((listener) => speechRecognizer.subscribe(listener));
+    intake.listenForLate((listener) => speechRecognizer.subscribe(listener));
+
+    // Then
+    expect(speechRecognizer.getListenerCount()).toBe(1);
+
+    // When
+    jest.advanceTimersByTime(30_000);
+
+    // Then
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+  });
+
   it('기다릴 파일이 없으면 늦은 파일을 듣지 않는다', () => {
     // Given
     const { intake } = createIntake();

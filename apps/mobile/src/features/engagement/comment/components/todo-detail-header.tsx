@@ -11,7 +11,7 @@ import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { useTodoCommentParams } from '../hooks/use-todo-comment-params';
@@ -90,6 +90,13 @@ function useSortChange() {
   const navigation = useNavigation();
   // useIsFetching은 지금 정렬 목록의 배경 재조회에도 켜져 정렬 버튼이 꺼진다. 고른 정렬을 받는 동안만 켠다
   const [isPending, setIsPending] = useState(false);
+  const isUnmountedRef = useRef(false);
+  useEffect(() => {
+    isUnmountedRef.current = false;
+    return () => {
+      isUnmountedRef.current = true;
+    };
+  }, []);
   const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
     todoId,
     sort: TODO_COMMENT_SORT.LATEST,
@@ -106,6 +113,9 @@ function useSortChange() {
     queryClient
       .prefetchInfiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
       .finally(() => {
+        if (isUnmountedRef.current) {
+          return;
+        }
         setIsPending(false);
         // router.setParams는 지금 보이는 화면에 걸린다. 받는 동안 떠났으면 그 화면의 params를 바꾸지 않는다
         if (navigation.isFocused()) {

@@ -532,6 +532,17 @@ MemoList.Loading = function Loading() {
 
 앱 전체의 메모리를 측정하거나 감사하지는 않았다. 위 규칙은 코드를 고칠 때 보는 기준이다.
 
+### 타이머·구독 정리
+
+effect는 개발 모드에서 마운트-정리-마운트를 한 번 더 돌려 정리가 빠진 곳을 드러낸다([React: effect가 두 번 도는 경우](https://react.dev/learn/synchronizing-with-effects#how-to-handle-the-effect-firing-twice-in-development)). 타이머·구독은 외부 시스템 연결이라 연결한 effect가 정리까지 맡는다([useEffect: 외부 시스템 연결](https://react.dev/reference/react/useEffect#connecting-to-an-external-system)).
+
+- `setTimeout`·`setInterval`·`requestAnimationFrame`·`requestIdleCallback`은 effect 안에서 걸고 정리에서 `clear…`·`cancel…`한다. 핸들러에서 거는 타이머는 ref에 핸들을 두고 다시 걸 때와 언마운트 때 지운다(`useCopiedFeedback`).
+- `AppState`·`Keyboard`·`BackHandler`·`Linking`·`AccessibilityInfo`의 `addEventListener`·`addListener`는 돌려받은 구독의 `.remove()`를, 포트의 `subscribe`는 돌려받은 해제 함수를 정리에서 부른다.
+- await 뒤에 상태를 바꾸거나 이동하는 Promise 체인은 effect의 `AbortController`·`isCurrent` 플래그(`use-stable-feed-foreground.ts`), 또는 핸들러에서 시작한다면 언마운트 ref로 막는다. 언마운트 뒤에 `setState`·`router`를 부르지 않는다.
+- effect 안에서 최신 콜백이 필요하면 deps에 넣어 타이머를 다시 걸지 말고 `useEffectEvent`로 읽는다.
+- 모듈·서비스 수준 Map·Set은 크기 상한이나 지우는 시점을 둔다(`useTrackInviteLinkOpened`는 최근 20개만 기억한다). 앱 수명 동안 도는 구독은 첫 구독자가 생길 때 열고 마지막이 나가면 닫는다(`createMinuteClockStore`).
+- 의도한 예외는 자기 종료를 함께 둔다. `VoiceRecordingIntake.listenForLate`는 언마운트 뒤 30초 동안만 듣고 스스로 풀며, 다시 걸면 앞의 구독을 먼저 푼다.
+
 ### 기다리지 않는 Promise
 
 `void` 연산자를 쓰지 않는다(Oxlint). 이벤트 핸들러는 Promise를 돌려준다. 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다. `.catch(noop)`은 실패가 이미 다른 곳에 보고될 때만 쓴다(mutation `onError`, 쿼리 오류 상태).

@@ -32,6 +32,7 @@ export class VoiceRecordingIntake {
   #recordings: VoiceNoteRecording[] = [];
   #partCount = 0;
   #notifyArrived: (() => void) | null = null;
+  #stopLateListening: (() => void) | null = null;
   /** 정리 화면으로 넘겼다. 이제 초안의 주인은 그 화면이라 녹음 조각만 더한다 */
   #hasHandedOff = false;
   /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
@@ -102,10 +103,16 @@ export class VoiceRecordingIntake {
     if (this.#segmentStarts.size === 0) {
       return;
     }
+    // 다시 불리면(화면 재마운트) 앞의 듣기를 풀어 구독과 타이머가 겹쳐 남지 않게 한다
+    this.#stopLateListening?.();
     const stop = () => {
       clearTimeout(timer);
       unsubscribe();
+      if (this.#stopLateListening === stop) {
+        this.#stopLateListening = null;
+      }
     };
+    this.#stopLateListening = stop;
     const unsubscribe = subscribe((event) => {
       // 30초 안에 새 녹음을 시작하면 그 파일의 이벤트도 여기로 온다. 옮기면 새 녹음의 조각이 사라진다
       if (event.type !== 'recording-saved' || !this.#segmentStarts.has(event.uri)) {
