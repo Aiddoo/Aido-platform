@@ -9,7 +9,7 @@ import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { useState } from 'react';
 
@@ -111,11 +111,12 @@ describe('useAiDataSharingConsentGate', () => {
 
     it('동의 상태가 캐시에 없으면 묻지 않고 듣기로 이어 간다', async () => {
       // Given
+      const user = userEvent.setup();
       onlineManager.setOnline(false);
       await renderGate(null, { me: null });
 
       // When
-      fireEvent.press(screen.getByText('듣기 전 확인'));
+      await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
       // Then
       expect(
@@ -125,11 +126,12 @@ describe('useAiDataSharingConsentGate', () => {
 
     it('동의 상태가 캐시에 없으면 AI 시작도 막지 않고 서버 판단에 맡긴다', async () => {
       // Given
+      const user = userEvent.setup();
       onlineManager.setOnline(false);
       await renderGate(null, { me: null });
 
       // When
-      fireEvent.press(screen.getByText('시작'));
+      await user.press(screen.getByRole('button', { name: '시작' }));
 
       // Then
       expect(
@@ -139,11 +141,12 @@ describe('useAiDataSharingConsentGate', () => {
 
     it('캐시에 동의가 있으면 내 정보를 기다리지 않고 이어 간다', async () => {
       // Given
+      const user = userEvent.setup();
       onlineManager.setOnline(false);
       await renderGate({ aiDataSharingDecision: 'AGREED' }, { me: null });
 
       // When
-      fireEvent.press(screen.getByText('듣기 전 확인'));
+      await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
       // Then
       expect(
@@ -153,13 +156,14 @@ describe('useAiDataSharingConsentGate', () => {
 
     it('캐시가 미응답이면 안내를 띄우고 동의 저장은 멈춰 있지 않고 바로 실패해 시트를 그대로 둔다', async () => {
       // Given
+      const user = userEvent.setup();
       onlineManager.setOnline(false);
       const { httpClient } = await renderGate({});
       httpClient.patch.mockRejectedValue(new NetworkError());
-      fireEvent.press(screen.getByText('듣기 전 확인'));
+      await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
       // When
-      fireEvent.press(await screen.findByTestId('ai-consent-agree'));
+      await user.press(await screen.findByRole('button', { name: '동의하고 계속' }));
 
       // Then
       await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
@@ -170,12 +174,13 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('안내가 떠 있는 동안 한 번 더 시작해도 두 요청이 모두 답을 받고 끝난다', async () => {
     // Given
+    const user = userEvent.setup();
     // 안내가 열린 채 마이크를 한 번 더 눌렀다
     await renderGate({});
 
     // When
-    fireEvent.press(screen.getByText('두 번 시작'));
-    fireEvent.press(await screen.findByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '두 번 시작' }));
+    await user.press(await screen.findByRole('button', { name: '나중에' }));
 
     // Then
     // 앞 요청이 시트에 밀려 영영 끝나지 않으면 두 번째까지만 센다
@@ -184,14 +189,15 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('듣기 전 확인에서 미응답이 나중에를 누르면 멈추라고 알리고 다시 물으면 또 안내한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient } = await renderGate({});
-    fireEvent.press(screen.getByText('듣기 전 확인'));
-    fireEvent.press(await screen.findByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
+    await user.press(await screen.findByRole('button', { name: '나중에' }));
     await screen.findByText(JSON.stringify({ hasAgreed: false, wasAsked: true }));
     await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
 
     // When
-    fireEvent.press(screen.getByText('듣기 전 확인'));
+    await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
     // Then
     expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
@@ -200,15 +206,16 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('이전 안내에 동의한 사람에게는 바뀐 안내를 보여 주고 나중에를 눌러도 서버로 보내지 않고 이어 간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient } = await renderGate({
       aiDataSharingDecision: 'AGREED',
       aiDataSharingConsentVersion: '2026-10-26',
     });
 
     // When
-    fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
     await screen.findByText(RENEWAL_NOTICE);
-    fireEvent.press(screen.getByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '나중에' }));
 
     // Then
     await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: true }));
@@ -217,17 +224,18 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('바뀐 안내는 계정마다 한 번만 보여 준다', async () => {
     // Given
+    const user = userEvent.setup();
     await renderGate({
       aiDataSharingDecision: 'AGREED',
       aiDataSharingConsentVersion: '2026-10-26',
     });
-    fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
     await screen.findByText(RENEWAL_NOTICE);
-    fireEvent.press(screen.getByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '나중에' }));
     await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: true }));
 
     // When
-    fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
     expect(
@@ -237,6 +245,7 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('내 정보를 아직 못 받았으면 받을 때까지 기다린 뒤 재안내를 보여 준다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient } = await renderGate(
       { aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: '2026-10-26' },
       { me: null },
@@ -244,7 +253,7 @@ describe('useAiDataSharingConsentGate', () => {
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
 
     // When
-    fireEvent.press(screen.getByText('듣기 전 확인'));
+    await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
     // Then
     await screen.findByText(RENEWAL_NOTICE);
@@ -253,6 +262,7 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('내 정보를 읽지 못하면 묻지 않고 서버 판단에 맡긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient } = await renderGate(
       { aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: '2026-10-26' },
       { me: null },
@@ -260,7 +270,7 @@ describe('useAiDataSharingConsentGate', () => {
     httpClient.get.mockRejectedValue(new Error('offline'));
 
     // When
-    fireEvent.press(screen.getByText('듣기 전 확인'));
+    await user.press(screen.getByRole('button', { name: '듣기 전 확인' }));
 
     // Then
     await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
@@ -269,13 +279,14 @@ describe('useAiDataSharingConsentGate', () => {
 
   it('현재 안내에 동의했으면 묻지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     await renderGate({
       aiDataSharingDecision: 'AGREED',
       aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
     });
 
     // When
-    fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
     await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));

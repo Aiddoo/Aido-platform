@@ -29,7 +29,7 @@ import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { onlineManager } from '@tanstack/react-query';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { Pressable, TextInput } from 'react-native';
@@ -83,21 +83,40 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   return (
     <>
       <Pressable
-        testID="begin"
+        accessibilityRole="button"
+        accessibilityLabel="begin"
         onPress={() => quickVoice.begin({ locale: 'ko-KR', hintWords: [] })}
       />
-      <Pressable testID="finish" onPress={quickVoice.finish} />
-      <Pressable testID="retry" onPress={quickVoice.retryPlanning} />
-      <Pressable testID="type-instead" onPress={quickVoice.typeInstead} />
-      <Pressable testID="cancel-planning" onPress={quickVoice.cancelPlanning} />
       <Pressable
-        testID="start"
+        accessibilityRole="button"
+        accessibilityLabel="finish"
+        onPress={quickVoice.finish}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="retry"
+        onPress={quickVoice.retryPlanning}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="type-instead"
+        onPress={quickVoice.typeInstead}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="cancel-planning"
+        onPress={quickVoice.cancelPlanning}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="start"
         onPress={() => {
           quickVoice.start().catch(jest.fn());
         }}
       />
       <Pressable
-        testID="continue-as-note"
+        accessibilityRole="button"
+        accessibilityLabel="continue-as-note"
         onPress={() => {
           quickVoice.continueAsVoiceNote().catch(jest.fn());
         }}
@@ -106,7 +125,7 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Text testID="consent-required">{String(quickVoice.isConsentRequired)}</Text>
       <Text testID="title">{title}</Text>
       <TextInput
-        testID="title-input"
+        accessibilityLabel="title-input"
         onChangeText={(text) => form.setValue('title', text, { shouldDirty: true })}
       />
       <Text testID="plan">
@@ -191,12 +210,12 @@ async function renderQuickVoice({
 }
 
 async function speak(speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) {
-  await fireEvent.press(screen.getByTestId('begin'));
+  await userEvent.press(screen.getByRole('button', { name: 'begin' }));
   await act(async () => speechRecognizer.emit({ type: 'start' }));
   await act(async () =>
     speechRecognizer.emit({ type: 'result', transcript: '말한 내용', isFinal: true, segments: [] }),
   );
-  await fireEvent.press(screen.getByTestId('finish'));
+  await userEvent.press(screen.getByRole('button', { name: 'finish' }));
   await act(async () => speechRecognizer.emit({ type: 'end' }));
 }
 
@@ -226,6 +245,7 @@ describe('useAddTodoQuickVoice', () => {
 
   it('정리에 실패하면 들은 글자를 입력 칸에 남기고 다시 정리는 같은 키로 보낸다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
@@ -233,7 +253,7 @@ describe('useAddTodoQuickVoice', () => {
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
 
     // When
-    await fireEvent.press(screen.getByTestId('retry'));
+    await user.press(screen.getByRole('button', { name: 'retry' }));
 
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
@@ -243,6 +263,7 @@ describe('useAddTodoQuickVoice', () => {
 
   it('내용이 다르다는 오류(AI_1318) 뒤에는 새 키로 보낸다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1318', '다른 내용', 422)));
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
@@ -250,7 +271,7 @@ describe('useAddTodoQuickVoice', () => {
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
 
     // When
-    await fireEvent.press(screen.getByTestId('retry'));
+    await user.press(screen.getByRole('button', { name: 'retry' }));
 
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
@@ -259,13 +280,14 @@ describe('useAddTodoQuickVoice', () => {
 
   it('찾은 할 일이 없으면 직접 입력을 고를 때 들은 글자를 입력 칸으로 옮긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValue(ok(createQuickPlanDto([], false)));
     await speak(speechRecognizer);
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
 
     // When
-    await fireEvent.press(screen.getByTestId('type-instead'));
+    await user.press(screen.getByRole('button', { name: 'type-instead' }));
 
     // Then
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
@@ -280,6 +302,7 @@ describe('useAddTodoQuickVoice', () => {
 
     it('한도를 다 썼으면 한도 안내에서 멈추고 동의와 마이크를 묻지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics } = await renderQuickVoice({
         consent: PREVIOUS_AGREEMENT,
         isCoachmarkSeen: false,
@@ -287,7 +310,7 @@ describe('useAddTodoQuickVoice', () => {
       });
 
       // When
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
 
       // Then
       await waitFor(() =>
@@ -302,19 +325,20 @@ describe('useAddTodoQuickVoice', () => {
 
     it('이전 안내에 동의한 사람은 재안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await renderQuickVoice({
         consent: PREVIOUS_AGREEMENT,
         isCoachmarkSeen: false,
       });
 
       // When
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
       await screen.findByTestId('ai-consent-sheet');
 
       // Then
       expect(screen.getByText(RENEWAL_SUBTITLE)).toBeOnTheScreen();
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
-      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+      await user.press(screen.getByRole('button', { name: '나중에' }));
       await waitFor(() =>
         expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
       );
@@ -322,6 +346,7 @@ describe('useAddTodoQuickVoice', () => {
 
     it('동의 상태를 읽는 사이 시트가 닫히면 마이크 권한을 묻지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { httpClient, speechRecognizer, closeSheet } = await renderQuickVoice();
       let failConsentRead: (error: Error) => void = jest.fn();
       httpClient.get.mockReturnValue(
@@ -329,7 +354,7 @@ describe('useAddTodoQuickVoice', () => {
           failConsentRead = reject;
         }),
       );
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
       await act(async () => closeSheet());
 
       // When
@@ -341,12 +366,13 @@ describe('useAddTodoQuickVoice', () => {
 
     it('마이크 권한을 기다리는 사이 시트가 닫히면 인식기를 시작하지 않고 분석도 남기지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics, queryClient, closeSheet } = await renderQuickVoice();
       queryClient.setQueryData(
         CONSENT_QUERY_KEYS.detail(),
         createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
       );
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
       analytics.trackEvent.mockClear();
@@ -357,7 +383,7 @@ describe('useAddTodoQuickVoice', () => {
           grant = resolve;
         }),
       );
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalled());
       await act(async () => closeSheet());
 
@@ -374,13 +400,14 @@ describe('useAddTodoQuickVoice', () => {
 
     it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await renderQuickVoice({ consent: {} });
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
       await screen.findByTestId('ai-consent-sheet');
       expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
 
       // When
-      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+      await user.press(screen.getByRole('button', { name: '나중에' }));
 
       // Then
       await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
@@ -391,15 +418,16 @@ describe('useAddTodoQuickVoice', () => {
 
     it('처음 쓰는 사람이 나중에를 눌러도 입력하던 글자는 남고 다시 누르면 안내를 다시 띄운다', async () => {
       // Given
+      const user = userEvent.setup();
       await renderQuickVoice({ consent: {} });
-      await fireEvent.changeText(screen.getByTestId('title-input'), '우유 사기');
-      await fireEvent.press(screen.getByTestId('start'));
-      await fireEvent.press(await screen.findByTestId('ai-consent-later'));
+      await user.type(screen.getByLabelText('title-input'), '우유 사기');
+      await user.press(screen.getByRole('button', { name: 'start' }));
+      await user.press(await screen.findByRole('button', { name: '나중에' }));
       await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
       expect(screen.getByTestId('title')).toHaveTextContent('우유 사기');
 
       // When
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
 
       // Then
       expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
@@ -407,13 +435,14 @@ describe('useAddTodoQuickVoice', () => {
 
     it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await renderQuickVoice({
         consent: PREVIOUS_AGREEMENT,
         isCoachmarkSeen: true,
       });
 
       // When
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
 
       // Then
       await waitFor(() =>
@@ -426,6 +455,7 @@ describe('useAddTodoQuickVoice', () => {
   describe('정리가 동의 때문에 막혔을 때', () => {
     it('듣는 동안 동의가 사라져 정리에서 나중에를 눌러도 다시 정리하면 안내를 다시 띄우고 동의하면 이어서 정리한다', async () => {
       // Given
+      const user = userEvent.setup();
       const { httpClient, speechRecognizer } = await renderQuickVoice({
         consent: {
           aiDataSharingDecision: 'AGREED',
@@ -433,7 +463,7 @@ describe('useAddTodoQuickVoice', () => {
         },
       });
       httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
-      await fireEvent.press(screen.getByTestId('start'));
+      await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () =>
@@ -444,9 +474,9 @@ describe('useAddTodoQuickVoice', () => {
           segments: [],
         }),
       );
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await fireEvent.press(await screen.findByTestId('ai-consent-later'));
+      await user.press(await screen.findByRole('button', { name: '나중에' }));
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
       expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
@@ -461,9 +491,9 @@ describe('useAddTodoQuickVoice', () => {
       );
 
       // When
-      await fireEvent.press(screen.getByTestId('retry'));
+      await user.press(screen.getByRole('button', { name: 'retry' }));
       await screen.findByTestId('ai-consent-sheet');
-      await fireEvent.press(screen.getByTestId('ai-consent-agree'));
+      await user.press(screen.getByRole('button', { name: '동의하고 계속' }));
 
       // Then
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
@@ -473,11 +503,12 @@ describe('useAddTodoQuickVoice', () => {
 
   it('앱을 오프라인으로 열어 동의 상태를 모르면 마이크를 눌렀을 때 묻지 않고 듣기 시작한다', async () => {
     // Given
+    const user = userEvent.setup();
     onlineManager.setOnline(false);
     const { speechRecognizer } = await renderQuickVoice();
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
@@ -516,13 +547,14 @@ describe('useAddTodoQuickVoice', () => {
 
   it('정리를 기다리다 그만두면 요청을 끊고 글자를 입력 칸으로 옮긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockReturnValue(new Promise(() => undefined));
     await speak(speechRecognizer);
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('planning'));
 
     // When
-    await fireEvent.press(screen.getByTestId('cancel-planning'));
+    await user.press(screen.getByRole('button', { name: 'cancel-planning' }));
 
     // Then
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
@@ -532,12 +564,13 @@ describe('useAddTodoQuickVoice', () => {
 
   it('권한 오류로 실패한 뒤 마이크를 다시 누르면 글자를 유지한 채 새로 듣는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, queryClient } = await renderQuickVoice();
     queryClient.setQueryData(
       CONSENT_QUERY_KEYS.detail(),
       createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
     );
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     await act(async () =>
       speechRecognizer.emit({
@@ -552,7 +585,7 @@ describe('useAddTodoQuickVoice', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('failed');
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(2));
@@ -564,7 +597,7 @@ describe('useAddTodoQuickVoice', () => {
     async function listenUntilLimit(
       speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
     ) {
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () =>
         speechRecognizer.emit({
@@ -592,12 +625,13 @@ describe('useAddTodoQuickVoice', () => {
 
     it('그대로 정리를 고르면 들은 글자로 계획을 만든다', async () => {
       // Given
+      const user = userEvent.setup();
       const { httpClient, speechRecognizer } = await renderQuickVoice();
       httpClient.post.mockResolvedValue(ok(createQuickPlanDto([WORKOUT_ACTION])));
       await listenUntilLimit(speechRecognizer);
 
       // When
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
 
       // Then
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
@@ -609,6 +643,7 @@ describe('useAddTodoQuickVoice', () => {
 
     it('말로 메모하기를 고르면 들은 글자를 초안에 저장하고 시트를 닫은 뒤 이어 듣기로 간다', async () => {
       // Given
+      const user = userEvent.setup();
       const { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics } =
         await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
@@ -616,7 +651,7 @@ describe('useAddTodoQuickVoice', () => {
       httpClient.get.mockRejectedValue(new Error('offline'));
 
       // When
-      await fireEvent.press(screen.getByTestId('continue-as-note'));
+      await user.press(screen.getByRole('button', { name: 'continue-as-note' }));
 
       // Then
       await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
@@ -636,6 +671,7 @@ describe('useAddTodoQuickVoice', () => {
 
     it('마이크 권한을 거절하면 시트에 그대로 남아 글자를 잃지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { httpClient, speechRecognizer, voiceNoteStorage, onExit } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       httpClient.get.mockRejectedValue(new Error('offline'));
@@ -644,7 +680,7 @@ describe('useAddTodoQuickVoice', () => {
       speechRecognizer.requestPermission.mockResolvedValue(denied);
 
       // When
-      await fireEvent.press(screen.getByTestId('continue-as-note'));
+      await user.press(screen.getByRole('button', { name: 'continue-as-note' }));
       await waitFor(() => expect(speechRecognizer.requestPermission).toHaveBeenCalled());
 
       // Then

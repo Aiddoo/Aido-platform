@@ -12,7 +12,7 @@ import {
 } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { OverlayProvider, Text } from '@src/shared/ui';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
@@ -45,16 +45,29 @@ function RecordingProbe(props: ProbeProps) {
   return (
     <>
       <Pressable
-        testID="start"
+        accessibilityRole="button"
+        accessibilityLabel="start"
         onPress={() => {
           recording.start({ startLocale: 'ko-KR', hintWords: [] }).catch(jest.fn());
         }}
       />
-      <Pressable testID="pause" onPress={recording.pause} />
-      <Pressable testID="resume" onPress={recording.resume} />
-      <Pressable testID="finish" onPress={recording.finish} />
+      <Pressable accessibilityRole="button" accessibilityLabel="pause" onPress={recording.pause} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="resume"
+        onPress={recording.resume}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="finish"
+        onPress={recording.finish}
+      />
       <Pressable testID="mark" onPress={recording.mark} />
-      <Pressable testID="discard" onPress={recording.discard} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="discard"
+        onPress={recording.discard}
+      />
       <Text testID="status">{recording.state.status}</Text>
       <Text testID="draft-id">{recording.draftId}</Text>
       <Text testID="captions">{recording.sentences.map(({ text }) => text).join('|')}</Text>
@@ -111,7 +124,7 @@ async function renderRecording({
 }
 
 const start = async (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) => {
-  await fireEvent.press(screen.getByTestId('start'));
+  await userEvent.press(screen.getByRole('button', { name: 'start' }));
   await act(async () => speechRecognizer.emit({ type: 'start' }));
 };
 
@@ -163,12 +176,13 @@ describe('useVoiceNoteRecording', () => {
 
   it('일시정지하면 인식기를 멈추고 초안을 바로 저장하며 이어 들으면 다시 시작한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, storage } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '멈추기 전 말', false);
 
     // When
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
 
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
@@ -178,7 +192,7 @@ describe('useVoiceNoteRecording', () => {
 
     // When
     await act(async () => speechRecognizer.emit({ type: 'end' }));
-    await fireEvent.press(screen.getByTestId('resume'));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // Then
@@ -188,12 +202,13 @@ describe('useVoiceNoteRecording', () => {
 
   it('끝내면 글자와 녹음 조각을 저장한 뒤 초안 id로 넘긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, storage, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () =>
       speechRecognizer.emit({ type: 'recording-saved', uri: 'file:///missing/recording_a.wav' }),
     );
@@ -207,16 +222,17 @@ describe('useVoiceNoteRecording', () => {
 
   it('일시정지 직후 끝내도 녹음 파일이 올 때까지 기다렸다가 조각을 남긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
 
     // Then
     expect(onFinished).not.toHaveBeenCalled();
@@ -232,13 +248,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('끝낼 때 인식기가 final 대신 client로 답해도 듣던 글자까지 초안에 남겨 넘긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, storage, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
     await say(speechRecognizer, '두 번째 문장', false);
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
     await act(async () => jest.advanceTimersByTimeAsync(0));
@@ -254,12 +271,13 @@ describe('useVoiceNoteRecording', () => {
 
   it('일시정지 뒤 인식기가 client로 답해도 실패가 아니고 들은 글자를 그대로 둔다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장', false);
 
     // When
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
     await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -270,13 +288,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('녹음 파일을 쓰지 않은 구간(Android 12 이하)은 기다리지 않고 글자를 넘긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
 
     // Then
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
@@ -284,14 +303,15 @@ describe('useVoiceNoteRecording', () => {
 
   it('녹음 파일이 끝내 오지 않아도 글자는 넘긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await act(async () =>
       speechRecognizer.emit({ type: 'recording-started', uri: 'file:///recording_a.wav' }),
     );
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('pause'));
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
 
     // When
     await act(async () => jest.advanceTimersByTimeAsync(3_100));
@@ -317,11 +337,12 @@ describe('useVoiceNoteRecording', () => {
 
   it('들은 글자 없이 끝내면 초안을 남기지 않고 알린다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, storage, onEmpty } = await renderRecording();
     await start(speechRecognizer);
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -382,12 +403,13 @@ describe('useVoiceNoteRecording', () => {
 
   it('말한 내용은 분석에 싣지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics } = await renderRecording();
     await start(speechRecognizer);
 
     // When
     await say(speechRecognizer, '비밀스러운 회의 내용.');
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -396,13 +418,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('Android에 언어 모델이 없으면 받을지 묻고 거절해도 네트워크 인식으로 시작한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics } = await renderRecording({
       canDownloadOnDeviceModel: true,
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
-    await fireEvent.press(await screen.findByText('나중에'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
+    await user.press(await screen.findByRole('button', { name: '나중에' }));
 
     // Then
     await waitFor(() =>
@@ -419,13 +442,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('받기를 거절하면 이 사용자의 그 언어로 기억한다', async () => {
     // Given
+    const user = userEvent.setup();
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
     await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
-    await fireEvent.press(await screen.findByText('나중에'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
+    await user.press(await screen.findByRole('button', { name: '나중에' }));
 
     // Then
     await waitFor(() =>
@@ -435,13 +459,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('받기를 묻는 중에 화면이 내려가면 거절로 기억하지 않고 듣지도 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
     const { speechRecognizer } = await renderRecording({
       canDownloadOnDeviceModel: true,
       offlineModelPromptRepository,
     });
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
     await screen.findByText('나중에');
 
     // When
@@ -466,8 +491,8 @@ describe('useVoiceNoteRecording', () => {
       speechRecognizer.requestOfflineModel.mockResolvedValue(result);
 
       // When
-      await fireEvent.press(screen.getByTestId('start'));
-      await fireEvent.press(await screen.findByText('받기'));
+      await userEvent.press(screen.getByRole('button', { name: 'start' }));
+      await userEvent.press(await screen.findByRole('button', { name: '받기' }));
 
       // Then
       await waitFor(() =>
@@ -478,6 +503,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('받기가 끝났으면 거절로 기억하지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
     const { speechRecognizer } = await renderRecording({
@@ -487,8 +513,8 @@ describe('useVoiceNoteRecording', () => {
     speechRecognizer.requestOfflineModel.mockResolvedValue('downloaded');
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
-    await fireEvent.press(await screen.findByText('받기'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
+    await user.press(await screen.findByRole('button', { name: '받기' }));
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
@@ -497,6 +523,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
     // Given
+    const user = userEvent.setup();
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
     offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'ko-KR');
@@ -506,7 +533,7 @@ describe('useVoiceNoteRecording', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
@@ -515,13 +542,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('다른 언어를 거절했어도 이 언어는 한 번 묻는다', async () => {
     // Given
+    const user = userEvent.setup();
     const offlineModelPromptRepository =
       createOfflineModelPromptRepository(createMemorySyncStorage());
     offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'en-US');
     await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
 
     // When
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
 
     // Then
     expect(await screen.findByText('나중에')).toBeTruthy();
@@ -562,12 +590,13 @@ describe('useVoiceNoteRecording', () => {
 
   it('끝내서 넘긴 뒤에는 들은 글자 없음 안내와 뒤로 가기를 부르지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, onEmpty, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -578,6 +607,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('초안을 지운 뒤 늦게 온 녹음 파일과 대기 쓰기가 초안을 되살리지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const { speechRecognizer, storage } = await renderRecording({ files });
@@ -586,7 +616,7 @@ describe('useVoiceNoteRecording', () => {
     await say(speechRecognizer, '첫 문장.');
 
     // When
-    await fireEvent.press(screen.getByTestId('discard'));
+    await user.press(screen.getByRole('button', { name: 'discard' }));
     await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
     await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
@@ -596,13 +626,14 @@ describe('useVoiceNoteRecording', () => {
 
   it('이어 듣기를 눌러도 앞 구간의 end가 올 때까지 인식기를 다시 열지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
 
     // When
-    await fireEvent.press(screen.getByTestId('resume'));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
 
     // Then
     expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
@@ -616,11 +647,12 @@ describe('useVoiceNoteRecording', () => {
 
   it('end가 끝내 오지 않아도 잠시 뒤 이어 듣는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('pause'));
-    await fireEvent.press(screen.getByTestId('resume'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
 
     // When
     await act(async () => jest.advanceTimersByTimeAsync(2_000));
@@ -631,25 +663,26 @@ describe('useVoiceNoteRecording', () => {
 
   it('파일이 뒤바뀌어 와도 파일마다 그 구간의 시작 시각을 붙이고 시각 순서로 저장한다', async () => {
     // Given
+    const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const first = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const second = files.addFile(RECORDING_DIRECTORY, 'recording_b.wav');
     const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
-    await fireEvent.press(screen.getByTestId('start'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: first }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     await say(speechRecognizer, '첫 문장.');
     await act(async () => jest.advanceTimersByTimeAsync(5_000));
-    await fireEvent.press(screen.getByTestId('pause'));
+    await user.press(screen.getByRole('button', { name: 'pause' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
-    await fireEvent.press(screen.getByTestId('resume'));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: second }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // When
     await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: second }));
     await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: first }));
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -666,6 +699,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('기다리는 시간을 넘긴 녹음 파일도 화면이 내려간 뒤 초안에 더한다', async () => {
     // Given
+    const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
@@ -694,7 +728,7 @@ describe('useVoiceNoteRecording', () => {
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
     await act(async () => jest.advanceTimersByTimeAsync(3_100));
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
@@ -750,7 +784,7 @@ describe('useVoiceNoteRecording', () => {
           logger,
         },
       });
-      await fireEvent.press(screen.getByTestId('start'));
+      await userEvent.press(screen.getByRole('button', { name: 'start' }));
       return {
         speechRecognizer,
         capabilities,
@@ -785,8 +819,9 @@ describe('useVoiceNoteRecording', () => {
 
     it('닫아서 초안을 지웠으면 화면이 내려가기 전이어도 인식기를 시작하지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, capabilities } = await renderStartingProbe();
-      await fireEvent.press(screen.getByTestId('discard'));
+      await user.press(screen.getByRole('button', { name: 'discard' }));
 
       // When
       await act(async () => capabilities.resolve({ ...NO_MODEL, canDownloadOnDeviceModel: false }));
@@ -798,6 +833,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('끝내는 동안 화면이 내려가면 글자는 저장하되 결과 화면으로 끌어오지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
     const onFinished = jest.fn();
@@ -827,7 +863,7 @@ describe('useVoiceNoteRecording', () => {
     );
     await say(speechRecognizer, '첫 문장.');
     const draftId = screen.getByTestId('draft-id').props.children;
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // When
@@ -841,6 +877,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('화면이 내려간 뒤 새 녹음의 파일이 와도 옛 초안으로 가져오지 않고 자기 파일만 받는다', async () => {
     // Given
+    const user = userEvent.setup();
     // 앞 녹음의 파일을 기다리는 동안 새 녹음이 시작됐다
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
@@ -871,7 +908,7 @@ describe('useVoiceNoteRecording', () => {
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
     await act(async () => jest.advanceTimersByTimeAsync(3_100));
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
@@ -931,8 +968,9 @@ describe('useVoiceNoteRecording', () => {
 
     it('지운 초안의 파일은 받는 즉시 지운다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, files, uri } = await renderListening();
-      await fireEvent.press(screen.getByTestId('discard'));
+      await user.press(screen.getByRole('button', { name: 'discard' }));
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
@@ -943,8 +981,9 @@ describe('useVoiceNoteRecording', () => {
 
     it('지우고 화면까지 내려간 뒤에 온 파일도 지우고 구독을 푼다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, files, uri, storage, unmount } = await renderListening();
-      await fireEvent.press(screen.getByTestId('discard'));
+      await user.press(screen.getByRole('button', { name: 'discard' }));
       await act(async () => unmount());
 
       // When
@@ -1092,6 +1131,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('저장 공간이 모자라 파일을 옮기지 못해도 글자는 넘기고 조각만 빠진다', async () => {
     // Given
+    const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
@@ -1101,7 +1141,7 @@ describe('useVoiceNoteRecording', () => {
     files.failNextMove(new Error('no space left'));
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 

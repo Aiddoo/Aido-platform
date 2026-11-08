@@ -9,7 +9,7 @@ import {
 } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { Text } from '@src/shared/ui';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Pressable } from 'react-native';
 
@@ -46,27 +46,38 @@ function SessionProbe({
   return (
     <>
       <Pressable
-        testID="begin"
+        accessibilityRole="button"
+        accessibilityLabel="begin"
         onPress={() => session.begin({ locale: 'ko-KR', hintWords: ['기획팀'] })}
       />
       <Pressable
-        testID="begin-without-waiting"
+        accessibilityRole="button"
+        accessibilityLabel="begin-without-waiting"
         onPress={() => {
           session.begin({ locale: 'ko-KR', hintWords: [] }).catch(jest.fn());
         }}
       />
       <Pressable
-        testID="change-locale-without-waiting"
+        accessibilityRole="button"
+        accessibilityLabel="change-locale-without-waiting"
         onPress={() => {
           session.changeLocale('en-US').catch(jest.fn());
         }}
       />
-      <Pressable testID="finish" onPress={session.finish} />
-      <Pressable testID="pause" onPress={session.pause} />
-      <Pressable testID="resume" onPress={session.resume} />
-      <Pressable testID="change-locale" onPress={() => session.changeLocale('en-US')} />
-      <Pressable testID="cancel" onPress={session.cancel} />
-      <Pressable testID="hand-off" onPress={session.handOff} />
+      <Pressable accessibilityRole="button" accessibilityLabel="finish" onPress={session.finish} />
+      <Pressable accessibilityRole="button" accessibilityLabel="pause" onPress={session.pause} />
+      <Pressable accessibilityRole="button" accessibilityLabel="resume" onPress={session.resume} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="change-locale"
+        onPress={() => session.changeLocale('en-US')}
+      />
+      <Pressable accessibilityRole="button" accessibilityLabel="cancel" onPress={session.cancel} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="hand-off"
+        onPress={session.handOff}
+      />
       <Text testID="status">{session.state.status}</Text>
     </>
   );
@@ -115,10 +126,11 @@ function createDeferred<T>() {
 describe('useVoiceCaptureSession', () => {
   it('기기 인식이 가능하면 기기 인식으로 시작하고 실제 값을 분석에 남긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics } = await renderSession();
 
     // When
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // Then
@@ -138,8 +150,9 @@ describe('useVoiceCaptureSession', () => {
 
   it('다 말했어요를 누르면 모은 글자를 한 번만 넘기고 말한 내용은 분석에 싣지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics, onCaptured } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     await act(async () =>
       speechRecognizer.emit({
@@ -151,7 +164,7 @@ describe('useVoiceCaptureSession', () => {
     );
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -171,7 +184,7 @@ describe('useVoiceCaptureSession', () => {
 
     const startSpeaking = async () => {
       const session = await renderSession();
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       jest.useFakeTimers();
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
@@ -245,12 +258,13 @@ describe('useVoiceCaptureSession', () => {
 
   it('말이 없으면 서버로 넘기지 않고 처음으로 돌아간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, onCaptured } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // When
-    await fireEvent.press(screen.getByTestId('finish'));
+    await user.press(screen.getByRole('button', { name: 'finish' }));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then
@@ -262,7 +276,7 @@ describe('useVoiceCaptureSession', () => {
     const beginListening = async () => {
       const session = await renderSession();
       logger.error.mockClear();
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       await act(async () =>
         session.speechRecognizer.emit({
@@ -277,10 +291,11 @@ describe('useVoiceCaptureSession', () => {
 
     it('끝내기는 실패가 아니라 final 없이도 들은 글자를 넘기고 오류를 남기지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics, onCaptured } = await beginListening();
 
       // When
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -295,10 +310,11 @@ describe('useVoiceCaptureSession', () => {
 
     it('일시정지는 멈춘 채로 있고 오류를 남기지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics } = await beginListening();
 
       // When
-      await fireEvent.press(screen.getByTestId('pause'));
+      await user.press(screen.getByRole('button', { name: 'pause' }));
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -313,9 +329,10 @@ describe('useVoiceCaptureSession', () => {
 
     it('일시정지 직후 이어 듣기를 눌러도 늦게 온 client가 실패로 만들지 않고 end 뒤에 다시 듣는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await beginListening();
-      await fireEvent.press(screen.getByTestId('pause'));
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'pause' }));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
@@ -329,8 +346,9 @@ describe('useVoiceCaptureSession', () => {
 
     it('언어를 바꾸려고 구간을 닫을 때도 실패가 아니고 새 언어로 이어 듣는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await beginListening();
-      await fireEvent.press(screen.getByTestId('change-locale'));
+      await user.press(screen.getByRole('button', { name: 'change-locale' }));
       await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
 
       // When
@@ -363,8 +381,9 @@ describe('useVoiceCaptureSession', () => {
 
     it('앞 구간이 끝나 새 구간을 듣는 중에 오는 client는 다시 실패로 본다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer } = await beginListening();
-      await fireEvent.press(screen.getByTestId('change-locale'));
+      await user.press(screen.getByRole('button', { name: 'change-locale' }));
       await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -384,13 +403,14 @@ describe('useVoiceCaptureSession', () => {
 
     const beginNote = async () => {
       const session = await renderSession({ mode: 'note' });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       await emit(session.speechRecognizer, { type: 'start' });
       return session;
     };
 
     it('침묵 끝에 세션이 끝나면 같은 옵션으로 몇 번이든 이어 듣고 글자를 모은다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, onCaptured } = await beginNote();
       const firstOptions = speechRecognizer.start.mock.calls[0]?.[0];
       await emit(speechRecognizer, {
@@ -411,7 +431,7 @@ describe('useVoiceCaptureSession', () => {
       });
       await emit(speechRecognizer, { type: 'end' });
       await emit(speechRecognizer, { type: 'start' });
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
       await emit(speechRecognizer, { type: 'end' });
 
       // Then
@@ -508,6 +528,7 @@ describe('useVoiceCaptureSession', () => {
 
       it('다시 열 때 듣던 글자를 확정해 다음 구간 글자가 덮지 않는다', async () => {
         // Given
+        const user = userEvent.setup();
         const { speechRecognizer, onCaptured } = await beginNote();
         await hearText(speechRecognizer, '듣던 말');
         await hearVolume(speechRecognizer, VOICE, 6_100);
@@ -516,7 +537,7 @@ describe('useVoiceCaptureSession', () => {
 
         // When
         await hearText(speechRecognizer, '다음 말');
-        await fireEvent.press(screen.getByTestId('finish'));
+        await user.press(screen.getByRole('button', { name: 'finish' }));
         await emit(speechRecognizer, { type: 'end' });
 
         // Then
@@ -542,12 +563,13 @@ describe('useVoiceCaptureSession', () => {
 
       it('끝내는 중에는 답이 없어도 abort로 끊지 않는다', async () => {
         // Given
+        const user = userEvent.setup();
         const { speechRecognizer } = await beginNote();
         await hearText(speechRecognizer, '남길 말');
         await hearVolume(speechRecognizer, VOICE, 6_100);
 
         // When
-        await fireEvent.press(screen.getByTestId('finish'));
+        await user.press(screen.getByRole('button', { name: 'finish' }));
         await act(async () => jest.advanceTimersByTimeAsync(1_000));
 
         // Then
@@ -601,12 +623,13 @@ describe('useVoiceCaptureSession', () => {
 
   it('듣는 중에 언어를 바꾸면 바뀐 언어를 분석에 남긴다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // When
-    await fireEvent.press(screen.getByTestId('change-locale'));
+    await user.press(screen.getByRole('button', { name: 'change-locale' }));
 
     // Then
     await waitFor(() =>
@@ -620,6 +643,7 @@ describe('useVoiceCaptureSession', () => {
 
   it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
     // Given
+    const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
     const { unmount } = await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
       di: {
@@ -629,7 +653,7 @@ describe('useVoiceCaptureSession', () => {
         errorReporter: createErrorReporterStub(),
       },
     });
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
     // When
@@ -645,18 +669,19 @@ describe('useVoiceCaptureSession', () => {
 
     it('일시정지했다 이어 들으면 남은 시간만큼만 듣고 한도를 알린다', async () => {
       // Given
+      const user = userEvent.setup();
       // 10초 한도에서 4초 듣고 멈췄다
       const onLimitReached = jest.fn();
       const { speechRecognizer } = await renderSession({ maxSeconds: 10, onLimitReached });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () => jest.advanceTimersByTimeAsync(4_000));
-      await fireEvent.press(screen.getByTestId('pause'));
+      await user.press(screen.getByRole('button', { name: 'pause' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
       await act(async () => jest.advanceTimersByTimeAsync(30_000));
 
       // When
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () => jest.advanceTimersByTimeAsync(5_500));
 
@@ -673,8 +698,9 @@ describe('useVoiceCaptureSession', () => {
 
     it('한도 알림을 받지 않는 화면은 한도에 닿으면 바로 끝낸다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, onCaptured } = await renderSession({ maxSeconds: 3 });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () =>
         speechRecognizer.emit({ type: 'result', transcript: '한 말', isFinal: true, segments: [] }),
@@ -694,7 +720,7 @@ describe('useVoiceCaptureSession', () => {
 
     const beginListening = async () => {
       const session = await renderSession({ mode: 'note' });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
     };
@@ -738,8 +764,9 @@ describe('useVoiceCaptureSession', () => {
   describe('앱이 백그라운드로 갈 때', () => {
     it('시작 준비 중에 내려갔다면 시작 신호가 와도 듣지 않고 멈춘 채 기다린다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, appLifecycle } = await renderSession({ mode: 'note' });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => appLifecycle.emit('background'));
       expect(screen.getByTestId('status')).toHaveTextContent('preparing');
 
@@ -753,7 +780,7 @@ describe('useVoiceCaptureSession', () => {
       // When
       await act(async () => speechRecognizer.emit({ type: 'end' }));
       await act(async () => appLifecycle.emit('active'));
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
 
       // Then
@@ -763,8 +790,9 @@ describe('useVoiceCaptureSession', () => {
 
     it('시작 신호 전에 돌아왔다면 그대로 듣는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, appLifecycle } = await renderSession({ mode: 'note' });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => appLifecycle.emit('background'));
       await act(async () => appLifecycle.emit('active'));
 
@@ -778,10 +806,11 @@ describe('useVoiceCaptureSession', () => {
 
     it('듣던 구간을 멈추고 돌아와 이어 들으면 같은 옵션으로 다시 연다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, appLifecycle, analytics, errorReporter } = await renderSession({
         mode: 'note',
       });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       const firstOptions = speechRecognizer.start.mock.calls[0]?.[0];
 
@@ -800,7 +829,7 @@ describe('useVoiceCaptureSession', () => {
       // When
       await act(async () => speechRecognizer.emit({ type: 'end' }));
       await act(async () => appLifecycle.emit('active'));
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
 
       // Then
@@ -815,8 +844,9 @@ describe('useVoiceCaptureSession', () => {
 
     it('통화로 인식기가 끊기면 들은 글자를 든 채 멈춘다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, errorReporter } = await renderSession();
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
 
       // When
@@ -834,8 +864,9 @@ describe('useVoiceCaptureSession', () => {
 
   it('언어를 바꾼 뒤 다시 열 때는 그 언어의 기기 인식 여부로 시작한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     speechRecognizer.getCapabilities.mockResolvedValueOnce({
       isAvailable: true,
@@ -846,7 +877,7 @@ describe('useVoiceCaptureSession', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('change-locale'));
+    await user.press(screen.getByRole('button', { name: 'change-locale' }));
     await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -858,8 +889,9 @@ describe('useVoiceCaptureSession', () => {
 
   it('기기 인식이 안 되는 언어로 바꾸면 내 카테고리·할 일 이름을 인식기에 주지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     speechRecognizer.getCapabilities.mockResolvedValueOnce({
       isAvailable: true,
@@ -870,7 +902,7 @@ describe('useVoiceCaptureSession', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('change-locale'));
+    await user.press(screen.getByRole('button', { name: 'change-locale' }));
     await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
@@ -885,8 +917,9 @@ describe('useVoiceCaptureSession', () => {
 
   it('화면이 내려가면 구독을 먼저 풀고 인식기를 끊어 끊김 이벤트가 세션에 오지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, unmount } = await renderSession();
-    await fireEvent.press(screen.getByTestId('begin'));
+    await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
     const listenerCountsAtAbort: number[] = [];
     speechRecognizer.abort.mockImplementation(() => {
@@ -913,7 +946,7 @@ describe('useVoiceCaptureSession', () => {
       const session = await renderSession();
       const capabilities = createDeferred<typeof FULL>();
       session.speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
-      await fireEvent.press(screen.getByTestId('begin-without-waiting'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
       await act(async () => session.unmount());
       return { ...session, capabilities };
     };
@@ -951,12 +984,13 @@ describe('useVoiceCaptureSession', () => {
 
     it('언어 확인이 늦게 끝나도 다른 세션의 인식기를 멈추지 않는다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, unmount } = await renderSession();
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       const capabilities = createDeferred<typeof FULL>();
       speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
-      await fireEvent.press(screen.getByTestId('change-locale-without-waiting'));
+      await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
 
       // When
       await act(async () => unmount());
@@ -972,7 +1006,7 @@ describe('useVoiceCaptureSession', () => {
       const session = await renderSession(options);
       logger.error.mockClear();
       logger.info.mockClear();
-      await fireEvent.press(screen.getByTestId('begin'));
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
     };
@@ -1002,11 +1036,12 @@ describe('useVoiceCaptureSession', () => {
 
     it('글자가 있으면 끝을 completed로, 정리 요청을 breadcrumb으로 남긴다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics, errorReporter } = await beginListening();
       await say(speechRecognizer);
 
       // When
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
       // Then
@@ -1030,10 +1065,11 @@ describe('useVoiceCaptureSession', () => {
 
     it('글자가 없으면 끝을 empty로 남긴다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics } = await beginListening();
 
       // When
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
       // Then
@@ -1045,13 +1081,14 @@ describe('useVoiceCaptureSession', () => {
 
     it('일시정지 뒤에 끝내도 멈춘 횟수와 함께 completed로 남긴다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics } = await beginListening();
       await say(speechRecognizer);
-      await fireEvent.press(screen.getByTestId('pause'));
+      await user.press(screen.getByRole('button', { name: 'pause' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
 
       // When
-      await fireEvent.press(screen.getByTestId('finish'));
+      await user.press(screen.getByRole('button', { name: 'finish' }));
 
       // Then
       expect(analytics.trackEvent).toHaveBeenCalledWith(
@@ -1065,11 +1102,12 @@ describe('useVoiceCaptureSession', () => {
       { button: 'hand-off', outcome: 'upgraded' },
     ])('$button은 들은 글자가 있으면 $outcome으로 남기고 인식기를 끊는다', async (expected) => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics } = await beginListening();
       await say(speechRecognizer);
 
       // When
-      await fireEvent.press(screen.getByTestId(expected.button));
+      await user.press(screen.getByRole('button', { name: expected.button }));
 
       // Then
       expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
@@ -1081,10 +1119,11 @@ describe('useVoiceCaptureSession', () => {
 
     it('취소해도 들은 글자가 없으면 empty로 남긴다', async () => {
       // Given
+      const user = userEvent.setup();
       const { analytics } = await beginListening();
 
       // When
-      await fireEvent.press(screen.getByTestId('cancel'));
+      await user.press(screen.getByRole('button', { name: 'cancel' }));
 
       // Then
       expect(analytics.trackEvent).toHaveBeenCalledWith(
@@ -1095,12 +1134,13 @@ describe('useVoiceCaptureSession', () => {
 
     it('일시정지와 이어 듣기를 남긴다', async () => {
       // Given
+      const user = userEvent.setup();
       const { speechRecognizer, analytics, errorReporter } = await beginListening();
 
       // When
-      await fireEvent.press(screen.getByTestId('pause'));
+      await user.press(screen.getByRole('button', { name: 'pause' }));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
 
       // Then
       expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
@@ -1165,6 +1205,7 @@ describe('useVoiceCaptureSession', () => {
 
     it('기능 확인이 실패하면 오류를 남기고 실패로 멈춘다', async () => {
       // Given
+      const user = userEvent.setup();
       const speechRecognizer = createSpeechRecognizerStub();
       speechRecognizer.getCapabilities.mockRejectedValue(new Error('native'));
       logger.error.mockClear();
@@ -1178,7 +1219,7 @@ describe('useVoiceCaptureSession', () => {
       });
 
       // When
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
 
       // Then
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
@@ -1192,6 +1233,7 @@ describe('useVoiceCaptureSession', () => {
 
     it('인식을 쓸 수 없는 기기는 시작하지 않고 실패로 멈춘다', async () => {
       // Given
+      const user = userEvent.setup();
       const speechRecognizer = createSpeechRecognizerStub();
       speechRecognizer.getCapabilities.mockResolvedValue({
         isAvailable: false,
@@ -1210,7 +1252,7 @@ describe('useVoiceCaptureSession', () => {
       });
 
       // When
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
 
       // Then
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
@@ -1219,6 +1261,7 @@ describe('useVoiceCaptureSession', () => {
 
     it('인식을 쓸 수 없어 실패한 뒤 다시 시도하면 준비 화면에 갇히지 않고 인식기를 다시 시작한다', async () => {
       // Given
+      const user = userEvent.setup();
       const speechRecognizer = createSpeechRecognizerStub();
       speechRecognizer.getCapabilities.mockResolvedValue({
         isAvailable: false,
@@ -1235,11 +1278,11 @@ describe('useVoiceCaptureSession', () => {
           errorReporter: createErrorReporterStub(),
         },
       });
-      await fireEvent.press(screen.getByTestId('begin'));
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
 
       // When
-      await fireEvent.press(screen.getByTestId('resume'));
+      await user.press(screen.getByRole('button', { name: 'resume' }));
 
       // Then
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));

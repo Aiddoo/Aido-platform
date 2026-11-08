@@ -19,7 +19,7 @@ import {
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Button, OverlayProvider } from '@src/shared/ui';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { useStartVoiceNote } from './use-start-voice-note';
@@ -111,13 +111,14 @@ describe('useStartVoiceNote', () => {
 
   it('한도를 다 썼으면 한도 안내에서 멈추고 동의와 마이크를 묻지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer, analytics } = await renderStart({
       consent: PREVIOUS_AGREEMENT,
       voiceNoteUsed: PLAN_CATALOG.VOICE_NOTE.free,
     });
 
     // When
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
     await waitFor(() =>
@@ -132,16 +133,17 @@ describe('useStartVoiceNote', () => {
 
   it('이전 안내에 동의한 사람은 재안내를 닫은 뒤에야 마이크 권한을 묻고 녹음 화면으로 간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderStart({ consent: PREVIOUS_AGREEMENT });
 
     // When
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
     await screen.findByTestId('ai-consent-sheet');
 
     // Then
     expect(screen.getByText(RENEWAL_SUBTITLE)).toBeOnTheScreen();
     expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '나중에' }));
     await waitFor(() =>
       expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
     );
@@ -150,13 +152,14 @@ describe('useStartVoiceNote', () => {
 
   it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderStart({ consent: {} });
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
     await screen.findByTestId('ai-consent-sheet');
     expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
 
     // When
-    await fireEvent.press(screen.getByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '나중에' }));
 
     // Then
     expect(await screen.findAllByText(CONSENT_REQUIRED_TOAST)).not.toHaveLength(0);
@@ -167,27 +170,29 @@ describe('useStartVoiceNote', () => {
 
   it('처음 쓰는 사람이 나중에를 눌렀어도 다시 누르면 안내를 다시 띄운다', async () => {
     // Given
+    const user = userEvent.setup();
     await renderStart({ consent: {} });
-    await fireEvent.press(screen.getByText('시작'));
-    await fireEvent.press(await screen.findByTestId('ai-consent-later'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
+    await user.press(await screen.findByRole('button', { name: '나중에' }));
     await screen.findAllByText(CONSENT_REQUIRED_TOAST);
 
     // When
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
-    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
+    expect(await screen.findByTestId('ai-consent-sheet')).toBeOnTheScreen();
   });
 
   it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderStart({
       consent: PREVIOUS_AGREEMENT,
       seenCoachmarks: ['ai-consent-renewal'],
     });
 
     // When
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
     await waitFor(() =>
@@ -198,6 +203,7 @@ describe('useStartVoiceNote', () => {
 
   it('마이크 권한을 얻지 못하면 녹음 화면으로 가지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { speechRecognizer } = await renderStart({
       consent: PREVIOUS_AGREEMENT,
       seenCoachmarks: ['ai-consent-renewal'],
@@ -214,7 +220,7 @@ describe('useStartVoiceNote', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByText('시작'));
+    await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
     await waitFor(() => expect(speechRecognizer.requestPermission).toHaveBeenCalled());

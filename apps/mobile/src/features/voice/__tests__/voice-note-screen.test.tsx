@@ -25,7 +25,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
@@ -125,10 +125,10 @@ describe('말로 메모 화면', () => {
     await renderScreen({});
 
     // When
-    const button = await screen.findByText('정리하기');
+    const button = await screen.findByRole('button', { name: '정리하기' });
 
     // Then
-    expect(button).toBeTruthy();
+    expect(button).toBeOnTheScreen();
     expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
       '1번 사용 · 이번 달 3번 남음',
     );
@@ -136,16 +136,17 @@ describe('말로 메모 화면', () => {
 
   it('정리에 실패하면 글자를 남기고 차감되지 않았을 때만 그렇게 말하며 다시 정리를 보인다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({});
     httpClient.post.mockResolvedValue(
       err(new ApiError('AI_1301', '실패', 503, { charged: false })),
     );
 
     // When
-    await fireEvent.press(await screen.findByText('정리하기'));
+    await user.press(await screen.findByRole('button', { name: '정리하기' }));
 
     // Then
-    expect(await screen.findByText('다시 정리')).toBeTruthy();
+    expect(await screen.findByText('다시 정리')).toBeOnTheScreen();
     expect(screen.getByTestId('voice-note-digest-failure')).toHaveTextContent(
       /횟수는 차감되지 않았어요/,
     );
@@ -153,45 +154,48 @@ describe('말로 메모 화면', () => {
 
   it('연결이 안 돼 정리하지 못하면 연결되면 다시 정리할 수 있다고 알린다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({});
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
-    await fireEvent.press(await screen.findByText('정리하기'));
+    await user.press(await screen.findByRole('button', { name: '정리하기' }));
 
     // Then
     const failure = await screen.findByTestId('voice-note-digest-failure');
     expect(failure).toHaveTextContent(/인터넷에 연결되지 않았어요/);
     expect(failure).toHaveTextContent(/인터넷에 연결되면 다시 정리할 수 있어요/);
-    expect(screen.getByText('다시 정리')).toBeTruthy();
+    expect(screen.getByText('다시 정리')).toBeOnTheScreen();
   });
 
   it('너무 길어 정리하지 못하면 이유를 알리고 소용없는 다시 정리를 보이지 않는다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({});
     httpClient.post.mockResolvedValue(err(new ApiError('AI_1312', '너무 김', 422)));
 
     // When
-    await fireEvent.press(await screen.findByText('정리하기'));
+    await user.press(await screen.findByRole('button', { name: '정리하기' }));
 
     // Then
     expect(await screen.findByTestId('voice-note-digest-failure')).toHaveTextContent(
       /한 번에 정리할 수 있는 길이를 넘었어요/,
     );
     expect(screen.queryByText('다시 정리')).toBeNull();
-    expect(screen.getByLabelText('더 보기')).toBeTruthy();
+    expect(screen.getByLabelText('더 보기')).toBeOnTheScreen();
   });
 
   it('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({});
     httpClient.post.mockResolvedValue(ok(createVoiceNoteDigestDto({ keyPoints: [] })));
 
     // When
-    await fireEvent.press(await screen.findByText('정리하기'));
+    await user.press(await screen.findByRole('button', { name: '정리하기' }));
 
     // Then
-    expect(await screen.findByText('요약이에요')).toBeTruthy();
+    expect(await screen.findByText('요약이에요')).toBeOnTheScreen();
     expect(screen.getByTestId('voice-note-no-todos')).toHaveTextContent(
       '할 일로 나눌 내용은 없었어요. 요약을 남겨뒀어요.',
     );
@@ -199,6 +203,7 @@ describe('말로 메모 화면', () => {
 
   it('메모로 저장하면 요약을 메모로 보내고 저장했다고 바뀐다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
@@ -206,15 +211,16 @@ describe('말로 메모 화면', () => {
     httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
 
     // When
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
 
     // Then
-    await waitFor(() => expect(screen.getByLabelText('메모로 저장했어요')).toBeDisabled());
+    expect(await screen.findByRole('button', { name: '메모로 저장했어요' })).toBeDisabled();
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/action-plans/apply');
   });
 
   it('메모로 저장하면 메모 목록과 개수 한도를 다시 읽는다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, queryClient } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
@@ -228,7 +234,7 @@ describe('말로 메모 화면', () => {
     );
 
     // When
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
 
     // Then
     await waitFor(() =>
@@ -239,6 +245,7 @@ describe('말로 메모 화면', () => {
 
   it('메모로 저장에 실패하면 저장한 것으로 바뀌지 않고 같은 키로 다시 저장할 수 있다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, storage } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
@@ -246,10 +253,10 @@ describe('말로 메모 화면', () => {
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
 
     // Then
-    await waitFor(() => expect(screen.getByLabelText('메모로 저장')).toBeEnabled());
+    expect(await screen.findByRole('button', { name: '메모로 저장' })).toBeEnabled();
     const kept = storage.drafts.find(ACCOUNT_ID, DRAFT_ID);
     expect(kept?.memoSavedAt).toBeNull();
     expect(kept?.digest).not.toBeNull();
@@ -260,17 +267,16 @@ describe('말로 메모 화면', () => {
 
   it('삭제를 확인하면 기기에서 지우고 화면을 닫는다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { storage } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
 
     // When
-    await act(async () => {
-      fireEvent.press(await screen.findByText('이 메모 삭제')).catch(jest.fn());
-    });
+    await user.press(await screen.findByText('이 메모 삭제'));
     await screen.findByText('이 메모를 삭제할까요?');
-    await fireEvent.press(screen.getByText('삭제'));
+    await user.press(screen.getByRole('button', { name: '삭제' }));
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
@@ -285,8 +291,8 @@ describe('말로 메모 화면', () => {
     await renderScreen({ digest, planDraft: emptyPlanDraft, recordings: [] });
 
     // Then
-    expect(await screen.findByText('남아 있는 요약')).toBeTruthy();
-    expect(screen.getByText('녹음 파일이 없어서 다시 들을 수 없어요')).toBeTruthy();
+    expect(await screen.findByText('남아 있는 요약')).toBeOnTheScreen();
+    expect(screen.getByText('녹음 파일이 없어서 다시 들을 수 없어요')).toBeOnTheScreen();
   });
 
   it('이미 할 일을 추가한 메모는 할 일 탭에서 다시 추가하지 않게 안내한다', async () => {
@@ -302,6 +308,7 @@ describe('말로 메모 화면', () => {
 
   it('할 일 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남긴다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, storage, unmount } = await renderScreen(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
@@ -312,8 +319,8 @@ describe('말로 메모 화면', () => {
         respond = () => resolve(ok({ todos: [], memo: null }));
       }),
     );
-    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
-    await fireEvent.press(screen.getByTestId('plan-review-apply'));
+    expect(await screen.findByRole('button', { name: /^할 일 \d+개 추가$/ })).toBeEnabled();
+    await user.press(screen.getByRole('button', { name: /^할 일 \d+개 추가$/ }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
 
     // When
@@ -328,16 +335,17 @@ describe('말로 메모 화면', () => {
 
   it('할 일 저장 응답을 놓치고 다시 열어 눌러도 같은 키로 보낸다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, storage, unmount } = await renderScreen(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
     );
     httpClient.post.mockRejectedValue(new NetworkError());
-    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
-    await fireEvent.press(screen.getByTestId('plan-review-apply'));
+    expect(await screen.findByRole('button', { name: /^할 일 \d+개 추가$/ })).toBeEnabled();
+    await user.press(screen.getByRole('button', { name: /^할 일 \d+개 추가$/ }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     const firstKey = httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'];
-    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+    expect(await screen.findByRole('button', { name: /^할 일 \d+개 추가$/ })).toBeEnabled();
 
     // When
     await act(async () => unmount());
@@ -349,6 +357,7 @@ describe('말로 메모 화면', () => {
 
   it('메모로 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남기고 키를 지운다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, storage, unmount } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
@@ -359,7 +368,7 @@ describe('말로 메모 화면', () => {
         respond = () => resolve(ok({ todos: [], memo: null }));
       }),
     );
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest?.idempotencyKey).toBe(
       httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],
@@ -378,17 +387,18 @@ describe('말로 메모 화면', () => {
 
   it('응답을 놓친 뒤 메모로 저장을 다시 누르면 같은 키로 다시 보낸다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
     httpClient.post.mockRejectedValue(new NetworkError());
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     await act(async () => {});
 
     // When
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
 
     // Then
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
@@ -399,6 +409,7 @@ describe('말로 메모 화면', () => {
 
   it('서버가 같은 키로 다른 내용이라고 거절하면 저장해 둔 키를 지운다', async () => {
     // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const { httpClient, storage } = await renderScreen({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
@@ -406,7 +417,7 @@ describe('말로 메모 화면', () => {
     httpClient.post.mockResolvedValue(err(new ApiError('AI_1318', '키 충돌', 409)));
 
     // When
-    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
+    await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
 
     // Then
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
