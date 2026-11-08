@@ -57,7 +57,6 @@ export function useMarkAllAsReadMutationOptions() {
       return { snapshot };
     },
     onSuccess: () => {
-      invalidateNotifications(queryClient);
       clearBadgeQuietly();
     },
     onError: (error, _variables, context) => {
@@ -74,6 +73,8 @@ export function useMarkAllAsReadMutationOptions() {
         fallback: t('notification:list.markAllReadFailed'),
       });
     },
+    // 실패로 되돌린 뒤에도 서버 값으로 맞춘다
+    onSettled: () => invalidateNotifications(queryClient),
   });
 }
 
@@ -89,7 +90,7 @@ export function useMarkAsReadMutationOptions() {
       unwrap(await notificationService.markAsRead(notificationId)),
     onMutate: async (notificationId) => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
-      const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+      const count = queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
       // 수를 모르면 배지를 0으로 지우지 않는다. 일부 Android 런처는 배지 호출을 거부해 경고만 남긴다
       if (count != null) {
         notificationBadgeService.setBadgeCount(count).catch((error) =>
@@ -101,7 +102,6 @@ export function useMarkAsReadMutationOptions() {
       return { snapshot, hasBadgeCount: count != null };
     },
     onSuccess: (_data, _notificationId, context) => {
-      invalidateNotifications(queryClient);
       if (!context.hasBadgeCount) {
         notificationBadgeService.syncBadgeCount().catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
@@ -122,6 +122,7 @@ export function useMarkAsReadMutationOptions() {
       // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
+    onSettled: () => invalidateNotifications(queryClient),
   });
 }
 
