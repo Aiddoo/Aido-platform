@@ -42,9 +42,9 @@ export function PushDeliverySettings() {
 PushDeliverySettings.Loading = function Loading() {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Toggle.Loading hasDescription />
       <SettingsListGroup.Separator />
-      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Toggle.Loading hasDescription />
     </SettingsListGroup>
   );
 };

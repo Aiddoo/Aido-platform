@@ -21,13 +21,13 @@ TermsSettingsScreen.Loading = function Loading() {
   return (
     <>
       <SettingsListGroup>
-        <SettingsListGroup.ItemSkeleton descriptionLines={2} />
+        <SettingsListGroup.Item.Loading descriptionLines={2} />
         <SettingsListGroup.Separator />
-        <SettingsListGroup.ItemSkeleton descriptionLines={2} />
+        <SettingsListGroup.Item.Loading descriptionLines={2} />
       </SettingsListGroup>
 
       <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton hasDescription />
+        <SettingsListGroup.Toggle.Loading hasDescription />
       </SettingsListGroup>
     </>
   );

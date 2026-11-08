@@ -21,15 +21,15 @@ NotificationSettingsScreen.Loading = function Loading() {
   return (
     <>
       <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton />
+        <SettingsListGroup.Toggle.Loading />
       </SettingsListGroup>
 
       <SettingsListGroup>
-        <SettingsListGroup.ItemSkeleton hasValue />
+        <SettingsListGroup.Item.Loading hasValue />
         <SettingsListGroup.Separator />
-        <SettingsListGroup.ItemSkeleton hasValue />
+        <SettingsListGroup.Item.Loading hasValue />
         <SettingsListGroup.Separator />
-        <SettingsListGroup.ItemSkeleton hasValue />
+        <SettingsListGroup.Item.Loading hasValue />
       </SettingsListGroup>
     </>
   );

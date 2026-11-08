@@ -38,9 +38,9 @@ export function MarketingConsentSettings() {
 MarketingConsentSettings.Loading = function Loading() {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Toggle.Loading hasDescription />
       <SettingsListGroup.Separator />
-      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Toggle.Loading hasDescription />
     </SettingsListGroup>
   );
 };

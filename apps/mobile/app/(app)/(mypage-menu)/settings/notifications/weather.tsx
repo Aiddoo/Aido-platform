@@ -44,7 +44,7 @@ export default function WeatherSettingsScreen() {
 WeatherSettingsScreen.Loading = function Loading() {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.ToggleSkeleton hasDescription />
+      <SettingsListGroup.Toggle.Loading hasDescription />
 
       <SettingsListGroup.Separator />
 

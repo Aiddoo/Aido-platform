@@ -50,7 +50,7 @@ interface SettingsListGroupItemProps extends Omit<
   isDisabled?: boolean;
 }
 
-SettingsListGroup.Item = function Item({
+function SettingsListGroupItem({
   label,
   description,
   icon,
@@ -95,17 +95,17 @@ SettingsListGroup.Item = function Item({
       </ListGroup.ItemSuffix>
     </ListGroup.Item>
   );
-};
+}
 
-interface SettingsListGroupItemSkeletonProps {
+interface SettingsListGroupItemLoadingProps {
   descriptionLines?: number;
   hasValue?: boolean;
 }
 
-SettingsListGroup.ItemSkeleton = function ItemSkeleton({
+SettingsListGroupItem.Loading = function Loading({
   descriptionLines = 0,
   hasValue = false,
-}: SettingsListGroupItemSkeletonProps) {
+}: SettingsListGroupItemLoadingProps) {
   return (
     <HStack align="center" gap={12} className="min-h-12 p-4 py-3">
       <VStack flex={1} gap={2}>
@@ -130,7 +130,7 @@ interface SettingsListGroupToggleProps extends Omit<
   description?: string;
 }
 
-SettingsListGroup.Toggle = function Toggle({
+function SettingsListGroupToggle({
   label,
   description,
   className,
@@ -151,15 +151,15 @@ SettingsListGroup.Toggle = function Toggle({
       <ControlField.Indicator />
     </ControlField>
   );
-};
+}
 
-interface SettingsListGroupToggleSkeletonProps {
+interface SettingsListGroupToggleLoadingProps {
   hasDescription?: boolean;
 }
 
-SettingsListGroup.ToggleSkeleton = function ToggleSkeleton({
+SettingsListGroupToggle.Loading = function Loading({
   hasDescription = false,
-}: SettingsListGroupToggleSkeletonProps) {
+}: SettingsListGroupToggleLoadingProps) {
   return (
     <HStack align="center" gap={12} className="min-h-12 px-4 py-3">
       <VStack flex={1} gap={2}>
@@ -170,6 +170,9 @@ SettingsListGroup.ToggleSkeleton = function ToggleSkeleton({
     </HStack>
   );
 };
+
+SettingsListGroup.Item = SettingsListGroupItem;
+SettingsListGroup.Toggle = SettingsListGroupToggle;
 
 SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;

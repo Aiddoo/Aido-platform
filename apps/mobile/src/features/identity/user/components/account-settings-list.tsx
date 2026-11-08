@@ -39,7 +39,7 @@ export function AccountSettingsList() {
 AccountSettingsList.Loading = function Loading() {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.ItemSkeleton hasValue />
+      <SettingsListGroup.Item.Loading hasValue />
     </SettingsListGroup>
   );
 };

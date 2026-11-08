@@ -20,14 +20,14 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### 로딩
 
-`.ItemSkeleton`·`.ToggleSkeleton`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 `fallback={SettingsListGroup.Error}`로 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
+`.Item.Loading`·`.Toggle.Loading`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 `fallback={SettingsListGroup.Error}`로 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
 
 ```tsx
 <QueryErrorBoundary fallback={SettingsListGroup.Error}>
   <Suspense
     fallback={
       <SettingsListGroup>
-        <SettingsListGroup.ToggleSkeleton hasDescription />
+        <SettingsListGroup.Toggle.Loading hasDescription />
       </SettingsListGroup>
     }
   >
@@ -60,7 +60,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 | `isSelected`  | `boolean`   | `false` | 넓은 화면의 선택 표시            |
 | `isDisabled`  | `boolean`   | `false` | 누를 수 없음                     |
 
-### SettingsListGroup.ItemSkeleton
+### SettingsListGroup.Item.Loading
 
 | Prop               | Type      | Default | Description             |
 | ------------------ | --------- | ------- | ----------------------- |
@@ -76,7 +76,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 | `label`       | `string` | -       | 토글 제목           |
 | `description` | `string` | -       | 제목 아래 보조 설명 |
 
-### SettingsListGroup.ToggleSkeleton
+### SettingsListGroup.Toggle.Loading
 
 | Prop             | Type      | Default | Description             |
 | ---------------- | --------- | ------- | ----------------------- |
