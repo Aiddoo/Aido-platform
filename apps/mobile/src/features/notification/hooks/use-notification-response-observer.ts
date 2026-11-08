@@ -33,10 +33,7 @@ import { resolveNotificationDestination } from '../utils/notification-destinatio
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
 
-/**
- * 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모으고,
- * 판단은 NotificationPolicy, 목적지는 resolveNotificationDestination에 맡긴다.
- */
+/** 푸시 응답의 입구 하나 */
 export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();
@@ -154,7 +151,6 @@ function useMarketingOptOut(
   }, [appLifecycle, response]);
 }
 
-/** 인증과 복원이 끝난 탭의 소유를 확인하고 목적지를 정한다 */
 function useResolveResponse(
   response: PendingNotificationResponse | null,
   finishResponse: (responseId: string) => void,
@@ -226,7 +222,6 @@ function useResolveResponse(
   }, [isRestoring, response, status]);
 }
 
-/** 앱에 들어가는 중이면 Index가 경로를 열고, 앱 안이면 여기서 연다 */
 function useOpenReadyEntry(
   entry: ReadyNotificationEntry | null,
   finishResponse: (responseId: string) => void,
@@ -269,7 +264,6 @@ function useOpenReadyEntry(
         recordOpened(data.notificationId);
       }
     } catch (error) {
-      // 외부 링크를 열지 못한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
     } finally {
       inFlightIdRef.current = null;
@@ -291,7 +285,6 @@ function useOpenReadyEntry(
       return;
     }
     openedByIndexIdRef.current = entry.response.id;
-    // Index가 이동하지 못하면 슬롯을 비워 피드로 보낸다
     const timer = setTimeout(() => abandon(entry.response.id), NOTIFICATION_ENTRY_HOLD_MAX_MS);
     return () => clearTimeout(timer);
   }, [entry, isEnteringApp]);

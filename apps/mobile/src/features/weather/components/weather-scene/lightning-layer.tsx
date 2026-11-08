@@ -8,9 +8,7 @@ import {
   NO_LIGHTNING_WINDOW,
 } from '../../utils/weather-scene-particles';
 
-/** 시안 wxFlash의 첫 섬광 최대 불투명도 */
 const MAX_FLASH_OPACITY = 0.45;
-/** 줄기는 화면 폭 20~80%에서 내려와 화면 높이의 절반까지 갈라지며 뻗는다. */
 const BOLT = {
   startX: [0.2, 0.8],
   reach: 0.5,
@@ -29,7 +27,6 @@ type LightningLayerProps = {
   time: SharedValue<number>;
 };
 
-/** 하늘이 번쩍일 때마다 구간마다 모양이 다른 번개 줄기가 갈라지며 내리친다. */
 export function LightningLayer({ width, height, time }: LightningLayerProps) {
   const intensity = useDerivedValue(() => getLightningIntensity(time.get()));
   const flashOpacity = useDerivedValue(() => intensity.get() * MAX_FLASH_OPACITY);

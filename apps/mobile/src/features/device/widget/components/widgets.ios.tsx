@@ -34,7 +34,6 @@ import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
 
-// Widget layouts execute in isolation; helpers and palette must stay inside this function.
 function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment) {
   'widget';
 

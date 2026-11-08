@@ -6,19 +6,14 @@ import { getSceneReferenceWidth } from '../../utils/weather-scene-particles';
 import type { WeatherSceneSun } from '../../utils/weather-scene.view-model';
 import { useSunRaysTexture } from './weather-scene-textures';
 
-/** 다크 모드에서는 빛무리를 조금 낮춘다. */
 const THEME_GLOW = { light: 1, dark: 0.78 } as const;
-/** 하늘 전체의 구름양과 해를 바로 가린 구름이 햇빛을 줄이는 비율 */
 const CLOUD_DIMMING = 0.55;
 const OCCLUSION_DIMMING = 0.7;
-/** 8초 주기로 2.5% 숨 쉰다. */
 const BREATH = { amount: 0.025, periodSeconds: 8 } as const;
-/** 두 빛살 텍스처가 서로 반대로 천천히 돈다(초당 라디안). 큰 쪽은 화면 폭의 1.15배다. */
 const RAYS = {
   outer: { scale: 1.15, turn: 0.015, alpha: 0.9 },
   inner: { scale: 0.92, turn: -0.012, alpha: 0.55 },
 } as const;
-/** 렌즈 반사는 해에서 화면 가운데(폭 45%, 높이 55%)를 향해 놓인다. */
 const FLARE_TARGET = { x: 0.45, y: 0.55 } as const;
 const FLARE_GHOSTS = [
   { offset: 0.38, radius: 0.028, rgb: '190,225,255', alpha: 0.12 },
@@ -28,7 +23,6 @@ const FLARE_GHOSTS = [
 ] as const;
 
 type SunStyle = {
-  /** 하얀 원반·따뜻한 코로나·하늘 전체 빛의 반지름(화면 폭 비율) */
   core: number;
   corona: number;
   sky: number;
@@ -73,17 +67,12 @@ type SunLayerProps = {
   hasLensFlare: boolean;
   clouds: number;
   isDark: boolean;
-  /** 구름이 해를 바로 가린 정도(0~1) */
   occlusion: SharedValue<number>;
   width: number;
   height: number;
   time: SharedValue<number>;
 };
 
-/**
- * 하얗게 타는 작은 원반, 따뜻한 코로나, 하늘 전체로 번지는 빛, 서로 반대로 도는 두 겹 빛살, 렌즈 반사.
- * 하늘의 구름양과 해를 지나는 구름만큼 어두워진다.
- */
 export function SunLayer({
   sun,
   center,

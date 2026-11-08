@@ -7,7 +7,6 @@ type WhatsNewEntryNoticeProps = Omit<
   'image' | 'title' | 'description' | 'pressLabel' | 'closeLabel'
 >;
 
-/** 새로운 기능을 다시 여는 피드 카드 */
 export function WhatsNewEntryNotice(props: WhatsNewEntryNoticeProps) {
   const { t } = useTranslation('whatsNew');
 

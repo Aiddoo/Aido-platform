@@ -10,7 +10,6 @@ const RING_WIDTH = 2.5;
 const RING_SIZE = DOT_SIZE + RING_WIDTH * 2;
 
 interface WeatherMeterProps {
-  /** 왼쪽부터 같은 간격으로 놓을 그라데이션 색 */
   colors: readonly string[];
   /** 0~1 사이 현재 값 자리. 값이 없으면 점을 그리지 않는다. */
   position: number | null;

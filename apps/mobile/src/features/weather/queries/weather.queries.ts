@@ -28,16 +28,11 @@ import { removeOutdatedWeatherReports } from './weather-cache';
 
 const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
 
-/** 권한이 없던 사용자가 설정에서 돌아오면 30분을 기다리지 않고 바로 다시 확인한다. */
 function refetchOnFocus(query: Query<LocationReading, Error>) {
   return query.state.data?.status === 'located' ? true : 'always';
 }
 
-/**
- * 등록을 마쳤을 때 같은 리비전의 리포트를 아직 받는 중이면 그 요청을 기다려 서버가 쓴 위치와 비교한다.
- * fetchQuery는 진행 중인 요청이 있으면 새로 보내지 않고 그 요청을 기다린다. 리포트 실패는 리포트 경계가
- * 알리므로 여기서는 비교할 위치가 없는 것으로 보고 기록만 남긴다.
- */
+/** 등록을 마쳤을 때 같은 리비전의 리포트를 아직 받는 중이면 그 요청을 기다려 서버가 쓴 위치와 비교한다 */
 async function findReportLocation(client: QueryClient, logger: Logger, revision: number) {
   const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
   const state = client.getQueryState<WeatherReport>(queryKey);
@@ -53,11 +48,7 @@ async function findReportLocation(client: QueryClient, logger: Logger, revision:
   return state?.data?.location ?? null;
 }
 
-/**
- * 위치 읽기·등록을 이 query 안에서 하는 이유: 피드 배지·날씨 화면·안내가 같은 key를 구독하므로
- * 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다.
- * 리포트는 이 query를 기다리지 않고 서버에 저장된 위치로 먼저 받는다.
- */
+/** 위치 읽기·등록을 이 query 안에서 하는 이유: 피드 배지·날씨 화면·안내가 같은 key를 구독하므로 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다 */
 export function useGetWeatherLocationQueryOptions() {
   const weatherLocationService = useWeatherLocationService();
   const logger = useLogger();
@@ -89,19 +80,14 @@ export function useWeatherLocationRevision(): number {
 }
 
 const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
-/** 화면을 켜 둔 동안에도 분 단위 강수 안내가 어긋나지 않게 주기적으로 다시 받는다. */
 const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
-/** 공급자 장애(WEATHER_1901)는 오래 기다리기보다 다시 시도 화면을 빨리 보여 준다. */
 const REPORT_MAX_RETRIES = 2;
 
 function shouldRetryReport(failureCount: number, error: unknown): boolean {
   return !isCodedError(error) && failureCount < REPORT_MAX_RETRIES;
 }
 
-/**
- * 개발 QA의 날씨 덮어쓰기는 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며
- * 기기에 저장하지 않는다. 실제 리포트가 이미 있으면 처음부터 그 값으로 그려 화면이 로딩으로 돌아가지 않는다.
- */
+/** 개발 QA의 날씨 덮어쓰기는 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며 기기에 저장하지 않는다 */
 export function useGetWeatherReportQueryOptions() {
   const weatherService = useWeatherService();
   const locationRevision = useWeatherLocationRevision();
@@ -200,10 +186,7 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
   };
 }
 
-/**
- * 블록마다 필요한 조각만 구독해 다른 조각이 바뀌어도 다시 그리지 않는다.
- * 모듈 수준 함수라 참조가 바뀌지 않아 TanStack이 select 결과를 재사용한다.
- */
+/** 블록마다 */
 export const WeatherReportSelect = {
   hero: selectHero,
   alerts: selectAlerts,

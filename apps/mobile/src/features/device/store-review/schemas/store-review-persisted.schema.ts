@@ -9,7 +9,6 @@ export const persistedStoreReviewStateSchema = storeReviewStateSchema.extend({
   version: z.literal(2),
 });
 
-/** 앱 안 확인 창을 쓰던 이전 저장 모양. 읽는 즉시 새 모양으로 옮겨 쓴다 */
 export const legacyStoreReviewStateSchema = z.object({
   completions: z.array(z.object({ localDate: dateSchema })),
   reviewRequestedAt: instantSchema.nullable(),

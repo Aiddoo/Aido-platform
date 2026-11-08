@@ -42,20 +42,14 @@ import {
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
-/**
- * 모든 칸은 같은 폭으로 리듬을 맞춘다. 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고,
- * 글자 배율에 비례해 늘린다.
- */
 const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies Record<
   TimeFormat,
   number
 >;
 const ICON_SIZE = 28;
-/** 아이콘 아래에 강수 확률 줄까지 포함한 칸 높이. 확률이 없는 칸도 같은 높이를 차지한다. */
 const CELL_ICON_HEIGHT = 50;
 const INITIAL_RENDER_COUNT = 8;
 const LOADING_CELL_COUNT = 6;
-/** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
 const VALUE_TYPE = { fontSize: 19, lineHeight: 24, letterSpacing: -0.4 };
 
 function useHourlyValueTextStyle() {
@@ -127,7 +121,6 @@ export function HourlyForecast() {
   );
 }
 
-/** 문장 속 시각은 위치 벽시계가 기기와 다를 때만 '현지'를 붙인다. 칸마다 붙이면 좁은 칸이 넘쳐 문장에서만 밝힌다. */
 HourlyForecast.Summary = function Summary({
   summary,
   context: { dateFormat, timeFormat },

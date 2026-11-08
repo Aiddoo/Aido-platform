@@ -58,13 +58,11 @@ import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 
 const MORE_CHEVRON_SIZE = 13;
-/** 영향이 큰 할 일만 보인다. 옮기기 시트가 있는 브리핑은 나머지를 시트에서 보고, 없으면 개수만 알린다. */
 const VISIBLE_TODO_LIMIT = 3;
 
 type RescheduleAction = Extract<BriefingAction, { kind: 'reschedule' }>;
 type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 
-/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
 function useTranslateBriefingCopy() {
   const { t } = useTranslation('weather');
   const translate = (copy: BriefingCopy): string => {
@@ -76,12 +74,7 @@ function useTranslateBriefingCopy() {
   return translate;
 }
 
-/**
- * 오늘 할 일과 시간별 예보를 겹쳐 비·뇌우·눈·더위와 만나는 할 일, 곧 올 비, 맑은 날, 내일 아침을 알려 준다.
- * 리포트는 히어로가 이미 요청한 같은 캐시를 던지지 않는 useQuery로 구독한다. 리포트 실패는 화면의
- * 리포트 경계 한 곳에서만 보이고 보고되며, 이 블록의 경계는 오늘 할 일 실패만 맡는다.
- * 할 일 시각은 기기 시계라 위치 벽시계가 기기와 다르면(해외 위치) 브리핑을 그리지 않는다.
- */
+/** 오늘 할 일과 시간별 예보를 겹쳐 비·뇌우·눈·더위와 만나는 할 일, 곧 올 비, 맑은 날, 내일 아침을 알려 준다 */
 export function WeatherBriefing() {
   const { data: report } = useQuery({
     ...useGetWeatherReportQueryOptions(),
@@ -150,7 +143,6 @@ WeatherBriefing.Contents = function Contents({
   const hiddenCount = view.rows.length - visibleRows.length;
   const { action } = view;
 
-  // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 화면에서는 처음 보인 브리핑만 센다
   useEffect(() => {
     if (hasTrackedShownRef.current) {
       return;
@@ -221,10 +213,6 @@ WeatherBriefing.Contents = function Contents({
   );
 };
 
-/**
- * 할 일 시각은 기기 시간대로 저장돼 있어 기기 시간대로 보여 준다. 큰 글씨에서는 칩을 제목 아래로 내린다.
- * 피드의 할 일 줄과 같게, 줄을 누르면 할 일 메뉴(수정·날짜·시간·카테고리)가 열리고 체크박스는 완료를 바꾼다.
- */
 WeatherBriefing.Item = function Item({
   row,
   timeFormat,
@@ -238,7 +226,6 @@ WeatherBriefing.Item = function Item({
   const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
-  // 앱 글자 크기가 가장 클 때는 칩을 제목 아래로 내린다
   const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
   const time = formatClockTime(todo.scheduledAt, timeFormat, dateFormat);
@@ -336,7 +323,6 @@ WeatherBriefing.Item = function Item({
   );
 };
 
-/** 보이지 않는 나머지 할 일은 옮기기 시트에서 함께 본다. */
 WeatherBriefing.More = function More({
   count,
   action,
@@ -359,7 +345,6 @@ WeatherBriefing.More = function More({
   );
 };
 
-/** 옮기기 시트가 없는 브리핑은 보이지 않는 할 일의 개수만 글자로 알린다. */
 WeatherBriefing.HiddenCount = function HiddenCount({ count }: { count: number }) {
   const { t } = useTranslation('weather');
   return (
@@ -387,9 +372,6 @@ WeatherBriefing.RescheduleButton = function RescheduleButton({
   );
 };
 
-/**
- * 날씨에 맞는 할 일을 제안만 한다. 제목·시각을 채운 할 일 추가 시트를 열고, 저장은 사용자가 고친 뒤 시트가 한다.
- */
 WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   action,
 }: {
@@ -422,7 +404,6 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   );
 };
 
-/** 받은 뒤와 같은 자리를 잡는다. 제목 아래 머리글과 본문 줄이 있고 오른쪽에 고양이 자리가 있다. */
 WeatherBriefing.Loading = function Loading() {
   return (
     <WeatherCard className="gap-0 p-4">
@@ -439,7 +420,6 @@ WeatherBriefing.Loading = function Loading() {
   );
 };
 
-/** 오늘 할 일을 받지 못해도 날씨는 그대로 보이도록 브리핑 자리에서만 다시 시도를 안내한다. */
 WeatherBriefing.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('weather');
   return (

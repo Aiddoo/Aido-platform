@@ -28,13 +28,11 @@ const SUN_PULSE_STYLE = {
   animationIterationCount: 'infinite',
 } as const;
 
-/** viewBox를 부모 폭에 맞춰 늘리고, 해 점은 늘어나도 둥글도록 퍼센트 자리에 따로 올린다. */
 export function WeatherSunArc({
   position,
   isNight,
 }: {
   position: DialPoint | null;
-  /** 해가 지평선 아래면 점을 작고 흐리게 그리고 빛 퍼짐을 끈다. */
   isNight: boolean;
 }) {
   const dotSize = isNight ? NIGHT_SUN_DOT_SIZE : SUN_DOT_SIZE;
@@ -116,7 +114,6 @@ export function WeatherSunArc({
   );
 }
 
-/** 시안 wxPulse: 해 점에서 퍼지는 빛. 동작 줄이기·화면 밖·앱 비활성에서는 멈춘다. */
 function SunPulse() {
   const isAnimating = useIsWeatherSceneRunning();
 

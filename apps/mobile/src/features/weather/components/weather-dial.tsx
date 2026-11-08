@@ -14,7 +14,6 @@ import {
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
 const DIAL_VIEWBOX = `0 0 ${DIAL_VIEWBOX_SIZE} ${DIAL_VIEWBOX_SIZE}`;
-/** 가운데 값은 중심보다 조금 위, 단위는 조금 아래에 둔다. */
 const VALUE_OFFSET_Y = -4;
 const UNIT_OFFSET_Y = 14;
 
@@ -97,7 +96,6 @@ interface WeatherCompassProps {
   unit: string;
 }
 
-/** 풍향 나침반. 꼬리는 바람이 불어오는 쪽, 화살촉은 불어 가는 쪽이다. */
 export function WeatherCompass({ size, dial, value, unit }: WeatherCompassProps) {
   const { t } = useTranslation('weather');
   const needleColor = useResolvedColor('text-on-sky');
@@ -137,7 +135,6 @@ interface WeatherPressureGaugeProps {
   highLabel: string;
 }
 
-/** 아래가 트인 기압 눈금판 */
 export function WeatherPressureGauge({
   size,
   gauge,

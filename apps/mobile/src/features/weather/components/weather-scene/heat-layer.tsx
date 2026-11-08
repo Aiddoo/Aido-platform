@@ -28,7 +28,6 @@ import {
   useParticleTexture,
 } from './weather-scene-textures';
 
-/** 일렁임은 화면 높이 55% 아래에서 시작해 바닥으로 갈수록 세진다. */
 const SHIMMER_START = 0.55;
 const HEAT_SHIMMER = Skia.RuntimeEffect.Make(`
 uniform shader image;
@@ -46,7 +45,6 @@ half4 main(float2 position) {
 `);
 const WAVE_SEED = 0x4ea7;
 const WAVE_COUNT = 7;
-/** 열기 물결은 화면 높이 102%에서 35%까지 올라가며, 위쪽 20% 구간에서 사라진다. */
 const WAVE_RANGE = { bottom: 1.02, top: 0.35, fade: 0.2 } as const;
 const WAVE_SPEED = [10, 18] as const;
 const WAVE_ALPHA = [0.08, 0.16] as const;
@@ -58,7 +56,6 @@ const GLOW_BREATH = { base: 0.79, swing: 0.21, frequency: 1.6 } as const;
 const EMBER_SEED = 0xe4b3;
 const EMBER_RADIUS = [1, 3] as const;
 const EMBER_RISE = [6, 16] as const;
-/** 불씨는 바닥에서 화면 높이 15%까지 올라간다. */
 const EMBER_TOP = 0.15;
 const EMBER_SWAY = 15;
 const EMBER_GLINT = { base: 0.5, swing: 0.5, frequency: 2 } as const;
@@ -72,7 +69,6 @@ type HeatLayerProps = {
   time: SharedValue<number>;
 };
 
-/** 무더위: 아래쪽 공기가 일렁이고, 열기 물결이 올라가며, 바닥에서 주황빛 열기와 불씨가 피어오른다. */
 export function HeatLayer({ width, height, isLowEndDevice, time }: HeatLayerProps) {
   const start = height * SHIMMER_START;
   const glowOpacity = useDerivedValue(
@@ -93,7 +89,6 @@ export function HeatLayer({ width, height, isLowEndDevice, time }: HeatLayerProp
 
 type HeatAreaProps = { width: number; height: number; time: SharedValue<number> };
 
-/** 먼저 그린 열기 물결·불씨를 셰이더로 좌우로 흔들어 아지랑이를 만든다. */
 HeatLayer.Shimmer = function Shimmer({ width, height, time }: HeatAreaProps) {
   const start = height * SHIMMER_START;
   const pixelRatio = PixelRatio.get();

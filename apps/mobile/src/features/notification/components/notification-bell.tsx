@@ -16,7 +16,6 @@ import { useResolveClassNames } from 'uniwind';
 import { NotificationBadgePolicy, type UnreadCount } from '../domains/notification-badge.model';
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
-// 읽지 않은 알림은 종을 채워 main으로 칠한다. 채운 기호에 점 자리가 뚫려 있어 같은 색이어도 점이 보인다
 const BELL_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
 const UNREAD_BELL_ICON =
   process.env.EXPO_OS === 'ios' ? 'bell.badge.fill' : NotificationsUnreadFill;

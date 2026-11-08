@@ -7,7 +7,6 @@ import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const COMPACT = { windowSizeClass: 'compact' } as const;
-// 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치로 연다.
 const COMMENT_THREAD_DESTINATION = {
   kind: 'route',
   href: { pathname: '/todo/[todoId]', params: { todoId: 42, comment: COMMENT_ID } },

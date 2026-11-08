@@ -37,9 +37,7 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
     throwOnError: false,
   });
   const openMyInvite = useOpenMyInvite();
-  // 끝나서 숨길 때도 접히는 동안은 그려 두어 아래 목록이 한 번에 뛰지 않게 한다
   const [isMounted, setIsMounted] = useState(isVisible);
-  // 첫 화면부터 보이던 카드는 그대로 두고, 조회가 끝난 뒤 늦게 나타나는 카드만 펼치며 보여 아래 목록이 뛰지 않게 한다
   const [isRevealedLate] = useState(!isVisible);
   if (isVisible && !isMounted) {
     setIsMounted(true);
@@ -90,7 +88,6 @@ interface ActivationChecklistCollapseProps {
   children: ReactNode;
 }
 
-/** 늦게 나타나면 0에서 펼치고, 닫히면 지금 높이에서 0으로 접고 흐리게 한 뒤 알린다. 동작 줄이기 설정이면 바로 바뀐다 */
 function ActivationChecklistCollapse({
   isOpen,
   isRevealedLate,
@@ -143,7 +140,6 @@ interface ActivationInviteStepProps {
   onPress: () => void;
 }
 
-/** 친구 초대는 선택 단계다. 앞의 두 단계를 끝내면 초대 전이라도 체크리스트를 마친다 */
 function ActivationInviteStep({ isCompleted, onPress }: ActivationInviteStepProps) {
   const { t } = useTranslation(['todo', 'invite']);
   const label = t('invite:entry.checklistStep');
@@ -223,10 +219,7 @@ interface ActivationStepIndicatorProps {
   isCompleted: boolean;
 }
 
-/**
- * 두 상태의 크기·테두리를 같게 두어 단계를 끝내도 행이 움직이지 않는다.
- * white 토큰은 다크 모드에서 어두워지므로 체크는 Avatar 선택 배지와 같은 색을 쓴다
- */
+/** 두 상태의 크기·테두리를 같게 두어 단계를 끝내도 행이 움직이지 않는다 */
 function ActivationStepIndicator({ isCompleted }: ActivationStepIndicatorProps) {
   const fontScaledSize = useFontScaledSize();
   const size = fontScaledSize(24);

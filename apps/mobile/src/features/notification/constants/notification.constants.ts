@@ -3,10 +3,7 @@ import type { NotificationType } from '../domains/notification.model';
 /** 진입 대기로 스플래시를 잡아 두는 상한. 판정이 어떻게 끝나든 스플래시에 갇히지 않게 한다 */
 export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3000;
 
-/**
- * 눌린 푸시를 열기 전에 읽음 응답을 기다리는 상한. 초깃값이라 Release 측정 뒤 확정한다.
- * 페이로드에 수신자 ID가 없어 읽음의 403·404가 다른 계정 알림을 막는 유일한 방어다.
- */
+/** 눌린 푸시를 열기 전에 읽음 응답을 기다리는 상한 */
 export const NOTIFICATION_READ_BUDGET_MS = 800;
 
 /** 서버가 마케팅 푸시에 싣는 categoryId. 앱의 푸시 카테고리 등록이 같은 값을 쓴다 */
@@ -20,7 +17,6 @@ export const SETTINGS_TIME_RANGE = {
   evening: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
 } as const;
 
-/** 알림 안내가 다음에 할 일. 안내 화면들이 같은 단계로 고른다 */
 export const PUSH_PERMISSION_STEP = {
   ASK: 'ASK',
   REQUEST_SYSTEM: 'REQUEST_SYSTEM',
@@ -33,7 +29,6 @@ export const PUSH_PERMISSION_STEP = {
 export const PUSH_PROMPT_SNOOZE_DAYS = 14;
 
 interface NotificationTypeTraits {
-  /** 알림함 항목이 어느 분류의 라벨(`categories.*`)로 보이는지 */
   labelKey:
     | 'friend'
     | 'nudge'
@@ -46,12 +41,8 @@ interface NotificationTypeTraits {
     | 'social';
   /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
   isAiFeature: boolean;
-  /**
-   * 서버 목적지(`navigation`)가 없는 알림을 구 필드로 열 길. `feed`는 오늘 피드, `notice`는 서버가 DEEP_LINK url에 고른 앱 경로,
-   * `routing`은 종류와 context로 고른 화면이다
-   */
+  /** 서버 목적지(`navigation`)가 없는 알림을 구 필드로 열 길 */
   legacyDestination: 'feed' | 'notice' | 'routing';
-  /** 앱이 켜진 동안 받으면 다시 받을 다른 기능의 화면. 없으면 null */
   invalidation: 'nudge-interactions' | 'friends' | 'invite' | 'me' | null;
 }
 
@@ -87,7 +78,6 @@ export const NOTIFICATION_TYPE_TRAITS = {
     legacyDestination: 'routing',
     invalidation: 'invite',
   },
-  // 초대받은 사람이 오늘 할 일을 끝내 사용 시작하도록 오늘 피드로 연다
   INVITE_QUALIFY_REMINDER: {
     labelKey: 'friend',
     isAiFeature: false,

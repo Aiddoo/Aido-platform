@@ -15,14 +15,10 @@ import { FOG_BAND_SPRITE, PARTICLE_SAMPLING, useFogBandTexture } from './weather
 
 const FOG_BAND_SEED = 0xf09b;
 const BAND_COUNT = 8;
-/** 띠는 화면 높이 18%부터 10%씩 아래로 놓이고, 위아래로 3%까지 흔들린다. */
 const BAND_LANES = { top: 0.18, step: 0.1, jitter: 0.03 } as const;
-/** 띠 폭은 화면 폭의 1.4~2.6배 */
 const BAND_WIDTH = [1.44, 2.56] as const;
-/** 화면 폭 대비 초당 이동. 홀수 번째 띠는 반대로 흐른다. */
 const BAND_SPEED = [0.006, 0.018] as const;
 const BAND_ALPHA = [0.35, 0.6] as const;
-/** 띠 가운데가 화면 폭의 -0.9배에서 1.1배 사이를 돌며 흐른다. */
 const BAND_TRAVEL = { start: -0.9, length: 2 } as const;
 const SPRITE_CENTER = { x: FOG_BAND_SPRITE.width / 2, y: FOG_BAND_SPRITE.height / 2 };
 
@@ -33,7 +29,6 @@ type FogBandLayerProps = {
   time: SharedValue<number>;
 };
 
-/** 짙은 안개 띠 여러 겹이 서로 반대 방향으로 천천히 흐른다. */
 export function FogBandLayer({ sky, width, height, time }: FogBandLayerProps) {
   const texture = useFogBandTexture();
   const seeds = createParticleSeeds(BAND_COUNT, FOG_BAND_SEED);

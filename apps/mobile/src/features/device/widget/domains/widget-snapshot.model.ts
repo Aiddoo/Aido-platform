@@ -13,7 +13,6 @@ interface WidgetDaySelection {
   renderState: WidgetRenderState;
 }
 
-/** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
 function getDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
   const [firstDay] = snapshot.days;
   if (isLoggedOut(snapshot)) {
@@ -27,7 +26,6 @@ function getDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySele
   return { day: today, renderState: today.state };
 }
 
-/** 소유자를 모르는 개인 목록은 추측해 보여주지 않고 stale로 표시한다. */
 function getDayForOwner(
   snapshot: WidgetSnapshot,
   todayLocalDate: string,

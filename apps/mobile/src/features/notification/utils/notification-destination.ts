@@ -42,11 +42,8 @@ type LegacyDestinationSource = NotificationDestinationSource & { type: Notificat
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
 interface NotificationDestinationOptions {
-  /** 피드로 열 때 날짜를 오늘로 맞춘다 */
   shouldOpenToday?: boolean;
-  /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다. */
   windowSizeClass: WindowSizeClass;
-  /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
   viewerId?: string;
 }
 
@@ -82,7 +79,6 @@ function toLegacyFieldsDestination(
     return toNoticeDestination(source.action?.url, { shouldOpenToday });
   }
 
-  // 아침 날씨 알림이 할 일과 겹친 비·더위를 알리면 옮기기 시트로 바로 연다. 링크가 없거나 낯설면 날씨 화면이다.
   const rescheduleHref =
     source.type === NOTIFICATION_TYPE.WEATHER_MORNING
       ? parseWeatherRescheduleUrl(source.action?.url)
@@ -97,10 +93,7 @@ function toLegacyFieldsDestination(
     : toRouteDestination(routing, { shouldOpenToday, windowSizeClass, viewerId });
 }
 
-/**
- * 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다. 구 필드로 고른 곳과 같아야 하며,
- * `packages/api/test-fixtures/notification-navigation.cases.json`으로 서버·앱·구 필드를 함께 묶는다.
- */
+/** 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다 */
 function toNavigationDestination(
   navigation: NotificationNavigation,
   { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
@@ -336,7 +329,6 @@ interface TodoTarget {
   todoDate?: string;
 }
 
-/** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */
 function toTodoFeedTarget({ todoOwnerId, todoDate }: TodoTarget, viewerId?: string) {
   const isFriendTodo = todoOwnerId != null && viewerId != null && todoOwnerId !== viewerId;
   return { friendId: isFriendTodo ? todoOwnerId : undefined, date: todoDate };
@@ -344,19 +336,11 @@ function toTodoFeedTarget({ todoOwnerId, todoDate }: TodoTarget, viewerId?: stri
 
 interface TodoDetailTarget {
   todoId: number;
-  /** 열 때 바로 보일 댓글 대화 */
   comment?: string;
-  /** 친구의 할 일이면 그 친구. 내 할 일이거나 모르면 비운다 */
   friendId?: string;
-  /** 할 일 날짜(YYYY-MM-DD). 모르면 피드의 기본 날짜다 */
   date?: string;
 }
 
-/**
- * 알림에서 할 일 상세를 여는 곳. 목록에서 고를 때와 같은 기준으로
- * 접힌 화면은 상세 화면을 push하고, 펼친 화면은 피드 상세 pane에 고른다.
- * 펼친 화면의 목록 pane은 그 할 일의 주인(친구 피드)과 날짜를 보여 준다.
- */
 function toTodoDetailRoute(
   windowSizeClass: WindowSizeClass,
   { todoId, comment, friendId, date }: TodoDetailTarget,

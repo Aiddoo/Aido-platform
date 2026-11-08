@@ -12,7 +12,6 @@ interface WeatherMascotProps extends Omit<
   'source' | 'onError' | 'accessible'
 > {
   source: ImageSource | number;
-  /** 이미지를 불러오지 못했을 때 대신 그릴 날씨 아이콘 */
   fallbackCondition: WeatherCondition;
 }
 

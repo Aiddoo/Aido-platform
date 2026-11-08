@@ -18,7 +18,6 @@ const USER_ID = 'user-1';
 const NOW = new Date('2026-11-05T12:00:00.000Z');
 const NOTICE_TITLE = '할 일 알림 시간을 지금 시간대에 맞췄어요';
 
-// 이 프로세스 시간대에서 크게 멀어진 곳에서 왔다. 오프셋은 기기 시계에서 읽어 시간대 이름과 따로 논다
 const FAR_AWAY = { timeZone: 'Asia/Seoul', offsetMinutes: -NOW.getTimezoneOffset() + 13 * 60 };
 
 const upcomingTimedTodo = createTodoDto({

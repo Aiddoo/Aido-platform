@@ -30,7 +30,6 @@ import {
 } from './weather-scene-textures';
 
 const CLOUD_SEED = 0xc10d;
-/** 먼 층부터 가까운 층까지: 크기, 화면 폭 대비 초당 이동, 불투명도, 세로 위치(화면 높이 비율) */
 const DEPTH_LAYERS = [
   { scale: 0.6, speed: 0.004, alpha: 0.45, top: 0.02, bottom: 0.18 },
   { scale: 0.9, speed: 0.008, alpha: 0.65, top: 0.05, bottom: 0.3 },
@@ -39,13 +38,9 @@ const DEPTH_LAYERS = [
 const SIZE_JITTER = [0.8, 1.2] as const;
 const WIND_SPEEDUP = 4;
 const COVERAGE_BASE = 0.4;
-/** 구름 덩이가 화면 왼쪽 밖(폭의 0.5배)에서 들어와 오른쪽 밖(1.4배)으로 나간다. */
 const TRAVEL = { start: -0.5, end: 1.4 } as const;
-/** 해·달을 가렸다고 볼 구름 몸통 크기(텍스처 대비)와 운량에 따른 가중치 */
 const OCCLUSION = { bodyWidth: 0.4, bodyHeight: 0.3, amountWeight: 2.2 } as const;
-/** 해·달 가까이(화면 폭 45% 안) 구름 가장자리에 비치는 빛 */
 const SILVER_LINING = { radius: 0.45, alpha: 0.35 } as const;
-/** 밤 구름은 어두운 하늘에서 튀지 않게 낮의 절반쯤만 짙게 그린다. */
 const NIGHT_ALPHA_RATIO = 0.52;
 const SPRITE_CENTER = { x: CLOUD_SPRITE.width / 2, y: CLOUD_SPRITE.height / 2 };
 
@@ -54,7 +49,6 @@ type CloudLayerProps = {
   wind: number;
   sky: WeatherSceneSky;
   isDaylight: boolean;
-  /** 해·달이 떠 있으면 그 자리. 가까운 구름 가장자리가 빛나고, 그 자리를 가린 정도를 occlusion에 쓴다. */
   light: CloudLight | null;
   occlusion: SharedValue<number>;
   width: number;
@@ -64,7 +58,6 @@ type CloudLayerProps = {
 
 export type CloudLight = { x: number; y: number; rgb: string };
 
-/** 뭉게구름이 먼 층·가운데 층·가까운 층으로 나뉘어 서로 다른 속도로 흐르고, 운량이 많을수록 덩이가 는다. */
 export function CloudLayer({
   amount,
   wind,

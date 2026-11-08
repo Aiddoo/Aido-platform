@@ -48,7 +48,6 @@ import { WeatherMeter } from './weather-meter';
 
 const LOADING_TILE_COUNT = 8;
 
-/** 구름 단계에 낮밤을 더해 안내 문구 키를 고른다. 흐림은 낮밤이 같다. */
 function getCloudCoverNoteKey({
   cloudCover,
   isDaylight,

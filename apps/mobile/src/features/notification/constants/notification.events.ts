@@ -1,6 +1,5 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 
-/** 알림 권한 안내가 보인 곳 */
 export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
 
 declare module '@src/shared/analytics/event-map' {
@@ -20,7 +19,6 @@ declare module '@src/shared/analytics/event-map' {
     push_permission_prompt_dismissed: { source: PushPermissionPromptSource; step: string };
     push_permission_requested: { source: PushPermissionPromptSource; status: string };
     push_permission_settings_opened: { source: PushPermissionPromptSource };
-    /** 시간대 이름·도시는 보내지 않고 바뀐 폭만 보낸다. 여행 빈도와 기기 예약 전환 판단에 쓴다. */
     device_timezone_changed: {
       offset_bucket: TimezoneOffsetBucket;
       notice_shown: boolean;

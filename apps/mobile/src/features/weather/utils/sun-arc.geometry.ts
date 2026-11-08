@@ -10,7 +10,6 @@ export const SUN_ARC_VIEWBOX = { width: 326, height: 96 } as const;
 
 type CubicCurve = readonly [DialPoint, DialPoint, DialPoint, DialPoint];
 
-/** 시안의 해 궤적 path와 같은 조정점이다. 낮은 두 곡선, 밤은 지평선 아래 양 끝 곡선이다. */
 const SUNRISE_TO_NOON: CubicCurve = [
   { x: 58, y: 70 },
   { x: 100, y: 70 },
@@ -53,7 +52,6 @@ export const SUN_ARC_PATHS = {
   nightAfter: toPath(NIGHT_AFTER_SUNSET),
 } as const;
 
-/** 낮 곡선이 시작하고 끝나는 지평선의 높이 */
 export const SUN_ARC_HORIZON_Y = SUNRISE_TO_NOON[0].y;
 
 function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
@@ -63,11 +61,6 @@ function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
   return { x: at(p0.x, p1.x, p2.x, p3.x), y: at(p0.y, p1.y, p2.y, p3.y) };
 }
 
-/**
- * 해 궤적 위 지금 해의 자리. 낮은 일출~일몰을 두 곡선에 시간 비율로 놓는다.
- * 밤은 반으로 나눠 일몰 뒤 반나절은 오른쪽 끝 곡선, 일출 전 반나절은 왼쪽 끝 곡선에 둔다.
- * 일출·일몰 중 하나라도 없으면(백야·극야 등) 자리를 정할 수 없어 null이다.
- */
 export function getSunArcPosition(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   now: Instant,
@@ -92,7 +85,6 @@ export function getSunArcPosition(
     : pointOnCurve(NOON_TO_SUNSET, toUnitPosition(current, noon, set));
 }
 
-/** 일출 전이나 일몰 뒤면 해 점을 밤처럼 흐리게 그린다. 일출·일몰을 모르면 낮으로 본다. */
 export function isSunBelowHorizon(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   now: Instant,

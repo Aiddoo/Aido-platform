@@ -2,12 +2,8 @@ import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 
-// Persist only display data; isolated widget runtimes cannot access auth or i18n.
-/** 하루치 표시 데이터. v1 snapshot 본문과 같은 모양이다. */
 export const widgetDaySnapshotSchema = z.object({
-  /** data: 그날 할 일 있음 · empty: 로그인했으나 그날 할 일 없음 · loggedOut: 비로그인 */
   state: z.enum(['data', 'empty', 'loggedOut']),
-  /** 이 day가 설명하는 로컬 날짜 (YYYY-MM-DD) — 렌더 시점 오늘 key와 비교한다 */
   date: z.string(),
   totalTodos: z.number().int().min(0),
   completedTodos: z.number().int().min(0),
@@ -61,10 +57,7 @@ export const widgetDaySnapshotSchema = z.object({
   }),
 });
 
-/**
- * v2: 오늘과 (받을 수 있으면) 내일 요약을 함께 저장한다. 자정이 지나면 렌더러가 내일 day를
- * 오늘로 고르므로 앱을 열기 전에도 새 날짜를 표시한다. 저장 key는 v1과 같다.
- */
+/** v2: 오늘과 (받을 수 있으면) 내일 요약을 함께 저장한다 */
 export const widgetSnapshotSchema = z.object({
   version: z.literal(2),
   updatedAtIso: z.string(),

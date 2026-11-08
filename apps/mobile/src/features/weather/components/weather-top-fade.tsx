@@ -7,7 +7,6 @@ import { useWeatherScene } from '../hooks/use-weather-scene';
 import { ScrimLayer } from './weather-scene/scrim-layer';
 import { SkyGradientLayer } from './weather-scene/sky-gradient-layer';
 
-/** 상태 표시줄 아래부터 끝까지 ease-out으로 옅어져 경계선이 생기지 않게 한다. */
 const FADE_STOPS = [
   [0, 1],
   [0.35, 0.72],
@@ -16,16 +15,11 @@ const FADE_STOPS = [
 ] as const;
 
 interface WeatherTopFadeProps {
-  /** 끝까지 불투명하게 덮을 높이(상태 표시줄) */
   solidHeight: number;
-  /** 페이드 전체 높이 */
   height: number;
 }
 
-/**
- * 스크롤한 내용이 상태 표시줄·투명 헤더 밑으로 지나갈 때 하늘색으로 서서히 덮는다.
- * 배경과 같은 하늘·스크림 레이어를 창 크기로 그리고 위쪽만 남겨 이음매가 보이지 않는다.
- */
+/** 스크롤한 내용이 상태 표시줄·투명 헤더 밑으로 지나갈 때 하늘색으로 서서히 덮는다 */
 export function WeatherTopFade({ solidHeight, height }: WeatherTopFadeProps) {
   const scene = useWeatherScene();
   const window = useWindowDimensions();

@@ -86,10 +86,7 @@ export class NotificationService {
       '[NotificationService] Invalid marketing opt-out response',
     );
 
-  /**
-   * 눌린 푸시를 읽음 처리하며 내 알림인지 본다. 예산 안에 답이 없어도 항상 끝난다.
-   * 서버 알림 기록이 없는 푸시는 묻지 않는다.
-   */
+  /** 눌린 푸시를 읽음 처리하며 내 알림인지 본다 */
   markAsReadAndCheckOwnership = async (notificationId: number): Promise<NotificationOwnership> => {
     if (!NotificationPolicy.hasServerRecord({ notificationId })) {
       return 'ok';

@@ -29,7 +29,6 @@ import {
   toSelectionKey,
 } from '../../utils/weather-reschedule-form';
 
-/** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패도 이 버튼이 모아 한 번만 알린다. */
 export function WeatherRescheduleSubmitButton({
   form,
   onDone,
@@ -54,7 +53,6 @@ export function WeatherRescheduleSubmitButton({
   });
   const updateSchedule = useMutation(useRescheduleTodoMutationOptions());
   const todayTodos = todoList?.todos ?? [];
-  // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
   const targetCount = WeatherReschedulePolicy.getRescheduleTargets(
     toScheduleChanges({ selections }, todoIds),
@@ -100,7 +98,6 @@ export function WeatherRescheduleSubmitButton({
     const now = getNowInstant();
     const expired = WeatherReschedulePolicy.getExpiredTargets(targets, now);
     if (expired.length > 0) {
-      // 시트를 연 채 정시를 넘겼다. 지난 시각으로 옮기지 않고 다음 유효 후보로 바꿔 다시 확인받는다
       for (const { todo } of expired) {
         const { scheduledAt } = WeatherBriefingPolicy.toBriefingTodo(todo, {
           date: todayKey,

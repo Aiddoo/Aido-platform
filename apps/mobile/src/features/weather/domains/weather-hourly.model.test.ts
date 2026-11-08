@@ -4,7 +4,6 @@ import { range } from 'es-toolkit';
 import { createHourlyForecasts, createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { WeatherHourlyPolicy } from './weather-hourly.model';
 
-/** 서울 오후 3시 26분 */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 
 const DRY_CLOUDY = { condition: 'CLOUDY', precipitationChance: 10 } as const;

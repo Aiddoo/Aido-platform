@@ -21,11 +21,8 @@ import { WeatherReportPolicy } from './weather-report.model';
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
 /** 내일 아침 최저 기온이 이 값(°C) 이하면 쌀쌀하다고 알린다. 서버 날씨 알림과 같은 기준이다. */
 const CHILLY_TEMPERATURE = WEATHER_BRIEFING_RULES.CHILLY_TEMPERATURE;
-/** 맑은 날 추천 시간은 가장 따뜻한 시각과 체감 온도 차이가 이 값(°C) 안인 시간까지 묶는다. */
 const BEST_TIME_TOLERANCE = 1;
-/** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
-/** 새벽, 오전, 오후가 시작하는 시각(기기 시간대. 위치 벽시계가 기기와 다르면 브리핑을 숨긴다). 저녁은 EVENING_HOUR부터다. */
 const MORNING_START_HOUR = 6;
 const AFTERNOON_START_HOUR = 12;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
@@ -36,7 +33,6 @@ const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
   'HAZY',
 ];
 
-/** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
 type BriefingSubTodoProgress = { completed: number; total: number } | null;
 
 /** 할 일 피처의 모델에 기대지 않도록 브리핑에 필요한 값만 받는다. 시간이 없거나 종일이면 scheduledAt이 null이다. */
@@ -48,11 +44,6 @@ export interface BriefingTodo {
   subTodoProgress: BriefingSubTodoProgress;
 }
 
-/**
- * 할 일 목록의 값을 브리핑 입력으로 바꾼다. 종일 할 일은 시각이 있어도 시간대를 정하지 않은 것으로 본다.
- * 할 일 시각은 어디서든 그 벽시계라 예보와 맞출 순간은 보고 있는 날짜 + 벽시계 + 기기 시간대로 만든다.
- * 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있으므로 시작일이 아니라 보고 있는 날짜에 둔다.
- */
 function toBriefingTodo(
   todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodoStats'>,
   { date, timeZone }: { date: string; timeZone: string },
@@ -69,7 +60,6 @@ function toBriefingTodo(
   };
 }
 
-/** 시각이 정해진 할 일과 그 시각의 시간별 예보 */
 export interface ForecastTodo {
   todoId: number;
   title: string;
@@ -113,7 +103,6 @@ type BriefingSource = {
   daily: DailyForecastEntry[];
 };
 
-/** 할 일 날짜는 기기 시간대로 저장되므로 오늘·내일도 기기 시간대로 가른다. */
 interface BriefingClock {
   now: Instant;
   timeZone: string;
@@ -139,7 +128,6 @@ function isFrozenHour(hour: HourlyForecastEntry): boolean {
   return WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
 }
 
-/** 기준 시간에서 앞뒤로 조건이 이어지는 시간을 묶는다. */
 function toHourRange(
   hourly: readonly HourlyForecastEntry[],
   anchor: number,
@@ -165,7 +153,6 @@ function toHourRange(
   };
 }
 
-/** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
 function getForecastTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
@@ -247,7 +234,6 @@ function toHotBriefing(
   };
 }
 
-/** 지금은 비가 안 오고, 오늘 남은 시간이나 내일 비가 시작되면 그 시각을 알려 준다. */
 function toRainLaterBriefing(
   hourly: readonly HourlyForecastEntry[],
   todos: ForecastTodo[],
@@ -282,7 +268,6 @@ function toRainLaterBriefing(
   };
 }
 
-/** 오늘 남은 낮 시간이 모두 맑고 덥지 않으면 가장 따뜻한 시간을 야외 할 일 하기 좋은 때로 알려 준다. */
 function toClearBriefing(
   hourly: readonly HourlyForecastEntry[],
   todos: ForecastTodo[],
@@ -312,7 +297,6 @@ function toClearBriefing(
   return range == null ? null : { kind: 'clear', todos, range };
 }
 
-/** 저녁에 오늘 남은 할 일이 없으면 내일 아침 기온을 미리 알려 준다. 날짜는 위치 시간대의 일별 예보를 따른다. */
 function toTomorrowMorningBriefing(
   report: BriefingSource,
   { now }: BriefingClock,
@@ -334,11 +318,6 @@ function toTomorrowMorningBriefing(
   };
 }
 
-/**
- * 판단은 완료한 할 일까지 포함해 체크해도 카드가 그대로 남는다. 옮기기 대상은 화면이 미완료만 고른다.
- * 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저 알리고, 없으면 곧 올 비, 맑은 날, 내일 아침 순으로 알려 준다.
- * 위 어디에도 해당하지 않으면 남은 할 일이 비를 피했는지만 알린다.
- */
 function getWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],

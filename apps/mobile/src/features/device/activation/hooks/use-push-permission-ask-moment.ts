@@ -6,11 +6,7 @@ import { useMemo, useState } from 'react';
 import { ActivationPolicy } from '../domains/activation.model';
 import { useActivationProgress } from './use-activation-progress';
 
-/**
- * 아직 알림 권한을 묻지 않은 사용자에게 언제 물을지 정한다. 기존 사용자는 로그인하자마자,
- * 신규 사용자는 활성화하거나 알림 설정을 켰을 때 계정·활성화 시점마다 한 번만 묻는다.
- * 묻는 화면(앱 안 안내 → 시스템 창)과 토큰 보고는 이 훅이 하지 않는다.
- */
+/** 아직 알림 권한을 묻지 않은 사용자에게 언제 물을지 정한다 */
 export function usePushPermissionAskMoment() {
   const activation = useActivationProgress();
   const { data: permission } = useQuery({

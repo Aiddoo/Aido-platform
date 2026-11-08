@@ -12,7 +12,6 @@ const widgetNavigationDestinationSchema = z.discriminatedUnion('kind', [
 ]);
 export type WidgetNavigationDestination = z.infer<typeof widgetNavigationDestinationSchema>;
 
-/** URI는 원시값으로만 해석한다. Router·현재 계정·시계는 호출자가 제공한다. */
 export function parseWidgetNavigationUri(uri: string | null): WidgetNavigationDestination | null {
   if (!uri) {
     return null;

@@ -12,10 +12,7 @@ import { COACHMARK_LOG_EVENT } from '../constants/coachmark-log-events';
 
 type ReorderCoachmarkKind = 'todo' | 'category';
 
-/**
- * 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다.
- * 보조 안내라 내 정보를 못 읽으면 목록을 막지 않고 조용히 빠진다.
- */
+/** 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다 */
 export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
   const logger = useLogger();
   const { data: user, error } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
@@ -56,7 +53,6 @@ ReorderCoachmark.Contents = function Contents({
     service.isPending({ accountId, kind: coachmarkKind }),
   );
 
-  // 렌더는 버려질 수 있어 "봤음"은 화면에 붙은 뒤에 저장한다.
   useEffect(() => {
     if (isVisible) {
       service.complete({ accountId, kind: coachmarkKind });

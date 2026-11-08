@@ -2,7 +2,6 @@ import type { DeviceTimezoneChange, TimezoneOffsetBucket } from '../domains/devi
 
 const MINUTES_PER_HOUR = 60;
 
-/** 측정 전용. 시간대 이름 대신 바뀐 폭만 보낸다 */
 export function getTimezoneOffsetBucket({
   previous,
   current,

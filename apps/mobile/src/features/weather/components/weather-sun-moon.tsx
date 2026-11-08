@@ -22,7 +22,6 @@ import { WeatherSunArc } from './weather-sun-arc';
 
 const SUN_FACT_COUNT = 3;
 
-/** 해·달 시각은 예보 위치 시간대로 읽고, 벽시계가 기기와 다를 때만 다음 해 시각에 '현지'를 붙인다. */
 export function WeatherSunMoon() {
   const { t } = useTranslation('weather');
   const [{ data }, { data: preference }] = useSuspenseQueries({
@@ -183,7 +182,6 @@ WeatherSunMoon.Fact = function Fact({
   );
 };
 
-/** 받은 뒤와 같은 자리를 잡는다. 제목, 큰 시각, 호, 사실 세 칸, 구분선, 달 아이콘과 두 줄이다. */
 WeatherSunMoon.Loading = function Loading() {
   return (
     <WeatherCard className="gap-0 px-4 pt-3.5 pb-4">

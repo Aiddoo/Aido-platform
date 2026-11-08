@@ -21,7 +21,6 @@ import { type AttributionBackground, toAttributionMark } from '../utils/to-attri
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;
 const LOGO_DEFAULT_ASPECT_RATIO = 38 / 14;
-/** 링크 글자(17pt 줄)는 시안 간격 그대로 두고 터치 영역만 44pt로 넓힌다. */
 const LINK_HIT_SLOP = { top: 14, bottom: 14, left: 16, right: 16 };
 
 const attributionTone = tv({
@@ -38,14 +37,10 @@ const attributionTone = tv({
 });
 
 interface WeatherAttributionProps {
-  /** 표기 뒤 바탕. 하늘 장면·다크 테마는 dark(흰 글자), 밝은 바탕은 light(어두운 글자). */
   background: AttributionBackground;
 }
 
-/**
- * WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 Apple Weather 표기와 출처 고지 링크를 둔다.
- * 마크는 Apple이 주는 로고 이미지를 변형 없이 쓰고, 하늘 위에서는 흰 글자(dark) 로고를 쓴다.
- */
+/** WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 */
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
   const openUrl = useOpenInAppBrowser();
@@ -90,7 +85,6 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
   );
 }
 
-/** 로고를 받지 못하거나 불러오지 못해도 서비스 이름으로 바꿔 출처 표기가 사라지지 않게 한다. */
 WeatherAttribution.Mark = function Mark({
   attribution,
   background,

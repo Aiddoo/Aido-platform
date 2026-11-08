@@ -49,7 +49,6 @@ function findTemperatureRange(
   return lowest == null || highest == null ? null : { lowest, highest };
 }
 
-/** 예보 기간 전체의 최저~최고를 0~1로 두고 하루의 최저·최고가 놓일 위치를 구한다. */
 export function toTemperatureBars(daily: readonly DailyForecastEntry[]): TemperatureBar[] {
   const range = findTemperatureRange(daily);
   if (range == null) {
@@ -61,7 +60,6 @@ export function toTemperatureBars(daily: readonly DailyForecastEntry[]): Tempera
   }));
 }
 
-/** 예보 기간 전체의 최저~최고를 0~1로 두고 지금 기온이 놓일 위치. 예보가 없으면 null이다. */
 export function toTemperaturePosition(
   daily: readonly DailyForecastEntry[],
   celsius: number,

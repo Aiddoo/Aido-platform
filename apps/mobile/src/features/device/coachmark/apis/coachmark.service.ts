@@ -1,10 +1,6 @@
 import type { CoachmarkInput } from '../domains/coachmark.model';
 import type { CoachmarkRepository } from './coachmark.repository';
 
-/**
- * 계정당 한 번만 보이는 안내 줄. 보이는 순간 끝나는 안내는 claim, 쓰거나 닫아야 끝나는 안내는 isPending·complete를 쓴다.
- * complete는 구독자에게 알려 같은 안내를 보이는 화면이 바로 닫힌다.
- */
 export class CoachmarkService {
   readonly #repository: Pick<CoachmarkRepository, 'hasSeen' | 'markSeen'>;
   readonly #listeners = new Set<() => void>();

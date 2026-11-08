@@ -13,16 +13,13 @@ interface WhatsNewIdentity {
 }
 
 export interface WhatsNewRepository {
-  /** 자동으로 연 적 있는지. claimSeen과 같이 값이 있기만 하면 본 것이다 */
   hasSeen(identity: WhatsNewIdentity): boolean;
-  /** 피드 카드를 다시 보일 기준 시각. 닫았거나 손상됐으면 null */
   findReentryOpenedAt(identity: WhatsNewIdentity): Instant | null;
   subscribe(identity: WhatsNewIdentity, listener: () => void): () => void;
   claimSeen(identity: WhatsNewIdentity, at: Instant): boolean;
   dismissReentry(identity: WhatsNewIdentity): void;
   /** 번들에서 빠진 캠페인의 키와 기간이 지난 재진입 키를 지운다 */
   removeRetiredKeys(input: { campaignIds: readonly string[]; now: Instant }): void;
-  /** 탈퇴한 계정의 키를 지운다 */
   removeAccount(userId: string): void;
 }
 
@@ -58,10 +55,7 @@ export function createWhatsNewRepository(
       };
     },
 
-    /**
-     * MMKV의 동기 get/set을 한 JS 런루프에서 연속 수행해 같은 계정·캠페인을 한 번만 claim한다.
-     * 본 상태를 먼저 기록하므로 화면이 열리기 전에 재진입 호출도 차단된다.
-     */
+    /** MMKV의 동기 get/set을 한 JS 런루프에서 연속 수행해 같은 계정·캠페인을 한 번만 claim한다 */
     claimSeen: (identity, at) => {
       try {
         if (storage.get(createWhatsNewSeenKey(identity)) != null) {
@@ -75,7 +69,6 @@ export function createWhatsNewRepository(
       }
     },
 
-    /** 본 기록은 남아 다시 claim되지 않으므로 같은 캠페인의 카드는 돌아오지 않고, 새 캠페인은 자기 키로 보인다 */
     dismissReentry: (identity) => {
       try {
         storage.remove(createWhatsNewReentryKey(identity));

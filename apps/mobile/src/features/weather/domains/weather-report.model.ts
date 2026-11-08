@@ -190,7 +190,6 @@ function getUpcomingHours(
 
 type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
 
-/** 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 안내한다. */
 export type PrecipitationPrecision = 'minute' | 'hour';
 
 export type PrecipitationWindow =
@@ -255,10 +254,6 @@ function toWindow(
   return { kind: 'upcoming', ...wet, isEndingOnLaterDay };
 }
 
-/**
- * 분 단위 예보가 있으면 그 구간을 먼저 믿고, 예보 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다.
- * 분 단위 예보가 없는 지역(nextHour == null)은 시간별 예보만으로 시작·그침을 정한다.
- */
 function getPrecipitationWindow(report: PrecipitationSource, now: Instant): PrecipitationWindow {
   const nowMs = toEpochMs(now);
   const { nextHour, hourly } = report;
@@ -294,7 +289,6 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Instant): Prec
   });
 }
 
-/** 분 단위 예보가 없는 지역은 이 시간 안의 시간별 예보로만 곧 올 비를 알린다. */
 const HOURLY_OUTLOOK_RANGE_HOURS = 6;
 
 export interface HourlyPrecipitationOutlook {
@@ -329,12 +323,10 @@ function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
-/** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
 function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
   return toDateKey(now, report.location.timezone);
 }
 
-/** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
 function findTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
   now: Instant,
@@ -343,10 +335,7 @@ function findTodayOrFirstForecast(
   return report.daily.find((day) => day.date === todayKey) ?? report.daily[0] ?? null;
 }
 
-/**
- * 서버가 심각도 순으로 정렬해 보내므로 순서는 그대로 두고, 화면을 켜 둔 사이 만료된 특보만 뺀다.
- * 아직 발효 전인 특보는 미리 알 수 있도록 남긴다.
- */
+/** 서버가 심각도 순으로 정렬해 보내므로 순서는 그대로 두고, 화면을 켜 둔 사이 만료된 특보만 뺀다 */
 function getActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
   return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
 }
@@ -360,10 +349,7 @@ type SunEvents =
   | { kind: 'polarDay' }
   | { kind: 'polarNight' };
 
-/**
- * 일출·일몰이 모두 없으면 극지의 백야·극야다. 둘을 가르는 값은 계약에 없으므로 지금 낮인지로 정한다.
- * 하나만 없으면(해가 뜨기만 하거나 지기만 하는 날) 있는 쪽만 보여 준다.
- */
+/** 일출·일몰이 모두 없으면 극지의 백야·극야다 */
 function getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boolean }): SunEvents {
   if (day.sunrise == null && day.sunset == null) {
     return { kind: isDaylight ? 'polarDay' : 'polarNight' };

@@ -46,7 +46,6 @@ function canViewRelease(
   return !release.requiresInvite || isInviteAvailable;
 }
 
-/** 출시 전에 가입했고, 켜진 캠페인을 지원하는 앱이고, 아직 보지 않았을 때만 자동으로 연다 */
 function shouldAutoOpen({ config, user, appVersion, hasSeen }: AutoOpenInput): boolean {
   if (!config?.enabled || user == null) {
     return false;

@@ -15,7 +15,6 @@ const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 
 interface UseForegroundNotificationSyncOptions {
   isAuthenticated: boolean;
-  /** 받은 알림 타입이 바꾸는 다른 기능의 화면을 다시 받는다. 위층인 bootstrap이 조립한다 */
   invalidateByType: (type: NotificationType) => Promise<unknown>;
 }
 

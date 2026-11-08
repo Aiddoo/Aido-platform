@@ -13,13 +13,11 @@ export type StoreReviewOutcome =
   | 'unavailable'
   | 'interrupted';
 
-/** 축하 화면의 애니메이션이 끝난 뒤 시스템 창이 뜨도록 순간마다 기다릴 시간 */
 const SETTLE_DELAY_MS = {
   all_todos_done: 1_200,
   paw_print_celebration: 1_500,
 } as const satisfies Record<StoreReviewMoment, number>;
 
-/** 축하 화면이 가라앉을 때까지 기다린다. 그사이 화면을 떠나거나 앱이 백그라운드로 가면 false */
 export type WaitUntilPresentable = (delayMs: number) => Promise<boolean>;
 
 interface RequestReviewInput {
@@ -27,10 +25,7 @@ interface RequestReviewInput {
   moment: StoreReviewMoment;
 }
 
-/**
- * 할 일을 끝낸 순간처럼 긍정적인 때에 OS 리뷰 창만 요청한다. 앱 자체 확인 창은 두지 않는다
- * (App Store 5.6.1·Google Play 인앱 리뷰 지침). 창을 실제로 띄울지는 OS가 정한다.
- */
+/** 할 일을 끝낸 순간처럼 긍정적인 때에 OS 리뷰 창만 요청한다 */
 export class StoreReviewService {
   readonly #repository: StoreReviewRepository;
   readonly #gateway: AppStoreReviewGateway;
@@ -82,7 +77,6 @@ export class StoreReviewService {
       if (!(await waitUntilPresentable(SETTLE_DELAY_MS[moment]))) {
         return 'interrupted';
       }
-      // 기다리는 사이 다른 계정의 요청이 먼저 나갔을 수 있다
       if (this.#hasRequestedThisSession) {
         return 'already_requested_this_session';
       }

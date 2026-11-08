@@ -48,11 +48,9 @@ const RAIN_VARIANT_STYLES = {
 } as const satisfies Record<RainVariant, RainVariantStyle>;
 
 const EDGE_MARGIN = 48;
-/** 시안 wxFall의 900px 동안 왼쪽으로 24px 기우는 기본 사선 */
 const BASE_SLANT = Math.atan(24 / 900);
 const FAR_DEPTH_BIAS = 1.6;
 const PACE = [0.62, 1];
-/** 입자마다 속도를 조금씩 달리해 줄이 맞아 보이지 않게 한다. */
 const PACE_JITTER = 0.12;
 const UNIT = [0, 1];
 
@@ -68,7 +66,6 @@ type RainLayerProps = {
   time: SharedValue<number>;
 };
 
-/** 빗줄기(이슬비는 짧고 가는 빗방울)는 멀수록 가늘고 짧고 흐리고 느리게, 바람이 셀수록 왼쪽으로 기울여 깊이를 만든다. */
 export function RainLayer({
   variant,
   density,

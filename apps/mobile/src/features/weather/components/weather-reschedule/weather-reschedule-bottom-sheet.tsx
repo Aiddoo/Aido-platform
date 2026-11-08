@@ -46,10 +46,7 @@ import { WeatherRescheduleTodo } from './weather-reschedule-todo';
 const WEATHER_HREF = '/weather';
 const LOADING_TODO_COUNT = 2;
 
-/**
- * 폼은 시트가 소유한다. 주 버튼을 시트 footer에 고정하려면 버튼과 목록이 같은 폼을 봐야 하기 때문이다.
- * 시트를 연 사이 완료·삭제·시각 경과로 목록에서 빠진 할 일의 선택은 함께 지워 옮기지 않는다.
- */
+/** 폼은 시트가 소유한다 */
 export function WeatherRescheduleBottomSheet() {
   const sheet = useSheetRoute(WEATHER_HREF);
   const form = useForm({

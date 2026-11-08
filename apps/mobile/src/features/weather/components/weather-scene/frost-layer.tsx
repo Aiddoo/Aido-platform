@@ -31,7 +31,6 @@ import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weath
 const SPINDRIFT_SEED = 0x5d1f;
 const CRYSTAL_SEED = 0xc75a;
 const FROST_SEED = 0xf057;
-/** 눈가루는 화면 높이 62~99%에서 바닥을 따라 옆으로 날린다. */
 const SPINDRIFT = {
   lanes: [0.62, 0.99],
   depth: [0.3, 1],
@@ -52,7 +51,6 @@ const CRYSTAL = {
   glint: { frequency: 2, sharpness: 8, sizeRatio: 0.8 },
 } as const;
 const EDGE_MARGIN = 12;
-/** 성에는 가장자리에서 안쪽으로 다섯 번까지 갈라지는 가는 가지다. 가지 굵기는 남은 갈래 수에 비례한다. */
 const FROST = {
   depth: 4,
   rootSpacing: { horizontal: 15, vertical: 21 },
@@ -82,7 +80,6 @@ type FrostLayerProps = {
   time: SharedValue<number>;
 };
 
-/** 강추위: 칼바람 줄기와 바닥의 눈가루, 바람에 실려 반짝이는 얼음 결정, 가장자리 성에와 차가운 테두리 */
 export function FrostLayer({ width, height, isLowEndDevice, time }: FrostLayerProps) {
   const glowTop = height * DRIFT_GLOW.top;
   const glowOpacity = useDerivedValue(
@@ -282,7 +279,6 @@ FrostLayer.Crystals = function Crystals({ width, height, isLowEndDevice, time }:
 
 type FrostRoot = { x: number; y: number; angle: number };
 
-/** 굵기별로 한 경로씩 모아 성에 가지를 한 번만 만든다. 화면 크기가 바뀔 때만 다시 만든다. */
 function buildEdgeFrost(width: number, height: number): SkPath[] {
   const random = createSeededRandom(FROST_SEED);
   const between = ([min, max]: readonly [number, number]) => min + random() * (max - min);

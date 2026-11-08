@@ -15,7 +15,6 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 
 interface WhatsNewFeedInput {
   isStable: boolean;
-  /** 날씨 위치 안내가 뜰 수 있는 동안에는 자동으로 열지 않아 두 안내가 겹치지 않게 한다 */
   isWeatherIntroductionPending: boolean;
   isInviteAvailable: boolean;
 }

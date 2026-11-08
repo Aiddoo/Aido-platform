@@ -17,12 +17,9 @@ import {
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const HAIL_SEED = 0x4a11;
-/** hashCycle의 salt. 같은 알의 값끼리 겹치면 입자 모양이 같아지므로 서로 다른 번호를 쓴다. */
 const SALT_START_X = 0;
 const SALT_BOUNCE_SPEED = 1;
-/** 튀는 횟수(bounce)를 더해 옆으로 튀는 값마다 따로 정한다. */
 const SALT_SIDEWAYS = 2;
-/** 파편은 SALT_SIDEWAYS 뒤 번호부터 파편마다 세 값(옆, 높이, 크기)씩 쓴다. */
 const SALT_SHARD_BASE = 4;
 const SALTS_PER_SHARD = 3;
 const DEPTH = [0.35, 1] as const;
@@ -30,11 +27,9 @@ const RADIUS = { base: 1.8, depth: 3.4 } as const;
 const FALL = { base: 300, depth: 700 } as const;
 const DRIFT = { base: 0.05, wind: 0.2 } as const;
 const SPIN = 4;
-/** 바닥은 화면 높이 97% 지점이고, 먼 알일수록 60pt까지 위에 닿는다. */
 const GROUND = 0.97;
 const FAR_GROUND_LIFT = 60;
 const GRAVITY = 1400;
-/** 첫 번째는 높이, 두 번째는 낮게 튄다(깊이를 곱한 초속 범위). */
 const BOUNCE_SPEEDS = [
   [160, 300],
   [50, 110],
@@ -43,7 +38,6 @@ const BOUNCE_SIDEWAYS = 60;
 const REST_SECONDS = [0, 0.8] as const;
 const SPAWN_ABOVE = 20;
 const TRAIL = { alpha: 0.16, lengthPerSpeed: 0.03 } as const;
-/** 첫 바닥에서 튀는 작은 파편 */
 const SHARDS_PER_STONE = 3;
 const SHARD = {
   life: 0.4,
@@ -108,7 +102,6 @@ function createHailstones(count: number, wind: number, height: number): Hailston
   });
 }
 
-/** 크기가 다른 얼음 알이 빛을 받으며 돌며 떨어지고, 바닥에서 두 번 튀며 작은 파편이 흩어진다. */
 export function HailLayer({ density, wind, width, height, isLowEndDevice, time }: HailLayerProps) {
   const texture = useParticleTexture();
   const count = getParticleCount('hail', { density, screen: { width, height }, isLowEndDevice });

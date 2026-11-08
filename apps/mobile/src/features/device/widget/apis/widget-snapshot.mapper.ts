@@ -15,10 +15,7 @@ import type {
   WidgetSnapshotStrings,
 } from '../schemas/widget-snapshot.schema';
 
-/**
- * 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일).
- * todo feature에 직접 의존하지 않도록 구조적 타입으로 선언한다.
- */
+/** 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일) */
 export interface WidgetSummaryInput {
   date: string;
   totalTodos: number;
@@ -34,7 +31,6 @@ export interface WidgetSummaryInput {
   }[];
 }
 
-/** 매퍼가 요구하는 최소 번역 함수 — i18next `t`가 그대로 만족한다 (순수성/테스트 용이성) */
 export type WidgetTranslateFn = (
   key:
     | 'widget:progress.title'
@@ -78,8 +74,7 @@ function bakeStrings(
     streakLabel: t('widget:progress.streak', { count: summary.currentStreak }),
     compactStreakLabel: t('widget:progress.compactStreak', { count: summary.currentStreak }),
     allDoneLabel: t('widget:progress.allDone'),
-    // 표시 행 수는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
-    // 어순/번역은 카탈로그가 소유하고, 위젯은 {count}만 실제 초과분으로 치환한다.
+    // 표시 행 수는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다
     moreLabelTemplate: t('widget:list.more', { overflow: '{count}' }),
     emptyTitle: t('widget:state.emptyTitle'),
     emptyCta: t('widget:state.emptyCta'),
@@ -94,7 +89,6 @@ function bakeStrings(
 
 export interface WidgetDaySummaries {
   today: WidgetSummaryInput;
-  /** 자정 이후 표시할 잠정 요약. 받지 못했으면 생략하고 자정부터 stale을 표시한다. */
   tomorrow?: WidgetSummaryInput;
 }
 
@@ -174,7 +168,6 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
   return { days, title, rangeLabel };
 }
 
-/** 비로그인 상태 스냅샷 (로그아웃/세션 종료 시 기록) */
 export function toLoggedOutWidgetSnapshot(
   localDate: string,
   context: WidgetSnapshotContext,

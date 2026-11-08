@@ -12,14 +12,10 @@ import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
 import { WeatherResult } from './weather-result';
 
 interface WeatherLocationPromptProps {
-  /** 리포트 오류 경계 안에서 열렸을 때, 다시 등록한 뒤 경계를 풀어 리포트를 다시 받는다. */
   onRecovered?: () => void;
 }
 
-/**
- * 위치 때문에 날씨를 보여 줄 수 없는 상태마다 할 일을 하나씩 안내한다.
- * 권한 요청은 인사하는 고양이, 설정 이동은 제안하는 고양이, 위치를 못 찾으면 닻 고양이를 쓴다.
- */
+/** 위치 때문에 날씨를 보여 줄 수 없는 상태마다 */
 export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProps) {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();
@@ -80,10 +76,7 @@ export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProp
     .exhaustive();
 }
 
-/**
- * 위치를 읽지 못해 저장된 위치로, 또는 권한을 확인하지 못해 마지막 위치로 날씨를 보여 주는 동안
- * 화면을 막지 않고 한 줄로 알린다.
- */
+/** 위치를 읽지 못해 저장된 위치로, 또는 권한을 확인하지 못해 마지막 위치로 날씨를 보여 주는 동안 화면을 막지 않고 한 줄로 알린다 */
 WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();

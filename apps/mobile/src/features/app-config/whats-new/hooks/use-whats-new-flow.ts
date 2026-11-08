@@ -30,10 +30,7 @@ function goBack() {
   router.replace('/feed');
 }
 
-/**
- * 출시 안내 흐름 하나의 시작과 끝. 닫기 버튼, iOS 스와이프 뒤로 가기, Android 뒤로 가기 모두
- * 화면이 사라질 때 닫은 것으로 남기고, 실제 기능으로 떠나거나 끝까지 본 경우만 뺀다.
- */
+/** 출시 안내 흐름 하나의 시작과 끝 */
 export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
   const { id: releaseId, campaignId } = release;
   const { trackEvent } = useTrack();

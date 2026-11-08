@@ -16,7 +16,6 @@ interface SaveWidgetHeadlessFailureInput {
 
 export interface WidgetHeadlessFailureRepository {
   save(input: SaveWidgetHeadlessFailureInput): void;
-  /** 남아 있는 실패를 꺼내며 지운다. 없으면 null이다 */
   take(): WidgetHeadlessFailure | null;
 }
 
