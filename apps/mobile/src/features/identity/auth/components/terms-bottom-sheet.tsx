@@ -69,6 +69,7 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
 
           <Separator />
 
+          {/* 필수 동의를 먼저, 선택 동의를 아래에 둔다 */}
           <VStack gap={20}>
             <Controller
               control={form.control}
@@ -80,17 +81,6 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
                   isSelected={value}
                   onSelectedChange={onChange}
                   onPressLink={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="marketingPushAgreed"
-              render={({ field: { value, onChange } }) => (
-                <TermsBottomSheet.AgreementItem
-                  label={t('terms.marketingPush')}
-                  isSelected={value}
-                  onSelectedChange={onChange}
                 />
               )}
             />
@@ -113,6 +103,17 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
               render={({ field: { value, onChange } }) => (
                 <TermsBottomSheet.AgreementItem
                   label={t('terms.marketing')}
+                  isSelected={value}
+                  onSelectedChange={onChange}
+                />
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="marketingPushAgreed"
+              render={({ field: { value, onChange } }) => (
+                <TermsBottomSheet.AgreementItem
+                  label={t('terms.marketingPush')}
                   isSelected={value}
                   onSelectedChange={onChange}
                 />
