@@ -217,7 +217,7 @@ describe('expoSpeechRecognizer', () => {
   describe('iOS 언어별 기능 확인', () => {
     it('기기 기본 언어는 기기 인식으로 보고 마이크 권한만 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'note');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('note', 'ko-KR');
       await expoSpeechRecognizer.requestPermission('note', 'ko-KR');
 
       // Then
@@ -228,7 +228,7 @@ describe('expoSpeechRecognizer', () => {
 
     it('빠른 말하기는 기기 기본 언어여도 서버 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'quick');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('quick', 'ko-KR');
       await expoSpeechRecognizer.requestPermission('quick', 'ko-KR');
 
       // Then
@@ -239,7 +239,7 @@ describe('expoSpeechRecognizer', () => {
 
     it('기기 기본 언어가 아니면 네트워크 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
       // When
-      const capabilities = await expoSpeechRecognizer.getCapabilities('en-US', 'note');
+      const capabilities = await expoSpeechRecognizer.getCapabilities('note', 'en-US');
       await expoSpeechRecognizer.requestPermission('note', 'en-US');
 
       // Then

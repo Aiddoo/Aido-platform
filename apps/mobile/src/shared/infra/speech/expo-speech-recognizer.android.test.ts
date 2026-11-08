@@ -22,7 +22,7 @@ describe('expoSpeechRecognizer (Android)', () => {
     });
 
     // When
-    const capabilities = await expoSpeechRecognizer.getCapabilities('ko-KR', 'note');
+    const capabilities = await expoSpeechRecognizer.getCapabilities('note', 'ko-KR');
 
     // Then
     expect(capabilities.canRecognizeOnDevice).toBe(false);

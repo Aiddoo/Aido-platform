@@ -119,8 +119,8 @@ export function useVoiceCaptureSession({
   const silence = useSilenceAutoFinish({
     isEnabled: mode === 'quick',
     canFinish: () => VoiceCapturePolicy.canFinish(stateRef.current),
-    onSilence: () => {
-      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, AUTO_FINISH_SILENCE_MS)) {
+    onSilence: (silentMs) => {
+      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, silentMs)) {
         finish();
       }
     },
@@ -159,7 +159,7 @@ export function useVoiceCaptureSession({
     const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
     const isOnDevice = startOptionsRef.current?.isOnDevice;
 
-    if (VoiceCapturePolicy.isRecognizerFailure(previous, code, isStopRequested)) {
+    if (VoiceCapturePolicy.isRecognizerFailure(previous, { code, isStopRequested })) {
       telemetry.recognizerFailed(code, isOnDevice);
     } else {
       telemetry.recognizerStopped(code, isOnDevice);
@@ -389,7 +389,7 @@ export function useVoiceCaptureSession({
     }
     dispatch({ type: 'prepare', seed });
     try {
-      const capabilities = await speechRecognizer.getCapabilities(locale, mode);
+      const capabilities = await speechRecognizer.getCapabilities(mode, locale);
       if (isUnmountedRef.current || getStatus() !== 'preparing') {
         return false;
       }
@@ -463,7 +463,7 @@ export function useVoiceCaptureSession({
     if (startOptions == null || startOptions.locale === locale) {
       return;
     }
-    const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale, mode);
+    const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(mode, locale);
     if (isUnmountedRef.current) {
       return;
     }
@@ -530,8 +530,8 @@ function createTimerSlots<TKey extends string>() {
 interface UseSilenceAutoFinishOptions {
   isEnabled: boolean;
   canFinish: () => boolean;
-  /** 말이 멈춘 채 `AUTO_FINISH_SILENCE_MS`가 지났다 */
-  onSilence: () => void;
+  /** 말이 멈춘 채 `AUTO_FINISH_SILENCE_MS`가 지났다. 실제로 멈춘 시간을 넘긴다 */
+  onSilence: (silentMs: number) => void;
   /** 음량 이벤트가 끊겼다. `isEnabled`와 상관없이 부른다 */
   onVolumeGap: () => void;
 }
@@ -561,7 +561,8 @@ function useSilenceAutoFinish({
     }
     isQuietRef.current = true;
     setIsQuiet(true);
-    timers.set('quiet', onSilence, AUTO_FINISH_SILENCE_MS);
+    const quietSince = Date.now();
+    timers.set('quiet', () => onSilence(Date.now() - quietSince), AUTO_FINISH_SILENCE_MS);
   };
 
   const noteVolume = (isSpeaking: boolean) => {

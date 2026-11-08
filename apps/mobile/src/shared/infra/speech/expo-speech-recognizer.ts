@@ -43,7 +43,7 @@ async function findMissingSpeechPermission(): Promise<MissingSpeechPermission> {
 
 async function toPermissionSnapshot(
   { granted, canAskAgain }: { granted: boolean; canAskAgain: boolean },
-  isMicrophoneOnly: boolean,
+  { isMicrophoneOnly }: { isMicrophoneOnly: boolean },
 ): Promise<PermissionSnapshot> {
   if (granted) {
     return { isGranted: true, canAskAgain };
@@ -159,7 +159,7 @@ export const expoSpeechRecognizer: SpeechRecognizer = {
       isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.getPermissionsAsync(),
-      isMicrophoneOnly,
+      { isMicrophoneOnly },
     );
   },
 
@@ -170,11 +170,11 @@ export const expoSpeechRecognizer: SpeechRecognizer = {
       isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.requestPermissionsAsync(),
-      isMicrophoneOnly,
+      { isMicrophoneOnly },
     );
   },
 
-  getCapabilities: async (locale, mode) => {
+  getCapabilities: async (mode, locale) => {
     const isOnDevice = await shouldRecognizeOnDevice(mode, locale);
 
     return {

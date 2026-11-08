@@ -84,7 +84,7 @@ export interface SpeechRecognizer {
   /** 필요한 권한은 언어마다 다르다. 기기 안에서 인식할 수 없는 언어는 음성 인식 권한도 필요하다 */
   getPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
   requestPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
-  getCapabilities(locale: SpeechLocale, mode: SpeechMode): Promise<SpeechCapabilities>;
+  getCapabilities(mode: SpeechMode, locale: SpeechLocale): Promise<SpeechCapabilities>;
   requestOfflineModel(locale: SpeechLocale): Promise<OfflineModelResult>;
   start(options: SpeechStartOptions): void;
   /** 듣기를 멈추고 남은 결과를 마지막으로 보낸다 */

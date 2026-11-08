@@ -656,7 +656,10 @@ describe('isRecognizerFailure', () => {
     '듣는 중의 %s는 앱이 고칠 수 없어 실패로 본다',
     (code) => {
       // When
-      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, code, false);
+      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, {
+        code,
+        isStopRequested: false,
+      });
 
       // Then
       expect(isFailure).toBe(true);
@@ -667,7 +670,10 @@ describe('isRecognizerFailure', () => {
     '%s는 사용자나 환경 때문이라 실패로 남기지 않는다',
     (code) => {
       // When
-      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, code, false);
+      const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, {
+        code,
+        isStopRequested: false,
+      });
 
       // Then
       expect(isFailure).toBe(false);
@@ -676,7 +682,10 @@ describe('isRecognizerFailure', () => {
 
   it('앱이 멈춘 구간의 client는 멈춤 응답이라 실패가 아니다', () => {
     // When
-    const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true);
+    const isFailure = VoiceCapturePolicy.isRecognizerFailure(listening, {
+      code: 'client',
+      isStopRequested: true,
+    });
 
     // Then
     expect(isFailure).toBe(false);
@@ -689,10 +698,13 @@ describe('isRecognizerFailure', () => {
 
     // When
     const results = [
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', true),
-      VoiceCapturePolicy.isRecognizerFailure(paused, 'client', false),
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'client', false),
-      VoiceCapturePolicy.isRecognizerFailure(listening, 'audio-capture', true),
+      VoiceCapturePolicy.isRecognizerFailure(listening, { code: 'client', isStopRequested: true }),
+      VoiceCapturePolicy.isRecognizerFailure(paused, { code: 'client', isStopRequested: false }),
+      VoiceCapturePolicy.isRecognizerFailure(listening, { code: 'client', isStopRequested: false }),
+      VoiceCapturePolicy.isRecognizerFailure(listening, {
+        code: 'audio-capture',
+        isStopRequested: true,
+      }),
     ];
 
     // Then

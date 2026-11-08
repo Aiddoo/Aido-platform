@@ -89,10 +89,15 @@ function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
  * Android 인식기는 stop 뒤에 마지막 결과 대신 ERROR_CLIENT를 줄 수 있고, 어느 쪽이든 이어서 end가 온다.
  * 앱이 스스로 멈춘 구간의 client는 실패가 아니라 정상 종료이고, 글자 확정은 end가 맡는다.
  */
+interface RecognizerError {
+  code: SpeechErrorCode;
+  /** 이 구간은 앱이 이미 stop을 불렀다 */
+  isStopRequested?: boolean;
+}
+
 function isStopAcknowledgement(
   state: VoiceCaptureState,
-  code: SpeechErrorCode,
-  isStopRequested: boolean = false,
+  { code, isStopRequested = false }: RecognizerError,
 ): boolean {
   return (
     code === 'client' &&
@@ -109,12 +114,8 @@ const RECOGNIZER_FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
   'unknown',
 ]);
 
-function isRecognizerFailure(
-  state: VoiceCaptureState,
-  code: SpeechErrorCode,
-  isStopRequested: boolean,
-): boolean {
-  return RECOGNIZER_FAILURE_CODES.has(code) && !isStopAcknowledgement(state, code, isStopRequested);
+function isRecognizerFailure(state: VoiceCaptureState, error: RecognizerError): boolean {
+  return RECOGNIZER_FAILURE_CODES.has(error.code) && !isStopAcknowledgement(state, error);
 }
 
 function reduceVoiceCapture(state: VoiceCaptureState, event: VoiceCaptureEvent): VoiceCaptureState {
@@ -177,7 +178,7 @@ function reduceVoiceCapture(state: VoiceCaptureState, event: VoiceCaptureEvent):
             .returnType<VoiceCaptureState>()
             .with('no-speech', 'speech-timeout', 'aborted', () => current)
             .with('client', () =>
-              isStopAcknowledgement(current, code, isStopRequested)
+              isStopAcknowledgement(current, { code, isStopRequested })
                 ? current
                 : toFailed(current, code, at),
             )
