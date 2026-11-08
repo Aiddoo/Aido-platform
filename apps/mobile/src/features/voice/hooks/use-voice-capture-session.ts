@@ -49,15 +49,9 @@ interface UseVoiceCaptureSessionOptions {
   maxSeconds?: number | null;
   /** 길이 한도에 닿았을 때. 없으면 바로 끝낸다 */
   onLimitReached?: () => void;
-  /**
-   * 캡처가 끝나 글자가 모였을 때 부른다. 계획을 돌려주면 고르는 단계로, null이면 처음으로 돌아간다.
-   * 거절하면 들은 글자를 남긴 채 실패 상태가 된다.
-   */
+  /** 계획을 돌려주면 고르는 단계, null이면 처음으로 간다. 거절하면 글자를 남긴 채 실패 상태다 */
   onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
-  /**
-   * 실패 상태가 그려지기 전에 부른다. 글자를 입력 칸으로 옮기면 빈 칸이 먼저 보이지 않는다.
-   * 렌더 뒤의 effect에서 옮기면 Android에서 칸이 잠깐 비어 보인다.
-   */
+  /** 실패 상태를 그리기 전에 부른다. 렌더 뒤 effect에서 옮기면 Android에서 칸이 잠깐 비어 보인다 */
   onFailed?: (transcript: VoiceTranscript) => void;
 }
 
@@ -68,10 +62,7 @@ export interface BeginOptions {
   seed?: VoiceCaptureSeed;
 }
 
-/**
- * 말하기 인식 세션. 화면이 아니라 이 훅을 쓴 시트가 세션을 소유하므로 회전·레이아웃 변화로 끊기지 않는다.
- * 앱이 백그라운드로 가면 지금까지의 글자를 확정하고 멈춰서 돌아왔을 때 이어 들을 수 있게 둔다.
- */
+/** 시트가 세션을 소유해 회전에도 끊기지 않고, 백그라운드로 가면 글자를 확정하고 멈춰 이어 들을 수 있게 둔다 */
 export function useVoiceCaptureSession({
   entry,
   mode = 'quick',
@@ -412,10 +403,7 @@ export function useVoiceCaptureSession({
   };
 }
 
-/**
- * 세션 상태와 같은 값을 든 ref. 인식기 이벤트는 렌더를 기다리지 않고 바로 다음 상태를 읽어야 한다.
- * `dispatch`는 바뀌기 전과 뒤를 돌려주고, 바뀌지 않았으면 같은 객체다.
- */
+/** 인식기 이벤트는 렌더를 기다리지 않고 다음 상태를 읽어야 한다. dispatch는 바뀌지 않았으면 같은 객체다 */
 function useVoiceCaptureState() {
   const [state, setState] = useState<VoiceCaptureState>(VoiceCapturePolicy.createVoiceCaptureState);
   const stateRef = useRef(state);
@@ -435,9 +423,7 @@ function useVoiceCaptureState() {
 
 type VoiceCaptureDispatch = ReturnType<typeof useVoiceCaptureState>['dispatch'];
 
-/**
- * 인식기를 켜고 끄며 그 연결을 기록한다. 연결은 그리지 않는 값이라 ref에 두고 `VoiceRecognizerLinkPolicy`로만 바꾼다.
- */
+/** 연결은 그리지 않는 값이라 ref에 두고 VoiceRecognizerLinkPolicy로만 바꾼다 */
 function useRecognizerLink() {
   const speechRecognizer = useSpeechRecognizer();
   const linkRef = useRef(VoiceRecognizerLinkPolicy.createVoiceRecognizerLink());
@@ -481,12 +467,7 @@ interface UseRecognizerStallRecoveryOptions {
   onStalled: () => void;
 }
 
-/**
- * 파형은 움직이는데 글자가 오지 않는 세션을 닫고 이어 듣는다. 일시정지·이어 듣기와 같은 길이고 사용자는 할 일이 없다.
- * 듣던 글자는 `end`가 확정한다. 멈춘 인식기는 stop에 답하지 않을 수 있어 잠시 뒤 abort로 `end`를 받는다.
- * abort는 녹음 파일을 마무리하지만 바로 새로 시작하면 Android가 파일을 버린다.
- * 남은 abort 대기는 `end`를 받았을 때와 세션 타이머를 지울 때 `clear`로 지운다.
- */
+/** 멈춘 인식기는 stop에 답하지 않을 수 있어 잠시 뒤 abort로 end를 받고, 곧바로 새로 열면 Android가 파일을 버린다 */
 function useRecognizerStallRecovery({
   stateRef,
   recognizer,
@@ -593,10 +574,7 @@ function useSilenceAutoFinish({
   };
 }
 
-/**
- * 화면이 내려가면 `release`로 남은 타이머와 듣던 인식기를 정리한다.
- * 돌려주는 ref는 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜지 않게 막는다. 그러면 아무도 끄지 못한다.
- */
+/** 돌려주는 ref는 내려간 뒤 끝난 비동기 확인이 인식기를 다시 켜지 못하게 막는다. 켜면 아무도 끄지 못한다 */
 function useReleaseOnUnmount(release: () => void) {
   const isUnmountedRef = useRef(false);
   const releaseOnUnmount = useEffectEvent(release);
@@ -638,10 +616,7 @@ interface UseCapturePlanningOptions {
   onRequested: () => void;
 }
 
-/**
- * 계획 단계에 들어가면 모은 글자로 계획을 한 번 요청한다.
- * 결과가 오기 전에 단계를 떠났으면(취소·다시 시도) 그 결과는 버린다.
- */
+/** 결과가 오기 전에 계획 단계를 떠났으면(취소·다시 시도) 그 결과는 버린다 */
 function useCapturePlanning({
   isPlanning,
   stateRef,

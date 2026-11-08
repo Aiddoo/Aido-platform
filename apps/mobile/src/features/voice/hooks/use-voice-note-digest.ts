@@ -18,10 +18,7 @@ export interface VoiceNoteDigestFailure {
   isFreeOfCharge: boolean;
 }
 
-/**
- * 글자를 요약·핵심 포인트·계획으로 정리해 초안에 담는다. 멱등 키를 초안에 함께 저장해 화면을 떠나거나
- * 앱을 다시 켜고 다시 눌러도 한 번만 차감된다. 실패해도 글자는 그대로다.
- */
+/** 멱등 키를 초안에 함께 저장해 떠나거나 앱을 다시 켜고 다시 눌러도 한 번만 차감된다 */
 export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; draftId: string }) {
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();

@@ -107,7 +107,7 @@ function toFailed(
   };
 }
 
-/** 결과 없이 끝나면 서버를 부르지 않는다 */
+// 결과 없이 끝나면 서버를 부르지 않는다
 function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
   const { elapsedMs, pauseCount } = state;
   const transcript = VoiceTranscriptPolicy.withInterimFinalized(state.transcript);
@@ -119,10 +119,7 @@ function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
   };
 }
 
-/**
- * Android 인식기는 stop 뒤에 마지막 결과 대신 ERROR_CLIENT를 줄 수 있고, 어느 쪽이든 이어서 end가 온다.
- * 앱이 스스로 멈춘 구간의 client는 실패가 아니라 정상 종료이고, 글자 확정은 end가 맡는다.
- */
+// Android 인식기는 stop 뒤 마지막 결과 대신 ERROR_CLIENT를 주기도 해 앱이 멈춘 구간의 client는 정상 종료로 본다
 interface RecognizerError {
   code: SpeechErrorCode;
   /** 이 구간은 앱이 이미 stop을 불렀다 */
@@ -253,7 +250,7 @@ export function reduceVoiceCapture(
   );
 }
 
-/** 듣기가 끝났는데 사용자가 끝내지 않았다면(침묵·인식기 제한 시간) 같은 세션을 다시 연다 */
+// 듣기가 끝났는데 사용자가 끝내지 않았다면(침묵·인식기 제한 시간) 같은 세션을 다시 연다
 export function shouldRestartSegment(state: VoiceCaptureState): boolean {
   return state.status === 'listening';
 }
@@ -267,7 +264,7 @@ export function isActive(state: VoiceCaptureState): boolean {
   );
 }
 
-/** 음성이 돌지 않고 계획도 없어 손으로 입력하는 때 */
+// 음성이 돌지 않고 계획도 없어 손으로 입력하는 때
 export function isManualInput(state: Pick<VoiceCaptureState, 'status'>): boolean {
   return state.status === 'idle' || state.status === 'failed';
 }
@@ -326,7 +323,7 @@ export function shouldAutoFinish(
 
 type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
 
-/** 시트의 바깥 탭과 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다 */
+// 시트의 바깥 탭과 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다
 export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
   return match(state)
     .returnType<VoiceDismissAction | null>()
@@ -338,12 +335,12 @@ export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction |
     .otherwise(() => null);
 }
 
-/** 차감된 계획을 고르는 단계인지. 떠나면 이미 쓴 횟수를 잃는다 */
+// 차감된 계획을 고르는 단계인지. 떠나면 이미 쓴 횟수를 잃는다
 export function isChargedReview(state: VoiceCaptureState): boolean {
   return state.status === 'review' && state.isCharged;
 }
 
-/** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
+// 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다
 export function getRemainingCaptureMs(
   state: VoiceCaptureState,
   maxSeconds: number,
@@ -356,10 +353,7 @@ export function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
   return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * SECOND_MS;
 }
 
-/**
- * 인식기에 줄 힌트를 정한다. 흔한 단어는 늘 주고, 내 카테고리·할 일 이름은 기기 안 인식일 때만 앞에 둔다.
- * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
- */
+// 네트워크 인식은 음성 인식 서비스로 나가므로 개인 단어(카테고리·할 일 이름)는 기기 안 인식일 때만 넣는다
 export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
   const commonHints = COMMON_SPEECH_HINTS[options.locale];
 

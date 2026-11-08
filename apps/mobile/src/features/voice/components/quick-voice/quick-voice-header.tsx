@@ -11,10 +11,7 @@ interface QuickVoiceHeaderProps {
   onClose: () => void;
 }
 
-/**
- * 빠른 말하기 시트의 위쪽 줄. 시트는 Stack 화면이 아니라 네이티브 헤더가 없다.
- * 좁은 창에서는 오른쪽이 넓어 양쪽을 같은 폭으로 맞출 수 없으니 남는 자리의 가운데에 둔다.
- */
+/** 시트라 네이티브 헤더가 없다. 좁은 창은 오른쪽이 넓어 가운데를 남는 자리의 가운데에 둔다 */
 export function QuickVoiceHeader({ center, right, onClose }: QuickVoiceHeaderProps) {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();

@@ -2,10 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Result } from '@src/shared/ui';
 import { router } from 'expo-router';
 
-/**
- * 말로 메모 화면이 캐시 없이 오프라인이라 조회가 연결될 때까지 멈출 때 이유를 알린다.
- * 연결되면 조회가 이어져 화면이 열리고, 그동안 닫을 길이 된다.
- */
+/** 캐시 없이 오프라인이면 조회가 연결될 때까지 멈추므로 이유를 알리고 닫을 길을 준다 */
 export function VoiceNoteOffline({ className }: { className?: string }) {
   const { t } = useTranslation('voiceNote');
 

@@ -8,11 +8,7 @@ type VoiceNoteDigestButtonProps = Omit<ComponentProps<typeof Button>, 'children'
   label: string;
 };
 
-/**
- * 정리 버튼. 누르기 전에 횟수를 쓴다는 걸 알 수 있게 보조 문구를 함께 보인다(확인 창은 없다).
- * 프리미엄·관리자는 횟수를 세어 보여 줄 일이 없어 숨긴다. 값은 모두 서버 한도다.
- * 한도를 읽는 동안에는 보조 문구 자리를 잡아 늦게 나타나며 아래가 밀리지 않게 한다.
- */
+/** 확인 창 없이 횟수를 쓰므로 보조 문구로 알린다. 프리미엄·관리자는 숨기고, 읽는 동안 자리를 잡아 밀리지 않게 한다 */
 export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigestButtonProps) {
   const { t } = useTranslation('voiceNote');
   const { status, isPending } = useQuotaStatus('VOICE_NOTE');

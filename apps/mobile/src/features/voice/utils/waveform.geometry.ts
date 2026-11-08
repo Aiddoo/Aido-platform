@@ -12,10 +12,7 @@ function getBarCount(durationMs: number) {
   return Math.max(0, Math.ceil(durationMs / WAVEFORM_BAR.intervalMs));
 }
 
-/**
- * 다시 듣기 파형은 말한 구간만 알면 되므로 문장 구간에서 만든다.
- * 말한 칸은 같은 입력에 같은 높이가 나오는 완만한 물결로, 조용한 칸은 낮게 둔다.
- */
+/** 다시 듣기 파형은 문장 구간에서 만든다. 같은 입력에 같은 높이가 나오는 물결로, 조용한 칸은 낮게 둔다 */
 export function createSpeechLevels(
   sentences: readonly VoiceNoteSentence[],
   durationMs: number,
@@ -50,10 +47,7 @@ export function createLevelSampler(): LevelSampler {
   return { pendingMax: 0, elapsedMs: 0 };
 }
 
-/**
- * 프레임마다 음량을 모아 `intervalMs`마다 그동안의 최댓값으로 한 칸을 만든다. UI 스레드에서 부른다.
- * worklet의 매개변수 기본값은 Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 오류가 나므로 호출부가 넘긴다.
- */
+/** UI 스레드에서 부른다. worklet 매개변수 기본값은 Reanimated가 모듈 값을 잡지 않아 오류라 호출부가 넘긴다 */
 // 프레임마다 도는 worklet이라 위치 인자를 유지한다
 export function appendLevelFrame(
   sampler: LevelSampler,
@@ -84,10 +78,7 @@ export function getFlagBarIndexes(sentences: readonly VoiceNoteSentence[]): numb
     .map((sentence) => Math.floor(sentence.startMs / WAVEFORM_BAR.intervalMs));
 }
 
-/**
- * 아직 칸이 없는 중요 표시에 지금 칸 번호를 매긴다. 녹음 중 칸은 듣는 동안에만 쌓여(이어 듣기는 0칸에서 시작한다)
- * 시간으로 계산하면 아직 없는 칸을 가리켜 깃발이 그려지지 않는다.
- */
+/** 녹음 중 칸은 듣는 동안에만 쌓여 시간으로 계산하면 없는 칸을 가리키므로 지금 칸 번호를 매긴다 */
 export function withFlagBars(
   flagBars: ReadonlyMap<number, number>,
   bookmarksMs: readonly number[],
@@ -103,10 +94,7 @@ export function withFlagBars(
   );
 }
 
-/**
- * 재생선(가운데)을 기준으로 왼쪽 과거와 오른쪽 미래 `sideCount`칸씩 모두 `2 * sideCount + 1`칸 중 `slot`칸의 소리 크기.
- * 재생선은 `levels`의 마지막 칸을 가리키고, 아직 소리가 없는 자리는 null이다. UI 스레드에서 프레임마다 부른다.
- */
+/** 재생선(levels의 마지막 칸) 양옆 sideCount칸 중 slot칸의 크기. 소리가 없는 자리는 null이다 */
 export function getTimelineLevel(
   levels: readonly number[],
   slot: number,

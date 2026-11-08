@@ -223,7 +223,7 @@ export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
   };
 }
 
-/** 정리한 내용을 메모 한 장으로 만든다. 제목이 비면 서버가 제목 없는 메모로 저장한다 */
+// 정리한 내용을 메모 한 장으로 만든다. 제목이 비면 서버가 제목 없는 메모로 저장한다
 export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
   if (note.digest == null) {
     return null;
@@ -239,7 +239,7 @@ export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
     : { type: 'create-memo', actionId: 'voice-note-memo', title, content };
 }
 
-/** 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다. 카드를 읽지 못한 경우(`planDraft`가 null)와 구분한다 */
+// 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다. 카드를 읽지 못한 경우(`planDraft`가 null)와 구분한다
 export function hasEmptyPlan(note: VoiceNote): boolean {
   return (
     note.digest != null &&
@@ -302,7 +302,7 @@ export function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
 
-/** 글자가 있는 노트만 최근에 만든 것부터 보인다 */
+// 글자가 있는 노트만 최근에 만든 것부터 보인다
 export function getListedNotes(notes: readonly VoiceNote[]): VoiceNote[] {
   return orderBy(notes.filter(hasText), [(note) => toEpochMs(note.createdAt)], ['desc']);
 }
@@ -311,7 +311,7 @@ export function canDigest(note: VoiceNote): boolean {
   return note.digest == null && hasText(note);
 }
 
-/** 다시 듣기 파일이 남아 있고 길이를 아는 노트. 파일이 실제로 있는지는 저장소가 확인한다 */
+// 다시 듣기 파일이 남아 있고 길이를 아는 노트. 파일이 실제로 있는지는 저장소가 확인한다
 export function canPlayRecording(note: VoiceNote): boolean {
   return note.recordings.length > 0 && note.durationMs > 0;
 }
@@ -328,7 +328,7 @@ export function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKe
   return maxBy(passed.toReversed(), (keyPoint) => keyPoint.startMs ?? 0) ?? null;
 }
 
-/** 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다 */
+// 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다
 export function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>): VoiceCaptureSeed {
   return {
     transcript: VoiceTranscriptPolicy.createVoiceTranscript({
@@ -354,7 +354,7 @@ export function isExpired(note: VoiceNote, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(note.createdAt) >= RETENTION_MS;
 }
 
-/** 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다 */
+// 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다
 export function isRecordingFileExpired(
   { modifiedAt }: Pick<LocalFileEntry, 'modifiedAt'>,
   now: Instant,

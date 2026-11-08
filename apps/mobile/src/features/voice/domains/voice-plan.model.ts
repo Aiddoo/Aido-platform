@@ -114,12 +114,12 @@ export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
-/** 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다 */
+// 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다
 export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
   return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
 }
 
-/** 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다 */
+// 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다
 export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
   if (todo.repeat != null) {
     return {
@@ -173,7 +173,7 @@ export function getPlanActionGroups(
     : [...groups, { categoryId: null, indexes: memoIndexes }];
 }
 
-/** 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다 */
+// 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다
 export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
   actions: readonly TAction[],
   fallbackCategoryId: number,
@@ -188,7 +188,7 @@ export type PlanHeadline =
   | { kind: 'memo' }
   | { kind: 'already-added' };
 
-/** 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다 */
+// 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다
 export function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
   const selectedTodoCount = getSelectedTodoCount(plan, selection);
   if (selectedTodoCount > 0) {

@@ -8,8 +8,7 @@ export const SAMPLE_REPORT_IDS = {
   MONTHLY: 'sample-monthly',
 } as const satisfies Record<ReportType, string>;
 
-// 샘플 리포트는 표시 시점 언어를 따라야 하므로 상수가 아닌 빌더 함수로 구성한다
-// (모듈 로드 시점 t() 평가 금지 규칙)
+// 표시 시점 언어를 따르도록 모듈 로드 때 t()를 부르지 않고 빌더 함수로 만든다
 function buildWeeklySampleReport(): AiReport {
   return {
     id: -1,

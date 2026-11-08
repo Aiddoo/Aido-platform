@@ -738,10 +738,7 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     null,
   );
 
-  /**
-   * 저장된 메모를 한 번 정리한다. 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를
-   * 묻지 않았으면 'consentRevoked'를 돌려준다. 그 밖에는 이동·안내까지 마치고 'done'이다
-   */
+  // 정리 중 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를 묻지 않았으면 'consentRevoked'다
   const parseSavedMemo = async (savedMemo: Memo): Promise<'done' | 'consentRevoked'> => {
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다

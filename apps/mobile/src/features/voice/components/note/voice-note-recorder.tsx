@@ -35,10 +35,7 @@ import { VoiceNoteRecordLanguageTabs } from './voice-note-record-language-tabs';
 
 const MARK_HINT_HEIGHT = 124;
 
-/**
- * 말로 메모하기 녹음. 화면 전체가 녹음이라 이 컴포넌트가 곧 화면이다(헤더의 언어 전환과 닫기 포함).
- * 열리면 바로 듣기를 시작하고, 끝내면 초안 화면으로 바꾸고, 들은 글자 없이 끝나면 돌아간다.
- */
+/** 화면 전체가 녹음이라 이 컴포넌트가 곧 화면이다. 들은 글자 없이 끝나면 돌아간다 */
 export function VoiceNoteRecorder() {
   const { t } = useTranslation('voiceNote');
   const isCompact = useWindowSizeClass() === 'compact';

@@ -64,10 +64,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
     }
   };
 
-  /**
-   * iOS는 항목이 준비되기 전에 위치를 옮기면 무시되거나 예외가 난다. 이벤트는 교체 전 값일 수 있어
-   * 플레이어의 현재 값(`playlist.isLoaded`)까지 확인한 뒤에 적용한다.
-   */
+  /** iOS는 준비 전 위치 이동을 무시하거나 던지고 이벤트는 교체 전 값일 수 있어 playlist.isLoaded까지 본다 */
   const applyPendingStart = () => {
     const pending = pendingStart;
     if (
@@ -157,11 +154,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
   };
 }
 
-/**
- * 멈췄다 이어 들은 녹음은 파일이 여러 개라 조각을 이어 하나처럼 재생한다.
- * 다음 조각으로 넘어가는 일은 네이티브 큐가 맡아 JS가 늦어도 멈추지 않는다. 플레이어는 이 훅을 쓰는 화면이 소유해
- * 화면이 사라지면 함께 해제된다. 재생 위치는 여기서 구독하지 않아 화면 전체가 다시 그려지지 않는다.
- */
+/** 조각 넘기기는 네이티브 큐가 맡아 JS가 늦어도 멈추지 않고, 재생 위치는 구독하지 않아 화면을 다시 그리지 않는다 */
 export function useVoiceNotePlayer({
   parts,
   durationMs,

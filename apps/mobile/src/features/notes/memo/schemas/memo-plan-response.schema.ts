@@ -20,5 +20,5 @@ export const parseMemoPlanResponseSchema = parseMemoResponseSchema.extend({
 });
 export type ParseMemoPlanResponse = z.infer<typeof parseMemoPlanResponseSchema>;
 
-/** 메모 정리 결과. 계획과, 이 요청을 반영한 AI 할 일 만들기 한도(서버가 한도를 읽지 못하면 싣지 않아 null) */
+/** featureQuota는 서버가 한도를 읽지 못하면 싣지 않아 null이다 */
 export type ParsedMemoPlan = Pick<QuickPlanResult, 'plan' | 'featureQuota'>;

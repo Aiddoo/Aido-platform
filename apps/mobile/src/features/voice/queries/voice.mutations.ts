@@ -49,11 +49,7 @@ interface ApplyActionPlanMutationOptionsInput {
   onMemoChanged: () => void;
 }
 
-/**
- * 확인한 행동을 저장한다. 횟수는 차감하지 않고, 같은 키로 다시 보내면 서버가 저장한 결과를 돌려준다.
- * 메모에서 만든 계획은 저장에 성공하면 서버가 원본 메모를 지운다. 메모 목록을 다시 읽는 일은
- * `onMemoChanged`로 넘기고, 화면이 떠나는 중이라 상세 캐시는 건드리지 않는다(예전 메모 변환과 같다).
- */
+/** 차감 없이 저장하고 같은 키면 서버가 저장한 결과를 준다. 메모 계획은 성공 때 서버가 원본 메모를 지운다 */
 export function useApplyActionPlanMutationOptions({
   onSaved,
   onMemoChanged,

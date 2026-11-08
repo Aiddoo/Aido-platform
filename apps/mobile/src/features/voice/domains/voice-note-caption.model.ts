@@ -13,11 +13,7 @@ interface ProvisionalSentence {
   startMs: number;
 }
 
-/**
- * 녹음 중 자막. 인식기가 플랫폼마다 다른 모양으로 주는 글자를 문장 카드 하나로 모은다.
- * - Android: 문장마다 final이 오고 이후 결과는 새 문장이다.
- * - iOS: interim이 지금까지 한 말 전체로 쌓이다가 끝에 final 하나만 오므로, 꼬리도 문장으로 나눠 저장해 앱이 꺼져도 남긴다.
- */
+// Android는 문장마다 final, iOS는 interim이 쌓이다 final 하나라 꼬리도 문장으로 나눠 앱이 꺼져도 남긴다
 export interface VoiceNoteCaptions {
   sentences: readonly VoiceNoteSentence[];
   provisional: readonly ProvisionalSentence[];
@@ -42,7 +38,7 @@ export function createVoiceNoteCaptions(): VoiceNoteCaptions {
   return { sentences: [], provisional: [], bookmarksMs: [] };
 }
 
-/** 자막 카드 한 장의 글자 수를 넘지 않게 문장으로 나눈다 */
+// 자막 카드 한 장의 글자 수를 넘지 않게 문장으로 나눈다
 function splitIntoCaptionSentences(text: string): string[] {
   return splitIntoSentences(text, VOICE_NOTE_SENTENCE_MAX_LENGTH);
 }
@@ -51,7 +47,7 @@ function removeSpaces(text: string) {
   return text.replace(/\s/g, '');
 }
 
-/** 공백을 뺀 글자 수로 센 각 조각의 시작 위치 */
+// 공백을 뺀 글자 수로 센 각 조각의 시작 위치
 function getStartOffsets(texts: readonly string[]): number[] {
   return texts.map((_text, index) =>
     sumBy(texts.slice(0, index), (text) => removeSpaces(text).length),
@@ -139,7 +135,7 @@ export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): V
 const INTERIM_RESTART_LENGTH_RATIO = 0.5;
 const INTERIM_RESTART_PREFIX_LENGTH = 8;
 
-/** iOS는 긴 침묵 뒤에 interim을 처음부터 다시 쌓기도 한다. 이때 앞 글자를 잃지 않게 먼저 확정한다 */
+// iOS는 긴 침묵 뒤에 interim을 처음부터 다시 쌓기도 한다. 이때 앞 글자를 잃지 않게 먼저 확정한다
 function hasRestartedInterim(previous: readonly ProvisionalSentence[], next: string) {
   const previousText = previous.map(({ text }) => text).join(' ');
   return (
@@ -206,7 +202,7 @@ export function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceN
   return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
 }
 
-/** 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다 */
+// 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다
 export function getCaptionSentences(
   captions: VoiceNoteCaptions,
   nowMs: number,
@@ -223,7 +219,7 @@ export function getCaptionSentences(
   });
 }
 
-/** 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다 */
+// 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다
 export function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
   const settling = captions.provisional.at(-1);
 
@@ -233,7 +229,7 @@ export function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSente
   );
 }
 
-/** 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다 */
+// 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다
 export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
   const sentences = getCaptionSentences(captions, 0);
   if (sentences.length === 0) {
@@ -243,7 +239,7 @@ export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
   return sentences.filter(({ isBookmarked }) => isBookmarked).length;
 }
 
-/** 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다 */
+// 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다
 export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
   return captions.sentences.length > 0 || captions.provisional.length > 0;
 }
@@ -260,7 +256,7 @@ interface CreateTranscribedVoiceNoteInput {
   durationMs: number;
 }
 
-/** 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다 */
+// 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다
 export function createTranscribedVoiceNote({
   draftId,
   locale,

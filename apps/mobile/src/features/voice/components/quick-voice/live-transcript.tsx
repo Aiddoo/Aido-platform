@@ -17,12 +17,7 @@ interface LiveTranscriptProps {
   isWordFadeEnabled?: boolean;
 }
 
-/**
- * 자막. 글자가 늘면 최신 줄을 따라가고, 사용자가 위로 올리면 멈췄다가 끝까지 내리면 다시 따라간다.
- * 확정된 글자는 진하게(흐림→선명으로 한 단어씩), 인식 중인 꼬리는 회색으로 보여준다.
- * Android에는 한글을 단어 단위로 줄바꿈하는 Text prop이 없다(`lineBreakStrategyIOS`는 iOS 전용, RN은
- * `LineBreakConfig`를 노출하지 않는다). 그래서 단어마다 따로 그려 음절 사이에서 끊기지 않게 한다.
- */
+/** 위로 올리면 따라가기를 멈추고 끝까지 내리면 다시 따른다. Android는 한글 단어 줄바꿈 prop이 없어 단어마다 그린다 */
 export function LiveTranscript({
   transcript,
   placeholder,

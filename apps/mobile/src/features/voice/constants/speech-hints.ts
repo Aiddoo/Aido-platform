@@ -1,9 +1,6 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 
-/**
- * 할 일에 자주 나오는데 인식이 틀리기 쉬운 말. 개인 정보가 아니라 네트워크 인식에도 보낸다.
- * 인식기가 힌트를 어떻게 쓰는지는 어댑터가 정한다. 보정 신호일 뿐 보장은 아니다.
- */
+/** 할 일에 자주 나오는데 인식이 틀리기 쉬운 말. 개인 정보가 아니라 네트워크 인식에도 보낸다 */
 export const COMMON_SPEECH_HINTS = {
   'ko-KR': [
     '분기',

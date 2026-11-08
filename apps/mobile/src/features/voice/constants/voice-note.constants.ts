@@ -5,10 +5,7 @@ export const VOICE_NOTE_RETENTION_DAYS = 30;
 /** 메모 탭에 바로 보이는 최근 말로 메모 수. 넘치면 전체 목록으로 보내 아래 메모가 밀리지 않게 한다 */
 export const VOICE_NOTE_PREVIEW_COUNT = 3;
 
-/**
- * 초안이 가리키지 않는 녹음 파일을 남겨 두는 시간. 글자 없이 실패한 채 앱을 끄면 이런 파일이 남는다.
- * 이어지는 녹음이 쓰는 중인 파일만 건드리지 않으면 되어 길게 둘 이유가 없다
- */
+/** 글자 없이 실패한 채 앱을 끄면 남는 고아 녹음 파일의 보관 시간. 쓰는 중인 파일만 피하면 되어 짧다 */
 export const VOICE_RECORDING_ORPHAN_RETENTION_MS = HOUR_MS;
 
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;

@@ -12,10 +12,7 @@ import type { ComponentProps } from 'react';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 
-/**
- * 피드 맨 아래의 있어도 되고 없어도 되는 칸이라 조회 오류를 던지지 않고 이 칸 안에서 다시 시도하게 한다.
- * 개발 빌드는 경계가 잡은 렌더 오류도 LogBox 전체 화면으로 보여 주므로 API 오류가 화면을 덮지 않게 한다.
- */
+/** 피드의 선택 칸이라 조회 오류를 던지지 않고 칸 안에서 다시 시도한다. 개발 빌드 LogBox가 화면을 덮지 않게 한다 */
 export function SuggestionEntry() {
   const push = useSingleTap(router.push);
 

@@ -14,7 +14,6 @@ const savedReportSchema = routeIntegerStringSchema
   .pipe(aiReportIdParamSchema.shape.id)
   .transform((id) => ({ kind: 'saved' as const, id }));
 
-/** 리포트 상세는 미리보기 샘플 id(sample-weekly 등) 또는 저장된 리포트의 숫자 id를 받는다. */
 export const reportParamsSchema = z.object({
   reportId: z.union([sampleReportSchema, savedReportSchema]),
 });

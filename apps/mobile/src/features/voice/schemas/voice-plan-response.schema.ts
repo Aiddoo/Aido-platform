@@ -5,10 +5,7 @@ import {
 } from '@aido/api';
 import { z } from 'zod';
 
-/**
- * 새 서버가 더한 모르는 행동 타입 하나 때문에 계획 전체를 버리지 않도록 행동은 느슨하게 받고,
- * 아는 타입만 {@link toVoicePlan}이 계약대로 검증한다.
- */
+// 새 서버의 모르는 행동 타입 하나로 계획 전체를 버리지 않게 느슨하게 받고 아는 타입만 toVoicePlan이 검증한다
 const lenientActionPlanSchema = actionPlanSchema.extend({ actions: z.array(z.unknown()) });
 
 export const lenientQuickPlanResponseSchema = quickPlanResponseSchema.extend({

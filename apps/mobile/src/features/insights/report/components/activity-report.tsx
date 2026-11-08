@@ -27,7 +27,6 @@ import { isReportUnavailableError } from '../domains/report.error';
 import { type AiReport, ReportPolicy } from '../domains/report.model';
 import { ReportTypeChip } from './report-type-chip';
 
-/** 활동이 많았던 시간대를 몇 개까지 보여 줄지 */
 const TOP_HOUR_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 

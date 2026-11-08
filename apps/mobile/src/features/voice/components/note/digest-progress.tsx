@@ -15,8 +15,7 @@ export function DigestProgress({ characterCount, markCount, ...stackProps }: Dig
   const { t } = useTranslation('voiceNote');
   const { locale } = useDateFormatContext();
 
-  // 글자는 기기에서 이미 끝났다. 핵심과 할 일은 서버가 한 요청으로 함께 만들어 어느 쪽이 끝났는지 알 수 없으니
-  // 모르는 진행을 지어내지 않고 둘 다 진행 중으로 둔다.
+  // 핵심과 할 일은 서버가 한 요청으로 만들어 어느 쪽이 끝났는지 몰라 둘 다 진행 중으로 둔다
   return (
     <VStack gap={12} {...stackProps}>
       <DigestProgress.Step

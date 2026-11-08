@@ -39,8 +39,7 @@ export function VoiceStorageUsage() {
   // 저장 용량은 기기의 동기 값이라 쿼리 없이 읽고, 기다리는 것은 계정(me)뿐이다
   const storage = useVoiceNoteStorageService();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  // 파일 크기는 구독할 수 없어 화면에 들어올 때와 이 화면에서 지운 뒤에만 다시 읽는다.
-  // 녹음은 이 화면 밖(녹음 화면)에서만 늘어나 이 화면이 떠 있는 동안 바뀌지 않는다
+  // 파일 크기는 구독할 수 없지만 녹음은 이 화면 밖에서만 늘어 들어올 때와 지운 뒤에만 다시 읽는다
   const [usage, setUsage] = useState(() => storage.getRecordingUsage(me.id));
   const refreshUsage = () => setUsage(storage.getRecordingUsage(me.id));
 

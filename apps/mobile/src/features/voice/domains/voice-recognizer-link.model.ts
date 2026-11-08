@@ -49,10 +49,7 @@ export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWa
   return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
 }
 
-/**
- * 파형은 움직이는데 글자가 오지 않아 구간을 닫고 다시 열 때인가.
- * 앱이 이미 stop을 부른 구간은 곧 `end`가 오므로 다시 열지 않는다.
- */
+// 파형은 움직이는데 글자가 오지 않으면 구간을 다시 연다. 앱이 stop을 부른 구간은 곧 end가 와서 열지 않는다
 export function shouldRestartStalledRecognizer(
   {
     isStopRequested,
@@ -89,7 +86,6 @@ export type VoiceRecognizerLinkEvent =
   | { type: 'start-requested'; at: number }
   /** 사용자가 끝내지 않았는데 구간이 끝나 같은 세션을 다시 열었다 */
   | { type: 'segment-restarted'; at: number }
-  /** 인식기가 시작 신호를 보냈다 */
   | { type: 'started'; at: number }
   | { type: 'stop-requested' }
   /** 글자 없이 말소리만 들려 구간을 닫는다 */
@@ -125,7 +121,7 @@ export function isRestartLooping(
   return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
 }
 
-/** 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다 */
+// 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다
 export function isSpeaking(
   { lastTextAt }: Pick<VoiceRecognizerLink, 'lastTextAt'>,
   level: number,

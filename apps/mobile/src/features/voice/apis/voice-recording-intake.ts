@@ -20,10 +20,7 @@ interface VoiceRecordingIntakeDeps {
   onRecordingSaved: () => void;
 }
 
-/**
- * 인식기가 쓴 녹음 파일을 받아 초안 이름으로 옮긴다. 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에 둔다.
- * 사용자 녹음이라 끝내거나 떠나도 잃지 않고, 지운 초안의 파일만 바로 지운다.
- */
+/** 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다 */
 export class VoiceRecordingIntake {
   readonly #deps: VoiceRecordingIntakeDeps;
   readonly #segmentStarts = new Map<string, number>();
@@ -94,10 +91,7 @@ export class VoiceRecordingIntake {
   /** 넘기거나 지운 뒤에는 글자를 초안에 쓰지 않는다 */
   canWriteDraft = (): boolean => !this.#hasHandedOff && !this.#hasDiscarded;
 
-  /**
-   * 화면이 내려간 뒤에 온 파일도 받는다. 초안에 더하고, 지운 초안이면 바로 지운다.
-   * 사용자가 끝내지 않고 떠나도 녹음을 잃지 않는다. 받으면 끝내고, 오지 않아도 잠시 뒤 끝낸다.
-   */
+  /** 떠나도 녹음을 잃지 않게 화면이 내려간 뒤 온 파일도 받는다. 받으면 끝내고 오지 않아도 잠시 뒤 끝낸다 */
   listenForLate = (subscribe: SpeechRecognizer['subscribe']): void => {
     if (this.#segmentStarts.size === 0) {
       return;

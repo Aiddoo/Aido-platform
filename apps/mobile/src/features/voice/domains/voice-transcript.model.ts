@@ -54,10 +54,7 @@ export function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
   return getTranscriptText(transcript).length === 0;
 }
 
-/**
- * 들은 글자를 입력 칸의 글자 뒤에 합친다. 친 글자는 지우지 않는다.
- * 실패로 이미 옮긴 글자가 겹치지 않게, 칸에 들어 있으면 그대로 두고 이어 말해 늘어났으면 늘어난 글자로 바꾼다.
- */
+// 친 글자는 지우지 않는다. 들은 글자가 칸에 이미 있으면 그대로, 이어 말해 늘었으면 늘어난 글자로 바꾼다
 export function mergeHeardTextIntoTitle(transcript: VoiceTranscript, title: string): string {
   const typed = title.trim();
   const heard = getTranscriptText(transcript).trim();
@@ -74,10 +71,7 @@ export function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscri
   return appendFinalResult(transcript, transcript.interim);
 }
 
-/**
- * 잘못 들었을 수 있는 단어(밑줄용). 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라
- * 아무것도 고르지 않는다.
- */
+// 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라 고르지 않는다
 export function getLowConfidenceWords(
   segments: readonly SpeechSegment[],
   threshold: number = LOW_CONFIDENCE_THRESHOLD,

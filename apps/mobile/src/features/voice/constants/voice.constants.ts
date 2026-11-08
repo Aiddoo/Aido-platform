@@ -19,18 +19,15 @@ export const SPEAKING_VOLUME_THRESHOLD = 0.18;
 /** 음량이 커도 이만큼 새 글자가 없으면 말이 아니라 주변 소리로 본다. 시끄러운 곳에서도 자동으로 마무리되게 한다 */
 export const SPEECH_TEXT_GRACE_MS = 1_500;
 
-/**
- * 말소리 크기의 음량이 들리는데 글자가 오지 않으면 인식기가 멈춘 것으로 보고 다시 연다.
- * Android는 멈춘 동안 빈 구간 신호(`no-match`)도 `end`도 주지 않아 시간으로만 알 수 있다.
- * - `textlessMs`: 마지막 글자 뒤로 글자 없이 지난 시간. QA 로그에서 말 구간이 약 3초마다 닫히므로 두 구간이다.
- * - `voicedMs`: 그동안 말소리 크기로 들린 시간의 합. 기침·문소리 몇 번으로는 닿지 않는 길이다.
- * - `maxSampleGapMs`: 음량은 50ms마다 온다. 이보다 벌어진 틈은 들은 시간으로 세지 않는다.
- * - `minIntervalMs`: 글자 없이 다시 연 뒤 기다리는 시간. 시끄러운 곳에서 녹음 파일이 잘게 쪼개지지 않게 한다.
- */
+// Android는 멈춘 동안 no-match도 end도 주지 않아, 말소리는 들리는데 글자가 없으면 시간으로 멈춤을 알고 다시 연다
 export const VOICE_STALL_RESTART = {
+  // QA 로그에서 말 구간이 약 3초마다 닫혀 두 구간 길이다
   textlessMs: 6_000,
+  // 기침·문소리 몇 번으로는 닿지 않는 말소리 합
   voicedMs: 3_000,
+  // 음량은 50ms마다 온다. 이보다 벌어진 틈은 들은 시간으로 세지 않는다
   maxSampleGapMs: 250,
+  // 시끄러운 곳에서 녹음 파일이 잘게 쪼개지지 않게 한다
   minIntervalMs: 30_000,
 } as const;
 
@@ -54,10 +51,7 @@ export const VOICE_RESTART_LOOP = { windowMs: 400, limit: 4 } as const;
 /** Android 일부 인식기는 말이 끝나면 음량 이벤트를 보내지 않는다(QA 로그). 이만큼 끊기면 소리 없음으로 본다 */
 export const VOICE_NO_VOLUME_GAP_MS = 300;
 
-/**
- * 구와 테두리 빛의 그라데이션 중간색. 팔레트에 없는 장식용 색이라 토큰 대신 여기 모은다.
- * 그라데이션 끝색은 토큰 `main`을 쓴다.
- */
+/** 팔레트에 없는 장식용 그라데이션 중간색이라 토큰 대신 여기 둔다. 끝색은 토큰 `main`이다 */
 export const VOICE_GRADIENT_COLORS = {
   orbPeach: '#ffc2a3',
   orbCoral: '#ff8a5c',

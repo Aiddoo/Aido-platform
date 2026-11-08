@@ -20,10 +20,7 @@ interface OfferOnDeviceModelOptions {
   isAbandoned: () => boolean;
 }
 
-/**
- * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
- * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
- */
+/** Android에 언어 모델이 없으면 한 번만 묻는다. 거절·시스템 창 취소·받을 수 없음이면 다시 묻지 않는다 */
 export function useOfferOnDeviceModel({ accountId, entry }: UseOfferOnDeviceModelOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const offlineModelPrompt = useOfflineModelPromptRepository();

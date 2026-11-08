@@ -23,10 +23,7 @@ function getSpeechErrorMessage(code: SpeechErrorCode) {
   return tDynamic('common', `speechErrors.${code}`, tDynamic('common', 'speechErrors.unknown'));
 }
 
-/**
- * 한 번 말하면 끝나는 받아쓰기. 인식기 이벤트는 앱 전체에 하나라 이 훅이 시작한 세션의 이벤트만 받는다.
- * 화면이 내려가면 결과를 받을 곳이 없으므로 듣던 세션을 끊는다.
- */
+/** 인식기 이벤트는 앱 전체에 하나라 이 훅이 시작한 세션만 받고, 화면이 내려가면 듣던 세션을 끊는다 */
 export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
