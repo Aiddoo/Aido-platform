@@ -52,6 +52,7 @@ export function createUser(overrides?: Partial<User>): User {
       endsAt: null,
       periodEndsAt: null,
       willRenew: false,
+      isTrial: false,
       bankedDays: 0,
       grantEndedAt: null,
     },

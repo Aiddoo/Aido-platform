@@ -3,11 +3,13 @@ import type {
   PurchaseOffering,
   PurchasePackage,
   PurchasePackageType,
+  PurchasePeriodUnit,
 } from '@src/core/ports/purchases-gateway';
 import { match } from 'ts-pattern';
 
 import { type CustomerInfo, customerInfoSchema } from '../domains/customer-info.model';
 import {
+  type FreeTrial,
   type PlanType,
   type SubscriptionOffering,
   type SubscriptionPlan,
@@ -20,6 +22,26 @@ function toPlanType(packageType: PurchasePackageType): PlanType | null {
     .with('ANNUAL', () => 'annual')
     .with('OTHER', () => null)
     .exhaustive();
+}
+
+function toFreeTrialPeriodUnit(periodUnit: PurchasePeriodUnit): FreeTrial['periodUnit'] {
+  return match(periodUnit)
+    .returnType<FreeTrial['periodUnit']>()
+    .with('DAY', () => 'day')
+    .with('WEEK', () => 'week')
+    .with('MONTH', () => 'month')
+    .with('YEAR', () => 'year')
+    .exhaustive();
+}
+
+function toFreeTrial(freeTrial: PurchasePackage['product']['freeTrial']): FreeTrial | null {
+  if (freeTrial == null) {
+    return null;
+  }
+  return {
+    periodUnit: toFreeTrialPeriodUnit(freeTrial.periodUnit),
+    periodNumberOfUnits: freeTrial.periodNumberOfUnits,
+  };
 }
 
 function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | null {
@@ -37,6 +59,7 @@ function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | n
     currencyCode: storePackage.product.currencyCode,
     title: storePackage.product.title,
     description: storePackage.product.description,
+    freeTrial: toFreeTrial(storePackage.product.freeTrial),
   };
 }
 

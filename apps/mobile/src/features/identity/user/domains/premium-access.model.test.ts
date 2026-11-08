@@ -316,3 +316,62 @@ describe('getRecentGrantEndedAt', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('isTrial', () => {
+  it.each([
+    ['스토어 구독이 체험이면 true', 'STORE', true, true],
+    ['스토어 구독이 결제 중이면 false', 'STORE', false, false],
+    ['보상 기간이면 체험 값이 섞여도 false', 'GRANT', true, false],
+  ] as const)('%s를 반환한다', (_case, source, isTrial, expected) => {
+    // Given
+    const access = createPremiumAccess({ source, isTrial });
+
+    // When
+    const result = PremiumAccessPolicy.isTrial(access);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('isTrialEndingSoon', () => {
+  // 11월 1일 14:30 KST에 끝나는 체험
+  const trial = createPremiumAccess({ source: 'STORE', isTrial: true, willRenew: true });
+
+  it.each([
+    ['4일 남았으면 false', '2026-10-28T01:00:00Z', false],
+    ['3일 남았으면 true', '2026-10-29T01:00:00Z', true],
+    ['끝나는 날 아침이면 true', '2026-10-31T23:00:00Z', true],
+    ['끝나는 시각이 지났으면 false', '2026-11-01T05:30:00.000Z', false],
+  ] as const)('자동 갱신과 상관없이 %s를 반환한다', (_case, now, expected) => {
+    // When
+    const result = PremiumAccessPolicy.isTrialEndingSoon(trial, toInstant(now), SEOUL);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  it('남은 날은 기기 시간대의 달력 날짜로 센다', () => {
+    // Given
+    // LA로는 10월 28일 22:00, 끝나는 10월 31일 22:30까지 달력 3일
+    const now = toInstant('2026-10-29T05:00:00Z');
+
+    // When
+    const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(trial, now, LOS_ANGELES);
+
+    // Then
+    expect(daysLeft).toBe(3);
+  });
+
+  it('체험이 아니면 남은 날이 없다', () => {
+    // When
+    const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(
+      createPremiumAccess(),
+      toInstant('2026-10-31T01:00:00Z'),
+      SEOUL,
+    );
+
+    // Then
+    expect(daysLeft).toBeNull();
+  });
+});

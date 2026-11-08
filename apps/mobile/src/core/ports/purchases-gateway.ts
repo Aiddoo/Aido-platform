@@ -11,6 +11,14 @@ export interface PurchaseStatus {
 
 export type PurchasePackageType = 'MONTHLY' | 'ANNUAL' | 'OTHER';
 
+export type PurchasePeriodUnit = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+
+/** 스토어 무료 체험 기간. 기간만 싣고 날짜는 스토어가 결제 때 정한다 */
+interface PurchaseFreeTrial {
+  periodUnit: PurchasePeriodUnit;
+  periodNumberOfUnits: number;
+}
+
 export interface PurchasePackage {
   identifier: string;
   packageType: PurchasePackageType;
@@ -20,6 +28,8 @@ export interface PurchasePackage {
     currencyCode: string;
     title: string;
     description: string | null;
+    /** 이 사용자가 지금 받을 수 있는 무료 체험. 자격이 없거나 스토어가 자격을 모르면 null이다 */
+    freeTrial: PurchaseFreeTrial | null;
   };
 }
 

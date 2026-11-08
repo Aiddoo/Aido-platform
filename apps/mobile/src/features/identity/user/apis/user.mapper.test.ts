@@ -27,6 +27,7 @@ describe('toUser', () => {
         endsAt: toInstant('2028-03-15T07:00:00.000Z'),
         periodEndsAt: toInstant('2028-03-10T04:00:00.000Z'),
         willRenew: true,
+        isTrial: false,
         bankedDays: 5,
         grantEndedAt: null,
       },
@@ -39,6 +40,7 @@ describe('toUser', () => {
         endsAt: toInstant('2028-03-11T04:00:00.000Z'),
         periodEndsAt: toInstant('2028-03-04T04:00:00.000Z'),
         willRenew: false,
+        isTrial: false,
         bankedDays: 7,
         grantEndedAt: null,
       },
@@ -51,6 +53,7 @@ describe('toUser', () => {
         endsAt: null,
         periodEndsAt: null,
         willRenew: false,
+        isTrial: false,
         bankedDays: 0,
         grantEndedAt: toInstant('2028-03-04T04:00:00.000Z'),
       },
@@ -61,6 +64,20 @@ describe('toUser', () => {
 
     // Then
     expect(result.premiumAccess).toEqual(expected);
+  });
+
+  it.each([
+    ['1.15.0 서버가 체험이라고 보내면 체험으로 옮긴다', true, true],
+    ['1.15.0 전 서버라 체험 필드가 없으면 체험이 아닌 것으로 읽는다', undefined, false],
+  ] as const)('%s', (_case, premiumIsTrial, expected) => {
+    // Given
+    const dto = { ...PREMIUM_ME_EXAMPLES.trialDuringReward, premiumIsTrial };
+
+    // When
+    const result = toUser(dto);
+
+    // Then
+    expect(result.premiumAccess.isTrial).toBe(expected);
   });
 
   it('providers 배열 매핑', () => {

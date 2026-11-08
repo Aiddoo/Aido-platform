@@ -24,6 +24,88 @@ function createReceipt(
 }
 
 describe('toSubscriptionReceiptViewModel', () => {
+  describe('무료 체험', () => {
+    const TRIAL_ENDS_AT = toInstant('2028-03-26T04:00:00.000Z');
+
+    function createTrialMe(overrides: Partial<CurrentUserResponse> = {}): CurrentUserResponse {
+      return { ...PREMIUM_ME_EXAMPLES.trialDuringReward, ...overrides };
+    }
+
+    it('G. 보상 중에 체험을 시작했으면 체험 종료일과 첫 결제일을 서버 기간 끝으로 보이고 해지 방법을 안내한다', () => {
+      // When
+      const result = createReceipt(createTrialMe());
+
+      // Then
+      expect(result).toEqual({
+        variant: 'trial',
+        rows: [
+          { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
+          { type: 'firstBillingDate', date: TRIAL_ENDS_AT },
+          { type: 'autoRenewal', willRenew: true },
+          { type: 'bankedReward', days: 5, endsAt: null },
+        ],
+        footnote: { type: 'cancelTrialInStore' },
+        primaryAction: 'manage',
+        endingNotice: null,
+      });
+    });
+
+    it.each([
+      ['4일 남았으면 아직 알리지 않는다', '2028-03-22T03:00:00Z', null],
+      ['3일 남았으면 D-3으로 알린다', '2028-03-23T03:00:00Z', 3],
+      ['하루 남았으면 D-1로 알린다', '2028-03-25T03:00:00Z', 1],
+      ['끝나는 날이면 오늘로 알린다', '2028-03-26T01:00:00Z', 0],
+    ] as const)('자동 갱신 중인 체험이 %s', (_case, now, expectedDaysLeft) => {
+      // When
+      const result = createReceipt(createTrialMe(), { now: toInstant(now) });
+
+      // Then
+      expect(result.endingNotice).toEqual(
+        expectedDaysLeft == null ? null : { daysLeft: expectedDaysLeft, willRenew: true },
+      );
+    });
+
+    it('체험을 해지했으면 결제일 없이 종료일만 보이고 끝나면 무료로 돌아간다고 알린다', () => {
+      // Given
+      const me = createTrialMe({
+        willRenew: false,
+        bankedPremiumDays: 0,
+        premiumEndsAt: '2028-03-26T04:00:00.000Z',
+      });
+
+      // When
+      // 체험이 끝나기 하루 전
+      const result = createReceipt(me, { now: toInstant('2028-03-25T03:00:00Z') });
+
+      // Then
+      expect(result.rows).toEqual([
+        { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
+        { type: 'autoRenewal', willRenew: false },
+      ]);
+      expect(result.footnote).toEqual({ type: 'returnsToFreePlan', date: TRIAL_ENDS_AT });
+      expect(result.endingNotice).toEqual({ daysLeft: 1, willRenew: false });
+    });
+
+    it('체험 끝이 지났는데 결제가 아직 반영되지 않았으면 갱신 확인 중으로 보이고 끝남 안내를 하지 않는다', () => {
+      // When
+      const result = createReceipt(createTrialMe(), { now: toInstant('2028-03-26T05:00:00Z') });
+
+      // Then
+      expect(result.rows).toContainEqual({ type: 'renewalPending' });
+      expect(result.rows).not.toContainEqual(expect.objectContaining({ type: 'firstBillingDate' }));
+      expect(result.endingNotice).toBeNull();
+    });
+
+    it('체험에서 결제로 넘어가면 일반 결제 영수증으로 돌아간다', () => {
+      // When
+      const result = createReceipt(createTrialMe({ premiumIsTrial: false }));
+
+      // Then
+      expect(result.variant).toBe('paid');
+      expect(result.rows[0]).toEqual({ type: 'nextBillingDate', date: TRIAL_ENDS_AT });
+    });
+  });
+
   describe('스토어 구독', () => {
     it('A. 보상 중에 구독했으면 다음 결제일은 스토어 만료로 보이고, 자동 갱신 중이라 쌓아 둔 보상은 날짜 없이 일수만 보인다', () => {
       // When

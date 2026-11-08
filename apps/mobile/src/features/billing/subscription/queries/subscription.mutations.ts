@@ -17,12 +17,13 @@ import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import { type SubscriptionPlan } from '../domains/subscription.model';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toPurchaseFailedReason } from '../utils/subscription-analytics';
 import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';
 
-type PurchaseVariables = Pick<SubscriptionPlan, 'identifier' | 'planType'>;
+type PurchaseVariables = Pick<SubscriptionPlan, 'identifier' | 'planType' | 'freeTrial'>;
 
 export function usePurchaseMutationOptions() {
   const haptics = useHaptics();
@@ -46,25 +47,53 @@ export function usePurchaseMutationOptions() {
 
       return { isReflected };
     },
-    onSuccess: ({ isReflected }, { identifier, planType }, context) => {
-      trackEvent('subscription_started', { product_id: identifier, plan_type: planType });
+    onSuccess: ({ isReflected }, plan, context) => {
+      trackEvent('subscription_started', {
+        product_id: plan.identifier,
+        plan_type: plan.planType,
+        is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+      });
       haptics.notify('success');
       if (!isReflected) {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
         return;
       }
-      // 보상 기간 중에 구독하면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다
+      // 체험인지는 반영된 서버 값으로 본다. 보상 기간 중이었으면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다
+      const currentAccess = getCachedMe(queryClient)?.premiumAccess;
+      const startedTrial = currentAccess != null && PremiumAccessPolicy.isTrial(currentAccess);
+      const hadRewardOnly =
+        context.previousAccess != null && PremiumAccessPolicy.isGrantOnly(context.previousAccess);
       toast.success(
-        context.previousAccess != null && PremiumAccessPolicy.isGrantOnly(context.previousAccess)
-          ? t('subscription:toast.purchaseSuccessWithReward')
-          : t('subscription:toast.purchaseSuccess'),
+        t(
+          match({ startedTrial, hadRewardOnly })
+            .with(
+              { startedTrial: true, hadRewardOnly: true },
+              () => 'subscription:toast.trialStartSuccessWithReward' as const,
+            )
+            .with(
+              { startedTrial: true, hadRewardOnly: false },
+              () => 'subscription:toast.trialStartSuccess' as const,
+            )
+            .with(
+              { startedTrial: false, hadRewardOnly: true },
+              () => 'subscription:toast.purchaseSuccessWithReward' as const,
+            )
+            .with(
+              { startedTrial: false, hadRewardOnly: false },
+              () => 'subscription:toast.purchaseSuccess' as const,
+            )
+            .exhaustive(),
+        ),
       );
     },
-    onError: (error, { planType }) =>
+    onError: (error, plan) =>
       match(toSubscriptionActionFailure('purchase', error))
         // 사용자가 직접 취소했으면 이미 알고 있어 알리지 않고 퍼널에만 남긴다
         .with({ type: 'cancelled' }, () => {
-          trackEvent('purchase_cancelled', { plan_type: planType });
+          trackEvent('purchase_cancelled', {
+            plan_type: plan.planType,
+            is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+          });
         })
         .with({ type: 'paymentPending' }, () =>
           toast.success(t('subscription:toast.paymentPending')),
@@ -74,7 +103,11 @@ export function usePurchaseMutationOptions() {
           haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
           if (reason != null) {
-            trackEvent('purchase_failed', { reason, plan_type: planType });
+            trackEvent('purchase_failed', {
+              reason,
+              plan_type: plan.planType,
+              is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+            });
           }
           errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
             feature: 'subscription',

@@ -66,7 +66,10 @@ PlanPicker.Plans = function Plans({
   const handleValueChange = (planId: string) => {
     const nextPlan = SubscriptionPolicy.findSelectedPlan(offering, planId);
     if (nextPlan != null && nextPlan.identifier !== selectedPlan?.identifier) {
-      trackEvent('paywall_plan_selected', { plan_type: nextPlan.planType });
+      trackEvent('paywall_plan_selected', {
+        plan_type: nextPlan.planType,
+        is_trial: SubscriptionPolicy.hasFreeTrial(nextPlan),
+      });
     }
     onValueChange(planId);
   };

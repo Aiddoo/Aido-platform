@@ -7,6 +7,7 @@ import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
+import { FREE_TRIAL_PERIOD_LABEL_KEYS } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -68,11 +69,16 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                   {label}
                 </Text>
                 {discountPercent > 0 && (
-                  <Chip variant="soft" className="self-center rounded-full bg-main/10 px-2 py-0.5">
-                    <Text size="e2" weight="bold" className="text-main">
-                      {t('plan.discount', { percent: discountPercent })}
-                    </Text>
-                  </Chip>
+                  <PlanChip>{t('plan.discount', { percent: discountPercent })}</PlanChip>
+                )}
+                {plan.freeTrial != null && (
+                  <PlanChip testID="subscription-plan-free-trial">
+                    {t('plan.freeTrial', {
+                      period: t(FREE_TRIAL_PERIOD_LABEL_KEYS[plan.freeTrial.periodUnit], {
+                        count: plan.freeTrial.periodNumberOfUnits,
+                      }),
+                    })}
+                  </PlanChip>
                 )}
               </HStack>
               <Radio>
@@ -106,5 +112,18 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
         </Card>
       )}
     </RadioGroup.Item>
+  );
+}
+
+function PlanChip({
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Chip>, 'variant' | 'className'>) {
+  return (
+    <Chip variant="soft" className="self-center rounded-full bg-main/10 px-2 py-0.5" {...props}>
+      <Text size="e2" weight="bold" className="text-main">
+        {children}
+      </Text>
+    </Chip>
   );
 }

@@ -1,10 +1,17 @@
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button } from '@src/shared/ui';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { Box, Button, Text } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
+import {
+  FREE_TRIAL_PERIOD_LABEL_KEYS,
+  PLAN_PRICE_LABEL_KEYS,
+} from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSubscriptionParams } from '../hooks/use-subscription-params';
@@ -21,6 +28,8 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
   const purchase = useMutation(usePurchaseMutationOptions());
   const [{ view }] = useSubscriptionParams();
   const isOnline = useIsOnline();
+  const { currentLocalDateKey } = useLocalDate();
+  const dateFormatContext = useDateFormatContext();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
   const { data: availability } = useQuery({
     ...useGetOfferingsQueryOptions(),
@@ -30,6 +39,11 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
     availability?.status === 'available'
       ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
       : null;
+  const freeTrial = selectedPlan?.freeTrial ?? null;
+  const trialEndDateKey =
+    selectedPlan == null
+      ? null
+      : SubscriptionPolicy.getFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
 
   const handlePurchase = () => {
     if (!selectedPlan || purchase.isPending) {
@@ -58,8 +72,33 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
         isDisabled={!selectedPlan || purchase.isPending || !isOnline}
         testID="subscription-purchase"
       >
-        {t(getPurchaseLabelKey(selectedPlan))}
+        {t(getPurchaseLabelKey(selectedPlan), {
+          period:
+            freeTrial == null
+              ? undefined
+              : t(FREE_TRIAL_PERIOD_LABEL_KEYS[freeTrial.periodUnit], {
+                  count: freeTrial.periodNumberOfUnits,
+                }),
+        })}
       </Button>
+      {/* "무료"만 크게 보이지 않게 버튼 바로 아래에 체험 뒤 금액·주기·해지를 함께 둔다(App Store 3.1.2) */}
+      {selectedPlan != null && trialEndDateKey != null && (
+        <Text
+          size="e1"
+          shade={6}
+          align="center"
+          lineBreakStrategyIOS="hangul-word"
+          className="pt-2"
+          testID="subscription-trial-disclosure"
+        >
+          {t('paywall.trialDisclosure', {
+            date: formatDateKeyLabel(trialEndDateKey, 'monthDay', dateFormatContext),
+            price: t(PLAN_PRICE_LABEL_KEYS[selectedPlan.planType], {
+              price: selectedPlan.priceString,
+            }),
+          })}
+        </Text>
+      )}
     </>
   );
 }
@@ -68,6 +107,9 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
 function getPurchaseLabelKey(plan: SubscriptionPlan | null) {
   if (plan == null) {
     return 'paywall.subscribeButton' as const;
+  }
+  if (SubscriptionPolicy.hasFreeTrial(plan)) {
+    return 'paywall.startFreeTrial' as const;
   }
   return match(plan.planType)
     .with('annual', () => 'paywall.startAnnual' as const)

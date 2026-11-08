@@ -6,6 +6,7 @@ import { RestorePurchaseButton } from '@src/features/billing/subscription/compon
 import { SubscriptionOfflineActionsNotice } from '@src/features/billing/subscription/components/subscription-offline-actions-notice';
 import { SubscriptionReceipt } from '@src/features/billing/subscription/components/subscription-receipt';
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
+import { TrialTimeline } from '@src/features/billing/subscription/components/trial-timeline';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
@@ -83,6 +84,7 @@ SubscriptionScreen.Plans = function Plans() {
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
                   <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
+                  <TrialTimeline planId={chosenPlanId} className="mt-3" />
                 </Suspense>
               </QueryErrorBoundary>
 

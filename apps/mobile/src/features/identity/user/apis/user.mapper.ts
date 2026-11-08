@@ -20,6 +20,8 @@ export function toUser(dto: CurrentUserResponse): User {
       endsAt: toNullableInstant(dto.premiumEndsAt),
       periodEndsAt: toNullableInstant(dto.premiumPeriodEndsAt),
       willRenew: dto.willRenew,
+      // 1.15.0 전 서버로 되돌려도 체험이 아닌 것으로 읽는다
+      isTrial: dto.premiumIsTrial ?? false,
       bankedDays: dto.bankedPremiumDays,
       grantEndedAt: toNullableInstant(dto.premiumGrantEndedAt),
     },

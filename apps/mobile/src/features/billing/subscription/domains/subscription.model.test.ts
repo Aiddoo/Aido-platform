@@ -10,6 +10,7 @@ function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
     currencyCode: 'KRW',
     title: '월간',
     description: null,
+    freeTrial: null,
     ...overrides,
   };
 }
@@ -102,5 +103,96 @@ describe('getMonthlyEquivalent', () => {
 
     // Then
     expect(monthlyEquivalent).toBeCloseTo(expected, 2);
+  });
+});
+
+describe('getFreeTrialEndDateKey', () => {
+  it.each([
+    ['1개월 체험은 다음 달 같은 날에 끝난다', 'month', 1, '2026-11-09', '2026-12-09'],
+    [
+      '1월 31일에 시작한 1개월 체험은 평년 2월 말일에 끝난다',
+      'month',
+      1,
+      '2027-01-31',
+      '2027-02-28',
+    ],
+    [
+      '윤년 1월 31일에 시작한 1개월 체험은 2월 29일에 끝난다',
+      'month',
+      1,
+      '2028-01-31',
+      '2028-02-29',
+    ],
+    [
+      '윤년 2월 29일에 시작한 1년 체험은 다음 해 2월 28일에 끝난다',
+      'year',
+      1,
+      '2028-02-29',
+      '2029-02-28',
+    ],
+    ['7일 체험은 해를 넘겨 센다', 'day', 7, '2026-12-28', '2027-01-04'],
+    ['2주 체험은 14일 뒤에 끝난다', 'week', 2, '2026-11-09', '2026-11-23'],
+  ] as const)('%s', (_case, periodUnit, periodNumberOfUnits, todayKey, expected) => {
+    // Given
+    const plan = createPlan({ planType: 'annual', freeTrial: { periodUnit, periodNumberOfUnits } });
+
+    // When
+    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(plan, todayKey);
+
+    // Then
+    expect(endDateKey).toBe(expected);
+  });
+
+  it('체험 자격이 없으면 끝나는 날이 없다', () => {
+    // When
+    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(annual, '2026-11-09');
+
+    // Then
+    expect(endDateKey).toBeNull();
+  });
+});
+
+describe('getFreeTrialReminderDateKey', () => {
+  it('체험이 끝나기 3일 전을 알림 날로 반환한다', () => {
+    // Given
+    const plan = createPlan({ freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 } });
+
+    // When
+    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, '2028-02-01');
+
+    // Then
+    // 윤년 3월 1일에 끝나므로 2월 27일
+    expect(reminderDateKey).toBe('2028-02-27');
+  });
+
+  it.each([
+    ['3일 체험이면 알림 날이 오늘이라', 3],
+    ['하루 체험이면 알림 날이 지나', 1],
+  ] as const)('%s 알림이 없다', (_case, days) => {
+    // Given
+    const plan = createPlan({ freeTrial: { periodUnit: 'day', periodNumberOfUnits: days } });
+
+    // When
+    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, '2026-11-09');
+
+    // Then
+    expect(reminderDateKey).toBeNull();
+  });
+});
+
+describe('hasFreeTrial', () => {
+  it.each([
+    [
+      '스토어가 체험을 줄 수 있다고 했으면 true',
+      { periodUnit: 'month', periodNumberOfUnits: 1 },
+      true,
+    ],
+    ['자격이 없으면 false', null, false],
+  ] as const)('%s를 반환한다', (_case, freeTrial, expected) => {
+    // When
+    const result = SubscriptionPolicy.hasFreeTrial(createPlan({ freeTrial }));
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

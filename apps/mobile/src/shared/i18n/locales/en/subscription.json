@@ -5,7 +5,20 @@
     "perYear": "/year",
     "perMonth": "/month",
     "discount": "{{percent}}% off",
-    "monthlyEquivalent": "About {{price}}/month"
+    "monthlyEquivalent": "About {{price}}/month",
+    "freeTrial": "{{period}} free",
+    "pricePerYear": "{{price}}/year",
+    "pricePerMonth": "{{price}}/month"
+  },
+  "trialPeriod": {
+    "day_one": "{{count}} day",
+    "day_other": "{{count}} days",
+    "week_one": "{{count}} week",
+    "week_other": "{{count}} weeks",
+    "month_one": "{{count}} month",
+    "month_other": "{{count}} months",
+    "year_one": "{{count}} year",
+    "year_other": "{{count}} years"
   },
   "toast": {
     "purchaseSuccess": "You're subscribed!",
@@ -14,7 +27,9 @@
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
     "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
-    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
+    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is",
+    "trialStartSuccess": "Your free trial has started!",
+    "trialStartSuccessWithReward": "Your free trial has started. Your remaining invite reward continues after your subscription ends"
   },
   "benefits": {
     "aiParsing": {
@@ -77,6 +92,8 @@
     "subscribeButton": "Subscribe",
     "startAnnual": "Start annual plan",
     "startMonthly": "Start monthly plan",
+    "startFreeTrial": "Start {{period}} free",
+    "trialDisclosure": "{{price}} from {{date}} · Cancel anytime",
     "renewalNotice": {
       "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
       "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
@@ -87,18 +104,37 @@
     "privacyLink": "Privacy Policy",
     "termsSuffix": "."
   },
+  "trialTimeline": {
+    "title": "Your free trial",
+    "today": "Today",
+    "start": "Free trial starts",
+    "reminder": "We'll remind you {{days}} days before it ends",
+    "charge": "{{price}} charged",
+    "chargeHint": "Cancel before then and you won't be charged"
+  },
   "endingNotice": {
     "badgeTomorrow": "Tomorrow",
     "badgeToday": "Today",
     "tomorrow": "Your Premium ends tomorrow. Subscribe to keep Premium going",
     "today": "Your Premium ends today. Subscribe to keep Premium going",
     "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
-    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going"
+    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going",
+    "badgeDaysLeft": "In {{days}} days",
+    "trialRenewing": "Your annual plan starts in {{days}} days",
+    "trialRenewingTomorrow": "Your annual plan starts tomorrow",
+    "trialRenewingToday": "Your annual plan starts today",
+    "trialCancelled": "Your free trial ends in {{days}} days",
+    "trialCancelledTomorrow": "Your free trial ends tomorrow",
+    "trialCancelledToday": "Your free trial ends today"
   },
   "receipt": {
     "paid": {
       "title": "Premium active",
       "description": "You're enjoying all Premium features"
+    },
+    "trial": {
+      "title": "Free trial",
+      "description": "You get every Premium feature during your trial"
     },
     "reward": {
       "title": "Premium from an invite reward",
@@ -115,6 +151,9 @@
       "until": "Until {{date}}",
       "nextBillingDate": "Next billing date",
       "renewalPending": "Confirming renewal",
+      "trialEndsOn": "Trial ends",
+      "firstBillingDate": "First payment",
+      "dateWithPrice": "{{date}} · {{price}}",
       "subscriptionEndsOn": "Subscription ends",
       "subscriptionStatus": "Subscription status",
       "autoRenewalOn": "Auto-renews",
@@ -132,7 +171,8 @@
       "returnsToFreePlan": "After {{date}}, you'll go back to the free plan",
       "rewardStartsAfterSubscription_one": "When your subscription ends, your {{count}} reward day starts",
       "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
-      "manageAutoRenewalInStore": "You can change auto-renew in your store settings"
+      "manageAutoRenewalInStore": "You can change auto-renew in your store settings",
+      "cancelTrialInStore": "Cancel in your store subscription settings before the trial ends and you won't be charged"
     }
   },
   "failure": {

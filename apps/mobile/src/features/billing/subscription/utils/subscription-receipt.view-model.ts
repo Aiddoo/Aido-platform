@@ -8,13 +8,19 @@ import { match } from 'ts-pattern';
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
 type PremiumEndingNotice = 'tomorrow' | 'today';
 
-/** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
-type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';
+/** 체험 끝까지 남은 날과 그날 결제되는지. 결제 여부로 "구독이 시작돼요"/"체험이 끝나요"가 갈린다 */
+interface TrialEndingNotice {
+  daysLeft: number;
+  willRenew: boolean;
+}
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
   | { type: 'rewardRecord'; endsAt: Instant }
   | { type: 'nextBillingDate'; date: Instant }
+  | { type: 'trialEndsOn'; date: Instant }
+  /** 금액은 서버가 모르므로 화면이 스토어 요금제에서 붙인다 */
+  | { type: 'firstBillingDate'; date: Instant }
   /** 결제 예정 시각이 지났는데 스토어 갱신이 아직 서버에 반영되지 않았다(최대 유예 3시간) */
   | { type: 'renewalPending' }
   | { type: 'subscriptionEndsOn'; date: Instant }
@@ -28,7 +34,8 @@ export type SubscriptionReceiptRow =
 type SubscriptionReceiptFootnote =
   | { type: 'returnsToFreePlan'; date: Instant }
   | { type: 'rewardStartsAfterSubscription'; days: number }
-  | { type: 'manageAutoRenewalInStore' };
+  | { type: 'manageAutoRenewalInStore' }
+  | { type: 'cancelTrialInStore' };
 
 type SubscriptionReceiptAction = 'subscribe' | 'manage';
 
@@ -38,12 +45,16 @@ interface SubscriptionReceiptContents {
   primaryAction: SubscriptionReceiptAction | null;
 }
 
-/** 관리자는 기간이 끝나도 모든 기능을 쓰므로 끝남 안내가 없다 */
+/** 영수증 출처는 관리자, 스토어 구독(결제·무료 체험), 초대 보상 기간이다. 관리자는 기간이 끝나도 모든 기능을 쓰므로 끝남 안내가 없다 */
 export type SubscriptionReceiptViewModel =
   | (SubscriptionReceiptContents & { variant: 'admin'; endingNotice: null })
   | (SubscriptionReceiptContents & {
-      variant: Exclude<SubscriptionReceiptVariant, 'admin'>;
+      variant: 'paid' | 'reward';
       endingNotice: PremiumEndingNotice | null;
+    })
+  | (SubscriptionReceiptContents & {
+      variant: 'trial';
+      endingNotice: TrialEndingNotice | null;
     });
 
 interface SubscriptionReceiptContext {
@@ -135,6 +146,68 @@ function toPaidReceipt(
   };
 }
 
+function toTrialBillingRow(
+  access: PremiumAccess,
+  periodEndsAt: Instant,
+  now: Instant,
+): SubscriptionReceiptRow[] {
+  if (!access.willRenew) {
+    return [];
+  }
+  return hasInstantPassed(periodEndsAt, now)
+    ? [{ type: 'renewalPending' }]
+    : [{ type: 'firstBillingDate', date: periodEndsAt }];
+}
+
+function toTrialRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow[] {
+  const { periodEndsAt } = access;
+  if (periodEndsAt == null) {
+    return [];
+  }
+
+  return [
+    { type: 'trialEndsOn', date: periodEndsAt },
+    ...toTrialBillingRow(access, periodEndsAt, now),
+    { type: 'autoRenewal', willRenew: access.willRenew },
+    ...toBankedRows(access, access.willRenew ? null : access.endsAt),
+  ];
+}
+
+/** 체험 중엔 "언제까지 해지하면 결제되지 않나"가 가장 궁금해 보상 안내보다 먼저 보인다(보상 일수는 행에 있다) */
+function toTrialFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | null {
+  if (access.willRenew) {
+    return { type: 'cancelTrialInStore' };
+  }
+  if (PremiumAccessPolicy.hasBankedDays(access)) {
+    return { type: 'rewardStartsAfterSubscription', days: access.bankedDays };
+  }
+  return access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt };
+}
+
+function toTrialEndingNotice(
+  access: PremiumAccess,
+  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+): TrialEndingNotice | null {
+  const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(access, now, timeZone);
+  if (daysLeft == null || !PremiumAccessPolicy.isTrialEndingSoon(access, now, timeZone)) {
+    return null;
+  }
+  return { daysLeft, willRenew: access.willRenew };
+}
+
+function toTrialReceipt(
+  access: PremiumAccess,
+  { now, timeZone }: SubscriptionReceiptContext,
+): SubscriptionReceiptViewModel {
+  return {
+    variant: 'trial',
+    rows: toTrialRows(access, now),
+    footnote: toTrialFootnote(access),
+    primaryAction: 'manage',
+    endingNotice: toTrialEndingNotice(access, { now, timeZone }),
+  };
+}
+
 function toRewardRows(
   access: PremiumAccess,
   { now, timeZone }: SubscriptionReceiptContext,
@@ -185,6 +258,10 @@ export function toSubscriptionReceiptViewModel(
     .when(
       () => PremiumAccessPolicy.isGrantOnly(access),
       () => toRewardReceipt(access, context),
+    )
+    .when(
+      () => PremiumAccessPolicy.isTrial(access),
+      () => toTrialReceipt(access, context),
     )
     .otherwise(() => toPaidReceipt(access, context));
 }

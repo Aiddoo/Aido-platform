@@ -17,12 +17,16 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
+import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
@@ -37,9 +41,12 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
   const premium = getPremiumBenefitAmounts();
+  const firstBillingPrice = useFirstBillingPrice(
+    rows.some((row) => row.type === 'firstBillingDate'),
+  );
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
-  // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
-  const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';
+  // 스토어 구독(체험 포함)의 결제일은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
+  const receiptDateLabel = variant === 'paid' || variant === 'trial' ? 'fullDate' : 'monthDay';
   const formatReceiptDate = (date: Instant) =>
     formatDateLabel(date, receiptDateLabel, dateFormatContext);
 
@@ -81,7 +88,12 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
 
         <VStack>
           {rows.map((row) => (
-            <ReceiptDetailRow key={row.type} row={row} formatDate={formatReceiptDate} />
+            <ReceiptDetailRow
+              key={row.type}
+              row={row}
+              formatDate={formatReceiptDate}
+              firstBillingPrice={firstBillingPrice}
+            />
           ))}
         </VStack>
 
@@ -97,6 +109,7 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
               .with({ type: 'manageAutoRenewalInStore' }, () =>
                 t('receipt.footnote.manageAutoRenewalInStore'),
               )
+              .with({ type: 'cancelTrialInStore' }, () => t('receipt.footnote.cancelTrialInStore'))
               .exhaustive()}
           </Text>
         )}
@@ -192,14 +205,36 @@ SubscriptionReceipt.Loading = function Loading() {
   );
 };
 
+/**
+ * 서버는 체험 뒤 금액을 몰라 스토어 요금제에서 붙인다. 체험은 연간 요금제에만 두므로(스토어 설정) 연간 가격이다.
+ * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜만 보인다
+ */
+function useFirstBillingPrice(isEnabled: boolean) {
+  const { t } = useTranslation('subscription');
+  const { data: availability } = useQuery({
+    ...useGetOfferingsQueryOptions(),
+    enabled: isEnabled,
+    throwOnError: false,
+  });
+  const annualPlan =
+    availability?.status === 'available'
+      ? SubscriptionPolicy.findPlanByType(availability.offering.plans, 'annual')
+      : null;
+
+  return annualPlan == null
+    ? null
+    : t(PLAN_PRICE_LABEL_KEYS.annual, { price: annualPlan.priceString });
+}
+
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
   formatDate: (date: Instant) => string;
+  firstBillingPrice: string | null;
 }
 
 type ReceiptValueTone = 'default' | 'brand' | 'muted';
 
-function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
+function ReceiptDetailRow({ row, formatDate, firstBillingPrice }: ReceiptDetailRowProps) {
   const { t } = useTranslation('subscription');
   const { label, value, tone } = match<
     SubscriptionReceiptRow,
@@ -218,6 +253,19 @@ function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
     .with({ type: 'nextBillingDate' }, ({ date }) => ({
       label: t('receipt.rows.nextBillingDate'),
       value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'trialEndsOn' }, ({ date }) => ({
+      label: t('receipt.rows.trialEndsOn'),
+      value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'firstBillingDate' }, ({ date }) => ({
+      label: t('receipt.rows.firstBillingDate'),
+      value:
+        firstBillingPrice == null
+          ? formatDate(date)
+          : t('receipt.rows.dateWithPrice', { date: formatDate(date), price: firstBillingPrice }),
       tone: 'default',
     }))
     .with({ type: 'renewalPending' }, () => ({

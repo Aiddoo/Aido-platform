@@ -14,6 +14,7 @@ export function createPremiumAccess(overrides?: Partial<PremiumAccess>): Premium
     endsAt: toInstant('2026-11-01T05:30:00Z'),
     periodEndsAt: toInstant('2026-11-01T05:30:00Z'),
     willRenew: false,
+    isTrial: false,
     bankedDays: 0,
     grantEndedAt: null,
     ...overrides,
@@ -105,5 +106,15 @@ export const PREMIUM_ME_EXAMPLES = {
     willRenew: true,
     bankedPremiumDays: 5,
     premiumGrantEndedAt: null,
+  }),
+  /** G. 보상 기간 중에 연간 무료 체험을 시작했다. 체험 끝(첫 결제일)이 스토어 만료이고 남은 보상 5일이 그 뒤로 쌓였다 */
+  trialDuringReward: premiumMe({
+    premiumSource: 'STORE',
+    premiumPeriodEndsAt: '2028-03-26T04:00:00.000Z',
+    premiumEndsAt: '2028-03-31T07:00:00.000Z',
+    willRenew: true,
+    bankedPremiumDays: 5,
+    premiumGrantEndedAt: null,
+    premiumIsTrial: true,
   }),
 } as const satisfies Record<string, CurrentUserResponse>;

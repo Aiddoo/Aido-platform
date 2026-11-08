@@ -1,5 +1,15 @@
 import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
-import Purchases, { PURCHASES_ERROR_CODE } from 'react-native-purchases';
+import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
+  PACKAGE_TYPE,
+  PERIOD_UNIT,
+  PRODUCT_TYPE,
+  PURCHASES_ERROR_CODE,
+  type PricingPhase,
+  type PurchasesPackage,
+  type PurchasesStoreProduct,
+  type SubscriptionOption,
+} from 'react-native-purchases';
 
 import {
   createRevenueCatPurchasesGateway,
@@ -25,6 +35,7 @@ jest.mock('react-native-purchases', () => ({
     configure: jest.fn(),
     setLogLevel: jest.fn(),
     getOfferings: jest.fn(),
+    checkTrialOrIntroductoryPriceEligibility: jest.fn(),
     purchasePackage: jest.fn(),
     addCustomerInfoUpdateListener: jest.fn(),
     removeCustomerInfoUpdateListener: jest.fn(),
@@ -34,6 +45,118 @@ jest.mock('react-native-purchases', () => ({
 }));
 
 const purchases = jest.mocked(Purchases);
+
+const ANNUAL_PRODUCT_ID = 'com.aido.pro.yearly';
+
+function createStoreProduct(overrides: Partial<PurchasesStoreProduct> = {}): PurchasesStoreProduct {
+  return {
+    identifier: ANNUAL_PRODUCT_ID,
+    description: '',
+    title: 'Aido Pro',
+    price: 29_900,
+    priceString: '₩29,900',
+    pricePerWeek: null,
+    pricePerMonth: null,
+    pricePerYear: null,
+    pricePerWeekString: null,
+    pricePerMonthString: null,
+    pricePerYearString: null,
+    currencyCode: 'KRW',
+    introPrice: null,
+    discounts: null,
+    productCategory: null,
+    productType: PRODUCT_TYPE.AUTO_RENEWABLE_SUBSCRIPTION,
+    subscriptionPeriod: 'P1Y',
+    defaultOption: null,
+    subscriptionOptions: null,
+    presentedOfferingIdentifier: null,
+    presentedOfferingContext: null,
+    installmentsInfo: null,
+    ...overrides,
+  };
+}
+
+/** App Store 무료 체험은 가격 0인 소개 가격으로 실린다 */
+const APP_STORE_FREE_MONTH = {
+  price: 0,
+  priceString: '₩0',
+  cycles: 1,
+  period: 'P1M',
+  periodUnit: 'MONTH',
+  periodNumberOfUnits: 1,
+};
+
+function createPricingPhase(
+  amountMicros: number,
+  iso8601: string,
+  unit: PERIOD_UNIT,
+): PricingPhase {
+  return {
+    billingPeriod: { unit, value: 1, iso8601 },
+    recurrenceMode: null,
+    billingCycleCount: null,
+    price: { formatted: amountMicros === 0 ? '₩0' : '₩29,900', amountMicros, currencyCode: 'KRW' },
+    offerPaymentMode: null,
+  };
+}
+
+function createPlayOption(freePhase: PricingPhase | null): SubscriptionOption {
+  const fullPricePhase = createPricingPhase(29_900_000_000, 'P1Y', PERIOD_UNIT.YEAR);
+  return {
+    id: freePhase == null ? 'yearly-base' : 'yearly-base:annual-trial-1m',
+    storeProductId: `${ANNUAL_PRODUCT_ID}:yearly-base`,
+    productId: ANNUAL_PRODUCT_ID,
+    pricingPhases: freePhase == null ? [fullPricePhase] : [freePhase, fullPricePhase],
+    tags: [],
+    isBasePlan: freePhase == null,
+    billingPeriod: fullPricePhase.billingPeriod,
+    isPrepaid: false,
+    fullPricePhase,
+    freePhase,
+    introPhase: null,
+    presentedOfferingIdentifier: null,
+    presentedOfferingContext: null,
+    installmentsInfo: null,
+  };
+}
+
+function givenOffering(product: PurchasesStoreProduct) {
+  const annualPackage: PurchasesPackage = {
+    identifier: '$rc_annual',
+    packageType: PACKAGE_TYPE.ANNUAL,
+    product,
+    offeringIdentifier: 'default',
+    presentedOfferingContext: {
+      offeringIdentifier: 'default',
+      placementIdentifier: null,
+      targetingContext: null,
+    },
+    webCheckoutUrl: null,
+  };
+  purchases.getOfferings.mockResolvedValue({
+    all: {},
+    current: {
+      identifier: 'default',
+      serverDescription: '',
+      metadata: {},
+      availablePackages: [annualPackage],
+      lifetime: null,
+      annual: annualPackage,
+      sixMonth: null,
+      threeMonth: null,
+      twoMonth: null,
+      monthly: null,
+      weekly: null,
+      webCheckoutUrl: null,
+    },
+  });
+}
+
+function givenIntroEligibility(status: INTRO_ELIGIBILITY_STATUS) {
+  purchases.checkTrialOrIntroductoryPriceEligibility.mockResolvedValue({
+    [ANNUAL_PRODUCT_ID]: { status, description: '' },
+  });
+}
 
 /** RevenueCat SDK가 던지는 오류 모양(PurchasesError)만 흉내 낸다 */
 const sdkError = (code: PURCHASES_ERROR_CODE) => ({ code, message: 'sdk message' });
@@ -118,6 +241,112 @@ describe('createRevenueCatPurchasesGateway', () => {
     // Then
     expect(result).toEqual({ type: 'package-not-found' });
     expect(purchases.purchasePackage).not.toHaveBeenCalled();
+  });
+
+  describe('무료 체험', () => {
+    const ONE_MONTH = { periodUnit: 'MONTH', periodNumberOfUnits: 1 };
+
+    async function getAnnualFreeTrial() {
+      const offering = await revenueCatPurchasesGateway.getOffering();
+      return offering?.packages[0]?.product.freeTrial;
+    }
+
+    it('App Store 무료 체험에 자격이 있으면 체험 기간을 싣는다', async () => {
+      // Given
+      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+      givenIntroEligibility(INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE);
+
+      // When
+      const freeTrial = await getAnnualFreeTrial();
+
+      // Then
+      expect(freeTrial).toEqual(ONE_MONTH);
+      expect(purchases.checkTrialOrIntroductoryPriceEligibility).toHaveBeenCalledWith([
+        ANNUAL_PRODUCT_ID,
+      ]);
+    });
+
+    it.each([
+      ['이미 체험했으면', INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_INELIGIBLE],
+      ['스토어가 자격을 모르면', INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_UNKNOWN],
+    ])(
+      'App Store 무료 체험이 있어도 %s 일반 가격만 보이게 체험을 싣지 않는다',
+      async (_case, status) => {
+        // Given
+        givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+        givenIntroEligibility(status);
+
+        // When
+        const freeTrial = await getAnnualFreeTrial();
+
+        // Then
+        expect(freeTrial).toBeNull();
+      },
+    );
+
+    it('자격 확인이 실패해도 요금제는 받고 체험만 싣지 않는다', async () => {
+      // Given
+      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+      purchases.checkTrialOrIntroductoryPriceEligibility.mockRejectedValue(new Error('boom'));
+
+      // When
+      const offering = await revenueCatPurchasesGateway.getOffering();
+
+      // Then
+      expect(offering?.packages[0]?.product).toMatchObject({ price: 29_900, freeTrial: null });
+    });
+
+    it('유료 소개 가격은 무료 체험이 아니라 자격을 묻지 않는다', async () => {
+      // Given
+      givenOffering(
+        createStoreProduct({
+          introPrice: { ...APP_STORE_FREE_MONTH, price: 9_900, priceString: '₩9,900' },
+        }),
+      );
+
+      // When
+      const freeTrial = await getAnnualFreeTrial();
+
+      // Then
+      expect(freeTrial).toBeNull();
+      expect(purchases.checkTrialOrIntroductoryPriceEligibility).not.toHaveBeenCalled();
+    });
+
+    it('Google Play 기본 옵션에 무료 단계가 있으면 자격이 있어 체험 기간을 싣는다', async () => {
+      // Given
+      const option = createPlayOption(createPricingPhase(0, 'P1M', PERIOD_UNIT.MONTH));
+      givenOffering(
+        createStoreProduct({
+          defaultOption: option,
+          subscriptionOptions: [option],
+          introPrice: APP_STORE_FREE_MONTH,
+        }),
+      );
+
+      // When
+      const freeTrial = await getAnnualFreeTrial();
+
+      // Then
+      expect(freeTrial).toEqual(ONE_MONTH);
+      expect(purchases.checkTrialOrIntroductoryPriceEligibility).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['기본 옵션에 무료 단계가 없으면', createPlayOption(null)],
+      [
+        '무료 단계의 기간 단위를 모르면',
+        createPlayOption(createPricingPhase(0, 'P1M', PERIOD_UNIT.UNKNOWN)),
+      ],
+    ])('Google Play %s 체험을 싣지 않는다', async (_case, option) => {
+      // Given
+      givenOffering(createStoreProduct({ defaultOption: option, subscriptionOptions: [option] }));
+
+      // When
+      const freeTrial = await getAnnualFreeTrial();
+
+      // Then
+      expect(freeTrial).toBeNull();
+    });
   });
 
   it('익명 사용자면 SDK 로그아웃을 부르지 않는다', async () => {

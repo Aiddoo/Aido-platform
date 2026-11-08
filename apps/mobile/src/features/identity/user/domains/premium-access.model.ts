@@ -1,4 +1,8 @@
-import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE } from '@aido/api/vocabulary';
+import {
+  PREMIUM_GRANT_ENDING_NOTICE_DAYS,
+  PREMIUM_SOURCE,
+  PREMIUM_TRIAL_ENDING_NOTICE_DAYS,
+} from '@aido/api/vocabulary';
 import {
   calculateCalendarDaysLeft,
   hasInstantPassed,
@@ -15,6 +19,8 @@ export const premiumAccessSchema = z.object({
   /** 지금 출처(스토어 구독 또는 진행 중인 보상 기간)만 끝나는 시각(서버 premiumPeriodEndsAt) */
   periodEndsAt: instantSchema.nullable(),
   willRenew: z.boolean(),
+  /** 스토어 구독이 무료 체험 기간인지(서버 premiumIsTrial). 체험 끝은 periodEndsAt이다 */
+  isTrial: z.boolean(),
   /** 지금 기간이 끝난 뒤 받은 순서대로 이어서 시작하는 보상 일수. 출처와 상관없이 있을 수 있다 */
   bankedDays: z.int().nonnegative(),
   /** 프리미엄이 아닐 때 최근 PREMIUM_GRANT_ENDED_WINDOW_DAYS일 안에 끝난 마지막 보상 기간의 끝. 그 뒤로는 서버가 null로 보낸다 */
@@ -29,6 +35,11 @@ function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
 /** 스토어 구독으로 프리미엄을 쓰는 중이라 구독을 다시 권하지 않는다 */
 function isStoreSubscribed(access: Pick<PremiumAccess, 'source'>) {
   return access.source === PREMIUM_SOURCE.STORE;
+}
+
+/** 서버는 STORE일 때만 체험이라고 보낸다. 출처가 바뀐 캐시가 섞여도 스토어 구독일 때만 체험으로 본다 */
+function isTrial(access: Pick<PremiumAccess, 'source' | 'isTrial'>) {
+  return isStoreSubscribed(access) && access.isTrial;
 }
 
 function isGrantOnly(access: Pick<PremiumAccess, 'source'>) {
@@ -66,6 +77,34 @@ function isExpiringSoon(
   );
 }
 
+/** 체험이 끝나는 날(=첫 결제일)까지 남은 달력 일수. 체험이 아니면 null이다 */
+function getTrialDaysLeft(
+  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'periodEndsAt'>,
+  now: Instant,
+  timeZone: string,
+) {
+  if (!isTrial(access) || access.periodEndsAt == null) {
+    return null;
+  }
+  return calculateCalendarDaysLeft(access.periodEndsAt, now, timeZone);
+}
+
+/** 자동 갱신과 상관없이 체험 끝을 서버 체험 알림과 같은 날수부터 앱 안에서도 알린다 */
+function isTrialEndingSoon(
+  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'periodEndsAt'>,
+  now: Instant,
+  timeZone: string,
+) {
+  const daysLeft = getTrialDaysLeft(access, now, timeZone);
+  if (access.periodEndsAt == null || daysLeft == null) {
+    return false;
+  }
+  return (
+    !hasInstantPassed(access.periodEndsAt, now) &&
+    isWithinNoticeDays(daysLeft, PREMIUM_TRIAL_ENDING_NOTICE_DAYS)
+  );
+}
+
 /** 무료 페이월에서 "초대 보상 프리미엄이 끝났어요"를 붙일 시각. 아직 프리미엄이면 null이다 */
 function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEndedAt'>) {
   return access.source == null ? access.grantEndedAt : null;
@@ -94,16 +133,20 @@ function hasChanged(previous: PremiumAccess, next: PremiumAccess) {
     !isSameInstant(previous.endsAt, next.endsAt) ||
     !isSameInstant(previous.periodEndsAt, next.periodEndsAt) ||
     previous.willRenew !== next.willRenew ||
+    previous.isTrial !== next.isTrial ||
     previous.bankedDays !== next.bankedDays
   );
 }
 
 export const PremiumAccessPolicy = {
   isStoreSubscribed,
+  isTrial,
   isGrantOnly,
   hasBankedDays,
   getDaysLeft,
   isExpiringSoon,
+  getTrialDaysLeft,
+  isTrialEndingSoon,
   getRecentGrantEndedAt,
   hasEndedSince,
   hasChanged,

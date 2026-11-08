@@ -3,6 +3,7 @@ import {
   type PurchaseFailureKind,
   type PurchasePackage,
   type PurchasePackageType,
+  type PurchasePeriodUnit,
   type PurchasesGateway,
   PurchasesGatewayError,
   type PurchaseStore,
@@ -10,10 +11,12 @@ import {
 import { getErrorMessage } from '@src/shared/errors';
 import Purchases, {
   type CustomerInfo,
+  INTRO_ELIGIBILITY_STATUS,
   LOG_LEVEL,
   PACKAGE_TYPE,
   PURCHASES_ERROR_CODE,
   type PurchasesPackage,
+  type PurchasesStoreProduct,
   type Store,
 } from 'react-native-purchases';
 import { match, P } from 'ts-pattern';
@@ -103,16 +106,88 @@ function toPurchaseStatus(info: CustomerInfo): PurchaseStatus {
   };
 }
 
-function toPurchasePackage(rcPackage: PurchasesPackage): PurchasePackage {
+const purchasePeriodUnitSchema = z.enum([
+  'DAY',
+  'WEEK',
+  'MONTH',
+  'YEAR',
+] as const satisfies readonly PurchasePeriodUnit[]);
+
+type PurchaseFreeTrial = PurchasePackage['product']['freeTrial'];
+
+/** 단위를 모르면(UNKNOWN) 체험 기간을 안내할 수 없어 체험이 없는 것으로 본다 */
+function toFreeTrial(periodUnit: string, periodNumberOfUnits: number): PurchaseFreeTrial {
+  const parsedUnit = purchasePeriodUnitSchema.safeParse(periodUnit);
+  if (!parsedUnit.success || periodNumberOfUnits <= 0) {
+    return null;
+  }
+  return { periodUnit: parsedUnit.data, periodNumberOfUnits };
+}
+
+/** defaultOption은 Google Play에만 있고, SDK가 자격 있는 혜택을 기본 옵션으로 고르므로 무료 단계가 있으면 자격이 있다 */
+function toPlayFreeTrial(product: PurchasesStoreProduct): PurchaseFreeTrial {
+  const freePhase = product.defaultOption?.freePhase;
+  if (freePhase == null) {
+    return null;
+  }
+  return toFreeTrial(freePhase.billingPeriod.unit, freePhase.billingPeriod.value);
+}
+
+/** App Store 무료 체험은 가격 0인 소개 가격이다. 상품에 실려 있어도 자격은 따로 물어야 한다 */
+function hasAppStoreFreeTrialOffer(product: PurchasesStoreProduct) {
+  return product.defaultOption == null && product.introPrice?.price === 0;
+}
+
+/** SDK 안내대로 ELIGIBLE만 체험을 보이고, UNKNOWN·INELIGIBLE·확인 실패는 일반 가격만 보인다 */
+async function findIntroEligibleProductIds(
+  products: readonly PurchasesStoreProduct[],
+): Promise<ReadonlySet<string>> {
+  const productIds = products.filter(hasAppStoreFreeTrialOffer).map(({ identifier }) => identifier);
+  if (productIds.length === 0) {
+    return new Set();
+  }
+  try {
+    const eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility(productIds);
+    return new Set(
+      productIds.filter(
+        (productId) =>
+          eligibility[productId]?.status ===
+          INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+      ),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function toAppStoreFreeTrial(
+  product: PurchasesStoreProduct,
+  introEligibleProductIds: ReadonlySet<string>,
+): PurchaseFreeTrial {
+  const { introPrice } = product;
+  if (introPrice == null || !introEligibleProductIds.has(product.identifier)) {
+    return null;
+  }
+  return toFreeTrial(introPrice.periodUnit, introPrice.periodNumberOfUnits);
+}
+
+function toPurchasePackage(
+  rcPackage: PurchasesPackage,
+  introEligibleProductIds: ReadonlySet<string>,
+): PurchasePackage {
+  const { product } = rcPackage;
   return {
     identifier: rcPackage.identifier,
     packageType: PURCHASE_PACKAGE_TYPE[rcPackage.packageType],
     product: {
-      priceString: rcPackage.product.priceString,
-      price: rcPackage.product.price,
-      currencyCode: rcPackage.product.currencyCode,
-      title: rcPackage.product.title,
-      description: rcPackage.product.description ?? null,
+      priceString: product.priceString,
+      price: product.price,
+      currencyCode: product.currencyCode,
+      title: product.title,
+      description: product.description ?? null,
+      freeTrial: hasAppStoreFreeTrialOffer(product)
+        ? toAppStoreFreeTrial(product, introEligibleProductIds)
+        : toPlayFreeTrial(product),
     },
   };
 }
@@ -159,9 +234,14 @@ export function createRevenueCatPurchasesGateway({
         if (current == null) {
           return null;
         }
+        const introEligibleProductIds = await findIntroEligibleProductIds(
+          current.availablePackages.map(({ product }) => product),
+        );
         return {
           identifier: current.identifier,
-          packages: current.availablePackages.map(toPurchasePackage),
+          packages: current.availablePackages.map((rcPackage) =>
+            toPurchasePackage(rcPackage, introEligibleProductIds),
+          ),
         };
       }),
 

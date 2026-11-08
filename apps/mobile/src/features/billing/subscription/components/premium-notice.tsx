@@ -8,24 +8,28 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import type { SubscriptionReceiptViewModel } from '../utils/subscription-receipt.view-model';
 
 type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 
-/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
+/** 체험은 끝나기 며칠 전부터, 그 밖의 프리미엄은 이어질 길이 없을 때 하루 안에 끝나면 알린다 */
 function Ending({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();
 
-  if (receipt.endingNotice == null) {
-    return null;
-  }
-  const { variant, endingNotice } = receipt;
-
   // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
-  const { badge, message } = match({ variant, endingNotice })
+  const notice = match(receipt)
+    .with({ endingNotice: null }, () => null)
+    .with({ variant: 'trial', endingNotice: P.nonNullable }, ({ endingNotice }) => ({
+      badge: match(endingNotice.daysLeft)
+        .with(0, () => t('endingNotice.badgeToday'))
+        .with(1, () => t('endingNotice.badgeTomorrow'))
+        .otherwise((days) => t('endingNotice.badgeDaysLeft', { days })),
+      message: t(getTrialEndingMessageKey(endingNotice), { days: endingNotice.daysLeft }),
+    }))
     .with({ variant: 'paid', endingNotice: 'today' }, () => ({
       badge: t('endingNotice.badgeToday'),
       message: t('endingNotice.paidToday'),
@@ -44,6 +48,11 @@ function Ending({ className }: PremiumNoticeProps) {
     }))
     .exhaustive();
 
+  if (notice == null) {
+    return null;
+  }
+  const { badge, message } = notice;
+
   return (
     <InlineAlert
       status="accent"
@@ -60,6 +69,22 @@ function Ending({ className }: PremiumNoticeProps) {
       title={message}
     />
   );
+}
+
+type TrialEndingNotice = NonNullable<
+  Extract<SubscriptionReceiptViewModel, { variant: 'trial' }>['endingNotice']
+>;
+
+/** 자동 갱신이 켜져 있으면 결제가, 꺼져 있으면 체험 끝이 사용자가 알아야 할 일이다 */
+function getTrialEndingMessageKey({ daysLeft, willRenew }: TrialEndingNotice) {
+  return match({ daysLeft, willRenew })
+    .with({ willRenew: true, daysLeft: 0 }, () => 'endingNotice.trialRenewingToday' as const)
+    .with({ willRenew: true, daysLeft: 1 }, () => 'endingNotice.trialRenewingTomorrow' as const)
+    .with({ willRenew: true }, () => 'endingNotice.trialRenewing' as const)
+    .with({ willRenew: false, daysLeft: 0 }, () => 'endingNotice.trialCancelledToday' as const)
+    .with({ willRenew: false, daysLeft: 1 }, () => 'endingNotice.trialCancelledTomorrow' as const)
+    .with({ willRenew: false }, () => 'endingNotice.trialCancelled' as const)
+    .exhaustive();
 }
 
 function GrantEnded({ className }: PremiumNoticeProps) {

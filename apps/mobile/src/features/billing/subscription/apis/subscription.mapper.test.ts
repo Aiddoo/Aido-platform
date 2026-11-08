@@ -14,6 +14,7 @@ function createPurchasePackage(overrides?: Partial<PurchasePackage>): PurchasePa
       currencyCode: 'KRW',
       title: 'Aido 프리미엄',
       description: null,
+      freeTrial: null,
     },
     ...overrides,
   };
@@ -36,6 +37,29 @@ describe('toSubscriptionOffering', () => {
     // Then
     expect(subscriptionOfferingSchema.parse(result)).toEqual(result);
     expect(result.plans.map((plan) => plan.planType)).toEqual(['monthly', 'annual']);
+  });
+
+  it.each([
+    [
+      '스토어 체험 기간을 요금제 체험으로 옮긴다',
+      { periodUnit: 'MONTH', periodNumberOfUnits: 1 },
+      { periodUnit: 'month', periodNumberOfUnits: 1 },
+    ],
+    ['체험 자격이 없으면 체험 없이 옮긴다', null, null],
+  ] as const)('%s', (_case, freeTrial, expected) => {
+    // Given
+    const storePackage = createPurchasePackage({ identifier: '$rc_annual', packageType: 'ANNUAL' });
+    const offering: PurchaseOffering = {
+      identifier: 'default',
+      packages: [{ ...storePackage, product: { ...storePackage.product, freeTrial } }],
+    };
+
+    // When
+    const result = toSubscriptionOffering(offering);
+
+    // Then
+    expect(subscriptionOfferingSchema.parse(result)).toEqual(result);
+    expect(result.plans[0]?.freeTrial).toEqual(expected);
   });
 
   it('월간·연간이 아닌 패키지는 요금제에서 뺀다', () => {
