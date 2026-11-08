@@ -61,7 +61,7 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
   const selectedTab = !isCompact && tab === 'todos' ? 'summary' : tab;
 
   return (
-    <VStack flex={1} gap={12} className="px-4 pt-2">
+    <VStack flex={1} gap={12}>
       <Stack.Screen options={{ title: '' }} />
       <VoiceNoteToolbar note={note} onMemoChanged={onMemoChanged} />
       <VoiceNoteResult.Title note={note} />
@@ -130,7 +130,7 @@ VoiceNoteResult.Title = function Title({ note }: { note: VoiceNote }) {
   return (
     <VStack gap={4}>
       <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-        {VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle')}
+        {VoiceNotePolicy.findDigestTitle(note) ?? t('result.defaultTitle')}
       </Text>
       <Text size="e1" shade={6} className="tabular-nums">
         {markCount > 0

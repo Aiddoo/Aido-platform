@@ -27,10 +27,14 @@ function VoiceNoteScreen() {
   return match(note)
     .with(P.nullish, () => <VoiceNoteScreen.NotFound />)
     .with({ digest: P.nullish }, (pending) => (
-      <VoiceNoteDigest note={pending} onMemoChanged={refreshMemos} />
+      <VStack flex={1} className="px-4 pt-2">
+        <VoiceNoteDigest note={pending} onMemoChanged={refreshMemos} />
+      </VStack>
     ))
     .with(P.nonNullable, (digested) => (
-      <VoiceNoteResult note={digested} onMemoChanged={refreshMemos} />
+      <VStack flex={1} className="px-4 pt-2">
+        <VoiceNoteResult note={digested} onMemoChanged={refreshMemos} />
+      </VStack>
     ))
     .exhaustive();
 }
@@ -47,7 +51,7 @@ VoiceNoteScreen.Loading = function Loading() {
         ))}
       </VStack>
     ))
-    .with(false, () => <VoiceNoteOffline />)
+    .with(false, () => <VoiceNoteOffline className="px-4" />)
     .exhaustive();
 };
 

@@ -38,7 +38,6 @@ export function RepeatHorizonHint() {
         hitSlop={{ top: 12, bottom: 12 }}
         accessibilityRole="button"
         accessibilityLabel={t('repeat.horizonInfo.label')}
-        className="mx-4 self-start"
         testID="repeat-horizon-hint"
       >
         <RepeatHintLine

@@ -30,7 +30,7 @@ export function VoiceNoteDigest({ note, onMemoChanged }: VoiceNoteDigestProps) {
   }
 
   return (
-    <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
+    <VStack flex={1} gap={12} className="pb-3">
       <Stack.Screen options={{ title: t('digest.readyTitle') }} />
       <VoiceNoteToolbar note={note} onMemoChanged={onMemoChanged} />
       <SentenceCaptionList sentences={note.sentences} className="min-h-24 flex-1" />
@@ -50,7 +50,7 @@ VoiceNoteDigest.Progress = function Progress({ note }: Pick<VoiceNoteDigestProps
   const { t } = useTranslation('voiceNote');
 
   return (
-    <VStack flex={1} gap={16} className="px-4 pb-3 pt-2" testID="voice-note-digesting">
+    <VStack flex={1} gap={16} className="pb-3" testID="voice-note-digesting">
       <Stack.Screen options={{ title: t('digest.title') }} />
       <DigestScanPreview
         paragraphs={note.sentences.slice(0, SCAN_PREVIEW_SENTENCES).map(({ text }) => text)}

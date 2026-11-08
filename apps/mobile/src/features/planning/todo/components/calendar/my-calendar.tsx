@@ -1,4 +1,5 @@
 import { useTodayKey } from '@src/shared/hooks/use-today';
+import { Box } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -27,7 +28,11 @@ export function MyCalendar() {
 
   const status = match({ isError: query.isError, isHorizonHintVisible })
     .with({ isError: true }, () => <Calendar.Error onRetry={() => query.refetch()} />)
-    .with({ isHorizonHintVisible: true }, () => <RepeatHorizonHint />)
+    .with({ isHorizonHintVisible: true }, () => (
+      <Box className="mx-4 items-start">
+        <RepeatHorizonHint />
+      </Box>
+    ))
     .otherwise(() => undefined);
 
   return <Calendar completions={query.data} status={status} />;
