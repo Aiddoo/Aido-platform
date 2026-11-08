@@ -98,20 +98,29 @@ describe('ConsentService', () => {
       });
       expect(result).toEqual({
         ok: true,
-        value: { marketingAgreedAt: toInstant(marketingAgreedAt) },
+        value: { marketingAgreedAt: toInstant(marketingAgreedAt), marketingWithdrawnAt: null },
       });
     });
 
-    it('철회 → marketingAgreedAt null', async () => {
+    it('철회 → marketingAgreedAt null, 서버가 처리한 철회 시각을 Instant로 변환', async () => {
       // Given
-      const dto = createUpdateMarketingConsentDto({ marketingAgreedAt: null });
+      const dto = createUpdateMarketingConsentDto({
+        marketingAgreedAt: null,
+        marketingWithdrawnAt: '2026-03-02T12:00:00.000Z',
+      });
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.updateMarketingConsent({ agreed: false });
 
       // Then
-      expect(result).toEqual({ ok: true, value: { marketingAgreedAt: null } });
+      expect(result).toEqual({
+        ok: true,
+        value: {
+          marketingAgreedAt: null,
+          marketingWithdrawnAt: toInstant('2026-03-02T12:00:00.000Z'),
+        },
+      });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {

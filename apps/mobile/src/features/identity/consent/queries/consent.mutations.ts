@@ -3,7 +3,7 @@ import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-conte
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateLabel } from '@src/shared/date/date-format';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant, type Instant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
@@ -46,6 +46,21 @@ function revertConsentFields(
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
     consent == null ? consent : { ...consent, ...pick(previousData, fields) },
   );
+}
+
+/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다 */
+function getConsentResultKey<TKey extends string>(
+  agreedAt: Instant | null,
+  withdrawnAt: Instant | null,
+  keys: { agreed: TKey; withdrawn: TKey },
+): { key: TKey; at: Instant } | null {
+  if (agreedAt != null) {
+    return { key: keys.agreed, at: agreedAt };
+  }
+  if (withdrawnAt != null) {
+    return { key: keys.withdrawn, at: withdrawnAt };
+  }
+  return null;
 }
 
 const AI_DATA_SHARING_FIELDS = [
@@ -138,11 +153,15 @@ export function useUpdateMarketingConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      // 정보통신망법 50조: 동의 결과를 전송자·일시와 함께 알린다. 일시는 서버가 기록한 값이다. 철회는 서버가 일시를 주지 않아 알리지 않는다
-      if (data.marketingAgreedAt != null) {
+      // 정보통신망법 50조: 동의·철회 결과를 전송자·일시와 함께 알린다. 일시는 서버가 처리한 값이고, 구 서버가 주지 않으면 알리지 않는다
+      const resultKey = getConsentResultKey(data.marketingAgreedAt, data.marketingWithdrawnAt, {
+        agreed: 'notification:consentResult.marketingAgreed',
+        withdrawn: 'notification:consentResult.marketingWithdrawn',
+      });
+      if (resultKey != null) {
         toast.success(
-          t('notification:consentResult.marketingAgreed', {
-            date: formatDateLabel(data.marketingAgreedAt, 'fullDate', dateFormatContext),
+          t(resultKey.key, {
+            date: formatDateLabel(resultKey.at, 'fullDate', dateFormatContext),
           }),
         );
       }
@@ -192,10 +211,18 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      if (data.marketingPushAgreedAt != null) {
+      const resultKey = getConsentResultKey(
+        data.marketingPushAgreedAt,
+        data.marketingPushWithdrawnAt,
+        {
+          agreed: 'notification:consentResult.marketingPushAgreed',
+          withdrawn: 'notification:consentResult.marketingPushWithdrawn',
+        },
+      );
+      if (resultKey != null) {
         toast.success(
-          t('notification:consentResult.marketingPushAgreed', {
-            date: formatDateLabel(data.marketingPushAgreedAt, 'fullDate', dateFormatContext),
+          t(resultKey.key, {
+            date: formatDateLabel(resultKey.at, 'fullDate', dateFormatContext),
           }),
         );
       }

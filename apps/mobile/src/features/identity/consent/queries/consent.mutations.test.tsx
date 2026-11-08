@@ -97,6 +97,29 @@ describe('마케팅 수신 동의 결과 알림', () => {
       await screen.findAllByText('2026년 3월 1일 아이두 마케팅 정보 수신에 동의했어요'),
     ).not.toHaveLength(0);
   });
+  it('철회하면 서버가 처리한 날짜로 결과를 알린다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(
+      ok(
+        createUpdateMarketingConsentDto({
+          marketingAgreedAt: null,
+          marketingWithdrawnAt: '2026-03-02T12:00:00.000Z',
+        }),
+      ),
+    );
+    const { updateMarketing } = await renderMarketing(httpClient);
+
+    // When
+    await act(async () => {
+      await updateMarketing(false);
+    });
+
+    // Then
+    expect(
+      await screen.findAllByText('2026년 3월 2일 아이두 마케팅 정보 수신 동의를 철회했어요'),
+    ).not.toHaveLength(0);
+  });
 });
 
 describe('마케팅 수신 동의를 연달아 바꿈', () => {

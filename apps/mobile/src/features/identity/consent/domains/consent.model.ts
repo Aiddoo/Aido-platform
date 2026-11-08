@@ -21,11 +21,14 @@ export type Consent = z.infer<typeof consentSchema>;
 
 const updateMarketingConsentResultSchema = z.object({
   marketingAgreedAt: instantSchema.nullable(),
+  /** 이번 요청으로 철회를 처리한 서버 시각. 동의했거나 구 서버면 null */
+  marketingWithdrawnAt: instantSchema.nullable(),
 });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
 
 const updateMarketingPushConsentResultSchema = z.object({
   marketingPushAgreedAt: instantSchema.nullable(),
+  marketingPushWithdrawnAt: instantSchema.nullable(),
 });
 export type UpdateMarketingPushConsentResult = z.infer<
   typeof updateMarketingPushConsentResultSchema

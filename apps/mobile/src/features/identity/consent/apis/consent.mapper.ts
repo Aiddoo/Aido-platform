@@ -29,13 +29,19 @@ export function toConsent(dto: ConsentEnvelope): Consent {
 export function toUpdateMarketingConsentResult(
   dto: UpdateMarketingConsentResponse,
 ): UpdateMarketingConsentResult {
-  return { marketingAgreedAt: toNullableInstant(dto.marketingAgreedAt) };
+  return {
+    marketingAgreedAt: toNullableInstant(dto.marketingAgreedAt),
+    marketingWithdrawnAt: toNullableInstant(dto.marketingWithdrawnAt ?? null),
+  };
 }
 
 export function toUpdateMarketingPushConsentResult(
   dto: UpdateMarketingPushConsentResponse,
 ): UpdateMarketingPushConsentResult {
-  return { marketingPushAgreedAt: toNullableInstant(dto.marketingPushAgreedAt) };
+  return {
+    marketingPushAgreedAt: toNullableInstant(dto.marketingPushAgreedAt),
+    marketingPushWithdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt ?? null),
+  };
 }
 
 export function toUpdateAiDataSharingConsentResult(
