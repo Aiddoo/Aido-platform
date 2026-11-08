@@ -72,6 +72,7 @@ describe('SubscriptionService', () => {
     service.subscribeCustomerInfo(listener);
 
     // When
+    // 새 스토어 값은 타입으로 만들 수 없어 문자열에서 읽는다
     const unknownStoreInfo = JSON.parse(
       '{"activeEntitlements":[{"store":"UNKNOWN_STORE","productIdentifier":"x"}]}',
     );

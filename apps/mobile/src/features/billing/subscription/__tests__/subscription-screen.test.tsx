@@ -62,6 +62,7 @@ function createEndingRewardState(): ScreenState {
   };
 }
 
+// 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인하는 것이 기본이다
 async function renderSubscriptionScreen(
   state: ScreenState | null,
   getOffering: () => Promise<PurchaseOffering | null> = () => new Promise(() => {}),

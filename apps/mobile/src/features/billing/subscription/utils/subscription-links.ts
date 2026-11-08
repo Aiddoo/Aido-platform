@@ -6,10 +6,16 @@ import {
 } from '../constants/subscription.constants';
 
 interface SubscriptionManagementTarget {
+  /** 스토어에서 결제한 활성 구독 상품 id */
   productId: string | null;
+  /** Android 패키지 이름 */
   applicationId: string | null;
 }
 
+/**
+ * 스토어의 구독 관리 주소. Android는 상품 id를 알면 그 구독 페이지를, 모르면 구독 목록을 연다.
+ * 스토어가 없는 플랫폼은 null이다.
+ */
 export function createManagementUrl(
   platform: string,
   { productId, applicationId }: SubscriptionManagementTarget,

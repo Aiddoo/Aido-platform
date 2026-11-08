@@ -17,12 +17,17 @@ interface EmailVerificationCodeStepProps extends Pick<
   'isSeparated'
 > {
   email: string;
+  /** 코드 확인 요청이 진행 중인지. 부모의 mutation 상태를 넘긴다 */
   isVerifying?: boolean;
+  /** 재발송 요청이 진행 중인지. 부모의 mutation 상태를 넘긴다 */
   isResending?: boolean;
+  /** 코드를 모두 입력하면 호출한다. reject하면 입력을 비우고 오류 상태로 표시한다. */
   onComplete: (code: string) => Promise<unknown>;
+  /** 코드를 다시 보낸다. 성공하면 retryAfterSeconds(없으면 기본값)만큼 재발송을 막는다. */
   onResend: () => Promise<{ retryAfterSeconds?: number }>;
 }
 
+/** 이메일로 받은 인증 코드를 입력·재발송하는 단계. 검증과 발송 mutation은 화면이 소유한다. */
 export function EmailVerificationCodeStep({
   email,
   onComplete,
@@ -91,7 +96,7 @@ export function EmailVerificationCodeStep({
             isInvalid={isInvalid}
           />
 
-          {/* 확인 중 줄이 생겼다 사라져도 재발송 줄이 밀리지 않게 자리를 둔다 */}
+          {/* 확인 중 줄이 생겼다 사라지며 아래 재발송 줄이 밀리지 않게 자리를 항상 둔다 */}
           <Text size="b4" className={cn('text-main', !isVerifying && 'opacity-0')}>
             {t('verification.verifying')}
           </Text>

@@ -21,9 +21,11 @@ export type SignUpStepContexts = {
 };
 
 interface SignUpFormProps {
+  /** 제목과 툴바가 단계를 따라가므로 단계 이동은 화면이 소유하고 여기서는 읽고 옮기기만 한다 */
   stepper: Stepper<SignUpStepContexts>;
 }
 
+/** 가입 3단계(정보, 비밀번호, 이메일 인증)의 입력과 제출. 앞 단계로 돌아가도 입력값은 폼이 지킨다 */
 export function SignUpForm({ stepper }: SignUpFormProps) {
   const form = useForm({
     resolver: zodResolver(signUpFormSchema),
@@ -44,7 +46,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
 
-  // 실패하면 false를 돌려 약관 시트를 열어 둔다
+  // 가입 요청이 실패하면 false를 돌려 약관 시트를 열어 둔다. 바로 다시 누를 수 있다
   const submitValidRegister = () =>
     new Promise<boolean>((resolve) => {
       form.handleSubmit(

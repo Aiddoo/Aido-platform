@@ -9,7 +9,10 @@ import { useEffect, useRef } from 'react';
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { refreshAfterPremiumEnded } from '../queries/subscription-cache';
 
-// 분 시계는 앞에 있을 때만 돌아 복귀 시 바로 다시 확인해 백그라운드 중 끝난 기간도 잡는다
+/**
+ * 앱이 켜져 있는 동안 프리미엄 기간이 끝나면 내 정보와 의존 쿼리를 한 번 다시 불러온다.
+ * 분 시계는 앱이 앞에 있을 때만 돌고, 앱으로 돌아오면 바로 다시 확인해 백그라운드 중에 끝난 기간도 잡는다.
+ */
 export function useRefreshOnPremiumEnd(access: PremiumAccess) {
   const queryClient = useQueryClient();
   const logger = useLogger();

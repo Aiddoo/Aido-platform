@@ -175,6 +175,7 @@ describe('useAiDataSharingConsentGate', () => {
   it('안내가 떠 있는 동안 한 번 더 시작해도 두 요청이 모두 답을 받고 끝난다', async () => {
     // Given
     const user = userEvent.setup();
+    // 안내가 열린 채 마이크를 한 번 더 눌렀다
     await renderGate({});
 
     // When
@@ -182,6 +183,7 @@ describe('useAiDataSharingConsentGate', () => {
     await user.press(await screen.findByRole('button', { name: '나중에' }));
 
     // Then
+    // 앞 요청이 시트에 밀려 영영 끝나지 않으면 두 번째까지만 센다
     expect(await screen.findByText('끝난 요청 2개')).toBeTruthy();
   });
 

@@ -13,7 +13,7 @@ import { type Consent } from '../domains/consent.model';
 import { ConsentPolicy } from '../domains/consent.model';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
-// 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다
+/** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
 
 export interface AiConsentCheck {
@@ -21,7 +21,10 @@ export interface AiConsentCheck {
   readonly wasAsked: boolean;
 }
 
-// 오프라인이면 TanStack Query가 조회를 멈춰 ensureQueryData가 끝나지 않아 캐시만 보고, 온라인이면 제한 시간까지만 기다린다
+/**
+ * 시작을 막지 않고 값을 읽는다. 오프라인이면 TanStack Query가 요청을 멈춰 두어 `ensureQueryData`가 연결될 때까지
+ * 끝나지 않으므로(`networkMode`를 바꿔도 이미 멈춘 조회의 약속을 받는다) 캐시만 보고, 온라인이면 제한 시간까지만 기다린다.
+ */
 export async function readWithoutBlocking<T>(
   cached: T | undefined,
   fetch: () => Promise<T>,
@@ -40,11 +43,17 @@ export async function readWithoutBlocking<T>(
 }
 
 interface UseAiDataSharingConsentGateOptions {
-  // 위층 기능(기기 안내)이 필요해 쓰는 쪽이 넘기고, 없으면 재안내를 띄우지 않는다
+  /**
+   * 동의 재안내를 계정당 한 번만 보이도록 자리를 잡고, 잡았으면 true를 돌려준다.
+   * 위층 기능(기기 안내)이 필요하므로 쓰는 쪽이 넘긴다. 없으면 재안내를 띄우지 않는다.
+   */
   claimRenewalPrompt?: (accountId: string) => boolean;
 }
 
-// 시트는 이 훅을 쓴 컴포넌트의 overlay에 뜨므로 답을 기다리는 동안 마운트된 곳에서 쓴다
+/**
+ * AI에 내용을 보내기 전에 AI 데이터 제공 동의를 확인한다.
+ * 시트는 이 훅을 쓴 컴포넌트의 overlay에 뜨므로, 답을 기다리는 동안 마운트돼 있는 곳에서 쓴다.
+ */
 export function useAiDataSharingConsentGate({
   claimRenewalPrompt,
 }: UseAiDataSharingConsentGateOptions = {}) {
@@ -66,6 +75,10 @@ export function useAiDataSharingConsentGate({
       logConsentCheckFailure,
     );
 
+  /**
+   * 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다.
+   * 이미 떠 있으면 같은 답을 기다린다. 답 없이 사라지면(쓰는 화면 unmount, 경로 변경) false다.
+   */
   const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) => {
     if (pendingAgreementRef.current != null) {
       return pendingAgreementRef.current;
@@ -95,7 +108,10 @@ export function useAiDataSharingConsentGate({
     return agreement;
   };
 
-  // 나중에를 눌러도 서버로 보내지 않아 이전 동의가 남고, 철회는 설정 화면에서만 한다
+  /**
+   * 이전 안내에 동의한 사람에게 바뀐 안내를 계정마다 한 번 보여 준다. 나중에를 눌러도 서버로 보내지 않아
+   * 이전 동의가 그대로 남고, 하던 일은 이어진다. 철회는 설정 화면에서만 한다.
+   */
   const promptRenewalOnce = async (consent: Consent, accountId?: string): Promise<boolean> => {
     if (accountId == null || !ConsentPolicy.shouldShowAiConsentRenewal(consent)) {
       return false;
@@ -107,9 +123,12 @@ export function useAiDataSharingConsentGate({
     return true;
   };
 
-  // wasAsked는 한 번의 AI 시도에서 안내를 두 번 띄우지 않는 데 쓴다
+  /**
+   * 이미 동의했으면 바로, 아니면 안내를 띄워 답을 받는다. wasAsked는 이번에 안내를 띄웠는지로,
+   * 한 번의 AI 시도에서 안내를 두 번 띄우지 않는 데 쓴다. [나중에]는 미응답을 그대로 둔다.
+   */
   const requestAgreementIfNeeded = async (): Promise<AiConsentCheck> => {
-    // 동의 상태를 읽지 못하면 막지 않고 서버에 맡긴다. 동의가 없으면 AI_1311로 다시 안내한다
+    // 동의 상태를 읽지 못하면 막지 않고 서버 판단에 맡긴다. 동의가 없으면 AI_1311로 다시 안내한다
     const consent = await readConsent();
     if (consent == null) {
       return { hasAgreed: true, wasAsked: false };
@@ -121,7 +140,11 @@ export function useAiDataSharingConsentGate({
     return { hasAgreed: await requestAgreement(), wasAsked: true };
   };
 
-  // 다 말한 뒤에 막히지 않게 듣기 전에 받고, 권한 요청 같은 뒤 단계가 안내를 앞지르지 않게 제한 시간까지 기다린다
+  /**
+   * 듣기 전에 동의를 받는다. 다 말한 뒤에 막히지 않게, 미응답이면 시작할 때마다 안내를 띄우고 [나중에]면 hasAgreed는 false다.
+   * 호출한 쪽은 그 자리에서 멈춘다. 이전 안내에 동의한 사람은 재안내에서 [나중에]를 눌러도 이어 간다.
+   * 내 정보를 아직 못 받았으면 제한 시간까지 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
+   */
   const requestAgreementBeforeListening = async (): Promise<AiConsentCheck> => {
     const [consent, me] = await Promise.all([
       readConsent(),
@@ -140,6 +163,7 @@ export function useAiDataSharingConsentGate({
     return { hasAgreed: await requestAgreement(), wasAsked: true };
   };
 
+  /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
   const isConsentRequired = (): boolean => {
     const consent = queryClient.getQueryData(consentQueryOptions.queryKey);
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);

@@ -13,6 +13,7 @@ import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/subscription-failure.
 import { createManagementUrl } from '../utils/subscription-links';
 import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
+/** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
 export function useOpenSubscriptionManagement() {
   const subscriptionService = useSubscriptionService();
   const applicationMetadata = useApplicationMetadata();

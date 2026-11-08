@@ -125,7 +125,7 @@ export function useEntitlementGate(
         trackEvent('limit_reached_shown', { feature: analyticsFeature, surface, trigger });
       }
 
-      // 공정 사용 한도에 닿은 프리미엄·관리자에게는 구독 대신 언제 다시 쓸 수 있는지만 알린다
+      // 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않고 언제 다시 쓸 수 있는지만 알린다
       if (!EntitlementPolicy.shouldOfferPremium(latest)) {
         toast.warning(title ?? copy.title, { description: copy.refill ?? undefined });
         return;
@@ -157,6 +157,7 @@ export function useEntitlementGate(
     };
 
     return {
+      /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
       promptIfBlocked: (options?: EntitlementGateDialogOptions): boolean => {
         if (snapshot == null) {
           return false;
@@ -172,9 +173,11 @@ export function useEntitlementGate(
       promptLimit: (options?: EntitlementGateDialogOptions) => {
         open(feature, 'limit-reached', 'precheck', options);
       },
+      /** 구독 안내를 바로 띄운다. 사용자가 구독을 직접 고른 버튼처럼 막힘 여부와 스냅샷을 보지 않는 곳에 쓴다 */
       promptLocked: (options?: EntitlementGateDialogOptions) => {
         open(feature, 'locked', 'precheck', options);
       },
+      /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
       promptIfBlockedError: (error: unknown, options?: EntitlementGateDialogOptions): boolean => {
         const limited = findLimitedFeature(error);
         if (limited == null) {

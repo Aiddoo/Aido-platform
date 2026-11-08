@@ -19,12 +19,15 @@ import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent } from '../domains/consent.model';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 
-// 앞 응답이 뒤에 바꾼 토글을 덮지 않게 마지막 저장만 캐시에 쓴다
+/**
+ * 같은 동의를 바꾸는 저장 중 지금 끝나는 것이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게
+ * 마지막만 응답을 캐시에 쓴다
+ */
 function isLastConsentWrite(queryClient: QueryClient, mutationKey: MutationKey) {
   return queryClient.isMutating({ mutationKey }) === 1;
 }
 
-// 실패가 섞이면 되돌린 값이 서버와 다를 수 있어 마지막 저장이 끝날 때 서버 값으로 맞춘다
+/** 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다 */
 function settleConsentWrite(queryClient: QueryClient, error: unknown) {
   if (error == null || !isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.writes())) {
     return;
@@ -32,7 +35,9 @@ function settleConsentWrite(queryClient: QueryClient, error: unknown) {
   queryClient.invalidateQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
 }
 
-// 스냅샷을 통째로 덮으면 진행 중인 다른 동의 토글을 지워 바꾼 필드만 되돌린다
+/**
+ * 스냅샷을 통째로 덮으면 함께 진행 중인 다른 동의 토글을 지운다. 이 저장이 바꾼 필드만 되돌린다
+ */
 function revertConsentFields(
   queryClient: QueryClient,
   previousData: Consent | undefined,
@@ -52,7 +57,7 @@ const AI_DATA_SHARING_FIELDS = [
   'aiDataSharingConsentVersion',
 ] as const;
 
-// 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 버전이다
+/** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export function useUpdateAiDataSharingConsentMutationOptions() {
   const haptics = useHaptics();
   const toast = useAppToast();
@@ -61,7 +66,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
-    // 오프라인에 멈추면 시트 버튼이 돌기만 해 바로 실패시킨다
+    // 오프라인에 멈춰 있으면 시트의 버튼이 돌기만 하고 나중에도 누를 수 없다. 바로 실패해 시트를 그대로 둔다
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.aiDataSharing(),
     mutationFn: async ({ agreed }: ConsentAgreement) => {
@@ -121,7 +126,7 @@ export function useUpdateMarketingConsentMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    // 오프라인에 멈추면 낙관적 토글이 잠겨 바로 실패시켜 되돌린다
+    // 오프라인에 멈춰 있으면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.marketing(),
     mutationFn: async (input: ConsentAgreement) =>

@@ -23,6 +23,7 @@ import {
   useRegisterMutationOptions,
 } from './auth.mutations';
 
+// 마운트된 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
 beforeEach(() => {
   jest.useFakeTimers();
 });

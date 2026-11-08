@@ -16,6 +16,7 @@ interface EditNameFormProps {
   title: string;
 }
 
+/** 이름 입력과 키보드 위 저장 버튼. 저장하면 이전 화면으로 돌아간다 */
 export function EditNameForm({ title }: EditNameFormProps) {
   const { t } = useTranslation('user');
   const navigation = useNavigation();
@@ -32,10 +33,11 @@ export function EditNameForm({ title }: EditNameFormProps) {
   const { isSubmitting, isValid, isDirty } = useFormState({ control: form.control });
   const canSubmit = isValid && isDirty;
 
+  // 실패하면 토스트는 mutation이 한 번 알리고 화면과 입력값은 그대로 둔다
   const submitName = form.handleSubmit(async ({ name }) => {
     try {
       await updateProfile.mutateAsync({ name });
-      // 저장 중 이미 떠났다면 또 뒤로 가지 않는다
+      // 저장하는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
       if (navigation.isFocused()) {
         goBack();
       }

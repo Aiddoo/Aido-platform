@@ -7,6 +7,7 @@ import {
 import type { StoreUnavailable } from './offerings-availability';
 import { getDiagnosticCode } from './subscription-diagnostic-code';
 
+/** 구독 화면에서 실패할 수 있는 곳. 앞의 둘은 불러오기, 뒤의 둘은 사용자가 누른 동작이다 */
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
 export type SubscriptionActionTarget = 'purchase' | 'restore';
 
@@ -31,12 +32,14 @@ type FailureDescriptionKey =
   | 'subscription:failure.description.storeSetup'
   | 'subscription:failure.description.storeTemporary';
 
+/** 무엇이 실패했는지(title), 무엇을 하면 되는지(description), 문의에 붙일 코드 */
 export interface SubscriptionSupportFailure {
   titleKey: (typeof FAILURE_TITLE_KEYS)[keyof typeof FAILURE_TITLE_KEYS];
   descriptionKey: FailureDescriptionKey;
   diagnosticCode: string;
 }
 
+/** 사용자가 직접 취소했거나 결제 승인을 기다리는 중이면 문의로 안내하지 않는다 */
 export type SubscriptionActionFailure =
   | { type: 'cancelled' }
   | { type: 'paymentPending' }
@@ -68,6 +71,7 @@ function toSupportFailure(
   };
 }
 
+/** 영수증·요금제를 불러오지 못하면 늘 다시 시도와 문의를 함께 보여 준다 */
 export function toSubscriptionLoadFailure(
   target: SubscriptionLoadTarget,
   error: unknown,
@@ -75,6 +79,7 @@ export function toSubscriptionLoadFailure(
   return toSupportFailure(target, error);
 }
 
+/** 결제·복원이 실패했을 때 조용히 넘길지, 승인 대기를 알릴지, 문의로 안내할지 정한다 */
 export function toSubscriptionActionFailure(
   target: SubscriptionActionTarget,
   error: unknown,
@@ -107,6 +112,7 @@ export function toSubscriptionStoreUnavailableFailure({
   };
 }
 
+/** 스토어 구독 관리를 열지 못했을 때 문의에 붙일 제목과 코드 */
 export const SUBSCRIPTION_MANAGE_OPEN_FAILURE = {
   titleKey: FAILURE_TITLE_KEYS.manage,
   diagnosticCode: 'SUBSCRIPTION_MANAGE_OPEN_FAILED',

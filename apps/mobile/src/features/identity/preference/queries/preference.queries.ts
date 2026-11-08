@@ -12,7 +12,7 @@ export function useGetPreferenceQueryOptions() {
     queryKey: PREFERENCE_QUERY_KEYS.current(),
     queryFn: async ({ signal }) => unwrap(await preferenceService.getPreference(signal)),
     ...PERSISTED_QUERY_OPTIONS,
-    // 프리미엄 전용 설정이 있어 프리미엄이 바뀌면 다시 받는다
+    // 알림 시각 선택처럼 프리미엄 전용 설정이 있어 프리미엄이 바뀌면 서버 값을 다시 받는다
     meta: { ...PERSISTED_QUERY_OPTIONS.meta, refreshOnPremiumChange: true },
   });
 }

@@ -32,10 +32,11 @@ export function usePurchaseMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    // 오프라인에 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다
+    // 오프라인 동안 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다(화면은 오프라인이면 버튼을 잠근다)
     networkMode: 'always',
-    // 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없어 미리 기억한다
+    // 결제 전 출처를 기억해 둔다. 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없다
     onMutate: () => ({ previousAccess: getCachedMe(queryClient)?.premiumAccess }),
+    // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
     mutationFn: async (identifier: string) => {
       const hasStoreEntitlement = unwrap(await subscriptionService.purchase(identifier));
       const isReflected = hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
@@ -49,6 +50,7 @@ export function usePurchaseMutationOptions() {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
         return;
       }
+      // 보상 기간 중에 구독하면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다
       toast.success(
         context.previousAccess != null && PremiumAccessPolicy.isGrantOnly(context.previousAccess)
           ? t('subscription:toast.purchaseSuccessWithReward')
@@ -57,11 +59,12 @@ export function usePurchaseMutationOptions() {
     },
     onError: (error) =>
       match(toSubscriptionActionFailure('purchase', error))
+        // 사용자가 직접 취소했으면 이미 알고 있다
         .with({ type: 'cancelled' }, () => undefined)
         .with({ type: 'paymentPending' }, () =>
           toast.success(t('subscription:toast.paymentPending')),
         )
-        // 돈이 빠져나갔을 수 있어 토스트 대신 다이얼로그로 문의할 길을 남긴다
+        // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
@@ -73,6 +76,7 @@ export function usePurchaseMutationOptions() {
             severity: 'warning',
             errorCode: failure.diagnosticCode,
           });
+          // 다이얼로그가 닫힐 때까지 구매 버튼이 돌지 않게 기다리지 않는다
           confirmDialog
             .openAsync({
               title: t(failure.titleKey),
@@ -101,9 +105,9 @@ export function useRestoreMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    // 오프라인에 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다
+    // 오프라인 동안 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다(화면은 오프라인이면 버튼을 잠근다)
     networkMode: 'always',
-    // 복원한 구독은 서버가 스토어 웹훅(TRANSFER)을 반영할 때까지 기다린다
+    // 복원한 구독은 서버가 스토어 웹훅(TRANSFER)을 반영할 때까지 기다려 복원 중으로 둔다(결제와 같은 대기)
     mutationFn: async () => {
       const hasRestoredStorePurchase = unwrap(await subscriptionService.restorePurchases());
       const isReflected = hasRestoredStorePurchase && (await syncMeUntilStorePremium(queryClient));
@@ -120,6 +124,7 @@ export function useRestoreMutationOptions() {
         }
         toast.success(t('subscription:toast.restoreSuccess'));
       } else {
+        // 복원할 구매가 없어도 보상 기간은 그대로라는 것을 알린다
         const premiumAccess = getCachedMe(queryClient)?.premiumAccess;
         toast.success(
           premiumAccess != null && PremiumAccessPolicy.isGrantOnly(premiumAccess)
@@ -131,6 +136,7 @@ export function useRestoreMutationOptions() {
     onError: (error) =>
       match(toSubscriptionActionFailure('restore', error))
         .with({ type: 'cancelled' }, { type: 'paymentPending' }, () => undefined)
+        // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
           errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_RESTORE_FAILED, {

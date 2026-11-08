@@ -35,9 +35,11 @@ type ForgotPasswordStepContexts = {
 };
 
 interface ForgotPasswordFormProps {
+  /** 단계마다 위에 놓는 제목. 인증 코드 단계는 받은 이메일을 보여 줘 그 단계가 맡는다 */
   stepTitles: Record<'email' | 'newPassword', string>;
 }
 
+/** 비밀번호 재설정 3단계(이메일, 인증 코드, 새 비밀번호)의 입력과 제출. 인증 코드 재발송 쿨다운은 인증 단계가 맡는다 */
 export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
   const form = useForm({
     resolver: zodResolver(forgotPasswordFormSchema),

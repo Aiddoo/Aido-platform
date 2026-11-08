@@ -2,6 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { isCodedError } from '@src/core/errors/result';
 import { isApiError } from '@src/shared/errors';
 
+/** 앱이 직접 판단한 소셜 로그인 실패. 문구는 `errors` 카탈로그에 같은 키로 둔다 */
 export const AUTH_ERROR_CODE = {
   LOGIN_CANCELLED: 'AUTH_LOGIN_CANCELLED',
   PROVIDER_ERROR: 'AUTH_PROVIDER_ERROR',
@@ -24,6 +25,7 @@ export function isEmailAlreadyRegisteredError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501);
 }
 
+/** 탈퇴·비밀번호 변경에서 현재 비밀번호가 틀렸다 */
 export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
 }
@@ -40,6 +42,7 @@ export function isVerificationAttemptsExceededError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.VERIFY_0754);
 }
 
+/** 재발송 실패가 쿨다운 중(VERIFY_0753)이면 서버가 알려 준 남은 초를, 아니면 null을 돌려준다. */
 export function findResendCooldown(error: unknown): number | null {
   if (!isApiError(error) || !error.hasCode(ErrorCode.VERIFY_0753)) {
     return null;

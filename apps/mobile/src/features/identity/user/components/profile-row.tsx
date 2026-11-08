@@ -25,6 +25,7 @@ import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 
 interface ProfileRowProps {
+  /** 구독 기능을 모르도록 route가 조립해 넘긴다. 같은 경계 안이라 함께 로딩하고 함께 실패한다 */
   tierChip: ReactNode;
 }
 

@@ -12,6 +12,7 @@ export interface AuthSessionStore {
   dispatch(event: AuthSessionEvent): void;
 }
 
+/** 값을 동기로 읽을 수 있어 커밋 전에 도착한 만료 이벤트도 지금 상태로 판정한다. DI가 소유한다 */
 export function createAuthSessionStore(
   initialState: AuthSessionState = { status: 'loading' },
 ): AuthSessionStore {

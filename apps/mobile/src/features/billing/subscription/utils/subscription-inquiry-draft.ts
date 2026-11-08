@@ -3,8 +3,10 @@ import { t } from '@src/shared/i18n';
 import { match } from 'ts-pattern';
 
 interface SubscriptionInquiryDraftInput {
+  /** 무엇이 실패했는지. 화면에 보인 제목을 쓰되 줄바꿈은 한 칸 띄어 한 줄로 적는다 */
   subject: string;
   diagnosticCode: string;
+  /** Expo Go·웹처럼 설치 정보를 모르면 undefined다 */
   installation: NativeApplicationMetadata | undefined;
 }
 
@@ -15,6 +17,10 @@ function toPlatformLabel(platform: string) {
     .otherwise(() => platform);
 }
 
+/**
+ * 문의 내용 맨 위에 붙일 상황 한 줄. 서버는 앱 버전·기기를 문의에 붙이지 않아 여기서 담는다.
+ * 토큰·사용자 ID·영수증처럼 민감한 값은 넣지 않는다.
+ */
 export function toSubscriptionInquiryDraft({
   subject,
   diagnosticCode,

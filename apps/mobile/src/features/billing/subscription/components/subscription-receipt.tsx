@@ -28,6 +28,7 @@ import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
 interface SubscriptionReceiptProps {
+  /** 보상 기간 영수증 모서리에 찍는 장식. 어떤 도장인지는 화면이 정한다 */
   rewardStamp?: ReactNode;
 }
 
@@ -37,7 +38,7 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   const dateFormatContext = useDateFormatContext();
   const premium = getPremiumBenefitAmounts();
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
-  // 결제 기간은 해를 넘길 수 있어 연도까지, 보상은 월·일만 보인다
+  // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
   const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';
   const formatReceiptDate = (date: Instant) =>
     formatDateLabel(date, receiptDateLabel, dateFormatContext);
@@ -52,9 +53,9 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
         <HStack gap={16} className="items-center">
           <FillTicketIcon width={40} height={40} />
 
-          {/* 긴 제목이 도장 아래로 들어가지 않게 자리를 비운다 */}
+          {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
           <VStack gap={2} className={cn('flex-1', variant === 'reward' && 'pr-10')}>
-            {/* 가장 큰 글자에서 단어 중간에서 끊기지 않게 어절 단위로 줄바꿈한다 */}
+            {/* 가장 큰 글자에서 "이/용 중"처럼 단어 중간에서 끊기지 않게 어절 단위로 줄바꿈한다 */}
             <Text
               size="t3"
               weight="bold"
@@ -138,7 +139,7 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
   );
 }
 
-// 받은 뒤 높이가 바뀌지 않게 가장 흔한 결제 영수증과 같은 줄 수를 잡는다
+/** 받은 뒤 높이가 바뀌지 않게 실제 영수증과 같은 줄 수와 자리를 잡는다. 줄 수는 가장 흔한 결제 영수증(다음 결제일, 자동 갱신)과 혜택 목록 줄 수다 */
 const LOADING_DETAIL_ROW_COUNT = 2;
 const BENEFIT_ROW_COUNT = 10;
 

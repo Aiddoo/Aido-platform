@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import type { SubscriptionSupportFailure } from '../utils/subscription-failure.view-model';
 import { toSubscriptionInquiryDraft } from '../utils/subscription-inquiry-draft';
 
+/** 구독 실패를 문의 화면으로 넘긴다. 무엇이 실패했는지와 오류 코드를 미리 채워 되묻는 일을 줄인다 */
 export function useOpenSubscriptionInquiry() {
   const applicationMetadata = useApplicationMetadata();
 

@@ -29,6 +29,7 @@ function isLimitedErrorCode(code: string): code is LimitedErrorCode {
 
 export interface LimitedFeature {
   feature: EntitlementFeature;
+  /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */
   featureQuota: FeatureQuota | null;
 }
 
@@ -42,6 +43,7 @@ export function findLimitedFeature(error: unknown): LimitedFeature | null {
   };
 }
 
+/** 처리 중·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
 export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
   if (!isApiError(error)) {
     return null;

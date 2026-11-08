@@ -19,7 +19,7 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
   const purchase = useMutation(usePurchaseMutationOptions());
   const [view] = useSubscriptionView();
   const isOnline = useIsOnline();
-  // 요금제 자리의 경계 밖이라 실패를 던지지 않는다
+  // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
   const { data: availability } = useQuery({
     ...useGetOfferingsQueryOptions(),
     throwOnError: false,
@@ -34,7 +34,7 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
       return;
     }
     purchase.mutate(selectedPlan.identifier, {
-      // 보상 영수증에서 들어왔으면 영수증으로 돌아가 결제 영수증으로 바뀌는 것을 보여 준다
+      // 보상 영수증에서 요금제로 들어왔으면 영수증으로 돌아가 결제한 영수증으로 바뀌는 것을 보여 준다
       onSuccess: () => {
         if (view === 'plans' && router.canGoBack()) {
           router.back();

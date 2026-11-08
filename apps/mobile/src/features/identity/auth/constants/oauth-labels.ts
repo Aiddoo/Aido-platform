@@ -9,6 +9,7 @@ const OAUTH_PROVIDER_LABEL_KEYS = {
   NAVER: 'auth:providers.NAVER',
 } as const satisfies Record<OAuthProvider, string>;
 
+/** OAuth 제공자 → 로케일 표시 이름 */
 export function getOAuthProviderLabel(provider: OAuthProvider): string {
   return t(OAUTH_PROVIDER_LABEL_KEYS[provider]);
 }

@@ -18,6 +18,7 @@ type PasswordStep = 'password' | 'passwordConfirm';
 
 interface SignUpPasswordFormProps {
   form: UseFormReturn<SignUpFormValues>;
+  /** 약관 동의 후 호출하는 회원가입 제출 함수 */
   onSubmit: () => Promise<boolean>;
 }
 

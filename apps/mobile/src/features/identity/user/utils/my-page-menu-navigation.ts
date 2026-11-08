@@ -1,5 +1,6 @@
 export type MyPageMenuNavigationMode = 'push' | 'replace';
 
+/** 내 정보 메뉴로 들어가는 화면들. 넓은 화면에서 왼쪽 메뉴가 함께 보이는 `(mypage-menu)` 라우트 그룹과 같다. */
 const MENU_DETAIL_ROOT_PATHNAMES = ['/settings', '/friends', '/achievements', '/reports'];
 
 function isMenuDetailPathname(pathname: string): boolean {
@@ -25,10 +26,10 @@ export function hasPushedScreen(state: FocusableNavigationState | undefined): bo
   return focusedChild == null ? focusedIndex > 0 : hasPushedScreen(focusedChild);
 }
 
-// 자기 진입점(친구 초대 카드)이 있는 하위 화면은 상위 항목을 선택 상태로 만들지 않는다
+// 마이페이지에 자기 진입점(친구 초대 카드)이 따로 있는 하위 화면. 상위 항목(친구 관리)을 선택 상태로 만들지 않는다
 const STANDALONE_PATHNAMES = ['/friends/invite'];
 
-// 경로가 겹치지 않아도 프로필에서 들어가는 화면은 프로필 카드를 선택 상태로 둔다
+// 경로가 겹치지 않지만 프로필 화면에서 들어가는 화면. 왼쪽에서 프로필 카드를 선택 상태로 둔다
 const PROFILE_PATHNAME = '/settings/profile';
 const PROFILE_CHILD_PATHNAMES = [
   '/settings/edit-name',

@@ -101,6 +101,7 @@ describe('watchPremiumEntitlementChanges', () => {
     unwatch = watchPremiumEntitlementChanges(queryClient);
 
     // When
+    // 스토어 이벤트 없이 서버가 보상 기간을 시작했다
     queryClient.setQueryData(USER_QUERY_KEYS.me(), GRANT_ME);
 
     // Then
@@ -165,6 +166,7 @@ describe('syncMeUntilStorePremium', () => {
     queryClient = createTestQueryClient();
   });
 
+  /** 서버가 /me를 차례로 이렇게 답한다 */
   async function serveMe(...responses: (typeof FREE_ME)[]) {
     const fetchMe = jest.fn(async () => responses.shift() ?? FREE_ME);
     await queryClient.prefetchQuery({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });
@@ -173,6 +175,7 @@ describe('syncMeUntilStorePremium', () => {
 
   it('웹훅이 반영돼 내 정보가 STORE가 되면 그때 멈추고 true를 반환한다', async () => {
     // Given
+    // 첫 응답과 첫 재요청은 아직 무료, 두 번째 재요청에서 반영된다
     const fetchMe = await serveMe(FREE_ME, FREE_ME, STORE_ME);
 
     // When

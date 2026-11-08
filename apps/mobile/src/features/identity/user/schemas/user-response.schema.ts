@@ -1,7 +1,7 @@
 import { currentUserSchema } from '@aido/api';
 import type { z } from 'zod';
 
-// 구버전 서버 때문에 계약은 선택 필드지만 지금 서버는 항상 보낸다
+/** 계약은 구버전 서버 때문에 선택 필드지만, 지금 서버는 프리미엄 출처·기간·효력을 항상 보낸다. 기능 권한은 GET /v1/entitlements에서 읽는다 */
 export const currentUserResponseSchema = currentUserSchema.required({
   premiumSource: true,
   premiumEndsAt: true,

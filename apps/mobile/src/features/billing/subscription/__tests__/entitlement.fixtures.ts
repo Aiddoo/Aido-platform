@@ -14,9 +14,12 @@ import { match } from 'ts-pattern';
 import { toEntitlementSnapshot } from '../apis/entitlement.mapper';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 
+/** 다음 달 1일 00:00 KST */
 export const MONTHLY_RESETS_AT = '2026-11-30T15:00:00.000Z';
+/** 다음 날 00:00 KST */
 export const DAILY_RESETS_AT = '2026-11-05T15:00:00.000Z';
 
+/** 등급별로 서버가 보낼 기능 한도(사용량 0). 횟수는 PLAN_CATALOG에서만 읽는다 */
 function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): FeatureQuotaDto {
   const definition = PLAN_CATALOG[feature];
   const base = {
@@ -71,6 +74,7 @@ function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): Feat
   };
 }
 
+/** 기능 하나를 쓴 만큼 줄인 한도. 계약 스키마로 검증해 서버가 보낼 수 없는 모양은 여기서 실패한다 */
 export function createFeatureQuotaDto(
   feature: PlanFeature,
   { tier = 'FREE', used }: { tier?: AccessTier; used?: number } = {},
@@ -86,6 +90,7 @@ export function createFeatureQuotaDto(
   });
 }
 
+/** GET /v1/entitlements 응답. 기본은 아무것도 쓰지 않은 무료 사용자다 */
 export function createEntitlementSnapshotDto({
   tier = 'FREE',
   isPremium = tier === 'PREMIUM',
@@ -113,6 +118,7 @@ export function createEntitlementSnapshot(
   return toEntitlementSnapshot(createEntitlementSnapshotDto(options));
 }
 
+/** 서버 한도 오류. details는 운영 응답처럼 공개 상세 스키마 모양이다 */
 export function createLimitApiError(
   code: string,
   details?: Record<string, unknown>,

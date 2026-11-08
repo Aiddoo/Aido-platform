@@ -10,6 +10,7 @@ import { useGetMeQueryOptions } from '../queries/user.queries';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
+/** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
 export function AccountSettingsList(props: SettingsSectionProps) {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('settings');

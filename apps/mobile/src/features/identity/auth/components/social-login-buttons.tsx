@@ -29,7 +29,7 @@ export function SocialLoginButtons() {
   const googleLogin = useMutation(useOpenGoogleLoginMutationOptions());
   const naverLogin = useMutation(useOpenNaverLoginMutationOptions());
 
-  // 성공하면 인증 상태로 바뀌고 Stack.Protected가 (app)으로 보낸다
+  // 교환에 성공하면 인증 상태로 바뀌고 Stack.Protected가 (app)으로 보낸다.
   const exchangeOnSuccess = (provider: OAuthStartProvider) => ({
     onSuccess: (code: string) => {
       exchangeCode.mutate({ code, provider });

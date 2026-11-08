@@ -30,6 +30,7 @@ interface InquiryFormProps {
   title: string;
 }
 
+/** 문의 종류와 내용 입력, 키보드 위 보내기 버튼. 보내면 이전 화면으로 돌아간다 */
 export function InquiryForm({ title }: InquiryFormProps) {
   const [initialValues] = useRouteParams(inquiryParamsSchema);
   const { t } = useTranslation('inquiry');
@@ -46,10 +47,11 @@ export function InquiryForm({ title }: InquiryFormProps) {
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
 
+  // 실패하면 토스트는 mutation이 한 번 알리고 화면과 입력값은 그대로 둔다
   const submitInquiry = form.handleSubmit(async (values) => {
     try {
       await createInquiry.mutateAsync(values);
-      // 보내는 중 이미 떠났다면 또 뒤로 가지 않는다
+      // 보내는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
       if (navigation.isFocused()) {
         goBack();
       }
