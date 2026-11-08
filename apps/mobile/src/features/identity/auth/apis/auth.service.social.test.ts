@@ -182,6 +182,29 @@ describe('소셜 로그인', () => {
       expect(result.ok).toBe(true);
     });
 
+    it('조립에서 받은 기기 종류로 세션을 구분한다', async () => {
+      // Given
+      const androidService = new AuthService({
+        publicHttpClient: publicHttp,
+        authHttpClient: authHttp,
+        tokenStore,
+        socialAuthGateway: gateway,
+        deviceType: 'ANDROID',
+        logger: createLoggerStub(),
+      });
+      gateway.signInWithApple.mockResolvedValue(APPLE_CREDENTIAL);
+      publicHttp.post.mockResolvedValue({ ok: true, value: createAuthTokensDto() });
+
+      // When
+      await androidService.openAppleLogin();
+
+      // Then
+      expect(publicHttp.post).toHaveBeenCalledWith(
+        'v1/auth/apple/callback',
+        expect.objectContaining({ deviceType: 'ANDROID' }),
+      );
+    });
+
     it('처음 가입이라 이름을 주면 함께 보낸다', async () => {
       // Given
       gateway.signInWithApple.mockResolvedValue({ ...APPLE_CREDENTIAL, givenName: '민수' });

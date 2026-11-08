@@ -168,7 +168,7 @@ export class AuthService {
       idToken: identityToken,
       nonce,
       userName: givenName ?? undefined,
-      deviceType: 'IOS',
+      deviceType: this.#deviceType,
     };
     return this.#saveTokens(await this.#publicHttpClient.post('v1/auth/apple/callback', input));
   };
