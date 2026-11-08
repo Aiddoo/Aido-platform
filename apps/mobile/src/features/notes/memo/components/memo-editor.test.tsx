@@ -1,6 +1,13 @@
 import '@src/shared/i18n/init';
+import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import type { EntitlementSnapshot } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
@@ -12,13 +19,15 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 import { Keyboard } from 'react-native';
 
 import { createMemo } from '../__tests__/memo.fixtures';
+import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
@@ -34,12 +43,45 @@ const SAVED_MEMO_DTO = {
   updatedAt: '2026-11-06T00:01:00.000Z',
 };
 
-async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}) {
+const AGREED_CONSENT_DTO = {
+  aiDataSharingDecision: 'AGREED',
+  aiDataSharingAgreedAt: '2026-11-05T00:00:00.000Z',
+  aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+};
+const PARSE_MEMO_URL = 'v1/ai/parse-memo';
+const CONSENT_REQUIRED_ERROR = new ApiError('AI_1311', '동의 필요', 403);
+
+function createAgreedConsent() {
+  return createConsent({
+    aiDataSharingDecision: 'AGREED',
+    aiDataSharingAgreedAt: toInstant(AGREED_CONSENT_DTO.aiDataSharingAgreedAt),
+    aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+  });
+}
+
+function getParseRequestCount(httpClient: ReturnType<typeof createHttpClientStub>) {
+  return httpClient.post.mock.calls.filter(([url]) => url === PARSE_MEMO_URL).length;
+}
+
+async function renderEditor(
+  toolbar: 'stack' | 'pane',
+  {
+    withList = false,
+    consent,
+    entitlements,
+  }: { withList?: boolean; consent?: Consent; entitlements?: EntitlementSnapshot } = {},
+) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+  if (consent != null) {
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), consent);
+  }
+  if (entitlements != null) {
+    queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), entitlements);
+  }
   queryClient.setQueryData(
     MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
     createMemo({ id: MEMO_ID, content: '처음 메모' }),
@@ -384,6 +426,127 @@ describe('MemoEditor', () => {
       // Then
       await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
       expect(dismissKeyboard).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('AI로 할 일 나누기', () => {
+    async function renderForAiParse({ consent }: { consent: Consent }) {
+      const rendered = await renderEditor('stack', {
+        consent,
+        entitlements: createEntitlementSnapshot(),
+      });
+      await screen.findByDisplayValue('처음 메모');
+      await waitFor(() =>
+        expect(rendered.httpClient.get).toHaveBeenCalledWith(
+          'v1/todo-categories',
+          expect.anything(),
+        ),
+      );
+      await act(async () => {});
+
+      return rendered;
+    }
+
+    async function startAiParse() {
+      // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
+      fireEvent.press(await screen.findByText('AI로 할 일 나누기')).catch(() => undefined);
+    }
+
+    it('이번 달 한도를 다 썼으면 안내를 띄우고 정리를 요청하지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderEditor('stack', {
+        consent: createAgreedConsent(),
+        entitlements: createEntitlementSnapshot({ used: { AI_PARSE: 10 } }),
+      });
+      await waitFor(() =>
+        expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
+      );
+      await act(async () => {});
+
+      // When
+      await startAiParse();
+
+      // Then
+      expect(await screen.findByText('이번 달 AI 할 일 만들기를 다 썼어요')).toBeTruthy();
+      expect(getParseRequestCount(httpClient)).toBe(0);
+    });
+
+    it('동의 안내에서 나중에를 누르면 정리를 요청하지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderForAiParse({ consent: createConsent() });
+      await startAiParse();
+      await screen.findByTestId('ai-consent-sheet');
+
+      // When
+      fireEvent.press(screen.getByTestId('ai-consent-later')).catch(() => undefined);
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+      expect(getParseRequestCount(httpClient)).toBe(0);
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('동의하면 정리를 한 번 요청하고 결과를 보는 화면으로 간다', async () => {
+      // Given
+      const { httpClient } = await renderForAiParse({ consent: createConsent() });
+      httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
+      httpClient.post.mockResolvedValue(ok(createParseMemoResponseDto()));
+      await startAiParse();
+      await screen.findByTestId('ai-consent-sheet');
+
+      // When
+      fireEvent.press(screen.getByTestId('ai-consent-agree')).catch(() => undefined);
+
+      // Then
+      await waitFor(() =>
+        expect(router.push).toHaveBeenCalledWith({
+          pathname: '/memo/[memoId]/ai-review',
+          params: { memoId: MEMO_ID },
+        }),
+      );
+      expect(getParseRequestCount(httpClient)).toBe(1);
+    });
+
+    it('정리하는 사이 동의가 사라졌으면 동의를 물은 뒤 한 번만 다시 요청한다', async () => {
+      // Given
+      const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
+      httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
+      httpClient.post
+        .mockResolvedValueOnce(err(CONSENT_REQUIRED_ERROR))
+        .mockResolvedValueOnce(ok(createParseMemoResponseDto()));
+      await startAiParse();
+      await screen.findByTestId('ai-consent-sheet');
+
+      // When
+      fireEvent.press(screen.getByTestId('ai-consent-agree')).catch(() => undefined);
+
+      // Then
+      await waitFor(() =>
+        expect(router.push).toHaveBeenCalledWith({
+          pathname: '/memo/[memoId]/ai-review',
+          params: { memoId: MEMO_ID },
+        }),
+      );
+      expect(getParseRequestCount(httpClient)).toBe(2);
+    });
+
+    it('동의한 뒤에도 서버가 동의 없음으로 거절하면 다시 묻지 않고 이유만 알린다', async () => {
+      // Given
+      const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
+      httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
+      httpClient.post.mockResolvedValue(err(CONSENT_REQUIRED_ERROR));
+      await startAiParse();
+      await screen.findByTestId('ai-consent-sheet');
+
+      // When
+      fireEvent.press(screen.getByTestId('ai-consent-agree')).catch(() => undefined);
+
+      // Then
+      expect(
+        await screen.findAllByText('AI 기능을 쓰려면 데이터 제공 동의가 필요해요'),
+      ).not.toHaveLength(0);
+      expect(getParseRequestCount(httpClient)).toBe(2);
+      expect(router.push).not.toHaveBeenCalled();
     });
   });
 });

@@ -738,7 +738,11 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     null,
   );
 
-  const parseSavedMemo = async (savedMemo: Memo) => {
+  /**
+   * 저장된 메모를 한 번 정리한다. 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를
+   * 묻지 않았으면 'consentRevoked'를 돌려준다. 그 밖에는 이동·안내까지 마치고 'done'이다
+   */
+  const parseSavedMemo = async (savedMemo: Memo): Promise<'done' | 'consentRevoked'> => {
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
     const draft = draftService.restore(
@@ -750,14 +754,14 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     if (draft.status === 'restored') {
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
 
-      return;
+      return 'done';
     }
     if (defaultCategoryId == null || gate.promptIfBlocked()) {
-      return;
+      return 'done';
     }
     const consent = await aiConsent.requestAgreementIfNeeded();
     if (!consent.hasAgreed) {
-      return;
+      return 'done';
     }
 
     try {
@@ -768,22 +772,22 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
       });
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
 
-      return;
+      return 'done';
     } catch {
       // 오류 안내는 mutation이 맡는다. 동의 없음(AI_1311)만 여기서 동의부터 다시 시작한다
     }
 
     // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 동의 캐시가 미응답이 된다
     if (!aiConsent.isConsentRequired()) {
-      return;
+      return 'done';
     }
     // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
     if (consent.wasAsked) {
       toast.error(t('AI_1311'));
 
-      return;
+      return 'done';
     }
-    await parseSavedMemo(savedMemo);
+    return 'consentRevoked';
   };
 
   // 정리는 입력칸의 글자가 아니라 저장된 메모로 하므로 고치던 글자를 먼저 저장한다
@@ -795,8 +799,15 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     isStartingRef.current = true;
     try {
       const savedMemo = await onSaveChanges();
-      if (savedMemo != null) {
-        await parseSavedMemo(savedMemo);
+      if (savedMemo == null) {
+        return;
+      }
+      if ((await parseSavedMemo(savedMemo)) === 'done') {
+        return;
+      }
+      // 정리하다 동의가 사라진 것을 알았으면 동의를 물으며 한 번만 다시 시작한다. 그래도 거절되면 이유만 알린다
+      if ((await parseSavedMemo(savedMemo)) === 'consentRevoked') {
+        toast.error(t('AI_1311'));
       }
     } finally {
       isStartingRef.current = false;
