@@ -385,7 +385,7 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
   const displayStartDate = toDate(hasOccurrenceInPeriod ? firstOccurrenceKey : startDate);
 
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
-  const handleCalendarPress = (date: Date) => {
+  const handleDateChange = (date: Date) => {
     applyRepeatFormValues(
       form,
       withTodoRepeatFormCalendarDate(form.getValues(), { date, today, timeZone }),
@@ -400,7 +400,7 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
       endDate={endDate}
       isOpenEnded={endType === 'NEVER' && repeat != null}
       occurrenceKeys={occurrenceKeys}
-      onDateSelect={handleCalendarPress}
+      onValueChange={handleDateChange}
     />
   );
 };

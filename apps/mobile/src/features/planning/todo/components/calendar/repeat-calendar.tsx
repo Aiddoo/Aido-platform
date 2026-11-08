@@ -28,7 +28,7 @@ interface RepeatCalendarProps {
   isOpenEnded: boolean;
   /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
   occurrenceKeys: ReadonlySet<string> | null;
-  onDateSelect: (date: Date) => void;
+  onValueChange: (date: Date) => void;
 }
 
 export function RepeatCalendar({
@@ -38,7 +38,7 @@ export function RepeatCalendar({
   endDate,
   isOpenEnded,
   occurrenceKeys,
-  onDateSelect,
+  onValueChange,
 }: RepeatCalendarProps) {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
   const { timeZone } = useDateFormatContext();
@@ -91,7 +91,7 @@ export function RepeatCalendar({
                         isInRange &&
                         !occurrenceKeys.has(toDateKey(date, timeZone))
                       }
-                      onPress={onDateSelect}
+                      onPress={onValueChange}
                     />
                   ) : (
                     <Box
