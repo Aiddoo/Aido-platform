@@ -11,27 +11,27 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BlockIcon,
-  FlagIcon,
-  MenuActionItem,
   Button,
-  DocsIcon,
+  FlagIcon,
+  FriendIllustration,
   HintPopoverContent,
-  InfiniteListFooter,
   HStack,
+  IconButton,
+  Image,
+  InfiniteListFooter,
   InfoIcon,
   ListRow,
+  MenuActionItem,
   MenuIcon,
   MoreIcon,
   Result,
   Text,
   TextButton,
   TextSkeleton,
-  VStack,
+  TintedRefreshControl,
   useFetchNextPage,
   useOverlay,
-  IconButton,
-  Image,
-  TintedRefreshControl,
+  VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -343,7 +343,7 @@ FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListPro
 
   return (
     <UserList.Empty
-      icon={<DocsIcon width={72} height={72} />}
+      icon={<FriendIllustration />}
       title={t('list.emptyTitle')}
       description={t('list.emptyDescription')}
     />

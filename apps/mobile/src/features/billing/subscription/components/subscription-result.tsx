@@ -1,12 +1,18 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorActions, Result } from '@src/shared/ui';
+import {
+  Box,
+  ErrorIllustration,
+  OfflineIllustration,
+  QueryErrorActions,
+  Result,
+} from '@src/shared/ui';
 import { type ComponentProps, useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import type { SubscriptionSupportFailure } from '../utils/subscription-failure.view-model';
 
-interface SubscriptionResultProps extends Omit<ComponentProps<typeof Result>, 'icon'> {
+interface SubscriptionResultProps extends ComponentProps<typeof Result> {
   /** 화면이 실패 안내로 바뀌면 스크린 리더에도 알린다 */
   isAlert?: boolean;
 }
@@ -44,6 +50,7 @@ SubscriptionResult.Offline = function Offline({ target }: SubscriptionOfflineRes
 
   return (
     <SubscriptionResult
+      icon={<OfflineIllustration />}
       title={t(target === 'receipt' ? 'offline.receiptTitle' : 'offline.plansTitle')}
       description={t('offline.description')}
       testID="subscription-offline"
@@ -67,6 +74,7 @@ SubscriptionResult.Failure = function Failure({
   return (
     <SubscriptionResult
       isAlert
+      icon={<ErrorIllustration />}
       title={t(failure.titleKey)}
       description={t(failure.descriptionKey)}
       testID="subscription-load-failure"

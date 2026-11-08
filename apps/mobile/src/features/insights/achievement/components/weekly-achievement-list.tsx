@@ -13,7 +13,7 @@ import {
   HStack,
   InfiniteList,
   ListRow,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
   Spacing,
@@ -151,11 +151,9 @@ WeeklyAchievementList.Loading = function Loading() {
 };
 
 WeeklyAchievementList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('common');
-
   return (
     <VStack flex={1} p={24} justify="center">
-      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback reset={reset} />
     </VStack>
   );
 };

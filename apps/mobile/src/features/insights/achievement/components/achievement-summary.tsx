@@ -14,15 +14,14 @@ import {
   DashedDivider,
   H4,
   HStack,
-  QueryErrorActions,
+  Image,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   ShareIcon,
   Spacing,
   Text,
   TextSkeleton,
   VStack,
-  Image,
 } from '@src/shared/ui';
 import { formatPercent } from '@src/shared/utils/number-format';
 import {
@@ -294,12 +293,10 @@ AchievementSummary.Loading = function Loading() {
 };
 
 AchievementSummary.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('common');
-
   return (
     <Certificate>
       <Spacing size={16} />
-      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback reset={reset} />
     </Certificate>
   );
 };

@@ -5,10 +5,9 @@ import {
   BottomSheet,
   EditIcon,
   INQUIRY_SHEET_EXIT,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   type SheetRouteExit,
   TrashIcon,
   useSheetRoute,
@@ -134,12 +133,5 @@ SubTodoActionsBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

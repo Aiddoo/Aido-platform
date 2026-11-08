@@ -19,12 +19,12 @@ import {
   BlockIcon,
   ChatBubbleIcon,
   CrownIcon,
-  DocsIcon,
   FlagIcon,
   GlobeIcon,
   H3,
   ListIcon,
   MemoIcon,
+  MemoIllustration,
   MicIcon,
   MoonIcon,
   PersonIcon,
@@ -50,7 +50,7 @@ export default function MyPageScreen() {
         secondary={
           <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
             <Result
-              icon={<DocsIcon width={72} height={72} />}
+              icon={<MemoIllustration />}
               title={t('mypage.empty.title')}
               description={t('mypage.empty.description')}
             />

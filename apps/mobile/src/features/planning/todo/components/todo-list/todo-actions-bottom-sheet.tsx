@@ -12,11 +12,10 @@ import {
   INQUIRY_SHEET_EXIT,
   ListFilledIcon,
   MoveRightIcon,
-  RepeatIcon,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
+  RepeatIcon,
   type SheetRouteExit,
   SunIcon,
   TrashIcon,
@@ -282,12 +281,5 @@ TodoActionsBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

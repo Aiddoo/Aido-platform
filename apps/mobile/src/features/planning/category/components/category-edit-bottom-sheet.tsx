@@ -8,10 +8,9 @@ import {
   Button,
   INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
@@ -93,14 +92,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };
 
 interface CategoryEditFormProps extends CategoryEditBottomSheetContentsProps {

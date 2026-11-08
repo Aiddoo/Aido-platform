@@ -9,11 +9,11 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   InfiniteList,
-  NotiIcon,
-  QueryErrorActions,
+  NotificationIllustration,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -69,11 +69,11 @@ SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbac
 
   return (
     <VStack flex={1} p={24}>
-      <Result
+      <QueryErrorFallback
         title={t(
           isListDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
         )}
-        button={<QueryErrorActions onRetry={reset} />}
+        reset={reset}
       />
     </VStack>
   );
@@ -84,7 +84,7 @@ SentNudgeList.Empty = function Empty() {
 
   return (
     <VStack flex={1} p={24}>
-      <Result icon={<NotiIcon width={72} height={72} />} title={t('sentNudges.empty')} />
+      <Result icon={<NotificationIllustration />} title={t('sentNudges.empty')} />
     </VStack>
   );
 };

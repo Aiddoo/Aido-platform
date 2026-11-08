@@ -1,9 +1,8 @@
-import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   ListRow,
   type ListRowProps,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
 } from '@src/shared/ui';
@@ -73,8 +72,7 @@ function Loading({
 }
 
 function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation();
-  return <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />;
+  return <QueryErrorFallback reset={reset} />;
 }
 
 function Empty(props: ComponentProps<typeof Result>) {

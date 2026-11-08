@@ -13,13 +13,12 @@ import {
   ChatBubbleIcon,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
+  IconButton,
   IconCountButton,
   MoreIcon,
   PlusIcon,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
-  IconButton,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
@@ -115,7 +114,7 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 
   return (
     <HStack flex={1} justify="center" align="center">
-      <Result title={t('list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback title={t('list.loadError')} reset={reset} />
     </HStack>
   );
 };

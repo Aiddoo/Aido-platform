@@ -78,7 +78,6 @@ export {
   MoreIcon,
   MoveRightIcon,
   NaverIcon,
-  NotiIcon,
   PauseIcon,
   PawIcon,
   PersonIcon,
@@ -102,6 +101,17 @@ export {
 export { IconButton, type IconButtonProps } from './icon-button';
 export * from './icon-count-button';
 export { Image } from './image';
+export {
+  CommentIllustration,
+  ErrorIllustration,
+  FriendIllustration,
+  type IllustrationSize,
+  MemoIllustration,
+  NotificationIllustration,
+  OfflineIllustration,
+  SearchIllustration,
+  TodoIllustration,
+} from './illustration';
 export { InfiniteList, InfiniteListFooter, useFetchNextPage } from './infinite-list';
 export { InlineAlert } from './inline-alert';
 export { BottomSheetInput, Input } from './input';

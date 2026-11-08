@@ -3,15 +3,15 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  HStack,
+  ErrorIllustration,
+  FriendIllustration,
   H2,
-  PauseIcon,
+  HStack,
   PawIcon,
   QueryErrorActions,
   type QueryErrorFallbackProps,
-  RefreshIcon,
   Result,
-  SearchIcon,
+  SearchIllustration,
   Spacing,
   Text,
   TextSkeleton,
@@ -99,7 +99,7 @@ InvitePreview.Empty = function Empty() {
 
   return (
     <InviteResult
-      icon={<SearchIcon width={40} height={40} colorClassName="text-main" />}
+      icon={<SearchIllustration />}
       title={t('result.notFound.title')}
       description={t('result.notFound.description')}
       testID="invite-result-not-found"
@@ -125,7 +125,7 @@ InvitePreview.Error = function ErrorFallback({ error, reset }: QueryErrorFallbac
     .with('not_found', () => <InvitePreview.Empty />)
     .with('rotated', () => (
       <InviteResult
-        icon={<RefreshIcon width={40} height={40} colorClassName="text-main" />}
+        icon={<FriendIllustration />}
         title={t('result.rotated.title')}
         description={t('result.rotated.description')}
         testID="invite-result-rotated"
@@ -134,7 +134,7 @@ InvitePreview.Error = function ErrorFallback({ error, reset }: QueryErrorFallbac
     ))
     .with('disabled', () => (
       <InviteResult
-        icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
+        icon={<FriendIllustration />}
         title={t('result.disabled.title')}
         description={t('result.disabled.description')}
         testID="invite-result-disabled"
@@ -142,6 +142,7 @@ InvitePreview.Error = function ErrorFallback({ error, reset }: QueryErrorFallbac
     ))
     .otherwise(() => (
       <InviteResult
+        icon={<ErrorIllustration />}
         title={t('result.loadFailed.title')}
         description={t('result.loadFailed.description')}
         button={<QueryErrorActions testID="invite-result-retry" onRetry={reset} />}
@@ -160,19 +161,7 @@ interface InviteResultProps extends Pick<ComponentProps<typeof Result>, 'testID'
 function InviteResult({ icon, title, description, button, testID }: InviteResultProps) {
   return (
     <HStack flex={1} justify="center" align="center" className="min-h-[420px]">
-      <Result
-        icon={
-          icon == null ? undefined : (
-            <Box className="size-[88px] items-center justify-center rounded-full bg-main/10">
-              {icon}
-            </Box>
-          )
-        }
-        title={title}
-        description={description}
-        button={button}
-        testID={testID}
-      />
+      <Result icon={icon} title={title} description={description} button={button} testID={testID} />
     </HStack>
   );
 }

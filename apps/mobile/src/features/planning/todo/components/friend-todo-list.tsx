@@ -9,13 +9,13 @@ import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
   ChatBubbleIcon,
-  DocsIcon,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
-  QueryErrorActions,
+  QueryErrorFallback,
   Result,
   Text,
+  TodoIllustration,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
@@ -163,7 +163,7 @@ FriendTodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps
 
   return (
     <HStack flex={1} justify="center" align="center">
-      <Result title={t('todo:list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback title={t('todo:list.loadError')} reset={reset} />
     </HStack>
   );
 };
@@ -176,7 +176,7 @@ FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: Compone
   return (
     <HStack flex={1} justify="center" align="center">
       <Result
-        icon={<DocsIcon width={72} height={72} />}
+        icon={<TodoIllustration />}
         title={t('friendTodo.emptyTitle')}
         description={isToday ? t('friendTodo.emptyDescription') : undefined}
         button={isToday ? <EmptyAction /> : undefined}

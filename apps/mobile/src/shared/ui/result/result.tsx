@@ -13,15 +13,15 @@ export function Result({ icon, title, description, button, className, testID }: 
           <Box accessible={false} importantForAccessibility="no">
             {icon}
           </Box>
-          <Spacing size={24} />
+          <Spacing size={16} />
         </>
       )}
 
       <Text
         size="b3"
-        shade={6}
+        shade={9}
         align="center"
-        weight="medium"
+        weight="semibold"
         lineBreakStrategyIOS="hangul-word"
         textBreakStrategy="highQuality"
       >
@@ -33,7 +33,7 @@ export function Result({ icon, title, description, button, className, testID }: 
           <Spacing size={4} />
           <Text
             size="b4"
-            shade={5}
+            shade={6}
             align="center"
             lineBreakStrategyIOS="hangul-word"
             textBreakStrategy="highQuality"
@@ -45,7 +45,7 @@ export function Result({ icon, title, description, button, className, testID }: 
 
       {button && (
         <>
-          <Spacing size={24} />
+          <Spacing size={20} />
           {button}
         </>
       )}

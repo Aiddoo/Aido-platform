@@ -9,8 +9,8 @@ import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
   Spacing,
@@ -98,13 +98,7 @@ WeatherRescheduleSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };
 
 function RescheduleTodoList({

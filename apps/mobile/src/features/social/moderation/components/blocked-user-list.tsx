@@ -9,7 +9,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
-  DocsIcon,
+  FriendIllustration,
   InfiniteList,
   Text,
   TextSkeleton,
@@ -145,7 +145,7 @@ BlockedUserList.Empty = function Empty() {
 
   return (
     <UserList.Empty
-      icon={<DocsIcon width={72} height={72} />}
+      icon={<FriendIllustration />}
       title={t('blockedUsers.emptyTitle')}
       description={t('blockedUsers.emptyDescription')}
       testID="blocked-users-empty"

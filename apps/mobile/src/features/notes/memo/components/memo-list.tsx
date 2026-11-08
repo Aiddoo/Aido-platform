@@ -8,10 +8,10 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
-  DocsIcon,
   HStack,
+  MemoIllustration,
   PinFilledIcon,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
   Text,
@@ -188,7 +188,7 @@ MemoList.Empty = function Empty() {
   return (
     <HStack flex={1} justify="center" align="center">
       <Result
-        icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
+        icon={<MemoIllustration />}
         title={t('list.emptyTitle')}
         description={t('list.emptyDescription')}
         button={
@@ -206,7 +206,7 @@ MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 
   return (
     <HStack flex={1} justify="center" align="center">
-      <Result title={t('memo:list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback title={t('memo:list.loadFailed')} reset={reset} />
     </HStack>
   );
 };

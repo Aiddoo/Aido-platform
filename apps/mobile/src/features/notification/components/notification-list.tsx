@@ -11,11 +11,11 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   InfiniteList,
-  NotiIcon,
-  QueryErrorActions,
+  NotificationIllustration,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -86,10 +86,7 @@ NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
 
   return (
     <VStack flex={1} p={24}>
-      <Result
-        title={t('notification:list.loadError')}
-        button={<QueryErrorActions onRetry={reset} />}
-      />
+      <QueryErrorFallback title={t('notification:list.loadError')} reset={reset} />
     </VStack>
   );
 };
@@ -99,7 +96,7 @@ NotificationList.Empty = function Empty() {
 
   return (
     <VStack flex={1} p={24}>
-      <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
+      <Result icon={<NotificationIllustration />} title={t('list.empty')} />
     </VStack>
   );
 };

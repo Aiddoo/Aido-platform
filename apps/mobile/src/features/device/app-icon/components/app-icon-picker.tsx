@@ -5,9 +5,8 @@ import {
   CrownFilledIcon,
   Grid,
   GridItem,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   Text,
   TextSkeleton,
   VStack,
@@ -115,10 +114,10 @@ AppIconPicker.Loading = function Loading() {
 AppIconPicker.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['appIcon', 'common']);
   return (
-    <Result
+    <QueryErrorFallback
       title={t('errorDialog.title')}
       description={t('errorDialog.description')}
-      button={<QueryErrorActions onRetry={reset} />}
+      reset={reset}
     />
   );
 };

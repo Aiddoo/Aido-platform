@@ -48,7 +48,6 @@ export {
   MoreIcon,
   MoveRightIcon,
   NaverIcon,
-  NotiIcon,
   PauseIcon,
   PawIcon,
   PersonIcon,

@@ -9,11 +9,11 @@ import {
   Button,
   CheckIcon,
   InfiniteList,
-  QueryErrorActions,
-  Result,
-  SearchIcon,
-  VStack,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
+  Result,
+  SearchIllustration,
+  VStack,
 } from '@src/shared/ui';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -150,7 +150,7 @@ FriendSearchList.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
   const { t } = useTranslation(['friend', 'common']);
   return (
     <VStack flex={1} p={24}>
-      <Result title={t('friend:search.loadError')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback title={t('friend:search.loadError')} reset={reset} />
     </VStack>
   );
 };
@@ -158,10 +158,7 @@ FriendSearchList.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
 FriendSearchList.Empty = function Empty({ query }: { query: string }) {
   const { t } = useTranslation('friend');
   return (
-    <UserList.Empty
-      icon={<SearchIcon width={64} height={64} colorClassName="text-gray-4" />}
-      title={t('search.empty.noResults', { query })}
-    />
+    <UserList.Empty icon={<SearchIllustration />} title={t('search.empty.noResults', { query })} />
   );
 };
 
@@ -171,7 +168,7 @@ FriendSearchList.Prompt = function Prompt() {
   return (
     <VStack flex={1} p={24}>
       <Result
-        icon={<SearchIcon width={64} height={64} colorClassName="text-gray-4" />}
+        icon={<SearchIllustration />}
         title={t('search.empty.prompt')}
         description={t('search.empty.tagHint')}
         button={<Result.Button onPress={openAddFriend}>{t('search.empty.addByTag')}</Result.Button>}

@@ -10,9 +10,8 @@ import {
   Box,
   DashedDivider,
   H4,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   ShareIcon,
   Spacing,
   Text,
@@ -196,12 +195,10 @@ WeeklyAchievementCertificate.Loading = function Loading() {
 };
 
 WeeklyAchievementCertificate.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('common');
-
   return (
     <Certificate>
       <Spacing size={16} />
-      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback reset={reset} />
     </Certificate>
   );
 };

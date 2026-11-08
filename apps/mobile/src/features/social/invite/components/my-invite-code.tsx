@@ -3,8 +3,8 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   CopyIcon,
+  FriendIllustration,
   HStack,
-  PauseIcon,
   Result,
   Text,
   TextButton,
@@ -131,7 +131,7 @@ MyInviteCode.Unavailable = function Unavailable() {
   return (
     <MyInviteCodeSurface className="min-h-[136px] justify-center">
       <Result
-        icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
+        icon={<FriendIllustration size="block" />}
         title={t('myInvite.unavailable.title')}
         description={t('myInvite.unavailable.description')}
       />

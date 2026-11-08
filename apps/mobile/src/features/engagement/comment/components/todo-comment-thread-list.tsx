@@ -7,15 +7,14 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  HStack,
   HeartFilledIcon,
+  HStack,
   InfiniteList,
-  QueryErrorActions,
+  InlineAlert,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   Text,
   VStack,
-  InlineAlert,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -191,7 +190,7 @@ TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallba
     >
       <TodoDetailHeader />
       <HStack flex={1} justify="center" align="center" py={32}>
-        <Result title={t('list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
+        <QueryErrorFallback title={t('list.loadFailed')} reset={reset} />
       </HStack>
     </TodoCommentKeyboardScrollView>
   );

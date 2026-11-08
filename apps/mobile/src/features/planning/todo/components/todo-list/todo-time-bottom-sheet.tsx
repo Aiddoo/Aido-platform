@@ -1,14 +1,12 @@
 import { toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
-import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   useSheetRoute,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -134,12 +132,5 @@ TodoTimeBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

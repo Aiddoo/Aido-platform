@@ -5,7 +5,7 @@ import {
 } from '@src/features/identity/user/components/user-list';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { InfiniteList, PawIcon, type Result } from '@src/shared/ui';
+import { FriendIllustration, InfiniteList, type Result } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import type { ComponentProps, ReactElement } from 'react';
@@ -75,7 +75,7 @@ InvitedFriendList.Empty = function Empty(props: Partial<ComponentProps<typeof Re
 
   return (
     <UserList.Empty
-      icon={<PawIcon width={36} height={36} colorClassName="text-gray-3" />}
+      icon={<FriendIllustration size="block" />}
       title={t('friendList.emptyTitle')}
       description={t('friendList.emptyDescription')}
       {...props}

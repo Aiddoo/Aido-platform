@@ -1,5 +1,4 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { ControlField, ListGroup, Separator, Skeleton } from 'heroui-native';
@@ -9,9 +8,8 @@ import { ScrollView } from 'react-native';
 import { Box } from '../box';
 import { HStack } from '../h-stack';
 import { ArrowRightIcon, type StyledIcon } from '../icon';
-import { QueryErrorActions, type QueryErrorFallbackProps } from '../query-error-boundary';
+import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
 import { ReadableContent } from '../readable-content';
-import { Result } from '../result';
 import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { Text, TextSkeleton } from '../text';
 import { VStack } from '../v-stack';
@@ -202,17 +200,10 @@ SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack
 };
 
 SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('common');
-
   return (
     <SettingsListGroup>
       <SettingsListGroup.Content>
-        <Result
-          className="py-4"
-          title={t('errorBoundary.title')}
-          description={t('errorBoundary.description')}
-          button={<QueryErrorActions onRetry={reset} />}
-        />
+        <QueryErrorFallback className="py-4" illustrationSize="block" reset={reset} />
       </SettingsListGroup.Content>
     </SettingsListGroup>
   );

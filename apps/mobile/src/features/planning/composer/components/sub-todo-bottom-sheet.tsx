@@ -9,10 +9,9 @@ import {
   INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   MicIcon,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   Text,
   useSheetRoute,
   VStack,
@@ -66,14 +65,7 @@ SubTodoBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
 }: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
-    />
-  );
+  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };
 
 interface SubTodoFormPartProps {

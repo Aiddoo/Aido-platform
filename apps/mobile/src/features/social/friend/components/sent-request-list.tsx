@@ -4,7 +4,7 @@ import {
 } from '@src/features/identity/user/components/user-list';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, DocsIcon, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
+import { Box, Button, FriendIllustration, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
@@ -90,5 +90,5 @@ SentRequestList.Error = UserList.Error;
 
 SentRequestList.Empty = function Empty() {
   const { t } = useTranslation('friend');
-  return <UserList.Empty icon={<DocsIcon width={72} height={72} />} title={t('list.emptySent')} />;
+  return <UserList.Empty icon={<FriendIllustration />} title={t('list.emptySent')} />;
 };

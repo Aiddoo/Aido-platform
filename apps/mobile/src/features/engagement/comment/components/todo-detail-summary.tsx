@@ -30,13 +30,13 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  DocsIcon,
   EyeIcon,
   HStack,
   QueryErrorBoundary,
   Result,
   Text,
   TextSkeleton,
+  TodoIllustration,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -330,7 +330,7 @@ TodoDetailSummary.Empty = function Empty() {
   return (
     <Box flex={1} className="bg-white px-8">
       <Result
-        icon={<DocsIcon width={72} height={72} />}
+        icon={<TodoIllustration />}
         title={t('detail.emptyTitle')}
         description={t('detail.selectPrompt')}
       />
@@ -345,7 +345,7 @@ TodoDetailSummary.Unavailable = function Unavailable({ onClose }: { onClose: () 
   return (
     <Box flex={1} px={32} testID="todo-unavailable">
       <Result
-        icon={<DocsIcon width={72} height={72} />}
+        icon={<TodoIllustration />}
         title={t('todo:detail.unavailableTitle')}
         description={t('todo:detail.unavailableDescription')}
         button={<Result.Button onPress={onClose}>{t('common:actions.goBack')}</Result.Button>}

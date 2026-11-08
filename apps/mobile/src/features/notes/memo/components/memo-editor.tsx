@@ -22,15 +22,15 @@ import {
   Box,
   CheckmarkIcon,
   ConfirmDialog,
-  DocsIcon,
   HStack,
   IconButton,
   type IconButtonProps,
+  MemoIllustration,
   MenuActionItem,
   MoreIcon,
   PinFilledIcon,
   PinIcon,
-  QueryErrorActions,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
   STACK_BACK_ICON,
@@ -426,7 +426,7 @@ MemoEditor.Empty = function Empty() {
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
       <HStack flex={1} justify="center" align="center">
         <Result
-          icon={<DocsIcon width={72} height={72} />}
+          icon={<MemoIllustration />}
           title={t('detail.emptyTitle')}
           description={t('detail.selectPrompt')}
         />
@@ -447,18 +447,14 @@ function MemoUnavailableResult({
       {match(error)
         .when(isMemoUnavailableError, () => (
           <Result
-            icon={<DocsIcon width={72} height={72} />}
+            icon={<MemoIllustration />}
             title={t('memo:detail.unavailableTitle')}
             description={t('memo:detail.unavailableDescription')}
             button={<Result.Button onPress={onLeave}>{t('common:actions.goBack')}</Result.Button>}
           />
         ))
         .otherwise(() => (
-          <Result
-            title={t('common:errorBoundary.title')}
-            description={t('common:errorBoundary.description')}
-            button={<QueryErrorActions onRetry={reset} />}
-          />
+          <QueryErrorFallback reset={reset} />
         ))}
     </Box>
   );

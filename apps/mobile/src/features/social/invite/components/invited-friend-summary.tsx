@@ -1,6 +1,15 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, H4, HStack, PawIcon, Result, TextButton, TextSkeleton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  FriendIllustration,
+  H4,
+  HStack,
+  Result,
+  TextButton,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -81,7 +90,7 @@ InvitedFriendSummary.Empty = function Empty() {
   return (
     <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
       <Result
-        icon={<PawIcon width={36} height={36} colorClassName="text-gray-3" />}
+        icon={<FriendIllustration size="block" />}
         title={t('friendList.emptyTitle')}
         description={t('friendList.emptyDescription')}
       />

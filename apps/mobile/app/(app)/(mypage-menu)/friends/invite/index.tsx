@@ -18,17 +18,16 @@ import {
   H4,
   HStack,
   Image,
-  QueryErrorActions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   ReadableContent,
-  Result,
   Spacing,
   StyledSafeAreaView,
   Text,
+  TintedRefreshControl,
   VStack,
   WordWrapText,
-  TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
@@ -146,7 +145,7 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
 
   return (
     <Box className="min-h-[320px] justify-center">
-      <Result title={t('result.loadFailed.title')} button={<QueryErrorActions onRetry={reset} />} />
+      <QueryErrorFallback title={t('result.loadFailed.title')} reset={reset} />
     </Box>
   );
 };

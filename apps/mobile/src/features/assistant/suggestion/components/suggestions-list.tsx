@@ -15,15 +15,14 @@ import {
   DashedDivider,
   H4,
   HStack,
-  QueryErrorActions,
+  Image,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
-  Result,
   ScallopedContainer,
   Spacing,
   Text,
   TextSkeleton,
   VStack,
-  Image,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
@@ -325,8 +324,6 @@ SuggestionsList.Loading = function Loading() {
 };
 
 SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('common');
-
   if (isSuggestionsPremiumRequiredError(error)) {
     return <SuggestionsList.PremiumPreview />;
   }
@@ -334,7 +331,7 @@ SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
   return (
     <ScallopedContainer>
       <Box className="px-5 py-6">
-        <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
+        <QueryErrorFallback reset={reset} />
       </Box>
     </ScallopedContainer>
   );
