@@ -85,11 +85,11 @@ export function useVoiceNoteRecording({
   const hasBegunRef = useRef(false);
   const isUnmountedRef = useRef(false);
 
-  const onCaptured = async () => {
+  /** 말로 메모하기는 고르는 단계가 없다. 녹음 파일까지 받아 초안을 저장하고 넘긴 뒤 계획 없이(null) 처음으로 돌아간다 */
+  const saveFinishedNote = async () => {
     await intake.waitUntilSettled();
     persist('now');
     intake.handOff();
-    hasBegunRef.current = false;
     // 끝내는 동안 사용자가 이미 떠났다. 글자는 저장했고 다른 화면에서 끌어오지 않는다
     if (!isUnmountedRef.current) {
       onFinished(baseNote.draftId);
@@ -102,7 +102,7 @@ export function useVoiceNoteRecording({
     mode: 'note',
     maxSeconds,
     onLimitReached,
-    onCaptured,
+    onCaptured: saveFinishedNote,
   });
 
   const captions = useVoiceNoteCaptions({
@@ -165,6 +165,7 @@ export function useVoiceNoteRecording({
   }, [intake, speechRecognizer]);
 
   const { status } = session.state;
+  const previousStatusRef = useRef(status);
   const flushDraft = useEffectEvent(() => {
     persist('now');
   });
@@ -176,11 +177,13 @@ export function useVoiceNoteRecording({
     }
   });
   useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    previousStatusRef.current = status;
     if (status === 'paused' || status === 'failed') {
       flushDraft();
     }
-    // 듣기를 시작한 뒤 처음으로 돌아왔다면 들은 글자 없이 끝난 것이다
-    if (status === 'idle') {
+    // 듣기를 시작한 뒤 처음으로 돌아왔다면 들은 글자 없이 끝난 것이다. 저장하고 넘긴 끝내기는 planning을 거친다
+    if (status === 'idle' && previousStatus !== 'planning') {
       notifyEmpty();
     }
   }, [status]);
