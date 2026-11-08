@@ -3,7 +3,6 @@ import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
 import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import type { Query, QueryClient } from '@tanstack/react-query';
 
@@ -22,7 +21,6 @@ export function invalidateAfterBlockChange(queryClient: QueryClient) {
   emitNotificationsChanged();
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: MODERATION_QUERY_KEYS.blockedUsers() }),
-    invalidateFriends(queryClient),
     invalidateFriendTodos(queryClient),
     invalidateFeedTodos(queryClient),
     queryClient.invalidateQueries({ predicate: isBlockDependentQuery }),

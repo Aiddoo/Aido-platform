@@ -39,6 +39,7 @@ export function useGetFriendsInfiniteQueryOptions() {
     },
     select: selectItemsWithTotal,
     ...PERSISTED_QUERY_OPTIONS,
+    meta: { ...PERSISTED_QUERY_OPTIONS.meta, refreshOnBlockChange: true },
   });
 }
 
@@ -68,6 +69,7 @@ export function useGetReceivedRequestsInfiniteQueryOptions() {
       return lastPage.items.at(-1)?.id;
     },
     select: selectItemsWithTotal,
+    meta: { refreshOnBlockChange: true },
   });
 }
 
@@ -87,6 +89,7 @@ export function useGetSentRequestsInfiniteQueryOptions() {
       return lastPage.items.at(-1)?.id;
     },
     select: selectItemsWithTotal,
+    meta: { refreshOnBlockChange: true },
   });
 }
 
@@ -114,5 +117,6 @@ export function useGetUserSearchInfiniteQueryOptions({ query }: { query: string 
       return { cursor: lastPage.nextCursor };
     },
     select: selectItems,
+    meta: { refreshOnBlockChange: true },
   });
 }
