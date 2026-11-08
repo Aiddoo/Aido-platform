@@ -8,9 +8,11 @@ import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
+import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSubscriptionView } from '../hooks/use-subscription-view';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { type SubscriptionOffering } from '../schemas/subscription.schema';
+import type { StoreUnavailable } from '../utils/offerings-availability';
 import {
   toSubscriptionLoadFailure,
   toSubscriptionStoreUnavailableFailure,
@@ -34,10 +36,7 @@ export function PlanPicker(props: PlanPickerProps) {
       <PlanPicker.Plans offering={offering} {...props} />
     ))
     .with({ status: 'unavailable' }, ({ unavailable }) => (
-      <SubscriptionResult.Failure
-        failure={toSubscriptionStoreUnavailableFailure(unavailable)}
-        onRetry={() => refetch()}
-      />
+      <StoreUnavailableFailure unavailable={unavailable} onRetry={() => refetch()} />
     ))
     .exhaustive();
 }
@@ -93,3 +92,25 @@ PlanPicker.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackPr
     />
   );
 };
+
+/** 안내를 실제로 보였을 때 관측을 남긴다(앱 실행마다 코드별 한 번) */
+function StoreUnavailableFailure({
+  unavailable,
+  onRetry,
+}: {
+  unavailable: StoreUnavailable;
+  onRetry: () => void;
+}) {
+  const reportStoreUnavailable = useReportStoreUnavailable();
+
+  useEffect(() => {
+    reportStoreUnavailable(unavailable);
+  }, [reportStoreUnavailable, unavailable]);
+
+  return (
+    <SubscriptionResult.Failure
+      failure={toSubscriptionStoreUnavailableFailure(unavailable)}
+      onRetry={onRetry}
+    />
+  );
+}
