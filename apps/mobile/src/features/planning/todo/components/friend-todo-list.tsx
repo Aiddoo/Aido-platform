@@ -53,6 +53,8 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
     ],
   });
   const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos.todos), [todos]);
+  // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다
+  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
 
   if (categoryGroups.length === 0) {
     return <FriendTodoList.Empty action={emptyAction} />;
@@ -65,7 +67,12 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
           <CategoryHeaderPill label={group.category.name} color={group.category.color} />
           <Box>
             {group.todos.map((todo) => (
-              <FriendTodoList.Item key={todo.id} todo={todo} action={rowAction} />
+              <FriendTodoList.Item
+                key={todo.id}
+                todo={todo}
+                action={rowAction}
+                onOpenDetail={openTodoDetail}
+              />
             ))}
           </Box>
         </VStack>
@@ -77,13 +84,14 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
 FriendTodoList.Item = function Item({
   todo,
   action: RowAction,
+  onOpenDetail,
 }: {
   todo: Todo;
   action: ComponentType<{ todo: Todo }>;
+  onOpenDetail: (todoId: number) => void;
 }) {
   const { t } = useTranslation('todo');
-  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
-  const selectTodo = useSingleTap(openTodoDetail);
+  const selectTodo = useSingleTap(onOpenDetail);
   // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const isExpanded = userExpanded ?? TodoPolicy.hasSubTodos(todo);

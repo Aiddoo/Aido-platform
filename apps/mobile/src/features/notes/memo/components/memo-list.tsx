@@ -65,6 +65,8 @@ export function MemoList() {
   const [voiceNotes] = useVoiceNotes(me.id);
   const hasVoiceNotes = voiceNotes.length > 0;
   const windowSizeClass = useWindowSizeClass();
+  // 칸마다 route 훅을 부르면 URL이 바뀔 때마다 메모 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
+  const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
 
   if (memos.length === 0) {
     return hasVoiceNotes ? null : <MemoList.Empty />;
@@ -100,7 +102,11 @@ export function MemoList() {
                       ) * ENTERING_STAGGER_MS,
                     ).duration(ENTERING_DURATION_MS)}
                   >
-                    <MemoList.Item memo={memo} />
+                    <MemoList.Item
+                      memo={memo}
+                      isSelected={selectedMemoId === memo.id}
+                      onSelect={setSelectedMemoId}
+                    />
                   </Animated.View>
                 ))}
             </VStack>
@@ -120,9 +126,14 @@ export function MemoList() {
   );
 }
 
-MemoList.Item = function Item({ memo }: { memo: Memo }) {
-  const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
-  const selectMemo = useSingleTap(setSelectedMemoId);
+interface MemoListItemProps {
+  memo: Memo;
+  isSelected: boolean;
+  onSelect: (memoId: number) => void;
+}
+
+MemoList.Item = function Item({ memo, isSelected, onSelect }: MemoListItemProps) {
+  const selectMemo = useSingleTap(onSelect);
   const dateFormatContext = useDateFormatContext();
   const { title, body } = toMemoPreview(memo);
 
@@ -132,7 +143,7 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
         gap={8}
         className={cn(
           'rounded-2xl border bg-gray-1 p-4',
-          selectedMemoId === memo.id ? 'border-main' : 'border-transparent',
+          isSelected ? 'border-main' : 'border-transparent',
         )}
       >
         <HStack align="start" gap={8}>

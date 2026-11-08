@@ -38,7 +38,7 @@ import { SubTodoPolicy } from '../../domains/sub-todo.model';
 import { type SubTodo } from '../../domains/sub-todo.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { type Todo } from '../../domains/todo.model';
-import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedDate } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
   useReorderSubTodosMutationOptions,
@@ -64,10 +64,13 @@ import {
 export function TodoList() {
   const { timeZone } = useDateFormatContext();
   const [selectedDate] = useFeedDate();
+  const date = toDateKey(selectedDate, timeZone);
+  // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
+  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
-      useGetTodosByDateQueryOptions({ date: toDateKey(selectedDate, timeZone) }),
+      useGetTodosByDateQueryOptions({ date }),
       useGetPreferenceQueryOptions(),
     ],
   });
@@ -85,9 +88,15 @@ export function TodoList() {
             label={group.category.name}
             color={group.category.color}
             categoryId={group.category.id}
+            date={date}
           />
 
-          <TodoReorderableList items={group.todos} updatedAt={dataUpdatedAt} />
+          <TodoReorderableList
+            items={group.todos}
+            updatedAt={dataUpdatedAt}
+            date={date}
+            onOpenDetail={openTodoDetail}
+          />
         </Box>
       ))}
       {/* 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다 */}
@@ -123,11 +132,11 @@ interface CategoryHeaderProps {
   label: string;
   color: string;
   categoryId: number;
+  date: string;
 }
 
-function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
+function CategoryHeader({ label, color, categoryId, date }: CategoryHeaderProps) {
   const fontScaledSize = useFontScaledSize();
-  const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
 
   return (
@@ -150,9 +159,12 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
 interface TodoReorderableListProps {
   items: Todo[];
   updatedAt: number;
+  /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
+  date: string;
+  onOpenDetail: (todoId: number) => void;
 }
 
-function TodoReorderableList({ items, updatedAt }: TodoReorderableListProps) {
+function TodoReorderableList({ items, updatedAt, date, onOpenDetail }: TodoReorderableListProps) {
   const reorderMutation = useMutation(useReorderTodoMutationOptions());
   const reorderableList = useReorderableList({
     items,
@@ -173,7 +185,9 @@ function TodoReorderableList({ items, updatedAt }: TodoReorderableListProps) {
       shouldUpdateActiveItem
       scrollEnabled={false}
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <TodoList.Item todo={item} updatedAt={updatedAt} />}
+      renderItem={({ item }) => (
+        <TodoList.Item todo={item} updatedAt={updatedAt} date={date} onOpenDetail={onOpenDetail} />
+      )}
     />
   );
 }
@@ -181,16 +195,16 @@ function TodoReorderableList({ items, updatedAt }: TodoReorderableListProps) {
 interface TodoListItemProps {
   todo: Todo;
   updatedAt: number;
+  date: string;
+  onOpenDetail: (todoId: number) => void;
 }
 
-TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
+TodoList.Item = function Item({ todo, updatedAt, date, onOpenDetail }: TodoListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
-  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
-  const selectTodo = useSingleTap(openTodoDetail);
+  const selectTodo = useSingleTap(onOpenDetail);
 
   const { t } = useTranslation('todo');
-  const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
