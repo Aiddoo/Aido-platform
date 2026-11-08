@@ -61,7 +61,7 @@ export function useMarkAllAsReadMutationOptions() {
       clearBadgeQuietly();
     },
     onError: (error, _variables, context) => {
-      if (context?.snapshot) {
+      if (context != null) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
       notificationBadgeService
@@ -111,7 +111,7 @@ export function useMarkAsReadMutationOptions() {
       }
     },
     onError: (_error, _variables, context) => {
-      if (context?.snapshot) {
+      if (context != null) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
       notificationBadgeService

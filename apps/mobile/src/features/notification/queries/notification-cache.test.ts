@@ -147,7 +147,7 @@ describe('notification cache optimistic update', () => {
     const snapshot = await optimisticallyMarkNotificationsRead(client, 1, { shouldApply });
 
     // Then
-    expect(snapshot).toEqual([]);
+    expect(snapshot).toBeNull();
     expect(client.getQueryData(listKey)).toBe(data);
   });
 });

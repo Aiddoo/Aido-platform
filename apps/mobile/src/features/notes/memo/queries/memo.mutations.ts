@@ -37,7 +37,6 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { Memo } from '../domains/memo.model';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import {
@@ -45,12 +44,7 @@ import {
   createMemoPlanRequestDraftKey,
   restoreOrCreateMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
-import {
-  invalidateMemoList,
-  invalidateMemoResourceLimit,
-  invalidateMemos,
-  replaceMemoInList,
-} from './memo-cache';
+import { invalidateMemoList, invalidateMemoResourceLimit, replaceMemoInList } from './memo-cache';
 
 export function useCreateMemoMutationOptions() {
   const memoService = useMemoService();
@@ -68,9 +62,10 @@ export function useCreateMemoMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
     },
-    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
+    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다. 다른 메모 상세는 그대로다
     onSettled: () => {
-      invalidateMemos(queryClient);
+      invalidateMemoList(queryClient);
+      invalidateMemoResourceLimit(queryClient);
     },
   });
 }
@@ -138,7 +133,7 @@ export function useSetMemoPinnedMutationOptions() {
       unwrap(await memoService.setPinned(memoId, isPinned)),
     onSuccess: async (memo, { memoId, isPinned }) => {
       await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
-      const previousMemo = queryClient.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId }));
+      const previousMemo = queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
       const accountId = getCachedMe(queryClient)?.id;
       if (previousMemo != null && accountId != null) {
         const source = { from: toEpochMs(previousMemo.updatedAt), to: toEpochMs(memo.updatedAt) };
@@ -161,8 +156,12 @@ export function useSetMemoPinnedMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
     },
-    onSettled: () => {
-      invalidateMemos(queryClient);
+    // 상세는 응답으로 고쳤고 고정 순서만 서버가 정한다
+    onSettled: (_memo, error, { memoId }) => {
+      invalidateMemoList(queryClient);
+      if (error != null) {
+        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+      }
     },
   });
 }
@@ -187,8 +186,10 @@ export function useDeleteMemoMutationOptions() {
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.deleteRetry') });
     },
     // 기다리면 지운 메모의 404 재조회가 먼저 끝나 다이얼로그가 닫히기 전에 경계로 내려갈 수 있다
-    onSettled: () => {
-      invalidateMemos(queryClient);
+    onSettled: (_result, _error, memoId) => {
+      invalidateMemoList(queryClient);
+      invalidateMemoResourceLimit(queryClient);
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
     },
   });
 }
@@ -263,7 +264,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
     content,
     sourceUpdatedAt,
   }: Pick<ParseMemoVariables, 'content' | 'sourceUpdatedAt'>) => {
-    const cachedMemo = queryClient.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId }));
+    const cachedMemo = queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
 
     return cachedMemo?.content === content ? toEpochMs(cachedMemo.updatedAt) : sourceUpdatedAt;
   };
