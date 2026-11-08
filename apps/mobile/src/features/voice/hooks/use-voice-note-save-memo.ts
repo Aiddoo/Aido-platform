@@ -6,7 +6,7 @@ import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
 import { type VoiceNote } from '../schemas/voice-note.schema';
-import { useCurrentVoiceNote } from './use-current-voice-note';
+import { useVoiceNoteRoute } from './use-current-voice-note';
 
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */
 const UNUSED_CATEGORY_ID = 0;
@@ -17,7 +17,7 @@ interface UseVoiceNoteSaveMemoOptions {
 }
 
 export function useVoiceNoteSaveMemo({ note, onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
-  const [{ accountId, draftId }] = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useVoiceNoteRoute();
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const mutation = useMutation(

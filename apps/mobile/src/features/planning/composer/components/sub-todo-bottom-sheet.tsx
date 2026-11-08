@@ -76,7 +76,7 @@ interface SubTodoTitleInputProps extends SubTodoFormPartProps {
   onSubmitEditing: () => void;
 }
 
-const SUB_TODO_TITLE_MAX_LENGTH = subTodoFormSchema.shape.title.maxLength ?? undefined;
+const SUB_TODO_TITLE_MAX_LENGTH = subTodoFormSchema.shape.title.out.maxLength ?? undefined;
 
 export function SubTodoTitleInput({ form, onSubmitEditing }: SubTodoTitleInputProps) {
   const { t } = useTranslation('todo');

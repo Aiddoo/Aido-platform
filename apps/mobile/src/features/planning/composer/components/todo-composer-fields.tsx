@@ -131,12 +131,16 @@ export function TodoComposerSubmitButton({
   onPress,
   testID,
 }: TodoComposerSubmitButtonProps) {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
   return (
     <PressableFeedback
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={t('add.save')}
+      accessibilityState={{ disabled: isDisabled === true, busy: isSubmitting }}
       isDisabled={isDisabled}
       onPress={onPress}
       style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}

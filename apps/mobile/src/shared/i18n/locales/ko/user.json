@@ -42,6 +42,7 @@
     "copyTag": "해시태그 복사",
     "defaultName": "열정적인 사용자",
     "avatarAlt": "{{name}} 프로필",
+    "changeImage": "프로필 이미지 바꾸기",
     "tagCopied": "해시태그 복사 완료",
     "tagCopiedDescription": "8자리 해시태그를 친구에게 공유해 친구 요청을 받아보세요",
     "tagCopyFailed": "해시태그를 복사하지 못했어요",

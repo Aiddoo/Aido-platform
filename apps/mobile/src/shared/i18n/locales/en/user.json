@@ -42,6 +42,7 @@
     "copyTag": "Copy hashtag",
     "defaultName": "Motivated User",
     "avatarAlt": "{{name}}'s profile",
+    "changeImage": "Change profile image",
     "tagCopied": "Hashtag copied",
     "tagCopiedDescription": "Share your 8-character hashtag to receive friend requests",
     "tagCopyFailed": "Could not copy the hashtag",

@@ -15,7 +15,11 @@ export function ProfileAvatarButton({ onPress }: ProfileAvatarButtonProps) {
 
   return (
     <VStack align="center" py={32}>
-      <PressableFeedback onPress={onPress}>
+      <PressableFeedback
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.changeImage')}
+        onPress={onPress}
+      >
         <Box className="relative overflow-visible">
           <UserAvatar
             alt={t('profile.avatarAlt', { name: user.name })}

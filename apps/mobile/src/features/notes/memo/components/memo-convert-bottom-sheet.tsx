@@ -15,7 +15,7 @@ import { BottomSheetInput, HStack, KeyboardBottomSheet, useOverlay, VStack } fro
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useForm, useFormState } from 'react-hook-form';
 
 import { useConvertMemoToTodosMutationOptions } from '../queries/memo.mutations';
 import type { Memo } from '../schemas/memo.schema';
@@ -58,10 +58,9 @@ export function MemoConvertBottomSheet({
       repeat: null,
     },
   });
-  const { isSubmitting } = useFormState({ control: form.control });
-  const title = useWatch({ control: form.control, name: 'title' });
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
   const convertMemo = useMutation(useConvertMemoToTodosMutationOptions());
-  const isSubmitDisabled = title.trim().length === 0 || isSubmitting;
+  const isSubmitDisabled = !isValid || isSubmitting;
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
@@ -77,12 +76,12 @@ export function MemoConvertBottomSheet({
     }
   });
 
-  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
   const handleTitleSubmit = () => {
     if (isSubmitting) {
       return;
     }
-    if (title.trim().length === 0) {
+    if (!isValid) {
       onClose();
 
       return;

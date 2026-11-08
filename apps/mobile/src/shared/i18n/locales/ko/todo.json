@@ -137,7 +137,8 @@
   },
   "add": {
     "placeholder": "무엇을 하고 싶나요?",
-    "submit": "선택하기"
+    "submit": "선택하기",
+    "save": "저장하기"
   },
   "subTodo": {
     "addItem": "하위 할 일 추가",

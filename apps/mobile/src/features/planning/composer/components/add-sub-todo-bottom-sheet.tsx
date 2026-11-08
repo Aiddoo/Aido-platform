@@ -10,7 +10,7 @@ import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormState } from 'react-hook-form';
 
 import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
@@ -52,17 +52,17 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: '' },
   });
-  const title = useWatch({ control: form.control, name: 'title' });
+  const { isValid } = useFormState({ control: form.control });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
   const reportUnexpectedError = useReportUnexpectedError('todo');
-  const isSubmitDisabled = !title.trim() || addSubTodo.isPending;
+  const isSubmitDisabled = !isValid || addSubTodo.isPending;
 
-  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
   const handleTitleSubmit = () => {
     if (addSubTodo.isPending) {
       return;
     }
-    if (title.trim().length === 0) {
+    if (!isValid) {
       onClose();
 
       return;
@@ -70,14 +70,13 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
     submit();
   };
 
-  const submit = form.handleSubmit(async (values) => {
-    const trimmedTitle = values.title.trim();
-    if (!trimmedTitle || addSubTodo.isPending) {
+  const submit = form.handleSubmit(async ({ title }) => {
+    if (addSubTodo.isPending) {
       return;
     }
 
     try {
-      await addSubTodo.mutateAsync({ todoId: todo.id, title: trimmedTitle, date });
+      await addSubTodo.mutateAsync({ todoId: todo.id, title, date });
     } catch (error) {
       reportUnexpectedError(error);
 

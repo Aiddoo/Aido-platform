@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
-import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { voicePlanIdSchema } from '../../schemas/voice-plan.schema';
@@ -30,7 +30,7 @@ interface VoiceNotePlanTodosProps extends Pick<
 
 export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation('voiceNote');
-  const [{ accountId, draftId }] = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useVoiceNoteRoute();
   const drafts = useVoiceNoteDraftRepository();
   // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoRow가 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
   const [{ data: categoriesResult }] = useSuspenseQueries({

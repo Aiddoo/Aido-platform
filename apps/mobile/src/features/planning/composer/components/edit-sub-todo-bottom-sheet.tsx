@@ -15,7 +15,7 @@ import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormState } from 'react-hook-form';
 
 import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
@@ -67,19 +67,19 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: subTodo.title },
   });
-  const title = useWatch({ control: form.control, name: 'title' });
+  const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const isBusy = updateSubTodo.isPending || deleteSubTodo.isPending;
-  const isSubmitDisabled = !title.trim() || isBusy;
+  const isSubmitDisabled = !isValid || isBusy;
 
-  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
   const handleTitleSubmit = () => {
     if (isBusy) {
       return;
     }
-    if (title.trim().length === 0) {
+    if (!isValid) {
       onClose();
 
       return;
@@ -87,12 +87,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
     submit();
   };
 
-  const submit = form.handleSubmit(async (values) => {
-    const trimmedTitle = values.title.trim();
-    if (!trimmedTitle || isBusy) {
+  const submit = form.handleSubmit(async ({ title }) => {
+    if (isBusy) {
       return;
     }
-    if (!SubTodoPolicy.hasTitleChanged(subTodo, trimmedTitle)) {
+    if (!SubTodoPolicy.hasTitleChanged(subTodo, title)) {
       onClose();
 
       return;
@@ -102,7 +101,7 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
       await updateSubTodo.mutateAsync({
         todoId: todo.id,
         subTodoId: subTodo.id,
-        title: trimmedTitle,
+        title,
         date,
       });
       onClose();

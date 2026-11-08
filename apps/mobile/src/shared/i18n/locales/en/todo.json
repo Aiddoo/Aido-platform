@@ -140,7 +140,8 @@
   },
   "add": {
     "placeholder": "What do you want to get done?",
-    "submit": "Select"
+    "submit": "Select",
+    "save": "Save"
   },
   "subTodo": {
     "addItem": "Add subtask",

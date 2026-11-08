@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { canRetryPlanFailure } from '../../domains/voice.error';
-import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../../hooks/use-voice-note-digest';
 import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { DigestProgress } from './digest-progress';
@@ -22,7 +22,7 @@ interface VoiceNoteDigestProps {
 
 export function VoiceNoteDigest({ note, onMemoChanged }: VoiceNoteDigestProps) {
   const { t } = useTranslation('voiceNote');
-  const [{ accountId, draftId }] = useCurrentVoiceNote();
+  const [{ accountId, draftId }] = useVoiceNoteRoute();
   const { digest, isPending, failure } = useVoiceNoteDigest({ accountId, draftId });
 
   if (isPending) {

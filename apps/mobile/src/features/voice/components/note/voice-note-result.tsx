@@ -27,7 +27,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
-import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import {
   useVoiceNotePlayback,
   useVoiceNotePlayer,
@@ -117,7 +117,7 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
 }
 
 function useVoiceNoteResultPlayer(note: VoiceNote) {
-  const [{ accountId }] = useCurrentVoiceNote();
+  const [{ accountId }] = useVoiceNoteRoute();
   const recordingRepository = useVoiceRecordingRepository();
   const [parts] = useState(() =>
     note.recordings.flatMap(({ fileName, startMs }) => {
