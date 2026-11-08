@@ -182,6 +182,7 @@ features/engagement/comment/
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
               todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-summary.tsx  todo-detail-header.tsx
+              comment-report-bottom-sheet.tsx
   utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts  comment-form-*.ts
   schemas/ todo-comment.schema.ts  todo-comment-form.schema.ts  todo-comment-draft.schema.ts  comment-params.schema.ts
 ```

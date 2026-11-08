@@ -50,7 +50,7 @@ type ReportReasonBottomSheetProps = Omit<
 
 /**
  * 신고 사유와 상세를 받아 신고한다. 신고하면 시트를 닫고 결과와 차단 바로가기를 토스트로 알린다.
- * 대상은 시트를 연 route가 정하고, 시트는 신고 폼과 mutation만 가진다.
+ * 대상은 route 값을 읽는 바깥 시트(`TodoReportBottomSheet` 등)가 정하고, 이 시트는 신고 폼과 mutation만 가진다.
  */
 export function ReportReasonBottomSheet({
   target,
