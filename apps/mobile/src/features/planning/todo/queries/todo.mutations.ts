@@ -7,7 +7,7 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
-import { toDate } from '@src/shared/date/instant';
+import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
@@ -99,7 +99,7 @@ export function useToggleTodoMutationOptions() {
     },
     onSettled: (_data, _error, { date }) => {
       if (date < todayKey) {
-        invalidateWeeklyAchievements(queryClient, { year: toDate(date).getFullYear() });
+        invalidateWeeklyAchievements(queryClient, { year: getIsoWeekYear(date) });
       }
       invalidateTodoDependentQueries(queryClient);
       settleTodoCompletionWrite(queryClient);

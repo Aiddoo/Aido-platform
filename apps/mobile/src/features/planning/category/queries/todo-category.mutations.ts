@@ -1,6 +1,7 @@
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
+import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
   invalidateFeedTodos,
@@ -68,6 +69,8 @@ export function useCreateTodoCategoryMutationOptions() {
     },
     onSuccess: (_data, variables) => {
       invalidateTodos(queryClient);
+      // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
+      invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryAdded'));
       trackEvent('category_created', { color: variables.color });
     },
@@ -190,6 +193,8 @@ export function useDeleteTodoCategoryMutationOptions() {
     onSuccess: () => {
       trackEvent('category_deleted');
       invalidateTodos(queryClient);
+      // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다
+      invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {

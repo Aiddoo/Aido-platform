@@ -4,7 +4,10 @@ import { unwrap } from '@src/core/errors/result';
 import { findLimitedFeature } from '@src/features/billing/subscription/domains/entitlement.error';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { getCachedEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
+import {
+  getCachedEntitlements,
+  invalidateEntitlements,
+} from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
@@ -37,6 +40,8 @@ export function useAcceptRequestMutationOptions() {
     onSuccess: async () => {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
+      // 친구 수가 한도(FRIEND)를 쓰므로 남은 횟수를 다시 받는다
+      invalidateEntitlements(queryClient);
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await invalidateFriends(queryClient);
     },
@@ -156,6 +161,8 @@ export function useRemoveFriendMutationOptions() {
     onSettled: (_data, error) => {
       if (!error) {
         trackEvent('friend_removed');
+        // 친구 수가 한도(FRIEND)를 돌려받으므로 남은 횟수를 다시 받는다
+        invalidateEntitlements(queryClient);
       }
       queryClient.invalidateQueries({ queryKey: friendsQueryKey });
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
@@ -229,6 +236,7 @@ export function useSendRequestByTagMutationOptions({
       if (result.autoAccepted) {
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
+        invalidateEntitlements(queryClient);
       }
       toast.success(t('friend:toast.requestSent'));
     },

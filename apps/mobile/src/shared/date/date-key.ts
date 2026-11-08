@@ -61,6 +61,11 @@ export function getYearOfDateKey(dateKey: string): number {
   return parseDateKey(dateKey).year();
 }
 
+/** 그 날이 속한 ISO 주(월요일 시작)의 연도. 연말·연초에는 달력 연도와 다르다 (2027-01-01 → 2026). */
+export function getIsoWeekYear(dateKey: string): number {
+  return parseDateKey(dateKey).isoWeekYear();
+}
+
 export function getDaysInDateKeyMonth(dateKey: string): number {
   return parseDateKey(dateKey).daysInMonth();
 }

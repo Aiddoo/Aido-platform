@@ -10,6 +10,7 @@ import {
   getCalendarWeek,
   getDayOfWeek,
   getDaysInDateKeyMonth,
+  getIsoWeekYear,
   getMondayOfDateKey,
   getMonthEndDateKey,
   getYearOfDateKey,
@@ -223,6 +224,24 @@ describe('getYearOfDateKey', () => {
     // Then
     expect(eveYear).toBe(2026);
     expect(newYearYear).toBe(2027);
+  });
+});
+
+describe('getIsoWeekYear', () => {
+  it.each([
+    ['2026-12-29', 2026],
+    ['2027-01-01', 2026],
+    ['2025-12-29', 2026],
+    ['2026-06-15', 2026],
+  ])('%s는 ISO 주 연도 %i에 속한다', (dateKey, expected) => {
+    // Given
+    const key = dateKey;
+
+    // When
+    const year = getIsoWeekYear(key);
+
+    // Then
+    expect(year).toBe(expected);
   });
 });
 
