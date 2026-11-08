@@ -1,4 +1,4 @@
-import { userIdParamSchema, userReportTargetTypeSchema } from '@aido/api';
+import { todoCommentIdSchema, userIdParamSchema, userReportTargetTypeSchema } from '@aido/api';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { z } from 'zod';
 
@@ -7,7 +7,7 @@ export const blockUserParamsSchema = userIdParamSchema.extend({
 });
 
 export const commentReportParamsSchema = todoParamsSchema.extend({
-  commentId: z.cuid(),
+  commentId: todoCommentIdSchema,
 });
 
 /**
