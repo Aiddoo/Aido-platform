@@ -42,8 +42,8 @@ src/
 │   ├── events/
 │   └── session/
 ├── features/{area}/{feature}/    # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능
-│   ├── schemas/                  # Zod 스키마. {entity}.schema.ts, {name}-form.schema.ts, {name}-params.schema.ts
-│   ├── domains/                  # {entity}.model.ts(순수 함수 + Policy), {feature}.error.ts
+│   ├── schemas/                  # 폼·초안·route·쿼리 키, 서버와 공유하는 응답 모양. {name}-form.schema.ts, {name}-params.schema.ts, {name}-response.schema.ts
+│   ├── domains/                  # {entity}.model.ts(모델 스키마·타입 + 순수 함수 + Policy), {feature}.error.ts
 │   ├── apis/                     # {feature}.service.ts, {entity}.mapper.ts, {name}.repository.ts
 │   ├── constants/                # {feature}-query-keys.ts, {feature}.constants.ts
 │   ├── queries/                  # {entity}.queries.ts, {entity}.mutations.ts, {feature}-cache.ts
@@ -197,6 +197,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 규칙                    | 지금 코드                                                                                                                                                                                                                          |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                     |
+| [모델](#모델과-policy)  | `schemas/{entity}.schema.ts`에 남은 모델 스키마 61개(2026-11-08). memo부터 `domains/{entity}.model.ts`로 옮겼고 나머지는 이번 정리에서 옮긴다. 계약에서 `pick`으로 유도한 모델은 앱 모양으로 직접 정의하고 mapper가 DTO를 바꾼다   |
 | [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음 |
 | 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                   |
 
@@ -765,46 +766,69 @@ const saveMemo = (onFailed: (error: unknown) => void) =>
 
 ## 모델과 Policy
 
-**비즈니스 규칙만 둔다. 가장 중요한 규칙이다.** `saving-product.model.ts`처럼 모델 스키마, 규칙 함수, Policy만 둔다. 문구, i18n 키, 색, 크기, 레이아웃, 화면 상태, 폼 값, 초안·저장 키는 넣지 않는다. 그런 값은 `*.view-model.ts`, `*-form.schema.ts`, `*-draft.ts`나 컴포넌트에 둔다. 규칙이 바뀔 때 함수 하나만 고쳐 사용처가 모두 바뀌게 하려면, 다른 이유로 바뀌는 값이 이 파일에 섞이면 안 된다.
+**프론트엔드의 도메인 모델이다. 가장 중요한 규칙이다.** `saving-product.model.ts`처럼 모델 스키마·타입, 이름 있는 순수 함수, Policy Facade를 한 파일에 응집한다. 규칙과 모델을 가까이 두어 파일을 오가지 않고 한 곳에서 고친다. 문구, i18n 키, 색, 크기, 레이아웃, 화면 상태, 폼 값, 초안·저장 키는 넣지 않는다. 그런 값은 `*.view-model.ts`, `*-form.schema.ts`, `*-draft.ts`나 컴포넌트에 둔다.
+
+**모델은 서버 응답에 의존하지 않는다.** 서버가 필드를 바꿔도 앱이 쉽게 대응하도록 모델은 앱이 쓰는 모양을 직접 정의하고, `apis/{entity}.mapper.ts`가 응답 DTO를 모델로 바꾼다. 서버가 바뀌면 mapper만 고치고 모델·Policy·화면은 그대로다. 그래서 모델 파일은 요청·응답 계약(`@aido/api` 루트·`contracts/*`)을 import하지 않는다. 용어 튜플·한도(`@aido/api/vocabulary`)와 오류 코드(`@aido/api/errors`)는 써도 된다.
 
 ```
 features/{area}/{feature}/
-├── schemas/
-│   ├── {entity}.schema.ts       # 앱 모델 스키마와 타입
-│   ├── {name}-form.schema.ts    # 폼 값
-│   ├── {name}-draft.schema.ts   # 저장하는 초안 값
-│   └── {name}-params.schema.ts  # route 값
-└── domains/
-    ├── {entity}.model.ts        # 이름 있는 순수 함수 + {Entity}Policy. zod를 import하지 않는다
-    └── {feature}.error.ts       # 기능 오류
-```
-
-스키마는 `schemas/` 한 곳에 모은다. 서버와 같은 값은 계약에서 `pick`·`extend`로 유도해 다시 적지 않는다. 앱에서 모양이 다른 값(응답 문자열 → `Instant` brand)만 `extend`로 바꾼다.
-
-```typescript
-// features/notes/memo/schemas/memo.schema.ts
-export const memoSchema = memoContractSchema
-  .pick({ id: true, content: true, isPinned: true })
-  .extend({ createdAt: instantSchema, updatedAt: instantSchema });
-export type Memo = z.infer<typeof memoSchema>;
-
-export const memoResourceLimitSchema = memoResourceLimitResponseSchema.pick({
-  currentCount: true,
-  maxPerUser: true,
-});
-export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
+├── domains/
+│   ├── {entity}.model.ts        # 모델 스키마·타입 + 순수 함수 + {Entity}Policy
+│   └── {feature}.error.ts       # 기능 오류
+├── apis/
+│   └── {entity}.mapper.ts       # 응답 DTO → 모델, 폼 값 → 요청
+└── schemas/
+    ├── {name}-form.schema.ts    # 폼 값
+    ├── {name}-draft.schema.ts   # 저장하는 초안 값
+    ├── {name}-params.schema.ts  # route 값
+    └── {name}-response.schema.ts # 서버와 공유하는 응답 모양(계약에서 pick·extend). 모델이 아니다
 ```
 
 ```typescript
 // features/notes/memo/domains/memo.model.ts
-function canCreateMemo(limit: MemoResourceLimit) {
+export const memoSchema = z.object({
+  id: z.int().positive(),
+  content: z.string(),
+  isPinned: z.boolean(),
+  createdAt: instantSchema,
+  updatedAt: instantSchema,
+});
+export type Memo = z.infer<typeof memoSchema>;
+
+export const memoResourceLimitSchema = z.object({
+  currentCount: z.int().nonnegative(),
+  maxPerUser: z.int().positive(),
+});
+export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
+
+/** 지금 개수가 한도보다 적어야 새 메모를 만들 수 있다 */
+export function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;
+}
+
+/** 저장은 앞뒤 공백을 빼고 하므로 공백만 고친 글자는 바뀐 것이 아니다 */
+export function hasContentChanged(memo: Pick<Memo, 'content'>, content: string) {
+  return content.trim() !== memo.content;
 }
 
 export const MemoPolicy = {
   canCreateMemo,
+  hasContentChanged,
 } as const;
 ```
+
+```typescript
+// features/notes/memo/apis/memo.mapper.ts — 서버 필드가 바뀌면 여기만 고친다
+export function toMemo(dto: MemoDto): Memo {
+  return {
+    ...pick(dto, ['id', 'content', 'isPinned']),
+    createdAt: toInstant(dto.createdAt),
+    updatedAt: toInstant(dto.updatedAt),
+  };
+}
+```
+
+**순수 함수는 이름과 인자로 뜻이 보인다.** `calculateExpectedAmount(monthlyAmount, term, annualRate)`처럼 무엇을 받는지 이름으로 드러나게 짓고, 외부 상태를 바꾸지 않는다. 규칙이 바뀌면 그 함수 하나만 고친다. 함수는 export해 테스트와 필터·정렬 인자(`filters={[(memo) => …]}`)에서 바로 쓰고, 화면은 보통 Policy로 묶어 소비한다.
 
 **화면은 Policy로 소비한다.** `MemoPolicy.canCreateMemo(resourceLimit)`처럼 쓴다. 카드의 제목·본문 나누기(`toMemoPreview`)는 표시 값이라 `utils/memo.view-model.ts`에 둔다. 모델을 불필요하게 여러 개 만들지 않는다.
 
@@ -826,16 +850,16 @@ export const MemoPolicy = {
 
 ### 서버 응답과 모델
 
-함수와 화면은 서버 응답 모양에 의존하지 않고 앱 타입만 안다. 서버 필드가 바뀌면 mapper와 `schemas/`만 고친다. 요청·응답 계약은 `@aido/api`가 소유하고 앱 모델은 앱이 소유한다.
+함수와 화면은 서버 응답 모양에 의존하지 않고 앱 모델만 안다. 서버 필드가 바뀌면 mapper만 고친다. 요청·응답 계약은 `@aido/api`가 소유하고 앱 모델은 앱이 소유한다.
 
-| `@aido/api` 진입점                        | 내용                                                        | import할 수 있는 곳                                                                                                     |
-| ----------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`MEMO_LIMITS` 등)                       | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`, 폼 스키마)                                                                 |
-| `@aido/api/errors`                        | `ErrorCode`, 오류 상세 스키마(`quotaErrorDetailsSchema` 등) | 어디서나                                                                                                                |
-| `@aido/api/common`                        | 응답 봉투, 날짜·시각 스키마, SemVer 비교                    | `shared`의 날짜·버전 도구, `shared/infra/http`                                                                          |
-| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입                                 | `apis/`와 `schemas/`, HTTP 어댑터(`shared/infra/http/token-refresher`의 `contracts/auth`). 테스트 fixture는 루트를 쓴다 |
+| `@aido/api` 진입점                        | 내용                                                        | import할 수 있는 곳                                                                                                                                                                   |
+| ----------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`MEMO_LIMITS` 등)                       | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`, 폼 스키마)                                                                                                                               |
+| `@aido/api/errors`                        | `ErrorCode`, 오류 상세 스키마(`quotaErrorDetailsSchema` 등) | 어디서나                                                                                                                                                                              |
+| `@aido/api/common`                        | 응답 봉투, 날짜·시각 스키마, SemVer 비교                    | `shared`의 날짜·버전 도구, `shared/infra/http`                                                                                                                                        |
+| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입                                 | `apis/`(mapper·service)와 `schemas/`(폼·공유 응답), HTTP 어댑터(`shared/infra/http/token-refresher`의 `contracts/auth`). 모델(`domains/`)은 쓰지 않는다. 테스트 fixture는 루트를 쓴다 |
 
-- 옮긴 모델은 `CLIENT_OWNED_MODEL_PATHS`에 올린다. 아직 옮기지 않은 모델의 `@aido/api` 재사용은 손댈 때 함께 옮긴다.
+- 모든 `domains/*.model.ts`는 계약을 import하지 않는다(`check:conventions`가 막는다). 아직 `schemas/{entity}.schema.ts`에 있는 모델 스키마는 손댈 때 `domains/{entity}.model.ts`로 옮긴다([아직 옮기지 않은 것](#아직-옮기지-않은-것)).
 - 공유할 값이 앱에만 있으면 `vocabulary`로 올린다. 숫자를 앱에서 다시 적지 않는다.
 - 폼 스키마가 계약과 같은 값을 통과시키는지 mapper 테스트로 교차 검증한다(`memo.mapper.test.ts`).
 - mapper는 계약 enum·유니온을 `satisfies Record<ContractEnum, …>`나 `exhaustive()`로 빠짐없이 매핑한다. 서버가 값을 더하면 빌드가 깨져 놓치지 않는다.
@@ -1154,8 +1178,8 @@ await clipboard.copy(comment.content ?? '');
 
 ## 새 Feature 추가 체크리스트
 
-1. **Schemas + Models**: `schemas/{entity}.schema.ts`, 필요하면 `schemas/{name}-form.schema.ts`. `domains/{entity}.model.ts`(순수 함수 + Policy), 필요하면 `domains/{feature}.error.ts`
-2. **Services + Mapper**: `apis/{entity}.mapper.ts`, `apis/{feature}.service.ts`. 모델 경로를 `CLIENT_OWNED_MODEL_PATHS`에 올린다
+1. **Model**: `domains/{entity}.model.ts`(모델 스키마·타입 + 순수 함수 + Policy)와 `{entity}.model.test.ts`(Given/When/Then, 경계값). 필요하면 `domains/{feature}.error.ts`, 폼은 `schemas/{name}-form.schema.ts`
+2. **Services + Mapper**: `apis/{entity}.mapper.ts`(응답 DTO → 모델), `apis/{feature}.service.ts`
 3. **DI 등록**: `di-provider.tsx`에 인스턴스, `di-context.tsx`에 `DIContainer` 필드와 `use{Feature}Service` 훅
 4. **Presentations**: `constants/{feature}-query-keys.ts`, `queries/{entity}.queries.ts`, `queries/{entity}.mutations.ts`, 다른 피처가 무효화해야 하면 `queries/{feature}-cache.ts`, `components/`
 5. **라우트**: `app/` 아래에 위→아래로 읽히는 화면

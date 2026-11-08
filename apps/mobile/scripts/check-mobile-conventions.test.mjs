@@ -441,7 +441,7 @@ test('테스트에서 new QueryClient를 직접 만들면 거부하고 공통 �
   );
 });
 
-test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거부하고 vocabulary·errors·mapper는 통과한다', () => {
+test('모든 클라이언트 도메인 모델이 요청·응답 계약을 import하면 거부하고 vocabulary·errors·mapper는 통과한다', () => {
   withFixture(
     {
       'apps/mobile/src/features/voice/domains/voice-plan.model.ts': `
@@ -458,9 +458,10 @@ test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거
       `,
     },
     (errors) => {
-      assert.equal(errors.length, 2);
+      assert.equal(errors.length, 3);
       assert.match(errors.join('\n'), /voice-plan\.model\.ts:2:/u);
       assert.match(errors.join('\n'), /voice-plan\.model\.ts:3:/u);
+      assert.match(errors.join('\n'), /widget-snapshot\.model\.ts:2:/u);
     },
   );
 });
@@ -952,10 +953,13 @@ test('Facade의 별칭, 인라인 함수, 모델의 this를 거부하고 같은 
   );
 });
 
-test('모델 파일이 Facade 밖으로 함수나 상수를 내보내면 거부하고 Facade와 타입은 통과한다', () => {
+test('모델 파일은 모델 스키마·타입·순수 함수·Policy를 내보내고 상수와 계약 import는 거부한다', () => {
   withFixture(
     {
       'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        import { z } from 'zod';
+        import { memoSchema as memoContractSchema } from '@aido/api';
+        export const memoSchema = z.object({ id: z.int(), isPinned: z.boolean() });
         export function isPinned(memo) { return memo.isPinned; }
         function getTitle(memo) { return memo.title; }
         export type MemoTitle = string;
@@ -968,8 +972,11 @@ test('모델 파일이 Facade 밖으로 함수나 상수를 내보내면 거부�
     },
     (errors) => {
       assert.equal(errors.length, 2);
-      assert.match(errors.join('\n'), /isPinned: 모델 함수는 Policy Facade로만/u);
-      assert.match(errors.join('\n'), /MEMO_PREVIEW_LINES: 모델 파일은 Policy와 타입만/u);
+      assert.match(errors.join('\n'), /MEMO_PREVIEW_LINES: 모델 파일은 클라이언트 모델 스키마/u);
+      assert.match(
+        errors.join('\n'),
+        /클라이언트 모델은 요청·응답 계약\(@aido\/api\)을 import하지 않습니다/u,
+      );
     },
   );
 });

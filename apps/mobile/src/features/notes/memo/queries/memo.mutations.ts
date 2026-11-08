@@ -37,8 +37,8 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import type { Memo } from '../domains/memo.model';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import type { Memo } from '../schemas/memo.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import {
   createMemoPlanDraftKey,

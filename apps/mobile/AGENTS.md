@@ -43,8 +43,8 @@ Expo SDK 58.0.23 · React Native 0.88 · React 19.3 · Expo Router · TanStack Q
 
 ```
 features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능 (voice, notification, weather는 한 단계)
-├── schemas/          # Zod 스키마(모델, 폼, 초안, route). 계약에서 pick·extend로 유도
-├── domains/          # 비즈니스 규칙(순수 함수 + Policy), 오류
+├── domains/          # 클라이언트 도메인 모델: 모델 스키마·타입 + 순수 함수 + Policy, 오류
+├── schemas/          # 폼·초안·route·쿼리 키, 서버와 공유하는 요청·응답 타입(계약에서 pick·omit)
 ├── apis/             # Service, Mapper, 로컬 저장소 repository
 ├── queries/          # 조회·변경 옵션, {feature}-cache.ts
 ├── constants/        # Query Keys, feature 상수
@@ -56,8 +56,8 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 
 | 파일 유형      | 패턴                                                                                                                                               |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 모델 스키마    | `schemas/{entity}.schema.ts`                                                                                                                       |
-| 함수 + Policy  | `domains/{entity}.model.ts`                                                                                                                        |
+| 도메인 모델    | `domains/{entity}.model.ts`(모델 스키마·타입 + 순수 함수 + Policy를 한 파일에)                                                                     |
+| 공유 계약 타입 | `schemas/{name}-response.schema.ts`·`{name}-request.schema.ts`(서버와 공유하는 요청·응답 모양, 계약에서 pick·omit)                                 |
 | 에러           | `domains/{feature}.error.ts`                                                                                                                       |
 | 폼 스키마      | `schemas/{name}-form.schema.ts`                                                                                                                    |
 | 서비스         | `apis/{feature}.service.ts`                                                                                                                        |
@@ -90,7 +90,7 @@ features/{area}/{feature}/   # 서버 모듈 이름의 업무 영역 + 단수 ke
 
 - **[사용성](.claude/architecture.md#사용성)**: 코드 구조보다 먼저다. 입력칸과 저장 버튼은 키보드 위에 보이고, 키보드가 열린 채 버튼은 첫 탭에 눌리고, 저장 실패에도 글자가 남는다. 구조를 고치다 나빠지면 구조를 양보한다.
 - **[이름](.claude/architecture.md#이름)**: 판별 함수는 `can*`(사용자가 해도 되나), `should*`(앱이 할 때인가), `is*`(상태), `has*`(가진 것, 이미 일어난 일)만 쓰고 부정 이름은 쓰지 않는다. 안내를 띄우는 함수는 `promptIf*`이고 true는 "안내를 띄웠다, 멈춘다"다. 불리언 ref는 `*Ref`다. 같은 종류 함수는 반환과 실패 표현이 같다. Policy 키도 같은 접두사를 따른다. 코드 품질 판단은 [Frontend Fundamentals](https://frontend-fundamentals.com/code-quality/)를 기준으로 한다([architecture](.claude/architecture.md#코드-품질-판단-기준)).
-- **[모델](.claude/architecture.md#모델과-policy)**: 가장 중요한 규칙이다. `*.model.ts`에는 순수 함수 + Policy Facade만 두고, Zod는 `schemas/`에 모은다. 문구·i18n 키·색·레이아웃·폼 값·초안 키를 넣지 않는다. 모델이 첫 인자고 동사형 이름이며 `xxxOf`는 쓰지 않는다. 서버 값을 다시 계산하지 않는다. 서버 응답은 mapper가, 계약 유도는 `schemas/`가 맡고 다른 곳은 계약을 import하지 않는다.
+- **[모델](.claude/architecture.md#모델과-policy)**: 가장 중요한 규칙이다. `domains/{entity}.model.ts`는 프론트엔드의 도메인 모델이다. 앱이 쓰는 모델 스키마·타입, 이름 있는 순수 함수, Policy Facade를 한 파일에 응집한다. 모델은 서버 응답 모양과 독립이라 계약(`@aido/api` 루트·contracts)을 import하지 않고, `apis/{entity}.mapper.ts`가 DTO를 모델로 바꾼다. 서버 필드가 바뀌면 mapper만 고친다. `schemas/`는 폼·초안·route·쿼리 키와 서버와 공유하는 요청·응답 타입만 둔다. Policy 멤버는 모델이 첫 인자고 동사형 이름이다. 문구·i18n 키·색·레이아웃·폼 값·초안 키를 넣지 않고, 서버 값을 다시 계산하지 않는다.
 - **[화면](.claude/architecture.md#화면)**: 위에서 아래로 읽힌다. Boundary·`Suspense`·`Spacing`과 화면 구성을 설명하는 글자를 스크린에 나열한다. 넘기기용 래퍼를 만들지 않는다. fallback은 `X.Loading`·`X.Error`다.
 - **[컴포넌트](.claude/architecture.md#컴포넌트-계약)**: 데이터는 쓰는 컴포넌트가 조회한다. 화면 id는 route hook에서 읽는다. 바깥 레이아웃을 모른다. Props는 `Omit<ComponentProps<typeof X>, …>`로 원본 이름을 살린다. 반복 표시는 `<Record />`를 나란히 쓴다. 래퍼와 훅은 역할이 있을 때만 만든다. 한 곳에서만 쓰면 파일 아래 지역 컴포넌트다.
 - **[레이아웃 시프트](.claude/architecture.md#레이아웃-시프트)**: 받은 뒤에 화면이 밀리지 않게 자리를 먼저 잡는다.

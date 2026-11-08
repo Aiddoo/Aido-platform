@@ -27,9 +27,9 @@ import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
+import type { Memo } from '../domains/memo.model';
 import { useSelectedMemoId } from '../hooks/use-memo-params';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
-import type { Memo } from '../schemas/memo.schema';
 import { toMemoPreview } from '../utils/memo.view-model';
 
 const LOADING_ITEMS_PER_COLUMN = 2;

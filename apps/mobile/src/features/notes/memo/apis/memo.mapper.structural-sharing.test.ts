@@ -1,7 +1,7 @@
 import type { MemoListResponse } from '@aido/api';
 import { createTestQueryClient } from '@src/shared/__tests__';
 
-import type { MemoPage } from '../schemas/memo.schema';
+import type { MemoPage } from '../domains/memo.model';
 import { toMemoPage } from './memo.mapper';
 
 const MEMO_COUNT = 18;

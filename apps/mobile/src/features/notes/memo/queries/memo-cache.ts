@@ -1,7 +1,7 @@
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { Memo, MemoPage } from '../schemas/memo.schema';
+import type { Memo, MemoPage } from '../domains/memo.model';
 
 export function invalidateMemos(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });

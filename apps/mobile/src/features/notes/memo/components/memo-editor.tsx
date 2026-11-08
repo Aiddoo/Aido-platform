@@ -67,6 +67,7 @@ import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
 import { MemoPolicy } from '../domains/memo.model';
+import type { Memo } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
@@ -76,7 +77,6 @@ import {
 } from '../queries/memo.mutations';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
-import type { Memo } from '../schemas/memo.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';

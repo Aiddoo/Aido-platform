@@ -17,8 +17,8 @@ import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
+import type { Memo } from '../domains/memo.model';
 import { useConvertMemoToTodosMutationOptions } from '../queries/memo.mutations';
-import type { Memo } from '../schemas/memo.schema';
 
 interface MemoConvertBottomSheetProps extends Pick<
   ComponentProps<typeof KeyboardBottomSheet>,

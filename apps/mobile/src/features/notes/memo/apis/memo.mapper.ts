@@ -18,13 +18,9 @@ import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
+import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import type {
-  Memo,
-  MemoPage,
-  MemoResourceLimit,
-  ParseMemoPlanResponse,
-} from '../schemas/memo.schema';
+import type { ParseMemoPlanResponse } from '../schemas/memo-plan-response.schema';
 
 export function toMemo(dto: MemoDto): Memo {
   return {

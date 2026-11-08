@@ -95,6 +95,11 @@ const QUERY_HOOK_NAMES = new Set([
 // 1.15부터 손댄 모델은 자기 Zod 스키마를 갖고, 요청·응답 계약(@aido/api 루트·contracts)은 apis의 service·mapper만 안다.
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
+/** 클라이언트 도메인 모델 스키마 이름. domains/{entity}.model.ts가 모델 스키마·타입·순수 함수·Policy를 함께 둔다 */
+const MODEL_SCHEMA_NAME = /^[a-z][A-Za-z]*Schema$/u;
+/** 클라이언트 도메인 모델 파일 */
+const DOMAIN_MODEL_FILE = /\/domains\/[^/]+\.model\.ts$/u;
+
 const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/weather/components/',
   'apps/mobile/src/features/weather/constants/',
@@ -1105,7 +1110,8 @@ function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (
     relativePath.includes('.test.') ||
-    !CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path))
+    (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path)) &&
+      !DOMAIN_MODEL_FILE.test(relativePath))
   ) {
     return;
   }
@@ -1128,6 +1134,7 @@ function checkSchemaFolderImports(sourceFile, repositoryRoot, errors) {
   if (
     relativePath.includes('.test.') ||
     relativePath.includes('/schemas/') ||
+    DOMAIN_MODEL_FILE.test(relativePath) ||
     !SCHEMA_FOLDER_FEATURE_PATHS.some((path) => relativePath.startsWith(path))
   ) {
     return;
@@ -1139,7 +1146,7 @@ function checkSchemaFolderImports(sourceFile, repositoryRoot, errors) {
       statement.moduleSpecifier.text === 'zod'
     ) {
       errors.push(
-        `${getLocation(sourceFile, statement, repositoryRoot)} Zod 스키마는 feature의 schemas/ 폴더에 둡니다.`,
+        `${getLocation(sourceFile, statement, repositoryRoot)} Zod 스키마는 클라이언트 모델이면 domains/{entity}.model.ts, 폼·route·초안·서버와 공유하는 요청 타입이면 schemas/에 둡니다.`,
       );
     }
   }
@@ -1966,27 +1973,19 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
     }
     if (
       isFeatureModel &&
-      ts.isFunctionDeclaration(node) &&
-      node.name !== undefined &&
-      node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
-    ) {
-      findings.push({
-        rule: 'policy-facade',
-        key: relativePath,
-        message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: 모델 함수는 Policy Facade로만 내보냅니다. export를 지우고 Facade에 같은 이름으로 넣으세요.`,
-      });
-    }
-    if (
-      isFeatureModel &&
       ts.isVariableStatement(node) &&
       node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
     ) {
       for (const declaration of node.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name) && !POLICY_NAME.test(declaration.name.text)) {
+        if (
+          ts.isIdentifier(declaration.name) &&
+          !POLICY_NAME.test(declaration.name.text) &&
+          !MODEL_SCHEMA_NAME.test(declaration.name.text)
+        ) {
           findings.push({
             rule: 'policy-facade',
             key: relativePath,
-            message: `${getLocation(sourceFile, declaration, repositoryRoot)} ${declaration.name.text}: 모델 파일은 Policy와 타입만 내보냅니다. 상수는 constants/{feature}.constants.ts로 옮기세요.`,
+            message: `${getLocation(sourceFile, declaration, repositoryRoot)} ${declaration.name.text}: 모델 파일은 클라이언트 모델 스키마(*Schema)·타입·순수 함수·Policy만 내보냅니다. 상수는 constants/{feature}.constants.ts로 옮기세요.`,
           });
         }
       }

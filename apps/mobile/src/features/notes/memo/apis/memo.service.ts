@@ -19,7 +19,10 @@ import { noop } from 'es-toolkit';
 
 import { MEMO_LOG_EVENT } from '../constants/memo-log-events';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import { type ParsedMemoPlan, parseMemoPlanResponseSchema } from '../schemas/memo.schema';
+import {
+  type ParsedMemoPlan,
+  parseMemoPlanResponseSchema,
+} from '../schemas/memo-plan-response.schema';
 import {
   toConvertMemoToTodosRequest,
   toMemo,

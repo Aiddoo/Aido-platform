@@ -3,7 +3,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { MemoPage } from '../schemas/memo.schema';
+import type { MemoPage } from '../domains/memo.model';
 import { replaceMemoInList } from './memo-cache';
 
 function createMemoList(): InfiniteData<MemoPage> {

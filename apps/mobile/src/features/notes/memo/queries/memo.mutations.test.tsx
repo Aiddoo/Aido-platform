@@ -20,7 +20,7 @@ import { act, screen } from '@testing-library/react-native';
 import { toMemo } from '../apis/memo.mapper';
 import { MemoService } from '../apis/memo.service';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { Memo } from '../schemas/memo.schema';
+import type { Memo } from '../domains/memo.model';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import {

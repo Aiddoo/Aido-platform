@@ -1,4 +1,4 @@
-import type { ParseMemoPlanResponse } from '../schemas/memo.schema';
+import type { ParseMemoPlanResponse } from '../schemas/memo-plan-response.schema';
 
 function generateParseMemoResponseDto(): ParseMemoPlanResponse {
   return {
