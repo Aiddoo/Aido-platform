@@ -30,7 +30,7 @@ import {
   toMemoPage,
   toMemoRequest,
   toMemoResourceLimit,
-  toVoicePlanFromParsedMemo,
+  toMemoVoicePlan,
 } from './memo.mapper';
 
 /** 메모 정리 결과. 계획과, 이 요청을 반영한 AI 할 일 만들기 한도(서버가 한도를 읽지 못하면 싣지 않아 null) */
@@ -60,13 +60,13 @@ export class MemoService {
     );
 
   getMemos = async (
-    { cursor, size }: { cursor: number | null; size: number },
+    { cursor, size }: { cursor: number | undefined; size: number },
     signal?: AbortSignal,
   ) =>
     parseApiResponse(
       await this.#httpClient.get('v1/memos', {
         signal,
-        params: { cursor: cursor ?? undefined, size },
+        params: { cursor, size },
       }),
       memoListResponseSchema,
       toMemoPage,
@@ -139,7 +139,7 @@ export class MemoService {
       (dto) => {
         try {
           return {
-            plan: toVoicePlanFromParsedMemo(idempotencyKey, dto),
+            plan: toMemoVoicePlan(idempotencyKey, dto),
             featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
           };
         } catch (error) {

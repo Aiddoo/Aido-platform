@@ -20,7 +20,7 @@ function createMemoList(): InfiniteData<MemoPage> {
         nextCursor: null,
       },
     ],
-    pageParams: [null, 2],
+    pageParams: [undefined, 2],
   };
 }
 

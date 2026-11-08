@@ -26,7 +26,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
     pages: [{ items: [], hasNext: false, nextCursor: null }],
-    pageParams: [null],
+    pageParams: [undefined],
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));

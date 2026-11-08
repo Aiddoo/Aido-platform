@@ -72,7 +72,7 @@ export function useGetInviteQueryOptions() {
   const logger = useLogger();
 
   return queryOptions({
-    queryKey: INVITE_QUERY_KEYS.invite(),
+    queryKey: INVITE_QUERY_KEYS.me(),
     queryFn: async ({ signal, client }) => {
       const result = await inviteService.getInvite(signal);
       // 서버가 초대가 꺼졌다고 답하면 진입점이 숨도록 사용 가능 여부를 다시 받는다
@@ -89,7 +89,7 @@ export function useGetInviteQueryOptions() {
   });
 }
 
-const FIRST_PAGE_CURSOR: string | null = null;
+const FIRST_PAGE_CURSOR: string | undefined = undefined;
 
 interface InviteesFilter {
   /** 상태별 목록. 없으면 전체다 */
@@ -106,7 +106,7 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
       unwrap(
         await inviteService.getInvitedFriends(
           {
-            cursor: pageParam ?? undefined,
+            cursor: pageParam,
             limit: DEFAULT_PAGE_SIZE,
             status,
           },
@@ -122,7 +122,7 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
 
 // 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
 function selectInvitedFriends(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
+  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
 ) {
   return invitedFriendPages.pages.flatMap((page) => page.items);
 }
@@ -132,7 +132,7 @@ function selectInvitedFriends(
  * 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다.
  */
 function selectInvitedFriendSummary(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
+  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
 ) {
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
   const invitedFriends = orderBy(
@@ -156,7 +156,7 @@ export function useGetInvitedFriendSummaryInfiniteQueryOptions() {
 }
 
 function selectInvitedFriendTotalCount(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
+  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
 ) {
   return invitedFriendPages.pages[0]?.totalCount ?? 0;
 }

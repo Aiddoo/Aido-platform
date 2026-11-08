@@ -7,9 +7,9 @@ import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
 import type { BlockedUser } from '../schemas/user-block.schema';
 
-const FIRST_PAGE_CURSOR: string | null = null;
+const FIRST_PAGE_CURSOR: string | undefined = undefined;
 
-function selectBlockedUsers(blockedUserPages: InfiniteData<Page<BlockedUser>, string | null>) {
+function selectBlockedUsers(blockedUserPages: InfiniteData<Page<BlockedUser>, string | undefined>) {
   return {
     blockedUsers: blockedUserPages.pages.flatMap((page) => page.items),
     totalCount: blockedUserPages.pages[0]?.totalCount ?? 0,
@@ -24,7 +24,7 @@ export function useGetBlockedUsersInfiniteQueryOptions() {
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await moderationService.getBlockedUsers(
-          { cursor: pageParam ?? undefined, limit: USER_BLOCK_LIMITS.DEFAULT_PAGE_SIZE },
+          { cursor: pageParam, limit: USER_BLOCK_LIMITS.DEFAULT_PAGE_SIZE },
           signal,
         ),
       ),

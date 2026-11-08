@@ -52,7 +52,7 @@ async function renderEditor(toolbar: 'stack' | 'pane', { withList = false } = {}
         nextCursor: null,
       },
     ],
-    pageParams: [null],
+    pageParams: [undefined],
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation((url) => {

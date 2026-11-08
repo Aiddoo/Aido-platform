@@ -7,15 +7,14 @@ import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack
 import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
 import type { NudgeDirection, NudgeInteractionPage } from '../schemas/nudge-interaction.schema';
 
-type NudgeInteractionsPageParam = { cursor?: number };
-const INITIAL_PAGE: NudgeInteractionsPageParam = {};
+const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
 type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
 const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
 const NUDGE_STALE_TIME_MS = 30 * SECOND_MS;
 
 function selectNudgeInteractions(
-  infinitePages: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
+  infinitePages: InfiniteData<NudgeInteractionPage, number | undefined>,
 ) {
   return infinitePages.pages.flatMap((page) => page.items);
 }
@@ -55,13 +54,13 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getInteractions(
-          { direction, limit: DEFAULT_PAGE_SIZE, cursor: pageParam.cursor },
+          { direction, limit: DEFAULT_PAGE_SIZE, cursor: pageParam },
           signal,
         ),
       ),
-    initialPageParam: INITIAL_PAGE,
+    initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: (page) =>
-      page.hasNext && page.nextCursor != null ? { cursor: page.nextCursor } : undefined,
+      page.hasNext && page.nextCursor != null ? page.nextCursor : undefined,
     select: selectNudgeInteractions,
     staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },

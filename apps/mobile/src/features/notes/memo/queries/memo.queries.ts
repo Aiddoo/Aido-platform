@@ -6,7 +6,7 @@ import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoPage } from '../schemas/memo.schema';
 
-const FIRST_PAGE_CURSOR: number | null = null;
+const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
 function selectMemos(data: InfiniteData<MemoPage>) {
   return data.pages.flatMap((page) => page.items);

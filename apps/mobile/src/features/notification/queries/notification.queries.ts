@@ -4,22 +4,16 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
-import {
-  NOTIFICATION_QUERY_KEYS,
-  type NotificationListFilters,
-} from '../constants/notification-query-keys';
+import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
 import type { NotificationListResult } from '../schemas/notification.schema';
 
-interface NotificationPageParam {
-  cursor?: number;
-}
-
-const INITIAL_NOTIFICATION_PAGE_PARAM: NotificationPageParam = {};
+const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
 export function useGetNotificationsInfiniteQueryOptions({
   category,
   limit,
-}: NotificationListFilters) {
+}: NotificationListQueryKey) {
   const notificationService = useNotificationService();
 
   return infiniteQueryOptions({
@@ -27,16 +21,13 @@ export function useGetNotificationsInfiniteQueryOptions({
 
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await notificationService.getNotifications(
-          { cursor: pageParam.cursor, limit, category },
-          signal,
-        ),
+        await notificationService.getNotifications({ cursor: pageParam, limit, category }, signal),
       ),
 
-    initialPageParam: INITIAL_NOTIFICATION_PAGE_PARAM,
+    initialPageParam: FIRST_PAGE_CURSOR,
 
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore && lastPage.nextCursor != null ? { cursor: lastPage.nextCursor } : undefined,
+      lastPage.hasMore && lastPage.nextCursor != null ? lastPage.nextCursor : undefined,
 
     select: selectNotifications,
   });
