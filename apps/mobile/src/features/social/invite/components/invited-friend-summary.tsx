@@ -4,7 +4,6 @@ import { Box, H4, HStack, PawIcon, Result, TextButton, TextSkeleton, VStack } fr
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
-import type { ComponentProps } from 'react';
 
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/invite.queries';
 import type { InvitedFriendsView } from '../schemas/invite-params.schema';
@@ -14,7 +13,7 @@ import { InvitedFriendRow } from './invited-friend-row';
  * 내 초대 화면의 초대한 친구 요약. 기다리는 친구를 먼저 몇 명만 보여 주고,
  * 더 있으면 전체 보기로 넘긴다. 화면 스크롤 안에 있어 가상화 목록을 쓰지 않는다.
  */
-export function InvitedFriendSummary({ className, ...props }: ComponentProps<typeof VStack>) {
+export function InvitedFriendSummary() {
   const { t } = useTranslation('invite');
   const { data } = useSuspenseInfiniteQuery(useGetInvitedFriendSummaryInfiniteQueryOptions());
   const openInvitedFriends = useSingleTap(() =>
@@ -25,8 +24,8 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
   );
 
   return (
-    <VStack gap={8} className={className} {...props}>
-      <HStack align="center" justify="between" className="min-h-8 px-4">
+    <VStack gap={8}>
+      <HStack align="center" justify="between" className="min-h-8">
         <H4>{t('friendList.title')}</H4>
         {data.hasMore && (
           <TextButton
@@ -41,13 +40,11 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
       </HStack>
 
       {data.invitedFriends.length === 0 ? (
-        <Box className="mx-4">
-          <InvitedFriendSummary.Empty />
-        </Box>
+        <InvitedFriendSummary.Empty />
       ) : (
         <VStack accessibilityRole="list">
           {data.invitedFriends.map((friend) => (
-            <InvitedFriendRow key={friend.userId} friend={friend} />
+            <InvitedFriendRow key={friend.userId} friend={friend} horizontalPadding="none" />
           ))}
         </VStack>
       )}
@@ -58,11 +55,11 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
 InvitedFriendSummary.Loading = function Loading() {
   return (
     <VStack gap={8} accessibilityState={{ busy: true }}>
-      <Box className="min-h-8 justify-center px-4">
+      <Box className="min-h-8 justify-center">
         <TextSkeleton size="t3" className="w-28" />
       </Box>
       {range(3).map((index) => (
-        <InvitedFriendRow.Loading key={index} />
+        <InvitedFriendRow.Loading key={index} horizontalPadding="none" />
       ))}
     </VStack>
   );

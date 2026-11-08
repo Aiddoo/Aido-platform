@@ -114,13 +114,16 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   );
 }
 
-InvitedFriendRow.Loading = function Loading() {
+InvitedFriendRow.Loading = function Loading(
+  props: Omit<ListRowProps, 'left' | 'contents' | 'right'>,
+) {
   return (
     <ListRow
       horizontalPadding="medium"
       left={<Skeleton className="size-10 rounded-full" />}
       contents={<ListRow.Texts.Loading type="2RowTypeA" />}
       right={<Skeleton className="h-7 w-[72px] rounded-full" />}
+      {...props}
     />
   );
 };

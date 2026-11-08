@@ -91,11 +91,9 @@ export default function MyInviteScreen() {
                   </Suspense>
                 </PawPrintBoardCard>
 
-                <Box className="-mx-4">
-                  <Suspense fallback={<InvitedFriendSummary.Loading />}>
-                    <InvitedFriendSummary />
-                  </Suspense>
-                </Box>
+                <Suspense fallback={<InvitedFriendSummary.Loading />}>
+                  <InvitedFriendSummary />
+                </Suspense>
               </QueryErrorBoundary>
 
               {/* 사용 시작 조건과 상한 안내. 이 화면에서만 보여 준다 */}
@@ -141,9 +139,7 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
         <PawPrintBoardCard>
           <InvitePawPrintBoard.Unavailable />
         </PawPrintBoardCard>
-        <Box className="-mx-4">
-          <InvitedFriendSummary.Unavailable />
-        </Box>
+        <InvitedFriendSummary.Unavailable />
       </>
     );
   }
