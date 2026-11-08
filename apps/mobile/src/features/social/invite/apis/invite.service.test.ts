@@ -401,37 +401,41 @@ describe('InviteService', () => {
     });
   });
 
-  describe('clearPendingRedemptionIfTerminal', () => {
-    it('이어서 열려던 초대가 없어졌으면 기기에 남긴 초대를 지운다', () => {
+  describe('미리보기 실패와 기기에 남긴 초대', () => {
+    it('이어서 열려던 초대가 없어졌으면 기기에 남긴 초대를 지운다', async () => {
       // Given
-      const { service, pendingRedemptionRepository } = createService();
+      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
       pendingRedemptionRepository.save(createPendingRedemption({ inviteCode: 'K7M2QX' }));
+      publicHttpClient.get.mockResolvedValue({
+        ok: false,
+        error: createInviteApiError({ code: 'INVITE_2102', status: 410 }),
+      });
 
       // When
-      service.clearPendingRedemptionIfTerminal(
-        'K7M2QX',
-        createInviteApiError({ code: 'INVITE_2102', status: 410 }),
-      );
+      await service.getPreview('K7M2QX');
 
       // Then
       expect(pendingRedemptionRepository.find()).toBeNull();
     });
 
-    it('다른 코드의 실패나 일시 오류는 기기에 남긴 초대를 지우지 않는다', () => {
+    it('다른 코드의 실패나 일시 오류는 기기에 남긴 초대를 지우지 않는다', async () => {
       // Given
-      const { service, pendingRedemptionRepository } = createService();
+      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
       const pending = createPendingRedemption({ inviteCode: 'K7M2QX' });
       pendingRedemptionRepository.save(pending);
+      publicHttpClient.get
+        .mockResolvedValueOnce({
+          ok: false,
+          error: createInviteApiError({ code: 'INVITE_2102', status: 410 }),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: createInviteApiError({ code: 'INVITE_2105', status: 403 }),
+        });
 
       // When
-      service.clearPendingRedemptionIfTerminal(
-        'BCDF23',
-        createInviteApiError({ code: 'INVITE_2102', status: 410 }),
-      );
-      service.clearPendingRedemptionIfTerminal(
-        'K7M2QX',
-        createInviteApiError({ code: 'INVITE_2105', status: 403 }),
-      );
+      await service.getPreview('BCDF23');
+      await service.getPreview('K7M2QX');
 
       // Then
       expect(pendingRedemptionRepository.find()).toEqual(pending);

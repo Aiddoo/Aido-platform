@@ -92,6 +92,7 @@ export class InviteService {
       '[InviteService] Invalid getAvailability response',
     );
 
+  /** 이어서 열려던 초대가 없어졌거나 바뀌어 미리보기를 받지 못했으면 기기에 남긴 초대도 지워 다음 실행 때 다시 열지 않는다 */
   getPreview = async (
     rawCode: string,
     signal?: AbortSignal,
@@ -103,6 +104,7 @@ export class InviteService {
 
     const result = await this.#publicHttpClient.get(`v1/invites/${inviteCode}`, { signal });
     if (!result.ok) {
+      this.#clearPendingRedemptionIfTerminal(inviteCode, result.error);
       return result;
     }
 
@@ -201,8 +203,7 @@ export class InviteService {
     this.#pendingRedemptionRepository.clear();
   };
 
-  /** 이어서 열려던 초대가 없어졌거나 바뀌어 미리보기를 받지 못했으면 다음 실행 때 다시 열지 않는다 */
-  clearPendingRedemptionIfTerminal = (inviteCode: string, error: unknown) => {
+  #clearPendingRedemptionIfTerminal = (inviteCode: string, error: unknown) => {
     if (
       this.#pendingRedemptionRepository.find()?.inviteCode === inviteCode &&
       isTerminalRedeemFailure(toRedeemFailureReason(error))

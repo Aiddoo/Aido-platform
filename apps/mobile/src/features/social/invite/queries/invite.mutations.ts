@@ -30,13 +30,8 @@ export function useCheckInvitePreviewMutationOptions() {
   return mutationOptions({
     // 보내는 사이 연결이 끊겨도 멈추지 않고 실패해 호출한 쪽이 알린다
     networkMode: 'always',
-    mutationFn: async (inviteCode: InviteCode) => {
-      const result = await inviteService.getPreview(inviteCode);
-      if (!result.ok) {
-        inviteService.clearPendingRedemptionIfTerminal(inviteCode, result.error);
-      }
-      return unwrap(result);
-    },
+    mutationFn: async (inviteCode: InviteCode) =>
+      unwrap(await inviteService.getPreview(inviteCode)),
     onSuccess: (preview, inviteCode) => {
       queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode }), preview);
     },
@@ -68,13 +63,13 @@ export function useRedeemInviteMutationOptions() {
       );
       haptics.notify('success');
     },
-    onError: (redeemError) => {
-      reportUnexpectedError(redeemError);
-      if (isBusinessError(redeemError)) {
-        trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(redeemError) });
+    onError: (error) => {
+      reportUnexpectedError(error);
+      if (isBusinessError(error)) {
+        trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(error) });
       }
       haptics.notify('error');
-      toast.error(getUserFacingMessage(redeemError));
+      toast.error(getUserFacingMessage(error));
     },
   });
 }
@@ -95,10 +90,10 @@ export function useRotateInviteCodeMutationOptions() {
       haptics.notify('success');
       toast.success(t('invite:toast.rotated'));
     },
-    onError: (rotateError) => {
-      reportUnexpectedError(rotateError);
+    onError: (error) => {
+      reportUnexpectedError(error);
       haptics.notify('error');
-      toast.error(getUserFacingMessage(rotateError));
+      toast.error(getUserFacingMessage(error));
     },
   });
 }

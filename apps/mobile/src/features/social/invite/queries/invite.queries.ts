@@ -58,13 +58,7 @@ export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: In
 
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.preview({ inviteCode }),
-    queryFn: async ({ signal }) => {
-      const result = await inviteService.getPreview(inviteCode, signal);
-      if (!result.ok) {
-        inviteService.clearPendingRedemptionIfTerminal(inviteCode, result.error);
-      }
-      return unwrap(result);
-    },
+    queryFn: async ({ signal }) => unwrap(await inviteService.getPreview(inviteCode, signal)),
     staleTime: INVITE_PREVIEW_STALE_TIME_MS,
   });
 }
