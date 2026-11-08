@@ -10,7 +10,8 @@ import { pickBy } from 'es-toolkit';
 import { PREFERENCE_MUTATION_KEYS } from '../constants/preference-mutation-keys';
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
-import type { Preference, PreferenceChange } from '../schemas/preference.schema';
+import { type Preference } from '../domains/preference.model';
+import { type PreferenceChange } from '../schemas/preference-request.schema';
 
 type UpdatePreferenceVariables = PreferenceChange & {
   /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */

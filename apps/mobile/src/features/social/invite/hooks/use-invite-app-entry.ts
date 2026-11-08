@@ -1,7 +1,7 @@
 import { usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';

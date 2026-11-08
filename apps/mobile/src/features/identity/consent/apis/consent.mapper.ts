@@ -5,13 +5,13 @@ import type {
 } from '@aido/api';
 import { toNullableInstant } from '@src/shared/date/instant';
 
-import type {
-  Consent,
-  ConsentEnvelope,
-  UpdateAiDataSharingConsentResult,
-  UpdateMarketingConsentResult,
-  UpdateMarketingPushConsentResult,
-} from '../schemas/consent.schema';
+import {
+  type Consent,
+  type UpdateAiDataSharingConsentResult,
+  type UpdateMarketingConsentResult,
+  type UpdateMarketingPushConsentResult,
+} from '../domains/consent.model';
+import { type ConsentEnvelope } from '../schemas/consent-response.schema';
 
 export function toConsent(dto: ConsentEnvelope): Consent {
   return {

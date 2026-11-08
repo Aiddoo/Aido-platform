@@ -2,8 +2,8 @@ import { Text } from '@src/shared/ui';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
+import { type EntitlementFeature } from '../domains/entitlement.model';
 import { useQuotaStatus } from '../hooks/use-quota-status';
-import type { EntitlementFeature } from '../schemas/entitlement.schema';
 
 interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
   feature: EntitlementFeature;

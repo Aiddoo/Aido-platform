@@ -12,7 +12,7 @@ import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { createConsent, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import type { Consent } from '../schemas/consent.schema';
+import { type Consent } from '../domains/consent.model';
 import {
   useUpdateMarketingConsentMutationOptions,
   useUpdateMarketingPushConsentMutationOptions,

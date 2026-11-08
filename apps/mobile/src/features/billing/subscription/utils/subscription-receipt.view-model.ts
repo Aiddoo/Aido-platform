@@ -1,7 +1,7 @@
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
+import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
-import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { type User } from '@src/features/identity/user/domains/user.model';
 import { hasInstantPassed, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 

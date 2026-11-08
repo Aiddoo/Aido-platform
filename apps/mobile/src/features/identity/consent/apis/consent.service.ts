@@ -7,7 +7,8 @@ import {
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { type ConsentAgreement, consentEnvelopeSchema } from '../schemas/consent.schema';
+import { type ConsentAgreement } from '../schemas/consent-request.schema';
+import { consentEnvelopeSchema } from '../schemas/consent-response.schema';
 import {
   toConsent,
   toUpdateAiDataSharingConsentResult,

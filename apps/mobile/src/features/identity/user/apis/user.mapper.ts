@@ -1,7 +1,8 @@
 import type { UpdateProfileResponse } from '@aido/api';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type { CurrentUserResponse, UpdateProfileResult, User } from '../schemas/user.schema';
+import { type UpdateProfileResult, type User } from '../domains/user.model';
+import { type CurrentUserResponse } from '../schemas/user-response.schema';
 
 export function toUser(dto: CurrentUserResponse): User {
   return {

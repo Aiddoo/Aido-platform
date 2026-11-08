@@ -1,4 +1,4 @@
-import { userSchema } from '@src/features/identity/user/schemas/user.schema';
+import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 

@@ -6,11 +6,8 @@ import {
 } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
 
-import {
-  type EntitlementFeature,
-  type FeatureQuota,
-  toFeatureQuota,
-} from '../schemas/entitlement.schema';
+import { toFeatureQuota } from '../apis/entitlement.mapper';
+import { type EntitlementFeature, type FeatureQuota } from './entitlement.model';
 
 const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1303]: 'AI_PARSE',

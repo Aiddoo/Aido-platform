@@ -1,7 +1,7 @@
 import type { PreferenceResponse } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
-import { type Preference, preferenceSchema } from '../schemas/preference.schema';
+import { type Preference, preferenceSchema } from '../domains/preference.model';
 
 function generatePreferenceDto(): PreferenceResponse {
   return {

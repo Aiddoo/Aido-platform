@@ -1,12 +1,8 @@
 import type { UpdateMarketingConsentResponse } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 
-import {
-  type Consent,
-  type ConsentEnvelope,
-  consentEnvelopeSchema,
-  consentSchema,
-} from '../schemas/consent.schema';
+import { type Consent, consentSchema } from '../domains/consent.model';
+import { type ConsentEnvelope, consentEnvelopeSchema } from '../schemas/consent-response.schema';
 
 function generateConsentDto(): ConsentEnvelope {
   return {

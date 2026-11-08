@@ -1,7 +1,7 @@
 import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
+import { type Preference } from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import type { Preference } from '@src/features/identity/preference/schemas/preference.schema';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 

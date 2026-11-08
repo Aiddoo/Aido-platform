@@ -7,9 +7,9 @@ import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
+import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import { type SubscriptionPlan } from '../schemas/subscription.schema';
 
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 

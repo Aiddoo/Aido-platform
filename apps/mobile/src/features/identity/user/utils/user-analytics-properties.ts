@@ -4,8 +4,8 @@ import type {
 } from '@src/core/observability/telemetry-keys';
 
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
+import { type User } from '../domains/user.model';
 import { UserPolicy } from '../domains/user.model';
-import type { User } from '../schemas/user.schema';
 
 type AnalyticsUser = Pick<User, 'role' | 'isPremium' | 'premiumAccess' | 'subscriptionStatus'>;
 

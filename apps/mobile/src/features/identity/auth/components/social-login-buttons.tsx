@@ -12,6 +12,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
 
+import { type OAuthStartProvider } from '../domains/oauth.model';
 import {
   useExchangeCodeMutationOptions,
   useOpenAppleLoginMutationOptions,
@@ -19,7 +20,6 @@ import {
   useOpenKakaoLoginMutationOptions,
   useOpenNaverLoginMutationOptions,
 } from '../queries/auth.mutations';
-import type { OAuthStartProvider } from '../schemas/oauth.schema';
 
 export function SocialLoginButtons() {
   const { t } = useTranslation('auth');

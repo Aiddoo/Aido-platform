@@ -7,7 +7,7 @@ import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/const
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
-import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
+import { type Consent } from '@src/features/identity/consent/domains/consent.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {

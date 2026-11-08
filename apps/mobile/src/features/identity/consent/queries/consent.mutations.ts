@@ -16,7 +16,8 @@ import { pick } from 'es-toolkit';
 
 import { CONSENT_MUTATION_KEYS } from '../constants/consent-mutation-keys';
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import type { Consent, ConsentAgreement } from '../schemas/consent.schema';
+import { type Consent } from '../domains/consent.model';
+import { type ConsentAgreement } from '../schemas/consent-request.schema';
 
 /**
  * 같은 동의를 바꾸는 저장 중 지금 끝나는 것이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게

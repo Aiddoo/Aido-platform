@@ -1,7 +1,7 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import type { CurrentUserResponse } from '@src/features/identity/user/schemas/user.schema';
+import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { type Instant, toInstant } from '@src/shared/date/instant';
 
 import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';

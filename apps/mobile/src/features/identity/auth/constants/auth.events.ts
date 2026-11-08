@@ -1,6 +1,6 @@
 import type { SessionExpiredReason } from '@src/core/observability/telemetry-event';
 
-import type { OAuthProviderSlug } from '../schemas/oauth.schema';
+import { type OAuthProviderSlug } from '../domains/oauth.model';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

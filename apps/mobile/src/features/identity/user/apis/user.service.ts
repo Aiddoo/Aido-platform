@@ -2,7 +2,8 @@ import { updateProfileResponseSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { currentUserResponseSchema, type ProfileChange } from '../schemas/user.schema';
+import { type ProfileChange } from '../schemas/update-profile-request.schema';
+import { currentUserResponseSchema } from '../schemas/user-response.schema';
 import { toUpdateProfileResult, toUser } from './user.mapper';
 
 export class UserService {

@@ -1,9 +1,9 @@
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
-import { entitlementSnapshotSchema } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import { entitlementSnapshotSchema } from '@src/features/billing/subscription/domains/entitlement.model';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
-import { preferenceSchema } from '@src/features/identity/preference/schemas/preference.schema';
+import { preferenceSchema } from '@src/features/identity/preference/domains/preference.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { userSchema } from '@src/features/identity/user/schemas/user.schema';
+import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { todoCategoriesResultSchema } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';

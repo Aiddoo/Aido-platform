@@ -2,7 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import { createFeatureQuotaDto, createLimitApiError } from '../__tests__/entitlement.fixtures';
-import { toFeatureQuota } from '../schemas/entitlement.schema';
+import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { findLimitedFeature, isFreeOfChargeError } from './entitlement.error';
 
 describe('findLimitedFeature', () => {

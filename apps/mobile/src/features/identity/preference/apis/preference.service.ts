@@ -2,7 +2,7 @@ import { preferenceResponseSchema, updatePreferenceResponseSchema } from '@aido/
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { PreferenceChange } from '../schemas/preference.schema';
+import { type PreferenceChange } from '../schemas/preference-request.schema';
 import { toPreference } from './preference.mapper';
 
 export class PreferenceService {

@@ -30,18 +30,15 @@ import { match } from 'ts-pattern';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
-import { OAuthPolicy } from '../domains/oauth.model';
+import { type AuthTokens } from '../domains/auth.model';
 import {
-  type AuthTokens,
-  authTokensEnvelopeSchema,
-  registerEnvelopeSchema,
-} from '../schemas/auth.schema';
-import type {
-  OAuthProvider,
-  OAuthProviderSlug,
-  OAuthStartMode,
-  OAuthStartProvider,
-} from '../schemas/oauth.schema';
+  type OAuthProvider,
+  type OAuthProviderSlug,
+  type OAuthStartMode,
+  type OAuthStartProvider,
+} from '../domains/oauth.model';
+import { OAuthPolicy } from '../domains/oauth.model';
+import { authTokensEnvelopeSchema, registerEnvelopeSchema } from '../schemas/auth-response.schema';
 import {
   toAuthTokens,
   toChangePasswordResult,

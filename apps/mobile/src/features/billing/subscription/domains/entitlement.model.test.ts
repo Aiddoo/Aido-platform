@@ -5,7 +5,7 @@ import {
   createEntitlementSnapshot,
   createFeatureQuotaDto,
 } from '../__tests__/entitlement.fixtures';
-import { toFeatureQuota } from '../schemas/entitlement.schema';
+import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';

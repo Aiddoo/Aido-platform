@@ -26,19 +26,19 @@ import {
   isVerificationCodeExpiredError,
   isVerificationCodeInvalidError,
 } from '../domains/auth.error';
+import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
 import { OAuthPolicy } from '../domains/oauth.model';
 import { useAuthSession } from '../hooks/use-auth-session';
-import type {
-  ChangePasswordInput,
-  DeleteAccountInput,
-  ExchangeCodeInput,
-  ForgotPasswordInput,
-  RegisterInput,
-  ResendVerificationInput,
-  ResetPasswordInput,
-  VerifyEmailInput,
-} from '../schemas/auth.schema';
-import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
+import {
+  type ChangePasswordInput,
+  type DeleteAccountInput,
+  type ExchangeCodeInput,
+  type ForgotPasswordInput,
+  type RegisterInput,
+  type ResendVerificationInput,
+  type ResetPasswordInput,
+  type VerifyEmailInput,
+} from '../schemas/auth-request.schema';
 
 // 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {

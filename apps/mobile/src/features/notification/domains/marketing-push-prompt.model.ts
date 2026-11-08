@@ -1,4 +1,4 @@
-import type { Consent } from '@src/features/identity/consent/schemas/consent.schema';
+import { type Consent } from '@src/features/identity/consent/domains/consent.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 

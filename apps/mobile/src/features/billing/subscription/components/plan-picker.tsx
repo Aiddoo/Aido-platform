@@ -7,11 +7,11 @@ import { Card } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
 
+import { type SubscriptionOffering } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSubscriptionView } from '../hooks/use-subscription-view';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import { type SubscriptionOffering } from '../schemas/subscription.schema';
 import type { StoreUnavailable } from '../utils/offerings-availability';
 import {
   toSubscriptionLoadFailure,

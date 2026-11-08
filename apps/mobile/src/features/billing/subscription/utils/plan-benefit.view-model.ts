@@ -1,7 +1,7 @@
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 
+import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import type { EntitlementSnapshot } from '../schemas/entitlement.schema';
 
 const SECONDS_PER_MINUTE = 60;
 

@@ -1,7 +1,10 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import type { PremiumAccess } from '../schemas/premium-access.schema';
-import { type CurrentUserResponse, currentUserResponseSchema } from '../schemas/user.schema';
+import { type PremiumAccess } from '../domains/premium-access.model';
+import {
+  type CurrentUserResponse,
+  currentUserResponseSchema,
+} from '../schemas/user-response.schema';
 import { createCurrentUserDto } from './user.fixtures';
 
 export function createPremiumAccess(overrides?: Partial<PremiumAccess>): PremiumAccess {

@@ -9,7 +9,7 @@ import {
   createEntitlementSnapshotDto,
 } from '../__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
-import type { EntitlementFeature, EntitlementSnapshot } from '../schemas/entitlement.schema';
+import { type EntitlementFeature, type EntitlementSnapshot } from '../domains/entitlement.model';
 import { QuotaChip } from './quota-chip';
 
 async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {

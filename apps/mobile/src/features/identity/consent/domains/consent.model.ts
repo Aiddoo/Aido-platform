@@ -1,6 +1,44 @@
-import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
+import {
+  AI_DATA_SHARING_CONSENT,
+  AI_DATA_SHARING_DECISION,
+  AI_DATA_SHARING_DECISIONS,
+} from '@aido/api/vocabulary';
+import { instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type { Consent } from '../schemas/consent.schema';
+export const consentSchema = z.object({
+  termsAgreedAt: instantSchema.nullable(),
+  privacyAgreedAt: instantSchema.nullable(),
+  agreedTermsVersion: z.string().nullable(),
+  marketingAgreedAt: instantSchema.nullable(),
+  marketingPushAgreedAt: instantSchema.nullable(),
+  aiDataSharingDecision: z.enum(AI_DATA_SHARING_DECISIONS),
+  aiDataSharingAgreedAt: instantSchema.nullable(),
+  /** 마지막으로 답한 안내 버전. 답한 적이 없으면 null */
+  aiDataSharingConsentVersion: z.string().nullable(),
+});
+export type Consent = z.infer<typeof consentSchema>;
+
+export const updateMarketingConsentResultSchema = z.object({
+  marketingAgreedAt: instantSchema.nullable(),
+});
+export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
+
+export const updateMarketingPushConsentResultSchema = z.object({
+  marketingPushAgreedAt: instantSchema.nullable(),
+});
+export type UpdateMarketingPushConsentResult = z.infer<
+  typeof updateMarketingPushConsentResultSchema
+>;
+
+export const updateAiDataSharingConsentResultSchema = z.object({
+  aiDataSharingDecision: z.enum(AI_DATA_SHARING_DECISIONS),
+  aiDataSharingAgreedAt: instantSchema.nullable(),
+  aiDataSharingConsentVersion: z.string().nullable(),
+});
+export type UpdateAiDataSharingConsentResult = z.infer<
+  typeof updateAiDataSharingConsentResultSchema
+>;
 
 /** 이전 안내 버전 동의도 AGREED다. 서버가 그 버전의 처리 업체만 쓰므로 기능은 그대로 동작한다 */
 function hasAgreedToAiDataSharing(consent: Pick<Consent, 'aiDataSharingDecision'>) {

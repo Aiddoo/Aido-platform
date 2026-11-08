@@ -22,8 +22,8 @@ import {
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import { type EntitlementSnapshot } from '../schemas/entitlement.schema';
 import { useEntitlementGate } from './use-entitlement-gate';
 
 const LIMIT_TITLE = '이번 달 AI 할 일 만들기를 다 썼어요';

@@ -6,7 +6,7 @@ import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import type { EntitlementSnapshot } from '../schemas/entitlement.schema';
+import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { toEntitlementSnapshot } from './entitlement.mapper';
 
 export class EntitlementService {

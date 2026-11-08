@@ -4,7 +4,7 @@ import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import type { SubscriptionError } from '../domains/subscription.error';
-import type { SubscriptionOffering } from '../schemas/subscription.schema';
+import { type SubscriptionOffering } from '../domains/subscription.model';
 import { getDiagnosticCode } from './subscription-diagnostic-code';
 
 /** 스토어를 쓸 수 없는 이유와 문의에 붙일 코드 */

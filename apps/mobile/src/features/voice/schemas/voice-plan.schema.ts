@@ -1,6 +1,6 @@
 import { quickPlanRequestSchema } from '@aido/api';
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import { type FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
 import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
 import { z } from 'zod';
 

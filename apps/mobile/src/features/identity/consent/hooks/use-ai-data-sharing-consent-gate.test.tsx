@@ -15,7 +15,7 @@ import { useState } from 'react';
 
 import { createConsent } from '../__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import type { Consent } from '../schemas/consent.schema';
+import { type Consent } from '../domains/consent.model';
 import {
   AI_CONSENT_CHECK_TIMEOUT_MS,
   readWithoutBlocking,

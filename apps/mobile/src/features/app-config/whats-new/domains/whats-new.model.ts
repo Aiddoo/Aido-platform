@@ -1,5 +1,5 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { type User } from '@src/features/identity/user/domains/user.model';
 import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
 import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';

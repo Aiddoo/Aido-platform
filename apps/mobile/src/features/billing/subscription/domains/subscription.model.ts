@@ -1,6 +1,25 @@
 import { round } from 'es-toolkit';
+import { z } from 'zod';
 
-import type { SubscriptionOffering, SubscriptionPlan } from '../schemas/subscription.schema';
+export const planTypeSchema = z.enum(['monthly', 'annual']);
+export type PlanType = z.infer<typeof planTypeSchema>;
+
+export const subscriptionPlanSchema = z.object({
+  identifier: z.string(),
+  planType: planTypeSchema,
+  priceString: z.string(),
+  price: z.number(),
+  currencyCode: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+});
+export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
+
+export const subscriptionOfferingSchema = z.object({
+  identifier: z.string(),
+  plans: z.array(subscriptionPlanSchema),
+});
+export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
 /** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
 function getAnnualDiscountPercent(

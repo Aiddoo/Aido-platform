@@ -3,8 +3,8 @@ import { Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 
+import { type AccessTier } from '../domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import type { AccessTier } from '../schemas/entitlement.schema';
 
 const ACCESS_TIER_CHIP_CONFIG = {
   ADMIN: {

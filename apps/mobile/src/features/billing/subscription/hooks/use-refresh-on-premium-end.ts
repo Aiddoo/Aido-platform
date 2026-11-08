@@ -1,6 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
-import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
+import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
 import { getErrorMessage } from '@src/shared/errors';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useQueryClient } from '@tanstack/react-query';

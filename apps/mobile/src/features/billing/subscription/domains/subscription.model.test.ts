@@ -1,4 +1,4 @@
-import type { SubscriptionOffering, SubscriptionPlan } from '../schemas/subscription.schema';
+import { type SubscriptionOffering, type SubscriptionPlan } from './subscription.model';
 import { SubscriptionPolicy } from './subscription.model';
 
 function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {

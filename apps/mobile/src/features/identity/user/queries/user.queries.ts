@@ -6,7 +6,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
-import type { User } from '../schemas/user.schema';
+import { type User } from '../domains/user.model';
 
 function toMe(user: User, { defaultName }: { defaultName: string }) {
   return {

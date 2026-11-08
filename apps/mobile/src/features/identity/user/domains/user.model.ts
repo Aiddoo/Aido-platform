@@ -1,7 +1,32 @@
-import { USER_ROLE } from '@aido/api/vocabulary';
+import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api/vocabulary';
+import { instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type { User } from '../schemas/user.schema';
-import { PremiumAccessPolicy } from './premium-access.model';
+import { PremiumAccessPolicy, premiumAccessSchema } from './premium-access.model';
+
+export const userSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string().nullable(),
+  profileImage: z.string().nullable(),
+  userTag: z.string(),
+  role: z.enum([USER_ROLE.USER, USER_ROLE.ADMIN]),
+  subscriptionStatus: z.enum(SUBSCRIPTION_STATUS),
+  subscriptionExpiresAt: instantSchema.nullable(),
+  providers: z.array(z.enum(ACCOUNT_PROVIDERS)),
+  premiumAccess: premiumAccessSchema,
+  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). 앱의 결제 사용자 판별은 UserPolicy.hasPremiumAccess 하나다 */
+  isPremium: z.boolean(),
+  createdAt: instantSchema,
+});
+export type User = z.infer<typeof userSchema>;
+
+/** 이름·프로필 사진 수정 결과. profileImage null은 사진을 지운 상태다 */
+export const updateProfileResultSchema = z.object({
+  name: z.string().nullable(),
+  profileImage: z.string().nullable(),
+});
+export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
 function hasCredential(user: Pick<User, 'providers'>) {
   return user.providers.includes('CREDENTIAL');

@@ -9,18 +9,17 @@ import type {
 } from '@aido/api';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type {
-  AuthTokens,
-  AuthTokensEnvelope,
-  ChangePasswordResult,
-  DeleteAccountResult,
-  ForgotPasswordResult,
-  RegisterEnvelope,
-  RegisterResult,
-  ResendVerificationResult,
-  ResetPasswordResult,
-} from '../schemas/auth.schema';
-import type { LinkedAccount, LinkedAccountsResult } from '../schemas/oauth.schema';
+import {
+  type AuthTokens,
+  type ChangePasswordResult,
+  type DeleteAccountResult,
+  type ForgotPasswordResult,
+  type RegisterResult,
+  type ResendVerificationResult,
+  type ResetPasswordResult,
+} from '../domains/auth.model';
+import { type LinkedAccount, type LinkedAccountsResult } from '../domains/oauth.model';
+import { type AuthTokensEnvelope, type RegisterEnvelope } from '../schemas/auth-response.schema';
 
 export function toAuthTokens(dto: AuthTokensEnvelope): AuthTokens {
   return {

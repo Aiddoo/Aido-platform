@@ -9,9 +9,9 @@ import { useRef } from 'react';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
 import { CONSENT_LOG_EVENT } from '../constants/consent-log-events';
+import { type Consent } from '../domains/consent.model';
 import { ConsentPolicy } from '../domains/consent.model';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
-import type { Consent } from '../schemas/consent.schema';
 
 /** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;

@@ -6,9 +6,9 @@ import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
+import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { type EntitlementFeature } from '../schemas/entitlement.schema';
 
 /**
  * 서버 한도로 본 남은 횟수와 기본 문구. 한도 창(일·월)이 바뀌는 순간을 놓치지 않게 분 단위 지금으로

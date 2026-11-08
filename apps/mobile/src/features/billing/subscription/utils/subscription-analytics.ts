@@ -1,5 +1,5 @@
+import { type EntitlementFeature } from '../domains/entitlement.model';
 import type { SubscriptionFailureCause } from '../domains/subscription-failure.model';
-import type { EntitlementFeature } from '../schemas/entitlement.schema';
 
 /**
  * premium_gate_*·limit_reached_*의 feature 값. 서버 카탈로그 전부터 대시보드가 이 이름으로 집계해 왔으므로 바꾸지 않는다.

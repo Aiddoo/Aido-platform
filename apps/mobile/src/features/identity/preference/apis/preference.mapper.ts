@@ -1,8 +1,22 @@
 import type { PreferenceResponse } from '@aido/api';
-import { omit } from 'es-toolkit';
+import { pick } from 'es-toolkit';
 
-import type { Preference } from '../schemas/preference.schema';
+import type { Preference } from '../domains/preference.model';
 
 export function toPreference(dto: PreferenceResponse): Preference {
-  return omit(dto, ['timezone']);
+  return pick(dto, [
+    'pushEnabled',
+    'nightPushEnabled',
+    'morningReminderHour',
+    'morningReminderMinute',
+    'eveningReminderHour',
+    'eveningReminderMinute',
+    'timeFormat',
+    'weatherMorningEnabled',
+    'weatherMorningHour',
+    'weatherMorningMinute',
+    'weatherEveningEnabled',
+    'weatherEveningHour',
+    'weatherEveningMinute',
+  ]);
 }

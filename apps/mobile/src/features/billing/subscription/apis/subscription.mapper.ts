@@ -6,12 +6,12 @@ import type {
 } from '@src/core/ports/purchases-gateway';
 import { match } from 'ts-pattern';
 
-import { type CustomerInfo, customerInfoSchema } from '../schemas/customer-info.schema';
-import type {
-  PlanType,
-  SubscriptionOffering,
-  SubscriptionPlan,
-} from '../schemas/subscription.schema';
+import { type CustomerInfo, customerInfoSchema } from '../domains/customer-info.model';
+import {
+  type PlanType,
+  type SubscriptionOffering,
+  type SubscriptionPlan,
+} from '../domains/subscription.model';
 
 function toPlanType(packageType: PurchasePackageType): PlanType | null {
   return match(packageType)

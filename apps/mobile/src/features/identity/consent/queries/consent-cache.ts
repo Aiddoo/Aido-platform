@@ -2,7 +2,7 @@ import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import type { Consent } from '../schemas/consent.schema';
+import { type Consent } from '../domains/consent.model';
 
 /**
  * 서버가 AI 데이터 제공 동의가 없다고 거절했을 때(AI_1311) 캐시를 서버 기준으로 맞춘다.

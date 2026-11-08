@@ -9,7 +9,8 @@ import type {
 import { ApiError } from '@src/core/errors/api-error';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 
-import type { AuthTokens, AuthTokensEnvelope, RegisterEnvelope } from '../schemas/auth.schema';
+import { type AuthTokens } from '../domains/auth.model';
+import { type AuthTokensEnvelope, type RegisterEnvelope } from '../schemas/auth-response.schema';
 
 function generateAuthTokensDto(): AuthTokensEnvelope {
   return {

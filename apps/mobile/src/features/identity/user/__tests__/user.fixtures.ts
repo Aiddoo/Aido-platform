@@ -2,7 +2,8 @@ import type { UpdateProfileResponse } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
 
-import { type CurrentUserResponse, type User, userSchema } from '../schemas/user.schema';
+import { type User, userSchema } from '../domains/user.model';
+import { type CurrentUserResponse } from '../schemas/user-response.schema';
 
 function generateCurrentUserDto(): CurrentUserResponse {
   return {

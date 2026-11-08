@@ -11,7 +11,7 @@ import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
-import { toFeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
+import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';

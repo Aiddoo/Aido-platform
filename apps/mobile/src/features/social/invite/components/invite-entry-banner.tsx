@@ -1,7 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
+import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

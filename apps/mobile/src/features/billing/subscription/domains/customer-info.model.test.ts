@@ -1,4 +1,4 @@
-import type { CustomerInfo } from '../schemas/customer-info.schema';
+import { type CustomerInfo } from './customer-info.model';
 import { CustomerInfoPolicy } from './customer-info.model';
 
 function createCustomerInfo(

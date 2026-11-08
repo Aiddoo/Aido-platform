@@ -21,13 +21,13 @@ import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/oauth-labels';
+import { type OAuthProvider } from '../domains/oauth.model';
 import { OAuthPolicy } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
 } from '../queries/auth.mutations';
 import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
-import type { OAuthProvider } from '../schemas/oauth.schema';
 
 export function LinkedAccountList() {
   return (

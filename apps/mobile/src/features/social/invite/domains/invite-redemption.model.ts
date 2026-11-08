@@ -4,8 +4,8 @@ import {
   PREMIUM_SOURCE,
   REDEEM_OUTCOME,
 } from '@aido/api/vocabulary';
-import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
-import type { User } from '@src/features/identity/user/schemas/user.schema';
+import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
+import { type User } from '@src/features/identity/user/domains/user.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
