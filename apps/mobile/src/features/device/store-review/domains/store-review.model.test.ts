@@ -7,7 +7,7 @@ import {
   STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
   STORE_REVIEW_REQUEST_WINDOW_DAYS,
 } from '../constants/store-review.constants';
-import type { StoreReviewState } from '../schemas/store-review.schema';
+import type { StoreReviewState } from './store-review.model';
 import { StoreReviewPolicy } from './store-review.model';
 
 const NOW = toInstant('2026-10-27T12:00:00.000Z');

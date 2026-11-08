@@ -2,7 +2,7 @@ import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { getNowInstant } from '@src/shared/date/instant';
 
 import { createCoachmarkRepository } from '../apis/coachmark.repository';
-import { type CoachmarkInput, coachmarkKindSchema } from '../schemas/coachmark.schema';
+import { type CoachmarkInput, coachmarkKindSchema } from '../domains/coachmark.model';
 
 /**
  * 안내를 이미 본 것으로 채운 저장소. `createTestDi({ syncStorage })`에 넘기면 운영처럼

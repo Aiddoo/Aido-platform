@@ -16,7 +16,7 @@ import { RadioGroup, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { APP_ICONS } from '../constants/app-icon.constants';
-import type { AppIconKey } from '../schemas/app-icon.schema';
+import type { AppIconKey } from '../domains/app-icon.model';
 
 interface AppIconInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,

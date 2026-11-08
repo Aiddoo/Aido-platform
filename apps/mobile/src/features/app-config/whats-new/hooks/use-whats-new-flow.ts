@@ -14,7 +14,7 @@ import { type Href, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
-import type { Release } from '../schemas/release.schema';
+import type { Release } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 
 interface WhatsNewFlowInput {

@@ -1,7 +1,7 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { toInstant } from '@src/shared/date/instant';
 
-import type { ActivationProgress } from '../schemas/activation.schema';
+import type { ActivationProgress } from './activation.model';
 import { ActivationPolicy } from './activation.model';
 
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
@@ -368,5 +368,50 @@ describe('getDaysSinceSignup', () => {
 
     // Then
     expect(days).toBe(0);
+  });
+});
+
+describe('getPushAskKey', () => {
+  it('활성화한 시각이 있으면 계정 ID와 활성화 시각으로 키를 만든다', () => {
+    // Given
+    const progress = createProgress({
+      activatedAt: toInstant('2026-08-02T00:00:00.000Z'),
+      pushRegistrationUnlockedAt: toInstant('2026-08-01T12:00:00.000Z'),
+    });
+
+    // When
+    const key = ActivationPolicy.getPushAskKey(progress, { id: 'user-1' });
+
+    // Then
+    expect(key).toBe('user-1:2026-08-02T00:00:00.000Z');
+  });
+
+  it('활성화 전이면 설정을 켠 시각으로 키를 만든다', () => {
+    // Given
+    const progress = createProgress({
+      pushRegistrationUnlockedAt: toInstant('2026-08-01T12:00:00.000Z'),
+    });
+
+    // When
+    const key = ActivationPolicy.getPushAskKey(progress, { id: 'user-1' });
+
+    // Then
+    expect(key).toBe('user-1:2026-08-01T12:00:00.000Z');
+  });
+
+  it('기준 시점이 없는 기존 사용자는 existing 자리를 쓴다', () => {
+    // When
+    const key = ActivationPolicy.getPushAskKey(createProgress(), { id: 'user-1' });
+
+    // Then
+    expect(key).toBe('user-1:existing');
+  });
+
+  it('사용자 정보를 읽지 못했으면 호환용 계정 자리를 쓴다', () => {
+    // When
+    const key = ActivationPolicy.getPushAskKey(createProgress(), undefined);
+
+    // Then
+    expect(key).toBe('compatibility-fallback:existing');
   });
 });

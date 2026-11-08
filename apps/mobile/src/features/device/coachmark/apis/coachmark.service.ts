@@ -1,4 +1,4 @@
-import type { CoachmarkInput } from '../schemas/coachmark.schema';
+import type { CoachmarkInput } from '../domains/coachmark.model';
 import type { CoachmarkRepository } from './coachmark.repository';
 
 /**

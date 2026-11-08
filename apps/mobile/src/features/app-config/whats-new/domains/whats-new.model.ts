@@ -1,11 +1,22 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
-import { type User } from '@src/features/identity/user/domains/user.model';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
+import type { User } from '@src/features/identity/user/domains/user.model';
 import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
 import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
+import { z } from 'zod';
 
-import { WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
-import type { Release } from '../schemas/release.schema';
+import { RELEASE_ID, WHATS_NEW_REENTRY_WINDOW_MS } from '../constants/whats-new.constants';
+
+export const releaseIdSchema = z.enum(RELEASE_ID);
+export type ReleaseId = z.infer<typeof releaseIdSchema>;
+
+export const releaseSchema = z.object({
+  id: releaseIdSchema,
+  campaignId: z.string().min(1),
+  releasedOn: z.iso.date(),
+  requiresInvite: z.boolean(),
+});
+export type Release = z.infer<typeof releaseSchema>;
 
 interface AutoOpenInput {
   config: FeatureCampaignConfig | undefined;

@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Keyboard } from 'react-native';
 
 import { STORE_REVIEW_LOG_EVENT } from '../constants/store-review-log-events';
-import type { StoreReviewMoment } from '../schemas/store-review.schema';
+import type { StoreReviewMoment } from '../domains/store-review.model';
 import { waitForSettledScreen } from '../utils/wait-for-settled-screen';
 
 /**

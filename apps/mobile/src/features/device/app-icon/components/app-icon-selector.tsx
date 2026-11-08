@@ -6,9 +6,9 @@ import { useConfirmDialog } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
 import { AppIconPolicy } from '../domains/app-icon.model';
+import type { AppIconKey } from '../domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from '../queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';
-import type { AppIconKey } from '../schemas/app-icon.schema';
 import { AppIconInput } from './app-icon-input';
 
 export function AppIconSelector() {

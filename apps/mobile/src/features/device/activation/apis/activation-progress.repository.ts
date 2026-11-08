@@ -3,11 +3,11 @@ import { type Instant, toNullableInstant } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
+import type { ActivationIdentity, ActivationProgress } from '../domains/activation.model';
 import {
   type PersistedActivationProgress,
   persistedActivationProgressSchema,
 } from '../schemas/activation-persisted.schema';
-import type { ActivationIdentity, ActivationProgress } from '../schemas/activation.schema';
 
 const KEY_PREFIX = 'aido_activation_v1';
 

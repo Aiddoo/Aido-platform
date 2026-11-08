@@ -9,7 +9,7 @@ import { screen } from '@testing-library/react-native';
 
 import { AppIconService } from '../apis/app-icon.service';
 import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
-import type { AppIconKey } from '../schemas/app-icon.schema';
+import type { AppIconKey } from '../domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from './app-icon.mutations';
 
 async function renderChange(gateway = createAppIconGatewayStub()) {

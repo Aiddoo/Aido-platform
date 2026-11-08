@@ -3,12 +3,12 @@ import { uniq } from 'es-toolkit';
 
 import { STORE_REVIEW_MIN_ACTIVE_DAYS } from '../constants/store-review.constants';
 import { StoreReviewPolicy } from '../domains/store-review.model';
+import { type StoreReviewState, storeReviewStateSchema } from '../domains/store-review.model';
 import {
   type LegacyStoreReviewState,
   legacyStoreReviewStateSchema,
   persistedStoreReviewStateSchema,
 } from '../schemas/store-review-persisted.schema';
-import { type StoreReviewState, storeReviewStateSchema } from '../schemas/store-review.schema';
 
 const KEY_PREFIX = 'aido_store_review_prompt_v1';
 

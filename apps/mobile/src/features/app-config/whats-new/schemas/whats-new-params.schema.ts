@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
-import { releaseIdSchema } from './release.schema';
+import { releaseIdSchema } from '../domains/whats-new.model';
 
 const whatsNewSourceSchema = z.enum(['auto', 'feed_reentry', 'mypage']);
 

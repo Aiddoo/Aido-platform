@@ -1,14 +1,24 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { type Instant, diffMs, toEpochMs } from '@src/shared/date/instant';
+import { type Instant, diffMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { maxBy } from 'es-toolkit';
+import { z } from 'zod';
 
 import {
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
   STORE_REVIEW_MIN_ACTIVE_DAYS,
+  STORE_REVIEW_MOMENTS,
   STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
   STORE_REVIEW_REQUEST_WINDOW_DAYS,
 } from '../constants/store-review.constants';
-import type { StoreReviewState } from '../schemas/store-review.schema';
+
+const storeReviewMomentSchema = z.enum(STORE_REVIEW_MOMENTS);
+export type StoreReviewMoment = z.infer<typeof storeReviewMomentSchema>;
+
+export const storeReviewStateSchema = z.object({
+  activeDays: z.array(z.iso.date()).max(STORE_REVIEW_MIN_ACTIVE_DAYS),
+  requestedAt: z.array(instantSchema).max(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW),
+});
+export type StoreReviewState = z.infer<typeof storeReviewStateSchema>;
 
 export type StoreReviewEligibility =
   | 'eligible'

@@ -1,6 +1,6 @@
 import type { FeatureKey } from '@src/shared/analytics/feature-key';
 
-import type { ReleaseId } from '../schemas/release.schema';
+import type { ReleaseId } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 
 declare module '@src/shared/analytics/event-map' {

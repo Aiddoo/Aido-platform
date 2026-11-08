@@ -1,4 +1,4 @@
-import type { ActivationProgress } from '../schemas/activation.schema';
+import type { ActivationProgress } from '../domains/activation.model';
 
 export const EMPTY_ACTIVATION_PROGRESS: ActivationProgress = {
   todoCreatedAt: null,

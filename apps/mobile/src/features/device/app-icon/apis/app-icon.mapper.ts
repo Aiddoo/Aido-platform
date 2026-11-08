@@ -1,4 +1,4 @@
-import { type AppIconKey, appIconKeySchema } from '../schemas/app-icon.schema';
+import { type AppIconKey, appIconKeySchema } from '../domains/app-icon.model';
 
 /** 네이티브가 모르는 이름(옛 버전이나 앞선 버전의 아이콘)이면 기본 아이콘으로 본다 */
 export function toAppIconKey(nativeKey: string | null): AppIconKey {

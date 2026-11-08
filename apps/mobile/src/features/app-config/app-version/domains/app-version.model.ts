@@ -1,12 +1,25 @@
 import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
+import { z } from 'zod';
 
-import {
-  type AppVersionConfig,
-  type AppVersionPlatform,
-  appStoreVersionSchema,
-  appVersionPlatformSchema,
-  type EnabledAppVersionConfig,
-} from '../schemas/app-version.schema';
+export const appStoreVersionSchema = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+
+export const appVersionPlatformSchema = z.enum(['ios', 'android']);
+export type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
+
+const enabledAppVersionConfigSchema = z.object({
+  enabled: z.literal(true),
+  latestByPlatform: z.object({
+    ios: appStoreVersionSchema,
+    android: appStoreVersionSchema,
+  }),
+});
+export type EnabledAppVersionConfig = z.infer<typeof enabledAppVersionConfigSchema>;
+
+export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
+  z.object({ enabled: z.literal(false) }),
+  enabledAppVersionConfigSchema,
+]);
+export type AppVersionConfig = z.infer<typeof appVersionConfigSchema>;
 
 /** 설치 정보나 서버 설정이 모자랄 수 있어 모든 칸이 선택이다 */
 export interface AppVersionPolicyInput {

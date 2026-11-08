@@ -2,7 +2,7 @@ import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gat
 import type { Instant } from '@src/shared/date/instant';
 
 import { type StoreReviewEligibility, StoreReviewPolicy } from '../domains/store-review.model';
-import type { StoreReviewMoment } from '../schemas/store-review.schema';
+import type { StoreReviewMoment } from '../domains/store-review.model';
 import type { StoreReviewRepository } from './store-review.repository';
 
 export type StoreReviewOutcome =

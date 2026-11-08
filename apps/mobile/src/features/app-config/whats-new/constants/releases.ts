@@ -3,7 +3,8 @@ import {
   WHATS_NEW_CAMPAIGN_ID,
 } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 
-import { type Release, RELEASE_ID, releaseListSchema } from '../schemas/release.schema';
+import { type ReleaseEntry, releaseEntryListSchema } from '../schemas/release-entry.schema';
+import { RELEASE_ID } from './whats-new.constants';
 
 export const RELEASE_1_15_0 = {
   id: RELEASE_ID.v1_15_0,
@@ -11,7 +12,7 @@ export const RELEASE_1_15_0 = {
   releasedOn: '2026-11-05',
   summaryKey: 'v1_15_0.summary',
   requiresInvite: false,
-} satisfies Release;
+} satisfies ReleaseEntry;
 
 export const RELEASE_1_14_0 = {
   id: RELEASE_ID.v1_14_0,
@@ -19,6 +20,6 @@ export const RELEASE_1_14_0 = {
   releasedOn: '2026-11-02',
   summaryKey: 'v1_14_0.summary',
   requiresInvite: true,
-} satisfies Release;
+} satisfies ReleaseEntry;
 
-export const RELEASES = releaseListSchema.parse([RELEASE_1_15_0, RELEASE_1_14_0]);
+export const RELEASES = releaseEntryListSchema.parse([RELEASE_1_15_0, RELEASE_1_14_0]);

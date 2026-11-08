@@ -1,6 +1,6 @@
 import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
 
-import type { AppIconKey } from '../schemas/app-icon.schema';
+import type { AppIconKey } from '../domains/app-icon.model';
 import { toAppIconKey, toNativeAppIconName } from './app-icon.mapper';
 
 export class AppIconService {

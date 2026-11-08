@@ -2,7 +2,7 @@ import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-st
 import type { Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
-import type { CoachmarkInput } from '../schemas/coachmark.schema';
+import type { CoachmarkInput } from '../domains/coachmark.model';
 
 export interface CoachmarkRepository {
   hasSeen(input: CoachmarkInput): boolean;

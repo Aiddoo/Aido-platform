@@ -6,7 +6,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
-import type { AppIconKey } from '../schemas/app-icon.schema';
+import type { AppIconKey } from '../domains/app-icon.model';
 
 export function useChangeAppIconMutationOptions() {
   const appIconService = useAppIconService();

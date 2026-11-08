@@ -1,6 +1,6 @@
 import type { AppVersionResponse } from '@aido/api';
 
-import type { AppVersionConfig } from '../schemas/app-version.schema';
+import type { AppVersionConfig } from '../domains/app-version.model';
 
 export function toAppVersionConfig(dto: AppVersionResponse): AppVersionConfig {
   return dto.enabled

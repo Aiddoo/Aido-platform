@@ -10,7 +10,7 @@ import tuxedo_cat from '@assets/images/profile-icons/tuxedo-cat.webp';
 import white_cat from '@assets/images/profile-icons/white-cat.webp';
 import type { ImageSourcePropType } from 'react-native';
 
-import type { AppIconKey } from '../schemas/app-icon.schema';
+import type { AppIconKey } from '../domains/app-icon.model';
 
 const ICON_PREVIEWS = {
   default: { labelKey: 'icons.default', preview: defaultIcon },

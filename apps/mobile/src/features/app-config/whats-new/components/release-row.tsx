@@ -7,9 +7,9 @@ import { Chip, PressableFeedback } from 'heroui-native';
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useHasUnseenRelease } from '../hooks/use-has-unseen-release';
-import type { Release } from '../schemas/release.schema';
+import type { ReleaseEntry } from '../schemas/release-entry.schema';
 
-export function ReleaseRow({ release }: { release: Pick<Release, 'id' | 'summaryKey'> }) {
+export function ReleaseRow({ release }: { release: Pick<ReleaseEntry, 'id' | 'summaryKey'> }) {
   const { t } = useTranslation('whatsNew');
   const push = useSingleTap(router.push);
   const hasUnseenRelease = useHasUnseenRelease();

@@ -3,17 +3,30 @@ import {
   LEGACY_WHATS_NEW_CAMPAIGN_ID,
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
 } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import type { TodoExistence } from '@src/features/planning/todo/schemas/todo.schema';
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { type Instant, toEpochMs, toInstant } from '@src/shared/date/instant';
+import { type Instant, instantSchema, toEpochMs, toInstant } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type {
-  ActivationChecklistSteps,
-  ActivationIdentity,
-  ActivationProgress,
-  ActivationUser,
-} from '../schemas/activation.schema';
+export const activationProgressSchema = z.object({
+  todoCreatedAt: instantSchema.nullable(),
+  activatedAt: instantSchema.nullable(),
+  pushRegistrationUnlockedAt: instantSchema.nullable(),
+});
+export type ActivationProgress = z.infer<typeof activationProgressSchema>;
+
+const activationIdentitySchema = z.object({ accountId: z.string(), campaignId: z.string() });
+export type ActivationIdentity = z.infer<typeof activationIdentitySchema>;
+
+const activationUserSchema = z.object({ id: z.string(), createdAt: instantSchema });
+export type ActivationUser = z.infer<typeof activationUserSchema>;
+
+const activationChecklistStepsSchema = z.object({
+  hasCreatedTodo: z.boolean(),
+  hasCompletedTodo: z.boolean(),
+});
+export type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
 
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
 const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
@@ -133,7 +146,19 @@ function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
   return calculateElapsedDays(toEpochMs(user.createdAt), toEpochMs(now));
 }
 
+const UNKNOWN_ACCOUNT_KEY = 'compatibility-fallback';
+const NO_UNLOCK_MOMENT_KEY = 'existing';
+
+function getPushAskKey(
+  progress: Pick<ActivationProgress, 'activatedAt' | 'pushRegistrationUnlockedAt'>,
+  user: Pick<ActivationUser, 'id'> | undefined,
+): string {
+  const unlockedAt = progress.activatedAt ?? progress.pushRegistrationUnlockedAt;
+  return `${user?.id ?? UNKNOWN_ACCOUNT_KEY}:${unlockedAt ?? NO_UNLOCK_MOMENT_KEY}`;
+}
+
 export const ActivationPolicy = {
+  getPushAskKey,
   findActivationIdentity,
   getChecklistSteps,
   getDaysSinceSignup,

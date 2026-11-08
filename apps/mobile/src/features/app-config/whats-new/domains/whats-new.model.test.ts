@@ -1,9 +1,9 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
 import { RELEASES } from '../constants/releases';
-import type { ReleaseList } from '../schemas/release.schema';
+import type { Release } from './whats-new.model';
 import { WhatsNewPolicy } from './whats-new.model';
 
 const createEnabledConfig = (
@@ -54,7 +54,7 @@ describe('shouldAutoOpen', () => {
 describe('getLatestRelease', () => {
   it('목록 순서와 상관없이 가장 최근에 나온 출시를 고른다', () => {
     // Given
-    const releases: ReleaseList = [
+    const releases: [Release, ...Release[]] = [
       { ...RELEASES[0], releasedOn: '2026-10-01' },
       { ...RELEASES[0], releasedOn: '2026-11-01' },
     ];

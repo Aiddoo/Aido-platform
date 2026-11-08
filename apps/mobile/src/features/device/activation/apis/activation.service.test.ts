@@ -1,4 +1,4 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 

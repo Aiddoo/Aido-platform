@@ -5,10 +5,10 @@ import { Popover } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
+import type { CoachmarkKind } from '../domains/coachmark.model';
 import { useIsCoachmarkSettled } from '../hooks/use-is-coachmark-settled';
 import { useMyAccountId } from '../hooks/use-my-account-id';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
-import type { CoachmarkKind } from '../schemas/coachmark.schema';
 
 interface CoachmarkPopoverProps
   extends

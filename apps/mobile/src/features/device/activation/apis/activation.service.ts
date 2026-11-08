@@ -1,9 +1,9 @@
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import type { Instant } from '@src/shared/date/instant';
 
 import type { ActivationCompletedEvent } from '../constants/activation.events';
 import { ActivationPolicy } from '../domains/activation.model';
-import type { ActivationProgress, ActivationUser } from '../schemas/activation.schema';
+import type { ActivationProgress, ActivationUser } from '../domains/activation.model';
 import type { ActivationProgressRepository } from './activation-progress.repository';
 
 interface ActivationActionInput {

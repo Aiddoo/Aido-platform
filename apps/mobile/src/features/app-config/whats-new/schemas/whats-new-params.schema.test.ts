@@ -1,4 +1,4 @@
-import { RELEASE_ID } from './release.schema';
+import { RELEASE_ID } from '../constants/whats-new.constants';
 import { whatsNewParamsSchema } from './whats-new-params.schema';
 
 describe('whatsNewParamsSchema', () => {

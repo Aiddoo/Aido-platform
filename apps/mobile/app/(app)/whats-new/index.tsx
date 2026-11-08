@@ -1,7 +1,7 @@
 import { Release1140Steps } from '@src/features/app-config/whats-new/components/release-1-14-0-steps';
 import { Release1150Steps } from '@src/features/app-config/whats-new/components/release-1-15-0-steps';
+import { RELEASE_ID } from '@src/features/app-config/whats-new/constants/whats-new.constants';
 import { useWhatsNewParams } from '@src/features/app-config/whats-new/hooks/use-whats-new-params';
-import { RELEASE_ID } from '@src/features/app-config/whats-new/schemas/release.schema';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { match } from 'ts-pattern';
