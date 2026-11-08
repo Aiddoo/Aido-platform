@@ -85,19 +85,21 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
     return submitValidRegister();
   };
 
-  return stepper.Render({
-    userInfo: ({ history }) => (
-      <SignUpUserInfoForm form={form} onNextStep={() => history.push('password', {})} />
-    ),
-    password: () => <SignUpPasswordForm form={form} onSubmit={submitRegister} />,
-    verification: ({ context: { email } }) => (
-      <EmailVerificationCodeStep
-        email={email}
-        isVerifying={verify.isPending}
-        isResending={resend.isPending}
-        onComplete={(code) => verify.mutateAsync({ email, code })}
-        onResend={() => resend.mutateAsync({ email })}
-      />
-    ),
-  });
+  return (
+    <stepper.Render
+      userInfo={({ history }) => (
+        <SignUpUserInfoForm form={form} onNextStep={() => history.push('password', {})} />
+      )}
+      password={() => <SignUpPasswordForm form={form} onSubmit={submitRegister} />}
+      verification={({ context: { email } }) => (
+        <EmailVerificationCodeStep
+          email={email}
+          isVerifying={verify.isPending}
+          isResending={resend.isPending}
+          onComplete={(code) => verify.mutateAsync({ email, code })}
+          onResend={() => resend.mutateAsync({ email })}
+        />
+      )}
+    />
+  );
 }

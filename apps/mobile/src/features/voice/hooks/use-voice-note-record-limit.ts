@@ -15,7 +15,7 @@ export function useVoiceNoteRecordLimit() {
   const maxSeconds =
     snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
 
-  const notifyLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
+  const finishOrPromptLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
     const minutes = Math.round(((maxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
     if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
       if (hasText) {
@@ -37,6 +37,6 @@ export function useVoiceNoteRecordLimit() {
   return {
     maxSeconds,
     limitMs: maxSeconds == null ? null : maxSeconds * SECOND_MS,
-    notifyLimit,
+    finishOrPromptLimit,
   };
 }

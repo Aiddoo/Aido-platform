@@ -6,6 +6,7 @@ import { QueryErrorBoundary, Spacing, StyledSafeAreaView, Text, Box } from '@src
 import { Suspense } from 'react';
 
 export default function AchievementsScreen() {
+  const { t } = useTranslation('achievement');
   const today = useToday();
 
   return (
@@ -17,7 +18,11 @@ export default function AchievementsScreen() {
               <Spacing size={16} />
               <AchievementSummary.Loading />
               <Spacing size={24} />
-              <HistoryTitle />
+              <Box className="px-1 pb-2">
+                <Text size="b2" shade={8} weight="bold">
+                  {t('list.sectionTitle')}
+                </Text>
+              </Box>
               <WeeklyAchievementList.Loading />
             </Box>
           }
@@ -32,24 +37,16 @@ export default function AchievementsScreen() {
                   </Suspense>
                 </QueryErrorBoundary>
                 <Spacing size={24} />
-                <HistoryTitle />
+                <Box className="px-1 pb-2">
+                  <Text size="b2" shade={8} weight="bold">
+                    {t('list.sectionTitle')}
+                  </Text>
+                </Box>
               </>
             }
           />
         </Suspense>
       </QueryErrorBoundary>
     </StyledSafeAreaView>
-  );
-}
-
-function HistoryTitle() {
-  const { t } = useTranslation('achievement');
-
-  return (
-    <Box className="px-1 pb-2">
-      <Text size="b2" shade={8} weight="bold">
-        {t('list.sectionTitle')}
-      </Text>
-    </Box>
   );
 }

@@ -54,3 +54,6 @@ export function AppIconSelector() {
     />
   );
 }
+
+AppIconSelector.Loading = AppIconPicker.Loading;
+AppIconSelector.Error = AppIconPicker.Error;

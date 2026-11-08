@@ -113,21 +113,22 @@ KeyPointList.Item = function Item({
   const { t } = useTranslation('voiceNote');
   const time = keyPoint.startMs == null ? null : formatMediaTime(keyPoint.startMs);
   const canPlay = isPlayable && time != null;
-  const timeChip = time != null && (
-    <Text
-      size="e1"
-      weight="bold"
-      tone="brand"
-      accessibilityElementsHidden={isSameTimeAsPrevious}
-      importantForAccessibility={isSameTimeAsPrevious ? 'no-hide-descendants' : 'auto'}
-      className={cn(
-        'rounded-full bg-main/10 px-2 py-1 tabular-nums',
-        isSameTimeAsPrevious && 'opacity-0',
-      )}
-    >
-      {time}
-    </Text>
-  );
+  const timeChip =
+    time == null ? null : (
+      <Text
+        size="e1"
+        weight="bold"
+        tone="brand"
+        accessibilityElementsHidden={isSameTimeAsPrevious}
+        importantForAccessibility={isSameTimeAsPrevious ? 'no-hide-descendants' : 'auto'}
+        className={cn(
+          'rounded-full bg-main/10 px-2 py-1 tabular-nums',
+          isSameTimeAsPrevious && 'opacity-0',
+        )}
+      >
+        {time}
+      </Text>
+    );
 
   return (
     <PressableFeedback
@@ -139,7 +140,7 @@ KeyPointList.Item = function Item({
       {...pressableProps}
     >
       <HStack gap={12} className="items-start">
-        {hasTimeCoachmark && timeChip !== false ? (
+        {hasTimeCoachmark && timeChip != null ? (
           <KeyPointTimeCoachmark>{timeChip}</KeyPointTimeCoachmark>
         ) : (
           timeChip

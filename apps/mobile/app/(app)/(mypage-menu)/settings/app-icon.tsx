@@ -1,5 +1,4 @@
 import { useAppIconService } from '@src/bootstrap/providers/di-context';
-import { AppIconPicker } from '@src/features/device/app-icon/components/app-icon-picker';
 import { AppIconSelector } from '@src/features/device/app-icon/components/app-icon-selector';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -35,8 +34,8 @@ export default function AppIconScreen() {
 
             <SettingsListGroup>
               <SettingsListGroup.Content>
-                <QueryErrorBoundary fallback={AppIconPicker.Error}>
-                  <Suspense fallback={<AppIconPicker.Loading />}>
+                <QueryErrorBoundary fallback={AppIconSelector.Error}>
+                  <Suspense fallback={<AppIconSelector.Loading />}>
                     <AppIconSelector />
                   </Suspense>
                 </QueryErrorBoundary>

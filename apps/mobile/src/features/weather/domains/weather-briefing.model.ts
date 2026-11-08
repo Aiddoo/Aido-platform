@@ -353,13 +353,17 @@ function getWeatherBriefing(
   // 브리핑에서 체크해 완료해도 카드가 바뀌지 않도록 판단에는 완료한 할 일도 센다.
   const scheduledCount = forecastTodos.length;
 
-  return (
+  const todayBriefing =
     toHotBriefing(hourly, hotTodos) ??
     toRainLaterBriefing(hourly, forecastTodos, clock) ??
-    toClearBriefing(hourly, forecastTodos, clock) ??
-    (scheduledCount === 0 ? toTomorrowMorningBriefing(report, clock) : null) ??
-    (scheduledCount === 0 ? { kind: 'noScheduledTodos' } : { kind: 'dry', todos: forecastTodos })
-  );
+    toClearBriefing(hourly, forecastTodos, clock);
+  if (todayBriefing != null) {
+    return todayBriefing;
+  }
+  if (scheduledCount === 0) {
+    return toTomorrowMorningBriefing(report, clock) ?? { kind: 'noScheduledTodos' };
+  }
+  return { kind: 'dry', todos: forecastTodos };
 }
 
 /** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */

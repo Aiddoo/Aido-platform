@@ -48,7 +48,7 @@ function VoiceNoteRecordScreen() {
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const { maxSeconds, limitMs, notifyLimit } = useVoiceNoteRecordLimit();
+  const { maxSeconds, limitMs, finishOrPromptLimit } = useVoiceNoteRecordLimit();
   const getSpeechContext = useReadSpeechContext();
   const [locale] = useRecognitionLanguage();
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
@@ -59,7 +59,7 @@ function VoiceNoteRecordScreen() {
     seedDraftId,
     entry,
     maxSeconds,
-    onLimitReached: () => notifyLimit(recording),
+    onLimitReached: () => finishOrPromptLimit(recording),
     onFinished: (draftId) =>
       router.replace({ pathname: '/voice-notes/[draftId]', params: { draftId } }),
     onEmpty: () => {
@@ -76,7 +76,6 @@ function VoiceNoteRecordScreen() {
     changeLocaleRef.current = recording.changeLocale;
   });
   const { state } = recording;
-  const footerProps = { recording, limitMs, onFinish: requestFinish, onClose: requestClose };
 
   useEffect(() => {
     recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch(() => {
@@ -119,12 +118,36 @@ function VoiceNoteRecordScreen() {
             bookmarksMs={recording.bookmarksMs}
             className="self-stretch"
           />
-          {!isCompact && <RecordFooter {...footerProps} />}
+          {!isCompact && (
+            <VoiceNoteRecordFooter
+              state={state}
+              limitMs={limitMs}
+              markCount={recording.markCount}
+              onPause={recording.pause}
+              onFinish={requestFinish}
+              onMark={recording.mark}
+              onSummarize={recording.finish}
+              onClose={requestClose}
+              onResume={recording.resume}
+            />
+          )}
         </VStack>
         <VStack flex={1}>
           <RecordCaptions sentences={recording.sentences} interimText={recording.interimText} />
         </VStack>
-        {isCompact && <RecordFooter {...footerProps} />}
+        {isCompact && (
+          <VoiceNoteRecordFooter
+            state={state}
+            limitMs={limitMs}
+            markCount={recording.markCount}
+            onPause={recording.pause}
+            onFinish={requestFinish}
+            onMark={recording.mark}
+            onSummarize={recording.finish}
+            onClose={requestClose}
+            onResume={recording.resume}
+          />
+        )}
       </Flex>
     </VStack>
   );
@@ -137,27 +160,26 @@ VoiceNoteRecordScreen.Loading = function Loading() {
   const { height: windowHeight } = useWindowDimensions();
   const { size: ringSize } = getRecordingRingLayout(windowHeight);
 
-  const clock = <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />;
-  const waveform = <Skeleton className="h-20 self-stretch rounded-xl" />;
-
   return match(isOnline)
     .with(true, () =>
       isCompact ? (
         <VStack flex={1} gap={12} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
-          <VStack align="center">{clock}</VStack>
-          {waveform}
+          <VStack align="center">
+            <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />
+          </VStack>
+          <Skeleton className="h-20 self-stretch rounded-xl" />
         </VStack>
       ) : (
         <HStack flex={1} gap={20} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
           <VStack flex={1} gap={12} justify="center" align="center">
-            {clock}
-            {waveform}
+            <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />
+            <Skeleton className="h-20 self-stretch rounded-xl" />
           </VStack>
           <VStack flex={1} />
         </HStack>
       ),
     )
-    .with(false, () => <VoiceNoteOffline />)
+    .with(false, () => <VoiceNoteOffline className="px-4" />)
     .exhaustive();
 };
 
@@ -178,29 +200,6 @@ function RecordCaptions(
       // 처음 안내가 조작 줄 위로 떠 자막 맨 아래를 덮는다. 방금 말한 문장이 그 위에 오게 한다
       contentBottomInset={isCompact && isMarkHintPending ? fontScaledSize(MARK_HINT_HEIGHT) : 0}
       className="min-h-24 flex-1"
-    />
-  );
-}
-
-interface RecordFooterProps {
-  recording: ReturnType<typeof useVoiceNoteRecording>;
-  limitMs: number | null;
-  onFinish: () => void;
-  onClose: () => void;
-}
-
-function RecordFooter({ recording, limitMs, onFinish, onClose }: RecordFooterProps) {
-  return (
-    <VoiceNoteRecordFooter
-      state={recording.state}
-      limitMs={limitMs}
-      markCount={recording.markCount}
-      onPause={recording.pause}
-      onFinish={onFinish}
-      onMark={recording.mark}
-      onSummarize={recording.finish}
-      onClose={onClose}
-      onResume={recording.resume}
     />
   );
 }

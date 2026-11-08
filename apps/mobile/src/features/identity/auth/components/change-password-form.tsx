@@ -19,7 +19,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useChangePasswordMutationOptions } from '../queries/auth.mutations';
 import {
   changePasswordFormSchema,
-  type ChangePasswordFormInput,
+  type ChangePasswordFormValues,
 } from '../schemas/change-password-form.schema';
 import { NewPasswordStep } from './new-password-step';
 import { PasswordInput } from './password-input';
@@ -67,27 +67,33 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     }
   };
 
-  return stepper.Render({
-    currentPassword: () => (
-      <CurrentPasswordStep title={stepTitles.currentPassword} form={form} onNext={handleNextStep} />
-    ),
-    newPassword: () => (
-      <NewPasswordStep
-        title={stepTitles.newPassword}
-        newPassword={newPassword}
-        newPasswordConfirm={newPasswordConfirm}
-        isSubmitting={isSubmitting}
-        onSubmit={submitNewPassword}
-        nextLabel={t('changePassword.next')}
-        submitLabel={t('changePassword.submit')}
-      />
-    ),
-  });
+  return (
+    <stepper.Render
+      currentPassword={() => (
+        <CurrentPasswordStep
+          title={stepTitles.currentPassword}
+          form={form}
+          onNext={handleNextStep}
+        />
+      )}
+      newPassword={() => (
+        <NewPasswordStep
+          title={stepTitles.newPassword}
+          newPassword={newPassword}
+          newPasswordConfirm={newPasswordConfirm}
+          isSubmitting={isSubmitting}
+          onSubmit={submitNewPassword}
+          nextLabel={t('changePassword.next')}
+          submitLabel={t('changePassword.submit')}
+        />
+      )}
+    />
+  );
 }
 
 interface CurrentPasswordStepProps {
   title: string;
-  form: UseFormReturn<ChangePasswordFormInput>;
+  form: UseFormReturn<ChangePasswordFormValues>;
   onNext: () => void;
 }
 

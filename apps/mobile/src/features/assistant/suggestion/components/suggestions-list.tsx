@@ -8,7 +8,7 @@ import {
 import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
@@ -106,13 +106,16 @@ export function SuggestionsList() {
 
 function formatSchedule(
   suggestion: AiSuggestion,
-  timeFormat: TimeFormat,
-  context: DateFormatContext,
+  {
+    timeFormat,
+    context,
+    allDayLabel,
+  }: { timeFormat: TimeFormat; context: DateFormatContext; allDayLabel: string },
 ): string {
   const days = formatDaysOfWeek(suggestion.daysOfWeek, toCatalogLanguage(context));
   const time =
     suggestion.scheduledTime == null
-      ? tGlobal('ai:suggestions.list.allDay')
+      ? allDayLabel
       : formatHHmmTime(suggestion.scheduledTime, timeFormat, context);
   return `${days} · ${time}`;
 }
@@ -155,7 +158,11 @@ SuggestionsList.Item = function Item({
             </Text>
           </HStack>
           <Text size="b4" shade={7}>
-            {formatSchedule(suggestion, preference.timeFormat, dateFormatContext)}
+            {formatSchedule(suggestion, {
+              timeFormat: preference.timeFormat,
+              context: dateFormatContext,
+              allDayLabel: t('suggestions.list.allDay'),
+            })}
           </Text>
         </VStack>
 

@@ -21,7 +21,7 @@ import {
   useResetPasswordMutationOptions,
 } from '../queries/auth.mutations';
 import {
-  type ForgotPasswordFormInput,
+  type ForgotPasswordFormValues,
   forgotPasswordFormSchema,
 } from '../schemas/forgot-password-form.schema';
 import { EmailVerificationCodeStep } from './email-verification-code-step';
@@ -81,46 +81,48 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     }
   });
 
-  return stepper.Render({
-    email: () => (
-      <EmailStep
-        title={stepTitles.email}
-        form={form}
-        onSubmit={requestCode}
-        isSubmitting={forgotPassword.isPending}
-      />
-    ),
-    verificationCode: ({ context: { email }, history }) => (
-      <EmailVerificationCodeStep
-        email={email}
-        isResending={forgotPassword.isPending}
-        onComplete={async (code) => {
-          form.setValue('code', code, { shouldValidate: true });
-          history.push('newPassword', {});
-        }}
-        onResend={async () => {
-          await forgotPassword.mutateAsync({ email });
-          return {};
-        }}
-      />
-    ),
-    newPassword: () => (
-      <NewPasswordStep
-        title={stepTitles.newPassword}
-        newPassword={newPassword}
-        newPasswordConfirm={newPasswordConfirm}
-        isSubmitting={isSubmitting}
-        onSubmit={submitNewPassword}
-        nextLabel={t('forgotPassword.next')}
-        submitLabel={t('forgotPassword.submit')}
-      />
-    ),
-  });
+  return (
+    <stepper.Render
+      email={() => (
+        <EmailStep
+          title={stepTitles.email}
+          form={form}
+          onSubmit={requestCode}
+          isSubmitting={forgotPassword.isPending}
+        />
+      )}
+      verificationCode={({ context: { email }, history }) => (
+        <EmailVerificationCodeStep
+          email={email}
+          isResending={forgotPassword.isPending}
+          onComplete={async (code) => {
+            form.setValue('code', code, { shouldValidate: true });
+            history.push('newPassword', {});
+          }}
+          onResend={async () => {
+            await forgotPassword.mutateAsync({ email });
+            return {};
+          }}
+        />
+      )}
+      newPassword={() => (
+        <NewPasswordStep
+          title={stepTitles.newPassword}
+          newPassword={newPassword}
+          newPasswordConfirm={newPasswordConfirm}
+          isSubmitting={isSubmitting}
+          onSubmit={submitNewPassword}
+          nextLabel={t('forgotPassword.next')}
+          submitLabel={t('forgotPassword.submit')}
+        />
+      )}
+    />
+  );
 }
 
 interface EmailStepProps {
   title: string;
-  form: UseFormReturn<ForgotPasswordFormInput>;
+  form: UseFormReturn<ForgotPasswordFormValues>;
   onSubmit: () => Promise<unknown>;
   isSubmitting: boolean;
 }
