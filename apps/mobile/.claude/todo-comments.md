@@ -160,7 +160,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
   실패 시 복원, 성공 시 서버 값으로 확정. 전체 invalidate는 하지 않는다.
 - 삭제: 낙관적으로 빼고(답글이 남은 댓글은 묘비, 마지막 답글을 잃은 묘비 묶음은 제거) 실패하면 복원. 성공하면 할 일 댓글 수만 다시 받는다.
 - 수정: 낙관적 본문 교체 후 서버 값으로 확정.
-- 오류(`useTodoCommentMutationErrorHandler`): `TODO_0833`·`TODO_0831` → "이미 삭제된 댓글이에요" + 그 행을 캐시에서 제거,
+- 오류(각 mutation의 `onError`에 나란히): `TODO_0833`·`TODO_0831` → "이미 삭제된 댓글이에요" + 그 행을 캐시에서 제거,
   429 → "너무 빨리 보내고 있어요", 그 밖은 햅틱과 토스트를 한 번, 4xx 밖은 Sentry에도 보낸다.
 - 알림으로 연 위치: `comment`가 있으면 anchor 페이지를 받아 그 묶음으로 옮기고(답글이면 펼쳐서) 1.6초 강조한다.
   `anchor: null`이면 "찾는 댓글이 삭제됐거나…" 토스트 후 목록 맨 위.
@@ -177,7 +177,7 @@ features/engagement/comment/
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
-  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts  use-todo-comment-mutation-error-handler.ts
+  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx

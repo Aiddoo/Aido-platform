@@ -1,13 +1,30 @@
-import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import {
+  useErrorReporter,
+  useHaptics,
+  useTodoCommentService,
+} from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import {
+  ApiError,
+  getUserFacingMessage,
+  isInfraError,
+  NetworkError,
+  ServerError,
+  TimeoutError,
+  toError,
+} from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
 import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-keys';
+import {
+  isTodoCommentRateLimitedError,
+  isTodoCommentUnavailableError,
+} from '../domains/todo-comment.error';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
 import type {
   TodoCommentChainInput,
   TodoCommentUpdateInput,
@@ -57,6 +74,23 @@ function isRetryableCreationError(error: unknown) {
   );
 }
 
+/** 서버가 코드로 답하지 않은 실패만 Sentry에 남긴다. 예측한 거절은 토스트로 끝난다 */
+function useReportUnexpectedTodoCommentError({ todoId }: { todoId: number }) {
+  const errorReporter = useErrorReporter();
+
+  return (error: unknown, method: 'POST' | 'PATCH' | 'DELETE' | 'PUT/DELETE') => {
+    if (error instanceof ApiError) {
+      return;
+    }
+    errorReporter.captureException(toError(error), {
+      feature: 'todo_comment',
+      endpoint: `v1/todos/${todoId}/comments`,
+      method,
+      statusCode: isInfraError(error) ? (error.statusCode ?? undefined) : undefined,
+    });
+  };
+}
+
 /**
  * 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않는다.
  * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
@@ -65,7 +99,9 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
@@ -102,7 +138,21 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
         );
     },
     onError: (error, { target }) => {
-      handleMutationError(error, 'create', target);
+      if (isTodoCommentUnavailableError(error)) {
+        if (target != null) {
+          removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
+        }
+        toast.warning(t('todoComment:toasts.alreadyDeleted'));
+        return;
+      }
+      if (isTodoCommentRateLimitedError(error)) {
+        toast.warning(t('todoComment:toasts.throttled'));
+        return;
+      }
+
+      reportUnexpectedError(error, 'POST');
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.writeFailed') });
     },
   });
 }
@@ -110,7 +160,9 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
 export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number }) {
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
-  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
 
   return mutationOptions({
     // 새 댓글과 같은 이유로 오프라인에서 멈추지 않는다
@@ -133,7 +185,21 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       if (context != null) {
         restoreTodoCommentCaches(queryClient, context.snapshot);
       }
-      handleMutationError(error, 'update', target);
+      if (isTodoCommentUnavailableError(error)) {
+        if (target != null) {
+          removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
+        }
+        toast.warning(t('todoComment:toasts.alreadyDeleted'));
+        return;
+      }
+      if (isTodoCommentRateLimitedError(error)) {
+        toast.warning(t('todoComment:toasts.throttled'));
+        return;
+      }
+
+      reportUnexpectedError(error, 'PATCH');
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.updateFailed') });
     },
     onSuccess: (updated) => {
       patchTodoCommentCaches({
@@ -151,9 +217,13 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
 
   return mutationOptions({
+    // 지우는 동안 메뉴 버튼이 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌린다
+    networkMode: 'always',
     mutationFn: async ({ comment }: DeleteTodoCommentMutationParams) =>
       unwrap(await todoCommentService.deleteComment(todoId, comment.id)),
     onMutate: async ({ comment }) => {
@@ -166,7 +236,21 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
       if (context != null) {
         restoreTodoCommentCaches(queryClient, context.snapshot);
       }
-      handleMutationError(error, 'delete', comment);
+      if (isTodoCommentUnavailableError(error)) {
+        if (comment != null) {
+          removeTodoCommentFromCaches({ queryClient, todoId, comment: comment });
+        }
+        toast.warning(t('todoComment:toasts.alreadyDeleted'));
+        return;
+      }
+      if (isTodoCommentRateLimitedError(error)) {
+        toast.warning(t('todoComment:toasts.throttled'));
+        return;
+      }
+
+      reportUnexpectedError(error, 'DELETE');
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.deleteFailed') });
     },
     onSuccess: (_commentId, { comment }) => {
       trackEvent('todo_comment_deleted', {
@@ -189,9 +273,12 @@ export function useSetTodoCommentLikeMutationOptions({
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedTodoCommentError({ todoId });
 
   return mutationOptions({
+    // 하트는 먼저 바뀌고 버튼이 잠기지 않는다. 오프라인이면 멈춰 두었다가 연결되면 같은 순서로 보낸다
     scope: { id: `todo-comment-like:${commentId}` },
     mutationFn: async ({ isLiked }: SetTodoCommentLikeMutationParams) =>
       unwrap(await todoCommentService.setCommentLike(todoId, commentId, isLiked)),
@@ -211,7 +298,21 @@ export function useSetTodoCommentLikeMutationOptions({
       if (context != null) {
         restoreTodoCommentCaches(queryClient, context.snapshot);
       }
-      handleMutationError(error, 'like', context?.target ?? null);
+      if (isTodoCommentUnavailableError(error)) {
+        if (context?.target != null) {
+          removeTodoCommentFromCaches({ queryClient, todoId, comment: context?.target });
+        }
+        toast.warning(t('todoComment:toasts.alreadyDeleted'));
+        return;
+      }
+      if (isTodoCommentRateLimitedError(error)) {
+        toast.warning(t('todoComment:toasts.throttled'));
+        return;
+      }
+
+      reportUnexpectedError(error, 'PUT/DELETE');
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todoComment:toasts.likeFailed') });
     },
     onSuccess: (result, { via }) => {
       trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked, via });
