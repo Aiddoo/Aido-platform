@@ -32,7 +32,8 @@ describe('보낸 요청 취소', () => {
     await waitFor(() => expect(httpClient.get).toHaveBeenCalledTimes(2));
 
     // Then
-    expect(result.current.cancel.isPending).toBe(true);
+    // TanStack Query는 상태 변경을 다음 틱에 알려 주므로 반영을 기다린다
+    await waitFor(() => expect(result.current.cancel.isPending).toBe(true));
     await act(async () => {
       refetch.settle();
     });
