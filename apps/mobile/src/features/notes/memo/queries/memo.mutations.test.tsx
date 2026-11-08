@@ -1,6 +1,7 @@
 import type { Memo as MemoDto } from '@aido/api';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import {
@@ -133,7 +134,7 @@ describe('메모 고정', () => {
   it('고정으로 수정 시각이 바뀌어도 쓰던 글자와 AI 요청 초안을 낡았다고 버리지 않는다', async () => {
     // Given
     const client = createTestQueryClient();
-    client.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+    client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
     client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
     const pinnedMemo: MemoDto = {
       ...originalMemo,
@@ -217,7 +218,7 @@ describe('AI 정리 중 메모 고정', () => {
   it('정리하는 사이 고정해 수정 시각이 바뀌어도 결과를 낡았다고 버리지 않는다', async () => {
     // Given
     const client = createTestQueryClient();
-    client.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+    client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
     client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
     const logger = createLoggerStub();
     const memoService = new MemoService(createHttpClientStub(), logger);

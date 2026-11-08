@@ -1,13 +1,14 @@
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
-import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
+import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
@@ -156,7 +157,7 @@ async function renderQuickVoice({
       kind: 'ai-consent-renewal',
     });
   }
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   if (consent != null) {
     queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent(consent));
   }

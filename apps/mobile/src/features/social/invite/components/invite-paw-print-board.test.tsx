@@ -1,3 +1,4 @@
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
@@ -30,7 +31,7 @@ async function renderBoard({
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: USER_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: USER_ID }));
   queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite({ qualifiedCount }));
 
   await renderUi(

@@ -1,4 +1,5 @@
 import { ok } from '@src/core/errors/result';
+import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
@@ -37,7 +38,10 @@ async function renderTodoList(todo: Todo) {
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
     categories: [{ ...todo.category, sortOrder: 0, todoCount: 1 }],
   });
-  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
+  queryClient.setQueryData(
+    PREFERENCE_QUERY_KEYS.current(),
+    createPreference({ timeFormat: 'TWELVE_HOUR' }),
+  );
 
   await renderUi(
     <LocalDateProvider>

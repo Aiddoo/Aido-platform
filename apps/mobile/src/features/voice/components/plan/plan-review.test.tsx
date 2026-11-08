@@ -1,5 +1,6 @@
-import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
+import '@src/shared/i18n/init';
+import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
@@ -108,7 +109,10 @@ async function renderPlan(
       { id: 2, name: '중요한 일', color: '#EF4444', sortOrder: 1, todoCount: 0 },
     ],
   });
-  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
+  queryClient.setQueryData(
+    PREFERENCE_QUERY_KEYS.current(),
+    createPreference({ timeFormat: 'TWELVE_HOUR' }),
+  );
 
   await renderUi(
     <LocalDateProvider>

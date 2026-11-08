@@ -6,6 +6,7 @@ import {
 import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/constants/widget.constants';
 import { type WidgetNavigationCommand } from '@src/features/device/widget/domains/widget-navigation.model';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createTestDi,
@@ -81,7 +82,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
     mockRepository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
     queryClient = createTestQueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'original-account' });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'original-account' }));
     command = {
       id: 'first-tap',
       uri: 'aido://todo/12',
@@ -174,7 +175,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
         authSessionStore.setStatus('unauthenticated');
       }
       if (scenario === 'different-account') {
-        queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+        queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
       }
       mockRepository.save(
         scenario === 'expired'
@@ -199,7 +200,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 
     // When
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
     await flushFrames();
 
     // Then
@@ -212,7 +213,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     async (uri) => {
       // Given
       jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
-      queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
       mockRepository.save({ ...command, uri });
       const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 

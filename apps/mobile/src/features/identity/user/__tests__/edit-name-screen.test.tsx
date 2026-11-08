@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import '@src/shared/i18n/init';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
@@ -12,11 +12,12 @@ import { router } from 'expo-router';
 
 import EditNameRoute from '../../../../../app/(app)/(mypage-menu)/settings/edit-name';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
+import { createUser } from './user.fixtures';
 import { createUpdateProfileDto } from './user.fixtures';
 
 async function renderEditName(httpClient: ReturnType<typeof createHttpClientStub>) {
   const queryClient = createTestQueryClient();
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { name: '테스트' });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name: '테스트' }));
   await renderUi(<EditNameRoute />, {
     queryClient,
     di: { httpClient, haptics: createHapticsGatewayStub() },

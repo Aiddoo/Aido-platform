@@ -1,7 +1,8 @@
-import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import '@src/shared/i18n/init';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import {
@@ -38,7 +39,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), { categories: [] });
 

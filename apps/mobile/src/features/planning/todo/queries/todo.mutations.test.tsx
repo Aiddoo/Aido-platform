@@ -1,6 +1,7 @@
 import { err, ok } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
+import '@src/shared/i18n/init';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAppStoreReviewGatewayStub,
@@ -63,7 +64,7 @@ async function renderToggle() {
       di: { httpClient, syncStorage, appStoreReviewGateway },
     },
   );
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
 
   const toggle = async (todoId: number, completed: boolean, date: string) => {

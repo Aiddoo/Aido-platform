@@ -3,7 +3,6 @@ import { last } from 'es-toolkit';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { LocationReading } from '../domains/weather-location.model';
 import type { RegisteredLocation } from '../domains/weather-report.model';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
 
@@ -17,7 +16,7 @@ function getReportKeyParams(queryKey: readonly unknown[]) {
 export async function refetchWeather(queryClient: QueryClient) {
   const getRevision = () =>
     WeatherLocationPolicy.getReadingRevision(
-      queryClient.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location()),
+      queryClient.getQueryData(WEATHER_QUERY_KEYS.location()),
     );
   const before = getRevision();
   await queryClient.refetchQueries(
@@ -68,7 +67,7 @@ export function setRegisteredWeatherLocation(
   queryClient: QueryClient,
   registered: RegisteredLocation,
 ) {
-  queryClient.setQueryData<LocationReading>(WEATHER_QUERY_KEYS.location(), (reading) =>
+  queryClient.setQueryData(WEATHER_QUERY_KEYS.location(), (reading) =>
     reading?.status === 'located' ? { ...reading, registered } : reading,
   );
 }

@@ -1,3 +1,4 @@
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createSpokenVoiceNote } from '@src/features/voice/__tests__/voice-note.fixtures';
@@ -23,7 +24,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
     pages: [{ items: [], hasNext: false, nextCursor: null }],
     pageParams: [undefined],

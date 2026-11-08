@@ -1,3 +1,4 @@
+import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import {
@@ -16,7 +17,10 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'TWELVE_HOUR' });
+  queryClient.setQueryData(
+    PREFERENCE_QUERY_KEYS.current(),
+    createPreference({ timeFormat: 'TWELVE_HOUR' }),
+  );
 
   await renderUi(
     <LocalDateProvider>

@@ -59,7 +59,7 @@ export function useGetWeatherLocationQueryOptions() {
     queryFn: async ({ signal, client, queryKey }): Promise<LocationReading> =>
       unwrap(
         await weatherLocationService.resolveLocation({
-          previous: client.getQueryData<LocationReading>(queryKey),
+          previous: client.getQueryData(queryKey),
           signal,
           findReportLocation: (revision) => findReportLocation(client, logger, revision),
         }),
@@ -102,7 +102,7 @@ export function useGetWeatherReportQueryOptions() {
     queryFn: async ({ signal, client: queryClient }) => {
       // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
       removeOutdatedWeatherReports(queryClient, { locationRevision });
-      const reading = queryClient.getQueryData<LocationReading>(WEATHER_QUERY_KEYS.location());
+      const reading = queryClient.getQueryData(WEATHER_QUERY_KEYS.location());
       return unwrap(
         await weatherService.getReportWithReregistration({
           lastRegistered:

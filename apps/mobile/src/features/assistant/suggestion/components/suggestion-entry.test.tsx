@@ -1,8 +1,9 @@
-import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
+import '@src/shared/i18n/init';
 import { err } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createErrorReporterStub,
@@ -27,7 +28,7 @@ describe('SuggestionEntry', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());
     const queryClient = createQueryClient();
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1', name: '아이도' });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1', name: '아이도' }));
     queryClient.setQueryData(
       ENTITLEMENT_QUERY_KEYS.snapshot(),
       createEntitlementSnapshot({ tier: 'PREMIUM' }),
@@ -48,7 +49,7 @@ describe('SuggestionEntry', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(serverError());
     const queryClient = createQueryClient();
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1', name: '아이도' });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1', name: '아이도' }));
 
     // When
     await renderUi(<SuggestionEntry />, {

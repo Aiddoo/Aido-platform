@@ -1,5 +1,6 @@
-import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import '@src/shared/i18n/init';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -22,7 +23,7 @@ async function renderForm() {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
   const httpClient = createHttpClientStub();
   await renderUi(
     <Suspense fallback={null}>

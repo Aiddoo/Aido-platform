@@ -41,7 +41,7 @@ function revertConsentFields(
   if (previousData == null) {
     return;
   }
-  queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (consent) =>
+  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
     consent == null ? consent : { ...consent, ...pick(previousData, fields) },
   );
 }
@@ -74,9 +74,9 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 
     onMutate: async ({ agreed }) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
+      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
 
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (consent) =>
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
         consent == null
           ? consent
           : {
@@ -97,7 +97,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing())) {
         return;
       }
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (consent) =>
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
         consent == null ? consent : { ...consent, ...result },
       );
     },
@@ -128,8 +128,8 @@ export function useUpdateMarketingConsentMutationOptions() {
       unwrap(await consentService.updateMarketingConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
+      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingAgreedAt: input.agreed ? getNowInstant() : null },
       );
       return { previousData };
@@ -138,7 +138,7 @@ export function useUpdateMarketingConsentMutationOptions() {
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
         return;
       }
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingAgreedAt: data.marketingAgreedAt },
       );
     },
@@ -168,8 +168,8 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       unwrap(await consentService.updateMarketingPushConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
+      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
         old
           ? {
               ...old,
@@ -183,7 +183,7 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
         return;
       }
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
+      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt },
       );
     },

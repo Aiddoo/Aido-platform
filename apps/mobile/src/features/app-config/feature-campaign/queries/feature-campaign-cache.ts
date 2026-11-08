@@ -6,5 +6,5 @@ import type { FeatureCampaignConfig } from '../domains/feature-campaign.model';
 export function getCachedFeatureCampaignConfig(
   queryClient: QueryClient,
 ): FeatureCampaignConfig | undefined {
-  return queryClient.getQueryData<FeatureCampaignConfig>(FEATURE_CAMPAIGN_QUERY_KEYS.config());
+  return queryClient.getQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config());
 }

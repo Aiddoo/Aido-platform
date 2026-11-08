@@ -8,7 +8,7 @@ import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/rea
 
 import { USER_MUTATION_KEYS } from '../constants/user-mutation-keys';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
-import { type UpdateProfileResult, type User } from '../domains/user.model';
+import { type UpdateProfileResult } from '../domains/user.model';
 import { type ProfileChange } from '../schemas/update-profile-request.schema';
 
 /** 지금 끝나는 프로필 저장이 마지막이면 true. 앞 응답이 뒤에 바꾼 값을 덮지 않게 마지막만 캐시를 맞춘다 */
@@ -22,7 +22,7 @@ function writeChangedProfileFields(
   input: ProfileChange,
   source: UpdateProfileResult,
 ) {
-  queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), (old) => {
     if (old == null) {
       return old;
     }
@@ -53,9 +53,9 @@ export function useUpdateProfileMutationOptions() {
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.me() });
 
-      const previousData = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
+      const previousData = queryClient.getQueryData(USER_QUERY_KEYS.me());
 
-      queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), (old) => {
         if (!old) {
           return old;
         }

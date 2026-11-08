@@ -1,10 +1,12 @@
-import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
+import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createMemo } from '@src/features/notes/memo/__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
@@ -85,12 +87,15 @@ async function renderScreen(note: Parameters<typeof createSpokenVoiceNote>[0], t
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
     categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 0 }],
   });
-  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
+  queryClient.setQueryData(
+    PREFERENCE_QUERY_KEYS.current(),
+    createPreference({ timeFormat: 'TWELVE_HOUR' }),
+  );
 
   const { unmount } = await renderUi(
     <LocalDateProvider>

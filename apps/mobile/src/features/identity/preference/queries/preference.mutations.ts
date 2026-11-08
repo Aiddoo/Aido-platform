@@ -10,7 +10,6 @@ import { pickBy } from 'es-toolkit';
 import { PREFERENCE_MUTATION_KEYS } from '../constants/preference-mutation-keys';
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
-import { type Preference } from '../domains/preference.model';
 import { type PreferenceChange } from '../schemas/preference-request.schema';
 
 type UpdatePreferenceVariables = PreferenceChange & {
@@ -50,9 +49,9 @@ export function useUpdatePreferenceMutationOptions() {
     onMutate: async ({ trackAs: _trackAs, ...change }) => {
       await queryClient.cancelQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });
 
-      const previousData = queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
+      const previousData = queryClient.getQueryData(PREFERENCE_QUERY_KEYS.current());
 
-      queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), (old) =>
+      queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), (old) =>
         old == null ? old : { ...old, ...change },
       );
 
@@ -68,14 +67,14 @@ export function useUpdatePreferenceMutationOptions() {
       }
       // invalidate 대신 응답을 직접 써 깜빡임을 막되, 다른 저장이 진행 중이면 그 변경이 없어 마지막 응답이 맞춘다
       if (isLastPreferenceWrite(queryClient)) {
-        queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
+        queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), data);
       }
     },
     onError: (error, { trackAs: _trackAs, ...change }, context) => {
       // 스냅샷을 통째로 덮으면 함께 진행 중인 다른 토글을 지운다. 이 저장이 바꾼 필드만 되돌린다
       const previousData = context?.previousData;
       if (previousData != null) {
-        queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), (old) =>
+        queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), (old) =>
           old == null ? old : { ...old, ...pickBy(previousData, (_value, key) => key in change) },
         );
       }

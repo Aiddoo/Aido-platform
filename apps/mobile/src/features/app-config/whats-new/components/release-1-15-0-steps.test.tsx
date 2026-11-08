@@ -1,7 +1,8 @@
-import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
+import '@src/shared/i18n/init';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
@@ -37,7 +38,7 @@ async function renderSteps() {
   const storage = createMemoryObservableSyncStorage();
   const repository = createWhatsNewRepository(storage);
   const queryClient = createTestQueryClient();
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(
     CONSENT_QUERY_KEYS.detail(),
     createConsent({

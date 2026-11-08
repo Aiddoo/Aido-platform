@@ -5,7 +5,7 @@ import { type User } from '../domains/user.model';
 
 /** 콜백·mutation 성공 처리처럼 훅 밖에서 현재 사용자가 필요할 때 쓴다 */
 export function getCachedMe(queryClient: QueryClient): User | undefined {
-  return queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
+  return queryClient.getQueryData(USER_QUERY_KEYS.me());
 }
 
 export function invalidateMe(queryClient: QueryClient) {

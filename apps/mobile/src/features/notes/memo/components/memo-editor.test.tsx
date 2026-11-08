@@ -1,5 +1,5 @@
-import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
+import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
@@ -8,6 +8,7 @@ import { type EntitlementSnapshot } from '@src/features/billing/subscription/dom
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
@@ -75,7 +76,7 @@ async function renderEditor(
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
   if (consent != null) {
     queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), consent);
   }

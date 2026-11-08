@@ -1,7 +1,8 @@
-import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
+import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
@@ -72,7 +73,7 @@ async function renderGate(
     queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent(consentOverrides));
   }
   if (me != null) {
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), me);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser(me));
   }
 
   await renderUi(
