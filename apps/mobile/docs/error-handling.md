@@ -112,18 +112,18 @@ export const FRIEND_ERROR_CODE = {
 return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
 
 // 판별: 코드를 넘기면 그 코드인 오류만 통과한다. 서버 ApiError도 같은 길이다
-if (isBusinessError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
+if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 ```
 
-| 요소        | 패턴                           | 위치                                                   |
-| ----------- | ------------------------------ | ------------------------------------------------------ |
-| 코드 상수   | `{FEATURE}_ERROR_CODE`         | `features/{area}/{feature}/domains/{feature}.error.ts` |
-| 문구        | 코드를 키로 한 ko·en 항목      | `shared/i18n/locales/{ko,en}/errors.json`              |
-| 던지기      | `new BusinessError(코드)`      | Service·Policy 경계                                    |
-| 판별        | `isBusinessError(error, 코드)` | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다       |
-| 사용자 문구 | `getUserFacingMessage(error)`  | `toast.error(getUserFacingMessage(error))`             |
+| 요소        | 패턴                          | 위치                                                   |
+| ----------- | ----------------------------- | ------------------------------------------------------ |
+| 코드 상수   | `{FEATURE}_ERROR_CODE`        | `features/{area}/{feature}/domains/{feature}.error.ts` |
+| 문구        | 코드를 키로 한 ko·en 항목     | `shared/i18n/locales/{ko,en}/errors.json`              |
+| 던지기      | `new BusinessError(코드)`     | Service·Policy 경계                                    |
+| 판별        | `isCodedError(error, 코드)`   | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다       |
+| 사용자 문구 | `getUserFacingMessage(error)` | `toast.error(getUserFacingMessage(error))`             |
 
-`isBusinessError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`와 그 하위 클래스)에 참이고, 그 타입은 `CodedError`다. 코드 상수를 둔 feature는 `domains/{feature}.error.ts`에서 `BusinessError`를 쓰거나 `isApiError`로 서버 코드를 판별한다. 하위 클래스가 필요하면 `SubscriptionError`처럼 `BusinessError`를 확장한다.
+`isCodedError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`와 그 하위 클래스)에 참이고, 그 타입은 `CodedError`다. 코드 상수를 둔 feature는 `domains/{feature}.error.ts`에서 `BusinessError`를 쓰거나 `isApiError`로 서버 코드를 판별한다. 하위 클래스가 필요하면 `SubscriptionError`처럼 `BusinessError`를 확장한다.
 
 ## 저장 실패 알림
 
