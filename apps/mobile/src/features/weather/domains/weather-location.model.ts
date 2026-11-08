@@ -47,14 +47,8 @@ export type WeatherLocationStatus =
       isLastKnown: boolean;
     };
 
-/** 권한은 있지만 위치를 읽지 못했거나 등록 요청이 실패하면 unavailable이다. */
-function getLocationStatus(
-  reading: LocationReading | undefined,
-  { hasFailed }: { hasFailed: boolean },
-): WeatherLocationStatus {
-  if (reading == null) {
-    return hasFailed ? { status: 'unavailable' } : { status: 'checking' };
-  }
+/** 권한은 있지만 위치를 읽지 못했으면 unavailable이다. 읽는 중과 요청 실패는 조회 상태라 훅이 정한다 */
+function getLocationStatus(reading: LocationReading): WeatherLocationStatus {
   return match(reading)
     .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const }))
     .with({ status: 'denied' }, () => ({ status: 'denied' as const }))
@@ -69,7 +63,7 @@ function getLocationStatus(
 }
 
 /** 권한을 묻는 중이거나 거부한 동안에는 받을 리포트가 없다. 그 밖에는 서버에 저장된 위치로 받는다. */
-function shouldFetchReport(status: WeatherLocationStatus['status']): boolean {
+function shouldFetchReport({ status }: Pick<WeatherLocationStatus, 'status'>): boolean {
   return status !== 'needsPermission' && status !== 'denied';
 }
 

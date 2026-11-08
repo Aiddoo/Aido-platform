@@ -30,7 +30,7 @@ export function useWeatherScene(): WeatherScene {
   const { data: sceneInput } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.scene,
-    enabled: WeatherLocationPolicy.shouldFetchReport(location.status),
+    enabled: WeatherLocationPolicy.shouldFetchReport(location),
   });
   return toWeatherScene(sceneInput ?? DEFAULT_SCENE_INPUT);
 }

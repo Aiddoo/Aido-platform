@@ -72,28 +72,9 @@ describe('getReadingRevision', () => {
 });
 
 describe('getLocationStatus', () => {
-  it('위치를 처음 읽는 중이면 확인 중 상태다', () => {
-    // When
-    const status = WeatherLocationPolicy.getLocationStatus(undefined, { hasFailed: false });
-
-    // Then
-    expect(status).toEqual({ status: 'checking' });
-  });
-
-  it('위치 등록 요청이 실패하면 위치를 찾지 못한 상태다', () => {
-    // When
-    const status = WeatherLocationPolicy.getLocationStatus(undefined, { hasFailed: true });
-
-    // Then
-    expect(status).toEqual({ status: 'unavailable' });
-  });
-
   it('권한은 있지만 좌표를 얻지 못하면 위치를 찾지 못한 상태다', () => {
     // When
-    const status = WeatherLocationPolicy.getLocationStatus(
-      { status: 'unavailable', revision: 0 },
-      { hasFailed: false },
-    );
+    const status = WeatherLocationPolicy.getLocationStatus({ status: 'unavailable', revision: 0 });
 
     // Then
     expect(status).toEqual({ status: 'unavailable' });
@@ -101,16 +82,13 @@ describe('getLocationStatus', () => {
 
   it('등록을 마치면 지명과 함께 준비 상태가 된다', () => {
     // When
-    const status = WeatherLocationPolicy.getLocationStatus(
-      {
-        status: 'located',
-        registered: { ...SEOUL, timezone: 'Asia/Seoul' },
-        place: { city: '서울', district: '중구' },
-        countryCode: 'KR',
-        revision: 1,
-      },
-      { hasFailed: false },
-    );
+    const status = WeatherLocationPolicy.getLocationStatus({
+      status: 'located',
+      registered: { ...SEOUL, timezone: 'Asia/Seoul' },
+      place: { city: '서울', district: '중구' },
+      countryCode: 'KR',
+      revision: 1,
+    });
 
     // Then
     expect(status).toEqual({
@@ -123,17 +101,14 @@ describe('getLocationStatus', () => {
 
   it('권한을 확인하지 못해 직전 위치를 쓰는 중이면 마지막 위치임을 알린다', () => {
     // When
-    const status = WeatherLocationPolicy.getLocationStatus(
-      {
-        status: 'located',
-        registered: { ...SEOUL, timezone: 'Asia/Seoul' },
-        place: { city: '서울', district: '중구' },
-        countryCode: 'KR',
-        revision: 1,
-        isLastKnown: true,
-      },
-      { hasFailed: false },
-    );
+    const status = WeatherLocationPolicy.getLocationStatus({
+      status: 'located',
+      registered: { ...SEOUL, timezone: 'Asia/Seoul' },
+      place: { city: '서울', district: '중구' },
+      countryCode: 'KR',
+      revision: 1,
+      isLastKnown: true,
+    });
 
     // Then
     expect(status).toMatchObject({ status: 'ready', isLastKnown: true });
@@ -141,7 +116,7 @@ describe('getLocationStatus', () => {
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {
     // When
-    const status = WeatherLocationPolicy.getLocationStatus({ status: state }, { hasFailed: false });
+    const status = WeatherLocationPolicy.getLocationStatus({ status: state });
 
     // Then
     expect(status).toEqual({ status: state });
@@ -157,7 +132,7 @@ describe('shouldFetchReport', () => {
     ['denied', false],
   ] as const)('%s 상태에서 리포트를 받을 수 있는지는 %p이다', (status, expected) => {
     // When
-    const canFetch = WeatherLocationPolicy.shouldFetchReport(status);
+    const canFetch = WeatherLocationPolicy.shouldFetchReport({ status });
 
     // Then
     expect(canFetch).toBe(expected);

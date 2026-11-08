@@ -3,10 +3,13 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import {
+  type WeatherLocationStatus,
+  WeatherLocationPolicy,
+} from '../domains/weather-location.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
@@ -37,7 +40,13 @@ export function useWeatherLocation(): WeatherLocation {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
-  const location = WeatherLocationPolicy.getLocationStatus(data, { hasFailed: isError });
+  const location = match({ data, isError })
+    .returnType<WeatherLocationStatus>()
+    .with({ data: P.nonNullable }, ({ data: reading }) =>
+      WeatherLocationPolicy.getLocationStatus(reading),
+    )
+    .with({ isError: true }, () => ({ status: 'unavailable' }))
+    .otherwise(() => ({ status: 'checking' }));
 
   const request = async () => {
     const permission = await gateway.requestPermission().catch((error) => {
