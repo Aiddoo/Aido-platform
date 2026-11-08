@@ -56,6 +56,8 @@ const base = {
 module.exports = {
   // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
   watchman: false,
+  // 기본값(코어 수 - 1)은 다른 작업과 함께 돌 때 기기를 포화시킨다. CI는 --maxWorkers로 덮어쓴다
+  maxWorkers: '50%',
   // 매 실행이 순서 의존을 검사한다. 실패하면 출력된 seed로 `pnpm test --seed <seed>` 재현
   randomize: true,
   showSeed: true,

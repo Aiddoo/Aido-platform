@@ -304,11 +304,11 @@ await renderUi(
 ## 실행 명령
 
 ```bash
-# 모바일 전체 단위 테스트
-pnpm --filter @aido/mobile test --runInBand
+# 모바일 전체 단위 테스트(워커는 설정의 maxWorkers 50%). PR 전에 한 번 돌린다
+pnpm --filter @aido/mobile test
 
 # 특정 파일
-pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
+pnpm --filter @aido/mobile test todo-comment.service.test.ts
 
 # 작업 중: 마지막 커밋 이후 바뀐 파일에 닿는 테스트만(수 초)
 pnpm --filter @aido/mobile test:changed
