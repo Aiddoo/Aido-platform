@@ -65,6 +65,7 @@ import { InviteShareService } from '@src/features/social/invite/apis/invite-shar
 import { InviteService } from '@src/features/social/invite/apis/invite.service';
 import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
+import { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
 import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
@@ -205,6 +206,11 @@ export function createTestDi({
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
   const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
+  const pendingRedemptionService = new PendingRedemptionService({
+    pendingRedemptionRepository,
+    installReferrerRepository: createInstallReferrerRepository(syncStorage),
+    installReferrerGateway,
+  });
   const deviceTimezoneService = new DeviceTimezoneService(
     createDeviceTimezoneRepository(syncStorage),
   );
@@ -292,12 +298,11 @@ export function createTestDi({
     inviteService: new InviteService({
       publicHttpClient: httpClient,
       authHttpClient: httpClient,
-      pendingRedemptionRepository,
-      installReferrerRepository: createInstallReferrerRepository(syncStorage),
-      installReferrerGateway,
+      pendingRedemptionService,
       installationIdGateway,
       logger,
     }),
+    pendingRedemptionService,
     allDoneBannerRepository: createAllDoneBannerRepository(syncStorage),
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(syncStorage),
     inviteShareService: new InviteShareService({

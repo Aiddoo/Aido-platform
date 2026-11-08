@@ -1,6 +1,6 @@
 import {
-  useInviteService,
   useLogger,
+  usePendingRedemptionService,
   useWeatherIntroductionRepository,
 } from '@src/bootstrap/providers/di-context';
 import { getNowInstant } from '@src/shared/date/instant';
@@ -24,7 +24,7 @@ export function useWeatherIntroduction({
 }): readonly [{ isPending: boolean }] {
   const location = useWeatherLocation();
   const introductionRepository = useWeatherIntroductionRepository();
-  const inviteService = useInviteService();
+  const pendingRedemptionService = usePendingRedemptionService();
   const logger = useLogger();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather']);
@@ -44,7 +44,7 @@ export function useWeatherIntroduction({
     const task = requestIdleCallback(() => {
       if (
         hasClaimedRef.current ||
-        inviteService.findFreshPendingRedemption(getNowInstant()) != null
+        pendingRedemptionService.findFreshPendingRedemption(getNowInstant()) != null
       ) {
         return;
       }
@@ -110,7 +110,7 @@ export function useWeatherIntroduction({
     return () => cancelIdleCallback(task);
   }, [
     introductionRepository,
-    inviteService,
+    pendingRedemptionService,
     logger,
     overlay,
     request,

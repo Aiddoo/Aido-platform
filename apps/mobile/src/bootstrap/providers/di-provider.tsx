@@ -53,6 +53,7 @@ import { InviteShareService } from '@src/features/social/invite/apis/invite-shar
 import { InviteService } from '@src/features/social/invite/apis/invite.service';
 import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
+import { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
 import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
@@ -119,6 +120,7 @@ import { viewShotViewCaptureGateway } from '@src/shared/infra/view-capture/view-
 import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
+import { useEventListenerErrorReporting } from '../hooks/use-event-listener-error-reporting';
 import { QUERY_CACHE_LOG_EVENT } from '../query/query-cache-log-events';
 import type { QueryCacheStorage } from '../query/query-cache-persistence';
 import { type DIContainer, StaticDIProvider } from './di-context';
@@ -238,12 +240,15 @@ export function DIProvider({
     const whatsNewRepository = createWhatsNewRepository(deviceSyncStorage);
 
     const pendingRedemptionRepository = createPendingRedemptionRepository(deviceSyncStorage);
-    const inviteService = new InviteService({
-      publicHttpClient,
-      authHttpClient,
+    const pendingRedemptionService = new PendingRedemptionService({
       pendingRedemptionRepository,
       installReferrerRepository: createInstallReferrerRepository(deviceSyncStorage),
       installReferrerGateway: expoInstallReferrerGateway,
+    });
+    const inviteService = new InviteService({
+      publicHttpClient,
+      authHttpClient,
+      pendingRedemptionService,
       installationIdGateway: expoInstallationIdGateway,
       logger,
     });
@@ -404,6 +409,7 @@ export function DIProvider({
       featureCampaignService,
       whatsNewRepository,
       inviteService,
+      pendingRedemptionService,
       allDoneBannerRepository: createAllDoneBannerRepository(deviceSyncStorage),
       pawPrintCelebrationRepository: createPawPrintCelebrationRepository(deviceSyncStorage),
       inviteShareService,
@@ -464,6 +470,8 @@ export function DIProvider({
       voiceRecordingRepository,
     };
   });
+
+  useEventListenerErrorReporting(di.logger);
 
   return <StaticDIProvider container={di}>{children}</StaticDIProvider>;
 }

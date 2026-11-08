@@ -1,5 +1,5 @@
 import { INVITE_FRIENDSHIP } from '@aido/api/vocabulary';
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
@@ -45,9 +45,9 @@ InviteCardActions.Guest = function Guest({
   source: InviteLinkSource;
 }) {
   const { t } = useTranslation('invite');
-  const inviteService = useInviteService();
+  const pendingRedemptionService = usePendingRedemptionService();
   const continueAsGuest = useSingleTap((pathname: '/sign-up' | '/login') => {
-    inviteService.savePendingRedemption({ inviteCode, source }, getNowInstant());
+    pendingRedemptionService.savePendingRedemption({ inviteCode, source }, getNowInstant());
     router.push(pathname);
   });
 
@@ -78,7 +78,7 @@ InviteCardActions.Guest = function Guest({
  */
 InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
-  const inviteService = useInviteService();
+  const pendingRedemptionService = usePendingRedemptionService();
   // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다.
   // 내 링크를 열었으면 서버가 INVITE_2103으로 막고 수락 오류 처리가 내 초대 화면으로 보낸다
   const [{ data: preview }, { data: me }] = useSuspenseQueries({
@@ -95,8 +95,8 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   // 그래서 수락이나 실패 쪽에서는 따로 지우지 않는다
   useFocusEffect(
     useCallback(() => {
-      inviteService.clearPendingRedemption();
-    }, [inviteService]),
+      pendingRedemptionService.clearPendingRedemption();
+    }, [pendingRedemptionService]),
   );
 
   // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다

@@ -55,6 +55,7 @@ import type { AllDoneBannerRepository } from '@src/features/social/invite/apis/a
 import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/apis/invite.service';
 import type { PawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
+import type { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
 import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
@@ -116,6 +117,7 @@ export interface DIContainer extends SharedDependencies {
   appIconService: AppIconService;
   friendService: FriendService;
   inviteService: InviteService;
+  pendingRedemptionService: PendingRedemptionService;
   allDoneBannerRepository: AllDoneBannerRepository;
   pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   inviteShareService: InviteShareService;
@@ -284,6 +286,9 @@ export function useFriendService() {
 }
 export function useInviteService() {
   return useDI().inviteService;
+}
+export function usePendingRedemptionService() {
+  return useDI().pendingRedemptionService;
 }
 export function useAllDoneBannerRepository() {
   return useDI().allDoneBannerRepository;

@@ -1,4 +1,4 @@
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
@@ -18,7 +18,7 @@ function selectUserId(user: User) {
  */
 export function useInviteAppEntry() {
   const status = useAuthStatus();
-  const inviteService = useInviteService();
+  const pendingRedemptionService = usePendingRedemptionService();
   const segments = useSegments();
   const { data: userId } = useQuery({
     ...useGetMeQueryOptions(),
@@ -37,8 +37,8 @@ export function useInviteAppEntry() {
     // 첫 화면이 그려진 다음 프레임에 이동해야 탭 화면이 아래에 남는다
     const frameId = requestAnimationFrame(() => {
       const now = getNowInstant();
-      inviteService.discardStalePendingRedemption(now);
-      const pending = inviteService.findFreshPendingRedemption(now);
+      pendingRedemptionService.discardStalePendingRedemption(now);
+      const pending = pendingRedemptionService.findFreshPendingRedemption(now);
       if (pending == null) {
         return;
       }
@@ -56,5 +56,5 @@ export function useInviteAppEntry() {
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [status, isAuthenticatedRouteMounted, userId, inviteService]);
+  }, [status, isAuthenticatedRouteMounted, userId, pendingRedemptionService]);
 }

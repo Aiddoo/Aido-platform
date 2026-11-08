@@ -6,41 +6,21 @@ import {
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { Logger } from '@src/core/ports/logger';
-import type { Instant } from '@src/shared/date/instant';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import type { Page } from '@src/shared/types/page.types';
 import { identity } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
-import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import {
-  INVITE_ERROR_CODE,
-  type InviteErrorCode,
-  isTerminalRedeemFailure,
-  toRedeemFailureReason,
-} from '../domains/invite.error';
+import { INVITE_ERROR_CODE, type InviteErrorCode } from '../domains/invite.error';
 import type { InvitePreview } from '../schemas/invite-preview.schema';
-import {
-  type InviteLinkSource,
-  type PendingRedemption,
-  type RedemptionResult,
-  redemptionResultSchema,
-} from '../schemas/invite-redemption.schema';
-import {
-  type Invite,
-  type InviteCode,
-  inviteSchema,
-  parseInviteCode,
-} from '../schemas/invite.schema';
+import { type RedemptionResult, redemptionResultSchema } from '../schemas/invite-redemption.schema';
+import { type Invite, inviteSchema, parseInviteCode } from '../schemas/invite.schema';
 import { type InvitedFriend, invitedFriendsPageSchema } from '../schemas/invited-friend.schema';
-import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
-import type { InstallReferrerRepository } from './install-referrer.repository';
 import { toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
-import type { PendingRedemptionRepository } from './pending-redemption.repository';
+import type { PendingRedemptionService } from './pending-redemption.service';
 
 type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;
 
@@ -48,41 +28,29 @@ interface InviteServicePorts {
   /** 미리보기·사용 가능 여부는 로그인 전에도 부른다 */
   publicHttpClient: HttpClient;
   authHttpClient: HttpClient;
-  pendingRedemptionRepository: PendingRedemptionRepository;
-  installReferrerRepository: InstallReferrerRepository;
-  installReferrerGateway: InstallReferrerGateway;
+  /** 미리보기가 더는 쓸 수 없는 초대라고 알려 주면 남겨 둔 초대를 지운다 */
+  pendingRedemptionService: Pick<PendingRedemptionService, 'clearPendingRedemptionIfTerminal'>;
   installationIdGateway: InstallationIdGateway;
   logger: Pick<Logger, 'warn'>;
-}
-
-interface SavePendingRedemptionInput {
-  inviteCode: InviteCode;
-  source: InviteLinkSource;
 }
 
 export class InviteService {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
-  readonly #pendingRedemptionRepository: PendingRedemptionRepository;
-  readonly #installReferrerRepository: InstallReferrerRepository;
-  readonly #installReferrerGateway: InstallReferrerGateway;
+  readonly #pendingRedemptionService: InviteServicePorts['pendingRedemptionService'];
   readonly #installationIdGateway: InstallationIdGateway;
   readonly #logger: Pick<Logger, 'warn'>;
 
   constructor({
     publicHttpClient,
     authHttpClient,
-    pendingRedemptionRepository,
-    installReferrerRepository,
-    installReferrerGateway,
+    pendingRedemptionService,
     installationIdGateway,
     logger,
   }: InviteServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
-    this.#pendingRedemptionRepository = pendingRedemptionRepository;
-    this.#installReferrerRepository = installReferrerRepository;
-    this.#installReferrerGateway = installReferrerGateway;
+    this.#pendingRedemptionService = pendingRedemptionService;
     this.#installationIdGateway = installationIdGateway;
     this.#logger = logger;
   }
@@ -107,7 +75,7 @@ export class InviteService {
 
     const result = await this.#publicHttpClient.get(`v1/invites/${inviteCode}`, { signal });
     if (!result.ok) {
-      this.#clearPendingRedemptionIfTerminal(inviteCode, result.error);
+      this.#pendingRedemptionService.clearPendingRedemptionIfTerminal(inviteCode, result.error);
       return result;
     }
 
@@ -174,67 +142,4 @@ export class InviteService {
       toInvitedFriendsPage,
       '[InviteService] Invalid getInvitedFriends response',
     );
-
-  savePendingRedemption = (input: SavePendingRedemptionInput, now: Instant) => {
-    this.#pendingRedemptionRepository.save({ ...input, savedAt: now });
-  };
-
-  /**
-   * 로그인 전에 남긴 초대 중 아직 이어서 열 수 있는 것. 없거나 기한이 지났으면 null이다.
-   * 로그인 전에만 남기므로 처음 로그인한 계정이 이어서 연다. 저장소는 바꾸지 않아
-   * 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
-   */
-  findFreshPendingRedemption = (now: Instant): PendingRedemption | null => {
-    const pending = this.#pendingRedemptionRepository.find();
-    if (pending == null || !InviteRedemptionPolicy.isFresh(pending, now)) {
-      return null;
-    }
-
-    return pending;
-  };
-
-  /** 기한이 지난 초대를 저장소에서 지운다 */
-  discardStalePendingRedemption = (now: Instant) => {
-    const pending = this.#pendingRedemptionRepository.find();
-    if (pending != null && !InviteRedemptionPolicy.isFresh(pending, now)) {
-      this.#pendingRedemptionRepository.clear();
-    }
-  };
-
-  /** 사용자가 초대 카드를 봤을 때. 닫고 나가도 다음 실행 때 다시 열지 않는다 */
-  clearPendingRedemption = () => {
-    this.#pendingRedemptionRepository.clear();
-  };
-
-  #clearPendingRedemptionIfTerminal = (inviteCode: string, error: unknown) => {
-    if (
-      this.#pendingRedemptionRepository.find()?.inviteCode === inviteCode &&
-      isTerminalRedeemFailure(toRedeemFailureReason(error))
-    ) {
-      this.#pendingRedemptionRepository.clear();
-    }
-  };
-
-  /** 처음 실행 때 Play 설치 referrer의 초대 코드를 이어서 열 초대로 남긴다 */
-  captureInstallReferrer = async (now: Instant): Promise<PendingRedemption | null> => {
-    if (this.#installReferrerRepository.hasChecked()) {
-      return null;
-    }
-
-    // 읽기에 실패해도 다음 실행마다 다시 묻지 않는다
-    this.#installReferrerRepository.markChecked();
-    const referrer = await this.#installReferrerGateway.get();
-    const inviteCode = referrer == null ? null : parseInstallReferrerInviteCode(referrer);
-    if (inviteCode == null) {
-      return null;
-    }
-
-    const pending: PendingRedemption = {
-      inviteCode,
-      source: 'install_referrer',
-      savedAt: now,
-    };
-    this.#pendingRedemptionRepository.save(pending);
-    return pending;
-  };
 }
