@@ -61,10 +61,11 @@ export function useCancelRequestMutationOptions() {
       const result = await friendService.cancelRequest(userId);
       return unwrap(result);
     },
-    onSuccess: (_data, userId) => {
+    onSuccess: async (_data, userId) => {
       patchSearchedUser(queryClient, (user) => user.id === userId, { requestPending: false });
       trackEvent('friend_request_cancelled');
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
+      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+      await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
     onError: (error) => {
       haptics.notify('error');
@@ -111,6 +112,8 @@ export function useRemoveFriendMutationOptions() {
   type FriendsInfiniteData = InfiniteData<Page<FriendUser>, string | undefined>;
 
   return mutationOptions({
+    // 삭제 중에는 행 버튼이 꺼진다. 오프라인에 멈춰 두면 행이 빠진 채 연결될 때까지 남으니 바로 실패해 되돌린다
+    networkMode: 'always',
     mutationFn: async (userId: string) => {
       const result = await friendService.removeFriend(userId);
       return unwrap(result);
@@ -173,6 +176,8 @@ export function useReorderFriendMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    // 순서를 저장하는 동안 끌기가 막힌다. 오프라인에 멈춰 두면 연결될 때까지 막히니 바로 실패해 제자리로 돌린다
+    networkMode: 'always',
     mutationFn: async ({ followId, input }: ReorderFriendParams) => {
       const result = await friendService.reorderFriend(followId, input);
       return unwrap(result);
@@ -227,19 +232,19 @@ export function useSendRequestByTagMutationOptions({
       }
       toast.success(t('friend:toast.requestSent'));
     },
-    onError: (err) => {
+    onError: (error) => {
       haptics.notify('error');
-      if (findLimitedFeature(err) != null) {
+      if (findLimitedFeature(error) != null) {
         const snapshot = getCachedEntitlements(queryClient);
         const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
         gate.promptIfBlockedError(
-          err,
+          error,
           onFriendLimitInvite == null
             ? {}
             : {
                 description: t('invite:entry.friendLimitDescription', {
                   limit: FriendPolicy.getFriendLimit({
-                    serverLimit: getFriendLimitFromError(err),
+                    serverLimit: getFriendLimitFromError(error),
                     knownLimit,
                   }),
                   activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
@@ -253,7 +258,7 @@ export function useSendRequestByTagMutationOptions({
         return;
       }
 
-      toast.error(getUserFacingMessage(err), { fallback: t('friend:toast.requestFailed') });
+      toast.error(getUserFacingMessage(error), { fallback: t('friend:toast.requestFailed') });
     },
   });
 }
