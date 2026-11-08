@@ -1,4 +1,5 @@
 import { dailyCompletionsRangeResponseSchema, todoListResponseSchema } from '@aido/api';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import {
   createDailyCompletionsDto,
@@ -9,13 +10,7 @@ import {
 import { dailyCompletionsResultSchema, todoListResultSchema } from '../schemas/todo.schema';
 import { toDailyCompletionsResult, toTodo, toTodoListResult } from './todo.mapper';
 
-beforeEach(() => {
-  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
-});
-
-afterEach(() => {
-  jest.useRealTimers();
-});
+setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 describe('toTodo', () => {
   it('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {

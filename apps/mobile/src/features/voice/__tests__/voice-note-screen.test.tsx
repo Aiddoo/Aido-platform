@@ -20,6 +20,7 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -116,6 +117,9 @@ async function renderScreen(note: Parameters<typeof createSpokenVoiceNote>[0], t
 }
 
 describe('말로 메모 화면', () => {
+  // 화면을 떠난 뒤 오는 응답·동의 결과가 토스트를 띄워도 타이머가 테스트 밖에 남지 않게 한다
+  setupFakeTimersPerTest({ advanceTimers: true });
+
   it('정리 전에는 들은 글자와 정리하기, 쓰게 될 횟수를 보여 준다', async () => {
     // Given
     await renderScreen({});

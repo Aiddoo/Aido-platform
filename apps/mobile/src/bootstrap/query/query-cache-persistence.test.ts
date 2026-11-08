@@ -6,6 +6,7 @@ import type {
   TodoListResult,
 } from '@src/features/planning/todo/schemas/todo.schema';
 import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import type { QueryClient } from '@tanstack/react-query';
 import {
@@ -141,13 +142,7 @@ describe('shouldPersistQuery', () => {
 });
 
 describe('createQueryPersistOptions', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   const saveAndRestore = async (savedBuster: string, restoringBuster: string) => {
     const storage = createQueryCacheStorage(createMemorySyncStorage());

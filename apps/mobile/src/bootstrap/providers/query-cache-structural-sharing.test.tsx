@@ -1,4 +1,5 @@
 import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { toInstant } from '@src/shared/date/instant';
 import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
@@ -33,13 +34,7 @@ function createMemos(): MemoItem[] {
 }
 
 describe('복원한 캐시를 다시 조회할 때의 구조 공유', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('같은 값의 메모 18개를 다시 조회해도 항목을 다시 그리지 않는다', async () => {
     // Given 저장했다가 복원한 캐시

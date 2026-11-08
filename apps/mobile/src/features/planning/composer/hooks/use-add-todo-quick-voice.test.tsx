@@ -23,6 +23,7 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { fromDate, getNowInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -205,6 +206,9 @@ const getIdempotencyKey = (
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useAddTodoQuickVoice', () => {
+  // 동의를 미룬 뒤 뜨는 토스트 타이머가 테스트 밖에 남지 않게 한다
+  setupFakeTimersPerTest({ advanceTimers: true });
+
   it('말이 끝나면 글자를 계획 API로 보내고 같은 시트의 고르는 단계로 넘어간다', async () => {
     // Given
     const { httpClient, speechRecognizer } = await renderQuickVoice();
@@ -557,14 +561,6 @@ describe('useAddTodoQuickVoice', () => {
   });
 
   describe('90초 제안', () => {
-    beforeEach(() => {
-      jest.useFakeTimers({ advanceTimers: true });
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
     async function listenUntilLimit(
       speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
     ) {

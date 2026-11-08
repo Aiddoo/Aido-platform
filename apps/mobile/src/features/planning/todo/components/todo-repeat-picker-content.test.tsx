@@ -5,6 +5,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import '@src/shared/i18n/init';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { fromDate } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -49,13 +50,7 @@ const chip = (name: string) => screen.getByRole('button', { name });
 const pressDay = (day: string) => fireEvent.press(chip(day));
 
 describe('TodoRepeatPickerContent', () => {
-  beforeEach(() => {
-    jest.useFakeTimers({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
 
   it('값이 없으면 시작일의 요일 하나와 날짜 종료로 시작하고 기간을 고를 때까지 확인이 막힌다', async () => {
     // Given

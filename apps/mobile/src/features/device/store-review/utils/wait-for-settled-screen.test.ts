@@ -1,17 +1,12 @@
 import { createAppLifecycleGatewayStub } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import { waitForSettledScreen } from './wait-for-settled-screen';
 
 const DELAY_MS = 1_200;
 
 describe('waitForSettledScreen', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('축하가 가라앉을 때까지 기다린 뒤 화면이 그대로면 true로 끝나고 구독을 정리한다', async () => {
     // Given

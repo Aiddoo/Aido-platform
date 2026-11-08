@@ -3,6 +3,7 @@ import {
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceRecordingIntake } from './voice-recording-intake';
@@ -27,13 +28,7 @@ function createIntake() {
 }
 
 describe('VoiceRecordingIntake', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('기다릴 파일이 없으면 바로 끝난다', async () => {
     // Given

@@ -1,4 +1,5 @@
 import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -56,13 +57,7 @@ function createRepository(timeZone = 'Asia/Seoul') {
 }
 
 describe('VoiceNoteDraftRepository', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('저장한 초안을 같은 계정에서 그대로 복원한다', () => {
     // Given

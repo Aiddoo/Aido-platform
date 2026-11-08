@@ -10,6 +10,7 @@ import {
   createVoiceNoteStorageFake,
   renderUi,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
@@ -121,13 +122,7 @@ const say = (
 ) => act(async () => speechRecognizer.emit({ type: 'result', transcript, isFinal, segments: [] }));
 
 describe('useVoiceNoteRecording', () => {
-  beforeEach(() => {
-    jest.useFakeTimers({ advanceTimers: true });
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest({ advanceTimers: true });
 
   it('기기 인식과 녹음 파일 저장으로 시작하고 말을 끝내도 알아서 끝나지 않는다', async () => {
     // Given

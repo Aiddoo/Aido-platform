@@ -1,15 +1,11 @@
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { pushNotificationPayloadSchema } from '../schemas/notification.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { toNotification, toNotificationListResult } from './notification.mapper';
 
-beforeEach(() => {
-  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
-});
-
-afterEach(() => {
-  jest.useRealTimers();
-});
+setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 

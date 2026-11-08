@@ -50,4 +50,5 @@ export { createVoiceNoteStorageFake } from './create-voice-note-storage-fake';
 export { createTestQueryClient } from './query-client';
 export { renderUi, renderUiHook } from './render-ui';
 export { runKyAfterResponseHook } from './run-ky-after-response-hook';
+export { setupFakeTimersPerTest } from './setup-fake-timers-per-test';
 export { stubWindowDimensions } from './stub-window-dimensions';

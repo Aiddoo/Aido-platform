@@ -7,6 +7,7 @@ import {
   createSpeechRecognizerStub,
   renderUi,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -424,13 +425,7 @@ describe('useVoiceCaptureSession', () => {
       const VOICE = SPEAKING_VOLUME_THRESHOLD;
       const QUIET = 0;
 
-      beforeEach(() => {
-        jest.useFakeTimers({ advanceTimers: true });
-      });
-
-      afterEach(() => {
-        jest.useRealTimers();
-      });
+      setupFakeTimersPerTest({ advanceTimers: true });
 
       const hearVolume = (
         speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
@@ -646,13 +641,7 @@ describe('useVoiceCaptureSession', () => {
   });
 
   describe('한 번의 길이 한도', () => {
-    beforeEach(() => {
-      jest.useFakeTimers({ advanceTimers: true });
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
+    setupFakeTimersPerTest({ advanceTimers: true });
 
     it('일시정지했다 이어 들으면 남은 시간만큼만 듣고 한도를 알린다', async () => {
       // Given
@@ -701,13 +690,7 @@ describe('useVoiceCaptureSession', () => {
   });
 
   describe('인식기가 시작하자마자 끝날 때', () => {
-    beforeEach(() => {
-      jest.useFakeTimers({ advanceTimers: true });
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
+    setupFakeTimersPerTest({ advanceTimers: true });
 
     const beginListening = async () => {
       const session = await renderSession({ mode: 'note' });

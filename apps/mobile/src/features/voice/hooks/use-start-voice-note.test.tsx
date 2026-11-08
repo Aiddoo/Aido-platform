@@ -16,6 +16,7 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Button, OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -48,6 +49,9 @@ function StartProbe() {
     </Button>
   );
 }
+
+/** 동의를 미룬 뒤 뜨는 안내. 테스트가 이 토스트까지 기다려야 끝난 뒤에 타이머가 남지 않는다 */
+const CONSENT_REQUIRED_TOAST = '말로 정리하려면 동의가 필요해요';
 
 async function renderStart({
   consent,
@@ -98,6 +102,9 @@ async function renderStart({
 }
 
 describe('useStartVoiceNote', () => {
+  // 화면을 떠난 뒤 오는 응답·동의 결과가 토스트를 띄워도 타이머가 테스트 밖에 남지 않게 한다
+  setupFakeTimersPerTest({ advanceTimers: true });
+
   beforeEach(() => {
     jest.mocked(router.push).mockClear();
   });
@@ -152,7 +159,8 @@ describe('useStartVoiceNote', () => {
     await fireEvent.press(screen.getByTestId('ai-consent-later'));
 
     // Then
-    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+    expect(await screen.findAllByText(CONSENT_REQUIRED_TOAST)).not.toHaveLength(0);
+    expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
     expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
   });
@@ -162,7 +170,7 @@ describe('useStartVoiceNote', () => {
     await renderStart({ consent: {} });
     await fireEvent.press(screen.getByText('시작'));
     await fireEvent.press(await screen.findByTestId('ai-consent-later'));
-    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+    await screen.findAllByText(CONSENT_REQUIRED_TOAST);
 
     // When
     await fireEvent.press(screen.getByText('시작'));

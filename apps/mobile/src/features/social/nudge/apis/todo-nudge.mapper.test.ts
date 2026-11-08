@@ -1,16 +1,12 @@
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+
 import {
   createNudgeCooldownInfoDto,
   createNudgeLimitInfoDto,
 } from '../__tests__/todo-nudge.fixtures';
 import { toNudgeCooldownInfo, toNudgeLimitInfo } from './todo-nudge.mapper';
 
-beforeEach(() => {
-  jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
-});
-
-afterEach(() => {
-  jest.useRealTimers();
-});
+setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 describe('toNudgeLimitInfo', () => {
   it('필드 매핑', () => {

@@ -5,6 +5,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -37,13 +38,7 @@ async function setup(isAuthenticated: boolean) {
 }
 
 describe('useForegroundNotificationSync', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('알림이 도착하면 목록을 다시 받고 배지를 맞춘다', async () => {
     // Given
