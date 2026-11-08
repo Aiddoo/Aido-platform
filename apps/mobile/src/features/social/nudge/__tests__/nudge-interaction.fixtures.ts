@@ -2,10 +2,10 @@ import { nudgeInteractionResponseSchema, type NudgeInteractionResponse } from '@
 
 import { createSendNudgeResponseDto } from './todo-nudge.fixtures';
 
-export const createNudgeInteractionDto = (
+export function createNudgeInteractionDto(
   overrides: Partial<NudgeInteractionResponse> = {},
-): NudgeInteractionResponse =>
-  nudgeInteractionResponseSchema.parse({
+): NudgeInteractionResponse {
+  return nudgeInteractionResponseSchema.parse({
     ...createSendNudgeResponseDto().nudge,
     sender: {
       id: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -27,3 +27,4 @@ export const createNudgeInteractionDto = (
     isAvailable: true,
     ...overrides,
   });
+}

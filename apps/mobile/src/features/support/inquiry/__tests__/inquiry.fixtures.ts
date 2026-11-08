@@ -1,24 +1,29 @@
 import type { CreateInquiryResponse } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
-const generateCreateInquiryResponseDto = (): CreateInquiryResponse => ({
-  message: '문의가 접수되었습니다.',
-});
+function generateCreateInquiryResponseDto(): CreateInquiryResponse {
+  return {
+    message: '문의가 접수되었습니다.',
+  };
+}
 
-export const createInquiryResponseDto = (
+export function createInquiryResponseDto(
   overrides?: Partial<CreateInquiryResponse>,
-): CreateInquiryResponse => ({
-  ...generateCreateInquiryResponseDto(),
-  ...overrides,
-});
+): CreateInquiryResponse {
+  return {
+    ...generateCreateInquiryResponseDto(),
+    ...overrides,
+  };
+}
 
-export const createInquiryApiError = (
+export function createInquiryApiError(
   overrides?: Partial<{ code: string; message: string; status: number }>,
-) =>
-  new ApiError(
+) {
+  return new ApiError(
     overrides?.code ?? 'INQUIRY_FAILED',
     overrides?.message ?? '문의 접수에 실패했습니다',
     overrides?.status ?? 500,
   );
+}
 
 export const INVALID_DTO = { invalid: 'data' };

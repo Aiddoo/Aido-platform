@@ -4,26 +4,29 @@ import type { PremiumAccess } from '../schemas/premium-access.schema';
 import { type CurrentUserResponse, currentUserResponseSchema } from '../schemas/user.schema';
 import { createCurrentUserDto } from './user.fixtures';
 
-export const createPremiumAccess = (overrides?: Partial<PremiumAccess>): PremiumAccess => ({
-  source: 'GRANT',
-  // 11월 1일 14:30 KST
-  endsAt: toInstant('2026-11-01T05:30:00Z'),
-  periodEndsAt: toInstant('2026-11-01T05:30:00Z'),
-  willRenew: false,
-  bankedDays: 0,
-  grantEndedAt: null,
-  ...overrides,
-});
+export function createPremiumAccess(overrides?: Partial<PremiumAccess>): PremiumAccess {
+  return {
+    source: 'GRANT',
+    // 11월 1일 14:30 KST
+    endsAt: toInstant('2026-11-01T05:30:00Z'),
+    periodEndsAt: toInstant('2026-11-01T05:30:00Z'),
+    willRenew: false,
+    bankedDays: 0,
+    grantEndedAt: null,
+    ...overrides,
+  };
+}
 
 /** 서버 /me 응답을 @aido/api 계약으로 검증해 만든다. 서버가 보낼 수 없는 모양은 여기서 실패한다 */
-const premiumMe = (overrides: Partial<CurrentUserResponse>) =>
-  currentUserResponseSchema.parse(
+function premiumMe(overrides: Partial<CurrentUserResponse>) {
+  return currentUserResponseSchema.parse(
     createCurrentUserDto({
       subscriptionStatus: 'ACTIVE',
       isPremium: overrides.premiumSource != null,
       ...overrides,
     }),
   );
+}
 
 /**
  * 서버 PremiumAccessPolicy 예시 그대로의 /me 프리미엄 응답.
