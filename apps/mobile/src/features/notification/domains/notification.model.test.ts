@@ -16,6 +16,25 @@ const baseNotification: Notification = {
   readAt: null,
 };
 
+describe('isAiFeature', () => {
+  it.each([
+    ['WEEKLY_REPORT', true],
+    ['MONTHLY_REPORT', true],
+    ['AI_SUGGESTION', true],
+    ['CHEER_RECEIVED', false],
+    ['SYSTEM_NOTICE', false],
+  ] as const)('%s 알림이 프리미엄 AI 기능인지는 %s다', (type, expected) => {
+    // Given
+    const notification = { type };
+
+    // When
+    const result = NotificationPolicy.isAiFeature(notification);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('findReceivedCheer', () => {
   it('받은 응원 알림은 신고할 응원과 보낸 친구를 반환한다', () => {
     // When

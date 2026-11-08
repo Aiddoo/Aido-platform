@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { NOTIFICATION_TYPE_LABEL_KEYS } from '../constants/notification-labels';
+import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category';
 import { useOpenNotification } from '../hooks/use-open-notification';
@@ -125,7 +125,7 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
 
   return (
     <NotificationListRow
-      label={t(`categories.${NOTIFICATION_TYPE_LABEL_KEYS[notification.type]}`)}
+      label={t(`categories.${NOTIFICATION_TYPE_TRAITS[notification.type].labelKey}`)}
       title={notification.title}
       body={notification.body}
       createdAt={notification.createdAt}

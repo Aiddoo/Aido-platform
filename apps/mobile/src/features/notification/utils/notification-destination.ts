@@ -8,6 +8,7 @@ import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 
+import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
 import {
   type NotificationAction,
   type NotificationContext,
@@ -35,25 +36,6 @@ export interface NotificationDestinationSource {
 }
 
 type LegacyDestinationSource = NotificationDestinationSource & { type: NotificationType };
-
-const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-  NOTIFICATION_TYPE.DAILY_COMPLETE,
-  NOTIFICATION_TYPE.MORNING_REMINDER,
-  NOTIFICATION_TYPE.EVENING_REMINDER,
-  NOTIFICATION_TYPE.WINBACK,
-  NOTIFICATION_TYPE.SOCIAL_DIGEST,
-  NOTIFICATION_TYPE.LUNCH_NUDGE,
-  NOTIFICATION_TYPE.STREAK_AT_RISK,
-  // 초대받은 사람이 오늘 할 일을 끝내 사용 시작하도록 오늘 피드로 연다
-  NOTIFICATION_TYPE.INVITE_QUALIFY_REMINDER,
-]);
-
-/** 종류만으로 갈 곳을 정할 수 없는 공지. 서버가 DEEP_LINK url에 고른 앱 경로를 따른다(리텐션 /feed·/achievements 등). */
-const NOTICE_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-  NOTIFICATION_TYPE.SYSTEM_NOTICE,
-  NOTIFICATION_TYPE.ADMIN_BROADCAST,
-  NOTIFICATION_TYPE.ADMIN_TARGETED,
-]);
 
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
@@ -93,7 +75,8 @@ function toLegacyFieldsDestination(
     return toExternalDestination('webview', source.action.url);
   }
 
-  if (NOTICE_NOTIFICATION_TYPES.has(source.type)) {
+  // 종류만으로 갈 곳을 정할 수 없는 공지. 서버가 DEEP_LINK url에 고른 앱 경로를 따른다(리텐션 /feed·/achievements 등)
+  if (NOTIFICATION_TYPE_TRAITS[source.type].legacyDestination === 'notice') {
     return toNoticeDestination(source.action?.url, { shouldOpenToday });
   }
 
@@ -234,7 +217,7 @@ function parseNotificationRouting(
   source: LegacyDestinationSource,
 ): NotificationDestinationRouting | null {
   const candidate = {
-    type: FEED_NOTIFICATION_TYPES.has(source.type) ? 'FEED' : source.type,
+    type: NOTIFICATION_TYPE_TRAITS[source.type].legacyDestination === 'feed' ? 'FEED' : source.type,
     todoId: source.context?.todoId,
     nudgeId: source.context?.nudgeId,
     friendId: source.context?.friendId,

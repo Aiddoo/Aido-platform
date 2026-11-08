@@ -3,24 +3,17 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { match } from 'ts-pattern';
 
-import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
-import type {
-  Notification,
-  NotificationType,
-  PendingNotificationResponse,
-} from '../schemas/notification.schema';
+import {
+  MARKETING_OPT_OUT_ACTION,
+  NOTIFICATION_TYPE_TRAITS,
+} from '../constants/notification.constants';
+import type { Notification, PendingNotificationResponse } from '../schemas/notification.schema';
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
 const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
 
-const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
-  'WEEKLY_REPORT',
-  'MONTHLY_REPORT',
-  'AI_SUGGESTION',
-]);
-
 function isAiFeature(notification: Pick<Notification, 'type'>) {
-  return AI_FEATURE_TYPES.has(notification.type);
+  return NOTIFICATION_TYPE_TRAITS[notification.type].isAiFeature;
 }
 
 /**

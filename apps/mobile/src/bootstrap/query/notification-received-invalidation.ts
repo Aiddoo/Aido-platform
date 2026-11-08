@@ -1,4 +1,5 @@
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { NOTIFICATION_TYPE_TRAITS } from '@src/features/notification/constants/notification.constants';
 import type { NotificationType } from '@src/features/notification/schemas/notification.schema';
 import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
 import { invalidateOnInviteNotification } from '@src/features/social/invite/queries/invite-cache';
@@ -11,17 +12,11 @@ export function invalidateOnNotificationReceived(
   queryClient: QueryClient,
   type: NotificationType,
 ): Promise<unknown> {
-  return (
-    match(type)
-      .with('NUDGE_RECEIVED', 'NUDGE_REPLIED', 'NUDGE_THANKED', () =>
-        invalidateNudgeInteractions(queryClient),
-      )
-      .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => invalidateFriends(queryClient))
-      .with('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS', () =>
-        invalidateOnInviteNotification(queryClient),
-      )
-      // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
-      .with('PREMIUM_GRANT_ENDING', () => invalidateMe(queryClient))
-      .otherwise(() => Promise.resolve())
-  );
+  return match(NOTIFICATION_TYPE_TRAITS[type].invalidation)
+    .with('nudge-interactions', () => invalidateNudgeInteractions(queryClient))
+    .with('friends', () => invalidateFriends(queryClient))
+    .with('invite', () => invalidateOnInviteNotification(queryClient))
+    .with('me', () => invalidateMe(queryClient))
+    .with(null, () => Promise.resolve())
+    .exhaustive();
 }
