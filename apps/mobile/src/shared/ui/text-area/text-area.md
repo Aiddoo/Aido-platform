@@ -90,7 +90,8 @@ import { TextArea } from '@src/shared/ui';
 
 `growsWithContent`는 입력 내용과 표면의 세로 padding을 측정해 컨테이너 높이를 조절합니다. 기존 폼의
 높이 동작을 바꾸지 않도록 opt-in이며, `className`에 최소 높이와 최대 높이를 함께 지정합니다. 최대
-높이를 넘은 내용은 TextInput 내부에서 스크롤합니다.
+높이를 넘은 내용은 TextInput 내부에서 스크롤합니다. `KeyboardBottomSheet` 안에서는 칸 전체가 키보드 위에 남은 높이에서
+나머지 내용(칩·보내기 줄)을 뺀 만큼까지만 자란다(`FieldMaxHeightContext`). 접은 Duo에서 칸이 자라 버튼 줄을 키보드 뒤로 밀지 않게 하려는 것이다.
 
 ```tsx
 <TextArea growsWithContent className="min-h-11 max-h-28" />

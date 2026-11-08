@@ -247,7 +247,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 전체 화면 편집기·목록(메모, 친구 찾기) | `KeyboardAvoidingView behavior="padding"`                      | 화면 머리글 버튼                               |
 
 - 화면 폼은 버튼을 `footer`로 넘긴다. 칸 전체(라벨·오류 문구·글자 수)를 버튼 위로 올리며, `KeyboardAwareScrollView`는 커서 줄만 올려 쓰지 않는다([FormStepLayout](../src/shared/ui/form-step-layout/form-step-layout.md#키보드)). 다음 칸은 `returnKeyType="next"`로 넘어간다.
-- 시트 내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 둔다. gorhom 동적 크기는 내용만 재므로 첫 프레임부터 최종 높이로 올라온다. 접은 Duo·SE에서 입력과 사이 내용 때문에 키보드에 가리는 주 버튼만 `footer`에 두며, `footer`는 시트와 함께 올라와 키보드 위에 멈춘다.
+- 시트 내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 둔다. gorhom 동적 크기는 내용만 재므로 첫 프레임부터 최종 높이로 올라온다. 접은 Duo·SE에서 입력과 사이 내용 때문에 키보드에 가리는 주 버튼만 `footer`에 두며, `footer`는 시트와 함께 올라와 키보드 위에 멈추고, 그 뒤로 들어간 내용은 스크롤로 `footer` 위까지 올린다. 자라는 `TextArea`는 키보드 위 남은 높이까지만 자란다.
 - 댓글처럼 목록 아래에 붙는 작성 바만 `KeyboardStickyView`를 직접 쓴다.
 
 ## 아직 옮기지 않은 것

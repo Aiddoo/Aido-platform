@@ -29,12 +29,18 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
 import { FocusedFieldContext } from '../input/focused-field';
+import { FieldMaxHeightContext } from '../text-area/field-max-height';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
@@ -100,11 +106,22 @@ export function KeyboardBottomSheet({
   const bottomPadding = getContentBottomPadding(insets.bottom);
   const contentHeight = useSharedValue(0);
   const keyboardHeight = useSharedValue(0);
-  // 시트가 위쪽 한계에 닿으면 바닥이 키보드에 가리므로(내용 영역은 줄지 않는다) footer를 가린 만큼 올린다. 다 올라간 위치로 정해 프레임마다 다시 붙지 않는다
-  const footerAnimatedStyle = useAnimatedStyle(() => {
+  // 시트가 위쪽 한계에 닿으면 바닥이 키보드에 가린다(gorhom은 내용 영역을 줄이지 않는다). 다 올라간 위치로 정해 프레임마다 다시 붙지 않는다
+  const keyboardHiddenHeight = useDerivedValue(() => {
     const sheetHeight = Math.min(contentHeight.get() + HANDLE_HEIGHT, maxDynamicContentSize);
     const hiddenHeight = sheetHeight + keyboardHeight.get() - (windowHeight - topInset);
-    const isSheetAtTop = keyboardHeight.get() > 0 && hiddenHeight >= 0;
+
+    return keyboardHeight.get() > 0 && hiddenHeight >= 0 ? hiddenHeight : null;
+  });
+  // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
+  const scrollAnimatedStyle = useAnimatedStyle(() => ({
+    marginBottom: withTiming(keyboardHiddenHeight.get() ?? 0, {
+      duration: SHEET_ANIMATION_DURATION,
+    }),
+  }));
+  const footerAnimatedStyle = useAnimatedStyle(() => {
+    const hiddenHeight = keyboardHiddenHeight.get();
+    const isSheetAtTop = hiddenHeight != null;
 
     return {
       // 키보드 위로 시트가 끝까지 올라가는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄인다
@@ -113,7 +130,7 @@ export function KeyboardBottomSheet({
       }),
       transform: [
         {
-          translateY: withTiming(isSheetAtTop ? -hiddenHeight : 0, {
+          translateY: withTiming(-(hiddenHeight ?? 0), {
             duration: SHEET_ANIMATION_DURATION,
           }),
         },
@@ -123,6 +140,28 @@ export function KeyboardBottomSheet({
   // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비운다. 키보드가 오르내릴 때 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
+  const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
+  const bodyContentRef = useRef<ComponentRef<typeof View>>(null);
+  const visibleBodyHeight =
+    !isOpen || keyboardTop == null
+      ? null
+      : Math.min(maxDynamicContentSize, keyboardTop - topInset) -
+        HANDLE_HEIGHT -
+        CONTENT_PADDING_TOP -
+        (footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP);
+  // 칸을 뺀 나머지 내용이 키보드 위에 남도록 칸 상한을 준다. 내용 높이는 칸과 같은 배치에서 동기로 잰다
+  const getMaxFieldHeight = useCallback(
+    (fieldHeight: number) => {
+      let maxFieldHeight: number | null = null;
+      if (visibleBodyHeight != null) {
+        bodyContentRef.current?.measure((_x, _y, _width, bodyHeight) => {
+          maxFieldHeight = visibleBodyHeight - (bodyHeight - fieldHeight);
+        });
+      }
+      return maxFieldHeight;
+    },
+    [visibleBodyHeight],
+  );
   const { scrollViewRef, handleScrollBeginDrag, reportFocusedField } =
     useScrollFocusedInputIntoView({
       isOpen,
@@ -207,9 +246,15 @@ export function KeyboardBottomSheet({
     const hideEvent = process.env.EXPO_OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSubscription = Keyboard.addListener(showEvent, (event) => {
       keyboardHeight.set(event.endCoordinates.height);
+      setKeyboardTop(event.endCoordinates.screenY);
+    });
+    // 키보드에 가려 스크롤이 생긴 내용(카테고리 색)이 있다는 것을 스크롤 막대로 잠깐 알린다
+    const didShowSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      scrollViewRef.current?.flashScrollIndicators();
     });
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
       keyboardHeight.set(0);
+      setKeyboardTop(null);
       resizeSheet();
     });
 
@@ -224,10 +269,11 @@ export function KeyboardBottomSheet({
 
     return () => {
       showSubscription.remove();
+      didShowSubscription.remove();
       hideSubscription.remove();
       appStateSubscription.remove();
     };
-  }, [isOpen, keyboardHeight, resizeSheet]);
+  }, [isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -373,6 +419,7 @@ export function KeyboardBottomSheet({
               <View style={styles.body}>
                 <BottomSheetScrollView
                   ref={scrollViewRef}
+                  style={scrollAnimatedStyle}
                   onScrollBeginDrag={handleScrollBeginDrag}
                   onContentSizeChange={handleContentSizeChange}
                   contentContainerStyle={[
@@ -384,10 +431,15 @@ export function KeyboardBottomSheet({
                     },
                   ]}
                   keyboardShouldPersistTaps="always"
-                  showsVerticalScrollIndicator={false}
+                  scrollIndicatorInsets={{ bottom: footer == null ? 0 : footerChromeHeight }}
+                  automaticallyAdjustsScrollIndicatorInsets={false}
                   bounces={false}
                 >
-                  <FocusedFieldContext value={reportFocusedField}>{children}</FocusedFieldContext>
+                  <FocusedFieldContext value={reportFocusedField}>
+                    <FieldMaxHeightContext value={getMaxFieldHeight}>
+                      <View ref={bodyContentRef}>{children}</View>
+                    </FieldMaxHeightContext>
+                  </FocusedFieldContext>
                 </BottomSheetScrollView>
                 {footer != null && (
                   <Animated.View style={[styles.footer, backgroundStyle, footerAnimatedStyle]}>
