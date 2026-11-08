@@ -3,6 +3,10 @@ export {
   type FollowReaderPort,
 } from "./application/ports/friends/follow-reader.port.js";
 export {
+  FRIEND_COUNT_READER,
+  type FriendCountReaderPort,
+} from "./application/ports/friends/friend-count-reader.port.js";
+export {
   FRIENDSHIP_ESTABLISHER,
   type FriendshipEstablisherPort,
   type FriendshipEstablishment,

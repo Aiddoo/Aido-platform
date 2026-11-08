@@ -8,6 +8,7 @@ import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/friends/follow-notifier.port.js";
 import { FOLLOW_READER } from "./application/ports/friends/follow-reader.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/friends/follow.repository.port.js";
+import { FRIEND_COUNT_READER } from "./application/ports/friends/friend-count-reader.port.js";
 import { FRIENDSHIP_ESTABLISHER } from "./application/ports/friends/friendship-establisher.port.js";
 import { FollowReader } from "./application/services/friends/follow.reader.js";
 import { FriendshipEstablisher } from "./application/services/friends/friendship-establisher.service.js";
@@ -41,6 +42,7 @@ import {
     { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
     followReaderProvider,
     { provide: FOLLOW_READER, useExisting: FollowReader },
+    { provide: FRIEND_COUNT_READER, useExisting: FollowReader },
     friendshipEffectsProvider,
     friendshipEstablisherProvider,
     { provide: FRIENDSHIP_ESTABLISHER, useExisting: FriendshipEstablisher },
@@ -57,6 +59,6 @@ import {
     reorderFriendProvider,
     searchUsersProvider,
   ],
-  exports: [FOLLOW_READER, FRIENDSHIP_ESTABLISHER],
+  exports: [FOLLOW_READER, FRIEND_COUNT_READER, FRIENDSHIP_ESTABLISHER],
 })
 export class SocialFriendsModule {}

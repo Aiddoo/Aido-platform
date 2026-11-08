@@ -542,8 +542,11 @@ describe("QuotaLedgerService", () => {
 
       // When
       const snapshot = await fixture.ledger.readSnapshot(fixture.userId, {
-        CHEER: { used: 2, resetsAt: dailyResetsAt },
-        NUDGE: { used: 0, resetsAt: dailyResetsAt },
+        daily: {
+          CHEER: { used: 2, resetsAt: dailyResetsAt },
+          NUDGE: { used: 0, resetsAt: dailyResetsAt },
+        },
+        resourceCounts: { FRIEND: 1, TODO_CATEGORY: 2 },
       });
 
       // Then
@@ -562,6 +565,127 @@ describe("QuotaLedgerService", () => {
         resetsAt: "2026-04-12T15:00:00.000Z",
       });
       expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: false, used: null });
+    });
+
+    function readResourceSnapshot(
+      fixture: Fixture,
+      resourceCounts: { readonly FRIEND: number; readonly TODO_CATEGORY: number },
+    ) {
+      const resetsAt = new Date("2026-04-12T15:00:00Z");
+      return fixture.ledger.readSnapshot(fixture.userId, {
+        daily: { CHEER: { used: 0, resetsAt }, NUDGE: { used: 0, resetsAt } },
+        resourceCounts,
+      });
+    }
+
+    it("무료 사용자가 카테고리·친구 한도에 닿으면 남은 자리가 0이고 초기화 시각은 없다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+
+      // When
+      const snapshot = await readResourceSnapshot(fixture, {
+        FRIEND: PLAN_CATALOG.FRIEND.free,
+        TODO_CATEGORY: PLAN_CATALOG.TODO_CATEGORY.free,
+      });
+
+      // Then
+      expect(snapshot.features.TODO_CATEGORY).toEqual({
+        feature: "TODO_CATEGORY",
+        allowed: true,
+        limit: PLAN_CATALOG.TODO_CATEGORY.free,
+        used: PLAN_CATALOG.TODO_CATEGORY.free,
+        remaining: 0,
+        period: null,
+        resetsAt: null,
+        isFairUse: false,
+        perUse: null,
+      });
+      expect(snapshot.features.FRIEND).toMatchObject({
+        limit: PLAN_CATALOG.FRIEND.free,
+        used: PLAN_CATALOG.FRIEND.free,
+        remaining: 0,
+        resetsAt: null,
+      });
+    });
+
+    it("한도보다 적으면 남은 자리를 주고, 한도를 넘게 가진 개수도 남은 자리는 0 아래로 내려가지 않는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+
+      // When
+      const snapshot = await readResourceSnapshot(fixture, {
+        FRIEND: PLAN_CATALOG.FRIEND.free + 2,
+        TODO_CATEGORY: 1,
+      });
+
+      // Then
+      expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+        used: 1,
+        remaining: PLAN_CATALOG.TODO_CATEGORY.free - 1,
+      });
+      expect(snapshot.features.FRIEND).toMatchObject({
+        used: PLAN_CATALOG.FRIEND.free + 2,
+        remaining: 0,
+      });
+    });
+
+    it("친구 한도는 초대 보상 자리를 더한 한도로 남은 자리를 센다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture({}, { FRIEND: 2 });
+
+      // When
+      const snapshot = await readResourceSnapshot(fixture, {
+        FRIEND: PLAN_CATALOG.FRIEND.free,
+        TODO_CATEGORY: 0,
+      });
+
+      // Then
+      expect(snapshot.features.FRIEND).toMatchObject({
+        limit: PLAN_CATALOG.FRIEND.free + 2,
+        used: PLAN_CATALOG.FRIEND.free,
+        remaining: 2,
+      });
+    });
+
+    it("프리미엄은 카테고리를 프리미엄 한도로 세고, 무제한인 친구는 개수를 싣지 않는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture({ subscriptionStatus: "ACTIVE" });
+
+      // When
+      const snapshot = await readResourceSnapshot(fixture, {
+        FRIEND: 12,
+        TODO_CATEGORY: PLAN_CATALOG.TODO_CATEGORY.premium,
+      });
+
+      // Then
+      expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+        limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+        used: PLAN_CATALOG.TODO_CATEGORY.premium,
+        remaining: 0,
+      });
+      expect(snapshot.features.FRIEND).toMatchObject({
+        allowed: true,
+        limit: null,
+        used: null,
+        remaining: null,
+        resetsAt: null,
+      });
+    });
+
+    it("ADMIN은 카테고리·친구 모두 무제한이라 개수를 싣지 않는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture({ role: "ADMIN" });
+
+      // When
+      const snapshot = await readResourceSnapshot(fixture, { FRIEND: 40, TODO_CATEGORY: 40 });
+
+      // Then
+      expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+        limit: null,
+        used: null,
+        remaining: null,
+      });
+      expect(snapshot.features.FRIEND).toMatchObject({ limit: null, used: null, remaining: null });
     });
   });
 

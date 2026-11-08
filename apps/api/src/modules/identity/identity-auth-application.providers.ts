@@ -4,7 +4,9 @@ import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.publi
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/planning-categories.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
+import { FRIEND_COUNT_READER } from "#api/modules/social/social-friends.public";
 import { NUDGE_USAGE_READER } from "#api/modules/social/social-nudges.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -106,12 +108,29 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
 
 export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshot> = {
   provide: GetEntitlementSnapshot,
-  inject: [QUOTA_LEDGER, CHEER_USAGE_READER, NUDGE_USAGE_READER],
+  inject: [
+    QUOTA_LEDGER,
+    CHEER_USAGE_READER,
+    NUDGE_USAGE_READER,
+    FRIEND_COUNT_READER,
+    TODO_CATEGORY_COUNT_READER,
+  ],
   useFactory: (
     quotaLedger: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["quotaLedger"],
     cheerUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["cheerUsageReader"],
     nudgeUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["nudgeUsageReader"],
-  ) => new GetEntitlementSnapshot({ quotaLedger, cheerUsageReader, nudgeUsageReader }),
+    friendCountReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["friendCountReader"],
+    categoryCountReader: ConstructorParameters<
+      typeof GetEntitlementSnapshot
+    >[0]["categoryCountReader"],
+  ) =>
+    new GetEntitlementSnapshot({
+      quotaLedger,
+      cheerUsageReader,
+      nudgeUsageReader,
+      friendCountReader,
+      categoryCountReader,
+    }),
 };
 
 export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> = {

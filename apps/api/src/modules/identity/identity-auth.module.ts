@@ -19,6 +19,7 @@ import {
 } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -152,6 +153,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     BillingSubscriptionsModule,
     AccessModule,
     SocialCheersModule,
+    SocialFriendsModule,
     SocialNudgesModule,
   ],
   controllers: [

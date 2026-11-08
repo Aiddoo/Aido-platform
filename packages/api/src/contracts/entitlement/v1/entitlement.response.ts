@@ -52,7 +52,7 @@ export const featureQuotaSchema = z
       .nonnegative()
       .nullable()
       .describe(
-        "지금 초기화 창(period)에서 쓴 횟수입니다. resource는 한도 오류 details에서만 현재 개수가 오고, 서버가 세지 않는 곳(GET /v1/entitlements의 resource·flag)은 null입니다.",
+        "횟수 기능은 지금 초기화 창(period)에서 쓴 횟수, 개수 기능(resource)은 지금 가진 개수입니다(친구 맺기·카테고리 만들기 한도 검사와 같은 값). 무제한 resource와 flag는 null입니다.",
       ),
     remaining: z
       .number()

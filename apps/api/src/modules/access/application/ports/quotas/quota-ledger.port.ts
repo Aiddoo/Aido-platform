@@ -1,5 +1,9 @@
 import type { EntitlementSnapshot, FeatureQuota } from "@aido/api";
-import type { MeteredFeatureKey, PlanQuotaFeatureKey } from "@aido/api/vocabulary";
+import type {
+  MeteredFeatureKey,
+  PlanQuotaFeatureKey,
+  PlanResourceFeatureKey,
+} from "@aido/api/vocabulary";
 
 import type { QuotaUsageReading } from "../../../domain/policies/entitlement/entitlement.policy.js";
 
@@ -14,6 +18,14 @@ export type QuotaRefundReason = (typeof QUOTA_REFUND_REASONS)[number];
 export type UnmeteredQuotaFeatureKey = Exclude<PlanQuotaFeatureKey, MeteredFeatureKey>;
 
 export type { QuotaUsageReading };
+
+/** Access가 셀 수 없어 소유 Context가 세어 넘기는 사용량 */
+export interface OwnedFeatureUsage {
+  /** 응원·찌르기의 오늘 사용량. 보내기 한도 검사와 같은 하루 창이다. */
+  readonly daily: Readonly<Record<UnmeteredQuotaFeatureKey, QuotaUsageReading>>;
+  /** 친구·카테고리의 지금 개수. 친구 맺기·카테고리 만들기 한도 검사와 같은 개수다. */
+  readonly resourceCounts: Readonly<Record<PlanResourceFeatureKey, number>>;
+}
 
 /** 계량기 기능의 featureQuota. 사용량을 항상 세므로 used·resetsAt이 있다. */
 export type MeteredFeatureQuota = FeatureQuota & {
@@ -69,9 +81,9 @@ export interface QuotaLedgerPort {
    */
   refund(reservation: QuotaReservation, reason: QuotaRefundReason): Promise<boolean>;
   read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota>;
-  /** GET /v1/entitlements. 일간 quota(CHEER·NUDGE) 사용량은 소유 Context가 세어 넘긴다. */
-  readSnapshot(
-    userId: string,
-    dailyUsage: Readonly<Record<UnmeteredQuotaFeatureKey, QuotaUsageReading>>,
-  ): Promise<EntitlementSnapshot>;
+  /**
+   * GET /v1/entitlements. 일간 quota(CHEER·NUDGE) 사용량과 resource(FRIEND·TODO_CATEGORY) 개수는 소유
+   * Context가 세어 넘긴다. resource는 한도가 있을 때만 used·remaining을 싣고 resetsAt은 항상 null이다.
+   */
+  readSnapshot(userId: string, ownedUsage: OwnedFeatureUsage): Promise<EntitlementSnapshot>;
 }

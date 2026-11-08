@@ -1,6 +1,7 @@
 import type { FollowCachePort } from "../../ports/friends/follow-cache.port.js";
 import type { FollowReaderPort } from "../../ports/friends/follow-reader.port.js";
 import type { FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
+import type { FriendCountReaderPort } from "../../ports/friends/friend-count-reader.port.js";
 
 interface FollowReaderDependencies {
   readonly followRepository: Pick<
@@ -13,7 +14,7 @@ interface FollowReaderDependencies {
   >;
 }
 
-export class FollowReader implements FollowReaderPort {
+export class FollowReader implements FollowReaderPort, FriendCountReaderPort {
   readonly #dependencies: FollowReaderDependencies;
 
   constructor(dependencies: FollowReaderDependencies) {
@@ -38,6 +39,11 @@ export class FollowReader implements FollowReaderPort {
     return this.#dependencies.cache.wrapFriendCount(userId, () =>
       this.#dependencies.followRepository.countMutualFriends(userId),
     );
+  }
+
+  /** 권한 스냅샷이 한도 검사와 같은 값을 보이도록 캐시 대신 지금 친구 수를 센다. */
+  countCurrentFriends(userId: string): Promise<number> {
+    return this.#dependencies.followRepository.countMutualFriends(userId);
   }
 
   async getUserDisplayName(userId: string): Promise<string> {

@@ -135,7 +135,7 @@ commit
 1. `@aido/api/vocabulary`의 `PLAN_CATALOG`(plan-catalog.constants.ts)에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 출시 앱 /me가 아는 기능만 `PREMIUM_FEATURES`에 두고, 새 기능은 `PLAN_CATALOG`에만 더해 `GET /v1/entitlements`로 내보낸다. 앱만 막는 기능은 `clientOnly`.
 2. 서버가 막는 flag면 [entitlement-guard](../src/modules/access/application/services/entitlement/entitlement-guard.ts)에 기존 ErrorCode를 연결하고 UseCase에서 `assertEntitled`를 호출한다. quota·resource는 `getLimit`로 한도를 읽고 사용량은 소유 Context가 센다.
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
-4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고 `QuotaLedger`로 센다.
+4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고 `QuotaLedger`로 센다. resource는 소유 Context가 한도 검사와 같은 개수를 읽는 포트(예: `FRIEND_COUNT_READER`·`TODO_CATEGORY_COUNT_READER`)를 내보내고 `GetEntitlementSnapshot`이 모아 원장에 넘긴다.
 
 다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategory`·`SendFriendRequest`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 무료 한도보다 많이 쓴 뒤 만료되면 다음 초기화까지 AI 할 일 만들기가 막힌다. 창 중간에 구독하면 바로 무제한으로 보인다(집행은 `fairUse.premium`).
 

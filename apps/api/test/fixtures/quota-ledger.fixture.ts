@@ -1,7 +1,10 @@
 import { mock } from "vitest-mock-extended";
 
 import { QuotaLedgerService } from "#api/modules/access/application/services/quotas/quota-ledger.service";
-import { NO_RESOURCE_BONUSES } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+import {
+  NO_RESOURCE_BONUSES,
+  type ResourceBonuses,
+} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import {
@@ -16,7 +19,10 @@ import { UserFixture } from "./user.fixture.js";
 export const QUOTA_LEDGER_TIME = new Date("2026-04-12T12:00:00Z");
 
 /** 메모리 저장소 위의 실제 QuotaLedgerService. 사용 Context의 UseCase 테스트도 이 원장을 쓴다. */
-export function createQuotaLedgerFixture(input: Partial<InMemoryQuotaUser> = {}) {
+export function createQuotaLedgerFixture(
+  input: Partial<InMemoryQuotaUser> = {},
+  resourceBonuses: ResourceBonuses = NO_RESOURCE_BONUSES,
+) {
   const user = UserFixture.create();
   const repository = new InMemoryQuotaLedgerRepository();
   repository.users.set(user.id, {
@@ -34,7 +40,7 @@ export function createQuotaLedgerFixture(input: Partial<InMemoryQuotaUser> = {})
   const ledger = new QuotaLedgerService({
     repository,
     userMutationLock,
-    resourceBonuses: { findResourceBonuses: async () => NO_RESOURCE_BONUSES },
+    resourceBonuses: { findResourceBonuses: async () => resourceBonuses },
     unitOfWork,
     alert,
     logger: ledgerLogger,

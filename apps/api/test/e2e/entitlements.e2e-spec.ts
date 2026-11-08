@@ -11,6 +11,8 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const AT = new Date("2027-01-04T12:00:00.000Z");
 const MONTH_RESET = "2027-01-31T15:00:00.000Z";
 const KST_DAY_RESET = "2027-01-04T15:00:00.000Z";
+/** 가입 때 만드는 기본 카테고리 수 */
+const DEFAULT_CATEGORY_COUNT = 2;
 
 describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
@@ -40,6 +42,13 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
       .set("X-Timezone", "Asia/Seoul")
       .expect(200);
     return entitlementSnapshotSchema.parse(response.body.data);
+  }
+
+  function createCategory(accessToken: string, name: string) {
+    return request(context.app.getHttpServer())
+      .post("/v1/todo-categories")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ name, color: "#00FF00" });
   }
 
   async function updateUser(userId: string, values: Partial<typeof user.$inferInsert>) {
@@ -84,10 +93,45 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
     });
     expect(snapshot.features.TODO_CATEGORY).toMatchObject({
       limit: PLAN_CATALOG.TODO_CATEGORY.free,
-      used: null,
+      used: DEFAULT_CATEGORY_COUNT,
+      remaining: PLAN_CATALOG.TODO_CATEGORY.free - DEFAULT_CATEGORY_COUNT,
       period: null,
+      resetsAt: null,
+    });
+    expect(snapshot.features.FRIEND).toMatchObject({
+      limit: PLAN_CATALOG.FRIEND.free,
+      used: 0,
+      remaining: PLAN_CATALOG.FRIEND.free,
+      resetsAt: null,
     });
     expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: false, limit: null });
+  });
+
+  it("FREE 사용자가 카테고리 한도를 채우면 남은 0을 받고, 다음 만들기 거절도 같은 featureQuota다", async () => {
+    // Given - 기본 카테고리 2개에 하나를 더해 무료 한도를 채운다
+    const free = await context.helpers.createVerifiedUser("ent-category@test.com", "Test1234!");
+    const before = await entitlements(free.accessToken);
+    await createCategory(free.accessToken, "세 번째").expect(201);
+
+    // When
+    const after = await entitlements(free.accessToken);
+    const rejected = await createCategory(free.accessToken, "네 번째").expect(403);
+
+    // Then
+    expect(before.features.TODO_CATEGORY).toMatchObject({ used: DEFAULT_CATEGORY_COUNT });
+    expect(after.features.TODO_CATEGORY).toEqual({
+      feature: "TODO_CATEGORY",
+      allowed: true,
+      limit: PLAN_CATALOG.TODO_CATEGORY.free,
+      used: PLAN_CATALOG.TODO_CATEGORY.free,
+      remaining: 0,
+      period: null,
+      resetsAt: null,
+      isFairUse: false,
+      perUse: null,
+    });
+    expect(rejected.body.error.code).toBe(ErrorCode.TODO_CATEGORY_0857);
+    expect(rejected.body.error.details.featureQuota).toEqual(after.features.TODO_CATEGORY);
   });
 
   it("PREMIUM 사용자는 공정 사용 상한을 숫자와 isFairUse로 받고 길이 상한이 커진다", async () => {
@@ -113,6 +157,12 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
       },
     });
     expect(snapshot.features.CHEER).toMatchObject({ limit: null, remaining: null });
+    expect(snapshot.features.FRIEND).toMatchObject({ limit: null, used: null, remaining: null });
+    expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+      used: DEFAULT_CATEGORY_COUNT,
+      remaining: PLAN_CATALOG.TODO_CATEGORY.premium - DEFAULT_CATEGORY_COUNT,
+    });
     expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: true });
   });
 

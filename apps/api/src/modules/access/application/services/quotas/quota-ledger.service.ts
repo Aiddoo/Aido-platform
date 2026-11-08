@@ -30,9 +30,11 @@ import {
   resolveAccessContext,
   resolveFeatureQuota,
   resolveQuotaLimit,
+  resolveResourceUsage,
   type AccessState,
   type AccessTier,
   type FeatureQuotaState,
+  type FeatureUsageReading,
   type QuotaUsageReading,
 } from "../../../domain/policies/entitlement/entitlement.policy.js";
 import { QuotaWindow } from "../../../domain/value-objects/quotas/quota-window.vo.js";
@@ -41,11 +43,11 @@ import { AccessQuotaLogEvent } from "../../observability/quotas/access-quota-log
 import type { EntitlementDatabasePort } from "../../ports/entitlement/entitlement-state.port.js";
 import type {
   MeteredFeatureQuota,
+  OwnedFeatureUsage,
   QuotaLedgerPort,
   QuotaRefundReason,
   QuotaReservation,
   QuotaReserveInput,
-  UnmeteredQuotaFeatureKey,
 } from "../../ports/quotas/quota-ledger.port.js";
 import type { QuotaLedgerRepositoryPort } from "../../ports/quotas/quota-ledger.repository.port.js";
 import type { QuotaUserMutationLockPort } from "../../ports/quotas/quota-user-mutation-lock.port.js";
@@ -292,10 +294,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     return { ...toFeatureQuota(state), used: usage.used, resetsAt: toISOString(usage.resetsAt) };
   }
 
-  async readSnapshot(
-    userId: string,
-    dailyUsage: Readonly<Record<UnmeteredQuotaFeatureKey, QuotaUsageReading>>,
-  ): Promise<EntitlementSnapshot> {
+  async readSnapshot(userId: string, ownedUsage: OwnedFeatureUsage): Promise<EntitlementSnapshot> {
     const [state, resourceBonuses] = await Promise.all([
       this.#findAccessState(userId),
       this.#dependencies.resourceBonuses.findResourceBonuses(userId),
@@ -307,8 +306,12 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       this.#readUsage(userId, "AI_PARSE", window),
       this.#readUsage(userId, "VOICE_NOTE", window),
     ]);
-    const usage: Readonly<Partial<Record<PlanFeature, QuotaUsageReading>>> = {
-      ...dailyUsage,
+    const resourceUsage = mapValues(ownedUsage.resourceCounts, (count, feature) =>
+      resolveResourceUsage({ tier, feature, resourceBonuses, count }),
+    );
+    const usage: Readonly<Partial<Record<PlanFeature, FeatureUsageReading | null>>> = {
+      ...ownedUsage.daily,
+      ...resourceUsage,
       AI_PARSE: aiParse,
       VOICE_NOTE: voiceNote,
     };

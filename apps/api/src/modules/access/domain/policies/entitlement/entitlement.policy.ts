@@ -5,6 +5,7 @@ import {
   type PlanFlagFeatureKey,
   type PlanQuotaFeatureKey,
   type PlanQuotaPeriod,
+  type PlanResourceFeatureKey,
 } from "@aido/api/vocabulary";
 import { mapValues } from "es-toolkit";
 import { match } from "ts-pattern";
@@ -162,6 +163,20 @@ export interface FeatureUsageReading {
   readonly resetsAt: Date | null;
 }
 
+/**
+ * 권한 스냅샷에 싣는 resource의 지금 개수. 무제한이면 막을 일이 없으므로 개수를 싣지 않는다(used·remaining
+ * null). 다시 채워지지 않아 resetsAt은 null이다.
+ */
+export function resolveResourceUsage(input: {
+  readonly tier: AccessTier;
+  readonly feature: PlanResourceFeatureKey;
+  readonly resourceBonuses: ResourceBonuses;
+  readonly count: number;
+}): FeatureUsageReading | null {
+  const { limit } = resolveFeatureAccess(input.tier, input.feature, input.resourceBonuses);
+  return limit == null ? null : { used: input.count, resetsAt: null };
+}
+
 /** 한 기간의 사용량. 소유 Context(계량기·응원·찌르기)가 센다. */
 export interface QuotaUsageReading extends FeatureUsageReading {
   readonly resetsAt: Date;
@@ -173,7 +188,7 @@ export interface FeatureQuotaState {
   readonly allowed: boolean;
   /** 집행 한도. null은 정말 무제한(ADMIN·flag·상한 없는 resource)이다. */
   readonly limit: number | null;
-  /** null은 서버가 이 기능 사용량을 세지 않는다는 뜻이다(resource·flag). */
+  /** null은 서버가 이 기능 사용량을 세지 않는다는 뜻이다(flag, 개수를 받지 않았거나 무제한인 resource). */
   readonly used: number | null;
   readonly remaining: number | null;
   readonly period: PlanQuotaPeriod | null;
