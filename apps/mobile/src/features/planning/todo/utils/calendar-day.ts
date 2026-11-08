@@ -52,7 +52,7 @@ export function getMonthViewDayState({ dateKey, selectedDateKey, todayKey }: Mon
   return {
     isSelected,
     dayType: getMonthViewDayType({ dayOfWeek: getDayOfWeek(dateKey), isSelected, isToday }),
-    highlightToday: !isSelected && isToday,
+    isTodayHighlighted: !isSelected && isToday,
   };
 }
 

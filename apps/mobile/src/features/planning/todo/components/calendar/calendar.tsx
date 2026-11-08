@@ -234,16 +234,16 @@ interface CalendarWeekPagerProps {
 function CalendarWeekPager({ pageWidth, completions }: CalendarWeekPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
-  // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
+  // 처음 연 날의 주를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
   const [baseWeek] = useState(() => getWeekStart(selectedDate, timeZone));
 
-  const weekAtPage = useCallback(
+  const getWeekAtPage = useCallback(
     (page: number) =>
       addLocalDays(baseWeek, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK, timeZone),
     [baseWeek, timeZone],
   );
 
-  const pageOfWeek = useCallback(
+  const getWeekPage = useCallback(
     (week: Date) =>
       clampCalendarPage(
         diffWeeks(week, baseWeek, timeZone) + CALENDAR_CENTER_PAGE,
@@ -253,14 +253,14 @@ function CalendarWeekPager({ pageWidth, completions }: CalendarWeekPagerProps) {
   );
 
   const handleChange = (page: number) => {
-    const week = weekAtPage(page);
+    const week = getWeekAtPage(page);
     setSelectedDate(addLocalDays(week, getDayOfWeek(toDateKey(selectedDate, timeZone)), timeZone));
   };
 
   return (
-    <CalendarPager value={pageOfWeek(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+    <CalendarPager value={getWeekPage(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
       {(page) => (
-        <WeekRow weekKey={toDateKey(weekAtPage(page), timeZone)} completions={completions} />
+        <WeekRow weekKey={toDateKey(getWeekAtPage(page), timeZone)} completions={completions} />
       )}
     </CalendarPager>
   );
@@ -274,15 +274,15 @@ interface CalendarMonthPagerProps {
 function CalendarMonthPager({ pageWidth, completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
-  // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
+  // 처음 연 날의 달을 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
   const [baseMonth] = useState(() => startOfLocalMonth(selectedDate, timeZone));
 
-  const monthAtPage = useCallback(
+  const getMonthAtPage = useCallback(
     (page: number) => addLocalMonths(baseMonth, page - CALENDAR_CENTER_PAGE, timeZone),
     [baseMonth, timeZone],
   );
 
-  const pageOfMonth = useCallback(
+  const getMonthPage = useCallback(
     (month: Date) =>
       clampCalendarPage(
         diffLocalMonths(month, baseMonth, timeZone) + CALENDAR_CENTER_PAGE,
@@ -292,14 +292,14 @@ function CalendarMonthPager({ pageWidth, completions }: CalendarMonthPagerProps)
   );
 
   const handleChange = (page: number) => {
-    const month = monthAtPage(page);
+    const month = getMonthAtPage(page);
     setSelectedDate(moveToLocalMonth(selectedDate, month, timeZone));
   };
 
   return (
-    <CalendarPager value={pageOfMonth(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+    <CalendarPager value={getMonthPage(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
       {(page) => (
-        <MonthGrid monthKey={toDateKey(monthAtPage(page), timeZone)} completions={completions} />
+        <MonthGrid monthKey={toDateKey(getMonthAtPage(page), timeZone)} completions={completions} />
       )}
     </CalendarPager>
   );

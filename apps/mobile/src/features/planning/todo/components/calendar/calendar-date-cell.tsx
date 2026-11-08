@@ -15,7 +15,7 @@ interface CalendarDateCellProps {
   label: string;
   isSelected: boolean;
   dayType: CalendarDayType;
-  highlightToday: boolean;
+  isTodayHighlighted: boolean;
   isOutsideMonth: boolean;
   completion: DailyCompletionSummary | undefined;
   onSelect: (date: Date) => void;
@@ -27,7 +27,7 @@ export const CalendarDateCell = memo(function CalendarDateCell({
   label,
   isSelected,
   dayType,
-  highlightToday,
+  isTodayHighlighted,
   isOutsideMonth,
   completion,
   onSelect,
@@ -45,7 +45,7 @@ export const CalendarDateCell = memo(function CalendarDateCell({
         className={cn(
           'size-7.5 items-center justify-center overflow-hidden rounded-2xl',
           isSelected && 'bg-main',
-          highlightToday && 'bg-main/10 dark:bg-main/20',
+          isTodayHighlighted && 'bg-main/10 dark:bg-main/20',
         )}
       >
         <Text size="b4" weight="medium" tone={DAY_TYPE_TONE[dayType]} shade={7}>

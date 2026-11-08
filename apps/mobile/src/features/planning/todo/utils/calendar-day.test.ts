@@ -54,37 +54,46 @@ describe('getDatePickerDayType', () => {
 
 describe('getMonthViewDayState', () => {
   // 2025-03-17 월, 2025-03-22 토, 2025-03-23 일, 2025-03-20 목
-  const state = (dateKey: string, selectedDateKey: string, todayKey = '2025-03-20') =>
-    getMonthViewDayState({ dateKey, selectedDateKey, todayKey });
+  const keys = (dateKey: string, selectedDateKey: string, todayKey = '2025-03-20') => ({
+    dateKey,
+    selectedDateKey,
+    todayKey,
+  });
 
   it.each([
-    ['선택된 날짜는 항상 selected', state('2025-03-23', '2025-03-23'), 'selected'],
-    ['일요일이고 선택되지 않으면 sunday', state('2025-03-23', '2025-03-17'), 'sunday'],
-    ['토요일이고 선택되지 않으면 saturday', state('2025-03-22', '2025-03-17'), 'saturday'],
-    ['오늘이고 주말이 아니고 선택되지 않으면 today', state('2025-03-20', '2025-03-17'), 'today'],
-    ['평일이고 선택되지 않고 오늘이 아니면 default', state('2025-03-17', '2025-03-18'), 'default'],
+    ['선택된 날짜는 항상 selected', keys('2025-03-23', '2025-03-23'), 'selected'],
+    ['일요일이고 선택되지 않으면 sunday', keys('2025-03-23', '2025-03-17'), 'sunday'],
+    ['토요일이고 선택되지 않으면 saturday', keys('2025-03-22', '2025-03-17'), 'saturday'],
+    ['오늘이고 주말이 아니고 선택되지 않으면 today', keys('2025-03-20', '2025-03-17'), 'today'],
+    ['평일이고 선택되지 않고 오늘이 아니면 default', keys('2025-03-17', '2025-03-18'), 'default'],
     [
       '오늘이 일요일이어도 월 달력에서는 sunday가 today보다 우선',
-      state('2025-03-23', '2025-03-17', '2025-03-23'),
+      keys('2025-03-23', '2025-03-17', '2025-03-23'),
       'sunday',
     ],
     [
       '오늘이 토요일이어도 월 달력에서는 saturday가 today보다 우선',
-      state('2025-03-22', '2025-03-17', '2025-03-22'),
+      keys('2025-03-22', '2025-03-17', '2025-03-22'),
       'saturday',
     ],
-  ])('%s', (_title, result, expected) => {
+  ])('%s', (_title, params, expected) => {
+    // When
+    const result = getMonthViewDayState(params);
+
     // Then
     expect(result.dayType).toBe(expected);
   });
 
   it.each([
-    ['오늘이고 선택되지 않으면 오늘을 강조한다', state('2025-03-20', '2025-03-17'), true, false],
-    ['오늘이 선택되면 선택으로만 칠한다', state('2025-03-20', '2025-03-20'), false, true],
-    ['오늘이 아닌 날은 강조하지 않는다', state('2025-03-18', '2025-03-17'), false, false],
-  ])('%s', (_title, result, highlightToday, isSelected) => {
+    ['오늘이고 선택되지 않으면 오늘을 강조한다', keys('2025-03-20', '2025-03-17'), true, false],
+    ['오늘이 선택되면 선택으로만 칠한다', keys('2025-03-20', '2025-03-20'), false, true],
+    ['오늘이 아닌 날은 강조하지 않는다', keys('2025-03-18', '2025-03-17'), false, false],
+  ])('%s', (_title, params, isTodayHighlighted, isSelected) => {
+    // When
+    const result = getMonthViewDayState(params);
+
     // Then
-    expect(result.highlightToday).toBe(highlightToday);
+    expect(result.isTodayHighlighted).toBe(isTodayHighlighted);
     expect(result.isSelected).toBe(isSelected);
   });
 });
