@@ -9,7 +9,6 @@ interface RevealedFieldProps {
   children: ReactNode;
 }
 
-/** 다음 단계에서 새로 나타나는 입력칸. 위로 떠오르며 보이고, 다 보이면 `onRevealed`를 부른다 */
 export function RevealedField({ onRevealed, children }: RevealedFieldProps) {
   return (
     <Animated.View

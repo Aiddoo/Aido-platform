@@ -7,7 +7,6 @@ import {
 import type { StoreUnavailable } from './offerings-availability';
 import { getDiagnosticCode } from './subscription-diagnostic-code';
 
-/** 구독 화면에서 실패할 수 있는 곳. 앞의 둘은 불러오기, 뒤의 둘은 사용자가 누른 동작이다 */
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
 export type SubscriptionActionTarget = 'purchase' | 'restore';
 
@@ -32,7 +31,6 @@ type FailureDescriptionKey =
   | 'subscription:failure.description.storeSetup'
   | 'subscription:failure.description.storeTemporary';
 
-/** 무엇이 실패했는지(title), 무엇을 하면 되는지(description), 문의에 붙일 코드 */
 export interface SubscriptionSupportFailure {
   titleKey: (typeof FAILURE_TITLE_KEYS)[keyof typeof FAILURE_TITLE_KEYS];
   descriptionKey: FailureDescriptionKey;
@@ -112,7 +110,6 @@ export function toSubscriptionStoreUnavailableFailure({
   };
 }
 
-/** 스토어 구독 관리를 열지 못했을 때 문의에 붙일 제목과 코드 */
 export const SUBSCRIPTION_MANAGE_OPEN_FAILURE = {
   titleKey: FAILURE_TITLE_KEYS.manage,
   diagnosticCode: 'SUBSCRIPTION_MANAGE_OPEN_FAILED',

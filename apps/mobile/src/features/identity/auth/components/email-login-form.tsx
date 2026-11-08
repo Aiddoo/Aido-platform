@@ -22,13 +22,10 @@ import { PasswordInput } from './password-input';
 const NEXT_FIELD_OFFSET = 52;
 
 interface EmailLoginFormProps {
-  /** 입력 위에 놓는 제목과 간격 */
   children: ReactNode;
-  /** 입력 아래에 놓는 안내 링크 */
   footer: ReactNode;
 }
 
-/** 이메일·비밀번호 입력과 키보드 위 로그인 버튼. 제목과 링크는 화면이 children과 footer로 넘긴다 */
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const reportUnexpectedError = useReportUnexpectedError('auth');

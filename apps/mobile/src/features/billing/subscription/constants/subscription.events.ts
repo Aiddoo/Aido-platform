@@ -23,10 +23,7 @@ export type LimitReachedTrigger = 'precheck' | 'server';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
-    /**
-     * 앱에서 결제가 끝난 순간(UI·퍼널 단계). **매출·전환 집계에 쓰지 않는다** — 매출 원본은 RevenueCat `purchase`다.
-     * 대시보드 이력을 지키려고 이름은 유지한다.
-     */
+    /** 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다 */
     subscription_started: { product_id: string };
     subscription_restored: undefined;
     premium_gate_shown: { feature: PremiumGateAnalyticsFeature; surface: EntitlementGateSurface };

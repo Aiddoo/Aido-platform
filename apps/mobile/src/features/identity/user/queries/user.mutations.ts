@@ -16,10 +16,7 @@ function isLastProfileWrite(queryClient: QueryClient) {
   return queryClient.isMutating({ mutationKey: USER_MUTATION_KEYS.updateProfile() }) === 1;
 }
 
-/**
- * 이 저장이 바꾼 필드만 `source`의 값으로 덮는다. 응답의 다른 필드는 함께 진행 중인 저장보다 오래된
- * 값일 수 있고, 스냅샷을 통째로 덮으면 함께 진행 중인 저장을 지운다
- */
+/** 다른 필드는 진행 중인 저장보다 오래됐을 수 있고 통째로 덮으면 그 저장을 지워 바꾼 필드만 덮는다 */
 function writeChangedProfileFields(
   queryClient: QueryClient,
   input: ProfileChange,

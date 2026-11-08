@@ -166,7 +166,6 @@ describe('syncMeUntilStorePremium', () => {
     queryClient = createTestQueryClient();
   });
 
-  /** 서버가 /me를 차례로 이렇게 답한다 */
   async function serveMe(...responses: (typeof FREE_ME)[]) {
     const fetchMe = jest.fn(async () => responses.shift() ?? FREE_ME);
     await queryClient.prefetchQuery({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });

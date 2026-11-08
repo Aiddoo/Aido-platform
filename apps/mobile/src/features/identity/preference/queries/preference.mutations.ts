@@ -66,8 +66,7 @@ export function useUpdatePreferenceMutationOptions() {
           trackEvent('settings_changed', { setting, value: String(value) });
         }
       }
-      // invalidate 대신 응답을 캐시에 직접 써서 다시 받는 동안의 깜빡임을 막는다.
-      // 다른 저장이 진행 중이면 이 응답에는 그 변경이 없어 쓰지 않는다. 마지막 응답이 맞춘다
+      // invalidate 대신 응답을 직접 써 깜빡임을 막되, 다른 저장이 진행 중이면 그 변경이 없어 마지막 응답이 맞춘다
       if (isLastPreferenceWrite(queryClient)) {
         queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
       }

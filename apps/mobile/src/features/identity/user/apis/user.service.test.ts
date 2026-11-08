@@ -17,8 +17,6 @@ describe('UserService', () => {
     service = new UserService(httpClient);
   });
 
-  // ── getCurrentUser ─────────────────────────
-
   describe('getCurrentUser', () => {
     it('서버 응답이 성공하면 userId가 id로 매핑된 User 반환', async () => {
       // Given
@@ -88,8 +86,6 @@ describe('UserService', () => {
       await expect(result).rejects.toThrow('Invalid getCurrentUser response');
     });
   });
-
-  // ── updateProfile ──────────────────────────
 
   describe('updateProfile', () => {
     const input = { name: '새이름' };

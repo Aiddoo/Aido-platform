@@ -30,10 +30,7 @@ function resolveBootState(status: ResolvedAuthStatus): AuthSessionState {
     .exhaustive();
 }
 
-/**
- * 부팅 판정은 판정 중에만 반영한다. 늦게 끝난 판정이 로그아웃을 되돌리면 안 된다.
- * 만료는 인증 중에만 반영한다. 로그인 화면에서 난 401은 세션 만료가 아니다.
- */
+/** 늦게 끝난 부팅 판정이 로그아웃을 되돌리거나 로그인 화면의 401이 만료로 잡히지 않게 해당 상태에서만 반영한다 */
 function transitionAuthSession(state: AuthSessionState, event: AuthSessionEvent): AuthSessionState {
   const pending = { status: P.union('loading', 'locked') };
 

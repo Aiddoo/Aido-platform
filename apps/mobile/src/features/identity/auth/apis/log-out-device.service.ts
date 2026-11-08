@@ -28,12 +28,7 @@ interface LogOutDeviceServicePorts {
 /** `superseded`면 기다리는 사이 다시 로그인했다. 지금 세션은 사용자가 나간 세션이 아니다 */
 type LogOutOutcome = 'ended' | 'superseded';
 
-/**
- * 이 기기의 세션을 끝낸다. 서버 정리(푸시 토큰 해제·로그아웃)는 최선 노력이라
- * 실패하거나 오프라인이어도 토큰은 항상 지운다.
- * 서버에 닿지 못했으면 세션과 푸시 기기가 서버에 남으므로 온라인이 되면 풀도록 기록한다.
- * 서버를 기다리는 동안 세션이 만료되면 세대가 오른다. 그 뒤의 인증 요청과 토큰 삭제는 다음 세션을 끝낼 수 있어 하지 않는다.
- */
+/** 서버 정리는 최선 노력이라 실패해도 토큰은 지운다. 기다리는 사이 세대가 오르면 다음 세션을 끝낼 수 있어 멈춘다 */
 export class LogOutDeviceService {
   readonly #authService: LogOutDeviceServicePorts['authService'];
   readonly #pushDeviceService: LogOutDeviceServicePorts['pushDeviceService'];

@@ -173,10 +173,7 @@ function toRewardReceipt(
   };
 }
 
-/**
- * 프리미엄 영수증에 무엇을 보일지 정한다. 출처·기간·자동 갱신·이어서 받을 보상은 서버 값을 그대로 쓰고,
- * 여기서는 기기 시간대 기준 남은 일수와 보일 행·안내만 고른다.
- */
+/** 출처·기간·자동 갱신·이어서 받을 보상은 서버 값을 쓰고 여기서는 기기 시간대 기준 남은 일수와 보일 행만 고른다 */
 export function toSubscriptionReceiptViewModel(
   user: Pick<User, 'role' | 'premiumAccess'>,
   context: SubscriptionReceiptContext,

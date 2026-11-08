@@ -25,7 +25,7 @@ interface SignUpFormProps {
   stepper: Stepper<SignUpStepContexts>;
 }
 
-/** 가입 3단계(정보, 비밀번호, 이메일 인증)의 입력과 제출. 앞 단계로 돌아가도 입력값은 폼이 지킨다 */
+/** 앞 단계로 돌아가도 입력값은 폼이 지킨다 */
 export function SignUpForm({ stepper }: SignUpFormProps) {
   const form = useForm({
     resolver: zodResolver(signUpFormSchema),

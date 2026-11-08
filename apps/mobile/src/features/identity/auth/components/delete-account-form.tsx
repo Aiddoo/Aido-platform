@@ -14,11 +14,9 @@ import { PasswordInput } from './password-input';
 
 interface DeleteAccountFormProps {
   title: string;
-  /** 입력 아래에 놓는 안내 */
   footer: ReactNode;
 }
 
-/** 현재 비밀번호 입력, 확인 창, 키보드 위 탈퇴 버튼 */
 export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
   const { t } = useTranslation(['auth', 'common']);
   const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());

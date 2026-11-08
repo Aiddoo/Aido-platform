@@ -86,7 +86,6 @@ export class AuthService {
     this.#logger = logger;
   }
 
-  /** 로그인 응답의 토큰을 저장한다. 다음 요청부터 이 토큰을 쓴다 */
   #saveTokens = async (response: Result<unknown, ApiError>) => {
     const result = parseApiResponse(
       response,
@@ -187,7 +186,7 @@ export class AuthService {
     return result.ok ? ok(undefined) : result;
   };
 
-  /** 명시적 로그아웃/탈퇴 — 세션 만료(SessionManager.end)와 더불어 토큰을 지우는 유일한 경로. */
+  /** 세션 만료(SessionManager.end) 말고 토큰을 지우는 유일한 경로다 */
   clearLocalSession = (): Promise<void> => this.#tokenStore.clear();
 
   verifyEmail = async (input: VerifyEmailInput) =>

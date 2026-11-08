@@ -71,10 +71,7 @@ function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEnde
   return access.source == null ? access.grantEndedAt : null;
 }
 
-/**
- * 지난 확인 뒤 지금까지 사이에 지금 기간이나 전체 프리미엄이 끝났는지. 끝나는 순간에는 서버 이벤트가 없어
- * 앱이 켜져 있으면 내 정보를 다시 받아야 한다. 경계는 남은 일수 표시(hasInstantPassed)와 같이 끝나는 시각 자체를 포함한다
- */
+/** 끝나는 순간엔 서버 이벤트가 없어 앱이 다시 받아야 한다. 경계는 hasInstantPassed처럼 끝나는 시각 자체를 포함한다 */
 function hasEndedSince(
   access: Pick<PremiumAccess, 'periodEndsAt' | 'endsAt'>,
   lastCheckedAt: Instant,

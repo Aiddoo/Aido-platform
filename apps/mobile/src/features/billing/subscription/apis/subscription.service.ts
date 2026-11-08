@@ -67,10 +67,7 @@ export class SubscriptionService {
     }
   };
 
-  /**
-   * 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다.
-   * 조회에 실패해도 목록으로 열면 되므로 "없음"과 "실패"를 구분하지 않고 실패는 경고로만 남긴다.
-   */
+  // null이면 호출부가 구독 목록을 열므로 조회 실패도 "없음"과 구분하지 않고 경고만 남긴다
   findActiveStoreProductId = async (store: SubscriptionStore): Promise<string | null> => {
     if (!this.#session.isConfigured()) {
       return null;

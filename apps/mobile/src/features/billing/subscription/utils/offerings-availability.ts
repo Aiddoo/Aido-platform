@@ -7,7 +7,6 @@ import type { SubscriptionError } from '../domains/subscription.error';
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { getDiagnosticCode } from './subscription-diagnostic-code';
 
-/** 스토어를 쓸 수 없는 이유와 문의에 붙일 코드 */
 export interface StoreUnavailable {
   kind: 'setup' | 'temporary';
   diagnosticCode: string;
@@ -39,10 +38,7 @@ export type StoreUnavailableReport =
   | { channel: 'log' }
   | { channel: 'event'; severity: Extract<Severity, 'error' | 'warning'> };
 
-/**
- * 스토어를 쓸 수 없을 때 남길 신호. 배포 빌드의 설정 문제는 매출이 막히는 일이라 error,
- * 스토어가 잠시 응답하지 못한 것은 warning이다. 개발 빌드는 Test Store라 로그만 남긴다.
- */
+/** 배포 빌드의 설정 문제는 매출이 막혀 error, 일시 장애는 warning이다. 개발 빌드는 Test Store라 로그만 남긴다 */
 export function toStoreUnavailableReport(
   kind: StoreUnavailable['kind'],
   { isDebugBuild }: { isDebugBuild: boolean },

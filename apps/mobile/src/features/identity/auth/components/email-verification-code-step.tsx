@@ -17,9 +17,7 @@ interface EmailVerificationCodeStepProps extends Pick<
   'isSeparated'
 > {
   email: string;
-  /** 코드 확인 요청이 진행 중인지. 부모의 mutation 상태를 넘긴다 */
   isVerifying?: boolean;
-  /** 재발송 요청이 진행 중인지. 부모의 mutation 상태를 넘긴다 */
   isResending?: boolean;
   /** 코드를 모두 입력하면 호출한다. reject하면 입력을 비우고 오류 상태로 표시한다. */
   onComplete: (code: string) => Promise<unknown>;
@@ -27,7 +25,7 @@ interface EmailVerificationCodeStepProps extends Pick<
   onResend: () => Promise<{ retryAfterSeconds?: number }>;
 }
 
-/** 이메일로 받은 인증 코드를 입력·재발송하는 단계. 검증과 발송 mutation은 화면이 소유한다. */
+/** 검증과 발송 mutation은 화면이 소유한다 */
 export function EmailVerificationCodeStep({
   email,
   onComplete,

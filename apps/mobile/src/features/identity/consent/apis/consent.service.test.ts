@@ -17,8 +17,6 @@ describe('ConsentService', () => {
     service = new ConsentService(httpClient);
   });
 
-  // ── getConsent ──────────────────────────────
-
   describe('getConsent', () => {
     it('서버 응답이 성공하면 ISO 문자열을 Instant로 변환', async () => {
       // Given
@@ -83,8 +81,6 @@ describe('ConsentService', () => {
       await expect(result).rejects.toThrow('Invalid getConsent response');
     });
   });
-
-  // ── updateMarketingConsent ──────────────────
 
   describe('updateMarketingConsent', () => {
     it('동의 → ISO를 Instant로 변환', async () => {

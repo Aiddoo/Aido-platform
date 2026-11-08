@@ -5,7 +5,6 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 
 const SECONDS_PER_MINUTE = 60;
 
-/** 페이월과 한도 안내에 보이는 프리미엄 혜택의 양 */
 export function getPremiumBenefitAmounts() {
   return {
     aiParse: PLAN_CATALOG.AI_PARSE.fairUse.premium,
@@ -15,7 +14,7 @@ export function getPremiumBenefitAmounts() {
   } as const;
 }
 
-/** 페이월 혜택 표의 무료·프리미엄 양. 무료 쪽은 내 한도(초대로 늘어난 자리 포함)를 반영한다 */
+/** 무료 쪽은 초대로 늘어난 자리까지 포함한 내 한도다 */
 export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
   return {
     free: {

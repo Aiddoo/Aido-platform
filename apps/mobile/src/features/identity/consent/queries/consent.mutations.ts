@@ -19,10 +19,7 @@ import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent } from '../domains/consent.model';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 
-/**
- * 같은 동의를 바꾸는 저장 중 지금 끝나는 것이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게
- * 마지막만 응답을 캐시에 쓴다
- */
+/** 지금 끝나는 저장이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게 마지막만 응답을 캐시에 쓴다 */
 function isLastConsentWrite(queryClient: QueryClient, mutationKey: MutationKey) {
   return queryClient.isMutating({ mutationKey }) === 1;
 }
@@ -35,9 +32,7 @@ function settleConsentWrite(queryClient: QueryClient, error: unknown) {
   queryClient.invalidateQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
 }
 
-/**
- * 스냅샷을 통째로 덮으면 함께 진행 중인 다른 동의 토글을 지운다. 이 저장이 바꾼 필드만 되돌린다
- */
+/** 스냅샷을 통째로 덮으면 함께 진행 중인 다른 동의 토글을 지운다. 이 저장이 바꾼 필드만 되돌린다 */
 function revertConsentFields(
   queryClient: QueryClient,
   previousData: Consent | undefined,

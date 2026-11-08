@@ -34,10 +34,7 @@ type AiConsentBottomSheetProps = Omit<ComponentProps<typeof ModalBottomSheet>, '
   isRenewal?: boolean;
 };
 
-/**
- * AI에 내용을 처음 보내기 전에 무엇을 어디로 보내는지 알리고 동의를 받는다.
- * 동의 저장은 시트가 맡고, 저장에 실패하면 토스트로 알리고 시트를 그대로 둔다.
- */
+/** 동의 저장은 시트가 맡고, 실패하면 토스트로 알리고 시트를 그대로 둔다 */
 export function AiConsentBottomSheet({
   onAgree,
   onOpenChange,

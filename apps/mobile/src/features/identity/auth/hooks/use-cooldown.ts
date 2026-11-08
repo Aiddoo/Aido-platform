@@ -4,10 +4,7 @@ import { AppState } from 'react-native';
 
 import { getMsUntilNextCooldownTick, getRemainingCooldownSeconds } from '../utils/cooldown';
 
-/**
- * 다시 보내기까지 남은 초와 시작 함수. 마감 시각을 두고 지금과의 차이로 센다.
- * 1초 타이머를 이어 세면 iOS 백그라운드에서 타이머가 멈춘 만큼 늦어지므로, 틱과 앱 복귀 때 다시 계산한다
- */
+/** 1초 타이머를 이어 세면 iOS 백그라운드에서 멈춘 만큼 늦어져 마감 시각과의 차이를 틱과 앱 복귀 때 다시 계산한다 */
 export function useCooldown() {
   const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());

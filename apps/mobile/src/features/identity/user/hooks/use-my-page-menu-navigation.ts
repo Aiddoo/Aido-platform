@@ -9,7 +9,6 @@ import {
 
 export type MyPageMenuPathname = Extract<Href, string>;
 
-/** 마이페이지 목록 항목의 이동 방식(push/replace)과 선택 여부를 현재 경로로 정한다. */
 export function useMyPageMenuNavigation() {
   const currentPathname = usePathname();
   const rootNavigationState = useRootNavigationState();

@@ -7,7 +7,6 @@ interface ReceiptBenefitRowProps {
   shade: ComponentProps<typeof Text>['shade'];
 }
 
-/** 영수증의 혜택 한 줄. 체크 원과 혜택 이름 */
 export function ReceiptBenefitRow({ title, shade }: ReceiptBenefitRowProps) {
   return (
     <ListRow

@@ -31,11 +31,7 @@ function premiumMe(overrides: Partial<CurrentUserResponse>) {
   );
 }
 
-/**
- * 서버 PremiumAccessPolicy 예시 그대로의 /me 프리미엄 응답.
- * 보상은 2028-02-26T04:00Z에 시작했고 스토어 만료는 03-10T04:00Z다.
- * premiumEndsAt은 쌓아 둔 보상까지 넣은 전체 끝, premiumPeriodEndsAt은 지금 출처만의 끝이다.
- */
+/** 서버 PremiumAccessPolicy 예시 그대로다. 보상은 2028-02-26T04:00Z에 시작했고 스토어 만료는 03-10T04:00Z다 */
 export const PREMIUM_ME_EXAMPLES = {
   /** A. 보상 기간 중에 구독했다. 남은 보상 5일이 구독 뒤로 쌓였다 */
   buyDuringReward: premiumMe({

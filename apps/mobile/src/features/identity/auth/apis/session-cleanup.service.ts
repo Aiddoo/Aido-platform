@@ -25,17 +25,12 @@ interface SessionCleanupServicePorts {
   deviceTimezone: { clear(): void };
   /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다. 위층 기능이라 조립하는 곳이 넘긴다 */
   pendingRedemption: { clear(): void };
-  /** 계정별 안내 기록. 위층 기능이라 조립하는 곳이 넘긴다 */
+  /** 위층 기능이라 조립하는 곳이 넘긴다 */
   accountGuides: readonly { removeAccount(accountId: string): void }[];
   logger: Pick<Logger, 'warn'>;
 }
 
-/**
- * 세션이 끝날 때 기기에 남은 계정 데이터를 정리한다.
- * 다음 사람에게 보이면 안 되는 데이터라 한 단계가 실패해도 나머지를 계속한다.
- * 호출은 미인증 전환이 커밋된 뒤여야 한다. 같은 tick에 비우면 아직 마운트된 인증 화면이
- * 다시 요청해 401 루프를 돈다.
- */
+/** 한 단계가 실패해도 계속한다. 미인증 전환 커밋 전에 비우면 마운트된 인증 화면이 다시 요청해 401 루프를 돈다 */
 export class SessionCleanupService {
   readonly #queryCache: SessionQueryCache;
   readonly #persistedQueryCache: SessionPersistedQueryCache;
@@ -89,10 +84,7 @@ export class SessionCleanupService {
     this.#run('persisted-query-cache', () => this.#persistedQueryCache.clear());
   };
 
-  /**
-   * 마운트된 채 다시 그려진 관찰자는 비운 콜백을 복구한다. 그 콜백이 정리 뒤 캐시를 채워도
-   * 다음 계정이 지난 값을 신선한 값으로 읽어 지난 계정의 초안만 남기는 일이 없게 다시 비운다.
-   */
+  /** 마운트된 채 다시 그려진 관찰자가 비운 콜백을 복구해 정리 뒤 캐시를 채울 수 있어 로그인 직전에 다시 비운다 */
   beforeSignIn = (): void => {
     this.#run('sign-in-queries', () => this.#queryCache.clearQueries());
   };

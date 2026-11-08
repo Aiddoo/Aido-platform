@@ -98,17 +98,17 @@ function getAccessDecision(
     : 'limit-reached';
 }
 
-/** 지금 한도. null은 무제한이거나 알 수 없다 */
+/** null은 무제한이거나 알 수 없다 */
 function getLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.limit ?? null;
 }
 
-/** 이번 기간에 남은 횟수. 세지 않는 기능·무제한은 null이다 */
+/** 세지 않는 기능·무제한은 null이다 */
 function getRemainingCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.remaining ?? null;
 }
 
-/** 한 번 쓸 수 있는 최대 길이(초). 길이 제한이 없으면 null이다 */
+/** 초 단위. 길이 제한이 없으면 null이다 */
 function getMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.perUse?.maxSeconds ?? null;
 }
@@ -137,10 +137,7 @@ function getQuotaStatus(
     : { type: 'remaining', count: quota.remaining, period: quota.period };
 }
 
-/**
- * 횟수 기능이 언제 다시 채워지는지. 기기 시간대의 달력으로 오늘·내일·날짜를 고른다.
- * 이미 지난 초기화 시각(오래된 스냅샷)은 믿지 않는다
- */
+/** 기기 시간대 달력으로 오늘·내일·날짜를 고르고, 이미 지난 초기화 시각(오래된 스냅샷)은 믿지 않는다 */
 function getResetNotice(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
@@ -158,10 +155,7 @@ function getResetNotice(
   return daysLeft === 1 ? { type: 'tomorrow' } : { type: 'date', date: quota.resetsAt };
 }
 
-/**
- * 무료로 쓸 수 있는 한도(혜택 안내용). 무료 사용자는 초대로 늘어난 자리까지 반영한 서버 값을,
- * 프리미엄·관리자는 카탈로그의 무료 한도를 쓴다
- */
+/** 무료 사용자는 초대로 늘어난 자리까지 반영한 서버 값을, 프리미엄·관리자는 카탈로그 무료 한도를 쓴다 */
 function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number {
   const limit = getLimit(snapshot, feature);
   return snapshot.tier === 'FREE' && limit != null ? limit : PLAN_CATALOG[feature].free;

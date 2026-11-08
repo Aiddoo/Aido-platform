@@ -17,10 +17,7 @@ function toPlatformLabel(platform: string) {
     .otherwise(() => platform);
 }
 
-/**
- * 문의 내용 맨 위에 붙일 상황 한 줄. 서버는 앱 버전·기기를 문의에 붙이지 않아 여기서 담는다.
- * 토큰·사용자 ID·영수증처럼 민감한 값은 넣지 않는다.
- */
+/** 서버가 앱 버전·기기를 문의에 붙이지 않아 여기서 담는다. 토큰·사용자 ID·영수증 같은 민감한 값은 넣지 않는다 */
 export function toSubscriptionInquiryDraft({
   subject,
   diagnosticCode,

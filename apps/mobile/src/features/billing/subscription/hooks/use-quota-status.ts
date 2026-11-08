@@ -10,10 +10,7 @@ import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
-/**
- * 서버 한도로 본 남은 횟수와 기본 문구. 한도 창(일·월)이 바뀌는 순간을 놓치지 않게 분 단위 지금으로
- * 계산한다. 렌더 중 읽은 지금은 React Compiler가 값을 붙잡아 다시 계산되지 않는다
- */
+/** 렌더 중 읽은 지금은 React Compiler가 붙잡으므로 한도 창(일·월)이 바뀌는 순간을 놓치지 않게 분 시계로 계산한다 */
 export function useQuotaStatus(feature: EntitlementFeature) {
   const { t } = useTranslation('subscription');
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);

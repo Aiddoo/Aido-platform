@@ -30,7 +30,6 @@ interface InquiryFormProps {
   title: string;
 }
 
-/** 문의 종류와 내용 입력, 키보드 위 보내기 버튼. 보내면 이전 화면으로 돌아간다 */
 export function InquiryForm({ title }: InquiryFormProps) {
   const [initialValues] = useRouteParams(inquiryParamsSchema);
   const { t } = useTranslation('inquiry');

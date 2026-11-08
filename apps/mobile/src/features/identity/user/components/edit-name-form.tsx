@@ -16,7 +16,6 @@ interface EditNameFormProps {
   title: string;
 }
 
-/** 이름 입력과 키보드 위 저장 버튼. 저장하면 이전 화면으로 돌아간다 */
 export function EditNameForm({ title }: EditNameFormProps) {
   const { t } = useTranslation('user');
   const navigation = useNavigation();
