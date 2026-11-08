@@ -7,12 +7,14 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
+  CommentIllustration,
   HeartFilledIcon,
   HStack,
   InfiniteList,
   InlineAlert,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  Result,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -172,10 +174,8 @@ TodoCommentThreadList.Empty = function Empty() {
   const { t } = useTranslation('todoComment');
 
   return (
-    <Box px={16} py={8}>
-      <Text size="b4" shade={6}>
-        {t('list.emptyDescription')}
-      </Text>
+    <Box px={16} py={24}>
+      <Result icon={<CommentIllustration size="block" />} title={t('list.emptyDescription')} />
     </Box>
   );
 };
