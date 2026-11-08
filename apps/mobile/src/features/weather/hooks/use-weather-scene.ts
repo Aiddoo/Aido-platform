@@ -1,4 +1,3 @@
-import { getNowInstant } from '@src/shared/date/instant';
 import { useQuery } from '@tanstack/react-query';
 
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
@@ -17,7 +16,7 @@ const DEFAULT_SCENE_INPUT: WeatherSceneInput = {
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
-  observedAt: getNowInstant(),
+  moonPhase: null,
   latitude: 0,
 };
 

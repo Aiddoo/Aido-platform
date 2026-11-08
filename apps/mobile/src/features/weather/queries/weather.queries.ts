@@ -19,6 +19,7 @@ import { pick } from 'es-toolkit';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { applyDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type LocationReading } from '../schemas/weather-location.schema';
 import { type WeatherReport } from '../schemas/weather-report.schema';
@@ -192,7 +193,9 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
       'cloudCover',
       'windSpeed',
     ]),
-    observedAt: report.fetchedAt,
+    // 해·달 카드와 같은 서버 위상을 쓴다. 받은 시각의 오늘(그 위치 시간대)이다
+    moonPhase:
+      WeatherReportPolicy.getTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
     latitude: report.location.latitude,
   };
 }

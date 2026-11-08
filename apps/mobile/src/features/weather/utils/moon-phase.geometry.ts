@@ -2,7 +2,7 @@ import type { WeatherMoonPhase } from '@aido/api/vocabulary';
 import { clamp, round } from 'es-toolkit';
 
 /** 위상을 한 바퀴 0~1로 둔 값. 0은 삭, 0.5는 보름이다. */
-const MOON_PHASE_CYCLE = {
+export const MOON_PHASE_CYCLE = {
   NEW: 0,
   WAXING_CRESCENT: 0.125,
   FIRST_QUARTER: 0.25,

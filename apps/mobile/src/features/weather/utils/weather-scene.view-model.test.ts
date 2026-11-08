@@ -1,11 +1,9 @@
 import { WEATHER_CONDITIONS, type WeatherCondition } from '@aido/api';
-import { toInstant } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 import {
   WEATHER_SCENE_MAX_PRECIPITATION_ANGLE,
   getMoonIllumination,
-  getMoonPhase,
   toWeatherScene,
   type WeatherSceneInput,
 } from './weather-scene.view-model';
@@ -29,7 +27,7 @@ const createInput = (overrides: Partial<WeatherSceneInput> = {}): WeatherSceneIn
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
-  observedAt: toInstant('2026-11-03T12:00:00.000Z'),
+  moonPhase: 'FULL',
   latitude: 37.5,
   ...overrides,
 });
@@ -387,28 +385,29 @@ describe('바람과 강수 각도', () => {
 });
 
 describe('달의 위상', () => {
-  test('같은 날씨를 몇 분 뒤 다시 받아도 장면이 같다', () => {
+  test('서버가 준 오늘의 위상을 한 바퀴 0~1 자리에 놓는다', () => {
     // Given
-    const first = createInput({ observedAt: toInstant('2026-11-03T12:00:00.000Z') });
-    const later = createInput({ observedAt: toInstant('2026-11-03T12:07:00.000Z') });
+    const full = createInput({ isDaylight: false, moonPhase: 'FULL' });
+    const firstQuarter = createInput({ isDaylight: false, moonPhase: 'FIRST_QUARTER' });
 
     // When
-    const [firstScene, laterScene] = [first, later].map(toWeatherScene);
+    const fullScene = toWeatherScene(full);
+    const firstQuarterScene = toWeatherScene(firstQuarter);
 
     // Then
-    expect(laterScene).toEqual(firstScene);
+    expect(fullScene.moonPhase).toBe(0.5);
+    expect(firstQuarterScene.moonPhase).toBe(0.25);
   });
 
-  test.each([
-    ['2000-01-06T18:14:00.000Z', 0],
-    ['2000-01-21T12:32:00.000Z', 0.5],
-    ['2000-02-05T06:51:00.000Z', 0],
-  ])('%s의 위상은 %p에 가깝다', (iso, expected) => {
+  test('일별 예보가 없어 위상을 모르면 밤에도 달을 그리지 않는다', () => {
+    // Given
+    const input = createInput({ isDaylight: false, moonPhase: null });
+
     // When
-    const phase = getMoonPhase(toInstant(iso));
+    const scene = toWeatherScene(input);
 
     // Then
-    expect(Math.min(Math.abs(phase - expected), 1 - Math.abs(phase - expected))).toBeLessThan(0.01);
+    expect(scene.moon).toBe(false);
   });
 
   test('보름달은 다 밝고 삭은 보이지 않는다', () => {
