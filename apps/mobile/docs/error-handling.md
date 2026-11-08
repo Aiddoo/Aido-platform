@@ -75,11 +75,12 @@ onError: (error) => {
     return;
   }
   // 사용자 문구가 있는 오류만 그대로 보이고 나머지는 폴백이다. 다시 던지지 않는다
-  showFailure(error);
+  haptics.notify('error');
+  toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
 },
 ```
 
-`toast.error(error, { fallback })`는 사용자 문구면 그 메시지를, 아니면 fallback을 보여 준다.
+`getUserFacingMessage(error)`가 사용자 문구면 그 메시지를, 아니면 `fallback`을 보여 준다. 햅틱과 토스트를 함수 하나로 묶어 `onError`에 넘기지 않는다(`check:conventions`가 막는다).
 
 ## 서버 오류를 읽는 곳
 
@@ -146,7 +147,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 
 ### 조회에서 예상한 상태
 
-조회에서도 예상한 상태는 경계로 던지지 않는다. 구독 요금제 조회는 query options가 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 캐시에 둔다.
+조회에서도 예상한 상태는 경계로 던지지 않는다. 구독 요금제 조회는 query options가 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 캐시에 둔다. 관측은 조회가 아니라 요금제 자리가 안내를 보일 때 `useReportStoreUnavailable`로 남긴다.
 
 | 상황                          | 결과          | 화면                                                                              | 관측(앱 실행마다 코드별 한 번)                  |
 | ----------------------------- | ------------- | --------------------------------------------------------------------------------- | ----------------------------------------------- |

@@ -399,6 +399,53 @@ function checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors) {
   }
 }
 
+const MUTATION_OPTIONS_FILE = /\/queries\/[^/]+\.mutations\.tsx?$/u;
+
+/** 실패 처리를 묶은 함수(`onError: showFailure`)는 호출부에서 햅틱·토스트·보고가 보이지 않는다 */
+function checkInlineMutationErrorHandlers(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (!MUTATION_OPTIONS_FILE.test(relativePath) || isTestSource(relativePath)) {
+    return;
+  }
+  function visit(node) {
+    if (
+      ts.isPropertyAssignment(node) &&
+      getPropertyName(node.name) === 'onError' &&
+      !ts.isArrowFunction(node.initializer) &&
+      !ts.isFunctionExpression(node.initializer)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} mutation onError는 햅틱·토스트를 그 자리에 나란히 적습니다. 실패 처리 함수로 묶지 않습니다.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+}
+
+const CACHE_HELPER_FILE = /\/queries\/[^/]+-cache\.ts$/u;
+const CACHE_HELPER_FORBIDDEN_MODULE =
+  /^@src\/core\/events\/|\/apis\/[^/]+\.service$|\/ports\/(error-reporter|logger)$/u;
+
+/** `*-cache.ts`는 Query 캐시만 만진다. 이벤트 발행·오류 보고·Service 호출(기기 저장)은 호출부에 적는다 */
+function checkCacheHelperPurity(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (!CACHE_HELPER_FILE.test(relativePath) || isTestSource(relativePath)) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      CACHE_HELPER_FORBIDDEN_MODULE.test(statement.moduleSpecifier.text)
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 캐시 helper는 Query 캐시만 만집니다. ${statement.moduleSpecifier.text}는 호출부(mutation)에서 씁니다.`,
+      );
+    }
+  }
+}
+
 const JEST_MODULE_MOCK_METHODS = new Set(['mock', 'doMock', 'setMock']);
 
 // 모듈 mock은 어댑터 테스트의 SDK와 jest.setup·moduleNameMapper의 네이티브 모듈만 쓴다. 허용 목록은 두지 않는다.
@@ -2086,6 +2133,8 @@ export function checkMobileConventions(
     checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
     checkSdkImports(sourceFile, repositoryRoot, errors);
     checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors);
+    checkInlineMutationErrorHandlers(sourceFile, repositoryRoot, errors);
+    checkCacheHelperPurity(sourceFile, repositoryRoot, errors);
     checkJestModuleMocks(sourceFile, repositoryRoot, errors);
     checkEsToolkitCompatImports(sourceFile, repositoryRoot, errors);
     checkRouteParamConventions(sourceFile, repositoryRoot, errors);

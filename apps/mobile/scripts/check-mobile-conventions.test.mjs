@@ -530,6 +530,62 @@ test('feature의 useAnalytics 직접 사용을 거부하고 bootstrap은 통과�
   );
 });
 
+test('mutation onError에 실패 처리 함수를 넘기면 거부하고 인라인 처리는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/identity/auth/queries/auth.mutations.ts': `
+        export function useLoginMutationOptions() {
+          const showFailure = useSocialLoginFailure();
+          return mutationOptions({ onError: showFailure });
+        }
+        export function useLinkMutationOptions() {
+          return mutationOptions({ onError: createFailureHandler() });
+        }
+        export function useUnlinkMutationOptions() {
+          return mutationOptions({
+            onError: (error) => {
+              haptics.notify('error');
+              toast.error(getUserFacingMessage(error));
+            },
+          });
+        }
+      `,
+      'apps/mobile/src/features/identity/auth/components/link-button.tsx': `
+        export function LinkButton() {
+          return link.mutate(undefined, { onError: reportFailure });
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.ok(errors.every((error) => /auth\.mutations\.ts.*햅틱·토스트/u.test(error)));
+    },
+  );
+});
+
+test('캐시 helper의 이벤트 발행·오류 보고·Service import를 거부하고 캐시 import는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/moderation/queries/moderation-cache.ts': `
+        import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
+        import type { ErrorReporter } from '@src/core/ports/error-reporter';
+        import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
+      `,
+      'apps/mobile/src/features/device/activation/queries/activation-cache.ts': `
+        import type { ActivationService } from '../apis/activation.service';
+        import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
+      `,
+      'apps/mobile/src/features/social/moderation/queries/moderation.mutations.ts': `
+        import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 3);
+      assert.ok(errors.every((error) => /-cache\.ts.*Query 캐시만/u.test(error)));
+    },
+  );
+});
+
 test('shared/infra와 테스트의 SDK import는 통과한다', () => {
   withFixture(
     {

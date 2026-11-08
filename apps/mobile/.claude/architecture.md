@@ -165,6 +165,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |
 | 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                            |
 | 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                   |
+| mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                |
+| 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                    |
 | worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                   |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
 | `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
