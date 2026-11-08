@@ -967,7 +967,9 @@ export const MEMO_QUERY_KEYS = {
   all: ['memo'] as const,
   list: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
   details: () => [...MEMO_QUERY_KEYS.all, 'detail'] as const,
-  detail: ({ memoId }: { memoId: number }) => [...MEMO_QUERY_KEYS.details(), { memoId }] as const,
+  // 뮤테이션이 직접 읽고 쓰는 키는 데이터 타입을 붙인다
+  detail: ({ memoId }: { memoId: number }) =>
+    queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.details(), { memoId }] }).queryKey,
   resourceLimit: () => [...MEMO_QUERY_KEYS.all, 'resource-limit'] as const,
 } as const;
 ```
@@ -990,9 +992,10 @@ export function useCreateMemoMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('memo:toasts.retryLater') });
     },
-    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
+    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다. 다른 메모 상세는 그대로다
     onSettled: () => {
-      invalidateMemos(queryClient);
+      invalidateMemoList(queryClient);
+      invalidateMemoResourceLimit(queryClient);
     },
   });
 }
@@ -1002,24 +1005,53 @@ export function useCreateMemoMutationOptions() {
 
 - **훅:** 서비스가 DI에 있으므로 옵션은 `useGetXQueryOptions` 훅이다. 컴포넌트는 `useSuspenseQuery(useGetXQueryOptions(…))`처럼 사용처에서 바로 부른다. 옵션을 감싸는 훅을 더 만들지 않는다. `getXQueryOptions` 함수는 훅 밖(`queryClient.fetchQuery`, 프리페치)에서 쓸 때만 `({ xService }, params)` 인자로 export한다. 옮긴 feature에는 아직 그런 예가 없다.
 - **인라인 금지:** query key·queryFn·캐시 정책을 컴포넌트에 인라인으로 만들지 않는다. 키를 하드코딩하지 않는다.
-- **키:** `{FEATURE}_QUERY_KEYS`이고 인자는 이름 있는 객체 하나다. 범위는 복수(`lists`, `details`), 단건은 단수(`detail`)다. 인자 없는 목록은 `list()` 하나면 된다. 키 이름에 피처 접두사를 반복하지 않는다. 영속 대상 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
+- **키:** `{FEATURE}_QUERY_KEYS`이고 인자는 이름 있는 객체 하나다. 캐시를 직접 읽고 쓰는 단건 키는 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다(TanStack TypeScript 문서의 DataTag). 접두사로 여럿을 고르는 `getQueriesData`·`setQueriesData`만 제네릭을 쓴다. 범위는 복수(`lists`, `details`), 단건은 단수(`detail`)다. 인자 없는 목록은 `list()` 하나면 된다. 키 이름에 피처 접두사를 반복하지 않는다. 영속 대상 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
 - **signal:** 서버 GET은 `signal`을 넘긴다.
 - **select:** 함수 참조가 바뀌면 다시 실행되므로 모듈 수준 `function`(`selectMemos`)이나 `useCallback`으로 둔다. 필요한 값만 구독할 때 쓴다. 오류를 던지는 데 쓰지 않고 서버 스키마를 변환하지 않는다(캐시에 DTO가 남으면 낙관적 업데이트가 서버 모양을 알아야 한다).
 - **필터:** 클라이언트 필터는 key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.
 - **구조 공유:** `Date`는 plain 객체가 아니어서 같은 값이어도 새 참조가 되고 그 객체와 조상까지 참조가 바뀐다. 그래서 `Date`가 있는 모델은 재조회 때 다시 그려질 수 있다. 순간은 `Instant` 문자열로 둔다(메모 18개 재조회에서 유지되는 참조 0개 → 18개, `memo.mapper.structural-sharing.test.ts`).
 - **추적 속성:** 결과를 rest로 구조 분해하지 않는다.
 - **`mutationFn`:** 반드시 `unwrap()`한다. `Result.err()`를 돌려주면 React Query가 성공으로 보고 `onSuccess`를 부른다. 오류 분기는 [에러 처리](../docs/error-handling.md)를 본다.
-- **`onSettled`·`onSuccess`의 기다림:** 콜백이 Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 떠나는 변경(create·delete·convert·update·pin)은 기다리지 않는다. update는 뒤로 가기 저장이 떠나므로 `onSuccess`에서 목록의 그 항목만 바꾸고(`replaceMemoInList`), pin은 `onSettled`에서 `invalidateMemos`를 부르되 돌려주지 않는다(`useSetMemoPinnedMutationOptions`). 화면에 머무는 목록의 행 버튼(친구 수락·거절)은 `onSuccess`에서 무효화를 기다려 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 하기 위해서다. 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
+- **`onSettled`·`onSuccess`의 기다림:** 콜백이 Promise를 돌려주면 `mutateAsync`가 무효화 재조회까지 기다린다. 저장 후 떠나는 변경(create·delete·convert·update·pin)은 기다리지 않는다. update는 뒤로 가기 저장이 떠나므로 `onSuccess`에서 목록의 그 항목만 바꾸고(`replaceMemoInList`), pin은 `onSettled`에서 `invalidateMemoList`를 부르되 돌려주지 않는다(`useSetMemoPinnedMutationOptions`). 화면에 머무는 목록의 행 버튼(친구 수락·거절)은 `onSuccess`에서 무효화를 기다려 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 하기 위해서다. 지운 메모의 재조회가 먼저 끝나면 404가 경계로 내려간다.
 - **무효화:** 다른 feature의 캐시는 그 feature의 `{feature}-cache.ts` 함수로만 무효화한다(`invalidateMemos`). 자기 feature 안에서 범위를 좁힐 때만 자기 키를 직접 쓴다. 키 위치에 기대는 구조 분해(`const [, , params] = query.queryKey`)를 쓰지 않는다.
+- **무효화 범위:** 바뀐 것만 무효화한다. 응답이 바뀐 값을 다 담으면 `setQueryData`로 고치고 다시 받지 않는다(TanStack "Updates from Mutation Responses"). 작은 변경 뒤 `X.all`이나 필터 없는 `invalidateQueries()`를 부르지 않는다. 바뀐 범위를 모를 때(반복 묶음, 카테고리 삭제, 당겨서 새로 고침, 언어 변경)만 넓게 쓴다.
+
+### 낙관적 갱신
+
+여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 캐시로 할 때는 순서가 하나다.
+
+1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `domains/*.model.ts` Policy나 `*-cache.ts`의 순수 함수다(`TodoCategoryPolicy.withCategoryAdded`).
+2. `onError`: 돌려받은 스냅샷으로 되돌린다. 같은 키를 동시에 쓰는 뮤테이션이 있으면 통째로 덮지 않고 그 변경만 되돌린다.
+3. `onSettled`: 바뀐 키만 무효화한다. 동시에 쓰는 뮤테이션은 `mutationKey`를 두고 `isMutating({ mutationKey }) === 1`일 때만 다시 받는다.
+
+```typescript
+// features/planning/category/queries/todo-category.mutations.ts
+onMutate: async ({ id }) => {
+  await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
+  const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+  queryClient.setQueryData(
+    TODO_CATEGORY_QUERY_KEYS.list(),
+    (old) => old && TodoCategoryPolicy.withCategoryRemoved(old, id),
+  );
+  return { previousData };
+},
+onError: (_error, _variables, context) => {
+  if (context?.previousData != null) {
+    queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+  }
+},
+onSettled: () => invalidateTodoCategories(queryClient),
+```
 
 ### 할 일 목록의 낙관적 갱신
 
 `features/planning/todo/queries/todo-cache.ts` 한 곳의 규칙을 따른다.
 
 - 날짜는 할 일의 `startDate`가 아니라 보고 있는 목록의 `date`다. 여러 날 할 일은 여러 날짜 목록에 있다.
-- `onMutate`: `cancelTodoQueries`(달력까지 바꾸면 `cancelTodoCompletionQueries`)로 조회를 멈추고 `updateCachedTodo`로 목록·상세를 함께 고친다. 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.
+- `onMutate`: `beginTodoWrite`로 그 목록·상세(달력까지 바꾸면 그날을 담은 완료 범위)만 멈추고, 돌려받은 표를 context에 담는다. `updateCachedTodo`로 목록·상세를 함께 고치고 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.
 - `onError`: 스냅샷을 통째로 덮지 않고 그 변경만 되돌린다. 통째로 덮으면 함께 진행 중인 다른 변경을 지운다.
-- `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoListWrite`·`settleTodoCompletionWrite`만 부른다. 마지막 뮤테이션이 끝날 때만 다시 받아야 낙관적 값이 되돌아가지 않는다.
+- `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다.
+- `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoWrite`만 부른다. 확정된 목록·하루짜리 달력은 다시 받지 않고, 기간 안의 다른 날짜 목록·겹치는 달력 범위·위젯 요약만 낡음(`refetchType: 'none'`)으로 표시한다. 실패했거나 다른 쓰기와 겹쳤으면 고친 목록·상세·달력까지 맞춘다. 마지막 쓰기만 화면에 붙은 낡은 조회를 다시 받아 낙관적 값이 되돌아가지 않는다.
 - 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다.
 
 ---
