@@ -20,7 +20,11 @@ export function useIsCoachmarkSettled(isVisible: boolean, restartKey?: string) {
   const [keyboardMoveCount, setKeyboardMoveCount] = useState(0);
   const [isSettled, setIsSettled] = useState(false);
 
+  // 가려진 동안의 키보드 움직임은 다시 보일 때 처음부터 기다리므로 셀 필요가 없다. 보이는 동안만 듣는다
   useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
     const subscriptions = KEYBOARD_MOVE_EVENTS.map((event) =>
       Keyboard.addListener(event, () => setKeyboardMoveCount((count) => count + 1)),
     );
@@ -28,7 +32,7 @@ export function useIsCoachmarkSettled(isVisible: boolean, restartKey?: string) {
     return () => {
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isVisible) {

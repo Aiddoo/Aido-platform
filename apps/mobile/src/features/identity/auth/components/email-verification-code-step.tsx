@@ -41,7 +41,7 @@ export function EmailVerificationCodeStep({
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [code, setCode] = useState('');
   const [isInvalid, setIsInvalid] = useState(false);
-  const [cooldown, setCooldown] = useCooldown(0);
+  const [cooldown, startCooldown] = useCooldown();
 
   const clearCode = () => {
     setCode('');
@@ -72,13 +72,13 @@ export function EmailVerificationCodeStep({
 
     try {
       const { retryAfterSeconds } = await onResend();
-      setCooldown(retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
+      startCooldown(retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
       setIsInvalid(false);
       clearCode();
     } catch (error) {
       const remainingSeconds = findResendCooldown(error);
       if (remainingSeconds != null) {
-        setCooldown(remainingSeconds);
+        startCooldown(remainingSeconds);
       }
     }
   };

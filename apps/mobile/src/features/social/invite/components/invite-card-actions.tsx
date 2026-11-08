@@ -3,13 +3,14 @@ import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, ReadableContent, StyledSafeAreaView, Text, TextButton } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
@@ -85,7 +86,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   });
   const redeem = useMutation(useRedeemInviteMutationOptions());
   const toast = useAppToast();
-  const [now] = useState(() => getNowInstant());
+  const now = useMinuteNow();
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
   const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, now);
 

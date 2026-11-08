@@ -171,6 +171,10 @@ export function useEntitlementGate(
       promptLimit: (options?: EntitlementGateDialogOptions) => {
         open(feature, 'limit-reached', 'precheck', options);
       },
+      /** 구독 안내를 바로 띄운다. 사용자가 구독을 직접 고른 버튼처럼 막힘 여부와 스냅샷을 보지 않는 곳에 쓴다 */
+      promptLocked: (options?: EntitlementGateDialogOptions) => {
+        open(feature, 'locked', 'precheck', options);
+      },
       /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
       promptIfBlockedError: (error: unknown, options?: EntitlementGateDialogOptions): boolean => {
         const limited = findLimitedFeature(error);

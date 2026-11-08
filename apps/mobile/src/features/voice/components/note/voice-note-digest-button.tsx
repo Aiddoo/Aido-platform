@@ -1,9 +1,6 @@
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { getNowInstant } from '@src/shared/date/instant';
+import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, Button, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
@@ -18,11 +15,7 @@ type VoiceNoteDigestButtonProps = Omit<ComponentProps<typeof Button>, 'children'
  */
 export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigestButtonProps) {
   const { t } = useTranslation('voiceNote');
-  const { data: snapshot, isPending } = useQuery(useGetEntitlementsQueryOptions());
-  const status =
-    snapshot == null
-      ? { type: 'untracked' as const }
-      : EntitlementPolicy.getQuotaStatus(snapshot, 'VOICE_NOTE', getNowInstant());
+  const { status, isPending } = useQuotaStatus('VOICE_NOTE');
   const cost = match(status)
     .with({ type: 'untracked' }, () => null)
     .with({ type: 'remaining' }, ({ count }) => t('digest.cost', { amount: count }))

@@ -85,7 +85,10 @@ FriendTodoList.Item = function Item({
   const { t } = useTranslation('todo');
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
   const selectTodo = useSingleTap(openTodoDetail);
-  const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
+  // 사용자가 접거나 펴기 전에는 서브투두 유무를 따른다.
+  // 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const isExpanded = userExpanded ?? TodoPolicy.hasSubTodos(todo);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
@@ -128,7 +131,7 @@ FriendTodoList.Item = function Item({
           <RowAction todo={todo} />
         </HStack>
       }
-      onPress={TodoPolicy.hasSubTodos(todo) ? () => setIsExpanded((prev) => !prev) : undefined}
+      onPress={TodoPolicy.hasSubTodos(todo) ? () => setUserExpanded(!isExpanded) : undefined}
     >
       {isExpanded && (
         <SubTodoIndent>
