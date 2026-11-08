@@ -1,7 +1,15 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
-import { use, useCallback, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import {
+  type ComponentRef,
+  use,
+  useCallback,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { TextInput, type View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box';
@@ -49,7 +57,7 @@ export function TextArea({
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [verticalChromeHeight, setVerticalChromeHeight] = useState<number | null>(null);
   const getMaxFieldHeight = use(FieldMaxHeightContext);
-  const containerRef = useRef<FocusedFieldNode | null>(null);
+  const containerRef = useRef<ComponentRef<typeof View> | null>(null);
   const [maxContainerHeight, setMaxContainerHeight] = useState<number | null>(null);
   // 칸 전체와 입력 칸을 같은 배치에서 동기로 재야 라벨·오류 문구 몫이 어긋나지 않아 상한이 흔들리지 않는다
   const measureMaxContainerHeight = () => {
