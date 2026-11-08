@@ -1,9 +1,8 @@
+import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
 import type {
   WidgetNavigationCommand,
   WidgetNavigationDestination,
 } from '../schemas/widget-navigation.schema';
-
-export const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
 
 function isFresh(command: Pick<WidgetNavigationCommand, 'createdAt'>, now: number): boolean {
   return (

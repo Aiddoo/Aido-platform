@@ -1,8 +1,7 @@
 import { match } from 'ts-pattern';
 
+import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
 import type { Coordinates, LocationReading, PlaceName } from '../schemas/weather-location.schema';
-
-export const SAVED_LOCATION_REVISION = 0;
 
 /** 약 1km(위도 0.01°) 안에서의 이동은 같은 날씨 격자로 보고 서버에 다시 등록하지 않는다. */
 const RELOCATION_THRESHOLD_DEGREES = 0.01;

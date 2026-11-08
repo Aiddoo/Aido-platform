@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
+
 // Persist only display data; isolated widget runtimes cannot access auth or i18n.
 /** 하루치 표시 데이터. v1 snapshot 본문과 같은 모양이다. */
 export const widgetDaySnapshotSchema = z.object({
@@ -22,7 +24,7 @@ export const widgetDaySnapshotSchema = z.object({
         categoryColor: z.string(),
       }),
     )
-    .max(10),
+    .max(WIDGET_TOP_TODOS_LIMIT),
   locale: z.enum(['ko', 'en']),
   weekDays: z
     .array(

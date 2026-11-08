@@ -17,3 +17,15 @@ export const SETTINGS_TIME_RANGE = {
   morning: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
   evening: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
 } as const;
+
+/** 알림 안내가 다음에 할 일. 안내 화면들이 같은 단계로 고른다 */
+export const PUSH_PERMISSION_STEP = {
+  ASK: 'ASK',
+  REQUEST_SYSTEM: 'REQUEST_SYSTEM',
+  OPEN_SETTINGS: 'OPEN_SETTINGS',
+  ENABLE_IN_APP: 'ENABLE_IN_APP',
+  NONE: 'NONE',
+} as const;
+
+/** 홈 알림 안내를 닫으면 이 날수 동안 다시 보이지 않는다 */
+export const PUSH_PROMPT_SNOOZE_DAYS = 14;

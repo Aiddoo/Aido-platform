@@ -3,19 +3,10 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
+import { PUSH_PERMISSION_STEP, PUSH_PROMPT_SNOOZE_DAYS } from '../constants/notification.constants';
 import type { PushPermission } from '../schemas/push-permission.schema';
 
-export const PUSH_PERMISSION_STEP = {
-  ASK: 'ASK',
-  REQUEST_SYSTEM: 'REQUEST_SYSTEM',
-  OPEN_SETTINGS: 'OPEN_SETTINGS',
-  ENABLE_IN_APP: 'ENABLE_IN_APP',
-  NONE: 'NONE',
-} as const;
-
 type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
-
-export const PUSH_PROMPT_SNOOZE_DAYS = 14;
 
 /** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
 function canDeliverPush(permission: PushPermission): boolean {

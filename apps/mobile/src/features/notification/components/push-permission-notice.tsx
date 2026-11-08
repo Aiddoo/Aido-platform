@@ -8,8 +8,9 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
 import { usePushPromptSnooze } from '../hooks/use-push-prompt-snooze';
 import {
   useOpenPushSettingsMutationOptions,

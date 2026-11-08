@@ -34,7 +34,6 @@ const MOON_DISC_WIDTH_RATIO = 0.058;
 /** 달 지름의 이 배수만큼 헤더 아래로 띄워 헤더가 높은 기기에서도 헤더 버튼에 가리지 않게 한다 */
 const MOON_HEADER_CLEARANCE_DISCS = 1.6;
 const CELESTIAL_HEADER_CLEARANCE = MOON_DISC_WIDTH_RATIO * MOON_HEADER_CLEARANCE_DISCS;
-export const CLOUD_DEPTH_LAYERS = 3;
 export const NO_LIGHTNING_WINDOW = -1;
 const NO_SHOOTING_STAR = -1;
 

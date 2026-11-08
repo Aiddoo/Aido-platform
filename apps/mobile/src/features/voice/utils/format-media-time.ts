@@ -1,7 +1,7 @@
-import { SECOND_MS } from '@src/shared/constants/time-units';
+import { HOUR_MS, MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 
-const MINUTE_SECONDS = 60;
-const HOUR_SECONDS = 3_600;
+const MINUTE_SECONDS = MINUTE_MS / SECOND_MS;
+const HOUR_SECONDS = HOUR_MS / SECOND_MS;
 
 function pad(value: number) {
   return String(value).padStart(2, '0');

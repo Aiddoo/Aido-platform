@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 
-import { WIDGET_BRAND_COLOR } from '../constants/widget.constants';
+import { WIDGET_BRAND_COLOR, WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props.schema';
 import type { WidgetDaySnapshot, WidgetRenderState } from '../schemas/widget-snapshot.schema';
 import { isHexColor } from '../utils/is-hex-color';
@@ -15,7 +15,7 @@ export function toWidgetProps(
 
   return {
     state,
-    maxRows: 4,
+    maxRows: WIDGET_LARGE_MAX_ROWS,
     totalTodos: snapshot.totalTodos,
     completedTodos: snapshot.completedTodos,
     completionRate: snapshot.completionRate,

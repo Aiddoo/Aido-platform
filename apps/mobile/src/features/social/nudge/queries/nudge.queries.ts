@@ -12,7 +12,6 @@ const INITIAL_PAGE: NudgeInteractionsPageParam = {};
 
 type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
 const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
-const THANKS_PREVIEW_PAGE_SIZE = 20;
 const NUDGE_STALE_TIME_MS = 30 * SECOND_MS;
 
 function selectNudgeInteractions(
@@ -78,7 +77,7 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
       unwrap(
         await todoNudgeService.getThanksPreview(
           todoId,
-          { limit: THANKS_PREVIEW_PAGE_SIZE, ...pageParam },
+          { limit: DEFAULT_PAGE_SIZE, ...pageParam },
           signal,
         ),
       ),

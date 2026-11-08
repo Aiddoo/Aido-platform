@@ -6,7 +6,8 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
+import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,

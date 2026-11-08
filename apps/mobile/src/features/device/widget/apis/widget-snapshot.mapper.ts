@@ -8,6 +8,7 @@ import type { Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
+import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import type {
   WidgetDaySnapshot,
   WidgetSnapshot,
@@ -64,9 +65,6 @@ export interface WidgetSnapshotContext {
   weekCompletions?: readonly { date: string; totalTodos: number; isComplete: boolean }[];
 }
 
-/** 표시할 상위 할 일 최대 개수 (Large 위젯 기준) */
-const TOP_TODOS_DISPLAY_LIMIT = 10;
-
 function bakeStrings(
   t: WidgetTranslateFn,
   summary: Pick<
@@ -118,7 +116,7 @@ function toWidgetDaySnapshot(
   summary: WidgetSummaryInput,
   context: WidgetSnapshotContext,
 ): WidgetDaySnapshot {
-  const topTodos = summary.topTodos.slice(0, TOP_TODOS_DISPLAY_LIMIT).map((todo) => ({
+  const topTodos = summary.topTodos.slice(0, WIDGET_TOP_TODOS_LIMIT).map((todo) => ({
     id: todo.id,
     title: todo.title,
     completed: todo.completed,

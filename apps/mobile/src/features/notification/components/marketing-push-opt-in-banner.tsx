@@ -9,8 +9,9 @@ import { InlineAlert, useOverlay } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
-import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
 import { MarketingPushConsentDialog } from './marketing-push-consent-dialog';
 

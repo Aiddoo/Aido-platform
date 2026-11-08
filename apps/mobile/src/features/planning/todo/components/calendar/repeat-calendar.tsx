@@ -7,6 +7,10 @@ import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 import { match } from 'ts-pattern';
 
+import {
+  PICKER_DATE_CELL_HEIGHT,
+  PICKER_MONTH_HEIGHT,
+} from '../../constants/todo-calendar.constants';
 import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   DAY_TYPE_TONE,
@@ -52,8 +56,7 @@ export function RepeatCalendar({
 
       <CalendarWeekdayHeader />
 
-      {/* 달마다 4~6주라 6주 높이(48 × 6)를 미리 잡아 달을 넘겨도 시트 높이가 변하지 않게 한다 */}
-      <VStack className="h-[288px]">
+      <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => {
           const days = getRepeatWeekDays(week, {
             displayMonth,
@@ -94,7 +97,11 @@ export function RepeatCalendar({
                       onPress={onDatePress}
                     />
                   ) : (
-                    <Box key={date.toISOString()} className="h-[48px] flex-1" />
+                    <Box
+                      key={date.toISOString()}
+                      className="flex-1"
+                      style={{ height: PICKER_DATE_CELL_HEIGHT }}
+                    />
                   ),
                 )}
               </HStack>
@@ -139,11 +146,9 @@ const RepeatDateCell = memo(function RepeatDateCell({
       accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
       accessibilityState={{ selected: isSelected, disabled: isDisabled }}
       onPress={() => onPress(date)}
+      style={{ height: PICKER_DATE_CELL_HEIGHT }}
       isDisabled={isDisabled}
-      className={cn(
-        'relative h-[48px] flex-1 items-center justify-center',
-        isDisabled && 'opacity-30',
-      )}
+      className={cn('relative flex-1 items-center justify-center', isDisabled && 'opacity-30')}
     >
       <Box
         className={cn(

@@ -1,4 +1,5 @@
-import { SAVED_LOCATION_REVISION, WeatherLocationPolicy } from './weather-location.model';
+import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
+import { WeatherLocationPolicy } from './weather-location.model';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };

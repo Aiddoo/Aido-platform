@@ -1,6 +1,7 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
 import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 import type { Page } from '@src/shared/types/page.types';
@@ -89,7 +90,6 @@ export function useGetInviteQueryOptions() {
 }
 
 const FIRST_PAGE_CURSOR: string | null = null;
-const INVITED_FRIENDS_PAGE_SIZE = 20;
 
 interface InviteesFilter {
   /** 상태별 목록. 없으면 전체다 */
@@ -107,7 +107,7 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
         await inviteService.getInvitedFriends(
           {
             cursor: pageParam ?? undefined,
-            limit: INVITED_FRIENDS_PAGE_SIZE,
+            limit: DEFAULT_PAGE_SIZE,
             status,
           },
           signal,

@@ -1,3 +1,4 @@
+import { PM10_UPPER_BOUNDS, PM25_UPPER_BOUNDS } from '../constants/weather.constants';
 import type { AirQuality, CurrentWeather } from '../schemas/weather-report.schema';
 
 function getGradeIndex(value: number, upperBounds: readonly number[]): number {
@@ -15,9 +16,6 @@ const AIR_QUALITY_GRADES = [
   'bad',
   'veryBad',
 ] as const satisfies readonly AirQualityGrade[];
-/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다. */
-export const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
-export const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
 
 const POLLUTANT_UPPER_BOUNDS = {
   pm10: PM10_UPPER_BOUNDS,

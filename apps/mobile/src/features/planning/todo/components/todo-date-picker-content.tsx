@@ -10,6 +10,7 @@ import { Box, HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shar
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
+import { PICKER_DATE_CELL_HEIGHT, PICKER_MONTH_HEIGHT } from '../constants/todo-calendar.constants';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import { DAY_TYPE_TONE, getDatePickerDayType, isTodayHighlighted } from '../utils/calendar-day';
 import { isSameDay, isSameMonth } from '../utils/calendar-day-comparison';
@@ -151,8 +152,7 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
 
       <CalendarWeekdayHeader />
 
-      {/* 달마다 4~6주라 6주 높이(48 × 6)를 미리 잡아 달을 넘겨도 시트 높이가 변하지 않게 한다 */}
-      <VStack className="h-[288px]">
+      <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => (
           // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>
@@ -165,7 +165,11 @@ function DatePickerCalendar({ picker, onDatePress }: DatePickerCalendarProps) {
                   onPress={onDatePress}
                 />
               ) : (
-                <Box key={date.toISOString()} className="h-[48px] flex-1" />
+                <Box
+                  key={date.toISOString()}
+                  className="flex-1"
+                  style={{ height: PICKER_DATE_CELL_HEIGHT }}
+                />
               ),
             )}
           </HStack>
@@ -196,7 +200,8 @@ function DatePickerDateCell({ date, selectedDate, onPress }: DatePickerDateCellP
       accessibilityLabel={formatDateLabel(date, 'fullDate', dateFormatContext)}
       accessibilityState={{ selected: isSelected }}
       onPress={() => onPress(date)}
-      className="relative h-[48px] flex-1 items-center justify-center"
+      style={{ height: PICKER_DATE_CELL_HEIGHT }}
+      className="relative flex-1 items-center justify-center"
     >
       <Box
         className={cn(
