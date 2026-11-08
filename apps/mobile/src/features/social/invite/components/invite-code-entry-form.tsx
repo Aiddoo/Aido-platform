@@ -26,6 +26,7 @@ import { InviteCodePolicy } from '../domains/invite-code.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
 import { useGetClipboardPresenceQueryOptions } from '../queries/invite.queries';
+import { parseInviteCode } from '../schemas/invite.schema';
 import {
   type InvalidCharacterSummary,
   summarizeInvalidCharacters,
@@ -72,7 +73,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
 
   const submitInviteCode = () =>
     form.handleSubmit(async ({ inviteCode: raw }) => {
-      const inviteCode = InviteCodePolicy.parseInviteCode(raw);
+      const inviteCode = parseInviteCode(raw);
       if (inviteCode == null) {
         const invalidCharacterSummary = summarizeInvalidCharacters(
           InviteCodePolicy.findInvalidCharacters(raw),

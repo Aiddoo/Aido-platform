@@ -18,6 +18,11 @@ import { z } from 'zod';
 /** 서버 경로 검증(userTagParamSchema)과 같은 규칙이다 */
 export const userTagSchema = userTagParamSchema.shape.userTag;
 
+/** 서버가 받는 Aido ID 형식(8자 영숫자 대문자)인지 */
+export function isUserTagFormat(value: string): boolean {
+  return userTagSchema.safeParse(value).success;
+}
+
 const friendUserSchema = friendUserContractSchema.extend({ friendsSince: instantSchema });
 export type FriendUser = z.infer<typeof friendUserSchema>;
 

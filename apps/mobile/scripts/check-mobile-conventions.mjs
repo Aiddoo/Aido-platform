@@ -202,6 +202,7 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/planning/todo/queries/',
   'apps/mobile/src/features/planning/todo/utils/',
   'apps/mobile/src/features/planning/composer/components/',
+  'apps/mobile/src/features/planning/composer/domains/',
   'apps/mobile/src/features/planning/composer/hooks/',
   'apps/mobile/src/features/planning/composer/queries/',
   'apps/mobile/src/features/planning/composer/utils/',

@@ -1,6 +1,6 @@
 import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary';
 
-import { type SearchedUser, userTagSchema } from '../schemas/friend.schema';
+import { isUserTagFormat, type SearchedUser } from '../schemas/friend.schema';
 
 type RequestState = 'friend' | 'pending' | 'none';
 
@@ -12,7 +12,7 @@ interface FriendLimitInput {
 }
 
 function isValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
-  return userTagSchema.safeParse(user.userTag.trim()).success;
+  return isUserTagFormat(user.userTag.trim());
 }
 
 function isValidSearchQuery(input: { query: string }) {

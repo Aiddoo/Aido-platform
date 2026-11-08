@@ -34,14 +34,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
+import { TodoChangePolicy } from '../domains/todo-change.model';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
-import {
-  hasOnlyDateChanges,
-  hasTodoUpdateChanges,
-  toTodoUpdateChanges,
-} from '../utils/to-todo-update-changes';
+import { toTodoUpdateChanges } from '../utils/to-todo-update-changes';
 import {
   openTodoRepeatPicker,
   TodoComposerChips,
@@ -160,7 +157,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   const submitTodo = form.handleSubmit(async (values) => {
     try {
       const changes = toTodoUpdateChanges(values, initialValues, timeZone);
-      if (!hasTodoUpdateChanges(changes)) {
+      if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
         return;
@@ -169,7 +166,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         TodoRepeatPolicy.getTodoEditScopeDecision({
           isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: initialValues.repeat }),
           repeat: changes.repeat,
-          isDateOnly: hasOnlyDateChanges(changes),
+          isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
         }),
       )
         .returnType<Promise<TodoUpdateScope | null | undefined>>()

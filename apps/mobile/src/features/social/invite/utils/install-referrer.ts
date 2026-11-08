@@ -1,4 +1,4 @@
-import { InviteCodePolicy } from '../domains/invite-code.model';
+import { parseInviteCode } from '../schemas/invite.schema';
 
 const INVITE_CODE_PARAM = 'inviteCode';
 
@@ -6,12 +6,10 @@ const INVITE_CODE_PARAM = 'inviteCode';
 export function parseInstallReferrerInviteCode(referrer: string) {
   const params = new URLSearchParams(referrer);
   if (params.has(INVITE_CODE_PARAM)) {
-    return InviteCodePolicy.parseInviteCode(params.get(INVITE_CODE_PARAM));
+    return parseInviteCode(params.get(INVITE_CODE_PARAM));
   }
 
   // 스토어 링크의 referrer 값 전체가 한 번 더 인코딩된 채로 오면 한 번 풀어서 다시 읽는다
   const decodedReferrer = new URLSearchParams(`referrer=${referrer}`).get('referrer') ?? '';
-  return InviteCodePolicy.parseInviteCode(
-    new URLSearchParams(decodedReferrer).get(INVITE_CODE_PARAM),
-  );
+  return parseInviteCode(new URLSearchParams(decodedReferrer).get(INVITE_CODE_PARAM));
 }

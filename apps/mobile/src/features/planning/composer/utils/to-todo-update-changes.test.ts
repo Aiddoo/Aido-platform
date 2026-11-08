@@ -1,11 +1,7 @@
 import { fromDate } from '@src/shared/date/instant';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
-import {
-  hasOnlyDateChanges,
-  hasTodoUpdateChanges,
-  toTodoUpdateChanges,
-} from './to-todo-update-changes';
+import { toTodoUpdateChanges } from './to-todo-update-changes';
 
 const TIME_ZONE = 'Asia/Seoul';
 
@@ -27,7 +23,6 @@ describe('toTodoUpdateChanges', () => {
 
     // Then
     expect(changes).toEqual({ input: {} });
-    expect(hasTodoUpdateChanges(changes)).toBe(false);
   });
 
   it('제목만 고치면 제목만 보낸다', () => {
@@ -71,7 +66,7 @@ describe('toTodoUpdateChanges', () => {
     );
 
     // Then
-    expect(hasTodoUpdateChanges(changes)).toBe(false);
+    expect(changes).toEqual({ input: {} });
   });
 
   it('반복을 없애면 repeat null로 보낸다', () => {
@@ -80,10 +75,9 @@ describe('toTodoUpdateChanges', () => {
 
     // Then
     expect(changes).toEqual({ input: {}, repeat: null });
-    expect(hasTodoUpdateChanges(changes)).toBe(true);
   });
 
-  it('날짜만 옮기면 날짜 변경으로 본다', () => {
+  it('날짜만 옮기면 날짜만 보낸다', () => {
     // When
     const changes = toTodoUpdateChanges(
       { ...DEFAULTS, startDate: fromDate(new Date(2026, 10, 6, 12)) },
@@ -92,7 +86,6 @@ describe('toTodoUpdateChanges', () => {
     );
 
     // Then
-    expect(changes.input).toEqual({ startDate: '2026-11-06' });
-    expect(hasOnlyDateChanges(changes)).toBe(true);
+    expect(changes).toEqual({ input: { startDate: '2026-11-06' } });
   });
 });

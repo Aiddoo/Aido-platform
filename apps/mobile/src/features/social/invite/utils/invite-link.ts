@@ -1,8 +1,8 @@
 import { INVITE_LINK_BASE_URL } from '@aido/api/vocabulary';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 
-import { InviteCodePolicy } from '../domains/invite-code.model';
 import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
+import { parseInviteCode } from '../schemas/invite.schema';
 
 export interface InviteSystemPathOptions {
   /** 이 빌드의 앱 스킴 (aido, aido-preview, aido-dev) */
@@ -90,7 +90,7 @@ export function findInviteSystemPath(
     return null;
   }
 
-  const inviteCode = link.rawCode == null ? null : InviteCodePolicy.parseInviteCode(link.rawCode);
+  const inviteCode = link.rawCode == null ? null : parseInviteCode(link.rawCode);
   // 형식이 맞지 않으면 코드 입력 화면에서 다시 확인하게 한다
   const query = `source=${link.source}&openedAt=${openedAt}`;
   return inviteCode == null ? `/invite?${query}` : `/invite/${inviteCode}?${query}`;

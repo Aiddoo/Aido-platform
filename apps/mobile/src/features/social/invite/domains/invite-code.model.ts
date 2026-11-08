@@ -1,6 +1,6 @@
 import { INVITE_CODE } from '@aido/api/vocabulary';
 
-import { type InviteCode, inviteCodeSchema, normalizeInviteCode } from '../schemas/invite.schema';
+import { normalizeInviteCode } from '../schemas/invite.schema';
 
 const INVITE_CODE_CHARACTERS = new Set(INVITE_CODE.ALPHABET);
 
@@ -28,11 +28,6 @@ function normalizeInviteCodeInput(raw: string) {
   return normalizeTypedInviteCode(raw).slice(0, INVITE_CODE.LENGTH);
 }
 
-function parseInviteCode(raw: unknown): InviteCode | null {
-  const parsed = inviteCodeSchema.safeParse(typeof raw === 'string' ? raw.normalize('NFKC') : raw);
-  return parsed.success ? parsed.data : null;
-}
-
 function isFilledInviteCode(raw: string) {
   return normalizeTypedInviteCode(raw).length === INVITE_CODE.LENGTH;
 }
@@ -54,7 +49,6 @@ function findInvalidCharacters(raw: string): InvalidInviteCodeCharacter[] {
 
 export const InviteCodePolicy = {
   normalizeInviteCodeInput,
-  parseInviteCode,
   isFilledInviteCode,
   findInvalidCharacters,
 } as const;
