@@ -10,6 +10,7 @@ import {
 import type Animated from 'react-native-reanimated';
 import {
   measure,
+  type MeasuredDimensions,
   runOnUI,
   scrollTo,
   useAnimatedRef,
@@ -20,27 +21,17 @@ import {
 
 import type { FocusedFieldNode } from '../input/focused-field';
 import {
-  getCaretScrollDelta,
-  getFocusedFieldScrollDelta,
+  type FocusedFieldInContent,
+  type FocusedFieldScrollInput,
+  getCaretTargetScroll,
+  getFocusedFieldTargetScroll,
+  getKeyboardTransitionScroll,
+  type KeyboardScrollTransition,
+  toFocusedInputField,
   type VerticalSpan,
-} from './get-focused-field-scroll-delta';
+} from './focused-field-scroll.geometry';
 
-// 칸 아래 끝(오류 문구·글자 수)과 키보드 위 버튼 사이
-const FIELD_GAP_ABOVE_FOOTER = 8;
-
-/** 스크롤 내용 기준 좌표라 스크롤해도 바뀌지 않는다 */
-interface FocusedFieldInContent {
-  top: number;
-  bottom: number;
-  inputTop: number;
-  inputHeight: number;
-}
-
-/** 키보드가 fromHeight → toHeight로 움직이는 동안 스크롤을 fromScroll에서 목표까지 같은 비율로 옮긴다 */
-interface KeyboardTransition {
-  fromHeight: number;
-  toHeight: number;
-  fromScroll: number;
+interface KeyboardTransition extends KeyboardScrollTransition {
   hasMoved: boolean;
 }
 
@@ -59,16 +50,10 @@ function measureInContent(node: Pick<HostInstance, 'measureLayout'>, content: Ho
   });
 }
 
-function clampToInput(value: number, inputHeight: number) {
-  'worklet';
-  return Math.min(Math.max(value, 0), inputHeight);
-}
-
 /**
- * 화면 폼에서 포커스한 칸 전체(라벨·입력 칸·오류 문구·글자 수)를 키보드와 키보드 위 버튼 사이에 보이게 한다.
- * `KeyboardAwareScrollView`는 커서 줄만 키보드 위로 올리므로(여러 줄 입력의 아래쪽·오류 문구는 버튼에 가린다)
- * 같은 라이브러리의 키보드·포커스 이벤트로 칸 전체를 기준 삼아 키보드와 같은 프레임에 UI 스레드에서 스크롤한다.
- * 키보드 높이가 뒤늦게 바뀌어도(암호 자동 완성 줄, Writing Tools, 병음 후보 줄) 새 높이로 다시 맞춘다
+ * 화면 폼에서 포커스한 칸 전체(라벨·입력 칸·오류 문구·글자 수)를 키보드 위 버튼 위에 보이게 한다.
+ * `KeyboardAwareScrollView`는 커서 줄만 올려 칸 아래가 버튼에 가리므로, 같은 라이브러리의 키보드·포커스 이벤트로
+ * 키보드와 같은 프레임에 UI 스레드에서 스크롤한다
  */
 export function useFocusedFieldKeyboardScroll() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -92,7 +77,6 @@ export function useFocusedFieldKeyboardScroll() {
     scrollViewTag.set(findNodeHandle(scrollRef.current) ?? -1);
   }, [scrollRef, scrollViewTag]);
 
-  /** 칸 전체를 알리지 않는 입력(코드 입력처럼 숨은 TextInput)은 이 스크롤 안에 있을 때 입력 자체를 칸으로 본다 */
   const getFocusedField = useCallback(
     (fromScroll: number, viewportTop: number): FocusedFieldInContent | null => {
       'worklet';
@@ -104,45 +88,32 @@ export function useFocusedFieldKeyboardScroll() {
       if (focusedInput == null || focusedInput.parentScrollViewTarget !== scrollViewTag.get()) {
         return null;
       }
-      // 포커스한 순간의 창 좌표다. 키보드가 움직이기 시작할 때까지는 스크롤하지 않았으므로 fromScroll 기준으로 바꾼다
-      const top = focusedInput.layout.absoluteY - viewportTop + fromScroll;
-      return {
-        top,
-        bottom: top + focusedInput.layout.height,
-        inputTop: top,
-        inputHeight: focusedInput.layout.height,
-      };
+      return toFocusedInputField(focusedInput.layout, viewportTop, fromScroll);
     },
     [field, input, scrollViewTag],
   );
 
-  const getVisibleSpan = useCallback(
-    (viewportTop: number, viewportHeight: number, keyboard: number): VerticalSpan => {
+  const toScrollInput = useCallback(
+    (
+      fromScroll: number,
+      keyboard: number,
+      viewport: MeasuredDimensions,
+      focused: FocusedFieldInContent,
+    ): FocusedFieldScrollInput => {
       'worklet';
-      return {
-        top: viewportTop,
-        bottom:
-          Math.min(viewportTop + viewportHeight, windowHeight - keyboard - footerHeight.get()) -
-          FIELD_GAP_ABOVE_FOOTER,
-      };
-    },
-    [footerHeight, windowHeight],
-  );
-
-  const getCaretSpan = useCallback(
-    (focused: FocusedFieldInContent, contentTop: number): VerticalSpan => {
-      'worklet';
-      const inputTop = contentTop + focused.inputTop;
       const caretInInput = caret.get();
-      if (caretInInput == null || caretInInput.target !== input.get()?.target) {
-        return { top: inputTop, bottom: inputTop };
-      }
       return {
-        top: inputTop + clampToInput(caretInInput.top, focused.inputHeight),
-        bottom: inputTop + clampToInput(caretInInput.bottom, focused.inputHeight),
+        fromScroll,
+        viewport: { top: viewport.pageY, height: viewport.height },
+        windowHeight,
+        keyboardHeight: keyboard,
+        footerHeight: footerHeight.get(),
+        field: focused,
+        caret:
+          caretInInput == null || caretInInput.target !== input.get()?.target ? null : caretInInput,
       };
     },
-    [caret, input],
+    [caret, footerHeight, input, windowHeight],
   );
 
   /** fromScroll에서 키보드가 keyboard 높이일 때 칸 전체가 보이는 스크롤 위치 */
@@ -151,19 +122,12 @@ export function useFocusedFieldKeyboardScroll() {
       'worklet';
       const viewport = measure(scrollRef);
       const focused = viewport == null ? null : getFocusedField(fromScroll, viewport.pageY);
-      if (focused == null || viewport == null || keyboard === 0) {
+      if (focused == null || viewport == null) {
         return fromScroll;
       }
-      const contentTop = viewport.pageY - fromScroll;
-      const delta = getFocusedFieldScrollDelta({
-        visible: getVisibleSpan(viewport.pageY, viewport.height, keyboard),
-        field: { top: contentTop + focused.top, bottom: contentTop + focused.bottom },
-        caret: getCaretSpan(focused, contentTop),
-      });
-      // 키보드 높이만큼 내용 아래를 비워 두므로 아래로는 늘 스크롤할 수 있다. 위로는 처음보다 더 올라가지 않는다
-      return Math.max(fromScroll + delta, Math.min(fromScroll, 0));
+      return getFocusedFieldTargetScroll(toScrollInput(fromScroll, keyboard, viewport, focused));
     },
-    [getCaretSpan, getFocusedField, getVisibleSpan, scrollRef],
+    [getFocusedField, scrollRef, toScrollInput],
   );
 
   const getTransitionScroll = useCallback(
@@ -173,14 +137,7 @@ export function useFocusedFieldKeyboardScroll() {
         current.toHeight === 0
           ? Math.min(current.fromScroll, scrollBeforeKeyboard.get())
           : getTargetScroll(current.fromScroll, current.toHeight);
-      const progress =
-        current.toHeight === current.fromHeight
-          ? 1
-          : Math.min(
-              Math.max((height - current.fromHeight) / (current.toHeight - current.fromHeight), 0),
-              1,
-            );
-      return current.fromScroll + (target - current.fromScroll) * progress;
+      return getKeyboardTransitionScroll(current, height, target);
     },
     [getTargetScroll, scrollBeforeKeyboard],
   );
@@ -273,16 +230,13 @@ export function useFocusedFieldKeyboardScroll() {
           return;
         }
         const fromScroll = scrollOffset.get();
-        const delta = getCaretScrollDelta(
-          getVisibleSpan(viewport.pageY, viewport.height, keyboard),
-          getCaretSpan(focused, viewport.pageY - fromScroll),
-        );
-        if (Math.abs(delta) >= 1) {
-          scrollTo(scrollRef, 0, fromScroll + delta, true);
+        const target = getCaretTargetScroll(toScrollInput(fromScroll, keyboard, viewport, focused));
+        if (Math.abs(target - fromScroll) >= 1) {
+          scrollTo(scrollRef, 0, target, true);
         }
       },
     },
-    [getCaretSpan, getVisibleSpan],
+    [toScrollInput],
   );
 
   const reportFocusedField = useCallback(

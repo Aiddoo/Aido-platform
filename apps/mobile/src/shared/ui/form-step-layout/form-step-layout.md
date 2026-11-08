@@ -66,9 +66,9 @@ form-step-layout/
 ├── form-scroll-view.tsx
 ├── form-step-layout.tsx
 ├── form-step-layout.md
-├── get-focused-field-scroll-delta.ts        # 칸 전체·커서 줄을 보이게 할 스크롤 양(순수 worklet)
-├── get-focused-field-scroll-delta.test.ts
+├── focused-field-scroll.geometry.ts         # 칸 전체·커서 줄이 보이는 스크롤 위치, 키보드 비율 보간(순수 worklet)
+├── focused-field-scroll.geometry.test.ts
 ├── keyboard-footer-height.ts                # 버튼이 제 높이를 알리는 Context
-├── use-focused-field-keyboard-scroll.ts
+├── use-focused-field-keyboard-scroll.ts     # 키보드·포커스·커서 이벤트를 받아 UI 스레드에서 스크롤
 └── index.ts
 ```
