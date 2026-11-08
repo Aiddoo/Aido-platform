@@ -46,7 +46,7 @@
 | `store-review.repository.ts` `toStoreReviewState`                        | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                   |
 | `notification-destination.ts` `toLegacyFieldsDestination`                | `navigation`이 없는 알림의 type·action·context·routing        | 영구(알림함 응답에 `navigation`이 없어 알림함에서 화면으로 가는 경로) |
 | `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 지우면 이미 받은 푸시·공유 링크가 열리지 않는다                       |
-| `widget-snapshot.schema.ts` `legacyWidgetSnapshotV1Schema`               | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)                                    |
+| `widget-snapshot-storage.schema.ts` `legacyWidgetSnapshotV1Schema`       | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)                                    |
 | `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다           | 영구(기기 저장 key)                                                   |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/.claude/e2e-test.md#호환성openapi))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
