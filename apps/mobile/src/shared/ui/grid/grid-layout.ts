@@ -22,17 +22,14 @@ function clampSpan(colSpan: number, columns: number) {
 
 /** 순서대로 놓인 칸들의 시작 열. 남은 열에 들어가지 않으면 다음 줄 첫 열에서 시작한다 */
 export function getGridStartColumns(colSpans: readonly number[], columns: number): number[] {
-  let cursor = 0;
-
-  return colSpans.map((colSpan) => {
-    const span = clampSpan(colSpan, columns);
-    if (cursor + span > columns) {
-      cursor = 0;
-    }
-    const start = cursor;
-    cursor = (cursor + span) % columns;
-    return start;
-  });
+  return colSpans.reduce<{ starts: number[]; cursor: number }>(
+    ({ starts, cursor }, colSpan) => {
+      const span = clampSpan(colSpan, columns);
+      const start = cursor + span > columns ? 0 : cursor;
+      return { starts: [...starts, start], cursor: (start + span) % columns };
+    },
+    { starts: [], cursor: 0 },
+  ).starts;
 }
 
 export function getGridItemLayout({

@@ -155,7 +155,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       onSubscribe: onExit,
       prepareRecordHref: () => {
         const { transcript, elapsedMs } = session.state;
-        const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
+        const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
           draftId: idGenerator.create(),
           locale,
           createdAt: getNowInstant(),

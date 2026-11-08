@@ -53,32 +53,35 @@ function splitIntoSentences(
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
 
-  return parts.flatMap((part) => {
-    const pieces: string[] = [];
-    let rest = part;
-    while (rest.length > maxLength) {
-      const lastSpace = rest.lastIndexOf(' ', maxLength);
-      const cut = lastSpace > 0 ? lastSpace : maxLength;
-      pieces.push(rest.slice(0, cut).trim());
-      rest = rest.slice(cut).trim();
-    }
-    return rest.length > 0 ? [...pieces, rest] : pieces;
-  });
+  return parts.flatMap((part) => splitLongPart(part, maxLength));
+}
+
+function splitLongPart(part: string, maxLength: number): string[] {
+  if (part.length <= maxLength) {
+    return part.length > 0 ? [part] : [];
+  }
+  const lastSpace = part.lastIndexOf(' ', maxLength);
+  const cut = lastSpace > 0 ? lastSpace : maxLength;
+  return [part.slice(0, cut).trim(), ...splitLongPart(part.slice(cut).trim(), maxLength)];
 }
 
 function removeSpaces(text: string) {
   return text.replace(/\s/g, '');
 }
 
+/** 공백을 뺀 글자 수로 센 각 조각의 시작 위치 */
+function getStartOffsets(texts: readonly string[]): number[] {
+  return texts.map((_text, index) =>
+    sumBy(texts.slice(0, index), (text) => removeSpaces(text).length),
+  );
+}
+
 function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number): number | null {
-  let consumed = 0;
-  for (const segment of segments) {
-    consumed += removeSpaces(segment.text).length;
-    if (offset < consumed) {
-      return segment.startMs;
-    }
-  }
-  return segments.at(-1)?.startMs ?? null;
+  const startOffsets = getStartOffsets(segments.map(({ text }) => text));
+  const segment = segments.find(
+    ({ text }, index) => offset < (startOffsets[index] ?? 0) + removeSpaces(text).length,
+  );
+  return (segment ?? segments.at(-1))?.startMs ?? null;
 }
 
 function findSegmentsWithin(
@@ -86,10 +89,9 @@ function findSegmentsWithin(
   fromOffset: number,
   toOffset: number,
 ): SpeechSegment[] {
-  let consumed = 0;
-  return segments.filter((segment) => {
-    const startOffset = consumed;
-    consumed += removeSpaces(segment.text).length;
+  const startOffsets = getStartOffsets(segments.map(({ text }) => text));
+  return segments.filter((_segment, index) => {
+    const startOffset = startOffsets[index] ?? 0;
     return fromOffset <= startOffset && startOffset < toOffset;
   });
 }
@@ -109,17 +111,16 @@ function toTimedSentences(
   },
 ): VoiceNoteSentence[] {
   const total = sumBy(pieces, (piece) => removeSpaces(piece).length);
-  let offset = 0;
+  const startOffsets = getStartOffsets(pieces);
 
-  const ranges = pieces.map((piece) => {
+  const ranges = pieces.map((piece, index) => {
+    const offset = startOffsets[index] ?? 0;
     const segmentStart = findSegmentStartMs(segments, offset);
     const startMs =
       segmentStart == null
         ? fromMs + Math.round(((toMs - fromMs) * offset) / Math.max(total, 1))
         : segmentStartMs + segmentStart;
-    const fromOffset = offset;
-    offset += removeSpaces(piece).length;
-    return { startMs, fromOffset, toOffset: offset };
+    return { startMs, fromOffset: offset, toOffset: offset + removeSpaces(piece).length };
   });
 
   return pieces.map((text, index) => {
@@ -256,7 +257,7 @@ function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';
 }
 
-interface CreateVoiceNoteFromTranscriptInput {
+interface CreateTranscribedVoiceNoteInput {
   draftId: string;
   locale: SpeechLocale;
   createdAt: Instant;
@@ -265,13 +266,13 @@ interface CreateVoiceNoteFromTranscriptInput {
 }
 
 /** 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다 */
-function createVoiceNoteFromTranscript({
+function createTranscribedVoiceNote({
   draftId,
   locale,
   createdAt,
   transcript,
   durationMs,
-}: CreateVoiceNoteFromTranscriptInput): VoiceNote {
+}: CreateTranscribedVoiceNoteInput): VoiceNote {
   const pieces = [...transcript.sentences, transcript.interim].flatMap((text) =>
     splitIntoSentences(text),
   );
@@ -283,7 +284,7 @@ function createVoiceNoteFromTranscript({
   );
 }
 
-function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
+function toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
   return {
     sentences,
     provisional: [],
@@ -293,8 +294,8 @@ function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
 
 export const VoiceNoteCaptionPolicy = {
   createVoiceNoteCaptions,
-  createCaptionsFromNote,
-  createVoiceNoteFromTranscript,
+  toVoiceNoteCaptions,
+  createTranscribedVoiceNote,
   commitProvisional,
   applyCaptionResult,
   withBookmark,

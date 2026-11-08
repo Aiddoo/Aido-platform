@@ -349,7 +349,7 @@ describe('getMarkedSentenceCount', () => {
   });
 });
 
-describe('createVoiceNoteFromTranscript', () => {
+describe('createTranscribedVoiceNote', () => {
   const input = {
     draftId: 'draft-1',
     locale: 'ko-KR',
@@ -361,7 +361,7 @@ describe('createVoiceNoteFromTranscript', () => {
     const transcript = { sentences: ['첫 문장.', '둘째 문장.'], interim: '셋째 말' };
 
     // When
-    const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
+    const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
       ...input,
       transcript,
       durationMs: 90_000,
@@ -379,7 +379,7 @@ describe('createVoiceNoteFromTranscript', () => {
     const transcript = { sentences: [], interim: '' };
 
     // When
-    const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
+    const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
       ...input,
       transcript,
       durationMs: 90_000,
@@ -399,14 +399,14 @@ describe('toVoiceNoteCaptions', () => {
 
   it('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
     // Given
-    const note = VoiceNoteCaptionPolicy.createVoiceNoteFromTranscript({
+    const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
       ...input,
       transcript: { sentences: ['첫 문장.'], interim: '' },
       durationMs: 1_000,
     });
 
     // When
-    const captions = VoiceNoteCaptionPolicy.createCaptionsFromNote(note);
+    const captions = VoiceNoteCaptionPolicy.toVoiceNoteCaptions(note);
 
     // Then
     expect(captions.sentences).toEqual(note.sentences);

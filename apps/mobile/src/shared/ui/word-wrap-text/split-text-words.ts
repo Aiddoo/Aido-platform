@@ -21,26 +21,23 @@ export function splitRunsIntoLines(runs: readonly TextRun[]): TextRun[][] {
 }
 
 export function splitRunsIntoWords(runs: readonly TextRun[]): TextRun[][] {
-  const words: TextRun[][] = [];
-  let current: TextRun[] = [];
-
-  for (const run of runs) {
-    for (const piece of run.text.split(/(\s+)/)) {
-      if (/^\s+$/.test(piece)) {
-        if (current.length > 0) {
-          words.push(current);
-          current = [];
-        }
-      } else if (piece !== '') {
-        current.push({ ...run, text: piece });
+  const pieces = runs.flatMap((run) =>
+    run.text.split(/(\s+)/).map((piece): TextRun => ({ ...run, text: piece })),
+  );
+  const groups = pieces.reduce<TextRun[][]>(
+    (words, piece) => {
+      if (/^\s+$/.test(piece.text)) {
+        return [...words, []];
       }
-    }
-  }
-  if (current.length > 0) {
-    words.push(current);
-  }
+      if (piece.text === '') {
+        return words;
+      }
+      return [...words.slice(0, -1), [...(words.at(-1) ?? []), piece]];
+    },
+    [[]],
+  );
 
-  return words;
+  return groups.filter((word) => word.length > 0);
 }
 
 export function splitWords(text: string): string[] {
