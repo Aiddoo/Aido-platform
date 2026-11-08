@@ -1,5 +1,6 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { ActivationPushPermissionDialog } from '@src/features/device/activation/components/activation-push-permission-dialog';
+import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/use-record-todo-completion';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { classifyBoundaryError } from '@src/shared/errors';
@@ -39,6 +40,7 @@ export const unstable_settings = {
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isCompact = useWindowSizeClass() === 'compact';
+  useRecordTodoCompletion();
 
   return (
     <>

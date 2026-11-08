@@ -125,7 +125,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **정해 둔 자리**
 
-- **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
+- **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. 할 일은 활성화가 읽으므로 완료 기록을 `todo-completion-changed` 이벤트로 알리고, `(app)/_layout`이 `useRecordTodoCompletion`으로 받는다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
 - **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
 - **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일과 순수 변환인 `planning/todo/apis/todo-repeat.mapper`만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
@@ -138,7 +138,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileRow`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                              |
 | 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `accountGuides`)       |
 | 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`) |
-| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`)                                                                                                                                                     |
+| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-completion-changed`)                                                                                                                          |
 
 코드에 있는 7가지는 위 4가지로 묶인다. 컴포넌트 prop은 슬롯, 콜백은 인자, `meta`는 캐시다. 새 방법을 더하지 않는다.
 

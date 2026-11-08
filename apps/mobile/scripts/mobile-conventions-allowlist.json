@@ -10,10 +10,6 @@
   "feature-bidirectional": {
     "reason": "끊지 못한 쌍. 항목마다 이유를 적고 새 쌍은 막는다",
     "entries": {
-      "device/activation <-> planning/todo": {
-        "count": 1,
-        "reason": "todo→activation은 완료 기록 activation-cache 한 줄, activation→todo는 체크리스트가 할 일 유무의 타입과 조회를 읽는다"
-      },
       "engagement/comment <-> social/moderation": {
         "count": 1,
         "reason": "comment→moderation은 제목 바의 신고·차단 동작 훅, moderation→comment는 차단 뒤 댓글 캐시 정리"

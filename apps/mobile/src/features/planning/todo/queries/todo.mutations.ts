@@ -1,10 +1,6 @@
-import {
-  useActivationService,
-  useHaptics,
-  useTodoService,
-} from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { recordTodoCompletionForActivation } from '@src/features/device/activation/queries/activation-cache';
+import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
@@ -52,7 +48,6 @@ interface ToggleTodoMutationParams {
 export function useToggleTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
-  const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const todayKey = useTodayKey();
@@ -77,14 +72,7 @@ export function useToggleTodoMutationOptions() {
         todo_id: variables.todoId,
         is_completed: variables.body.completed,
       });
-      const activationEvent = recordTodoCompletionForActivation({
-        queryClient,
-        service: activationService,
-        isCompleted: variables.body.completed,
-      });
-      if (activationEvent) {
-        trackEvent('activation_completed', activationEvent);
-      }
+      emitTodoCompletionChanged({ isCompleted: variables.body.completed });
       if (!variables.body.completed) {
         return;
       }
