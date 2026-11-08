@@ -7,13 +7,15 @@
     "marketingOptOut": "광고성 푸시 그만 받기"
   },
   "marketingOptIn": {
-    "bannerTitle": "혜택·리마인드 알림 받기",
-    "bannerDescription": "놓친 할 일과 연속 기록, 아이두 소식을 챙겨드려요",
-    "bannerDismiss": "알림 안내 닫기",
-    "title": "이런 알림을 보내드려요",
-    "description": "· 연속 기록이 끊기기 전 미리 리마인드\n· 놓친 할 일과 AI 맞춤 추천\n· 이벤트·혜택 소식\n\n언제든 설정에서 끌 수 있어요.\n(광고성 정보 수신 동의)",
-    "agree": "네, 받을게요",
+    "title": "혜택·소식도 알림으로 받을까요?",
+    "description": "이벤트·혜택 소식과 맞춤 추천을 보내드려요",
+    "notice": "광고성 정보 수신 동의예요. 설정에서 언제든 끌 수 있어요",
+    "agree": "받을게요",
     "later": "나중에"
+  },
+  "consentResult": {
+    "marketingAgreed": "{{date}} 아이두 마케팅 정보 수신에 동의했어요",
+    "marketingPushAgreed": "{{date}} 아이두 광고성 앱 푸시 수신에 동의했어요"
   },
   "titles": {
     "notifications": "알림",
@@ -79,23 +81,21 @@
   },
   "permission": {
     "card": {
-      "askTitle": "할 일 알림을 받아보세요",
-      "askDescription": "리마인드 알림과 친구의 응원을 제때 알려드려요",
       "deniedTitle": "알림이 꺼져 있어요",
       "requestDescription": "다시 허용하면 리마인드 알림을 받을 수 있어요",
       "settingsDescription": "설정에서 켜면 리마인드 알림을 받을 수 있어요",
-      "appOffTitle": "푸시 알림이 꺼져 있어요",
-      "appOffDescription": "알림 설정에서 푸시 알림을 켜주세요",
-      "continue": "계속",
       "openSettings": "설정 열기",
-      "turnOn": "켜기",
       "dismiss": "알림 안내 닫기"
     },
-    "dialog": {
-      "title": "알림을 보내드려도 될까요?",
-      "description": "할 일 리마인드, 친구의 응원·콕, 연속 기록 소식을 놓치지 않게 알려드려요. 언제든 설정에서 바꿀 수 있어요.",
-      "continue": "계속",
+    "onboarding": {
+      "title": "할 일 시간에 맞춰 알려드릴게요",
+      "description": "리마인드와 친구 응원을 놓치지 않아요",
+      "allow": "알림 받기",
       "later": "나중에"
+    },
+    "deviceOff": {
+      "title": "기기 알림이 꺼져 있어요",
+      "description": "켜야 아래 알림을 받을 수 있어요"
     },
     "status": {
       "label": "기기 알림 권한",

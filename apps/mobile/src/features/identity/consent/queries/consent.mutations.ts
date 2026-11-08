@@ -2,8 +2,10 @@ import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/voc
 import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
+import { formatDateLabel } from '@src/shared/date/date-format';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import {
@@ -115,6 +117,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 }
 
 export function useUpdateMarketingConsentMutationOptions() {
+  const dateFormatContext = useDateFormatContext();
   const haptics = useHaptics();
   const toast = useAppToast();
   const consentService = useConsentService();
@@ -135,6 +138,14 @@ export function useUpdateMarketingConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
+      // 정보통신망법 50조: 동의 결과를 전송자·일시와 함께 알린다. 일시는 서버가 기록한 값이다. 철회는 서버가 일시를 주지 않아 알리지 않는다
+      if (data.marketingAgreedAt != null) {
+        toast.success(
+          t('notification:consentResult.marketingAgreed', {
+            date: formatDateLabel(data.marketingAgreedAt, 'fullDate', dateFormatContext),
+          }),
+        );
+      }
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
         return;
       }
@@ -156,6 +167,7 @@ export function useUpdateMarketingConsentMutationOptions() {
 }
 
 export function useUpdateMarketingPushConsentMutationOptions() {
+  const dateFormatContext = useDateFormatContext();
   const haptics = useHaptics();
   const toast = useAppToast();
   const consentService = useConsentService();
@@ -180,6 +192,13 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
+      if (data.marketingPushAgreedAt != null) {
+        toast.success(
+          t('notification:consentResult.marketingPushAgreed', {
+            date: formatDateLabel(data.marketingPushAgreedAt, 'fullDate', dateFormatContext),
+          }),
+        );
+      }
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
         return;
       }

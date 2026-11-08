@@ -22,7 +22,7 @@ export interface WhatsNewRepository {
   dismissReentry(identity: WhatsNewIdentity): void;
   /** 번들에서 빠진 캠페인의 키와 기간이 지난 재진입 키를 지운다 */
   removeRetiredKeys(input: { campaignIds: readonly string[]; now: Instant }): void;
-  removeAccount(userId: string): void;
+  clear(userId: string): void;
 }
 
 function createWhatsNewSeenKey({ userId, campaignId }: WhatsNewIdentity): string {
@@ -98,7 +98,7 @@ export function createWhatsNewRepository(
         .forEach((key) => storage.remove(key));
     },
 
-    removeAccount: (userId) => {
+    clear: (userId) => {
       storage
         .keys()
         .filter(

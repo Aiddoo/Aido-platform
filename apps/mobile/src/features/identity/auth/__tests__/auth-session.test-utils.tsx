@@ -35,6 +35,7 @@ import { DraftService } from '@src/shared/draft/draft.service';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import type { PropsWithChildren } from 'react';
 
 import { AuthService } from '../apis/auth.service';
@@ -54,7 +55,7 @@ interface AuthSessionOptions {
   tokens?: AuthTokenPair;
   tokenStore?: TokenStore;
   di?: Partial<DIContainer>;
-  accountGuides?: readonly { removeAccount(accountId: string): void }[];
+  clearUserDeviceData?: (userId: string) => void;
 }
 
 /** 네트워크 경계만 stub이고 AuthBootProvider, AuthService, PushDeviceService는 실제 코드다 */
@@ -62,7 +63,7 @@ export function createAuthSession({
   tokens,
   tokenStore,
   di,
-  accountGuides = [],
+  clearUserDeviceData = noop,
 }: AuthSessionOptions = {}) {
   const store = tokenStore ?? createMemoryTokenStore(tokens);
   const sessionEpoch = di?.sessionEpoch ?? createSessionEpoch();
@@ -87,7 +88,7 @@ export function createAuthSession({
     now: Date.now,
   });
   const sessionCleanupService = new SessionCleanupService({
-    accountGuides,
+    userDeviceData: { clearForUser: clearUserDeviceData },
     queryCache: createSessionQueryCache(queryClient),
     persistedQueryCache: queryCacheStorage,
     drafts: draftService,

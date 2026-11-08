@@ -12,7 +12,7 @@ export interface UpsellDismissalRepository {
   dismiss(userId: string, feature: EntitlementFeature, dateKey: string): void;
   subscribe(userId: string, listener: () => void): () => void;
   /** 탈퇴한 계정의 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
-  removeAccount(userId: string): void;
+  clear(userId: string): void;
 }
 
 function createUpsellDismissalKey(userId: string): string {
@@ -40,6 +40,6 @@ export function createUpsellDismissalRepository(
       }
     },
     subscribe: (userId, listener) => storage.subscribe(createUpsellDismissalKey(userId), listener),
-    removeAccount: (userId) => storage.remove(createUpsellDismissalKey(userId)),
+    clear: (userId) => storage.remove(createUpsellDismissalKey(userId)),
   };
 }

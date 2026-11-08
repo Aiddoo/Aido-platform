@@ -8,6 +8,7 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import {
   getErrorMessage,
   getUserFacingMessage,
@@ -241,5 +242,37 @@ export function useRecordPushOpenedMutationOptions() {
       logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, {
         error: getErrorMessage(error),
       }),
+  });
+}
+
+// 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
+export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
+  const updatePreferenceOptions = useUpdatePreferenceMutationOptions();
+  const pushDeviceService = usePushDeviceService();
+  const logger = useLogger();
+  const queryClient = useQueryClient();
+  const haptics = useHaptics();
+  const toast = useAppToast();
+
+  return mutationOptions({
+    ...updatePreferenceOptions,
+    onSuccess: async (data, variables, onMutateResult, context) => {
+      await updatePreferenceOptions.onSuccess?.(data, variables, onMutateResult, context);
+      if (variables.pushEnabled !== true) {
+        return;
+      }
+      await pushDeviceService.requestPermission().then(
+        (permission) => {
+          setCachedPushPermission(queryClient, permission);
+        },
+        (error: unknown) => {
+          logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
+            error: getErrorMessage(error),
+          });
+          haptics.notify('error');
+          toast.error(t('notification:permission.toasts.requestFailed'));
+        },
+      );
+    },
   });
 }

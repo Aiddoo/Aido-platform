@@ -1,23 +1,26 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { toHHmm } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, InlineAlert } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { match } from 'ts-pattern';
+import { useEffect } from 'react';
 
-import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
+import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { usePushPromptSnooze } from '../hooks/use-push-prompt-snooze';
+import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
 } from '../queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
-import { PushPermissionDialog } from './push-permission-dialog';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';
 
@@ -25,14 +28,34 @@ interface PushPermissionNoticeProps {
   className?: string;
 }
 
+/** 알림을 거절했고 오늘 알림이 갈 할 일이 남아 있을 때만 보인다. 닫으면 계정마다 14일 동안 숨긴다 */
 export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
-  const [{ data: permission }, { data: preference }] = useSuspenseQueries({
-    queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],
-  });
-  const [isSnoozed, snooze] = usePushPromptSnooze();
+  const todayKey = useTodayKey();
+  const [{ data: permission }, { data: preference }, { data: me }, { data: todayTodos }] =
+    useSuspenseQueries({
+      queries: [
+        useGetPushPermissionQueryOptions(),
+        useGetPreferenceQueryOptions(),
+        useGetMeQueryOptions(),
+        useGetTodosByDateQueryOptions({ date: todayKey }),
+      ],
+    });
+  const [prompt, { dismissNotice }] = usePushPermissionPrompt(me.id);
+  const { timeZone } = useDateFormatContext();
+  const now = useMinuteNow();
   const { trackEvent } = useTrack();
+  const isVisible =
+    PushPermissionPolicy.getAskMoment(permission, {
+      surface: 'feed',
+      hasUpcomingTimedTodo: TodoPolicy.hasUpcomingTimedTodo(todayTodos.todos, {
+        dateKey: todayKey,
+        time: toHHmm(now, timeZone),
+        timeZone,
+      }),
+      prompt,
+      now,
+    }) === PUSH_ASK_MOMENT.DENIED_NOTICE;
   const step = PushPermissionPolicy.getNextStep(permission, preference);
-  const isVisible = !isSnoozed && step !== PUSH_PERMISSION_STEP.NONE;
 
   useEffect(() => {
     if (isVisible) {
@@ -46,58 +69,20 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
 
   const dismiss = () => {
     trackEvent('push_permission_prompt_dismissed', { source: SOURCE, step });
-    snooze();
+    dismissNotice();
   };
 
-  return match(step)
-    .with(PUSH_PERMISSION_STEP.ASK, () => (
-      <PushPermissionNotice.Ask className={className} onDismiss={dismiss} />
-    ))
-    .with(PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
-      <PushPermissionNotice.RequestSystem className={className} onDismiss={dismiss} />
-    ))
-    .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => (
-      <PushPermissionNotice.OpenSettings className={className} onDismiss={dismiss} />
-    ))
-    .with(PUSH_PERMISSION_STEP.ENABLE_IN_APP, () => (
-      <PushPermissionNotice.EnableInApp className={className} onDismiss={dismiss} />
-    ))
-    .exhaustive();
+  return step === PUSH_PERMISSION_STEP.REQUEST_SYSTEM ? (
+    <PushPermissionNotice.RequestSystem className={className} onDismiss={dismiss} />
+  ) : (
+    <PushPermissionNotice.OpenSettings className={className} onDismiss={dismiss} />
+  );
 }
 
 interface StepNoticeProps {
   className?: string;
   onDismiss: () => void;
 }
-
-PushPermissionNotice.Ask = function Ask({ className, onDismiss }: StepNoticeProps) {
-  const { t } = useTranslation('notification');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  return (
-    <>
-      <InlineAlert
-        className={className}
-        image={null}
-        title={t('permission.card.askTitle')}
-        description={t('permission.card.askDescription')}
-        action={
-          <Button
-            size="small"
-            variant="weak"
-            display="inline"
-            onPress={() => setIsDialogOpen(true)}
-          >
-            {t('permission.card.continue')}
-          </Button>
-        }
-        onClose={onDismiss}
-        closeLabel={t('permission.card.dismiss')}
-      />
-      <PushPermissionDialog source={SOURCE} isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
-    </>
-  );
-};
 
 PushPermissionNotice.RequestSystem = function RequestSystem({
   className,
@@ -129,7 +114,7 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
             })
           }
         >
-          {t('permission.card.continue')}
+          {t('permission.onboarding.allow')}
         </Button>
       }
       onClose={onDismiss}
@@ -164,32 +149,6 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
           }
         >
           {t('permission.card.openSettings')}
-        </Button>
-      }
-      onClose={onDismiss}
-      closeLabel={t('permission.card.dismiss')}
-    />
-  );
-};
-
-PushPermissionNotice.EnableInApp = function EnableInApp({ className, onDismiss }: StepNoticeProps) {
-  const { t } = useTranslation('notification');
-  const navigate = useSingleTap(router.navigate);
-
-  return (
-    <InlineAlert
-      className={className}
-      image={null}
-      title={t('permission.card.appOffTitle')}
-      description={t('permission.card.appOffDescription')}
-      action={
-        <Button
-          size="small"
-          variant="weak"
-          display="inline"
-          onPress={() => navigate('/settings/notifications/push')}
-        >
-          {t('permission.card.turnOn')}
         </Button>
       }
       onClose={onDismiss}

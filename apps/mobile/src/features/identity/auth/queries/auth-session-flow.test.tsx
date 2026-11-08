@@ -473,11 +473,11 @@ describe('탈퇴', () => {
 
   it('성공하면 조회 캐시를 비우고 그 계정의 안내 기록만 지운다', async () => {
     // Given
-    const removeAccount = jest.fn();
+    const clearUserDeviceData = jest.fn();
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
     const session = createAuthSession({
       tokens: ACCOUNT_A_TOKENS,
-      accountGuides: [{ removeAccount }],
+      clearUserDeviceData,
     });
     session.userHttp.get.mockResolvedValue(ok(account));
     session.authHttp.delete.mockImplementation(async (url) =>
@@ -502,18 +502,18 @@ describe('탈퇴', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    expect(removeAccount).toHaveBeenCalledTimes(1);
-    expect(removeAccount).toHaveBeenCalledWith(account.userId);
+    expect(clearUserDeviceData).toHaveBeenCalledTimes(1);
+    expect(clearUserDeviceData).toHaveBeenCalledWith(account.userId);
     expect(session.queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeUndefined();
   });
 
   it('탈퇴 응답을 기다리는 사이 세션이 만료돼도 초안과 안내 기록을 지운다', async () => {
     // Given
-    const removeAccount = jest.fn();
+    const clearUserDeviceData = jest.fn();
     const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
     const session = createAuthSession({
       tokens: ACCOUNT_A_TOKENS,
-      accountGuides: [{ removeAccount }],
+      clearUserDeviceData,
     });
     const deleteRequest = createPendingResponse(ok(createDeleteAccountDto()));
     session.userHttp.get.mockResolvedValue(ok(account));
@@ -552,7 +552,7 @@ describe('탈퇴', () => {
     await waitFor(() =>
       expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
     );
-    expect(removeAccount).toHaveBeenCalledWith(account.userId);
+    expect(clearUserDeviceData).toHaveBeenCalledWith(account.userId);
   });
 
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {

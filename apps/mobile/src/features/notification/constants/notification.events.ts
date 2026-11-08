@@ -1,6 +1,6 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 
-export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
+export type PushPermissionPromptSource = 'onboarding' | 'todo_time' | 'feed_card' | 'settings';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
@@ -13,8 +13,9 @@ declare module '@src/shared/analytics/event-map' {
     };
     notification_center_opened: { type: string; destination: string };
     marketing_push_opted_out: { source: 'push_action' };
-    marketing_push_opted_in: { source: 'feed_banner' };
-    marketing_push_prompt_dismissed: { source: 'feed_banner' };
+    marketing_push_opted_in: { source: 'completion_sheet' };
+    marketing_push_prompt_shown: { source: 'completion_sheet' };
+    marketing_push_prompt_dismissed: { source: 'completion_sheet' };
     push_permission_prompt_shown: { source: PushPermissionPromptSource; step: string };
     push_permission_prompt_dismissed: { source: PushPermissionPromptSource; step: string };
     push_permission_requested: { source: PushPermissionPromptSource; status: string };

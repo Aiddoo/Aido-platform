@@ -86,7 +86,7 @@ describe('createUpsellDismissalRepository', () => {
     repository.dismiss('user-b', 'AI_PARSE', '2026-11-09');
 
     // When
-    repository.removeAccount('user-a');
+    repository.clear('user-a');
 
     // Then
     expect(repository.findDismissedOn('user-a', 'AI_PARSE')).toBeNull();

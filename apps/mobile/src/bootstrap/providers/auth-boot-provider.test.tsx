@@ -33,6 +33,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { AppState, type AppStateStatus, Text } from 'react-native';
 import { z } from 'zod';
 
@@ -118,7 +119,7 @@ describe('AuthBootProvider', () => {
           userService,
           widgetBridge: { writeSnapshot },
           sessionCleanupService: new SessionCleanupService({
-            accountGuides: [],
+            userDeviceData: { clearForUser: noop },
             queryCache: createSessionQueryCache(queryClient),
             persistedQueryCache: queryCacheStorage,
             drafts: draftService,

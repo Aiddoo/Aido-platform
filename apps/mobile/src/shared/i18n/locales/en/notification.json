@@ -7,13 +7,15 @@
     "marketingOptOut": "Turn off promotional notifications"
   },
   "marketingOptIn": {
-    "bannerTitle": "Reminders, tips & Aido news",
-    "bannerDescription": "A little help with your streak, to-dos, and what’s new",
-    "bannerDismiss": "Dismiss reminder prompt",
-    "title": "A little help along the way",
-    "description": "· Reminders to keep your streak going\n· Missed to-dos and AI suggestions for you\n· News, events, and special offers\n\nYou can turn these off anytime in Settings.\n(By agreeing, you consent to promotional notifications.)",
-    "agree": "Yes, notify me",
-    "later": "Later"
+    "title": "Get offers and news too?",
+    "description": "We'll send events, offers, and picks for you",
+    "notice": "This is consent to promotional messages. Turn it off anytime in Settings",
+    "agree": "Yes, please",
+    "later": "Not now"
+  },
+  "consentResult": {
+    "marketingAgreed": "You agreed to Aido marketing messages on {{date}}",
+    "marketingPushAgreed": "You agreed to Aido promotional push on {{date}}"
   },
   "titles": {
     "notifications": "Notifications",
@@ -79,23 +81,21 @@
   },
   "permission": {
     "card": {
-      "askTitle": "Get to-do reminders",
-      "askDescription": "We'll let you know about reminders and cheers from friends on time",
       "deniedTitle": "Notifications are off",
       "requestDescription": "Allow them again to get reminders",
       "settingsDescription": "Turn them on in Settings to get reminders",
-      "appOffTitle": "Push notifications are off",
-      "appOffDescription": "Turn on push notifications in notification settings",
-      "continue": "Continue",
       "openSettings": "Open settings",
-      "turnOn": "Turn on",
       "dismiss": "Dismiss notification notice"
     },
-    "dialog": {
-      "title": "Can we send you notifications?",
-      "description": "We'll remind you about to-dos, cheers and nudges from friends, and your streak. You can change this anytime in settings.",
-      "continue": "Continue",
+    "onboarding": {
+      "title": "We'll remind you right on time",
+      "description": "Never miss a reminder or a cheer from friends",
+      "allow": "Get notified",
       "later": "Not now"
+    },
+    "deviceOff": {
+      "title": "Device notifications are off",
+      "description": "Turn them on to get the alerts below"
     },
     "status": {
       "label": "Device notifications",

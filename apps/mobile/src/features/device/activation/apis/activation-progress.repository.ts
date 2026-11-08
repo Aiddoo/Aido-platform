@@ -22,7 +22,6 @@ export interface ActivationProgressRepository {
   subscribe(identity: ActivationIdentity, listener: () => void): () => void;
   markTodoCreated(identity: ActivationIdentity, at: Instant): ActivationProgress;
   claimActivated(identity: ActivationIdentity, at: Instant): ClaimActivationResult;
-  unlockPushRegistration(identity: ActivationIdentity, at: Instant): ActivationProgress;
 }
 
 function createActivationProgressKey({ accountId, campaignId }: ActivationIdentity): string {
@@ -36,7 +35,6 @@ function toActivationProgress(parsed: ActivationProgressStorage | null): Activat
   return {
     todoCreatedAt: toNullableInstant(parsed.todoCreatedAt),
     activatedAt: toNullableInstant(parsed.activatedAt),
-    pushRegistrationUnlockedAt: toNullableInstant(parsed.pushRegistrationUnlockedAt),
   };
 }
 
@@ -88,14 +86,6 @@ export function createActivationProgressRepository(
       return save(identity, next)
         ? { isClaimed: true, progress: next }
         : { isClaimed: false, progress: current };
-    },
-    unlockPushRegistration: (identity, at) => {
-      const current = get(identity);
-      if (current.pushRegistrationUnlockedAt) {
-        return current;
-      }
-      const next = { ...current, pushRegistrationUnlockedAt: at };
-      return save(identity, next) ? next : current;
     },
   };
 }

@@ -10,10 +10,10 @@ import { TodoCommentTitleBar } from '@src/features/engagement/comment/components
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
 import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
+import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -158,6 +158,7 @@ function MyFeed() {
     isAuthenticated: status === 'authenticated',
     hasPendingNavigation,
   });
+  useOpenPushOnboarding({ isStable });
   const [weatherIntroduction] = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useIsInviteAvailable();
   const whatsNew = useWhatsNewFeed({
@@ -208,7 +209,6 @@ function MyFeed() {
         <QueryErrorBoundary fallback={() => null}>
           <Suspense fallback={null}>
             <PushPermissionNotice className="mx-4 mb-3" />
-            <MarketingPushOptInBanner className="mx-4 mb-3" />
           </Suspense>
         </QueryErrorBoundary>
 

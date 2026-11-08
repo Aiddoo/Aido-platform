@@ -47,7 +47,7 @@ import type { NotificationBadgeService } from '@src/features/notification/apis/n
 import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import type { PushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
+import type { PushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import type { CalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
@@ -140,7 +140,7 @@ export interface DIContainer extends SharedDependencies {
   notificationEntryStore: NotificationEntryStore;
   pushDeviceService: PushDeviceService;
   deviceTimezoneService: DeviceTimezoneService;
-  pushPromptRepository: PushPromptRepository;
+  pushPermissionPromptRepository: PushPermissionPromptRepository;
   marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
@@ -347,8 +347,8 @@ export function useDeviceTimezoneService() {
 export function useCalendarViewModeRepository() {
   return useDI().calendarViewModeRepository;
 }
-export function usePushPromptRepository() {
-  return useDI().pushPromptRepository;
+export function usePushPermissionPromptRepository() {
+  return useDI().pushPermissionPromptRepository;
 }
 export function useMarketingPushPromptRepository() {
   return useDI().marketingPushPromptRepository;

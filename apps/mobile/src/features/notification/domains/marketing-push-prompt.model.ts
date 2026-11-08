@@ -3,48 +3,33 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
+/** 계정마다 혜택·소식 제안을 마지막으로 닫은 시각 */
 export const marketingPushPromptStateSchema = z.object({
-  count: z.number(),
-  lastPromptedAt: instantSchema.nullable(),
+  dismissedAt: instantSchema.nullable(),
 });
 export type MarketingPushPromptState = z.infer<typeof marketingPushPromptStateSchema>;
 
-const COOLDOWN_DAYS = 14;
-/** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */
-const MAX_PROMPT_COUNT = 3;
+/** 거절하면 이 날수 동안 다시 제안하지 않는다 */
+const DECLINE_COOLDOWN_DAYS = 90;
 
 function hasAgreedToMarketingPush(consent: Pick<Consent, 'marketingPushAgreedAt'>): boolean {
   return consent.marketingPushAgreedAt != null;
 }
 
-function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
-  return promptState.count < MAX_PROMPT_COUNT;
-}
-
-/** 닫은 적 없으면 true다 */
 function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant): boolean {
-  if (promptState.lastPromptedAt == null) {
+  if (promptState.dismissedAt == null) {
     return true;
   }
-
-  return diffMs(now, promptState.lastPromptedAt) >= COOLDOWN_DAYS * DAY_MS;
+  return diffMs(now, promptState.dismissedAt) >= DECLINE_COOLDOWN_DAYS * DAY_MS;
 }
 
-/** 동의 정보 로딩 전에는 노출하지 않는다 */
+/** 이미 동의했거나 거절한 지 90일이 안 됐으면 제안하지 않는다 */
 function shouldPrompt(
-  consent: Pick<Consent, 'marketingPushAgreedAt'> | undefined,
+  consent: Pick<Consent, 'marketingPushAgreedAt'>,
   promptState: MarketingPushPromptState,
   now: Instant,
 ): boolean {
-  if (consent == null) {
-    return false;
-  }
-
-  return (
-    !hasAgreedToMarketingPush(consent) &&
-    isUnderPromptLimit(promptState) &&
-    hasCooldownElapsed(promptState, now)
-  );
+  return !hasAgreedToMarketingPush(consent) && hasCooldownElapsed(promptState, now);
 }
 
 export const MarketingPushPromptPolicy = {

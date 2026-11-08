@@ -57,7 +57,7 @@ describe('createCoachmarkRepository', () => {
     repository.markSeen({ accountId: 'user-10', kind: 'friend-strip' });
 
     // When
-    repository.removeAccount('user-1');
+    repository.clear('user-1');
 
     // Then
     expect(storage.keys()).toEqual(['aido_friend_strip_hint_dismissed_v1:user-10']);

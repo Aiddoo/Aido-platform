@@ -4,6 +4,7 @@ export const AUTH_LOG_EVENT = {
   LOGOUT_API_FAILED: 'auth.logout-api.failed',
   LOGOUT_SERVER_SKIPPED_OFFLINE: 'auth.logout-server.skipped-offline',
   SESSION_CLEANUP_STEP_FAILED: 'auth.session-cleanup.step-failed',
+  USER_DEVICE_DATA_CLEAR_FAILED: 'auth.user-device-data.clear-failed',
   LOCAL_SESSION_CLEAR_FAILED: 'auth.local-session.clear-failed',
   SESSION_REVOCATION_NOT_RECORDED: 'auth.session-revocation.not-recorded',
   SESSION_REVOCATION_DEFERRED: 'auth.session-revocation.deferred',

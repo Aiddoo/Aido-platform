@@ -21,11 +21,6 @@ interface TodoCompletionResult {
   event: ActivationCompletedEvent | null;
 }
 
-interface PushRegistrationUnlockResult {
-  progress: ActivationProgress;
-  didOpenAskMoment: boolean;
-}
-
 export class ActivationService {
   readonly #repository: ActivationProgressRepository;
 
@@ -61,27 +56,6 @@ export class ActivationService {
             days_since_signup: ActivationPolicy.getDaysSinceSignup(user, now),
           }
         : null,
-    };
-  };
-
-  /** 요청 시점이 이번 호출로 새로 열렸는지 함께 돌려준다. 이미 열렸거나 활성화됐으면 요청 키가 바뀌지 않아 안내가 다시 뜨지 않는다 */
-  unlockPushRegistration = ({
-    config,
-    user,
-    now,
-  }: ActivationActionInput): PushRegistrationUnlockResult | null => {
-    const identity = ActivationPolicy.findActivationIdentity(config, user);
-    if (!identity) {
-      return null;
-    }
-    const before = this.#repository.get(identity);
-    const progress = this.#repository.unlockPushRegistration(identity, now);
-    return {
-      progress,
-      didOpenAskMoment:
-        before.activatedAt == null &&
-        before.pushRegistrationUnlockedAt == null &&
-        progress.pushRegistrationUnlockedAt != null,
     };
   };
 }

@@ -9,7 +9,6 @@ import {
   CheckmarkIcon,
   H4,
   HStack,
-  LockIcon,
   ModalBottomSheet,
   RobotIcon,
   SendIcon,
@@ -130,25 +129,18 @@ export function AiConsentBottomSheet({
             title={t('consent.items.usage.title')}
             description={t('consent.items.usage.description')}
           />
-          <ConsentItem
-            icon={
-              <LockIcon width={ITEM_ICON_SIZE} height={ITEM_ICON_SIZE} colorClassName="text-main" />
-            }
-            title={t('consent.items.retention.title')}
-            description={t('consent.items.retention.description')}
-          >
-            <TextButton
-              size="medium"
-              variant="underline"
-              accessibilityRole="link"
-              style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
-              className="self-start justify-center"
-              onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
-            >
-              {t('consent.privacyLink')}
-            </TextButton>
-          </ConsentItem>
         </VStack>
+
+        <TextButton
+          size="medium"
+          variant="underline"
+          accessibilityRole="link"
+          style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
+          className="self-center justify-center"
+          onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
+        >
+          {t('consent.privacyLink')}
+        </TextButton>
 
         <Text size="e1" shade={6} align="center">
           {isRenewal ? t('consent.renewal.declineNotice') : t('consent.declineNotice')}
@@ -162,10 +154,9 @@ interface ConsentItemProps {
   icon: ReactNode;
   title: string;
   description: string;
-  children?: ReactNode;
 }
 
-function ConsentItem({ icon, title, description, children }: ConsentItemProps) {
+function ConsentItem({ icon, title, description }: ConsentItemProps) {
   return (
     <HStack gap={12} align="start">
       <Box className="size-7 items-center justify-center rounded-full bg-main/10">{icon}</Box>
@@ -176,7 +167,6 @@ function ConsentItem({ icon, title, description, children }: ConsentItemProps) {
         <WordWrapText size="b4" shade={7}>
           {description}
         </WordWrapText>
-        {children}
       </VStack>
     </HStack>
   );

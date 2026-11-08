@@ -20,7 +20,9 @@ function createPorts() {
       voiceNotes: { removeAll: record('voiceNotes') },
       deviceTimezone: { clear: record('deviceTimezone') },
       pendingRedemption: { clear: record('pendingRedemption') },
-      accountGuides: [{ removeAccount: (accountId: string) => calls.push(`guides:${accountId}`) }],
+      userDeviceData: {
+        clearForUser: (accountId: string) => calls.push(`device-data:${accountId}`),
+      },
       logger: createLoggerStub(),
     },
   };
@@ -54,7 +56,7 @@ describe('SessionCleanupService', () => {
     new SessionCleanupService(ports).afterAccountDeleted('user-1');
 
     // Then
-    expect(calls).toEqual(['guides:user-1']);
+    expect(calls).toEqual(['device-data:user-1']);
   });
 
   it('세션 만료 정리는 캐시만 지우고 초안과 녹음은 남긴다', () => {

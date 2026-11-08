@@ -20,7 +20,6 @@ const createConfig = (
 const createProgress = (overrides?: Partial<ActivationProgress>): ActivationProgress => ({
   todoCreatedAt: null,
   activatedAt: null,
-  pushRegistrationUnlockedAt: null,
   ...overrides,
 });
 
@@ -212,94 +211,6 @@ describe('getChecklistSteps', () => {
   });
 });
 
-describe('shouldRegisterPushAutomatically', () => {
-  it('기존 사용자와 활성화된 신규 사용자는 자동 등록한다', () => {
-    // Given
-    const config = createConfig();
-
-    // When
-    const existing = ActivationPolicy.shouldRegisterPushAutomatically({
-      config,
-      user: { id: 'existing', createdAt: toInstant('2026-07-01T00:00:00.000Z') },
-      progress: createProgress(),
-    });
-    const activated = ActivationPolicy.shouldRegisterPushAutomatically({
-      config,
-      user: { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) },
-      progress: createProgress({ activatedAt: toInstant('2026-08-02T00:00:00.000Z') }),
-    });
-
-    // Then
-    expect(existing).toBe(true);
-    expect(activated).toBe(true);
-  });
-
-  it('미활성 신규 사용자는 자동 등록하지 않는다', () => {
-    // Given
-    const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
-
-    // When
-    const result = ActivationPolicy.shouldRegisterPushAutomatically({
-      config: createConfig(),
-      user,
-      progress: createProgress(),
-    });
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('설정에서 푸시를 명시적으로 켠 신규 사용자는 자동 등록한다', () => {
-    // Given
-    const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
-
-    // When
-    const result = ActivationPolicy.shouldRegisterPushAutomatically({
-      config: createConfig(),
-      user,
-      progress: createProgress({
-        pushRegistrationUnlockedAt: toInstant('2026-08-02T00:00:00.000Z'),
-      }),
-    });
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('캠페인 설정 조회가 실패해도 출시 전 기존 사용자는 자동 등록을 유지한다', () => {
-    // Given
-    const user = {
-      id: 'existing',
-      createdAt: toInstant('2026-07-31T23:59:59.999Z'),
-    };
-
-    // When
-    const result = ActivationPolicy.shouldRegisterPushAutomatically({
-      config: undefined,
-      user,
-      progress: createProgress(),
-    });
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('캠페인 설정 조회 실패 중에도 출시 이후 신규 사용자는 권한 요청을 연기한다', () => {
-    // Given
-    const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
-
-    // When
-    const result = ActivationPolicy.shouldRegisterPushAutomatically({
-      config: undefined,
-      user,
-      progress: createProgress(),
-    });
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
-
 describe('findActivationIdentity', () => {
   it('캠페인 설정을 읽지 못하면 사용자의 활성화 식별자를 만들지 않는다', () => {
     // Given
@@ -368,50 +279,5 @@ describe('getDaysSinceSignup', () => {
 
     // Then
     expect(days).toBe(0);
-  });
-});
-
-describe('getPushAskKey', () => {
-  it('활성화한 시각이 있으면 계정 ID와 활성화 시각으로 키를 만든다', () => {
-    // Given
-    const progress = createProgress({
-      activatedAt: toInstant('2026-08-02T00:00:00.000Z'),
-      pushRegistrationUnlockedAt: toInstant('2026-08-01T12:00:00.000Z'),
-    });
-
-    // When
-    const key = ActivationPolicy.getPushAskKey(progress, { id: 'user-1' });
-
-    // Then
-    expect(key).toBe('user-1:2026-08-02T00:00:00.000Z');
-  });
-
-  it('활성화 전이면 설정을 켠 시각으로 키를 만든다', () => {
-    // Given
-    const progress = createProgress({
-      pushRegistrationUnlockedAt: toInstant('2026-08-01T12:00:00.000Z'),
-    });
-
-    // When
-    const key = ActivationPolicy.getPushAskKey(progress, { id: 'user-1' });
-
-    // Then
-    expect(key).toBe('user-1:2026-08-01T12:00:00.000Z');
-  });
-
-  it('기준 시점이 없는 기존 사용자는 existing 자리를 쓴다', () => {
-    // When
-    const key = ActivationPolicy.getPushAskKey(createProgress(), { id: 'user-1' });
-
-    // Then
-    expect(key).toBe('user-1:existing');
-  });
-
-  it('사용자 정보를 읽지 못했으면 호환용 계정 자리를 쓴다', () => {
-    // When
-    const key = ActivationPolicy.getPushAskKey(createProgress(), undefined);
-
-    // Then
-    expect(key).toBe('compatibility-fallback:existing');
   });
 });

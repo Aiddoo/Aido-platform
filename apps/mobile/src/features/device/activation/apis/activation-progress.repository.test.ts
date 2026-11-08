@@ -51,7 +51,6 @@ describe('ActivationProgressRepository', () => {
     expect(result).toEqual({
       todoCreatedAt: null,
       activatedAt: null,
-      pushRegistrationUnlockedAt: null,
     });
   });
 
@@ -69,21 +68,6 @@ describe('ActivationProgressRepository', () => {
     expect(anotherCampaign.todoCreatedAt).toBeNull();
   });
 
-  it('설정에서 푸시 등록을 해제한 시각을 최초 한 번만 보존한다', () => {
-    // Given
-    const repository = createActivationProgressRepository(createMemoryObservableSyncStorage());
-
-    // When
-    repository.unlockPushRegistration(identity, toInstant('2026-08-02T10:00:00.000Z'));
-    const result = repository.unlockPushRegistration(
-      identity,
-      toInstant('2026-08-03T10:00:00.000Z'),
-    );
-
-    // Then
-    expect(result.pushRegistrationUnlockedAt).toBe('2026-08-02T10:00:00.000Z');
-  });
-
   it('저장소 쓰기 실패가 핵심 할 일 동작으로 전파되지 않는다', () => {
     // Given
     const storage = {
@@ -97,16 +81,12 @@ describe('ActivationProgressRepository', () => {
     // When
     const create = () =>
       repository.markTodoCreated(identity, toInstant('2026-08-02T10:00:00.000Z'));
-    const unlock = () =>
-      repository.unlockPushRegistration(identity, toInstant('2026-08-02T10:00:00.000Z'));
 
     // Then
     expect(create).not.toThrow();
-    expect(unlock).not.toThrow();
     expect(repository.get(identity)).toEqual({
       todoCreatedAt: null,
       activatedAt: null,
-      pushRegistrationUnlockedAt: null,
     });
   });
 });

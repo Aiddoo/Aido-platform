@@ -136,7 +136,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 위층이 필요한 이유                         | 끊는 방법                                                                                                                                                                                                                                                                        |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileRow`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                                                                                     |
-| 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `accountGuides`)                                                              |
+| 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `userDeviceData`)                                                             |
 | 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`, `invalidateAfterBlockChange`와 `refreshOnBlockChange`) |
 | 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-completion-changed`)                                                                                                                                                                                 |
 
@@ -377,7 +377,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 
 `disabled`·`selected`·`onToggle`처럼 같은 뜻의 다른 이름을 만들지 않는다.
 
-**래퍼는 역할이 있을 때만 만든다.** 참고 저장소의 `AmountInput`(단위 suffix·숫자 포맷), 앱의 `PushPermissionDialog`(도메인 문구·권한 요청)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
+**래퍼는 역할이 있을 때만 만든다.** 참고 저장소의 `AmountInput`(단위 suffix·숫자 포맷), 앱의 `MarketingPushOptInBottomSheet`(도메인 문구·동의 저장)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
 
 **반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `range(n).map`이다.
 
@@ -601,7 +601,7 @@ effect는 개발 모드에서 마운트-정리-마운트를 한 번 더 돌려 �
 | 값 구독             | `useWatch`, `form.subscribe`                                                 | 렌더 경로 `getValues()`           |
 
 - 한 컴포넌트에서 서로 독립인 `useSuspenseQuery`를 연달아 부르면 워터폴이다. `useSuspenseQueries`(`MemoEditor`)나 블록별 경계로 나눈다. 앞 결과가 다음 조회의 입력일 때만 순차로 둔다.
-- 기기 저장 값의 repository는 `find*`·`get`·`has*`(읽기), 쓰기, `subscribe`를 한 파일에 둔다(`push-prompt.repository`). 읽기는 저장값이 그대로면 같은 값을 돌려준다. 객체를 읽으면 저장 문자열로 스냅샷을 기억한다(`marketing-push-prompt.repository`, `activation-progress.repository`). 같은 값을 Query 캐시나 `useState`에 복사하지 않는다. 파일 크기처럼 구독할 수 없는 값만 화면에 들어올 때 읽는다(`settings/voice-storage`).
+- 기기 저장 값의 repository는 `find*`·`get`·`has*`(읽기), 쓰기, `subscribe`를 한 파일에 둔다(`push-permission-prompt.repository`). 읽기는 저장값이 그대로면 같은 값을 돌려준다. 객체를 읽으면 저장 문자열로 스냅샷을 기억한다(`marketing-push-prompt.repository`, `activation-progress.repository`). 같은 값을 Query 캐시나 `useState`에 복사하지 않는다. 파일 크기처럼 구독할 수 없는 값만 화면에 들어올 때 읽는다(`settings/voice-storage`).
 - 당겨서 새로고침은 `useRefresh`로 사용자가 당긴 동안만 표시한다(`MemoListScrollView`). `isRefetching`은 배경 재조회까지 켜져 동작이 달라진다.
 
 예외:

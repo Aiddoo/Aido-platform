@@ -29,6 +29,7 @@ import { createPendingRevocationRepository } from '@src/features/identity/auth/a
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
 import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
+import { UserDeviceDataService } from '@src/features/identity/auth/apis/user-device-data.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -43,7 +44,7 @@ import { NotificationBadgeService } from '@src/features/notification/apis/notifi
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
+import { createPushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
@@ -299,7 +300,7 @@ export function DIProvider({
     const deviceTimezoneService = new DeviceTimezoneService(
       createDeviceTimezoneRepository(deviceSyncStorage),
     );
-    const pushPromptRepository = createPushPromptRepository(deviceSyncStorage);
+    const pushPermissionPromptRepository = createPushPermissionPromptRepository(deviceSyncStorage);
     const marketingPushPromptRepository = createMarketingPushPromptRepository(deviceSyncStorage);
 
     const todoNudgeService = new TodoNudgeService(authHttpClient);
@@ -369,7 +370,16 @@ export function DIProvider({
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: deviceTimezoneService,
       pendingRedemption: pendingRedemptionRepository,
-      accountGuides: [whatsNewRepository, coachmarkRepository, upsellDismissalRepository],
+      userDeviceData: new UserDeviceDataService({
+        repositories: {
+          'whats-new': whatsNewRepository,
+          coachmark: coachmarkRepository,
+          'push-permission-prompt': pushPermissionPromptRepository,
+          'marketing-push-prompt': marketingPushPromptRepository,
+          'upsell-dismissal': upsellDismissalRepository,
+        },
+        logger,
+      }),
       logger,
     });
 
@@ -430,7 +440,7 @@ export function DIProvider({
       notificationEntryStore: createNotificationEntryStore(),
       pushDeviceService,
       deviceTimezoneService,
-      pushPromptRepository,
+      pushPermissionPromptRepository,
       calendarViewModeRepository: createCalendarViewModeRepository(deviceSyncStorage),
       marketingPushPromptRepository,
       todoNudgeService,

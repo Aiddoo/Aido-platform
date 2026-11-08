@@ -1,8 +1,14 @@
 import { instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
 import { marketingPushPromptStateSchema } from '../domains/marketing-push-prompt.model';
 
-/** 출시된 앱이 쓰던 JSON 모양 그대로다. 시각으로 읽을 수 없는 값은 null로 바꿔 다시 보이게 한다 */
+/** 시각으로 읽을 수 없는 값은 null로 바꿔 다시 제안하게 한다 */
 export const marketingPushPromptStorageSchema = marketingPushPromptStateSchema.extend({
+  dismissedAt: instantSchema.nullable().catch(null),
+});
+
+/** 1.14.x까지 기기 하나에 남긴 JSON. 로그인한 계정으로 한 번 옮기고 지운다 */
+export const legacyMarketingPushPromptStorageSchema = z.object({
   lastPromptedAt: instantSchema.nullable().catch(null),
 });

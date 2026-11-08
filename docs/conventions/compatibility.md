@@ -40,14 +40,17 @@
 
 기기에 이미 남은 값과 링크를 읽는 앱 코드도 외부 계약이다. 새 앱이 쓰지 않는 모양을 읽어 옮기거나 받아 준다.
 
-| 코드(앱)                                                                 | 읽는 것                                                       | 지울 시점                                                             |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                           | 지우면 이전 버전에서 올라온 사용자의 저장 전 초안이 사라진다          |
-| `store-review.repository.ts` `toStoreReviewState`                        | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt` | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                   |
-| `notification-destination.ts` `toLegacyFieldsDestination`                | `navigation`이 없는 알림의 type·action·context·routing        | 영구(알림함 응답에 `navigation`이 없어 알림함에서 화면으로 가는 경로) |
-| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                         | 지우면 이미 받은 푸시·공유 링크가 열리지 않는다                       |
-| `widget-snapshot-storage.schema.ts` `legacyWidgetSnapshotV1Schema`       | 위젯 snapshot v1 저장 JSON                                    | 영구(위젯 snapshot 버전 해석 계약)                                    |
-| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다           | 영구(기기 저장 key)                                                   |
+| 코드(앱)                                                                 | 읽는 것                                                                                                             | 지울 시점                                                                |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                                                                                 | 지우면 이전 버전에서 올라온 사용자의 저장 전 초안이 사라진다             |
+| `store-review.repository.ts` `toStoreReviewState`                        | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt`                                                       | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                      |
+| `notification-destination.ts` `toLegacyFieldsDestination`                | `navigation`이 없는 알림의 type·action·context·routing                                                              | 영구(알림함 응답에 `navigation`이 없어 알림함에서 화면으로 가는 경로)    |
+| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                                                                               | 지우면 이미 받은 푸시·공유 링크가 열리지 않는다                          |
+| `widget-snapshot-storage.schema.ts` `legacyWidgetSnapshotV1Schema`       | 위젯 snapshot v1 저장 JSON                                                                                          | 영구(위젯 snapshot 버전 해석 계약)                                       |
+| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다                                                                 | 영구(기기 저장 key)                                                      |
+| `marketing-push-prompt.repository.ts` `claimDeviceRecord`                | 1.14.x까지 기기 하나에 남긴 `aido_marketing_push_prompt`(`lastPromptedAt`). 로그인한 계정 key로 한 번 옮기고 지운다 | 1.16.0 이후(옮기기 전에 업데이트한 사용자가 한 번 더 제안을 받을 뿐이다) |
+| `push-permission-prompt.repository.ts` `NOTICE_DISMISSED_KEY_PREFIX`     | 1.14.x까지 쓰던 피드 안내 닫은 시각 key. 지금도 이 key로 읽고 쓴다                                                  | 영구(기기 저장 key)                                                      |
+| `activation-progress-storage.schema.ts`                                  | 1.14.x가 남긴 `pushRegistrationUnlockedAt`은 읽지 않고 버린다                                                       | 지울 코드 없음(스키마가 모르는 칸을 버린다)                              |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/.claude/e2e-test.md#호환성openapi))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 

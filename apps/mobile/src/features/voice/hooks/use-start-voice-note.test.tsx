@@ -99,7 +99,7 @@ async function renderStart({
     },
   );
 
-  return { speechRecognizer, analytics };
+  return { speechRecognizer, analytics, httpClient };
 }
 
 describe('useStartVoiceNote', () => {
@@ -151,10 +151,10 @@ describe('useStartVoiceNote', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
-  it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
+  it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 AI에도 보내지 않은 채 멈춘다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer } = await renderStart({ consent: {} });
+    const { speechRecognizer, httpClient } = await renderStart({ consent: {} });
     await user.press(screen.getByRole('button', { name: '시작' }));
     await screen.findByTestId('ai-consent-sheet');
     expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
@@ -167,6 +167,7 @@ describe('useStartVoiceNote', () => {
     expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
     expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
+    expect(httpClient.post).not.toHaveBeenCalled();
   });
 
   it('처음 쓰는 사람이 나중에를 눌렀어도 다시 누르면 안내를 다시 띄운다', async () => {

@@ -120,19 +120,15 @@
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "What you type or say, categories, and the date and time zone. Reports and suggestions also use to-do titles and completion history. We don't send your name, email, or friends, and audio files aren't sent to Aido's servers."
+        "description": "What you type or say, your to-dos, and the date and time zone. Never your name, email, friends, or audio files."
       },
       "processor": {
         "title": "Who processes it",
-        "description": "Anthropic, Google, and OpenAI organize the text. Apple or Google speech recognition may turn your speech into text."
+        "description": "Anthropic, Google, and OpenAI for text. Apple or Google speech recognition for voice."
       },
       "usage": {
         "title": "How it's used",
         "description": "Only for AI features. Never for ads."
-      },
-      "retention": {
-        "title": "How long we keep it",
-        "description": "We keep and delete it as described in our Privacy Policy."
       }
     },
     "privacyLink": "View Privacy Policy",

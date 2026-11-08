@@ -8,7 +8,7 @@ export interface CoachmarkRepository {
   hasSeen(input: CoachmarkInput): boolean;
   markSeen(input: CoachmarkInput): void;
   removeRetiredKeys(): void;
-  removeAccount(accountId: string): void;
+  clear(accountId: string): void;
 }
 
 const REORDER_KEY_PREFIX = 'aido_reorder_coachmark_v1';
@@ -65,7 +65,7 @@ export function createCoachmarkRepository(
         )
         .forEach((key) => storage.remove(key));
     },
-    removeAccount: (accountId) => {
+    clear: (accountId) => {
       storage
         .keys()
         .filter(

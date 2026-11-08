@@ -1,6 +1,6 @@
-import { PushDeliverySettings } from '@src/features/device/activation/components/push-delivery-settings';
 import { MarketingConsentSettings } from '@src/features/identity/consent/components/marketing-consent-settings';
 import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
+import { PushDeliverySettings } from '@src/features/notification/components/settings/push-delivery-settings';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
 

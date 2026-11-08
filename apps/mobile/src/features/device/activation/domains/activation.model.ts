@@ -6,13 +6,12 @@ import {
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { type Instant, instantSchema, toEpochMs, toInstant } from '@src/shared/date/instant';
+import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 const activationProgressSchema = z.object({
   todoCreatedAt: instantSchema.nullable(),
   activatedAt: instantSchema.nullable(),
-  pushRegistrationUnlockedAt: instantSchema.nullable(),
 });
 export type ActivationProgress = z.infer<typeof activationProgressSchema>;
 
@@ -34,16 +33,12 @@ const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
   WHATS_NEW_CAMPAIGN_ID,
 ]);
-// 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다
-const PUSH_REGISTRATION_DEFERRED_SINCE = toInstant('2026-08-01T00:00:00.000Z');
 const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
-interface PushRegistrationInput {
+interface ChecklistEligibilityInput {
   config: FeatureCampaignConfig | undefined;
   user: ActivationUser | undefined;
   progress: ActivationProgress;
-}
-interface ChecklistEligibilityInput extends PushRegistrationInput {
   now: Instant;
 }
 
@@ -121,45 +116,14 @@ function hasFinishedRequiredSteps(steps: ActivationChecklistSteps): boolean {
   return steps.hasCreatedTodo && steps.hasCompletedTodo;
 }
 
-function shouldRegisterPushAutomatically({
-  config,
-  user,
-  progress,
-}: PushRegistrationInput): boolean {
-  if (!user) {
-    return false;
-  }
-  const isDeferredCohort =
-    config == null
-      ? toEpochMs(user.createdAt) >= toEpochMs(PUSH_REGISTRATION_DEFERRED_SINCE)
-      : isNewUserCohort(config, user);
-  if (!isDeferredCohort) {
-    return true;
-  }
-  return progress.activatedAt != null || progress.pushRegistrationUnlockedAt != null;
-}
-
 function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
   return calculateElapsedDays(toEpochMs(user.createdAt), toEpochMs(now));
 }
 
-const UNKNOWN_ACCOUNT_KEY = 'compatibility-fallback';
-const NO_UNLOCK_MOMENT_KEY = 'existing';
-
-function getPushAskKey(
-  progress: Pick<ActivationProgress, 'activatedAt' | 'pushRegistrationUnlockedAt'>,
-  user: Pick<ActivationUser, 'id'> | undefined,
-): string {
-  const unlockedAt = progress.activatedAt ?? progress.pushRegistrationUnlockedAt;
-  return `${user?.id ?? UNKNOWN_ACCOUNT_KEY}:${unlockedAt ?? NO_UNLOCK_MOMENT_KEY}`;
-}
-
 export const ActivationPolicy = {
-  getPushAskKey,
   findActivationIdentity,
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,
   hasFinishedRequiredSteps,
-  shouldRegisterPushAutomatically,
 } as const;

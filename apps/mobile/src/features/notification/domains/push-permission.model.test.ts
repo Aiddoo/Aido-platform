@@ -1,7 +1,10 @@
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { createPushPermission } from '../__tests__/notification.fixtures';
-import { PUSH_PROMPT_SNOOZE_DAYS } from '../constants/notification.constants';
+import {
+  PUSH_ONBOARDING_WINDOW_DAYS,
+  PUSH_PROMPT_SNOOZE_DAYS,
+} from '../constants/notification.constants';
 import { PushPermissionPolicy } from './push-permission.model';
 
 const NOW = toInstant('2026-11-04T09:00:00.000Z');
@@ -95,32 +98,126 @@ describe('canRequestSystemDialog', () => {
   });
 });
 
-describe('isPromptSnoozed', () => {
-  it('닫은 적이 없으면 안내를 숨기지 않는다', () => {
+describe('getAskMoment', () => {
+  const SIGNED_UP_AT = toInstant('2026-11-04T08:00:00.000Z');
+  const NOT_ASKED = createPushPermission({ status: 'NOT_DETERMINED', canAskAgain: true });
+  const DENIED = createPushPermission({ status: 'DENIED', canAskAgain: false });
+  const NO_ANSWER = { deferredAt: null, noticeDismissedAt: null };
+
+  const shiftedFromNow = (ms: number) => toInstant(new Date(toEpochMs(NOW) + ms).toISOString());
+
+  it.each([
+    [
+      '가입 직후 아직 묻지 않았으면 알림 화면',
+      NOT_ASKED,
+      SIGNED_UP_AT,
+      NO_ANSWER,
+      'ONBOARDING_SCREEN',
+    ],
+    ['나중에를 눌렀으면 다시 띄우지 않는다', NOT_ASKED, SIGNED_UP_AT, { deferredAt: NOW }, null],
+    [
+      '이미 허용했으면 묻지 않는다',
+      createPushPermission({ status: 'GRANTED' }),
+      SIGNED_UP_AT,
+      NO_ANSWER,
+      null,
+    ],
+    ['이미 거절했으면 알림 화면을 건너뛴다', DENIED, SIGNED_UP_AT, NO_ANSWER, null],
+    [
+      '가입한 지 하루가 지난 기존 사용자에게는 띄우지 않는다',
+      NOT_ASKED,
+      shiftedFromNow(-PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS),
+      NO_ANSWER,
+      null,
+    ],
+  ] as const)('%s', (_label, permission, signedUpAt, prompt, expected) => {
     // When
-    const result = PushPermissionPolicy.isPromptSnoozed(null, NOW);
+    const moment = PushPermissionPolicy.getAskMoment(permission, {
+      surface: 'onboarding',
+      signedUpAt,
+      prompt,
+      now: NOW,
+    });
 
     // Then
-    expect(result).toBe(false);
+    expect(moment).toBe(expected);
   });
 
-  it('닫은 뒤 14일이 되기 직전까지 숨기고 14일째부터 다시 보인다', () => {
-    // Given
-    const dismissedAt = toInstant(
-      new Date(toEpochMs(NOW) - PUSH_PROMPT_SNOOZE_DAYS * DAY_MS).toISOString(),
-    );
-
+  it.each([
+    ['아직 묻지 않았으면 그 자리에서 시스템 창', NOT_ASKED, 'SYSTEM_DIALOG'],
+    [
+      'Android에서 한 번 거절했어도 꺼짐 안내',
+      createPushPermission({ status: 'DENIED', canAskAgain: true }),
+      'DENIED_NOTICE',
+    ],
+    ['거절했으면 꺼짐 안내', DENIED, 'DENIED_NOTICE'],
+    [
+      'iOS 임시 허용은 알림이 오므로 안내하지 않는다',
+      createPushPermission({ status: 'PROVISIONAL' }),
+      null,
+    ],
+  ] as const)('할 일 시간을 정할 때 %s', (_label, permission, expected) => {
     // When
-    const justBefore = PushPermissionPolicy.isPromptSnoozed(
-      dismissedAt,
-      toInstant(new Date(toEpochMs(NOW) - 1).toISOString()),
-    );
-    const atBoundary = PushPermissionPolicy.isPromptSnoozed(dismissedAt, NOW);
+    const moment = PushPermissionPolicy.getAskMoment(permission, { surface: 'todo-time' });
 
     // Then
-    expect(justBefore).toBe(true);
-    expect(atBoundary).toBe(false);
+    expect(moment).toBe(expected);
   });
+
+  it.each([
+    ['거절했고 알림이 갈 할 일이 있으면 꺼짐 안내', DENIED, true, null, 'DENIED_NOTICE'],
+    ['알림이 갈 할 일이 없으면 안내하지 않는다', DENIED, false, null, null],
+    ['아직 묻지 않았으면 피드에서는 묻지 않는다', NOT_ASKED, true, null, null],
+    [
+      '닫은 지 14일이 되기 직전까지 숨긴다',
+      DENIED,
+      true,
+      shiftedFromNow(-PUSH_PROMPT_SNOOZE_DAYS * DAY_MS + 1),
+      null,
+    ],
+    [
+      '닫은 지 14일째부터 다시 보인다',
+      DENIED,
+      true,
+      shiftedFromNow(-PUSH_PROMPT_SNOOZE_DAYS * DAY_MS),
+      'DENIED_NOTICE',
+    ],
+  ] as const)(
+    '피드에서 %s',
+    (_label, permission, hasUpcomingTimedTodo, noticeDismissedAt, expected) => {
+      // When
+      const moment = PushPermissionPolicy.getAskMoment(permission, {
+        surface: 'feed',
+        hasUpcomingTimedTodo,
+        prompt: { noticeDismissedAt },
+        now: NOW,
+      });
+
+      // Then
+      expect(moment).toBe(expected);
+    },
+  );
+});
+
+describe('canReceivePush', () => {
+  it.each([
+    ['GRANTED', true, true],
+    ['PROVISIONAL', true, true],
+    ['GRANTED', false, false],
+    ['DENIED', true, false],
+    ['NOT_DETERMINED', true, false],
+  ] as const)(
+    '권한 %s, 앱 푸시 %s면 할 일 알림이 닿는지는 %s다',
+    (status, pushEnabled, expected) => {
+      // When
+      const result = PushPermissionPolicy.canReceivePush(createPushPermission({ status }), {
+        pushEnabled,
+      });
+
+      // Then
+      expect(result).toBe(expected);
+    },
+  );
 });
 
 describe('isNotDetermined', () => {

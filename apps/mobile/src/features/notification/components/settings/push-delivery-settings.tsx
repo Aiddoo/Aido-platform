@@ -2,18 +2,25 @@ import { useUpdatePreferenceMutationOptions } from '@src/features/identity/prefe
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 
-import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../queries/activation.mutations';
+import { PushPermissionPolicy } from '../../domains/push-permission.model';
+import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../../queries/notification.mutations';
+import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
 
+/** 기기 알림이 꺼져 있으면 설정은 바꿀 수 있지만 알림이 닿지 않는다는 뜻으로 흐리게 둔다 */
 export function PushDeliverySettings() {
   const { t } = useTranslation(['notification', 'auth']);
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const [{ data: preference }, { data: permission }] = useSuspenseQueries({
+    queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
+  });
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const pushEnabledMutation = useMutation(useUpdatePushEnabledAndAskPermissionMutationOptions());
 
   return (
-    <SettingsListGroup>
+    <SettingsListGroup
+      className={PushPermissionPolicy.isPushDeliverable(permission) ? undefined : 'opacity-50'}
+    >
       <SettingsListGroup.Toggle
         label={t('settings.pushLabel')}
         description={t('settings.pushDescription')}

@@ -399,10 +399,10 @@ describe('useAddTodoQuickVoice', () => {
       );
     });
 
-    it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
+    it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 AI에도 보내지 않은 채 멈춘다', async () => {
       // Given
       const user = userEvent.setup();
-      const { speechRecognizer } = await renderQuickVoice({ consent: {} });
+      const { speechRecognizer, httpClient } = await renderQuickVoice({ consent: {} });
       await user.press(screen.getByRole('button', { name: 'start' }));
       await screen.findByTestId('ai-consent-sheet');
       expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
@@ -415,6 +415,7 @@ describe('useAddTodoQuickVoice', () => {
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
       expect(speechRecognizer.start).not.toHaveBeenCalled();
       expect(screen.getByTestId('status')).toHaveTextContent('idle');
+      expect(httpClient.post).not.toHaveBeenCalled();
     });
 
     it('처음 쓰는 사람이 나중에를 눌러도 입력하던 글자는 남고 다시 누르면 안내를 다시 띄운다', async () => {

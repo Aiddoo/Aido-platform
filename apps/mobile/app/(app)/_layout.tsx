@@ -1,8 +1,9 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { ActivationPushPermissionDialog } from '@src/features/device/activation/components/activation-push-permission-dialog';
 import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/use-record-todo-completion';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
+import { useIsPushOnboardingDue } from '@src/features/notification/hooks/use-is-push-onboarding-due';
+import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
@@ -47,47 +48,53 @@ function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isCompact = useWindowSizeClass() === 'compact';
   const headerOptions = useStackScreenOptions();
+  const isPushOnboardingDue = useIsPushOnboardingDue();
   useRecordTodoCompletion();
+  useOfferMarketingPushAfterCompletion();
 
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor },
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationTypeForReplace: 'push',
+        contentStyle: { backgroundColor },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="nudges" />
+      <Stack.Screen name="suggestions" />
+      {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 헤더 아래 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다. 뒤로 가기는 오른쪽 칸 헤더가 맡는다 */}
+      <Stack.Screen
+        name="(mypage-menu)"
+        options={{
+          ...headerOptions,
+          title: '',
+          headerShown: !isCompact,
+          headerBackVisible: false,
+          animation: isCompact ? 'slide_from_right' : 'none',
         }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="nudges" />
-        <Stack.Screen name="suggestions" />
-        {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 헤더 아래 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다. 뒤로 가기는 오른쪽 칸 헤더가 맡는다 */}
+      />
+      <Stack.Screen name="weather" />
+      <Stack.Screen name="whats-new" />
+      <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
+      {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
+      <Stack.Screen
+        name="voice-notes"
+        options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+      />
+      {SHEET_ROUTES.map((name) => (
+        <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
+      ))}
+      {/* 답하면 조건이 풀려 화면이 빠지고 피드로 돌아간다. 이미 답한 뒤에는 링크로도 열리지 않는다 */}
+      <Stack.Protected guard={isPushOnboardingDue}>
         <Stack.Screen
-          name="(mypage-menu)"
-          options={{
-            ...headerOptions,
-            title: '',
-            headerShown: !isCompact,
-            headerBackVisible: false,
-            animation: isCompact ? 'slide_from_right' : 'none',
-          }}
+          name="onboarding/notifications"
+          options={{ animation: 'fade', gestureEnabled: false }}
         />
-        <Stack.Screen name="weather" />
-        <Stack.Screen name="whats-new" />
-        <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
-        {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
-        <Stack.Screen
-          name="voice-notes"
-          options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
-        />
-        {SHEET_ROUTES.map((name) => (
-          <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
-        ))}
-      </Stack>
-      <ActivationPushPermissionDialog />
-    </>
+      </Stack.Protected>
+    </Stack>
   );
 }
 

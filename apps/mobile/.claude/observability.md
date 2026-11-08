@@ -61,7 +61,7 @@ track(analytics, 'session_expired', { reason });
 
 ### 푸시 권한 퍼널
 
-`source`는 `PushPermissionPromptSource`(`activation`·`feed_card`·`settings`), `step`은 `PUSH_PERMISSION_STEP` 값(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다.
+`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`), `step`은 `PUSH_PERMISSION_STEP` 값(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다.
 `shown`은 안내가 보일 때 한 번이다. 앱 안 다이얼로그는 `step=ASK`로 보낸다. 흐름은 [push-notifications](../docs/push-notifications.md)를 본다.
 
 ## Sentry

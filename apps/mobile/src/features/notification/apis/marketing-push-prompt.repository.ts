@@ -3,49 +3,70 @@ import type { Instant } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import type { MarketingPushPromptState } from '../domains/marketing-push-prompt.model';
-import { marketingPushPromptStorageSchema } from '../schemas/marketing-push-prompt-storage.schema';
+import {
+  legacyMarketingPushPromptStorageSchema,
+  marketingPushPromptStorageSchema,
+} from '../schemas/marketing-push-prompt-storage.schema';
 
-// 출시된 앱이 쓰던 키와 JSON 모양을 그대로 읽는다
-const MARKETING_PUSH_PROMPT_KEY = 'aido_marketing_push_prompt';
+// 1.14.x까지 계정 구분 없이 쓰던 키. 지우지 않으면 다음 계정이 앞사람이 닫은 기록을 이어받는다
+const LEGACY_DEVICE_KEY = 'aido_marketing_push_prompt';
+const KEY_PREFIX = 'aido_notification_marketing_push_prompt_v1';
 
-const EMPTY_STATE: MarketingPushPromptState = { lastPromptedAt: null, count: 0 };
+const EMPTY_STATE: MarketingPushPromptState = { dismissedAt: null };
 
 export interface MarketingPushPromptRepository {
   /** 저장값이 그대로면 같은 객체를 돌려준다(`useSyncExternalStore`의 스냅샷) */
-  get(): MarketingPushPromptState;
-  /** 닫은 시각을 남기고 닫은 횟수를 하나 늘린다. 저장 필드 이름 `lastPromptedAt`은 출시된 앱 그대로다 */
-  dismiss(dismissedAt: Instant): void;
-  subscribe(listener: () => void): () => void;
+  find(userId: string): MarketingPushPromptState;
+  dismiss(userId: string, dismissedAt: Instant): void;
+  subscribe(userId: string, listener: () => void): () => void;
+  /** 기기에 남은 1.14.x 기록을 이 계정으로 한 번 옮기고 지운다. 이미 계정 기록이 있으면 지우기만 한다 */
+  claimDeviceRecord(userId: string): void;
+  clear(userId: string): void;
+}
+
+function createKey(userId: string): string {
+  return `${KEY_PREFIX}:${userId}`;
 }
 
 export function createMarketingPushPromptRepository(
   storage: ObservableSyncStorage,
 ): MarketingPushPromptRepository {
-  let cachedRaw: string | undefined;
-  let cachedState: MarketingPushPromptState = EMPTY_STATE;
+  const snapshots = new Map<string, { raw: string | undefined; state: MarketingPushPromptState }>();
 
-  const get = (): MarketingPushPromptState => {
-    const raw = storage.get(MARKETING_PUSH_PROMPT_KEY);
-    if (raw !== cachedRaw) {
-      cachedRaw = raw;
-      cachedState = parseStoredJson(raw, marketingPushPromptStorageSchema) ?? EMPTY_STATE;
+  const save = (userId: string, state: MarketingPushPromptState) => {
+    try {
+      storage.set(createKey(userId), JSON.stringify(state));
+    } catch {
+      // 저장하지 못하면 제안이 한 번 더 보일 뿐이다.
     }
-    return cachedState;
   };
 
   return {
-    get,
-    dismiss: (dismissedAt) => {
-      const next: MarketingPushPromptState = {
-        lastPromptedAt: dismissedAt,
-        count: get().count + 1,
-      };
-      try {
-        storage.set(MARKETING_PUSH_PROMPT_KEY, JSON.stringify(next));
-      } catch {
-        // 저장하지 못하면 안내가 한 번 더 보일 뿐이다.
+    find: (userId) => {
+      const raw = storage.get(createKey(userId));
+      const cached = snapshots.get(userId);
+      if (cached != null && cached.raw === raw) {
+        return cached.state;
       }
+      const state = parseStoredJson(raw, marketingPushPromptStorageSchema) ?? EMPTY_STATE;
+      snapshots.set(userId, { raw, state });
+      return state;
     },
-    subscribe: (listener) => storage.subscribe(MARKETING_PUSH_PROMPT_KEY, listener),
+    dismiss: (userId, dismissedAt) => save(userId, { dismissedAt }),
+    subscribe: (userId, listener) => storage.subscribe(createKey(userId), listener),
+    claimDeviceRecord: (userId) => {
+      const legacy = parseStoredJson(
+        storage.get(LEGACY_DEVICE_KEY),
+        legacyMarketingPushPromptStorageSchema,
+      );
+      if (legacy?.lastPromptedAt != null && storage.get(createKey(userId)) == null) {
+        save(userId, { dismissedAt: legacy.lastPromptedAt });
+      }
+      storage.remove(LEGACY_DEVICE_KEY);
+    },
+    clear: (userId) => {
+      storage.remove(createKey(userId));
+      snapshots.delete(userId);
+    },
   };
 }

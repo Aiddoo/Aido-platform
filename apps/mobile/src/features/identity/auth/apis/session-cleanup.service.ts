@@ -3,6 +3,7 @@ import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import type { UserDeviceDataService } from './user-device-data.service';
 
 export interface SessionQueryCache {
   /** 진행 중 mutation이 끝나도 콜백이 돌지 않게 한다. 요청은 끊지 않는다 */
@@ -25,8 +26,7 @@ interface SessionCleanupServicePorts {
   deviceTimezone: { clear(): void };
   /** 계정 구분이 없는 키라 지우지 않으면 다음 계정이 앞사람의 초대를 받는다. 위층 기능이라 조립하는 곳이 넘긴다 */
   pendingRedemption: { clear(): void };
-  /** 위층 기능이라 조립하는 곳이 넘긴다 */
-  accountGuides: readonly { removeAccount(accountId: string): void }[];
+  userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
   logger: Pick<Logger, 'warn'>;
 }
 
@@ -38,7 +38,7 @@ export class SessionCleanupService {
   readonly #voiceNotes: SessionCleanupServicePorts['voiceNotes'];
   readonly #deviceTimezone: SessionCleanupServicePorts['deviceTimezone'];
   readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
-  readonly #accountGuides: SessionCleanupServicePorts['accountGuides'];
+  readonly #userDeviceData: SessionCleanupServicePorts['userDeviceData'];
   readonly #logger: SessionCleanupServicePorts['logger'];
 
   constructor({
@@ -48,7 +48,7 @@ export class SessionCleanupService {
     voiceNotes,
     deviceTimezone,
     pendingRedemption,
-    accountGuides,
+    userDeviceData,
     logger,
   }: SessionCleanupServicePorts) {
     this.#queryCache = queryCache;
@@ -57,7 +57,7 @@ export class SessionCleanupService {
     this.#voiceNotes = voiceNotes;
     this.#deviceTimezone = deviceTimezone;
     this.#pendingRedemption = pendingRedemption;
-    this.#accountGuides = accountGuides;
+    this.#userDeviceData = userDeviceData;
     this.#logger = logger;
   }
 
@@ -72,9 +72,7 @@ export class SessionCleanupService {
 
   /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
   afterAccountDeleted = (accountId: string): void => {
-    this.#accountGuides.forEach((guides) => {
-      this.#run('account-guides', () => guides.removeAccount(accountId));
-    });
+    this.#run('user-device-data', () => this.#userDeviceData.clearForUser(accountId));
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */

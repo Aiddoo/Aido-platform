@@ -171,7 +171,7 @@ describe('whats-new 키 정리', () => {
     repository.claimSeen({ userId: 'user-10', campaignId: CURRENT }, claimedAt);
 
     // When
-    repository.removeAccount('user-1');
+    repository.clear('user-1');
 
     // Then
     expect(storage.get(`${SEEN}:user-1:${CURRENT}`)).toBeUndefined();
