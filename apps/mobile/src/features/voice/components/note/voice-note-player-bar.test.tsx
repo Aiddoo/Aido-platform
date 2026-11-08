@@ -69,6 +69,24 @@ describe('VoiceNotePlayerBar', () => {
     expect(player.seekTo).toHaveBeenCalledWith(60_000);
   });
 
+  it('다른 제스처에 가로채여 끊긴 드래그는 위치를 옮기지 않는다', async () => {
+    // Given
+    const { player } = createPlayerStub();
+    await renderBar(player);
+
+    // When
+    await act(async () => {
+      fireGestureHandler(getByGestureTestId('voice-note-scrubber'), [
+        { state: State.BEGAN, x: 50 },
+        { state: State.ACTIVE, x: 80 },
+        { state: State.CANCELLED, x: 100 },
+      ]);
+    });
+
+    // Then
+    expect(player.seekTo).not.toHaveBeenCalled();
+  });
+
   it('화면 밖까지 끌어도 노트 범위 안으로 옮긴다', async () => {
     // Given
     const { player } = createPlayerStub();

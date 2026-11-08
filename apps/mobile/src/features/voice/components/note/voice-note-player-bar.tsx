@@ -211,10 +211,13 @@ function Scrubber({
       'worklet';
       dragRatio.set(getDragRatio(event.x, width));
     })
-    .onFinalize((event) => {
+    .onFinalize((event, success) => {
       'worklet';
       dragRatio.set(null);
-      scheduleOnRN(onSeek, getDragRatio(event.x, width));
+      // 다른 제스처나 시스템이 가로채 끊긴 터치는 위치를 옮기지 않는다
+      if (success) {
+        scheduleOnRN(onSeek, getDragRatio(event.x, width));
+      }
     });
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
