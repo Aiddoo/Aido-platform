@@ -26,7 +26,6 @@ interface PawPrintRow {
 export interface PawPrintBoard {
   /** 1부터 센 판 번호 */
   boardNumber: number;
-  /** 지금까지 찍힌 발자국 */
   totalPawPrints: number;
   /** 이 판을 다 채웠다. 축하를 보여 준 뒤 다음에 열면 새 판이 나온다 */
   isComplete: boolean;

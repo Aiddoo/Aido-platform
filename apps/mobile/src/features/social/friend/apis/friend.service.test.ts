@@ -24,8 +24,6 @@ describe('FriendService', () => {
     service = new FriendService(httpClient);
   });
 
-  // ── sendRequestByTag ─────────────────────────
-
   describe('sendRequestByTag', () => {
     it('태그가 비어 있으면 EMPTY_TAG 오류를 반환한다', async () => {
       // When
@@ -119,8 +117,6 @@ describe('FriendService', () => {
     });
   });
 
-  // ── getFriends ───────────────────────────────
-
   describe('getFriends', () => {
     it('응답을 받으면 친구 목록 페이지를 반환한다', async () => {
       // Given
@@ -165,8 +161,6 @@ describe('FriendService', () => {
       await expect(result).rejects.toThrow('Invalid getFriends response');
     });
   });
-
-  // ── getReceivedRequests ──────────────────────
 
   describe('getReceivedRequests', () => {
     it('응답을 받으면 친구 요청 목록 페이지를 반환한다', async () => {
@@ -213,8 +207,6 @@ describe('FriendService', () => {
     });
   });
 
-  // ── getSentRequests ──────────────────────────
-
   describe('getSentRequests', () => {
     it('응답을 받으면 친구 요청 목록 페이지를 반환한다', async () => {
       // Given
@@ -260,8 +252,6 @@ describe('FriendService', () => {
     });
   });
 
-  // ── acceptRequest ────────────────────────────
-
   describe('acceptRequest', () => {
     it('요청이 성공하면 성공 결과를 반환한다', async () => {
       // Given
@@ -288,8 +278,6 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── removeFriend ─────────────────────────────
 
   describe('removeFriend', () => {
     it('요청이 성공하면 성공 결과를 반환한다', async () => {
@@ -319,8 +307,6 @@ describe('FriendService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── reorderFriend ──────────────────────────
 
   describe('reorderFriend', () => {
     it('응답을 받으면 순서를 바꾼 친구를 반환한다', async () => {
@@ -373,8 +359,6 @@ describe('FriendService', () => {
       await expect(result).rejects.toThrow('Invalid reorderFriend response');
     });
   });
-
-  // ── searchUsers ─────────────────────────
 
   describe('searchUsers', () => {
     it('검색어가 2자 미만이면 요청 없이 오류를 반환한다', async () => {

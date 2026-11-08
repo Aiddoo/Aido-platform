@@ -17,8 +17,6 @@ describe('TodoNudgeService', () => {
     service = new TodoNudgeService(httpClient);
   });
 
-  // ── sendNudge ────────────────────────────────
-
   describe('sendNudge', () => {
     it('메시지가 200자를 넘으면 MESSAGE_TOO_LONG 오류를 반환한다', async () => {
       // Given
@@ -113,8 +111,6 @@ describe('TodoNudgeService', () => {
       await expect(result).rejects.toThrow('Invalid sendNudge response');
     });
   });
-
-  // ── getLimitInfo ─────────────────────────────
 
   describe('getLimitInfo', () => {
     it('응답을 받으면 콕 한도 정보를 반환한다', async () => {

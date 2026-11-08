@@ -23,7 +23,6 @@ import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import type { InviteShareChannel } from '../schemas/invite-share.schema';
 
-/** 카카오톡 / 링크 복사 / 다른 앱 공유 */
 export function InviteShareActions(props: ComponentProps<typeof VStack>) {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],

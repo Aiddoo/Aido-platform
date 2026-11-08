@@ -2,7 +2,6 @@ interface FriendStripRevealInput {
   /** 스크롤 콘텐츠 기준 항목 시작 위치 */
   itemStart: number;
   itemWidth: number;
-  /** 지금 스크롤 위치 */
   scrollOffset: number;
   viewportWidth: number;
   /** 가장자리에 남겨 친구가 더 있다는 걸 보여 줄 폭 */
