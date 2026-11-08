@@ -50,7 +50,7 @@ describe('알림 목적지와 라우트 파일', () => {
       // When
       const destination = resolveNotificationDestination(
         { type, context: CONTEXT, action: { type: 'DEEP_LINK' } },
-        { windowSizeClass, today: '2026-11-06' },
+        { windowSizeClass, shouldOpenToday: true },
       );
 
       // Then
@@ -69,7 +69,7 @@ describe('알림 목적지와 라우트 파일', () => {
       // When
       const destination = resolveNotificationDestination(
         { type: null, navigation },
-        { windowSizeClass, today: '2026-11-06' },
+        { windowSizeClass, shouldOpenToday: true },
       );
 
       // Then
@@ -97,7 +97,7 @@ describe('알림 목적지와 라우트 파일', () => {
     // When
     const destination = resolveNotificationDestination(
       { type: NOTIFICATION_TYPE.SYSTEM_NOTICE, action: { type: 'DEEP_LINK', url } },
-      { windowSizeClass: 'compact', today: '2026-11-06' },
+      { windowSizeClass: 'compact', shouldOpenToday: true },
     );
 
     // Then

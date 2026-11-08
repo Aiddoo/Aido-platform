@@ -196,7 +196,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
     }
     expect(
       resolveNotificationDestination(result.data, {
-        today: '2026-11-05',
+        shouldOpenToday: true,
         windowSizeClass: 'compact',
       }),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
@@ -221,7 +221,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
     expect(notification.routing).toBeUndefined();
     expect(
       resolveNotificationDestination(notification, {
-        today: '2026-11-05',
+        shouldOpenToday: true,
         windowSizeClass: 'compact',
       }),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });

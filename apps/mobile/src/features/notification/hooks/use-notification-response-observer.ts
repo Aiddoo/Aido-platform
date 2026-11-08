@@ -10,7 +10,6 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, unwrap } from '@src/shared/errors';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -169,7 +168,6 @@ function useResolveResponse(
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
   const queryClient = useQueryClient();
-  const today = useTodayKey();
   const windowSizeClass = useWindowSizeClass();
   const inFlightIdRef = useRef<string | null>(null);
 
@@ -194,7 +192,7 @@ function useResolveResponse(
       store.markReady(
         target.id,
         resolveNotificationDestination(data, {
-          today,
+          shouldOpenToday: true,
           windowSizeClass,
           viewerId: getCachedMe(queryClient)?.id,
         }),

@@ -6,7 +6,6 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -80,7 +79,7 @@ export function NotificationList() {
   );
 }
 
-NotificationList.Loading = NotificationListRow.ListLoading;
+NotificationList.Loading = NotificationListRow.Loading;
 
 NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
@@ -113,7 +112,6 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
   const { t } = useTranslation(['notification', 'moderation']);
   const push = useSingleTap(router.push);
   const navigateToDestination = useNotificationNavigation();
-  const today = useTodayKey();
   const windowSizeClass = useWindowSizeClass();
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
@@ -141,7 +139,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
         routing: notification.routing,
         action: notification.action,
       },
-      { today, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
+      { shouldOpenToday: true, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
     );
     trackEvent('notification_center_opened', {
       type: notification.type,

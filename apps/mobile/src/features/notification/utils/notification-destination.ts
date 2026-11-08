@@ -58,7 +58,8 @@ const NOTICE_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
 interface NotificationDestinationOptions {
-  today?: string;
+  /** 피드로 열 때 날짜를 오늘로 맞춘다 */
+  shouldOpenToday?: boolean;
   /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다. */
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
@@ -70,17 +71,17 @@ export function resolveNotificationDestination(
   options: NotificationDestinationOptions,
 ): NotificationDestination {
   if (source.navigation != null) {
-    return fromNavigation(source.navigation, options);
+    return toNavigationDestination(source.navigation, options);
   }
   if (source.type == null) {
     return { kind: 'route', href: '/notifications' };
   }
-  return fromLegacyFields({ ...source, type: source.type }, options);
+  return toLegacyFieldsDestination({ ...source, type: source.type }, options);
 }
 
-function fromLegacyFields(
+function toLegacyFieldsDestination(
   source: LegacyDestinationSource,
-  { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
+  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
   if (source.action?.type === 'NONE') {
     return NO_DESTINATION;
@@ -93,7 +94,7 @@ function fromLegacyFields(
   }
 
   if (NOTICE_NOTIFICATION_TYPES.has(source.type)) {
-    return toNoticeDestination(source.action?.url, today);
+    return toNoticeDestination(source.action?.url, { shouldOpenToday });
   }
 
   // 아침 날씨 알림이 할 일과 겹친 비·더위를 알리면 옮기기 시트로 바로 연다. 링크가 없거나 낯설면 날씨 화면이다.
@@ -108,18 +109,18 @@ function fromLegacyFields(
   const routing = parseNotificationRouting(source);
   return routing == null
     ? NO_DESTINATION
-    : toRouteDestination(routing, { today, windowSizeClass, viewerId });
+    : toRouteDestination(routing, { shouldOpenToday, windowSizeClass, viewerId });
 }
 
 /**
  * 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다. 구 필드로 고른 곳과 같아야 하며,
  * `packages/api/test-fixtures/notification-navigation.cases.json`으로 서버·앱·구 필드를 함께 묶는다.
  */
-function fromNavigation(
+function toNavigationDestination(
   navigation: NotificationNavigation,
-  { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
+  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
-  const feedDate = today ? 'today' : undefined;
+  const feedDate = shouldOpenToday ? 'today' : undefined;
   return (
     match(navigation)
       .returnType<NotificationDestination>()
@@ -197,8 +198,11 @@ function fromNavigation(
 }
 
 /** 공지의 앱 경로는 아는 화면만 연다. 모르는 경로, 상세 id·프리미엄 확인이 필요한 경로는 이동하지 않는다. */
-function toNoticeDestination(url: string | undefined, today?: string): NotificationDestination {
-  const feedDate = today ? 'today' : undefined;
+function toNoticeDestination(
+  url: string | undefined,
+  { shouldOpenToday }: Pick<NotificationDestinationOptions, 'shouldOpenToday'>,
+): NotificationDestination {
+  const feedDate = shouldOpenToday ? 'today' : undefined;
   return match(url)
     .with('/feed', () => ({
       kind: 'route' as const,
@@ -249,10 +253,10 @@ function toExternalDestination(kind: 'browser' | 'webview', url?: string): Notif
 
 function toRouteDestination(
   routing: NotificationDestinationRouting,
-  { today, windowSizeClass, viewerId }: NotificationDestinationOptions,
+  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
 ): NotificationDestination {
   const toTodoFeed = (target: TodoTarget) => toTodoFeedTarget(target, viewerId);
-  const feedDate = today ? 'today' : undefined;
+  const feedDate = shouldOpenToday ? 'today' : undefined;
   return (
     match(routing)
       .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({

@@ -8,7 +8,7 @@ const WINDOW_SIZE_CLASSES: readonly WindowSizeClass[] = ['compact', 'medium', 'e
 const OWNER_ID = 'cmfriend00000000000000001';
 const VIEWER_IDS = [undefined, OWNER_ID, 'cmviewer00000000000000001'];
 const OPTION_COMBINATIONS = WINDOW_SIZE_CLASSES.flatMap((windowSizeClass) =>
-  VIEWER_IDS.map((viewerId) => ({ windowSizeClass, viewerId, today: '2026-11-06' })),
+  VIEWER_IDS.map((viewerId) => ({ windowSizeClass, viewerId, shouldOpenToday: true })),
 );
 
 describe('서버 navigation과 구 필드 대조', () => {
@@ -45,10 +45,10 @@ describe('서버 navigation과 구 필드 대조', () => {
       // When
       const legacySource = toLegacySource(source);
       const fromServer = resolveNotificationDestination({ ...legacySource, navigation }, options);
-      const fromLegacy = resolveNotificationDestination(legacySource, options);
+      const toStoreReviewState = resolveNotificationDestination(legacySource, options);
 
       // Then
-      expect(fromServer).toEqual(fromLegacy);
+      expect(fromServer).toEqual(toStoreReviewState);
     });
   });
 
@@ -58,20 +58,20 @@ describe('서버 navigation과 구 필드 대조', () => {
     ),
   )('$name: 알려진 차이는 실제로 다른 곳으로 간다', ({ navigation, source }) => {
     // Given
-    const options = { windowSizeClass: 'compact', today: '2026-11-06' } as const;
+    const options = { windowSizeClass: 'compact', shouldOpenToday: true } as const;
 
     // When
     const legacySource = toLegacySource(source);
     const fromServer = resolveNotificationDestination({ ...legacySource, navigation }, options);
-    const fromLegacy = resolveNotificationDestination(legacySource, options);
+    const toStoreReviewState = resolveNotificationDestination(legacySource, options);
 
     // Then
-    expect(fromServer).not.toEqual(fromLegacy);
+    expect(fromServer).not.toEqual(toStoreReviewState);
   });
 });
 
 describe('푸시 호환', () => {
-  const OPTIONS = { windowSizeClass: 'compact', today: '2026-11-06' } as const;
+  const OPTIONS = { windowSizeClass: 'compact', shouldOpenToday: true } as const;
 
   it('모르는 타입이어도 navigation이 있으면 따른다', () => {
     // When

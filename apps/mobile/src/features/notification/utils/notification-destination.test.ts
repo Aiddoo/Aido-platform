@@ -184,7 +184,7 @@ describe('공지 알림의 앱 경로', () => {
     // When
     const result = resolveNotificationDestination(
       { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
-      { today: '2026-10-26', windowSizeClass: 'compact' },
+      { shouldOpenToday: true, windowSizeClass: 'compact' },
     );
 
     // Then
@@ -260,7 +260,7 @@ describe('콕과 오늘의 알림 이동', () => {
     // When
     const destination = resolveNotificationDestination(
       { type: 'NUDGE_RECEIVED', context },
-      { today: '2026-10-04', windowSizeClass: 'compact' },
+      { shouldOpenToday: true, windowSizeClass: 'compact' },
     );
     // Then
     expect(destination).toEqual({
@@ -297,16 +297,14 @@ describe('콕과 오늘의 알림 이동', () => {
   });
 
   it('할 일 알림은 해당 할 일을 바로 열고 날짜 안내는 오늘 피드를 연다', () => {
-    // Given
-    const today = '2026-10-04';
     // When
     const todo = resolveNotificationDestination(
       { type: 'TODO_REMINDER', context: { todoId: 42 } },
-      { today, windowSizeClass: 'compact' },
+      { shouldOpenToday: true, windowSizeClass: 'compact' },
     );
     const morning = resolveNotificationDestination(
       { type: 'MORNING_REMINDER' },
-      { today, windowSizeClass: 'compact' },
+      { shouldOpenToday: true, windowSizeClass: 'compact' },
     );
     // Then
     expect(todo).toEqual({
@@ -378,7 +376,6 @@ describe('콕과 오늘의 알림 이동', () => {
 });
 
 describe('알림 타입별 목적지', () => {
-  const today = '2026-10-25';
   const todayFeed = { kind: 'route', href: { pathname: '/feed', params: { date: 'today' } } };
   const friendFeed = {
     kind: 'route',
@@ -457,7 +454,7 @@ describe('알림 타입별 목적지', () => {
     // When
     const result = resolveNotificationDestination(
       { type, context },
-      { today, windowSizeClass: 'compact' },
+      { shouldOpenToday: true, windowSizeClass: 'compact' },
     );
 
     // Then
