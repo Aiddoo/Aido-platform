@@ -4,7 +4,7 @@ import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
+import { TODO_NUDGE_QUERY_KEYS } from '../constants/todo-nudge-query-keys';
 import type { NudgeDirection, NudgeInteractionPage } from '../schemas/nudge-interaction.schema';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
@@ -23,7 +23,7 @@ export function useGetNudgeInteractionAvailabilityQueryOptions() {
   const todoNudgeService = useTodoNudgeService();
 
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.interactionAvailability(),
+    queryKey: TODO_NUDGE_QUERY_KEYS.interactionAvailability(),
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getInteractionAvailability(signal)),
     staleTime: NUDGE_STALE_TIME_MS,
@@ -35,7 +35,7 @@ export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: numbe
   const todoNudgeService = useTodoNudgeService();
 
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId }),
+    queryKey: TODO_NUDGE_QUERY_KEYS.interaction({ nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
     staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
@@ -50,7 +50,7 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
   const todoNudgeService = useTodoNudgeService();
 
   return infiniteQueryOptions({
-    queryKey: NUDGE_QUERY_KEYS.interactionList({ direction }),
+    queryKey: TODO_NUDGE_QUERY_KEYS.interactionList({ direction }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getInteractions(
@@ -71,7 +71,7 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
   const todoNudgeService = useTodoNudgeService();
 
   return infiniteQueryOptions({
-    queryKey: NUDGE_QUERY_KEYS.thanksPreview({ todoId }),
+    queryKey: TODO_NUDGE_QUERY_KEYS.thanksPreview({ todoId }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getThanksPreview(
@@ -94,7 +94,7 @@ export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: stri
   const todoNudgeService = useTodoNudgeService();
 
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId }),
+    queryKey: TODO_NUDGE_QUERY_KEYS.remindCooldown({ userId }),
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getRemindCooldownInfo(userId, signal)),
     staleTime: MINUTE_MS,
@@ -106,7 +106,7 @@ export function useGetTodoNudgeLimitQueryOptions() {
   const todoNudgeService = useTodoNudgeService();
 
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.limit(),
+    queryKey: TODO_NUDGE_QUERY_KEYS.limit(),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getLimitInfo(signal)),
     staleTime: MINUTE_MS,
     meta: { refreshOnPremiumChange: true, refreshOnBlockChange: true },

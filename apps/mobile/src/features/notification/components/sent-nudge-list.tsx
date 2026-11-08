@@ -1,7 +1,7 @@
-import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-labels';
+import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { isSentNudgeListDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
-import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import type { NudgeInteraction } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

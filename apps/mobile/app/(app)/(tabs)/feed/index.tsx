@@ -39,7 +39,7 @@ import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-i
 import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
-import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
+import { invalidateNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';

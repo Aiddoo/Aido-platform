@@ -32,7 +32,7 @@ import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
   useGetNudgeThanksPreviewInfiniteQueryOptions,
-} from '../../queries/nudge.queries';
+} from '../../queries/todo-nudge.queries';
 import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const VISIBLE_AVATAR_COUNT = 2;

@@ -5,7 +5,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { useNudgeId } from '../../hooks/use-nudge-id';
-import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
+import { useGetNudgeInteractionQueryOptions } from '../../queries/todo-nudge.queries';
 
 export function NudgeTodoButton() {
   const [nudgeId] = useNudgeId();

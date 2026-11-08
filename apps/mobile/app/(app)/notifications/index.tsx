@@ -7,7 +7,7 @@ import {
   notificationCategoryParamSchema,
   notificationDirectionParamSchema,
 } from '@src/features/notification/schemas/notification-params.schema';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import type { NudgeDirection } from '@src/features/social/nudge/schemas/nudge-interaction.schema';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';

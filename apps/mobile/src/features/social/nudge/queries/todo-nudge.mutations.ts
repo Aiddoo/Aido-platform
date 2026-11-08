@@ -10,7 +10,7 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { NUDGE_QUERY_KEYS } from '../constants/nudge-query-keys';
+import { TODO_NUDGE_QUERY_KEYS } from '../constants/todo-nudge-query-keys';
 import { isNudgeTodoChangedError } from '../domains/todo-nudge.error';
 import type {
   CreateNudgeInput,
@@ -18,7 +18,7 @@ import type {
   ReplyToNudgeInput,
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
-import { invalidateNudgeInteractions } from './nudge-cache';
+import { invalidateNudgeInteractions } from './todo-nudge-cache';
 
 export function useReplyToNudgeMutationOptions() {
   const haptics = useHaptics();
@@ -35,7 +35,10 @@ export function useReplyToNudgeMutationOptions() {
       unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
     onSuccess: (data, variables) => {
       trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
-      queryClient.setQueryData(NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }), data);
+      queryClient.setQueryData(
+        TODO_NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }),
+        data,
+      );
       emitNotificationsChanged();
       invalidateNudgeInteractions(queryClient);
     },
@@ -96,7 +99,7 @@ export function useSendRemindNudgeMutationOptions() {
     onSuccess: (_data, variables) => {
       haptics.notify('success');
       queryClient.invalidateQueries({
-        queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId: variables.receiverId }),
+        queryKey: TODO_NUDGE_QUERY_KEYS.remindCooldown({ userId: variables.receiverId }),
       });
       toast.success(t('todo:toast.remindNudgeSent'));
       trackEvent('remind_nudge_sent');
@@ -123,7 +126,7 @@ export function useSendTodoNudgeMutationOptions() {
     mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeService.sendNudge(input)),
     onSuccess: () => {
       haptics.notify('success');
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });
+      queryClient.invalidateQueries({ queryKey: TODO_NUDGE_QUERY_KEYS.limit() });
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');

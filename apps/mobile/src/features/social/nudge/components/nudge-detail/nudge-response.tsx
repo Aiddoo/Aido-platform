@@ -21,11 +21,11 @@ import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';
 
-import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-labels';
+import { NUDGE_REPLY_LABEL_KEYS } from '../../constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useNudgeId } from '../../hooks/use-nudge-id';
-import { useReplyToNudgeMutationOptions } from '../../queries/nudge.mutations';
-import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
+import { useReplyToNudgeMutationOptions } from '../../queries/todo-nudge.mutations';
+import { useGetNudgeInteractionQueryOptions } from '../../queries/todo-nudge.queries';
 import { ThanksSummaryRow } from '../nudge-interactions/thanks-summary-row';
 
 export function NudgeResponse() {

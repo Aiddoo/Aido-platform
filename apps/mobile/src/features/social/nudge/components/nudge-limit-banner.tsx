@@ -17,7 +17,7 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/nudge.queries';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/todo-nudge.queries';
 
 export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');

@@ -22,7 +22,7 @@ import { Controller, useForm, useFormState } from 'react-hook-form';
 import {
   useSendRemindNudgeMutationOptions,
   useSendTodoNudgeMutationOptions,
-} from '../queries/nudge.mutations';
+} from '../queries/todo-nudge.mutations';
 import { type NudgeFormValues, nudgeFormSchema } from '../schemas/nudge-form.schema';
 import { remindNudgeParamsSchema } from '../schemas/nudge-params.schema';
 

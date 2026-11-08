@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Result, Text, useOverlay } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 
-import { useGetRemindNudgeCooldownQueryOptions } from '../queries/nudge.queries';
+import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.queries';
 import { type NudgeReceiver, RemindNudgeBottomSheet } from './nudge-bottom-sheet';
 
 /** 오늘 할 일이 없는 친구에게 독촉 시트를 여는 버튼. 쿨다운 중이면 눌러지지 않는다 */

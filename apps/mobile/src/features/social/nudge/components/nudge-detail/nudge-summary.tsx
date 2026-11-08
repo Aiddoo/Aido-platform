@@ -9,7 +9,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useNudgeId } from '../../hooks/use-nudge-id';
-import { useGetNudgeInteractionQueryOptions } from '../../queries/nudge.queries';
+import { useGetNudgeInteractionQueryOptions } from '../../queries/todo-nudge.queries';
 
 export function NudgeSummary() {
   const [nudgeId] = useNudgeId();

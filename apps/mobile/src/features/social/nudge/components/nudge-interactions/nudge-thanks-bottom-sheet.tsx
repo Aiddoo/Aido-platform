@@ -25,8 +25,8 @@ import { useWindowDimensions } from 'react-native';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
-import { useSendNudgeThanksMutationOptions } from '../../queries/nudge.mutations';
-import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/nudge.queries';
+import { useSendNudgeThanksMutationOptions } from '../../queries/todo-nudge.mutations';
+import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/todo-nudge.queries';
 import type { NudgeThanksPreview } from '../../schemas/nudge-interaction.schema';
 
 const RECIPIENT_ROW_HEIGHT = 64;

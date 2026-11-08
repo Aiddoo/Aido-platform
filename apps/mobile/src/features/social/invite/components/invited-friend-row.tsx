@@ -2,7 +2,7 @@ import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/voc
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
-import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/nudge.queries';
+import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

@@ -13,7 +13,7 @@ import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtur
 import {
   useReplyToNudgeMutationOptions,
   useSendNudgeThanksMutationOptions,
-} from './nudge.mutations';
+} from './todo-nudge.mutations';
 
 function useReplyMutation() {
   return useMutation(useReplyToNudgeMutationOptions());

@@ -5,7 +5,7 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/constants/memo-query-keys';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import { NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/nudge-query-keys';
+import { TODO_NUDGE_QUERY_KEYS } from '@src/features/social/nudge/constants/todo-nudge-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
@@ -17,7 +17,7 @@ import {
 } from './subscription-cache';
 
 const DEPENDENT_KEYS = [
-  NUDGE_QUERY_KEYS.limit(),
+  TODO_NUDGE_QUERY_KEYS.limit(),
   ENTITLEMENT_QUERY_KEYS.snapshot(),
   SUGGESTION_QUERY_KEYS.all,
   MEMO_QUERY_KEYS.resourceLimit(),
