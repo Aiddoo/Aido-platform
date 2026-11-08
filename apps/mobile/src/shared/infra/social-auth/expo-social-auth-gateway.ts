@@ -1,5 +1,6 @@
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import { ENV } from '@src/shared/config/env';
+import { toHex } from '@src/shared/utils/to-hex';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Crypto from 'expo-crypto';
@@ -16,9 +17,7 @@ function readQueryParams(url: string): Record<string, string> {
 }
 
 async function createNonce() {
-  const nonce = Array.from(Crypto.getRandomBytes(32), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
+  const nonce = toHex(Crypto.getRandomBytes(32));
   const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
   return { nonce, hashedNonce };
 }
