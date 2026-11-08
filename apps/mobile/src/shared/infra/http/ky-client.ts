@@ -1,4 +1,4 @@
-import { successEnvelopeSchema } from '@aido/api';
+import { successEnvelopeSchema } from '@aido/api/common';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';

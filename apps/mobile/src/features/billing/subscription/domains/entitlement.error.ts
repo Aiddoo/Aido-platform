@@ -1,5 +1,9 @@
-import { notChargedErrorDetailsSchema, quotaErrorDetailsSchema } from '@aido/api';
-import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import {
+  ErrorCode,
+  type ErrorCodeType,
+  notChargedErrorDetailsSchema,
+  quotaErrorDetailsSchema,
+} from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
 
 import {

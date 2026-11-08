@@ -31,6 +31,8 @@ const base = {
     '^@aido/api/vocabulary$': '<rootDir>/../../packages/api/src/vocabulary',
     '^@aido/api$': '<rootDir>/../../packages/api/src',
     '^@aido/api/errors$': '<rootDir>/../../packages/api/src/errors',
+    '^@aido/api/common$': '<rootDir>/../../packages/api/src/common',
+    '^@aido/api/contracts/(.*)$': '<rootDir>/../../packages/api/src/contracts/$1',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',

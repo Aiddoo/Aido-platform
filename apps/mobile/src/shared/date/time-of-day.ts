@@ -1,4 +1,4 @@
-import { timeOfDaySchema } from '@aido/api';
+import { timeOfDaySchema } from '@aido/api/common';
 import dayjs from 'dayjs';
 
 import type { TimeFormat } from './date-format';

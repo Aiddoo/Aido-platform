@@ -18,3 +18,11 @@ export {
   friendQuotaErrorDetailsSchema,
   toPublicErrorDetails,
 } from "./public-details.js";
+export type {
+  NotChargedErrorDetails,
+  QuotaErrorDetails,
+} from "../contracts/entitlement/v1/quota-error.details.js";
+export {
+  notChargedErrorDetailsSchema,
+  quotaErrorDetailsSchema,
+} from "../contracts/entitlement/v1/quota-error.details.js";
