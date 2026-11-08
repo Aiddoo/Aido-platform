@@ -81,20 +81,15 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
   );
 };
 
-interface CategoryEditFormProps extends CategoryEditBottomSheetProps {
+interface CategoryEditFormProps extends Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children'
+> {
   category: TodoCategory;
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
 }
 
-function CategoryEditForm({
-  category,
-  isOpen,
-  onOpenChange,
-  onClose,
-  ...props
-}: CategoryEditFormProps) {
+function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps) {
   const { t } = useTranslation('common');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
@@ -124,8 +119,6 @@ function CategoryEditForm({
   return (
     <KeyboardBottomSheet
       {...props}
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
       footer={
         <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
           {t('actions.confirm')}
