@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
@@ -7,7 +8,7 @@ import { ScrollView } from 'react-native';
 
 import { Box } from '../box';
 import { HStack } from '../h-stack';
-import { ArrowRightIcon } from '../icon';
+import { ArrowRightIcon, type StyledIcon } from '../icon';
 import { QueryErrorActions, type QueryErrorFallbackProps } from '../query-error-boundary';
 import { ReadableContent } from '../readable-content';
 import { Result } from '../result';
@@ -171,7 +172,29 @@ SettingsListGroupToggle.Loading = function Loading({
   );
 };
 
+/** 메뉴 아이콘 칸. 옅은 브랜드 바탕 위에 브랜드 색 선 아이콘을 그려 목록마다 같은 크기·색으로 보인다 */
+const ITEM_ICON_TILE_SIZE = 30;
+const ITEM_ICON_SIZE = 18;
+
+function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
+  const fontScaledSize = useFontScaledSize();
+  const tileSize = fontScaledSize(ITEM_ICON_TILE_SIZE);
+  const iconSize = fontScaledSize(ITEM_ICON_SIZE);
+
+  return (
+    <Box
+      accessible={false}
+      importantForAccessibility="no"
+      className="items-center justify-center rounded-[9px] bg-main/10"
+      style={{ width: tileSize, height: tileSize }}
+    >
+      <Icon width={iconSize} height={iconSize} colorClassName="text-main" />
+    </Box>
+  );
+}
+
 SettingsListGroup.Item = SettingsListGroupItem;
+SettingsListGroup.Icon = SettingsListGroupIcon;
 SettingsListGroup.Toggle = SettingsListGroupToggle;
 
 SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {

@@ -3,7 +3,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { AiIcon, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { AiFilledIcon, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -95,7 +95,7 @@ function InfoCard({ label, ...props }: InfoCardProps) {
   return (
     <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
-        left={<AiIcon width={24} height={24} colorClassName="text-main" />}
+        left={<AiFilledIcon width={24} height={24} colorClassName="text-main" />}
         contents={
           <ListRow.Texts
             type="1RowTypeA"

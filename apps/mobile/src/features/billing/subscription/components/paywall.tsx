@@ -16,9 +16,9 @@ import {
   type FeatureMediaProps,
   H2,
   HStack,
-  ListIcon,
+  ListFilledIcon,
   MicIcon,
-  PersonIcon,
+  PersonFilledIcon,
   Spacing,
   type StyledIcon,
   Text,
@@ -126,13 +126,13 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
       />
       <Separator className="bg-gray-3" />
       <AdditionalBenefit
-        Icon={PersonIcon}
+        Icon={PersonFilledIcon}
         title={t('benefits.friends.title')}
         description={t('benefits.friends.description', { free: formatAmount(free.friend) })}
       />
       <Separator className="bg-gray-3" />
       <AdditionalBenefit
-        Icon={ListIcon}
+        Icon={ListFilledIcon}
         title={t('benefits.categories.title', { premium: formatAmount(premium.category) })}
         description={t('benefits.categories.description', {
           free: formatAmount(free.category),

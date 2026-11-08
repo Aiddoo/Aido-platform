@@ -10,7 +10,7 @@ import {
   ClockIcon,
   EditIcon,
   INQUIRY_SHEET_EXIT,
-  ListIcon,
+  ListFilledIcon,
   MoveRightIcon,
   RepeatIcon,
   QueryErrorActions,
@@ -222,7 +222,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<ListIcon width={16} height={16} colorClassName="text-main" />}
+          icon={<ListFilledIcon width={16} height={16} colorClassName="text-main" />}
           label={t('actions.changeCategory')}
           hasArrow
           isDisabled={isBusy}

@@ -6,9 +6,11 @@
     },
     "header": "My account",
     "sections": {
-      "activity": "Activity",
+      "friends": "Friends",
+      "records": "Records",
       "subscription": "Subscription",
-      "settings": "Settings"
+      "settings": "Settings",
+      "support": "Help"
     },
     "items": {
       "friends": "Manage friends",

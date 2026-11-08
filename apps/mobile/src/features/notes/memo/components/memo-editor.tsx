@@ -18,7 +18,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  AiIcon,
+  AiFilledIcon,
   Box,
   CheckmarkIcon,
   ConfirmDialog,
@@ -585,7 +585,7 @@ function MemoMoreMenu({
         >
           <MenuActionItem
             testID="memo-ai-review"
-            Icon={AiIcon}
+            Icon={AiFilledIcon}
             title={t('memo:detail.aiParse')}
             description={aiQuota}
             isDisabled={aiParse.isDisabled}

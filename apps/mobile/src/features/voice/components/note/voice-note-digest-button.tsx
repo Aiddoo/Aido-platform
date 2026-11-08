@@ -2,7 +2,7 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
-import { AiIcon, Button, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { AiFilledIcon, Button, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
@@ -37,7 +37,7 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
       {cost == null && isPending && <TextSkeleton size="e1" className="mx-auto w-32" />}
       {cost != null && (
         <HStack gap={4} align="center" justify="center">
-          <AiIcon width={14} height={14} colorClassName="text-main" />
+          <AiFilledIcon width={14} height={14} colorClassName="text-main" />
           <Text size="e1" shade={6} numberOfLines={1} testID="voice-note-digest-cost">
             {cost}
           </Text>

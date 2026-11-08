@@ -6,7 +6,7 @@ import { toDateFormatLocale } from '@src/shared/date/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { AiIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
+import { AiFilledIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
@@ -32,7 +32,7 @@ export function QuickVoiceInfo() {
             accessibilityLabel={t('info.label')}
           >
             <HStack gap={4} align="center">
-              <AiIcon
+              <AiFilledIcon
                 width={fontScaledSize(14)}
                 height={fontScaledSize(14)}
                 colorClassName="text-main"
@@ -48,7 +48,7 @@ export function QuickVoiceInfo() {
             </HStack>
           </PressableFeedback>
         </Popover.Trigger>
-        <HintPopoverContent Icon={AiIcon} title={t('info.title')}>
+        <HintPopoverContent Icon={AiFilledIcon} title={t('info.title')}>
           <QuickVoiceInfo.Contents
             remaining={
               snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')

@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Avatar,
   Box,
-  CrownIcon,
+  CrownFilledIcon,
   Grid,
   GridItem,
   QueryErrorActions,
@@ -79,7 +79,7 @@ AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerIt
             </Avatar>
             {isLocked && (
               <Box className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-8 dark:bg-gray-2 dark:border-gray-4 border-gray-8 border items-center justify-center z-10">
-                <CrownIcon width={14} height={14} />
+                <CrownFilledIcon width={14} height={14} />
               </Box>
             )}
           </Box>

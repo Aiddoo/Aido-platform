@@ -3,7 +3,7 @@ import { WhatsNewMenuItem } from '@src/features/app-config/whats-new/components/
 import { AccessTierChip } from '@src/features/billing/subscription/components/access-tier-chip';
 import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
 import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
-import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu';
+import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -14,26 +14,26 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
   AiIcon,
+  AppSquareIcon,
   BellIcon,
   BlockIcon,
   ChatBubbleIcon,
   CrownIcon,
   DocsIcon,
-  EditIcon,
   FlagIcon,
+  GlobeIcon,
   H3,
-  KoreanIcon,
   ListIcon,
   MemoIcon,
   MicIcon,
   MoonIcon,
-  PawIcon,
   PersonIcon,
   QueryErrorBoundary,
   Result,
   SettingsListGroup,
   Spacing,
   StyledSafeAreaView,
+  TextSizeIcon,
   VStack,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
@@ -97,7 +97,7 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           </QueryErrorBoundary>
         )}
 
-        <SettingsListGroup label={t('mypage.sections.activity')}>
+        <SettingsListGroup label={t('mypage.sections.friends')}>
           <MyPageMenuItem Icon={PersonIcon} label={t('mypage.items.friends')} pathname="/friends" />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
@@ -105,37 +105,31 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
             label={t('mypage.items.blockedUsers')}
             pathname="/settings/blocked-users"
           />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={ListIcon}
-            label={t('mypage.items.categories')}
-            pathname="/settings/category-settings"
-          />
-          <SettingsListGroup.Separator />
-          <WhatsNewMenuItem />
-          <SettingsListGroup.Separator />
+        </SettingsListGroup>
+
+        <SettingsListGroup label={t('mypage.sections.records')}>
           <MyPageMenuItem
             Icon={FlagIcon}
             label={t('mypage.items.achievements')}
             pathname="/achievements"
           />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
         </SettingsListGroup>
 
         <QuotaSummary />
 
         <SettingsListGroup label={t('mypage.sections.subscription')}>
-          <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={PawIcon}
-            label={t('mypage.items.appIcon')}
-            pathname="/settings/app-icon"
-          />
-          <SettingsListGroup.Separator />
           <MyPageMenuItem
             Icon={CrownIcon}
             label={t('mypage.items.subscription')}
             pathname="/settings/subscription"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={AppSquareIcon}
+            label={t('mypage.items.appIcon')}
+            pathname="/settings/app-icon"
           />
         </SettingsListGroup>
 
@@ -147,19 +141,25 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
+            Icon={ListIcon}
+            label={t('mypage.items.categories')}
+            pathname="/settings/category-settings"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
             Icon={MoonIcon}
             label={t('mypage.items.theme')}
             pathname="/settings/theme"
           />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={EditIcon}
+            Icon={TextSizeIcon}
             label={t('mypage.items.fontSize')}
             pathname="/settings/font-size"
           />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={KoreanIcon}
+            Icon={GlobeIcon}
             label={t('settings:titles.language')}
             pathname="/settings/language"
           />
@@ -171,7 +171,9 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           />
         </SettingsListGroup>
 
-        <SettingsListGroup>
+        <SettingsListGroup label={t('mypage.sections.support')}>
+          <WhatsNewMenuItem />
+          <SettingsListGroup.Separator />
           <MyPageMenuItem
             Icon={ChatBubbleIcon}
             label={t('mypage.items.inquiry')}

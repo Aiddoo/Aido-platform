@@ -6,9 +6,11 @@
     },
     "header": "내 정보",
     "sections": {
-      "activity": "활동",
+      "friends": "친구",
+      "records": "기록",
       "subscription": "구독",
-      "settings": "설정"
+      "settings": "설정",
+      "support": "도움말"
     },
     "items": {
       "friends": "친구 관리",

@@ -4,7 +4,7 @@ import { isThemeMode } from '@src/shared/preferences/theme-mode.preference';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   DeviceIcon,
-  MoonIcon,
+  MoonFilledIcon,
   SettingsListGroup,
   SettingsScreenLayout,
   SunIcon,
@@ -33,7 +33,7 @@ function ThemeSettingsScreen() {
           <SettingsListGroup.Separator />
           <IconRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
           <SettingsListGroup.Separator />
-          <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
+          <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonFilledIcon} />
         </RadioGroup>
       </SettingsListGroup>
     </SettingsScreenLayout>

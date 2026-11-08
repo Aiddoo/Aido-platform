@@ -4,7 +4,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import type { Preference } from '@src/features/identity/preference/schemas/preference.schema';
-import { CrownIcon } from '@src/shared/ui';
+import { CrownFilledIcon } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
@@ -61,7 +61,7 @@ export function ReminderTimeInput({ label, description, period }: ReminderTimeIn
       {...time.range}
       timeFormat={preference.timeFormat}
       isDisabled={!preference.pushEnabled || updatePreference.isPending}
-      accessory={canUseCustomTime ? undefined : <CrownIcon width={14} height={14} />}
+      accessory={canUseCustomTime ? undefined : <CrownFilledIcon width={14} height={14} />}
       onBeforeOpen={() => !gate.promptIfBlocked()}
     />
   );
