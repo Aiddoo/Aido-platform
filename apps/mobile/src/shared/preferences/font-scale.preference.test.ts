@@ -55,7 +55,7 @@ describe('toFontScale', () => {
 
 describe('저장 키', () => {
   it('이미 설치된 앱의 저장 값을 읽도록 키를 바꾸지 않는다', () => {
-    // Then
+    // When·Then
     expect(FONT_SCALE_STORAGE_KEY).toBe('aido_font_scale');
   });
 });

@@ -437,6 +437,7 @@ describe('AuthBootProvider', () => {
     it.each(['success', 'failure'] as const)(
       '로그아웃 후 늦게 끝난 %s 판정은 세션을 변경하거나 리포팅하지 않는다',
       async (outcome) => {
+        // Given
         const listeners: Array<Parameters<typeof AppState.addEventListener>[1]> = [];
         jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
           listeners.push(listener);
@@ -467,6 +468,7 @@ describe('AuthBootProvider', () => {
         await fireEvent.press(screen.getByTestId('logout'));
         await expectStatus('unauthenticated');
 
+        // When
         await act(() => {
           if (outcome === 'success') {
             resolveRead('previous-session-token');
@@ -475,6 +477,7 @@ describe('AuthBootProvider', () => {
           }
         });
 
+        // Then
         await expectStatus('unauthenticated');
         expect(errorReporter.captureException).not.toHaveBeenCalled();
       },

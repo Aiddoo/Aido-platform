@@ -160,6 +160,8 @@ describe('useAiDataSharingConsentGate', () => {
     // Given
     // 안내가 열린 채 마이크를 한 번 더 눌렀다
     await renderGate({});
+
+    // When
     fireEvent.press(screen.getByText('두 번 시작'));
     fireEvent.press(await screen.findByTestId('ai-consent-later'));
 

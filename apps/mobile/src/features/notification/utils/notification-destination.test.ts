@@ -194,12 +194,14 @@ describe('공지 알림의 앱 경로', () => {
   it.each(Object.values(NOTICE_DEEP_LINK_PATH))(
     '서버가 보낼 수 있는 공지 경로 %s는 모두 연다',
     (url) => {
-      expect(
-        resolveNotificationDestination(
-          { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
-          COMPACT,
-        ),
-      ).toMatchObject({ kind: 'route' });
+      // When
+      const result = resolveNotificationDestination(
+        { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
+        COMPACT,
+      );
+
+      // Then
+      expect(result).toMatchObject({ kind: 'route' });
     },
   );
 
@@ -525,12 +527,17 @@ describe('펼친 화면 할 일 알림의 목록 pane', () => {
   it.each(['TODO_REMINDER', 'NUDGE_RECEIVED'] as const)(
     '%s도 할 일 주인과 날짜로 목록 pane을 연다',
     (type) => {
-      expect(
-        resolveNotificationDestination(
-          { type, context: { todoId: 42 }, routing: { todoOwnerId: VIEWER, todoDate: DATE } },
-          { windowSizeClass: 'expanded', viewerId: VIEWER },
-        ),
-      ).toEqual({ kind: 'route', href: { pathname: '/feed', params: { date: DATE, todoId: 42 } } });
+      // When
+      const result = resolveNotificationDestination(
+        { type, context: { todoId: 42 }, routing: { todoOwnerId: VIEWER, todoDate: DATE } },
+        { windowSizeClass: 'expanded', viewerId: VIEWER },
+      );
+
+      // Then
+      expect(result).toEqual({
+        kind: 'route',
+        href: { pathname: '/feed', params: { date: DATE, todoId: 42 } },
+      });
     },
   );
 

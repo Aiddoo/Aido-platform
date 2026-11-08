@@ -100,7 +100,7 @@ describe('toDeleteAccountResult', () => {
 });
 
 describe('toLinkedAccount', () => {
-  it('linkedAt ISO → Instant', () => {
+  it('연결 시각은 ISO 문자열을 Instant로 바꿔 옮긴다', () => {
     // Given
     const dto = {
       provider: 'GOOGLE' as const,
@@ -118,7 +118,7 @@ describe('toLinkedAccount', () => {
     expect(result.linked).toBe(true);
   });
 
-  it('linkedAt null → null', () => {
+  it('연결 시각이 없으면 비워 두고 계정 id도 비운다', () => {
     // Given
     const dto = {
       provider: 'KAKAO' as const,

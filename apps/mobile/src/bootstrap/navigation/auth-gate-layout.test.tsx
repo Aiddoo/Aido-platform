@@ -120,8 +120,10 @@ describe('root 인증 route 전환', () => {
   it.each(['loading', 'locked'] as const)(
     '%s 상태에서 복원 전에는 loading을 유지한다',
     async (status) => {
+      // Given·When
       const { route } = await renderAuthRoutes(status);
 
+      // Then
       expect(route.getPathname()).toBe('/loading');
       expect(screen.queryByTestId('login')).toBeNull();
       expect(screen.queryByTestId('feed')).toBeNull();
@@ -129,41 +131,58 @@ describe('root 인증 route 전환', () => {
   );
 
   it('세션 없는 부팅은 login으로 이동한다', async () => {
+    // Given
     const { route } = await renderAuthRoutes('loading');
 
+    // When
     await fireEvent.press(screen.getByTestId('boot-unauthenticated'));
 
+    // Then
     expect(route.getPathname()).toBe('/login');
   });
 
   it('세션 복원은 index가 없는 탭 그룹의 feed로 이동한다', async () => {
+    // Given
     const { route } = await renderAuthRoutes('loading');
 
+    // When
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
 
+    // Then
     expect(route.getPathname()).toBe('/feed');
     expect(screen.getByTestId('feed')).toBeTruthy();
   });
 
   it('로그인 후 feed, 로그아웃 후 login으로 이동한다', async () => {
+    // Given
     const { route } = await renderAuthRoutes('unauthenticated');
 
+    // When
     await fireEvent.press(screen.getByTestId('login'));
+
+    // Then
     expect(route.getPathname()).toBe('/feed');
 
+    // When
     await fireEvent.press(screen.getByTestId('feed'));
+
+    // Then
     expect(route.getPathname()).toBe('/login');
   });
 
   it('인증된 재실행의 root는 feed로 이동한다', async () => {
+    // Given·When
     const { route } = await renderAuthRoutes('authenticated');
 
+    // Then
     expect(route.getPathname()).toBe('/feed');
   });
 
   it('미인증 사용자의 private URL은 login으로 이동한다', async () => {
+    // Given·When
     const { route } = await renderAuthRoutes('unauthenticated', '/feed');
 
+    // Then
     expect(route.getPathname()).toBe('/login');
   });
 

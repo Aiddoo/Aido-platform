@@ -8,6 +8,8 @@ describe('createCoachmarkRepository', () => {
     // Given
     const storage = createMemorySyncStorage();
     storage.set('aido_friend_strip_hint_dismissed_v1:user-1', '2026-10-01T00:00:00.000Z');
+
+    // When
     const repository = createCoachmarkRepository(storage, getNowInstant);
 
     // Then
@@ -16,7 +18,7 @@ describe('createCoachmarkRepository', () => {
   });
 
   it('저장 키는 출시된 앱과 같다', () => {
-    // Then
+    // When·Then
     expect(createCoachmarkKey({ accountId: 'u', kind: 'todo-reorder' })).toBe(
       'aido_reorder_coachmark_v1:u:todo',
     );

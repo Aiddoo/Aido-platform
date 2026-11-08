@@ -15,13 +15,17 @@ const notificationAsync = jest.mocked(Haptics.notificationAsync);
 describe('expoHapticsGateway', () => {
   it('알림 햅틱을 지원하지 않는 기기에서 실패해도 예외를 밖으로 내지 않는다', async () => {
     // Given
+    const onUnhandledRejection = jest.fn();
+    process.on('unhandledRejection', onUnhandledRejection);
     notificationAsync.mockRejectedValue(new Error('unsupported'));
 
     // When
     expoHapticsGateway.notify('error');
-    await Promise.resolve();
+    await new Promise((resolve) => setImmediate(resolve));
 
     // Then
+    process.off('unhandledRejection', onUnhandledRejection);
     expect(notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Error);
+    expect(onUnhandledRejection).not.toHaveBeenCalled();
   });
 });

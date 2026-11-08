@@ -64,9 +64,34 @@ function renderFeed(url: string, options: { from?: string; routes?: string[] } =
   return renderRouteHook(useFeedScreen, { url, wrapper: FeedProviders, ...options });
 }
 
+const FIXED_NOW = new Date(2026, 10, 8, 12);
+
 describe('피드 URL 플로우', () => {
   beforeEach(() => {
+    jest.useFakeTimers({
+      now: FIXED_NOW,
+      doNotFake: [
+        'hrtime',
+        'nextTick',
+        'performance',
+        'queueMicrotask',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'requestIdleCallback',
+        'cancelIdleCallback',
+        'setImmediate',
+        'clearImmediate',
+        'setInterval',
+        'clearInterval',
+        'setTimeout',
+        'clearTimeout',
+      ],
+    });
     stubWindowDimensions(FOLD_WIDTH);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('날짜', () => {

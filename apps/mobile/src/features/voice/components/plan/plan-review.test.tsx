@@ -231,7 +231,7 @@ describe('PlanReview', () => {
   });
 
   it('제목이 비어 저장할 수 없는 카드가 있으면 추가 버튼을 막는다', async () => {
-    // Given
+    // When
     await renderPlan({
       ...PLAN,
       actions: [createTodoAction({ title: '' }), GROCERIES],

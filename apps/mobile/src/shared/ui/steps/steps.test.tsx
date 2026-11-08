@@ -14,7 +14,7 @@ async function renderButtons(props: { index: number; isLast: boolean }) {
 
 describe('Steps.Buttons', () => {
   it('첫 단계에서는 뒤로 버튼을 접근성 트리에서 숨긴다', async () => {
-    // Given
+    // When
     await renderButtons({ index: 0, isLast: false });
 
     // Then

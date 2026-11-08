@@ -62,18 +62,28 @@ describe('위젯 앱 진입 경로 검증', () => {
 
 describe('위젯 목적지가 이미 보이는지 판단', () => {
   it('같은 날짜의 내 피드가 보이면 다시 이동하지 않는다', () => {
-    expect(isWidgetRouteShown('aido://feed?date=today', '/feed', {})).toBe(true);
+    // When
+    const isShown = isWidgetRouteShown('aido://feed?date=today', '/feed', {});
+
+    // Then
+    expect(isShown).toBe(true);
   });
 
   it('같은 피드 화면이라도 친구 피드가 보이면 내 피드로 이동한다', () => {
-    expect(
-      isWidgetRouteShown('aido://feed?date=today', '/feed', {
-        friendId: 'friend-1',
-      }),
-    ).toBe(false);
+    // When
+    const isShown = isWidgetRouteShown('aido://feed?date=today', '/feed', {
+      friendId: 'friend-1',
+    });
+
+    // Then
+    expect(isShown).toBe(false);
   });
 
   it('할 일 상세는 pathname으로 판단한다', () => {
-    expect(isWidgetRouteShown('aido://todo/123', '/todo/123', {})).toBe(true);
+    // When
+    const isShown = isWidgetRouteShown('aido://todo/123', '/todo/123', {});
+
+    // Then
+    expect(isShown).toBe(true);
   });
 });

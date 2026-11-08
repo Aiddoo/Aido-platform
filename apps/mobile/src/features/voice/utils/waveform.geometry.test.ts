@@ -112,7 +112,7 @@ describe('getTimelineLevel', () => {
 
 describe('appendTimelineBar', () => {
   it('오래 녹음해도 칸 수는 정한 길이를 넘지 않고 최근 칸을 남긴다', () => {
-    // Given
+    // When
     const bars = range(18_000)
       .map((index) => index)
       .reduce<readonly number[]>((current, bar) => appendTimelineBar(current, bar, 160), []);

@@ -12,7 +12,7 @@ const logEventFiles = sourcePaths.filter((path) => path.endsWith('log-events.ts'
 
 describe('로그 이벤트 키', () => {
   it('상수 파일이 있다', () => {
-    // Then
+    // When·Then
     expect(logEventFiles.length).toBeGreaterThan(0);
   });
 

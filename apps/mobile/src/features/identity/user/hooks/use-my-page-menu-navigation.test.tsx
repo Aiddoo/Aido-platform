@@ -54,8 +54,12 @@ describe('useMyPageMenuNavigation', () => {
     mockedUsePathname.mockReturnValue('/settings/theme');
     const { result } = await renderHook(() => useMyPageMenuNavigation());
 
+    // When
+    const isThemeSelected = result.current.isSelected('/settings/theme');
+    const isLanguageSelected = result.current.isSelected('/settings/language');
+
     // Then
-    expect(result.current.isSelected('/settings/theme')).toBe(true);
-    expect(result.current.isSelected('/settings/language')).toBe(false);
+    expect(isThemeSelected).toBe(true);
+    expect(isLanguageSelected).toBe(false);
   });
 });
