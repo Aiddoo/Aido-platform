@@ -110,10 +110,59 @@ export function ReportReasonBottomSheet({
           <H4>{t('report.title')}</H4>
         </VStack>
 
-        <ReasonField control={form.control} />
+        <Controller
+          control={form.control}
+          name="reason"
+          render={({ field: { onChange, value } }) => (
+            <RadioGroup value={value} onValueChange={onChange} className="gap-0 overflow-hidden">
+              <IconRadioItem
+                value="SPAM"
+                label={t('report.reason.SPAM')}
+                testID="report-reason-SPAM"
+              />
+              <IconRadioItem
+                value="HARASSMENT"
+                label={t('report.reason.HARASSMENT')}
+                testID="report-reason-HARASSMENT"
+              />
+              <IconRadioItem
+                value="INAPPROPRIATE"
+                label={t('report.reason.INAPPROPRIATE')}
+                testID="report-reason-INAPPROPRIATE"
+              />
+              <IconRadioItem
+                value="IMPERSONATION"
+                label={t('report.reason.IMPERSONATION')}
+                testID="report-reason-IMPERSONATION"
+              />
+              <IconRadioItem
+                value="OTHER"
+                label={t('report.reason.OTHER')}
+                testID="report-reason-OTHER"
+              />
+            </RadioGroup>
+          )}
+        />
 
         <VStack gap={6}>
-          <DetailField control={form.control} />
+          <Controller
+            control={form.control}
+            name="detail"
+            render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
+              <BottomSheetTextArea
+                ref={ref}
+                label={t('report.detailLabel')}
+                placeholder={t('report.detailPlaceholder')}
+                value={value ?? ''}
+                onChange={onChange}
+                isInvalid={error != null}
+                errorMessage={error?.message}
+                maxLength={USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}
+                className="h-[88px] min-h-0"
+                testID="report-detail-input"
+              />
+            )}
+          />
           <DetailLengthCounter control={form.control} />
         </VStack>
 
@@ -122,67 +171,6 @@ export function ReportReasonBottomSheet({
         </Text>
       </VStack>
     </KeyboardBottomSheet>
-  );
-}
-
-function ReasonField({ control }: { control: Control<UserReportFormValues> }) {
-  const { t } = useTranslation('moderation');
-
-  return (
-    <Controller
-      control={control}
-      name="reason"
-      render={({ field: { onChange, value } }) => (
-        <RadioGroup value={value} onValueChange={onChange} className="gap-0 overflow-hidden">
-          <IconRadioItem value="SPAM" label={t('report.reason.SPAM')} testID="report-reason-SPAM" />
-          <IconRadioItem
-            value="HARASSMENT"
-            label={t('report.reason.HARASSMENT')}
-            testID="report-reason-HARASSMENT"
-          />
-          <IconRadioItem
-            value="INAPPROPRIATE"
-            label={t('report.reason.INAPPROPRIATE')}
-            testID="report-reason-INAPPROPRIATE"
-          />
-          <IconRadioItem
-            value="IMPERSONATION"
-            label={t('report.reason.IMPERSONATION')}
-            testID="report-reason-IMPERSONATION"
-          />
-          <IconRadioItem
-            value="OTHER"
-            label={t('report.reason.OTHER')}
-            testID="report-reason-OTHER"
-          />
-        </RadioGroup>
-      )}
-    />
-  );
-}
-
-function DetailField({ control }: { control: Control<UserReportFormValues> }) {
-  const { t } = useTranslation('moderation');
-
-  return (
-    <Controller
-      control={control}
-      name="detail"
-      render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
-        <BottomSheetTextArea
-          ref={ref}
-          label={t('report.detailLabel')}
-          placeholder={t('report.detailPlaceholder')}
-          value={value ?? ''}
-          onChange={onChange}
-          isInvalid={error != null}
-          errorMessage={error?.message}
-          maxLength={USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}
-          className="h-[88px] min-h-0"
-          testID="report-detail-input"
-        />
-      )}
-    />
   );
 }
 

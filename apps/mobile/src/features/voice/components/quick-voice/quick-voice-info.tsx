@@ -19,6 +19,11 @@ export function QuickVoiceInfo() {
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const formatRefillSentence = useFormatRefillSentence();
+  const remaining =
+    snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE');
+  const refill = formatRefillSentence(snapshot, 'AI_PARSE');
+  // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
+  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
 
   return (
     <HStack gap={8} align="center">
@@ -49,56 +54,40 @@ export function QuickVoiceInfo() {
           </PressableFeedback>
         </Popover.Trigger>
         <HintPopoverContent Icon={AiFilledIcon} title={t('info.title')}>
-          <QuickVoiceInfo.Contents
-            remaining={
-              snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')
-            }
-            refill={formatRefillSentence(snapshot, 'AI_PARSE')}
-          />
+          <VStack gap={8}>
+            <VStack gap={4}>
+              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                {t('info.description')}
+              </Text>
+              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                {t('info.examples')}
+              </Text>
+            </VStack>
+            <Separator thickness={1} className="bg-border" />
+            <VStack gap={4}>
+              {remaining != null && (
+                <Text
+                  size="b4"
+                  shade={7}
+                  className="tabular-nums"
+                  lineBreakStrategyIOS="hangul-word"
+                >
+                  {t('info.remaining', { amount: formatCount(remaining, locale) })}
+                </Text>
+              )}
+              {refill != null && (
+                <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
+                  {refill}
+                </Text>
+              )}
+              <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
+                {t('info.notCharged')}
+              </Text>
+            </VStack>
+          </VStack>
         </HintPopoverContent>
       </Popover>
       <QuotaChip feature="AI_PARSE" />
     </HStack>
   );
 }
-
-QuickVoiceInfo.Contents = function Contents({
-  remaining,
-  refill,
-}: {
-  remaining: number | null;
-  refill: string | null;
-}) {
-  const { t } = useTranslation('voice');
-  // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
-  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
-
-  return (
-    <VStack gap={8}>
-      <VStack gap={4}>
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-          {t('info.description')}
-        </Text>
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-          {t('info.examples')}
-        </Text>
-      </VStack>
-      <Separator thickness={1} className="bg-border" />
-      <VStack gap={4}>
-        {remaining != null && (
-          <Text size="b4" shade={7} className="tabular-nums" lineBreakStrategyIOS="hangul-word">
-            {t('info.remaining', { amount: formatCount(remaining, locale) })}
-          </Text>
-        )}
-        {refill != null && (
-          <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
-            {refill}
-          </Text>
-        )}
-        <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
-          {t('info.notCharged')}
-        </Text>
-      </VStack>
-    </VStack>
-  );
-};

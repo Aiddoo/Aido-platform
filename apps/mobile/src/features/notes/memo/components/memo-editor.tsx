@@ -35,7 +35,6 @@ import {
   Result,
   STACK_BACK_ICON,
   STACK_MORE_ICON,
-  StyledSafeAreaView,
   Text,
   TextArea,
   TextSkeleton,
@@ -423,15 +422,13 @@ MemoEditor.Empty = function Empty() {
   const { t } = useTranslation('memo');
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
-      <HStack flex={1} justify="center" align="center">
-        <Result
-          icon={<MemoIllustration />}
-          title={t('detail.emptyTitle')}
-          description={t('detail.selectPrompt')}
-        />
-      </HStack>
-    </StyledSafeAreaView>
+    <Box flex={1} className="px-8">
+      <Result
+        icon={<MemoIllustration />}
+        title={t('detail.emptyTitle')}
+        description={t('detail.selectPrompt')}
+      />
+    </Box>
   );
 };
 

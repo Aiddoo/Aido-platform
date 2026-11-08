@@ -46,13 +46,15 @@ export function VoiceNoteRecordFooter({
           />
         ))
         .otherwise(() => (
-          <ListeningControls
-            isListening={state.status === 'listening'}
-            markCount={markCount}
-            onPause={onPause}
-            onFinish={onFinish}
-            onMark={onMark}
-          />
+          <Box className="w-full max-w-90 self-center">
+            <ListeningControls
+              isListening={state.status === 'listening'}
+              markCount={markCount}
+              onPause={onPause}
+              onFinish={onFinish}
+              onMark={onMark}
+            />
+          </Box>
         ))}
       <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
         {t('record.privacy')}
@@ -79,7 +81,7 @@ function ListeningControls({
   const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
 
   return (
-    <HStack align="start" className="w-full max-w-90 self-center">
+    <HStack align="start">
       <RecordButton
         label={t('record.pause')}
         onPress={onPause}

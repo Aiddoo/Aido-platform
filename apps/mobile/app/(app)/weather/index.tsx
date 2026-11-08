@@ -28,10 +28,11 @@ import {
   Box,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
+  ReadableContent,
   Spacing,
   VStack,
 } from '@src/shared/ui';
-import { type PropsWithChildren, Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -40,7 +41,7 @@ const HERO_TOP = 6;
 const CARDS_TOP = 32;
 const CARD_GAP = 12;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
-const COLUMN_MAX_WIDTH = 560;
+const COLUMN_STYLE = { maxWidth: 560 };
 
 /**
  * 위치를 확인하는 동안에도 서버에 저장된 위치로 리포트를 바로 받는다.
@@ -67,7 +68,7 @@ export default function WeatherScreen() {
             <AdaptivePane
               primary={
                 <WeatherScrollView>
-                  <WeatherColumn>
+                  <ReadableContent style={COLUMN_STYLE}>
                     <Box px={SCREEN_GUTTER}>
                       <WeatherLocationPrompt.SavedLocationNotice />
                     </Box>
@@ -100,14 +101,14 @@ export default function WeatherScreen() {
                         <ForecastCards />
                       </>
                     )}
-                  </WeatherColumn>
+                  </ReadableContent>
                 </WeatherScrollView>
               }
               secondary={
                 <WeatherScrollView>
-                  <WeatherColumn>
+                  <ReadableContent style={COLUMN_STYLE}>
                     <ForecastCards />
-                  </WeatherColumn>
+                  </ReadableContent>
                 </WeatherScrollView>
               }
             />
@@ -139,14 +140,6 @@ function ForecastCards() {
         <WeatherAttribution background="dark" />
       </Suspense>
     </VStack>
-  );
-}
-
-function WeatherColumn({ children }: PropsWithChildren) {
-  return (
-    <Box className="w-full self-center" style={{ maxWidth: COLUMN_MAX_WIDTH }}>
-      {children}
-    </Box>
   );
 }
 

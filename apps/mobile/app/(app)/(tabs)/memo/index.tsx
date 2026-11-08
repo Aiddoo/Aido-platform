@@ -88,7 +88,9 @@ export default function MemoScreen() {
         }
         secondary={
           selectedMemoId == null ? (
-            <MemoEditor.Empty />
+            <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+              <MemoEditor.Empty />
+            </StyledSafeAreaView>
           ) : (
             <StyledSafeAreaView
               key={selectedMemoId}

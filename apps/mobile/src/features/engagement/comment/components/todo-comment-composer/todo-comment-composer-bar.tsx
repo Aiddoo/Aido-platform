@@ -7,7 +7,7 @@ import { Box, Text } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { KeyboardStickyView, useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, {
@@ -33,6 +33,11 @@ const EXTRA_PADDING_DURATION_MS = 150;
  * 아래 여백도 키보드 진행률로 바뀌어 JS 리렌더 없이 붙는다.
  */
 export function TodoCommentComposerBar() {
+  const { t } = useTranslation('todoComment');
+  const [todoId] = useTodoId();
+  const [{ data: detail }, { data: user }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
+  });
   const insets = useSafeAreaInsets();
   const keyboardBottomGap = useKeyboardBottomGap();
   const isScreenFocused = useIsFocused();
@@ -100,9 +105,15 @@ export function TodoCommentComposerBar() {
     <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }} enabled={isScreenFocused}>
       <Box className="bg-white px-3 pt-2" testID="todo-comment-composer">
         <Box ref={composerRef} collapsable={false} onLayout={handleContentLayout}>
-          <Suspense fallback={<TodoCommentComposerBar.Loading />}>
-            <ComposerInput />
-          </Suspense>
+          {detail.permissions.canComment ? (
+            <TodoCommentForm user={user} />
+          ) : (
+            <Box className="items-center py-2">
+              <Text size="b4" shade={6}>
+                {t('input.commentingDisabled')}
+              </Text>
+            </Box>
+          )}
         </Box>
         <Animated.View style={bottomSpacerStyle} />
       </Box>
@@ -110,26 +121,14 @@ export function TodoCommentComposerBar() {
   );
 }
 
+/** 작성 바와 같은 바탕·여백 위에 입력 자리를 잡는다. 키보드가 올라오기 전이라 따라가지 않는다 */
 TodoCommentComposerBar.Loading = function Loading() {
-  return <Skeleton className="h-14 w-full rounded-3xl" />;
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Box className="bg-white px-3 pt-2">
+      <Skeleton className="h-14 w-full rounded-3xl" />
+      <Box style={{ height: (insets.bottom || DEFAULT_BOTTOM_INSET) + CLOSED_EXTRA_PADDING }} />
+    </Box>
+  );
 };
-
-function ComposerInput() {
-  const [todoId] = useTodoId();
-  const { t } = useTranslation('todoComment');
-  const [{ data: detail }, { data: user }] = useSuspenseQueries({
-    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
-  });
-
-  if (!detail.permissions.canComment) {
-    return (
-      <Box className="items-center py-2">
-        <Text size="b4" shade={6}>
-          {t('input.commentingDisabled')}
-        </Text>
-      </Box>
-    );
-  }
-
-  return <TodoCommentForm user={user} />;
-}

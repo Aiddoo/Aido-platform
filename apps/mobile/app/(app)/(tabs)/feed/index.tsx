@@ -59,11 +59,13 @@ import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
+/** 친구 피드 위 쿡 찌르기 안내 줄의 높이(그림 72). 불러오는 동안과 실패했을 때 같은 자리를 잡는다 */
+const NUDGE_BANNER_HEIGHT = 72;
+
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const [{ sort, comment }] = useTodoCommentParams();
-  const [selectedDateKey] = useFeedDateKey();
   const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
   const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
@@ -115,7 +117,7 @@ export default function FeedScreen() {
               >
                 {/* 펼친 피드의 오른쪽 칸이라 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */}
                 <TodoCommentSession onExit={closeDetail}>
-                  <TodoCommentTitleBar date={selectedDateKey} />
+                  <TodoCommentTitleBar />
 
                   <TodoAvailabilityGuard
                     fallback={<TodoDetailSummary.Unavailable onClose={closeDetail} />}
@@ -131,7 +133,9 @@ export default function FeedScreen() {
                       </QueryErrorBoundary>
 
                       <QueryErrorBoundary resetKeys={[id]}>
-                        <TodoCommentComposerBar />
+                        <Suspense fallback={<TodoCommentComposerBar.Loading />}>
+                          <TodoCommentComposerBar />
+                        </Suspense>
                       </QueryErrorBoundary>
                     </TodoCommentKeyboardArea>
                   </TodoAvailabilityGuard>
@@ -175,9 +179,10 @@ function MyFeed() {
         <AddTodoRequestEntry />
         <MyCalendar />
 
-        <Spacing size={10} />
+        <Spacing size={12} />
 
-        <ActivationChecklist className="mx-4 mb-5" />
+        {/* 스스로 숨는 안내는 숨을 때 간격도 함께 사라지게 아래 12를 자기 className으로 가진다 */}
+        <ActivationChecklist className="mx-4 mb-3" />
 
         <Box px={16}>
           <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
@@ -189,18 +194,14 @@ function MyFeed() {
 
         <Spacing size={20} />
 
-        <InviteEntryBanner className="mx-4 mb-5" />
+        <InviteEntryBanner className="mx-4 mb-3" />
 
         {whatsNew.isReentryVisible && (
-          <>
-            <Box px={16}>
-              <WhatsNewEntryNotice
-                onPress={whatsNew.openFromReentry}
-                onClose={whatsNew.dismissReentry}
-              />
-            </Box>
-            <Spacing size={12} />
-          </>
+          <WhatsNewEntryNotice
+            className="mx-4 mb-3"
+            onPress={whatsNew.openFromReentry}
+            onClose={whatsNew.dismissReentry}
+          />
         )}
 
         {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
@@ -216,6 +217,7 @@ function MyFeed() {
             <SuggestionEntry />
           </QueryErrorBoundary>
         </Box>
+
         <Spacing size={20} />
       </StyledSafeAreaView>
     </ScrollViewContainer>
@@ -323,6 +325,13 @@ FriendFeedTodos.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
+
+        <Spacing size={8} />
+
+        {/* 불러오기 전과 같은 높이로 안내 줄 자리를 비워 둬 오류 뒤 목록이 밀리지 않는다 */}
+        <Box className="px-4" style={{ height: NUDGE_BANNER_HEIGHT }} />
+
+        <Spacing size={16} />
 
         <Box className="grow px-4 pb-6">
           <FriendTodoList.Error {...props} />

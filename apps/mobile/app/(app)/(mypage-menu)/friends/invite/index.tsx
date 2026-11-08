@@ -22,7 +22,6 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   ReadableContent,
-  Spacing,
   StyledSafeAreaView,
   Text,
   TintedRefreshControl,
@@ -72,7 +71,23 @@ export default function MyInviteScreen() {
                 </Text>
               </Box>
 
-              <InviteRewardLines />
+              {/* 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */}
+              <VStack
+                gap={14}
+                className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4"
+              >
+                <RewardLine
+                  label={t('myInvite.rewardInviteeLabel')}
+                  value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
+                />
+                <RewardLine
+                  label={t('myInvite.rewardInviterLabel')}
+                  value={t('myInvite.rewardInviter', {
+                    activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
+                    days: FIRST_INVITER_PREMIUM_DAYS,
+                  })}
+                />
+              </VStack>
 
               {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
               <QueryErrorBoundary fallback={MyInviteScreen.Error}>
@@ -100,7 +115,6 @@ export default function MyInviteScreen() {
                 <Text size="b4" weight="semibold" shade={7} accessibilityRole="header">
                   {t('myInvite.notice.title')}
                 </Text>
-                <Spacing size={2} />
                 <VStack gap={4} accessibilityRole="list">
                   <NoticeRow>
                     {t('myInvite.notice.qualification', {
@@ -150,30 +164,11 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
   );
 };
 
-/** 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */
-function InviteRewardLines() {
+function RewardLine({ label, value }: { label: string; value: string }) {
   const { t } = useTranslation('invite');
 
   return (
-    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4">
-      <RewardLine
-        label={t('myInvite.rewardInviteeLabel')}
-        value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
-      />
-      <RewardLine
-        label={t('myInvite.rewardInviterLabel')}
-        value={t('myInvite.rewardInviter', {
-          activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-          days: FIRST_INVITER_PREMIUM_DAYS,
-        })}
-      />
-    </VStack>
-  );
-}
-
-function RewardLine({ label, value }: { label: string; value: string }) {
-  return (
-    <VStack gap={6} accessible accessibilityLabel={`${label}, ${value}`}>
+    <VStack gap={6} accessible accessibilityLabel={t('myInvite.rewardLineLabel', { label, value })}>
       <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
         <Text size="e1" weight="bold" tone="brand">
           {label}

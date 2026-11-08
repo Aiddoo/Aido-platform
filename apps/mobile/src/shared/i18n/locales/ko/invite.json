@@ -62,6 +62,7 @@
     "rewardInviteeLabel": "친구",
     "rewardInvitee": "가입하면 바로 프리미엄 {{days}}일",
     "rewardInviterLabel": "나",
+    "rewardLineLabel": "{{label}}, {{value}}",
     "rewardInviter": "친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구\u00a01\u2060명\u00a0더",
     "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
     "codeLabel": "내 초대 코드",

@@ -66,6 +66,7 @@
     "rewardInviteeLabel": "Your friend",
     "rewardInvitee": "{{days}} days of Premium right when they join",
     "rewardInviterLabel": "You",
+    "rewardLineLabel": "{{label}}, {{value}}",
     "rewardInviter": "{{days}} days of Premium + 1\u00a0more\u00a0friend once they complete to-dos on {{activeDays}} days",
     "heroTitle": "Invite a friend and\ncheer each other on",
     "codeLabel": "My invite code",

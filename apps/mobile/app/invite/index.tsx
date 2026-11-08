@@ -12,7 +12,7 @@ export default function InviteCodeEntryRoute() {
       <InviteCodeEntryForm>
         <H3>{t('codeEntry.headline')}</H3>
 
-        <Spacing size={10} />
+        <Spacing size={8} />
 
         <Text size="b3" shade={7}>
           {t('codeEntry.description')}

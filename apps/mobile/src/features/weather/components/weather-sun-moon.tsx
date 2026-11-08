@@ -3,7 +3,7 @@ import { formatClockTime, formatDateKeyLabel } from '@src/shared/date/date-forma
 import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { Box, HStack, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { isNotNil, range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
@@ -108,6 +108,7 @@ export function WeatherSunMoon() {
           </Text>
         )}
       </HStack>
+      <Spacing size={8} />
       <WeatherSunArc
         position={getSunArcPosition(today, now)}
         isNight={isSunBelowHorizon(today, now)}

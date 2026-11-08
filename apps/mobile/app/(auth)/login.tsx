@@ -28,7 +28,7 @@ export default function LoginScreen() {
             <Avatar.Image source={appIconImage} />
           </Avatar>
           <VStack align="center">
-            <H1>Aido</H1>
+            <H1>{t('login.appName')}</H1>
             <Text size="b4" shade={6}>
               {t('login.slogan')}
             </Text>

@@ -82,7 +82,15 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
                 </VoiceNoteResult.Summary>
               ))
               .with('todos', () => (
-                <VoiceNoteResult.Todos note={note} onMemoChanged={onMemoChanged} />
+                <QueryErrorBoundary>
+                  <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
+                    <VoiceNotePlanTodos
+                      note={note}
+                      className={PLAN_TODOS_CLASS_NAME}
+                      onMemoChanged={onMemoChanged}
+                    />
+                  </Suspense>
+                </QueryErrorBoundary>
               ))
               .with('transcript', () => (
                 <VoiceNoteResult.Transcript note={note} player={player} canPlay={canPlay} />
@@ -92,7 +100,15 @@ export function VoiceNoteResult({ note, onMemoChanged }: VoiceNoteResultProps) {
         </VStack>
         {!isCompact && (
           <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>
-            <VoiceNoteResult.Todos note={note} onMemoChanged={onMemoChanged} />
+            <QueryErrorBoundary>
+              <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
+                <VoiceNotePlanTodos
+                  note={note}
+                  className={PLAN_TODOS_CLASS_NAME}
+                  onMemoChanged={onMemoChanged}
+                />
+              </Suspense>
+            </QueryErrorBoundary>
           </Box>
         )}
       </HStack>
@@ -196,20 +212,6 @@ VoiceNoteResult.TabList = function TabList({
         </SegmentTabTrigger>
       </Tabs.List>
     </ViewTabs>
-  );
-};
-
-VoiceNoteResult.Todos = function Todos({ note, onMemoChanged }: VoiceNoteResultProps) {
-  return (
-    <QueryErrorBoundary>
-      <Suspense fallback={<PlanReview.Loading className={PLAN_TODOS_CLASS_NAME} />}>
-        <VoiceNotePlanTodos
-          note={note}
-          className={PLAN_TODOS_CLASS_NAME}
-          onMemoChanged={onMemoChanged}
-        />
-      </Suspense>
-    </QueryErrorBoundary>
   );
 };
 

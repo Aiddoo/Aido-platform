@@ -1,3 +1,4 @@
+import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
@@ -26,7 +27,7 @@ import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 const ACTION_MENU_WIDTH = 180;
 
 /** 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없고, 선택 해제는 목록 pane이 맡는다 */
-export function TodoCommentTitleBar({ date }: { date: string }) {
+export function TodoCommentTitleBar() {
   const { t } = useTranslation('todo');
 
   return (
@@ -35,7 +36,7 @@ export function TodoCommentTitleBar({ date }: { date: string }) {
         {t('detail.pageTitle')}
       </Text>
 
-      <TodoActionsButton date={date} />
+      <TodoActionsButton />
       <TodoModerationMenu />
     </HStack>
   );
@@ -101,9 +102,10 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
 };
 
 /** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
-function TodoActionsButton({ date }: { date: string }) {
+function TodoActionsButton() {
   const { t } = useTranslation('todo');
   const [todoId] = useTodoId();
+  const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 

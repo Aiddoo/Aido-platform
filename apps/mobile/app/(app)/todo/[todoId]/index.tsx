@@ -41,7 +41,9 @@ export default function TodoDetailScreen() {
             </QueryErrorBoundary>
 
             <QueryErrorBoundary resetKeys={[todoId]}>
-              <TodoCommentComposerBar />
+              <Suspense fallback={<TodoCommentComposerBar.Loading />}>
+                <TodoCommentComposerBar />
+              </Suspense>
             </QueryErrorBoundary>
           </TodoCommentKeyboardArea>
         </TodoAvailabilityGuard>

@@ -43,7 +43,7 @@ export function WeatherSunArc({
   const horizonColor = useResolvedColor('text-on-sky/35');
 
   return (
-    <Box className="relative mt-2" style={{ height: SUN_ARC_VIEWBOX.height }}>
+    <Box className="relative" style={{ height: SUN_ARC_VIEWBOX.height }}>
       <Svg
         width="100%"
         height={SUN_ARC_VIEWBOX.height}
