@@ -41,7 +41,7 @@ import {
   useTileLayout,
   WeatherDialTile,
   WeatherTextTile,
-  WeatherTileSkeleton,
+  WeatherTile,
 } from './weather-detail-tile';
 import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
 import { WeatherMeter } from './weather-meter';
@@ -265,7 +265,7 @@ WeatherDetailGrid.Loading = function Loading() {
       <Grid columns={columns} gap={TILE_GRID_GAP}>
         {range(LOADING_TILE_COUNT).map((index) => (
           <GridItem key={index}>
-            <WeatherTileSkeleton minHeight={bodyMinHeight} />
+            <WeatherTile.Loading minHeight={bodyMinHeight} />
           </GridItem>
         ))}
       </Grid>

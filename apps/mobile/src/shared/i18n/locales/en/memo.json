@@ -43,6 +43,7 @@
   "aiReview": {
     "draftLost": "We couldn't load the split to-dos. Please split the memo again",
     "goBack": "Go back",
-    "noCategory": "Couldn't find a category"
+    "noCategory": "Couldn't find a category",
+    "loadFailed": "Couldn't load the split to-dos"
   }
 }

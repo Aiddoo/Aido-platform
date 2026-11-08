@@ -1,8 +1,7 @@
+import { MyPageMenuPane } from '@src/bootstrap/navigation/my-page-menu-pane';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { AdaptivePane } from '@src/shared/ui';
 import { Stack } from 'expo-router';
-
-import { MyPageMenuPane } from '../(tabs)/mypage/index';
 
 export default function MyPageMenuLayout() {
   const isCompact = useWindowSizeClass() === 'compact';

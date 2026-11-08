@@ -43,6 +43,7 @@
   "aiReview": {
     "draftLost": "나눈 내용을 불러오지 못했어요. 메모에서 다시 나눠주세요",
     "goBack": "돌아가기",
-    "noCategory": "카테고리를 찾을 수 없어요"
+    "noCategory": "카테고리를 찾을 수 없어요",
+    "loadFailed": "나눈 내용을 불러오지 못했어요"
   }
 }

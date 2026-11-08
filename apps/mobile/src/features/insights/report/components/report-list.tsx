@@ -19,25 +19,6 @@ import { ReportRow } from './report-row';
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 
-export function FreeReportPreview() {
-  const push = useSingleTap(router.push);
-  const { t } = useTranslation('ai');
-  const [reportType] = useReportType();
-  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
-
-  return (
-    <VStack gap={12}>
-      <Box className="opacity-60">
-        <ReportRow report={sampleReport} isSample isLast />
-      </Box>
-
-      <Button size="medium" onPress={() => push('/settings/subscription')}>
-        {t('report.list.subscribeCta')}
-      </Button>
-    </VStack>
-  );
-}
-
 export function ReportList() {
   const [reportType] = useReportType();
   usePrefetchQuery(useGetReportStatusQueryOptions());
@@ -55,6 +36,25 @@ export function ReportList() {
     </VStack>
   );
 }
+
+ReportList.Free = function Free() {
+  const push = useSingleTap(router.push);
+  const { t } = useTranslation('ai');
+  const [reportType] = useReportType();
+  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
+
+  return (
+    <VStack gap={12}>
+      <Box className="opacity-60">
+        <ReportRow report={sampleReport} isSample isLast />
+      </Box>
+
+      <Button size="medium" onPress={() => push('/settings/subscription')}>
+        {t('report.list.subscribeCta')}
+      </Button>
+    </VStack>
+  );
+};
 
 function PremiumPendingPreview() {
   const { t } = useTranslation('ai');

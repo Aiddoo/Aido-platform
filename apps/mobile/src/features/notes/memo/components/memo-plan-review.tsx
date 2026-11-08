@@ -13,7 +13,7 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Result } from '@src/shared/ui';
+import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -106,6 +106,16 @@ export function MemoPlanReview() {
     />
   );
 }
+
+MemoPlanReview.Loading = function Loading() {
+  return <PlanReview.Loading className="flex-1" />;
+};
+
+MemoPlanReview.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('memo');
+
+  return <QueryErrorFallback title={t('aiReview.loadFailed')} reset={reset} />;
+};
 
 function createMemoPlanIdentity(memoId: number) {
   return {

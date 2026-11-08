@@ -32,7 +32,7 @@ export function useTileLayout(): TileLayout {
   // 앱 글자 크기가 가장 클 때는 두 칸에 값이 잘리므로 한 칸으로 쌓는다
   const isLargeText = useFontScale().fontScale === 'xlarge';
   const [width, setWidth] = useState(0);
-  const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
+  const handleLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
   const wideColumns = width >= FOUR_COLUMN_MIN_WIDTH ? 4 : 2;
   const columns = isLargeText ? wideColumns / 2 : wideColumns;
   const tileSide = (width - TILE_GRID_GAP * (columns - 1)) / columns;
@@ -40,7 +40,7 @@ export function useTileLayout(): TileLayout {
   return {
     columns,
     bodyMinHeight: Math.max(0, tileHeight - TILE_PADDING * 2 - TILE_BORDER),
-    onLayout,
+    onLayout: handleLayout,
   };
 }
 
@@ -54,7 +54,7 @@ interface WeatherTileProps {
 }
 
 /** 모든 타일이 같은 뼈대(제목 → 본문 → 바닥에 붙은 문구)를 갖도록 높이와 순서를 고정한다. */
-function WeatherTile({
+export function WeatherTile({
   icon,
   title,
   minHeight,
@@ -168,7 +168,7 @@ export function WeatherDialTile({
 }: WeatherDialTileProps) {
   const { t } = useTranslation('weather');
   const [size, setSize] = useState(0);
-  const onLayout = (event: LayoutChangeEvent) => {
+  const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setSize(Math.floor(Math.min(width, height, DIAL_MAX_SIZE)));
   };
@@ -181,14 +181,14 @@ export function WeatherDialTile({
       note={note}
       accessibilityLabel={t('details.tile', { title, value: accessibilityValue, note })}
     >
-      <Box className="mt-1.5 flex-1 items-center justify-center" onLayout={onLayout}>
+      <Box className="mt-1.5 flex-1 items-center justify-center" onLayout={handleLayout}>
         {size > 0 && <Box className="absolute">{children(size)}</Box>}
       </Box>
     </WeatherTile>
   );
 }
 
-export function WeatherTileSkeleton({ minHeight }: { minHeight: number }) {
+WeatherTile.Loading = function Loading({ minHeight }: Pick<WeatherTileProps, 'minHeight'>) {
   return (
     <WeatherCard density="tile">
       <VStack gap={8} style={{ minHeight }}>
@@ -197,4 +197,4 @@ export function WeatherTileSkeleton({ minHeight }: { minHeight: number }) {
       </VStack>
     </WeatherCard>
   );
-}
+};
