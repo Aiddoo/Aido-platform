@@ -6,7 +6,7 @@ import {
 import { type Logger } from '@src/core/ports/logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { getErrorMessage, isBusinessError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, isCodedError, unwrap } from '@src/shared/errors';
 import {
   type Query,
   type QueryClient,
@@ -95,7 +95,7 @@ const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
 const REPORT_MAX_RETRIES = 2;
 
 function shouldRetryReport(failureCount: number, error: unknown): boolean {
-  return !isBusinessError(error) && failureCount < REPORT_MAX_RETRIES;
+  return !isCodedError(error) && failureCount < REPORT_MAX_RETRIES;
 }
 
 /**

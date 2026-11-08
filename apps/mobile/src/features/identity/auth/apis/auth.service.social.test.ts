@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import {
   createHttpClientStub,
   createLoggerStub,
@@ -111,7 +111,7 @@ describe('소셜 로그인', () => {
 
       // Then
       expect(result.ok).toBe(false);
-      expect(!result.ok && isBusinessError(result.error, code)).toBe(true);
+      expect(!result.ok && isCodedError(result.error, code)).toBe(true);
     });
 
     it('서버 오류 코드는 카탈로그 문구로, 모르는 코드는 호출부 폴백으로 보여 준다', async () => {
@@ -140,7 +140,7 @@ describe('소셜 로그인', () => {
       const result = await service.openKakaoLogin();
 
       // Then
-      expect(!result.ok && isBusinessError(result.error, 'AUTH_NO_CODE_RECEIVED')).toBe(true);
+      expect(!result.ok && isCodedError(result.error, 'AUTH_NO_CODE_RECEIVED')).toBe(true);
     });
 
     it('서버가 오류 코드를 실어 돌려보내면 토큰을 저장하지 않고 실패한다', async () => {
@@ -234,7 +234,7 @@ describe('소셜 로그인', () => {
       const result = await service.openAppleLogin();
 
       // Then
-      expect(!result.ok && isBusinessError(result.error, code)).toBe(true);
+      expect(!result.ok && isCodedError(result.error, code)).toBe(true);
       expect(publicHttp.post).not.toHaveBeenCalled();
     });
 

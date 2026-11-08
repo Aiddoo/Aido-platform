@@ -1,4 +1,4 @@
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -34,7 +34,7 @@ describe('FriendService', () => {
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.EMPTY_TAG)).toBe(true);
+        expect(isCodedError(result.error, FRIEND_ERROR_CODE.EMPTY_TAG)).toBe(true);
       }
       expect(httpClient.post).not.toHaveBeenCalled();
     });
@@ -46,7 +46,7 @@ describe('FriendService', () => {
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.INVALID_TAG)).toBe(true);
+        expect(isCodedError(result.error, FRIEND_ERROR_CODE.INVALID_TAG)).toBe(true);
       }
       expect(httpClient.post).not.toHaveBeenCalled();
     });
@@ -389,7 +389,7 @@ describe('FriendService', () => {
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(isBusinessError(result.error, FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT)).toBe(true);
+        expect(isCodedError(result.error, FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT)).toBe(true);
       }
       expect(httpClient.get).not.toHaveBeenCalled();
     });

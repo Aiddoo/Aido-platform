@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import { isApiError } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
@@ -27,7 +27,7 @@ export type RedeemFailureReason =
   | 'unknown';
 
 export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
-  if (isBusinessError(error, INVITE_ERROR_CODE.INVALID_CODE)) {
+  if (isCodedError(error, INVITE_ERROR_CODE.INVALID_CODE)) {
     return 'invalid_code';
   }
   if (!isApiError(error)) {

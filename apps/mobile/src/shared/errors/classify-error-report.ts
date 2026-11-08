@@ -1,5 +1,5 @@
 import { isApiError } from '@src/core/errors/api-error';
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import { ZodError } from 'zod';
 
 import { isConnectivityError, ParseError } from './infra-error';
@@ -24,7 +24,7 @@ export function classifyErrorReport(error: unknown): ErrorReportKind {
   if (isApiError(error)) {
     return error.status >= SERVER_ERROR_STATUS ? 'event' : 'breadcrumb';
   }
-  if (isBusinessError(error) || error instanceof ZodError) {
+  if (isCodedError(error) || error instanceof ZodError) {
     return 'breadcrumb';
   }
   if (isConnectivityError(error) || isKeychainLockedError(error)) {

@@ -4,7 +4,7 @@ import {
   useLogger,
   useInviteShareService,
 } from '@src/bootstrap/providers/di-context';
-import { isBusinessError, unwrap } from '@src/core/errors/result';
+import { isCodedError, unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
@@ -65,7 +65,7 @@ export function useRedeemInviteMutationOptions() {
     },
     onError: (error) => {
       reportUnexpectedError(error);
-      if (isBusinessError(error)) {
+      if (isCodedError(error)) {
         trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(error) });
       }
       haptics.notify('error');

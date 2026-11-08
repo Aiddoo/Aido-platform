@@ -1,4 +1,4 @@
-import { isBusinessError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { isCodedError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 
 /** 재시도 상한(그 외 — 예: 응답 파싱 실패). */
 const MAX_RETRIES = 3;
@@ -30,7 +30,7 @@ function isRetryableInfraError(error: unknown): boolean {
  * - 나머지: 기본 상한까지 재시도한다.
  */
 export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
-  if (isBusinessError(error)) {
+  if (isCodedError(error)) {
     return false;
   }
 

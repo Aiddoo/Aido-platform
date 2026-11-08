@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import { isApiError } from '@src/shared/errors';
 
 /** 앱이 직접 판단한 소셜 로그인 실패. 문구는 `errors` 카탈로그에 같은 키로 둔다 */
@@ -14,7 +14,7 @@ export const AUTH_ERROR_CODE = {
 } as const;
 
 export function isLoginCancelledError(error: unknown) {
-  return isBusinessError(error, AUTH_ERROR_CODE.LOGIN_CANCELLED);
+  return isCodedError(error, AUTH_ERROR_CODE.LOGIN_CANCELLED);
 }
 
 export function isEmailNotVerifiedError(error: unknown) {

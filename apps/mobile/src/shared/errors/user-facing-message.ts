@@ -1,4 +1,4 @@
-import { isBusinessError } from '@src/core/errors/result';
+import { isCodedError } from '@src/core/errors/result';
 import { tDynamic } from '@src/shared/i18n';
 
 import { BusinessError } from './business-error';
@@ -19,7 +19,7 @@ export function getUserFacingMessage(error: unknown): string | undefined {
   if (error instanceof BusinessError) {
     return tDynamic('errors', error.code) || undefined;
   }
-  if (!isBusinessError(error) && !isInfraError(error)) {
+  if (!isCodedError(error) && !isInfraError(error)) {
     return undefined;
   }
 

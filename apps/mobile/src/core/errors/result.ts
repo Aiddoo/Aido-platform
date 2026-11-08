@@ -41,12 +41,12 @@ export function unwrap<T, E extends CodedError>(result: Result<T, E>): T {
  * 코드를 가진 오류(서버 ApiError, 도메인 BusinessError)인지 확인한다.
  * 코드를 함께 넘기면 그 코드인 오류만 걸러낸다.
  */
-export function isBusinessError(error: unknown): error is CodedError;
-export function isBusinessError<TCode extends string>(
+export function isCodedError(error: unknown): error is CodedError;
+export function isCodedError<TCode extends string>(
   error: unknown,
   code: TCode,
 ): error is CodedError & { readonly code: TCode };
-export function isBusinessError(error: unknown, code?: string): error is CodedError {
+export function isCodedError(error: unknown, code?: string): error is CodedError {
   if (!(error instanceof Error) || !('code' in error) || typeof error.code !== 'string') {
     return false;
   }

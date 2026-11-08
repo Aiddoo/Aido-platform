@@ -14,7 +14,7 @@ export {
 /** 코드를 가진 오류 타입. 오류 판별을 쓰는 곳을 위해 열어 둔다 @public */
 export type { CodedError } from '@src/core/errors/result';
 
-export { err, isBusinessError, ok, type Result, unwrap } from '@src/core/errors/result';
+export { err, isCodedError, ok, type Result, unwrap } from '@src/core/errors/result';
 
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 
