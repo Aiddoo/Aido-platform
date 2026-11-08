@@ -6,6 +6,7 @@ import {
   ANDROID_WIDGET_DEFINITIONS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
 } from '../constants/widget.constants';
+import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
 import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 
@@ -62,10 +63,11 @@ export function createAndroidWidgetTaskHandler({
           if (!stored) {
             return;
           }
-        } else if (destination.kind !== 'feed' || destination.action != null) {
+        } else if (!WidgetNavigationPolicy.canOpenWithoutOwner(destination)) {
           return;
         }
 
+        // 켜져 있는 앱은 저장된 명령을 구독해 직접 옮긴다. 꺼져 있거나 계정이 없으면 피드로 앱을 연다
         if (!hasOwner || !isAppActive()) {
           await openApp(`${new URL(uri).protocol}//feed?date=today`);
         }

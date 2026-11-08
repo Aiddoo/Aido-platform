@@ -70,3 +70,53 @@ describe('parseWidgetNavigationUri', () => {
     expect(destination).toBeNull();
   });
 });
+
+describe('getCommandState', () => {
+  const command = { createdAt: 1000, userId: 'original-account' };
+
+  it('만료된 명령은 계정을 몰라도 지울 명령이다', () => {
+    // When
+    const result = WidgetNavigationPolicy.getCommandState(command, {
+      userId: null,
+      now: 1000 + WIDGET_NAVIGATION_COMMAND_TTL_MS,
+    });
+
+    // Then
+    expect(result).toBe('stale');
+  });
+
+  it('살아 있는 명령은 계정을 알 때까지 기다리고 다른 계정이면 지운다', () => {
+    // When
+    const unknown = WidgetNavigationPolicy.getCommandState(command, { userId: null, now: 1000 });
+    const foreign = WidgetNavigationPolicy.getCommandState(command, {
+      userId: 'other-account',
+      now: 1000,
+    });
+    const valid = WidgetNavigationPolicy.getCommandState(command, {
+      userId: 'original-account',
+      now: 1000,
+    });
+
+    // Then
+    expect(unknown).toBe('ownerUnknown');
+    expect(foreign).toBe('foreign');
+    expect(valid).toBe('valid');
+  });
+});
+
+describe('canOpenWithoutOwner', () => {
+  it('계정 없는 위젯 클릭은 동작 없는 피드만 연다', () => {
+    // Given
+    const feed = parseWidgetNavigationUri('aido://feed?date=today');
+    const addTodo = parseWidgetNavigationUri('aido://feed?date=today&action=add-todo');
+
+    // When
+    const canOpenFeed = feed != null && WidgetNavigationPolicy.canOpenWithoutOwner(feed);
+    const canOpenAddTodo = addTodo != null && WidgetNavigationPolicy.canOpenWithoutOwner(addTodo);
+
+    // Then
+    expect(addTodo).not.toBeNull();
+    expect(canOpenFeed).toBe(true);
+    expect(canOpenAddTodo).toBe(false);
+  });
+});

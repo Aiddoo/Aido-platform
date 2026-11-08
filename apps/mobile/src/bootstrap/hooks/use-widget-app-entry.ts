@@ -54,15 +54,15 @@ export function useWidgetAppEntry() {
       if (!isCommandCurrent) {
         return;
       }
-      if (command) {
-        const currentUserId = getCachedMe(queryClient)?.id;
-        if (currentUserId == null) {
+      if (command != null) {
+        const commandState = WidgetNavigationPolicy.getCommandState(command, {
+          userId: getCachedMe(queryClient)?.id ?? null,
+          now: Date.now(),
+        });
+        if (commandState === 'ownerUnknown') {
           return;
         }
-        if (
-          !WidgetNavigationPolicy.isOwnedBy(command, currentUserId) ||
-          !WidgetNavigationPolicy.isFresh(command, Date.now())
-        ) {
+        if (commandState !== 'valid') {
           setPendingInitialUrl(null);
           widgetNavigationRepository.clearIfCurrent(command);
           return;
@@ -122,7 +122,14 @@ export function useWidgetAppEntry() {
       return;
     }
 
-    if (pendingCommand && !WidgetNavigationPolicy.isFresh(pendingCommand, Date.now())) {
+    const commandState =
+      pendingCommand == null
+        ? null
+        : WidgetNavigationPolicy.getCommandState(pendingCommand, {
+            userId: meQuery.data ?? null,
+            now: Date.now(),
+          });
+    if (pendingCommand != null && commandState === 'stale') {
       setPendingInitialUrl(null);
       widgetNavigationRepository.clearIfCurrent(pendingCommand);
       return;
@@ -130,16 +137,13 @@ export function useWidgetAppEntry() {
     if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
       return;
     }
-    const myId = meQuery.data;
-    if (pendingCommand != null) {
-      if (myId == null) {
-        return;
-      }
-      if (!WidgetNavigationPolicy.isOwnedBy(pendingCommand, myId)) {
-        setPendingInitialUrl(null);
-        widgetNavigationRepository.clearIfCurrent(pendingCommand);
-        return;
-      }
+    if (commandState === 'ownerUnknown') {
+      return;
+    }
+    if (pendingCommand != null && commandState === 'foreign') {
+      setPendingInitialUrl(null);
+      widgetNavigationRepository.clearIfCurrent(pendingCommand);
+      return;
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
