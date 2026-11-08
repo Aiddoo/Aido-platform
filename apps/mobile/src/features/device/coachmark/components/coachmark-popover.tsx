@@ -97,7 +97,8 @@ export function CoachmarkPopover({
     // 스쳐 지나간 자동 안내는 그대로 남긴다. 닫는 일은 위 기다림이 맡고, 멈추면 새 자리에서 다시 열린다
     if (
       isOpen &&
-      (isForced || CoachmarkPolicy.isReadLongEnough(Date.now() - openedAtRef.current))
+      (isForced ||
+        CoachmarkPolicy.isReadLongEnough({ openedAtMs: openedAtRef.current }, Date.now()))
     ) {
       handleOpenChange(false);
     }

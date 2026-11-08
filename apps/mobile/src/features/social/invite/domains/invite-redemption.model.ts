@@ -5,6 +5,7 @@ import {
   REDEEM_OUTCOME,
 } from '@aido/api/vocabulary';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
+import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
@@ -78,8 +79,8 @@ function getRewardStart(premiumAccess: Pick<PremiumAccess, 'source' | 'bankedDay
 }
 
 /** 가입한 지 며칠 안 된 계정만 초대 보상을 기대할 수 있다(서버가 최종 판정한다) */
-function isRewardExpected(accountCreatedAt: Instant, now: Instant) {
-  return isWithinDays(accountCreatedAt, now, INVITE_REDEEM_WINDOW_DAYS);
+function isRewardExpected(user: Pick<User, 'createdAt'>, now: Instant) {
+  return isWithinDays(user.createdAt, now, INVITE_REDEEM_WINDOW_DAYS);
 }
 
 export const InviteRedemptionPolicy = {
@@ -92,5 +93,4 @@ export const InviteRedemptionPolicy = {
   getMissingRewardReason,
   getRewardStart,
   isRewardExpected,
-  isWithinDays,
 } as const;

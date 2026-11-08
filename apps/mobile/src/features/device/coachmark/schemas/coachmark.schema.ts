@@ -21,3 +21,7 @@ const coachmarkInputSchema = z.object({
 });
 
 export type CoachmarkInput = z.infer<typeof coachmarkInputSchema>;
+
+/** 화면에 뜬 안내. 언제 열렸는지(에포크 밀리초)만 안다 */
+const coachmarkDisplaySchema = z.object({ openedAtMs: z.number() });
+export type CoachmarkDisplay = z.infer<typeof coachmarkDisplaySchema>;

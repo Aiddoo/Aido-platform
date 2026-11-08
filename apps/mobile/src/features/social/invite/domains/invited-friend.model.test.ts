@@ -60,26 +60,6 @@ describe('orderByWaitingFirst', () => {
   });
 });
 
-describe('calculateActiveDaysLeft', () => {
-  it('필요한 날보다 적게 했으면 남은 날을 반환한다', () => {
-    // When
-    const result = InvitedFriendPolicy.calculateActiveDaysLeft(1, 2);
-
-    // Then
-    // 2 - 1 = 1
-    expect(result).toBe(1);
-  });
-
-  it('필요한 날을 넘겼으면 0을 반환한다', () => {
-    // When
-    const result = InvitedFriendPolicy.calculateActiveDaysLeft(3, 2);
-
-    // Then
-    // max(2 - 3, 0) = 0
-    expect(result).toBe(0);
-  });
-});
-
 describe('getActiveDaysLeft', () => {
   it('사용 시작까지 남은 날을 규칙 값으로 계산해 반환한다', () => {
     // Given
@@ -91,6 +71,18 @@ describe('getActiveDaysLeft', () => {
     // Then
     // MIN_ACTIVE_DAYS 2 - 0 = 2
     expect(result).toBe(2);
+  });
+
+  it('필요한 날을 넘겨 썼으면 0을 반환한다', () => {
+    // Given
+    const friend = createInvitedFriend({ activeDayCount: 3 });
+
+    // When
+    const result = InvitedFriendPolicy.getActiveDaysLeft(friend);
+
+    // Then
+    // max(2 - 3, 0) = 0
+    expect(result).toBe(0);
   });
 });
 

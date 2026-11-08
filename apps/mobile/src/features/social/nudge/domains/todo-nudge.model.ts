@@ -1,25 +1,21 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 
+import type { CreateNudgeInput } from '../schemas/nudge-request.schema';
 import type { NudgeLimitInfo } from '../schemas/todo-nudge.schema';
 
 const MAX_MESSAGE_LENGTH = NUDGE_LIMITS.MAX_MESSAGE_LENGTH;
 
-function normalizeMessage(message?: string | null): string | undefined {
-  if (message == null) {
-    return undefined;
-  }
-  const trimmed = message.trim();
+/** 보낼 메시지. 앞뒤 공백을 지우고, 남는 글자가 없으면 메시지 없이 보낸다 */
+function normalizeMessage(input: Pick<CreateNudgeInput, 'message'>): string | undefined {
+  const trimmed = input.message?.trim();
 
-  return trimmed.length > 0 ? trimmed : undefined;
+  return trimmed == null || trimmed.length === 0 ? undefined : trimmed;
 }
 
-function isMessageTooLong(message?: string | null): boolean {
-  if (!message) {
-    return false;
-  }
-
-  return message.trim().length > MAX_MESSAGE_LENGTH;
+/** 앞뒤 공백을 지운 길이로 판단한다 */
+function isMessageTooLong(input: Pick<CreateNudgeInput, 'message'>): boolean {
+  return (normalizeMessage(input)?.length ?? 0) > MAX_MESSAGE_LENGTH;
 }
 
 function isLimitReached(limitInfo: Pick<NudgeLimitInfo, 'remainingToday'>): boolean {

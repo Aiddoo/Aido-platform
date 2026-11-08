@@ -107,33 +107,23 @@ describe('canNudgeTodoInRange', () => {
 });
 
 describe('normalizeMessage', () => {
-  it('null이면 undefined를 반환한다', () => {
+  it('메시지 칸이 없으면 undefined를 반환한다', () => {
+    // Given
+    const input = {};
+
     // When
-    const result = TodoNudgePolicy.normalizeMessage(null);
+    const result = TodoNudgePolicy.normalizeMessage(input);
 
     // Then
     expect(result).toBeUndefined();
   });
 
-  it('undefined이면 undefined를 반환한다', () => {
+  it.each(['', '   '])('공백뿐인 메시지 "%s"면 undefined를 반환한다', (message) => {
+    // Given
+    const input = { message };
+
     // When
-    const result = TodoNudgePolicy.normalizeMessage(undefined);
-
-    // Then
-    expect(result).toBeUndefined();
-  });
-
-  it('빈 문자열이면 undefined를 반환한다', () => {
-    // When
-    const result = TodoNudgePolicy.normalizeMessage('');
-
-    // Then
-    expect(result).toBeUndefined();
-  });
-
-  it('공백만 있으면 undefined를 반환한다', () => {
-    // When
-    const result = TodoNudgePolicy.normalizeMessage('   ');
+    const result = TodoNudgePolicy.normalizeMessage(input);
 
     // Then
     expect(result).toBeUndefined();
@@ -141,10 +131,10 @@ describe('normalizeMessage', () => {
 
   it('앞뒤 공백을 제거한 문자열을 반환한다', () => {
     // Given
-    const message = '  화이팅!  ';
+    const input = { message: '  화이팅!  ' };
 
     // When
-    const result = TodoNudgePolicy.normalizeMessage(message);
+    const result = TodoNudgePolicy.normalizeMessage(input);
 
     // Then
     expect(result).toBe('화이팅!');
@@ -154,10 +144,10 @@ describe('normalizeMessage', () => {
 describe('isMessageTooLong', () => {
   it('200자 이하이면 false를 반환한다', () => {
     // Given
-    const message = 'a'.repeat(200);
+    const input = { message: 'a'.repeat(200) };
 
     // When
-    const result = TodoNudgePolicy.isMessageTooLong(message);
+    const result = TodoNudgePolicy.isMessageTooLong(input);
 
     // Then
     expect(result).toBe(false);
@@ -165,26 +155,21 @@ describe('isMessageTooLong', () => {
 
   it('201자 이상이면 true를 반환한다', () => {
     // Given
-    const message = 'a'.repeat(201);
+    const input = { message: 'a'.repeat(201) };
 
     // When
-    const result = TodoNudgePolicy.isMessageTooLong(message);
+    const result = TodoNudgePolicy.isMessageTooLong(input);
 
     // Then
     expect(result).toBe(true);
   });
 
-  it('null이면 false를 반환한다', () => {
-    // When
-    const result = TodoNudgePolicy.isMessageTooLong(null);
+  it('메시지 칸이 없으면 false를 반환한다', () => {
+    // Given
+    const input = {};
 
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('undefined이면 false를 반환한다', () => {
     // When
-    const result = TodoNudgePolicy.isMessageTooLong(undefined);
+    const result = TodoNudgePolicy.isMessageTooLong(input);
 
     // Then
     expect(result).toBe(false);
@@ -193,10 +178,10 @@ describe('isMessageTooLong', () => {
   it('공백 포함 200자 초과 시 trim 후 판단한다', () => {
     // Given
     // 앞뒤 공백 제거하면 200자
-    const message = ` ${'a'.repeat(200)} `;
+    const input = { message: ` ${'a'.repeat(200)} ` };
 
     // When
-    const result = TodoNudgePolicy.isMessageTooLong(message);
+    const result = TodoNudgePolicy.isMessageTooLong(input);
 
     // Then
     expect(result).toBe(false);

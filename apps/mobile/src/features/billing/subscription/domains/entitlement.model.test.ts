@@ -321,9 +321,12 @@ describe('getBlockedDecision', () => {
     ['서버가 등급에서 닫았다고 줬으면', 'AI_PARSE', { allowed: false }, 'locked'],
     ['한도 정보가 없는 횟수 기능이면', 'AI_PARSE', null, 'limit-reached'],
     ['한도 정보가 없는 켜고 끄는 기능이면', 'APP_ICON', null, 'locked'],
-  ] as const)('%s %s는 %s다', (_label, feature, quota, expected) => {
+  ] as const)('%s %s는 %s다', (_label, feature, featureQuota, expected) => {
+    // Given
+    const limited = { feature, featureQuota };
+
     // When
-    const decision = EntitlementPolicy.getBlockedDecision(feature, quota);
+    const decision = EntitlementPolicy.getBlockedDecision(limited);
 
     // Then
     expect(decision).toBe(expected);

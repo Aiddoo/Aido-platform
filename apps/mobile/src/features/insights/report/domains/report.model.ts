@@ -13,11 +13,13 @@ const HIGH_COMPLETION_RATE = 80;
 const MEDIUM_COMPLETION_RATE = 50;
 
 /** 요일별 완료율을 얼마나 잘 해낸 요일로 볼지. 80% 이상은 높음, 50% 이상은 보통이다 */
-function getCompletionLevel(rate: number): CompletionLevel {
-  if (rate >= HIGH_COMPLETION_RATE) {
+function getCompletionLevel(
+  dayPattern: Pick<AiReport['dayPatterns'][number], 'rate'>,
+): CompletionLevel {
+  if (dayPattern.rate >= HIGH_COMPLETION_RATE) {
     return 'high';
   }
-  if (rate >= MEDIUM_COMPLETION_RATE) {
+  if (dayPattern.rate >= MEDIUM_COMPLETION_RATE) {
     return 'medium';
   }
   return 'low';

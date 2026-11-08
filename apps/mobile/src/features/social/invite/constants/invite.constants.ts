@@ -26,5 +26,6 @@ export const FIRST_INVITER_PREMIUM_DAYS = InviteRewardPolicy.getPremiumDays(
 );
 
 /** 발자국 판에 생선 칸으로 미리 보여 줄 단계의 친구 수 */
-export const ONE_TIME_MILESTONE_COUNTS =
-  InvitePolicy.findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
+export const ONE_TIME_MILESTONE_COUNTS = INVITER_REWARD_MILESTONES.filter(
+  InvitePolicy.isOneTimeMilestone,
+).map((milestone) => milestone.qualifiedCount);

@@ -2,7 +2,7 @@ import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import type { PremiumAccess } from '@src/features/identity/user/schemas/premium-access.schema';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
-import type { Instant } from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
@@ -91,7 +91,7 @@ function toBillingRow(
   if (!access.willRenew) {
     return { type: 'subscriptionEndsOn', date: periodEndsAt };
   }
-  return PremiumAccessPolicy.hasPassed(periodEndsAt, now)
+  return hasInstantPassed(periodEndsAt, now)
     ? { type: 'renewalPending' }
     : { type: 'nextBillingDate', date: periodEndsAt };
 }

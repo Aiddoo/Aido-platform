@@ -59,9 +59,7 @@ export class TodoNudgeService {
   sendNudge = async (
     input: CreateNudgeInput,
   ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {
-    const normalizedMessage = TodoNudgePolicy.normalizeMessage(input.message);
-
-    if (TodoNudgePolicy.isMessageTooLong(normalizedMessage)) {
+    if (TodoNudgePolicy.isMessageTooLong(input)) {
       return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
@@ -69,7 +67,7 @@ export class TodoNudgeService {
       await this.#httpClient.post('v1/nudges', {
         receiverId: input.receiverId,
         todoId: input.todoId,
-        message: normalizedMessage,
+        message: TodoNudgePolicy.normalizeMessage(input),
       }),
       createNudgeResponseSchema,
       toSendNudgeResult,
@@ -88,16 +86,14 @@ export class TodoNudgeService {
   sendRemindNudge = async (
     input: CreateRemindNudgeInput,
   ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {
-    const normalizedMessage = TodoNudgePolicy.normalizeMessage(input.message);
-
-    if (TodoNudgePolicy.isMessageTooLong(normalizedMessage)) {
+    if (TodoNudgePolicy.isMessageTooLong(input)) {
       return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
     return parseApiResponse(
       await this.#httpClient.post('v1/nudges/remind', {
         receiverId: input.receiverId,
-        message: normalizedMessage,
+        message: TodoNudgePolicy.normalizeMessage(input),
       }),
       createRemindNudgeResponseSchema,
       toSendRemindNudgeResult,

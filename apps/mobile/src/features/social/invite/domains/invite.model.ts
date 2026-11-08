@@ -9,10 +9,8 @@ function calculateRemainingInvites(qualifiedCount: number, targetCount: number) 
 }
 
 // 반복하지 않는 단계(3·5·10명 등)만 발자국 판에 생선 칸으로 미리 보여 준다
-function findOneTimeMilestoneCounts(milestones: readonly InviterRewardMilestone[]) {
-  return milestones
-    .filter((milestone) => milestone.repeatEvery == null)
-    .map((milestone) => milestone.qualifiedCount);
+function isOneTimeMilestone(milestone: Pick<InviterRewardMilestone, 'repeatEvery'>) {
+  return milestone.repeatEvery == null;
 }
 
 function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
@@ -74,6 +72,5 @@ export const InvitePolicy = {
   getEarnedFriendSlots,
   hasInvitedAnyone,
   getProgress,
-  calculateRemainingInvites,
-  findOneTimeMilestoneCounts,
+  isOneTimeMilestone,
 } as const;

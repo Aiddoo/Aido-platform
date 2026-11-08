@@ -45,5 +45,4 @@ export const InvitedFriendPolicy = {
   getPawPrintState,
   orderByJoinedAtDesc,
   orderByWaitingFirst,
-  calculateActiveDaysLeft,
 } as const;

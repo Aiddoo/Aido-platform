@@ -1,6 +1,9 @@
 import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
-import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
-import type { Instant } from '@src/shared/date/instant';
+import {
+  calculateCalendarDaysLeft,
+  hasInstantPassed,
+  type Instant,
+} from '@src/shared/date/instant';
 
 import type {
   EntitlementFeature,
@@ -8,6 +11,7 @@ import type {
   FeatureQuota,
   QuotaPeriod,
 } from '../schemas/entitlement.schema';
+import type { LimitedFeature } from './entitlement.error';
 
 /** 기능을 지금 시작해도 되는지. 모르는 기능은 서버가 판단하도록 allow다 */
 type AccessDecision = 'allow' | 'limit-reached' | 'locked';
@@ -53,7 +57,7 @@ function getAccessDecision(
   if (quota.remaining !== 0) {
     return 'allow';
   }
-  return quota.resetsAt != null && PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
+  return quota.resetsAt != null && hasInstantPassed(quota.resetsAt, now)
     ? 'allow'
     : 'limit-reached';
 }
@@ -89,11 +93,7 @@ function getQuotaStatus(
   ) {
     return { type: 'untracked' };
   }
-  if (
-    quota.remaining === 0 &&
-    quota.resetsAt != null &&
-    PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
-  ) {
+  if (quota.remaining === 0 && quota.resetsAt != null && hasInstantPassed(quota.resetsAt, now)) {
     return { type: 'untracked' };
   }
   return quota.remaining === 0
@@ -111,15 +111,11 @@ function getResetNotice(
   { now, timeZone }: { now: Instant; timeZone: string },
 ): QuotaResetNotice | null {
   const quota = findFeatureQuota(snapshot, feature);
-  if (
-    quota?.limit == null ||
-    quota.resetsAt == null ||
-    PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
-  ) {
+  if (quota?.limit == null || quota.resetsAt == null || hasInstantPassed(quota.resetsAt, now)) {
     return null;
   }
 
-  const daysLeft = PremiumAccessPolicy.calculateDaysLeft(quota.resetsAt, now, timeZone);
+  const daysLeft = calculateCalendarDaysLeft(quota.resetsAt, now, timeZone);
   if (daysLeft === 0) {
     return { type: 'today' };
   }
@@ -141,13 +137,14 @@ function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): E
 
 /** 서버가 막은 기능의 오류가 한도 소진인지 등급 잠금인지. 서버가 한도를 함께 줬으면 그 값을 따른다 */
 function getBlockedDecision(
-  feature: EntitlementFeature,
-  quota: Pick<FeatureQuota, 'allowed'> | null,
+  limited: Pick<LimitedFeature, 'feature'> & {
+    featureQuota: Pick<FeatureQuota, 'allowed'> | null;
+  },
 ): Exclude<AccessDecision, 'allow'> {
-  if (quota != null) {
-    return quota.allowed ? 'limit-reached' : 'locked';
+  if (limited.featureQuota != null) {
+    return limited.featureQuota.allowed ? 'limit-reached' : 'locked';
   }
-  return PLAN_CATALOG[feature].kind === 'flag' ? 'locked' : 'limit-reached';
+  return PLAN_CATALOG[limited.feature].kind === 'flag' ? 'locked' : 'limit-reached';
 }
 
 /** 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않는다. 스냅샷을 모르면 권한다 */

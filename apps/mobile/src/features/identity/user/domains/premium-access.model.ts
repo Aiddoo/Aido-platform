@@ -1,17 +1,12 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE } from '@aido/api/vocabulary';
-import { diffDateKeysInDays } from '@src/shared/date/date-key';
-import { type Instant, toDateKey, toEpochMs } from '@src/shared/date/instant';
+import {
+  calculateCalendarDaysLeft,
+  hasInstantPassed,
+  type Instant,
+  toEpochMs,
+} from '@src/shared/date/instant';
 
 import type { PremiumAccess } from '../schemas/premium-access.schema';
-
-/** 끝나는 날까지 남은 달력 일수. 이미 지난 날은 0일이다 */
-function calculateDaysLeft(endsAt: Instant, now: Instant, timeZone: string) {
-  return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);
-}
-
-function hasPassed(endsAt: Instant, now: Instant) {
-  return toEpochMs(endsAt) <= toEpochMs(now);
-}
 
 function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
   return daysLeft <= noticeDays;
@@ -36,7 +31,7 @@ function hasRenewal(access: Pick<PremiumAccess, 'willRenew' | 'bankedDays'>) {
 }
 
 function getDaysLeft(access: Pick<PremiumAccess, 'endsAt'>, now: Instant, timeZone: string) {
-  return access.endsAt == null ? null : calculateDaysLeft(access.endsAt, now, timeZone);
+  return access.endsAt == null ? null : calculateCalendarDaysLeft(access.endsAt, now, timeZone);
 }
 
 /** 곧 끝나는데 이어질 길이 없는지. 이미 끝난 시각이면 곧 만료가 아니라 만료다 */
@@ -52,7 +47,7 @@ function isExpiringSoon(
 
   return (
     !hasRenewal(access) &&
-    !hasPassed(access.endsAt, now) &&
+    !hasInstantPassed(access.endsAt, now) &&
     isWithinNoticeDays(daysLeft, PREMIUM_GRANT_ENDING_NOTICE_DAYS)
   );
 }
@@ -64,7 +59,7 @@ function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEnde
 
 /**
  * 지난 확인 뒤 지금까지 사이에 지금 기간이나 전체 프리미엄이 끝났는지. 끝나는 순간에는 서버 이벤트가 없어
- * 앱이 켜져 있으면 내 정보를 다시 받아야 한다. 경계는 남은 일수 표시(hasPassed)와 같이 끝나는 시각 자체를 포함한다
+ * 앱이 켜져 있으면 내 정보를 다시 받아야 한다. 경계는 남은 일수 표시(hasInstantPassed)와 같이 끝나는 시각 자체를 포함한다
  */
 function hasEndedSince(
   access: Pick<PremiumAccess, 'periodEndsAt' | 'endsAt'>,
@@ -72,7 +67,8 @@ function hasEndedSince(
   now: Instant,
 ) {
   return [access.periodEndsAt, access.endsAt].some(
-    (endsAt) => endsAt != null && !hasPassed(endsAt, lastCheckedAt) && hasPassed(endsAt, now),
+    (endsAt) =>
+      endsAt != null && !hasInstantPassed(endsAt, lastCheckedAt) && hasInstantPassed(endsAt, now),
   );
 }
 
@@ -100,6 +96,4 @@ export const PremiumAccessPolicy = {
   getRecentGrantEndedAt,
   hasEndedSince,
   hasChanged,
-  calculateDaysLeft,
-  hasPassed,
 } as const;

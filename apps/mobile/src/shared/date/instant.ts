@@ -2,6 +2,7 @@ import { MINUTE_MS } from '@src/shared/constants/time-units';
 import dayjs from 'dayjs';
 import { z } from 'zod';
 
+import { diffDateKeysInDays } from './date-key';
 import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
 
 const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -60,6 +61,16 @@ export function toEpochMs(instant: Instant): number {
 /** 앞 값에서 뒤 값을 뺀 밀리초 */
 export function diffMs(instant: Instant, other: Instant): number {
   return toEpochMs(instant) - toEpochMs(other);
+}
+
+/** 순간이 지금이거나 그 전인지. 끝나는 시각 자체를 지난 것으로 본다 */
+export function hasInstantPassed(instant: Instant, now: Instant): boolean {
+  return toEpochMs(instant) <= toEpochMs(now);
+}
+
+/** 끝나는 날까지 남은 달력 일수(시간대 기준). 이미 지난 날은 0일이다 */
+export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZone: string): number {
+  return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);
 }
 
 export function toDate(date: Date | string | number): Date {

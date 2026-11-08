@@ -11,8 +11,11 @@ describe('isReadLongEnough', () => {
     { title: '2초 보면 읽은 것으로 본다', visibleMs: 2_000, expected: true },
     { title: '한참 보면 읽은 것으로 본다', visibleMs: 30_000, expected: true },
   ])('$title', ({ visibleMs, expected }) => {
+    // Given
+    const display = { openedAtMs: 1_000_000 };
+
     // When
-    const result = CoachmarkPolicy.isReadLongEnough(visibleMs);
+    const result = CoachmarkPolicy.isReadLongEnough(display, display.openedAtMs + visibleMs);
 
     // Then
     expect(result).toBe(expected);

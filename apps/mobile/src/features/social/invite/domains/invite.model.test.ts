@@ -1,37 +1,27 @@
 import { createInvite } from '../__tests__/invite.fixtures';
 import { InvitePolicy } from './invite.model';
 
-describe('calculateRemainingInvites', () => {
-  it('목표보다 적게 모았으면 남은 인원을 반환한다', () => {
+describe('isOneTimeMilestone', () => {
+  it('반복 간격이 없는 단계면 true를 반환한다', () => {
+    // Given
+    const milestone = { repeatEvery: null };
+
     // When
-    const result = InvitePolicy.calculateRemainingInvites(1, 3);
+    const result = InvitePolicy.isOneTimeMilestone(milestone);
 
     // Then
-    // 3 - 1 = 2
-    expect(result).toBe(2);
+    expect(result).toBe(true);
   });
 
-  it('목표를 넘겼으면 0을 반환한다', () => {
+  it('반복 간격이 있는 단계면 false를 반환한다', () => {
+    // Given
+    const milestone = { repeatEvery: 1 };
+
     // When
-    const result = InvitePolicy.calculateRemainingInvites(4, 3);
+    const result = InvitePolicy.isOneTimeMilestone(milestone);
 
     // Then
-    // max(3 - 4, 0) = 0
-    expect(result).toBe(0);
-  });
-});
-
-describe('findOneTimeMilestoneCounts', () => {
-  it('반복하지 않는 단계의 인원만 반환한다', () => {
-    // When
-    const result = InvitePolicy.findOneTimeMilestoneCounts([
-      { qualifiedCount: 1, repeatEvery: 1, rewards: [] },
-      { qualifiedCount: 3, repeatEvery: null, rewards: [] },
-      { qualifiedCount: 5, repeatEvery: null, rewards: [] },
-    ]);
-
-    // Then
-    expect(result).toEqual([3, 5]);
+    expect(result).toBe(false);
   });
 });
 
@@ -60,6 +50,21 @@ describe('getRemainingToNextMilestone', () => {
     // Then
     // 3 - 2 = 1
     expect(result).toBe(1);
+  });
+
+  it('다음 단계 인원을 넘겼으면 0을 반환한다', () => {
+    // Given
+    const myInvite = createInvite({
+      qualifiedCount: 4,
+      nextMilestone: { qualifiedCount: 3, rewards: [] },
+    });
+
+    // When
+    const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
+
+    // Then
+    // max(3 - 4, 0) = 0
+    expect(result).toBe(0);
   });
 });
 

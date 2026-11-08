@@ -12,33 +12,6 @@ const inviter = {
   profileImage: 'orange_tabby',
 };
 
-describe('isWithinDays', () => {
-  it('정확히 기간만큼 지나면 false를 반환한다', () => {
-    // Given
-    const from = toInstant('2026-10-01T00:00:00Z');
-    const now = toInstant('2026-10-08T00:00:00Z');
-
-    // When
-    const result = InviteRedemptionPolicy.isWithinDays(from, now, 7);
-
-    // Then
-    // 7일 = 7 × 24시간, 기간 안이 아니다
-    expect(result).toBe(false);
-  });
-
-  it('기간이 1ms 남았으면 true를 반환한다', () => {
-    // Given
-    const from = toInstant('2026-10-01T00:00:00.000Z');
-    const now = toInstant('2026-10-07T23:59:59.999Z');
-
-    // When
-    const result = InviteRedemptionPolicy.isWithinDays(from, now, 7);
-
-    // Then
-    expect(result).toBe(true);
-  });
-});
-
 describe('isFresh', () => {
   it('저장한 지 7일이 안 됐으면 true를 반환한다', () => {
     // Given
@@ -226,11 +199,11 @@ describe('getRewardStart', () => {
 describe('isRewardExpected', () => {
   it('가입한 지 7일이 안 됐으면 true를 반환한다', () => {
     // Given
-    const accountCreatedAt = toInstant('2026-10-19T00:00:01Z');
+    const user = { createdAt: toInstant('2026-10-19T00:00:01Z') };
     const now = toInstant('2026-10-26T00:00:00Z');
 
     // When
-    const result = InviteRedemptionPolicy.isRewardExpected(accountCreatedAt, now);
+    const result = InviteRedemptionPolicy.isRewardExpected(user, now);
 
     // Then
     expect(result).toBe(true);
@@ -238,13 +211,14 @@ describe('isRewardExpected', () => {
 
   it('가입한 지 정확히 7일이 지났으면 false를 반환한다', () => {
     // Given
-    const accountCreatedAt = toInstant('2026-10-19T00:00:00Z');
+    const user = { createdAt: toInstant('2026-10-19T00:00:00Z') };
     const now = toInstant('2026-10-26T00:00:00Z');
 
     // When
-    const result = InviteRedemptionPolicy.isRewardExpected(accountCreatedAt, now);
+    const result = InviteRedemptionPolicy.isRewardExpected(user, now);
 
     // Then
+    // 7일 = 7 × 24시간, 기간 안이 아니다
     expect(result).toBe(false);
   });
 });

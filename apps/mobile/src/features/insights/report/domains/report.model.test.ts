@@ -33,8 +33,11 @@ describe('getCompletionLevel', () => {
     [49, 'low'],
     [0, 'low'],
   ])('요일 완료율 %i%%는 %s 단계다', (rate, expected) => {
+    // Given
+    const dayPattern = { rate };
+
     // When
-    const level = ReportPolicy.getCompletionLevel(rate);
+    const level = ReportPolicy.getCompletionLevel(dayPattern);
 
     // Then
     expect(level).toBe(expected);

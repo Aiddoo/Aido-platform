@@ -207,7 +207,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
       </Text>
       <HStack justify="around">
         {items.map((item) => {
-          const level = ReportPolicy.getCompletionLevel(item.rate);
+          const level = ReportPolicy.getCompletionLevel(item);
 
           return (
             <VStack key={item.day} align="center" gap={4}>

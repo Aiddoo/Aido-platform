@@ -88,7 +88,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   const toast = useAppToast();
   const now = useMinuteNow();
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, now);
+  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me, now);
 
   // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다.
   // 로그인 화면 아래에 남은 카드는 로그인 순간 보이지 않으므로 지우지 않고, 로그인 뒤 이어서 연 카드가 지운다.

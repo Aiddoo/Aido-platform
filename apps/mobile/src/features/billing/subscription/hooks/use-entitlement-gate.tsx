@@ -184,12 +184,7 @@ export function useEntitlementGate(
         if (limited.featureQuota != null) {
           setFeatureQuota(queryClient, limited.featureQuota);
         }
-        open(
-          limited.feature,
-          EntitlementPolicy.getBlockedDecision(limited.feature, limited.featureQuota),
-          'server',
-          options,
-        );
+        open(limited.feature, EntitlementPolicy.getBlockedDecision(limited), 'server', options);
         return true;
       },
     };
