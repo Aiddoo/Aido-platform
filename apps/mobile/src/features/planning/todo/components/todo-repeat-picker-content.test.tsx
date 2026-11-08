@@ -8,7 +8,7 @@ import '@src/shared/i18n/init';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { fromDate } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { screen, userEvent } from '@testing-library/react-native';
 
 import type { TodoRepeat } from '../schemas/todo-repeat.schema';
 import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
@@ -44,10 +44,10 @@ async function renderSheet({
   return { onChange, onCancel, haptics };
 }
 
-const press = (text: string) => fireEvent.press(screen.getByText(text));
-const confirm = () => press('확인');
 const chip = (name: string) => screen.getByRole('button', { name });
-const pressDay = (day: string) => fireEvent.press(chip(day));
+const press = (text: string) => userEvent.press(screen.getByText(text));
+const confirm = () => press('확인');
+const pressDay = (day: string) => userEvent.press(chip(day));
 
 describe('TodoRepeatPickerContent', () => {
   setupFakeTimersPerTest({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
@@ -60,8 +60,8 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('매주 목 반복')).toBeTruthy();
-    expect(screen.getByText('기간을 선택해주세요')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeOnTheScreen();
+    expect(screen.getByText('기간을 선택해주세요')).toBeOnTheScreen();
     expect(chip('목')).toBeSelected();
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일부터 계속')).toBeTruthy();
+    expect(screen.getByText('11월 5일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(START_DATE),
       repeat: WEEKLY_THURSDAY_FOREVER,
@@ -90,13 +90,13 @@ describe('TodoRepeatPickerContent', () => {
     await pressDay('금');
 
     // Then
-    expect(screen.getByText('매주 목, 금 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목, 금 반복')).toBeOnTheScreen();
 
     // When
     await pressDay('금');
 
     // Then
-    expect(screen.getByText('매주 목 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeOnTheScreen();
   });
 
   it('주중 프리셋은 월~금을 고르고 다시 누르면 요일이 비어 확인이 막힌다', async () => {
@@ -107,14 +107,14 @@ describe('TodoRepeatPickerContent', () => {
     await press('주중');
 
     // Then
-    expect(screen.getByText('주중 반복')).toBeTruthy();
+    expect(screen.getByText('주중 반복')).toBeOnTheScreen();
 
     // When
     await press('주중');
     await confirm();
 
     // Then
-    expect(screen.getByText('요일을 선택해주세요')).toBeTruthy();
+    expect(screen.getByText('요일을 선택해주세요')).toBeOnTheScreen();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -126,7 +126,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('격주');
 
     // Then
-    expect(screen.getByText('격주 목 반복')).toBeTruthy();
+    expect(screen.getByText('격주 목 반복')).toBeOnTheScreen();
     expect(chip('목')).toBeSelected();
 
     // When
@@ -143,7 +143,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('격주');
 
     // Then
-    expect(screen.getByText('매주 목 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeOnTheScreen();
   });
 
   it('매월 n일을 켜면 요일 선택이 꺼지고 시작일의 날짜로 매월 반복한다', async () => {
@@ -156,7 +156,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('매월 5일 반복')).toBeTruthy();
+    expect(screen.getByText('매월 5일 반복')).toBeOnTheScreen();
     expect(chip('목')).not.toBeSelected();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(START_DATE),
@@ -173,7 +173,7 @@ describe('TodoRepeatPickerContent', () => {
     await pressDay('월');
 
     // Then
-    expect(screen.getByText('매주 월 반복')).toBeTruthy();
+    expect(screen.getByText('매주 월 반복')).toBeOnTheScreen();
     expect(chip('매월 5일')).not.toBeSelected();
   });
 
@@ -189,14 +189,14 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일부터 10회')).toBeTruthy();
+    expect(screen.getByText('11월 5일부터 10회')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({ startDate: fromDate(START_DATE), repeat: counted });
 
     // When
     await press('계속 반복');
 
     // Then
-    expect(screen.getByText('11월 5일부터 계속')).toBeTruthy();
+    expect(screen.getByText('11월 5일부터 계속')).toBeOnTheScreen();
   });
 
   it('계속 상태에서 시작일 뒤 날짜를 누르면 그날까지 날짜 종료가 된다', async () => {
@@ -209,7 +209,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일 - 11월 12일')).toBeTruthy();
+    expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(START_DATE),
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
@@ -224,7 +224,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('기간을 선택해주세요')).toBeTruthy();
+    expect(screen.getByText('기간을 선택해주세요')).toBeOnTheScreen();
     expect(onChange).not.toHaveBeenCalled();
 
     // When
@@ -232,7 +232,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일 - 11월 12일')).toBeTruthy();
+    expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(START_DATE),
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
@@ -248,7 +248,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('19');
 
     // Then
-    expect(screen.getByText('기간을 선택해주세요')).toBeTruthy();
+    expect(screen.getByText('기간을 선택해주세요')).toBeOnTheScreen();
     expect(screen.queryByText('11월 5일 - 11월 12일')).toBeNull();
   });
 
@@ -262,7 +262,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeTruthy();
+    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeOnTheScreen();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -276,7 +276,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 7일부터 계속')).toBeTruthy();
+    expect(screen.getByText('11월 7일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(START_DATE),
       repeat: {
@@ -313,7 +313,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 7일부터 계속')).toBeTruthy();
+    expect(screen.getByText('11월 7일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(new Date(2026, 10, 7)),
       repeat: {
@@ -337,7 +337,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('매월 19일')).toBeTruthy();
+    expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: fromDate(new Date(2026, 10, 19)),
       repeat: { frequency: 'MONTHLY', monthDay: 19, end: { type: 'UNTIL', date: '2026-11-26' } },
@@ -354,7 +354,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('매월 31일')).toBeTruthy();
+    expect(screen.getByText('매월 31일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({ startDate: fromDate(startDate), repeat });
   });
 
@@ -368,7 +368,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('매월 19일')).toBeTruthy();
+    expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenLastCalledWith({
       startDate: fromDate(new Date(2026, 10, 19)),
       repeat: expect.objectContaining({ frequency: 'MONTHLY', monthDay: 19 }),
@@ -385,8 +385,8 @@ describe('TodoRepeatPickerContent', () => {
     await press('7');
 
     // Then
-    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeTruthy();
-    expect(screen.getByText('11월 5일 - 11월 7일')).toBeTruthy();
+    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeOnTheScreen();
+    expect(screen.getByText('11월 5일 - 11월 7일')).toBeOnTheScreen();
   });
 
   it('시작일이 29일 이후인 매월 반복은 말일 안내를 보여준다', async () => {
@@ -400,7 +400,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('매월 29일');
 
     // Then
-    expect(screen.getByText('그 날이 없는 달은 마지막 날에 반복해요')).toBeTruthy();
+    expect(screen.getByText('그 날이 없는 달은 마지막 날에 반복해요')).toBeOnTheScreen();
   });
 
   it('기존 반복이 있으면 삭제 버튼이 반복 없음으로 돌려준다', async () => {

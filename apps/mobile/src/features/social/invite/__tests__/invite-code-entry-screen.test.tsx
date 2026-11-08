@@ -9,7 +9,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { onlineManager } from '@tanstack/react-query';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
@@ -36,6 +36,7 @@ describe('초대 코드 입력 화면', () => {
     // Given
     const queryClient = createTestQueryClient();
     onlineManager.setOnline(false);
+    const user = userEvent.setup();
     await renderUi(<InviteCodeEntryRoute />, {
       di: {
         analytics: createAnalyticsStub(),
@@ -44,11 +45,11 @@ describe('초대 코드 입력 화면', () => {
       },
       queryClient,
     });
-    await fireEvent.press(await screen.findByText('복사한 코드 붙여넣기'));
-    await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 
     // When
-    await fireEvent.press(screen.getByTestId('invite-code-submit'));
+    await user.press(screen.getByRole('button', { name: '확인' }));
 
     // Then
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
@@ -62,6 +63,7 @@ describe('초대 코드 입력 화면', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
     const queryClient = createTestQueryClient();
+    const user = userEvent.setup();
     await renderUi(<InviteCodeEntryRoute />, {
       di: {
         httpClient,
@@ -71,11 +73,11 @@ describe('초대 코드 입력 화면', () => {
       },
       queryClient,
     });
-    await fireEvent.press(await screen.findByText('복사한 코드 붙여넣기'));
-    await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 
     // When
-    await fireEvent.press(screen.getByTestId('invite-code-submit'));
+    await user.press(screen.getByRole('button', { name: '확인' }));
 
     // Then
     await waitFor(() =>
@@ -91,6 +93,7 @@ describe('초대 코드 입력 화면', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockReturnValue(new Promise(noop));
+    const user = userEvent.setup();
     await renderUi(<InviteCodeEntryRoute />, {
       di: {
         httpClient,
@@ -100,8 +103,8 @@ describe('초대 코드 입력 화면', () => {
       },
       queryClient: createTestQueryClient(),
     });
-    await fireEvent.press(await screen.findByText('복사한 코드 붙여넣기'));
-    await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
     await fireEvent(screen.getByLabelText('초대 코드'), 'submitEditing');
 
     // When

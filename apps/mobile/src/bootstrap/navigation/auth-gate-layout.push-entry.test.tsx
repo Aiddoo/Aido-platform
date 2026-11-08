@@ -21,10 +21,11 @@ import { ApiError, NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { userEvent } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { type PropsWithChildren, useCallback } from 'react';
 import { Linking, Pressable, Text } from 'react-native';
@@ -84,7 +85,8 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
   function LoadingScreen() {
     return (
       <Pressable
-        testID="boot-authenticated"
+        accessibilityRole="button"
+        accessibilityLabel="boot-authenticated"
         onPress={() => authSessionStore.setStatus('authenticated')}
       >
         <Text>Restore session</Text>
@@ -94,7 +96,11 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
 
   function LoginScreen() {
     return (
-      <Pressable testID="login" onPress={() => authSessionStore.setStatus('authenticated')}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="login"
+        onPress={() => authSessionStore.setStatus('authenticated')}
+      >
         <Text>Login</Text>
       </Pressable>
     );
@@ -107,7 +113,11 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
       }, []),
     );
     return (
-      <Pressable testID="logout" onPress={() => authSessionStore.setStatus('unauthenticated')}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="logout"
+        onPress={() => authSessionStore.setStatus('unauthenticated')}
+      >
         <Text>Feed</Text>
       </Pressable>
     );
@@ -202,6 +212,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 스플래시 뒤에서 목적지로 바로 가 피드가 focus되지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const read = createPendingResponse(READ_OK);
     const { route, gateway, focusLog, hideLog } = await setup({
       status: 'loading',
@@ -211,7 +222,7 @@ describe('푸시 탭 진입', () => {
     expect(route.getPathname()).toBe('/loading');
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(gateway.clearLastResponse).not.toHaveBeenCalled());
@@ -230,6 +241,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 다른 계정 알림은 버리고 피드로 간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, gateway, focusLog } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
@@ -237,7 +249,7 @@ describe('푸시 탭 진입', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
@@ -247,6 +259,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 오프라인이어도 목적지로 간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
@@ -256,7 +269,7 @@ describe('푸시 탭 진입', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
@@ -264,6 +277,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 이동 없는 알림은 피드로 간다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, focusLog, gateway } = await setup({
       status: 'loading',
       lastResponse: {
@@ -278,7 +292,7 @@ describe('푸시 탭 진입', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
@@ -288,6 +302,7 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 외부 링크는 피드로 간 뒤 한 번만 연다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, externalLink } = await setup({
       status: 'loading',
       lastResponse: {
@@ -306,7 +321,7 @@ describe('푸시 탭 진입', () => {
     });
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
@@ -316,11 +331,12 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 펼친 화면은 피드의 상세 pane으로 연다', async () => {
     // Given
+    const user = userEvent.setup();
     stubWindowDimensions(1000);
     const { route, hideLog } = await setup({ status: 'loading', lastResponse: TODO_RESPONSE });
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(hideLog).toEqual(['/feed']));
@@ -341,8 +357,9 @@ describe('푸시 탭 진입', () => {
 
   it('앱 종료 상태 탭: 뒤로 가면 피드이고 다시 이동하지 않는다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, gateway } = await setup({ status: 'loading', lastResponse: TODO_RESPONSE });
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
 
     // When
@@ -361,12 +378,13 @@ describe('푸시 탭 진입', () => {
 
   it('잠금 중 콜드 스타트: 스피너로 넘겼다가 잠금이 풀리면 이동한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route } = await setup({ status: 'locked', lastResponse: TODO_RESPONSE });
     await waitFor(() => expect(route.getPathname()).toBe('/loading'));
     await waitFor(() => expect(SplashScreen.hideAsync).toHaveBeenCalled());
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
@@ -396,13 +414,14 @@ describe('푸시 탭 진입', () => {
 
   it('로그아웃 상태 탭: 보관했다가 로그인 뒤 한 번만 이동한다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, gateway, httpClient } = await setup({ status: 'unauthenticated' });
     await waitFor(() => expect(route.getPathname()).toBe('/login'));
     await act(async () => gateway.emitResponse(TODO_RESPONSE));
     expect(httpClient.patch).not.toHaveBeenCalled();
 
     // When
-    await fireEvent.press(screen.getByTestId('login'));
+    await user.press(screen.getByRole('button', { name: 'login' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
@@ -470,6 +489,7 @@ describe('푸시 탭 진입', () => {
 
   it('로그아웃하면 진행 중인 읽음이 끝나도 이동하지 않고 마지막 응답을 지운다', async () => {
     // Given
+    const user = userEvent.setup();
     const read = createPendingResponse(READ_OK);
     const { route, gateway } = await setup({
       status: 'authenticated',
@@ -479,7 +499,7 @@ describe('푸시 탭 진입', () => {
     await act(async () => gateway.emitResponse(TODO_RESPONSE));
 
     // When
-    await fireEvent.press(screen.getByTestId('logout'));
+    await user.press(screen.getByRole('button', { name: 'logout' }));
     await waitFor(() => expect(route.getPathname()).toBe('/login'));
     await act(async () => read.settle());
 
@@ -490,12 +510,13 @@ describe('푸시 탭 진입', () => {
 
   it('연속 두 탭: 마지막 탭만 열고 뒤로 가면 피드다', async () => {
     // Given
+    const user = userEvent.setup();
     const { route, gateway } = await setup({ status: 'loading' });
     await act(async () => gateway.emitResponse(TODO_RESPONSE));
     await act(async () => gateway.emitResponse(SECOND_TODO_RESPONSE));
 
     // When
-    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/todo/43'));
