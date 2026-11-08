@@ -40,21 +40,6 @@ import type {
 } from '../schemas/auth.schema';
 import type { OAuthProvider, OAuthProviderSlug } from '../schemas/oauth.schema';
 
-// 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
-function useSocialLoginFailure(fallback = t('auth:toasts.loginFailed')) {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-
-  return (error: unknown) => {
-    haptics.notify('error');
-    if (isLoginCancelledError(error)) {
-      return;
-    }
-
-    toast.error(getUserFacingMessage(error), { fallback });
-  };
-}
-
 // 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
@@ -93,7 +78,7 @@ export function useExchangeCodeMutationOptions() {
   const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
-  const showFailure = useSocialLoginFailure();
+  const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
@@ -107,7 +92,15 @@ export function useExchangeCodeMutationOptions() {
 
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
     },
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
   });
 }
 
@@ -116,7 +109,7 @@ export function useOpenAppleLoginMutationOptions() {
   const { signIn } = useAuthSession();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const showFailure = useSocialLoginFailure();
+  const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
@@ -129,40 +122,75 @@ export function useOpenAppleLoginMutationOptions() {
 
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
     },
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
   });
 }
 
 export function useOpenGoogleLoginMutationOptions() {
   const authService = useAuthService();
-  const showFailure = useSocialLoginFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openGoogleLogin()),
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
   });
 }
 
 export function useOpenKakaoLoginMutationOptions() {
   const authService = useAuthService();
-  const showFailure = useSocialLoginFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openKakaoLogin()),
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
   });
 }
 
 export function useOpenNaverLoginMutationOptions() {
   const authService = useAuthService();
-  const showFailure = useSocialLoginFailure();
+  const haptics = useHaptics();
+  const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await authService.openNaverLogin()),
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
+    },
   });
 }
 
@@ -383,22 +411,31 @@ export function useLinkAccountMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const showFailure = useSocialLoginFailure(t('auth:toasts.linkFailed'));
+  const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (provider: OAuthProviderSlug) =>
       unwrap(await authService.linkAccount(provider)),
-    onSuccess: (_data, provider) => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
+    onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountLinked', {
           provider: getOAuthProviderLabel(toOAuthProvider(provider)),
         }),
       );
       trackEvent('auth_social_linked', { provider });
+      // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
+      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
-    onError: showFailure,
+    onError: (error) => {
+      haptics.notify('error');
+      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
+      if (isLoginCancelledError(error)) {
+        return;
+      }
+
+      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.linkFailed') });
+    },
   });
 }
 
@@ -413,14 +450,15 @@ export function useUnlinkAccountMutationOptions() {
     networkMode: 'always',
     mutationFn: async (provider: OAuthProvider) =>
       unwrap(await authService.unlinkAccount(provider)),
-    onSuccess: (_data, provider) => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
+    onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
       );
       trackEvent('auth_social_unlinked', {
         provider: toOAuthProviderSlug(provider),
       });
+      // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
+      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
     onError: (error) => {
       haptics.notify('error');
