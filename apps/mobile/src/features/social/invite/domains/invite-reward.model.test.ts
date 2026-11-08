@@ -1,8 +1,4 @@
-import {
-  calculateRewardQuantity,
-  InviteRewardPolicy,
-  isPremiumDaysReward,
-} from './invite-reward.model';
+import { InviteRewardPolicy } from './invite-reward.model';
 
 describe('calculateRewardQuantity', () => {
   it('고른 종류의 수량만 더해서 반환한다', () => {
@@ -14,7 +10,10 @@ describe('calculateRewardQuantity', () => {
     ] as const;
 
     // When
-    const result = calculateRewardQuantity(rewards, isPremiumDaysReward);
+    const result = InviteRewardPolicy.calculateRewardQuantity(
+      rewards,
+      InviteRewardPolicy.isPremiumDaysReward,
+    );
 
     // Then
     // 7 + 7 = 14
@@ -23,7 +22,10 @@ describe('calculateRewardQuantity', () => {
 
   it('보상이 없으면 0을 반환한다', () => {
     // When
-    const result = calculateRewardQuantity([], isPremiumDaysReward);
+    const result = InviteRewardPolicy.calculateRewardQuantity(
+      [],
+      InviteRewardPolicy.isPremiumDaysReward,
+    );
 
     // Then
     expect(result).toBe(0);

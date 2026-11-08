@@ -31,7 +31,7 @@ import { match } from 'ts-pattern';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
-import { findOAuthCode } from '../domains/oauth.model';
+import { OAuthPolicy } from '../domains/oauth.model';
 import {
   type AuthTokens,
   authTokensEnvelopeSchema,
@@ -118,7 +118,7 @@ export class AuthService {
     return match(session)
       .returnType<Result<string, BusinessError>>()
       .with({ type: 'success' }, ({ url, queryParams }) => {
-        const code = findOAuthCode(url, queryParams);
+        const code = OAuthPolicy.findOAuthCode(url, queryParams);
         if (code) {
           return ok(code);
         }

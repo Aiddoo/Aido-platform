@@ -2,12 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 
 import { createInvitedFriend } from '../__tests__/invite.fixtures';
-import {
-  calculateActiveDaysLeft,
-  InvitedFriendPolicy,
-  orderByJoinedAtDesc,
-  orderByWaitingFirst,
-} from './invited-friend.model';
+import { InvitedFriendPolicy } from './invited-friend.model';
 
 describe('orderByJoinedAtDesc', () => {
   it('나중에 가입한 친구가 앞에 오도록 정렬 값을 반환한다', () => {
@@ -22,7 +17,7 @@ describe('orderByJoinedAtDesc', () => {
     });
 
     // When
-    const result = orderBy([earlier, later], [orderByJoinedAtDesc], ['asc']);
+    const result = orderBy([earlier, later], [InvitedFriendPolicy.orderByJoinedAtDesc], ['asc']);
 
     // Then
     expect(result.map((friend) => friend.userId)).toEqual(['later', 'earlier']);
@@ -51,7 +46,7 @@ describe('orderByWaitingFirst', () => {
     // When
     const result = orderBy(
       [rewardedLater, waitingEarlier, waitingLater],
-      [orderByWaitingFirst, orderByJoinedAtDesc],
+      [InvitedFriendPolicy.orderByWaitingFirst, InvitedFriendPolicy.orderByJoinedAtDesc],
       ['asc', 'asc'],
     );
 
@@ -68,7 +63,7 @@ describe('orderByWaitingFirst', () => {
 describe('calculateActiveDaysLeft', () => {
   it('필요한 날보다 적게 했으면 남은 날을 반환한다', () => {
     // When
-    const result = calculateActiveDaysLeft(1, 2);
+    const result = InvitedFriendPolicy.calculateActiveDaysLeft(1, 2);
 
     // Then
     // 2 - 1 = 1
@@ -77,7 +72,7 @@ describe('calculateActiveDaysLeft', () => {
 
   it('필요한 날을 넘겼으면 0을 반환한다', () => {
     // When
-    const result = calculateActiveDaysLeft(3, 2);
+    const result = InvitedFriendPolicy.calculateActiveDaysLeft(3, 2);
 
     // Then
     // max(2 - 3, 0) = 0

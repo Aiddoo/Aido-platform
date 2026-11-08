@@ -2,7 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { toUser } from '../apis/user.mapper';
-import { calculateDaysLeft, PremiumAccessPolicy } from './premium-access.model';
+import { PremiumAccessPolicy } from './premium-access.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
@@ -14,7 +14,7 @@ describe('calculateDaysLeft', () => {
     const now = toInstant('2026-10-31T14:59:59Z'); // 10월 31일 23:59:59 KST
 
     // When
-    const result = calculateDaysLeft(endsAt, now, SEOUL);
+    const result = PremiumAccessPolicy.calculateDaysLeft(endsAt, now, SEOUL);
 
     // Then
     // 11월 1일 - 10월 31일 = 1일
@@ -27,7 +27,7 @@ describe('calculateDaysLeft', () => {
     const now = toInstant('2026-10-31T15:00:00Z'); // 11월 1일 00:00 KST
 
     // When
-    const result = calculateDaysLeft(endsAt, now, SEOUL);
+    const result = PremiumAccessPolicy.calculateDaysLeft(endsAt, now, SEOUL);
 
     // Then
     // 11월 1일 - 11월 1일 = 0일
@@ -41,7 +41,7 @@ describe('calculateDaysLeft', () => {
     const endsAt = toInstant('2026-11-02T20:00:00Z'); // 11월 2일 12:00 PST
 
     // When
-    const result = calculateDaysLeft(endsAt, now, LOS_ANGELES);
+    const result = PremiumAccessPolicy.calculateDaysLeft(endsAt, now, LOS_ANGELES);
 
     // Then
     // 49시간이 지나도 11월 2일 - 10월 31일 = 2일
@@ -54,7 +54,7 @@ describe('calculateDaysLeft', () => {
     const endsAt = toInstant('2028-03-01T03:00:00Z');
 
     // When
-    const result = calculateDaysLeft(endsAt, now, SEOUL);
+    const result = PremiumAccessPolicy.calculateDaysLeft(endsAt, now, SEOUL);
 
     // Then
     // 2월 28일 → 2월 29일 → 3월 1일 = 2일
@@ -67,7 +67,7 @@ describe('calculateDaysLeft', () => {
     const now = toInstant('2026-10-25T00:00:00Z');
 
     // When
-    const result = calculateDaysLeft(endsAt, now, SEOUL);
+    const result = PremiumAccessPolicy.calculateDaysLeft(endsAt, now, SEOUL);
 
     // Then
     // max(10월 20일 - 10월 25일, 0) = 0일
@@ -103,7 +103,11 @@ describe('calculateDaysLeft', () => {
     ],
   ] as const)('%s 남은 달력 일수를 반환한다', (_case, timeZone, now, endsAt, expected) => {
     // When
-    const result = calculateDaysLeft(toInstant(endsAt), toInstant(now), timeZone);
+    const result = PremiumAccessPolicy.calculateDaysLeft(
+      toInstant(endsAt),
+      toInstant(now),
+      timeZone,
+    );
 
     // Then
     expect(result).toBe(expected);

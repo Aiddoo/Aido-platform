@@ -1,21 +1,14 @@
 import { createCaptureState } from '../__tests__/voice.fixtures';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import type { VoiceStallWatch } from '../schemas/voice-capture.schema';
-import {
-  createVoiceRecognizerLink,
-  createVoiceStallWatch,
-  reduceRecognizerLink,
-  VoiceRecognizerLinkPolicy,
-  withTextHeard,
-  withVolumeSample,
-} from './voice-recognizer-link.model';
+import { VoiceRecognizerLinkPolicy } from './voice-recognizer-link.model';
 
 const NOW = 100_000;
 
 describe('shouldRestartStalledRecognizer', () => {
   const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
   const watch = (overrides: Partial<VoiceStallWatch> = {}): VoiceStallWatch => ({
-    ...createVoiceStallWatch(NOW),
+    ...VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW),
     voicedMs: 3_000,
     isVoiceAudible: true,
     ...overrides,
@@ -96,10 +89,14 @@ describe('withVolumeSample', () => {
     },
   ])('$why', ({ level, gapMs, expected }) => {
     // Given
-    const stallWatch = withVolumeSample(createVoiceStallWatch(NOW), 0, NOW);
+    const stallWatch = VoiceRecognizerLinkPolicy.withVolumeSample(
+      VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW),
+      0,
+      NOW,
+    );
 
     // When
-    const next = withVolumeSample(stallWatch, level, NOW + gapMs);
+    const next = VoiceRecognizerLinkPolicy.withVolumeSample(stallWatch, level, NOW + gapMs);
 
     // Then
     expect(next.voicedMs).toBe(expected);
@@ -109,14 +106,17 @@ describe('withVolumeSample', () => {
 describe('withTextHeard', () => {
   it('글자가 오면 들은 시간과 다시 연 시각을 지운다', () => {
     // Given
-    const stallWatch = withVolumeSample(
-      createVoiceStallWatch(NOW, NOW),
+    const stallWatch = VoiceRecognizerLinkPolicy.withVolumeSample(
+      VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW, NOW),
       SPEAKING_VOLUME_THRESHOLD,
       NOW,
     );
 
     // When
-    const next = withTextHeard({ ...stallWatch, voicedMs: 5_000 }, NOW + 7_000);
+    const next = VoiceRecognizerLinkPolicy.withTextHeard(
+      { ...stallWatch, voicedMs: 5_000 },
+      NOW + 7_000,
+    );
 
     // Then
     expect(next).toMatchObject({
@@ -132,13 +132,16 @@ describe('reduceRecognizerLink', () => {
   it('시작을 맡기면 달리는 중이 되고 앞 구간의 멈춤 요청과 재시작 횟수를 지운다', () => {
     // Given
     const link = {
-      ...createVoiceRecognizerLink(),
+      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
       isStopRequested: true,
       quickEndCount: 3,
     };
 
     // When
-    const next = reduceRecognizerLink(link, { type: 'start-requested', at: NOW });
+    const next = VoiceRecognizerLinkPolicy.reduceRecognizerLink(link, {
+      type: 'start-requested',
+      at: NOW,
+    });
 
     // Then
     expect(next).toMatchObject({
@@ -151,13 +154,16 @@ describe('reduceRecognizerLink', () => {
 
   it('end를 받으면 달리지 않고 멈춤 요청도 지운다', () => {
     // Given
-    const link = reduceRecognizerLink(
-      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'start-requested', at: NOW }),
+    const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+      VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+        VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+        { type: 'start-requested', at: NOW },
+      ),
       { type: 'stop-requested' },
     );
 
     // When
-    const next = reduceRecognizerLink(link, { type: 'ended' });
+    const next = VoiceRecognizerLinkPolicy.reduceRecognizerLink(link, { type: 'ended' });
 
     // Then
     expect(next).toMatchObject({ isRunning: false, isStopRequested: false });
@@ -165,14 +171,17 @@ describe('reduceRecognizerLink', () => {
 
   it('같은 글자가 다시 오면 마지막 글자 시각을 옮기지 않는다', () => {
     // Given
-    const heard = reduceRecognizerLink(createVoiceRecognizerLink(), {
-      type: 'text-heard',
-      transcript: '장보기',
-      at: NOW,
-    });
+    const heard = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+      VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      {
+        type: 'text-heard',
+        transcript: '장보기',
+        at: NOW,
+      },
+    );
 
     // When
-    const repeated = reduceRecognizerLink(heard, {
+    const repeated = VoiceRecognizerLinkPolicy.reduceRecognizerLink(heard, {
       type: 'text-heard',
       transcript: '장보기',
       at: NOW + 1_000,
@@ -184,13 +193,16 @@ describe('reduceRecognizerLink', () => {
 
   it('stop 뒤의 마지막 글자는 다시 연 간격을 지우지 않는다', () => {
     // Given
-    const link = reduceRecognizerLink(
-      reduceRecognizerLink(createVoiceRecognizerLink(), { type: 'stall-restarted', at: NOW }),
+    const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+      VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+        VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+        { type: 'stall-restarted', at: NOW },
+      ),
       { type: 'stop-requested' },
     );
 
     // When
-    const next = reduceRecognizerLink(link, {
+    const next = VoiceRecognizerLinkPolicy.reduceRecognizerLink(link, {
       type: 'text-heard',
       transcript: '마지막 글자',
       at: NOW + 500,
@@ -202,13 +214,19 @@ describe('reduceRecognizerLink', () => {
 
   it('인식기 시작 신호는 다시 연 간격을 남기고 감시를 새로 센다', () => {
     // Given
-    const link = reduceRecognizerLink(createVoiceRecognizerLink(), {
-      type: 'stall-restarted',
-      at: NOW,
-    });
+    const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
+      VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      {
+        type: 'stall-restarted',
+        at: NOW,
+      },
+    );
 
     // When
-    const next = reduceRecognizerLink(link, { type: 'started', at: NOW + 200 });
+    const next = VoiceRecognizerLinkPolicy.reduceRecognizerLink(link, {
+      type: 'started',
+      at: NOW + 200,
+    });
 
     // Then
     expect(next.stallWatch).toMatchObject({ lastTextAt: NOW + 200, lastRestartAt: NOW });

@@ -16,7 +16,7 @@ import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import { isInviteDisabledError } from '../domains/invite.error';
-import { orderByJoinedAtDesc, orderByWaitingFirst } from '../domains/invited-friend.model';
+import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import type { RedemptionResult } from '../schemas/invite-redemption.schema';
 import type { InviteCode } from '../schemas/invite.schema';
 import type { InvitedFriend } from '../schemas/invited-friend.schema';
@@ -137,7 +137,7 @@ function selectInvitedFriendSummary(
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
   const invitedFriends = orderBy(
     invitedFriendPages.pages.flatMap((page) => page.items),
-    [orderByWaitingFirst, orderByJoinedAtDesc],
+    [InvitedFriendPolicy.orderByWaitingFirst, InvitedFriendPolicy.orderByJoinedAtDesc],
     ['asc', 'asc'],
   );
 

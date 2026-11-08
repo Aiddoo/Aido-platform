@@ -1,14 +1,10 @@
 import { createInvite } from '../__tests__/invite.fixtures';
-import {
-  calculateRemainingInvites,
-  findOneTimeMilestoneCounts,
-  InvitePolicy,
-} from './invite.model';
+import { InvitePolicy } from './invite.model';
 
 describe('calculateRemainingInvites', () => {
   it('목표보다 적게 모았으면 남은 인원을 반환한다', () => {
     // When
-    const result = calculateRemainingInvites(1, 3);
+    const result = InvitePolicy.calculateRemainingInvites(1, 3);
 
     // Then
     // 3 - 1 = 2
@@ -17,7 +13,7 @@ describe('calculateRemainingInvites', () => {
 
   it('목표를 넘겼으면 0을 반환한다', () => {
     // When
-    const result = calculateRemainingInvites(4, 3);
+    const result = InvitePolicy.calculateRemainingInvites(4, 3);
 
     // Then
     // max(3 - 4, 0) = 0
@@ -28,7 +24,7 @@ describe('calculateRemainingInvites', () => {
 describe('findOneTimeMilestoneCounts', () => {
   it('반복하지 않는 단계의 인원만 반환한다', () => {
     // When
-    const result = findOneTimeMilestoneCounts([
+    const result = InvitePolicy.findOneTimeMilestoneCounts([
       { qualifiedCount: 1, repeatEvery: 1, rewards: [] },
       { qualifiedCount: 3, repeatEvery: null, rewards: [] },
       { qualifiedCount: 5, repeatEvery: null, rewards: [] },

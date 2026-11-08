@@ -7,7 +7,7 @@ import type {
   MultiDayTodoSpan,
   Todo,
 } from '../schemas/todo.schema';
-import { isTodoOnDate } from './todo.model';
+import { TodoPolicy } from './todo.model';
 
 function createDailyCompletionSummary(
   summary: Pick<
@@ -78,7 +78,7 @@ function withDailyCompletionFromTodos(
   if (!isInRange) {
     return result;
   }
-  const dayTodos = todos.filter((todo) => isTodoOnDate(todo, date));
+  const dayTodos = todos.filter((todo) => TodoPolicy.isTodoOnDate(todo, date));
   const others = result.completions.filter((completion) => completion.date !== date);
   return withCompletions(
     result,

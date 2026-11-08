@@ -5,8 +5,8 @@ import { clamp, sumBy } from 'es-toolkit';
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
 import { type VoiceNote, type VoiceNoteSentence } from '../schemas/voice-note.schema';
 import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
-import { createVoiceNote, withSentences } from './voice-note.model';
-import { getLowConfidenceWords } from './voice-transcript.model';
+import { VoiceNotePolicy } from './voice-note.model';
+import { VoiceTranscriptPolicy } from './voice-transcript.model';
 
 /** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
 interface ProvisionalSentence {
@@ -39,12 +39,12 @@ interface CaptionClock {
   segmentStartMs: number;
 }
 
-export function createVoiceNoteCaptions(): VoiceNoteCaptions {
+function createVoiceNoteCaptions(): VoiceNoteCaptions {
   return { sentences: [], provisional: [], bookmarksMs: [] };
 }
 
 /** 문장부호에서 나누고, 부호가 없는 긴 말(문장부호를 못 넣는 인식기)은 띄어쓰기에서 끊는다 */
-export function splitIntoSentences(
+function splitIntoSentences(
   text: string,
   maxLength: number = VOICE_NOTE_SENTENCE_MAX_LENGTH,
 ): string[] {
@@ -130,14 +130,14 @@ function toTimedSentences(
       startMs,
       endMs: Math.max(startMs, ranges[index + 1]?.startMs ?? toMs),
       isBookmarked: false,
-      lowConfidenceWords: getLowConfidenceWords(
+      lowConfidenceWords: VoiceTranscriptPolicy.getLowConfidenceWords(
         findSegmentsWithin(segments, range?.fromOffset ?? 0, range?.toOffset ?? 0),
       ),
     };
   });
 }
 
-export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
   if (captions.provisional.length === 0) {
     return captions;
   }
@@ -209,7 +209,7 @@ function applyFinal(
   };
 }
 
-export function applyCaptionResult(
+function applyCaptionResult(
   captions: VoiceNoteCaptions,
   result: SpeechResultInput,
   clock: CaptionClock,
@@ -219,15 +219,12 @@ export function applyCaptionResult(
     : applyInterim(captions, result.transcript, clock.nowMs);
 }
 
-export function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
   return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
 }
 
 /** 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다 */
-export function getCaptionSentences(
-  captions: VoiceNoteCaptions,
-  nowMs: number,
-): VoiceNoteSentence[] {
+function getCaptionSentences(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteSentence[] {
   const { sentences } = commitProvisional(captions, nowMs);
 
   return sentences.map((sentence, index) => {
@@ -241,7 +238,7 @@ export function getCaptionSentences(
 }
 
 /** 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다 */
-export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
+function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
   const sentences = getCaptionSentences(captions, 0);
   if (sentences.length === 0) {
     return Math.min(captions.bookmarksMs.length, 1);
@@ -255,7 +252,7 @@ function hasCaptionText(captions: VoiceNoteCaptions): boolean {
   return captions.sentences.length > 0 || captions.provisional.length > 0;
 }
 
-export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
+function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';
 }
 
@@ -268,7 +265,7 @@ interface CreateVoiceNoteFromTranscriptInput {
 }
 
 /** 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다 */
-export function createVoiceNoteFromTranscript({
+function createVoiceNoteFromTranscript({
   draftId,
   locale,
   createdAt,
@@ -279,14 +276,14 @@ export function createVoiceNoteFromTranscript({
     splitIntoSentences(text),
   );
 
-  return withSentences(
-    createVoiceNote({ draftId, locale, createdAt }),
+  return VoiceNotePolicy.withSentences(
+    VoiceNotePolicy.createVoiceNote({ draftId, locale, createdAt }),
     toTimedSentences(pieces, { fromMs: 0, toMs: durationMs, segments: [], segmentStartMs: 0 }),
     durationMs,
   );
 }
 
-export function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
+function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
   return {
     sentences,
     provisional: [],
@@ -305,4 +302,5 @@ export const VoiceNoteCaptionPolicy = {
   getCaptionInterimText,
   getMarkedSentenceCount,
   hasCaptionText,
+  splitIntoSentences,
 } as const;

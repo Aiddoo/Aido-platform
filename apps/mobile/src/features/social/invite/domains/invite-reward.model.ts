@@ -3,7 +3,7 @@ import { sumBy } from 'es-toolkit';
 
 import type { InviteReward } from '../schemas/invite-reward.schema';
 
-export function isPremiumDaysReward(reward: InviteReward) {
+function isPremiumDaysReward(reward: InviteReward) {
   return reward.rewardType === REWARD_TYPE.PREMIUM_DAYS;
 }
 
@@ -11,7 +11,7 @@ function isFriendSlotReward(reward: InviteReward) {
   return reward.rewardType === REWARD_TYPE.FRIEND_SLOT;
 }
 
-export function calculateRewardQuantity(
+function calculateRewardQuantity(
   rewards: readonly InviteReward[],
   isTarget: (reward: InviteReward) => boolean,
 ) {
@@ -44,4 +44,6 @@ export const InviteRewardPolicy = {
   getFriendSlots,
   getWelcomePremiumDays,
   getInviterPremiumDays,
+  isPremiumDaysReward,
+  calculateRewardQuantity,
 } as const;

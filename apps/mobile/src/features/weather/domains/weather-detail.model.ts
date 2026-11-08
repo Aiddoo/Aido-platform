@@ -3,7 +3,7 @@ import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/dat
 import { round, sumBy } from 'es-toolkit';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
-import { getUpcomingHours } from './weather-report.model';
+import { WeatherReportPolicy } from './weather-report.model';
 
 /** WHO 기준 자외선 지수 3(보통) 이상부터 차단제를 권한다. */
 const SUNSCREEN_UV_INDEX = 3;
@@ -20,7 +20,7 @@ function getSunscreenWindow(
   timeZone: string,
 ): TimeWindow | null {
   const todayKey = toDateKey(now, timeZone);
-  const strongHours = getUpcomingHours(hourly, now).filter(
+  const strongHours = WeatherReportPolicy.getUpcomingHours(hourly, now).filter(
     (hour) => toDateKey(hour.startsAt, timeZone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
   );
   const first = strongHours[0];
@@ -38,7 +38,7 @@ function calculateNextDayPrecipitation(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): number | null {
-  const hours = getUpcomingHours(hourly, now).slice(0, NEXT_DAY_HOURS);
+  const hours = WeatherReportPolicy.getUpcomingHours(hourly, now).slice(0, NEXT_DAY_HOURS);
   if (hours.length === 0) {
     return null;
   }

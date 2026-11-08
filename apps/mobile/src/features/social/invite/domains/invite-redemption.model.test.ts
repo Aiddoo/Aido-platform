@@ -3,7 +3,7 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.fixtures';
-import { isWithinDays, InviteRedemptionPolicy } from './invite-redemption.model';
+import { InviteRedemptionPolicy } from './invite-redemption.model';
 
 const inviter = {
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -19,7 +19,7 @@ describe('isWithinDays', () => {
     const now = toInstant('2026-10-08T00:00:00Z');
 
     // When
-    const result = isWithinDays(from, now, 7);
+    const result = InviteRedemptionPolicy.isWithinDays(from, now, 7);
 
     // Then
     // 7일 = 7 × 24시간, 기간 안이 아니다
@@ -32,7 +32,7 @@ describe('isWithinDays', () => {
     const now = toInstant('2026-10-07T23:59:59.999Z');
 
     // When
-    const result = isWithinDays(from, now, 7);
+    const result = InviteRedemptionPolicy.isWithinDays(from, now, 7);
 
     // Then
     expect(result).toBe(true);

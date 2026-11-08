@@ -26,11 +26,11 @@ const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;
 /** 시간별 예보에서 이 확률 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림과 같은 기준이다. */
 const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 
-export function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
+function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
   return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
 }
 
-export function isWetHour(hour: HourlyForecastEntry): boolean {
+function isWetHour(hour: HourlyForecastEntry): boolean {
   return hour.precipitationChance >= WET_HOUR_CHANCE;
 }
 
@@ -38,7 +38,7 @@ function getHourEndsAt(hour: HourlyForecastEntry): number {
   return toEpochMs(hour.startsAt) + HOUR_MS;
 }
 
-export function getUpcomingHours(
+function getUpcomingHours(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): HourlyForecastEntry[] {

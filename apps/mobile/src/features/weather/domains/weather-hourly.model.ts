@@ -4,7 +4,7 @@ import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
-import { isWetHour, getUpcomingHours } from './weather-report.model';
+import { WeatherReportPolicy } from './weather-report.model';
 
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
@@ -45,7 +45,7 @@ export type HourlySummary =
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
 
-/** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(isWetHour)로만 정한다. */
+/** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(WeatherReportPolicy.isWetHour)로만 정한다. */
 function toHourlySky(condition: WeatherCondition): HourlySky {
   return match<WeatherCondition, HourlySky>(condition)
     .with('CLEAR', 'MOSTLY_CLEAR', 'HOT', () => 'clear')
@@ -140,7 +140,10 @@ function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,
 ): HourlySummary | null {
-  const hours = getUpcomingHours(report.hourly, now).slice(0, PRECIPITATION_RANGE_HOURS);
+  const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, now).slice(
+    0,
+    PRECIPITATION_RANGE_HOURS,
+  );
   const [first] = hours;
   if (first == null) {
     return null;
@@ -153,8 +156,8 @@ function getHourlySummary(
     report.current.precipitationIntensity > 0
       ? toCurrentPrecipitationType(report.current.condition)
       : null;
-  if (currentPrecipitation != null || isWetHour(first)) {
-    const dryHour = hours.slice(1).find((hour) => !isWetHour(hour));
+  if (currentPrecipitation != null || WeatherReportPolicy.isWetHour(first)) {
+    const dryHour = hours.slice(1).find((hour) => !WeatherReportPolicy.isWetHour(hour));
     return {
       kind: 'precipitationOngoing',
       precipitationType: currentPrecipitation ?? first.precipitationType,
@@ -163,7 +166,7 @@ function getHourlySummary(
     };
   }
 
-  const wetHour = hours.find(isWetHour);
+  const wetHour = hours.find(WeatherReportPolicy.isWetHour);
   if (wetHour != null) {
     return {
       kind: 'precipitationUpcoming',

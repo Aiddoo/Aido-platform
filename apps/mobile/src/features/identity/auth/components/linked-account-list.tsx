@@ -21,7 +21,7 @@ import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
-import { toOAuthProviderSlug } from '../domains/oauth.model';
+import { OAuthPolicy } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
@@ -173,7 +173,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button size="small" onPress={() => link(toOAuthProviderSlug(provider))}>
+          <Button size="small" onPress={() => link(OAuthPolicy.toOAuthProviderSlug(provider))}>
             {t('linkedAccounts.connect')}
           </Button>
         ))

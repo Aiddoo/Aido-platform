@@ -11,14 +11,7 @@ import {
 import { createVoiceNoteSchema } from '../schemas/voice-note.schema';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
-import {
-  createDigestInput,
-  createDigestMemo,
-  hasEmptyPlan,
-  VoiceNotePolicy,
-  withDigestResult,
-  withPlanDraft,
-} from './voice-note.model';
+import { VoiceNotePolicy } from './voice-note.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
   createPlanReviewDraft(
@@ -340,7 +333,10 @@ describe('voiceNoteSchema', () => {
       omittedTodoCount: 1,
       actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
     });
-    const note = withPlanDraft(createSpokenVoiceNote(), createPlanReviewDraft(plan));
+    const note = VoiceNotePolicy.withPlanDraft(
+      createSpokenVoiceNote(),
+      createPlanReviewDraft(plan),
+    );
     const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
     stored.planDraft.form.actions[0].title = '';
 
@@ -350,7 +346,7 @@ describe('voiceNoteSchema', () => {
     // Then
     expect(restored.planDraft?.form.actions.map(({ title }) => title)).toEqual(['장보기']);
     expect(restored.planDraft?.omittedTodoCount).toBe(2);
-    expect(hasEmptyPlan(restored)).toBe(false);
+    expect(VoiceNotePolicy.hasEmptyPlan(restored)).toBe(false);
   });
 });
 
@@ -372,7 +368,7 @@ describe('createDigestInput', () => {
     });
 
     // When
-    const input = createDigestInput(note);
+    const input = VoiceNotePolicy.createDigestInput(note);
 
     // Then
     expect(input).toEqual({
@@ -398,7 +394,7 @@ describe('createDigestInput', () => {
     const note = createSpokenVoiceNote({ sentences });
 
     // When
-    const { segments } = createDigestInput(note);
+    const { segments } = VoiceNotePolicy.createDigestInput(note);
 
     // Then
     expect(segments.length).toBeLessThanOrEqual(ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS);
@@ -425,7 +421,7 @@ describe('withDigestResult', () => {
     });
 
     // When
-    const next = withDigestResult(
+    const next = VoiceNotePolicy.withDigestResult(
       note,
       {
         plan: emptyPlan,
@@ -457,7 +453,7 @@ describe('withDigestResult', () => {
     const note = createSpokenVoiceNote();
 
     // When
-    const next = withDigestResult(
+    const next = VoiceNotePolicy.withDigestResult(
       note,
       {
         plan: emptyPlan,
@@ -488,7 +484,7 @@ describe('createDigestMemo', () => {
     });
 
     // When
-    const memo = createDigestMemo(note);
+    const memo = VoiceNotePolicy.createDigestMemo(note);
 
     // Then
     expect(memo).toMatchObject({ type: 'create-memo', title: '회의', content: '요약\n- 포인트' });
@@ -504,7 +500,7 @@ describe('hasEmptyPlan', () => {
     };
 
     // When
-    const result = hasEmptyPlan(note);
+    const result = VoiceNotePolicy.hasEmptyPlan(note);
 
     // Then
     expect(result).toBe(false);

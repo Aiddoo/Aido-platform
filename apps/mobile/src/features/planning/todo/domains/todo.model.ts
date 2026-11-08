@@ -75,7 +75,7 @@ function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number): boolea
   );
 }
 
-export function isTodoOnDate(todo: Pick<Todo, 'startDate' | 'endDate'>, date: string): boolean {
+function isTodoOnDate(todo: Pick<Todo, 'startDate' | 'endDate'>, date: string): boolean {
   return todo.startDate <= date && date <= (todo.endDate ?? todo.startDate);
 }
 

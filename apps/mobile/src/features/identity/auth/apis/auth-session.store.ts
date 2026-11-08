@@ -2,8 +2,8 @@ import { isEqual } from 'es-toolkit';
 
 import {
   type AuthSessionEvent,
+  AuthSessionPolicy,
   type AuthSessionState,
-  transitionAuthSession,
 } from '../domains/auth-session.model';
 
 export interface AuthSessionStore {
@@ -28,7 +28,7 @@ export function createAuthSessionStore(
       };
     },
     dispatch: (event) => {
-      const next = transitionAuthSession(state, event);
+      const next = AuthSessionPolicy.transitionAuthSession(state, event);
       if (isEqual(next, state)) {
         return;
       }

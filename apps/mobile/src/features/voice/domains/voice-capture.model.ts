@@ -17,12 +17,7 @@ import type {
   VoicePauseCause,
 } from '../schemas/voice-capture.schema';
 import type { SpeechResult, VoiceTranscript } from '../schemas/voice-transcript.schema';
-import {
-  applyResult,
-  createVoiceTranscript,
-  isTranscriptEmpty,
-  withInterimFinalized,
-} from './voice-transcript.model';
+import { VoiceTranscriptPolicy } from './voice-transcript.model';
 
 export interface VoiceCaptureSeed {
   transcript: VoiceTranscript;
@@ -44,8 +39,13 @@ export type VoiceCaptureEvent =
   | { type: 'retry-plan' }
   | { type: 'cancel' };
 
-export function createVoiceCaptureState(): VoiceCaptureState {
-  return { status: 'idle', transcript: createVoiceTranscript(), elapsedMs: 0, pauseCount: 0 };
+function createVoiceCaptureState(): VoiceCaptureState {
+  return {
+    status: 'idle',
+    transcript: VoiceTranscriptPolicy.createVoiceTranscript(),
+    elapsedMs: 0,
+    pauseCount: 0,
+  };
 }
 
 function getElapsedMs(state: VoiceCaptureState, now: number): number {
@@ -67,7 +67,7 @@ function toFailed(
   const segment = toFinishedSegment(state, at);
   return {
     ...segment,
-    transcript: withInterimFinalized(segment.transcript),
+    transcript: VoiceTranscriptPolicy.withInterimFinalized(segment.transcript),
     status: 'failed',
     reason,
   };
@@ -76,12 +76,12 @@ function toFailed(
 /** 결과 없이 끝나면 서버를 부르지 않는다 */
 function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
   const { elapsedMs, pauseCount } = state;
-  const transcript = withInterimFinalized(state.transcript);
+  const transcript = VoiceTranscriptPolicy.withInterimFinalized(state.transcript);
   return {
     transcript,
     elapsedMs,
     pauseCount,
-    status: isTranscriptEmpty(transcript) ? 'idle' : 'planning',
+    status: VoiceTranscriptPolicy.isTranscriptEmpty(transcript) ? 'idle' : 'planning',
   };
 }
 
@@ -117,10 +117,7 @@ function isRecognizerFailure(
   return RECOGNIZER_FAILURE_CODES.has(code) && !isStopAcknowledgement(state, code, isStopRequested);
 }
 
-export function reduceVoiceCapture(
-  state: VoiceCaptureState,
-  event: VoiceCaptureEvent,
-): VoiceCaptureState {
+function reduceVoiceCapture(state: VoiceCaptureState, event: VoiceCaptureEvent): VoiceCaptureState {
   return (
     match([state, event] as const)
       .returnType<VoiceCaptureState>()
@@ -130,7 +127,7 @@ export function reduceVoiceCapture(
         status: 'preparing',
       }))
       .with([{ status: P.union('paused', 'failed') }, { type: 'resume' }], ([current]) => ({
-        transcript: withInterimFinalized(current.transcript),
+        transcript: VoiceTranscriptPolicy.withInterimFinalized(current.transcript),
         elapsedMs: current.elapsedMs,
         pauseCount: current.pauseCount,
         status: 'preparing',
@@ -146,7 +143,7 @@ export function reduceVoiceCapture(
         [{ status: P.union('listening', 'paused', 'finalizing') }, { type: 'result' }],
         ([current, { result }]) => ({
           ...current,
-          transcript: applyResult(current.transcript, result),
+          transcript: VoiceTranscriptPolicy.applyResult(current.transcript, result),
         }),
       )
       .with([{ status: 'listening' }, { type: 'pause' }], ([current, { cause, at }]) => ({
@@ -165,7 +162,7 @@ export function reduceVoiceCapture(
       // final 없이 구간이 끝나면 다음 구간의 글자가 덮지 않게 듣던 글자를 먼저 확정한다
       .with([{ status: 'listening' }, { type: 'end' }], ([current]) => ({
         ...current,
-        transcript: withInterimFinalized(current.transcript),
+        transcript: VoiceTranscriptPolicy.withInterimFinalized(current.transcript),
       }))
       .with([{ status: 'paused' }, { type: 'finish' }], ([current]) => toFinalized(current))
       .with(
@@ -244,7 +241,10 @@ function isWrappingUp(state: VoiceCaptureState): boolean {
 function canFinish(state: VoiceCaptureState): boolean {
   const isStopped =
     state.status === 'paused' || (state.status === 'failed' && state.reason !== 'planning-failed');
-  return (state.status === 'listening' || isStopped) && !isTranscriptEmpty(state.transcript);
+  return (
+    (state.status === 'listening' || isStopped) &&
+    !VoiceTranscriptPolicy.isTranscriptEmpty(state.transcript)
+  );
 }
 
 function canResume(state: VoiceCaptureState): boolean {
@@ -274,7 +274,7 @@ function canRetryPlanning(state: VoiceCaptureState): boolean {
   return (
     state.status === 'failed' &&
     state.reason === 'planning-failed' &&
-    !isTranscriptEmpty(state.transcript)
+    !VoiceTranscriptPolicy.isTranscriptEmpty(state.transcript)
   );
 }
 
@@ -325,7 +325,7 @@ function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
  * 인식기에 줄 힌트를 정한다. 흔한 단어는 늘 주고, 내 카테고리·할 일 이름은 기기 안 인식일 때만 앞에 둔다.
  * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
  */
-export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
+function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
   const commonHints = COMMON_SPEECH_HINTS[options.locale];
 
   return {
@@ -351,4 +351,7 @@ export const VoiceCapturePolicy = {
   getDismissAction,
   isChargedReview,
   getElapsedMs,
+  createVoiceCaptureState,
+  reduceVoiceCapture,
+  getRecognizerStartOptions,
 } as const;

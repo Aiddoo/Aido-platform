@@ -1,6 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { createVoiceNote } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
 import {
   type VoiceNote,
   type VoiceNoteDigest,
@@ -48,7 +48,7 @@ export const createSpokenVoiceNote = ({
   draftId = 'draft-1',
   ...overrides
 }: VoiceNoteOverrides = {}): VoiceNote => ({
-  ...createVoiceNote({
+  ...VoiceNotePolicy.createVoiceNote({
     draftId,
     locale: 'ko-KR',
     createdAt: toInstant('2026-11-01T00:00:00.000Z'),

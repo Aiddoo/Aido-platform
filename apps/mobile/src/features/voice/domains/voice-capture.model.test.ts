@@ -3,12 +3,7 @@ import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
 import { voicePlanSchema } from '../schemas/voice-plan.schema';
-import {
-  createVoiceCaptureState,
-  getRecognizerStartOptions,
-  reduceVoiceCapture,
-  VoiceCapturePolicy,
-} from './voice-capture.model';
+import { VoiceCapturePolicy } from './voice-capture.model';
 
 const NOW = 100_000;
 
@@ -26,7 +21,7 @@ describe('getRecognizerStartOptions', () => {
     const options = { ...baseOptions, isOnDevice: false };
 
     // When
-    const result = getRecognizerStartOptions(options);
+    const result = VoiceCapturePolicy.getRecognizerStartOptions(options);
 
     // Then
     expect(result.hintWords).toEqual(COMMON_SPEECH_HINTS['ko-KR']);
@@ -38,7 +33,7 @@ describe('getRecognizerStartOptions', () => {
     const options = { ...baseOptions, isOnDevice: true, hintWords: ['기획팀', '분기'] };
 
     // When
-    const result = getRecognizerStartOptions(options);
+    const result = VoiceCapturePolicy.getRecognizerStartOptions(options);
 
     // Then
     expect(result.hintWords.slice(0, 2)).toEqual(['기획팀', '분기']);
@@ -57,11 +52,11 @@ describe('reduceVoiceCapture', () => {
 
   it('준비 → 듣기 시작 순서로 진행한다', () => {
     // Given
-    const idle = createVoiceCaptureState();
+    const idle = VoiceCapturePolicy.createVoiceCaptureState();
 
     // When
-    const preparing = reduceVoiceCapture(idle, { type: 'prepare' });
-    const listening = reduceVoiceCapture(preparing, { type: 'start', at: NOW });
+    const preparing = VoiceCapturePolicy.reduceVoiceCapture(idle, { type: 'prepare' });
+    const listening = VoiceCapturePolicy.reduceVoiceCapture(preparing, { type: 'start', at: NOW });
 
     // Then
     expect(preparing.status).toBe('preparing');
@@ -73,7 +68,7 @@ describe('reduceVoiceCapture', () => {
     const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
 
     // When
-    const state = reduceVoiceCapture(listening, {
+    const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
       type: 'result',
       result: { transcript: '장보기', isFinal: false },
     });
@@ -91,7 +86,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const state = reduceVoiceCapture(listening, {
+    const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
       type: 'pause',
       cause: 'app-background',
       at: NOW + 4_000,
@@ -112,7 +107,7 @@ describe('reduceVoiceCapture', () => {
     const paused = createCaptureState({ status: 'paused', cause: 'app-background' });
 
     // When
-    const state = reduceVoiceCapture(paused, {
+    const state = VoiceCapturePolicy.reduceVoiceCapture(paused, {
       type: 'result',
       result: { transcript: '우유', isFinal: true },
     });
@@ -131,7 +126,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const state = reduceVoiceCapture(paused, { type: 'resume' });
+    const state = VoiceCapturePolicy.reduceVoiceCapture(paused, { type: 'resume' });
 
     // Then
     expect(state).toMatchObject({ status: 'preparing', elapsedMs: 4_000 });
@@ -147,8 +142,11 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const finalizing = reduceVoiceCapture(listening, { type: 'finish', at: NOW + 3_000 });
-    const planning = reduceVoiceCapture(finalizing, { type: 'end' });
+    const finalizing = VoiceCapturePolicy.reduceVoiceCapture(listening, {
+      type: 'finish',
+      at: NOW + 3_000,
+    });
+    const planning = VoiceCapturePolicy.reduceVoiceCapture(finalizing, { type: 'end' });
 
     // Then
     expect(finalizing).toMatchObject({ status: 'finalizing', elapsedMs: 3_000 });
@@ -161,7 +159,7 @@ describe('reduceVoiceCapture', () => {
     const finalizing = createCaptureState({ status: 'finalizing' });
 
     // When
-    const state = reduceVoiceCapture(finalizing, { type: 'end' });
+    const state = VoiceCapturePolicy.reduceVoiceCapture(finalizing, { type: 'end' });
 
     // Then
     expect(state.status).toBe('idle');
@@ -174,7 +172,11 @@ describe('reduceVoiceCapture', () => {
       const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
 
       // When
-      const state = reduceVoiceCapture(listening, { type: 'error', code, at: NOW + 1_000 });
+      const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
+        type: 'error',
+        code,
+        at: NOW + 1_000,
+      });
 
       // Then
       expect(state).toBe(listening);
@@ -190,7 +192,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const state = reduceVoiceCapture(listening, {
+    const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
       type: 'error',
       code: 'interrupted',
       at: NOW + 2_000,
@@ -210,7 +212,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const state = reduceVoiceCapture(listening, {
+    const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
       type: 'error',
       code: 'network',
       at: NOW + 2_000,
@@ -229,8 +231,12 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const afterError = reduceVoiceCapture(finalizing, { type: 'error', code: 'client', at: NOW });
-    const afterEnd = reduceVoiceCapture(afterError, { type: 'end' });
+    const afterError = VoiceCapturePolicy.reduceVoiceCapture(finalizing, {
+      type: 'error',
+      code: 'client',
+      at: NOW,
+    });
+    const afterEnd = VoiceCapturePolicy.reduceVoiceCapture(afterError, { type: 'end' });
 
     // Then
     expect(afterError.status).toBe('finalizing');
@@ -245,7 +251,11 @@ describe('reduceVoiceCapture', () => {
     const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
 
     // When
-    const state = reduceVoiceCapture(listening, { type: 'error', code: 'client', at: NOW });
+    const state = VoiceCapturePolicy.reduceVoiceCapture(listening, {
+      type: 'error',
+      code: 'client',
+      at: NOW,
+    });
 
     // Then
     expect(state).toMatchObject({ status: 'failed', reason: 'client' });
@@ -258,7 +268,10 @@ describe('reduceVoiceCapture', () => {
     const error = { type: 'error', code: 'client', at: NOW, isStopRequested: true } as const;
 
     // When
-    const states = [reduceVoiceCapture(listening, error), reduceVoiceCapture(preparing, error)];
+    const states = [
+      VoiceCapturePolicy.reduceVoiceCapture(listening, error),
+      VoiceCapturePolicy.reduceVoiceCapture(preparing, error),
+    ];
 
     // Then
     expect(states.map(({ status }) => status)).toEqual(['listening', 'preparing']);
@@ -272,7 +285,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const failed = reduceVoiceCapture(planning, { type: 'plan-failed' });
+    const failed = VoiceCapturePolicy.reduceVoiceCapture(planning, { type: 'plan-failed' });
 
     // Then
     expect(failed).toMatchObject({ status: 'failed', reason: 'planning-failed' });
@@ -289,7 +302,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const state = reduceVoiceCapture(failed, { type: 'retry-plan' });
+    const state = VoiceCapturePolicy.reduceVoiceCapture(failed, { type: 'retry-plan' });
 
     // Then
     expect(state.status).toBe('planning');
@@ -304,20 +317,23 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const planned = reduceVoiceCapture(planning, { type: 'planned', result: null });
-    const cancelled = reduceVoiceCapture(planning, { type: 'cancel' });
+    const planned = VoiceCapturePolicy.reduceVoiceCapture(planning, {
+      type: 'planned',
+      result: null,
+    });
+    const cancelled = VoiceCapturePolicy.reduceVoiceCapture(planning, { type: 'cancel' });
 
     // Then
-    expect(planned).toEqual(createVoiceCaptureState());
-    expect(cancelled).toEqual(createVoiceCaptureState());
+    expect(planned).toEqual(VoiceCapturePolicy.createVoiceCaptureState());
+    expect(cancelled).toEqual(VoiceCapturePolicy.createVoiceCaptureState());
   });
 
   it('상태에 맞지 않는 이벤트는 무시한다', () => {
     // Given
-    const idle = createVoiceCaptureState();
+    const idle = VoiceCapturePolicy.createVoiceCaptureState();
 
     // When
-    const state = reduceVoiceCapture(idle, { type: 'start', at: NOW });
+    const state = VoiceCapturePolicy.reduceVoiceCapture(idle, { type: 'start', at: NOW });
 
     // Then
     expect(state).toBe(idle);
@@ -329,7 +345,7 @@ describe('reduceVoiceCapture', () => {
     const planning = createCaptureState({ status: 'planning', transcript });
 
     // When
-    const next = reduceVoiceCapture(planning, {
+    const next = VoiceCapturePolicy.reduceVoiceCapture(planning, {
       type: 'planned',
       result: { plan, isCharged: false },
     });
@@ -343,7 +359,7 @@ describe('reduceVoiceCapture', () => {
     const planning = createCaptureState({ status: 'planning' });
 
     // When
-    const next = reduceVoiceCapture(planning, {
+    const next = VoiceCapturePolicy.reduceVoiceCapture(planning, {
       type: 'planned',
       result: { plan, isCharged: true },
     });
@@ -361,7 +377,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
+    const next = VoiceCapturePolicy.reduceVoiceCapture(failed, { type: 'finish', at: 0 });
 
     // Then
     expect(next.status).toBe('planning');
@@ -377,7 +393,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
+    const next = VoiceCapturePolicy.reduceVoiceCapture(failed, { type: 'finish', at: 0 });
 
     // Then
     expect(next).toBe(failed);
@@ -389,7 +405,7 @@ describe('reduceVoiceCapture', () => {
     const seed = { transcript: createTranscript({ sentences: ['앞 말'] }), elapsedMs: 90_000 };
 
     // When
-    const next = reduceVoiceCapture(createCaptureState({ status: 'idle' }), {
+    const next = VoiceCapturePolicy.reduceVoiceCapture(createCaptureState({ status: 'idle' }), {
       type: 'prepare',
       seed,
     });
@@ -400,17 +416,22 @@ describe('reduceVoiceCapture', () => {
 
   it('듣는 중에 final 없이 구간이 끝나면 듣던 글자를 확정해 다음 구간이 덮지 못한다', () => {
     // Given
-    const state = reduceVoiceCapture(
-      reduceVoiceCapture(reduceVoiceCapture(createVoiceCaptureState(), { type: 'prepare' }), {
-        type: 'start',
-        at: 0,
-      }),
+    const state = VoiceCapturePolicy.reduceVoiceCapture(
+      VoiceCapturePolicy.reduceVoiceCapture(
+        VoiceCapturePolicy.reduceVoiceCapture(VoiceCapturePolicy.createVoiceCaptureState(), {
+          type: 'prepare',
+        }),
+        {
+          type: 'start',
+          at: 0,
+        },
+      ),
       { type: 'result', result: { transcript: '앞에서 한 말', isFinal: false } },
     );
 
     // When
-    const ended = reduceVoiceCapture(state, { type: 'end' });
-    const next = reduceVoiceCapture(ended, {
+    const ended = VoiceCapturePolicy.reduceVoiceCapture(state, { type: 'end' });
+    const next = VoiceCapturePolicy.reduceVoiceCapture(ended, {
       type: 'result',
       result: { transcript: '이어서 한 말', isFinal: false },
     });
@@ -548,7 +569,7 @@ describe('isSpeaking', () => {
 
 describe('getDismissAction', () => {
   const createReview = (actions: unknown[]) =>
-    reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
+    VoiceCapturePolicy.reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
       type: 'planned',
       result: {
         plan: voicePlanSchema.parse({
@@ -709,7 +730,7 @@ describe('getRemainingCaptureMs', () => {
 
 describe('isChargedReview', () => {
   const planned = (isCharged: boolean) =>
-    reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
+    VoiceCapturePolicy.reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
       type: 'planned',
       result: {
         plan: voicePlanSchema.parse({

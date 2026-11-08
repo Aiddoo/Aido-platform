@@ -7,18 +7,11 @@ import {
 } from '../constants/voice.constants';
 import type { VoiceCaptureState, VoiceStallWatch } from '../schemas/voice-capture.schema';
 
-export function createVoiceStallWatch(
-  now: number,
-  lastRestartAt: number | null = null,
-): VoiceStallWatch {
+function createVoiceStallWatch(now: number, lastRestartAt: number | null = null): VoiceStallWatch {
   return { lastTextAt: now, voicedMs: 0, lastSampleAt: null, isVoiceAudible: false, lastRestartAt };
 }
 
-export function withVolumeSample(
-  watch: VoiceStallWatch,
-  level: number,
-  now: number,
-): VoiceStallWatch {
+function withVolumeSample(watch: VoiceStallWatch, level: number, now: number): VoiceStallWatch {
   const isVoiceAudible = level >= SPEAKING_VOLUME_THRESHOLD;
   const gapMs = watch.lastSampleAt == null ? 0 : Math.max(0, now - watch.lastSampleAt);
   return {
@@ -30,7 +23,7 @@ export function withVolumeSample(
   };
 }
 
-export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
+function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
   return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
 }
 
@@ -49,7 +42,7 @@ function shouldRestartStalledRecognizer(
 }
 
 /** 인식기와 세션의 연결 상태. 화면에 보이지 않고 시각은 호출한 쪽이 넘긴다 */
-export interface VoiceRecognizerLink {
+interface VoiceRecognizerLink {
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
   isRunning: boolean;
   /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
@@ -76,7 +69,7 @@ export type VoiceRecognizerLinkEvent =
   | { type: 'text-heard'; transcript: string; at: number }
   | { type: 'volume-sampled'; level: number; at: number };
 
-export function createVoiceRecognizerLink(): VoiceRecognizerLink {
+function createVoiceRecognizerLink(): VoiceRecognizerLink {
   return {
     isRunning: false,
     isStopRequested: false,
@@ -102,7 +95,7 @@ function isRestartLooping(
   return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
 }
 
-export function reduceRecognizerLink(
+function reduceRecognizerLink(
   link: VoiceRecognizerLink,
   event: VoiceRecognizerLinkEvent,
 ): VoiceRecognizerLink {
@@ -150,4 +143,9 @@ export function reduceRecognizerLink(
 export const VoiceRecognizerLinkPolicy = {
   isRestartLooping,
   shouldRestartStalledRecognizer,
+  createVoiceStallWatch,
+  withVolumeSample,
+  withTextHeard,
+  createVoiceRecognizerLink,
+  reduceRecognizerLink,
 } as const;

@@ -13,7 +13,7 @@ import { maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
-import { isFrozenPrecipitation, isWetHour, WeatherReportPolicy } from './weather-report.model';
+import { WeatherReportPolicy } from './weather-report.model';
 
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
@@ -132,7 +132,7 @@ function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): n
   });
 }
 
-export function isHot(hour: HourlyForecastEntry): boolean {
+function isHot(hour: HourlyForecastEntry): boolean {
   return hour.isDaylight && hour.apparentTemperature >= HEAT_APPARENT_TEMPERATURE;
 }
 
@@ -141,7 +141,7 @@ function isThunderHour(hour: HourlyForecastEntry): boolean {
 }
 
 function isFrozenHour(hour: HourlyForecastEntry): boolean {
-  return isFrozenPrecipitation(hour.precipitationType);
+  return WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
 }
 
 /** 기준 시간에서 앞뒤로 조건이 이어지는 시간을 묶는다. */
@@ -171,7 +171,7 @@ function toHourRange(
 }
 
 /** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
-export function getForecastTodos(
+function getForecastTodos(
   hourly: readonly HourlyForecastEntry[],
   todos: readonly BriefingTodo[],
   now: Instant,
@@ -260,10 +260,10 @@ function toRainLaterBriefing(
 ): BriefingResult | null {
   const nowIndex = findHourIndexAt(hourly, now);
   const current = hourly[nowIndex];
-  if (current == null || isWetHour(current)) {
+  if (current == null || WeatherReportPolicy.isWetHour(current)) {
     return null;
   }
-  const wetHour = hourly.slice(nowIndex + 1).find(isWetHour);
+  const wetHour = hourly.slice(nowIndex + 1).find(WeatherReportPolicy.isWetHour);
   if (wetHour == null) {
     return null;
   }
@@ -297,7 +297,7 @@ function toClearBriefing(
   const daylightHours = WeatherReportPolicy.getUpcomingHours(hourly, now).filter(
     (hour) => hour.isDaylight && toDateKey(hour.startsAt, timeZone) === todayKey,
   );
-  if (daylightHours.length === 0 || daylightHours.some(isWetHour)) {
+  if (daylightHours.length === 0 || daylightHours.some(WeatherReportPolicy.isWetHour)) {
     return null;
   }
   if (!daylightHours.every((hour) => CLEAR_CONDITIONS.includes(hour.condition))) {
@@ -351,7 +351,7 @@ function getWeatherBriefing(
 ): BriefingResult {
   const { hourly } = report;
   const forecastTodos = getForecastTodos(hourly, todos, clock.now);
-  const wetTodos = forecastTodos.filter((todo) => isWetHour(todo.hour));
+  const wetTodos = forecastTodos.filter((todo) => WeatherReportPolicy.isWetHour(todo.hour));
   if (wetTodos.length > 0) {
     return toWetBriefing(hourly, wetTodos);
   }
@@ -387,4 +387,6 @@ export const WeatherBriefingPolicy = {
   toBriefingTodo,
   getWeatherBriefing,
   getSuggestedStartAt,
+  isHot,
+  getForecastTodos,
 } as const;

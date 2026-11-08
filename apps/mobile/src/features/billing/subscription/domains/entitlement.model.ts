@@ -1,8 +1,5 @@
 import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
-import {
-  calculateDaysLeft,
-  hasPassed,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import type { Instant } from '@src/shared/date/instant';
 
 import type {
@@ -56,7 +53,9 @@ function getAccessDecision(
   if (quota.remaining !== 0) {
     return 'allow';
   }
-  return quota.resetsAt != null && hasPassed(quota.resetsAt, now) ? 'allow' : 'limit-reached';
+  return quota.resetsAt != null && PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
+    ? 'allow'
+    : 'limit-reached';
 }
 
 /** 지금 한도. null은 무제한이거나 알 수 없다 */
@@ -90,7 +89,11 @@ function getQuotaStatus(
   ) {
     return { type: 'untracked' };
   }
-  if (quota.remaining === 0 && quota.resetsAt != null && hasPassed(quota.resetsAt, now)) {
+  if (
+    quota.remaining === 0 &&
+    quota.resetsAt != null &&
+    PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
+  ) {
     return { type: 'untracked' };
   }
   return quota.remaining === 0
@@ -108,11 +111,15 @@ function getResetNotice(
   { now, timeZone }: { now: Instant; timeZone: string },
 ): QuotaResetNotice | null {
   const quota = findFeatureQuota(snapshot, feature);
-  if (quota?.limit == null || quota.resetsAt == null || hasPassed(quota.resetsAt, now)) {
+  if (
+    quota?.limit == null ||
+    quota.resetsAt == null ||
+    PremiumAccessPolicy.hasPassed(quota.resetsAt, now)
+  ) {
     return null;
   }
 
-  const daysLeft = calculateDaysLeft(quota.resetsAt, now, timeZone);
+  const daysLeft = PremiumAccessPolicy.calculateDaysLeft(quota.resetsAt, now, timeZone);
   if (daysLeft === 0) {
     return { type: 'today' };
   }

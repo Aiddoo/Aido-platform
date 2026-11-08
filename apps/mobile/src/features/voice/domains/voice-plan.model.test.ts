@@ -4,17 +4,7 @@ import {
   voicePlanIdSchema,
   type VoicePlan,
 } from '../schemas/voice-plan.schema';
-import {
-  canApplyPlan,
-  getSelectedTodoCount,
-  getPlanActionGroups,
-  getSelectedActions,
-  sortPlanActionsByGroup,
-  withRepeat,
-  withStartDate,
-  type PlanHeadline,
-  VoicePlanPolicy,
-} from './voice-plan.model';
+import { type PlanHeadline, VoicePlanPolicy } from './voice-plan.model';
 
 const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({
   type: 'create-todo',
@@ -71,7 +61,7 @@ describe('getSelectedActions', () => {
     const plan = createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
 
     // When
-    const selected = getSelectedActions(plan, { a1: false, a2: true });
+    const selected = VoicePlanPolicy.getSelectedActions(plan, { a1: false, a2: true });
 
     // Then
     expect(selected.map((action) => action.actionId)).toEqual(['a2']);
@@ -84,7 +74,7 @@ describe('canApplyPlan', () => {
     const plan = createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
 
     // When
-    const canApply = canApplyPlan(plan, { a1: false, a2: false });
+    const canApply = VoicePlanPolicy.canApplyPlan(plan, { a1: false, a2: false });
 
     // Then
     expect(canApply).toBe(false);
@@ -97,7 +87,7 @@ describe('getSelectedTodoCount', () => {
     const plan = createPlan(todo(), memo());
 
     // When
-    const count = getSelectedTodoCount(plan, { a1: true, m1: true });
+    const count = VoicePlanPolicy.getSelectedTodoCount(plan, { a1: true, m1: true });
 
     // Then
     expect(count).toBe(1);
@@ -135,7 +125,7 @@ describe('getPlanActionGroups', () => {
     const actions = categories.map((categoryId) => todo({ categoryId }));
 
     // When
-    const result = getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
+    const result = VoicePlanPolicy.getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result).toEqual(groups);
@@ -146,7 +136,7 @@ describe('getPlanActionGroups', () => {
     const actions = [todo({ categoryId: 1 }), memo(), todo({ categoryId: 1 })];
 
     // When
-    const result = getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
+    const result = VoicePlanPolicy.getPlanActionGroups(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result).toEqual([
@@ -167,7 +157,7 @@ describe('sortPlanActionsByGroup', () => {
     ];
 
     // When
-    const result = sortPlanActionsByGroup(actions, FALLBACK_CATEGORY_ID);
+    const result = VoicePlanPolicy.sortPlanActionsByGroup(actions, FALLBACK_CATEGORY_ID);
 
     // Then
     expect(result.map(({ actionId }) => actionId)).toEqual(['a', 'c', 'b', 'm1']);
@@ -180,7 +170,10 @@ describe('withRepeat', () => {
     const period = todo({ endDate: '2026-11-07' });
 
     // When
-    const result = withRepeat(period, { frequency: 'DAILY', end: { type: 'NEVER' } });
+    const result = VoicePlanPolicy.withRepeat(period, {
+      frequency: 'DAILY',
+      end: { type: 'NEVER' },
+    });
 
     // Then
     expect(result.endDate).toBeNull();
@@ -224,7 +217,7 @@ describe('withStartDate', () => {
       const period = todo({ startDate, endDate });
 
       // When
-      const result = withStartDate(period, movedTo);
+      const result = VoicePlanPolicy.withStartDate(period, movedTo);
 
       // Then
       expect(result).toMatchObject({ startDate: movedTo, endDate: expected });

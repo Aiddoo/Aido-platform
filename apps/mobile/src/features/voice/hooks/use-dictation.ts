@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
-import { getRecognizerStartOptions } from '../domains/voice-capture.model';
+import { VoiceCapturePolicy } from '../domains/voice-capture.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
@@ -112,7 +112,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
       }
       isSessionOwnerRef.current = true;
       speechRecognizer.start(
-        getRecognizerStartOptions({
+        VoiceCapturePolicy.getRecognizerStartOptions({
           locale,
           mode: 'dictation',
           hintWords: [],

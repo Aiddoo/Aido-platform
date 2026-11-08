@@ -21,8 +21,8 @@ import {
 } from '../schemas/voice-note.schema';
 import type { PlannedMemo, VoiceNoteDigestResult } from '../schemas/voice-plan.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
-import { isTodoAction } from './voice-plan.model';
-import { createVoiceTranscript } from './voice-transcript.model';
+import { VoicePlanPolicy } from './voice-plan.model';
+import { VoiceTranscriptPolicy } from './voice-transcript.model';
 
 interface CreateVoiceNoteInput {
   draftId: string;
@@ -30,7 +30,7 @@ interface CreateVoiceNoteInput {
   createdAt: Instant;
 }
 
-export function createVoiceNote({ draftId, locale, createdAt }: CreateVoiceNoteInput): VoiceNote {
+function createVoiceNote({ draftId, locale, createdAt }: CreateVoiceNoteInput): VoiceNote {
   return {
     draftId: voiceNoteDraftIdSchema.parse(draftId),
     locale,
@@ -49,7 +49,7 @@ export function createVoiceNote({ draftId, locale, createdAt }: CreateVoiceNoteI
   };
 }
 
-export function withSentences(
+function withSentences(
   note: VoiceNote,
   sentences: readonly VoiceNoteSentence[],
   durationMs: number,
@@ -68,7 +68,7 @@ function withDigestRequest(
   return { ...note, digestRequest };
 }
 
-export function withPlanDraft(note: VoiceNote, planDraft: PlanReviewDraft | null): VoiceNote {
+function withPlanDraft(note: VoiceNote, planDraft: PlanReviewDraft | null): VoiceNote {
   return { ...note, planDraft };
 }
 
@@ -76,7 +76,7 @@ function isSentenceAtKeyPoint(sentence: VoiceNoteSentence, startMs: number) {
   return sentence.startMs <= startMs && startMs < sentence.endMs;
 }
 
-export function withDigestResult(
+function withDigestResult(
   note: VoiceNote,
   result: VoiceNoteDigestResult,
   planDraft: PlanReviewDraft,
@@ -132,7 +132,7 @@ export interface VoiceNoteDigestInput {
   segments: { startMs: number; text: string; isBookmarked: boolean }[];
 }
 
-export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
+function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
   const sentences = note.sentences.filter((sentence) => sentence.text.trim() !== '');
   const groupSize = Math.max(
     1,
@@ -151,7 +151,7 @@ export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
 }
 
 /** 정리한 내용을 메모 한 장으로 만든다. 제목이 비면 서버가 제목 없는 메모로 저장한다 */
-export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
+function createDigestMemo(note: VoiceNote): PlannedMemo | null {
   if (note.digest == null) {
     return null;
   }
@@ -167,12 +167,12 @@ export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
 }
 
 /** 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다. 카드를 읽지 못한 경우(`planDraft`가 null)와 구분한다 */
-export function hasEmptyPlan(note: VoiceNote): boolean {
+function hasEmptyPlan(note: VoiceNote): boolean {
   return (
     note.digest != null &&
     note.appliedAt == null &&
     note.planDraft != null &&
-    !note.planDraft.form.actions.some(isTodoAction)
+    !note.planDraft.form.actions.some(VoicePlanPolicy.isTodoAction)
   );
 }
 
@@ -195,7 +195,7 @@ function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
 }
 
 function getPlannedTodoCount(note: VoiceNote): number {
-  return note.planDraft?.form.actions.filter(isTodoAction).length ?? 0;
+  return note.planDraft?.form.actions.filter(VoicePlanPolicy.isTodoAction).length ?? 0;
 }
 
 function getCharacterCount(note: VoiceNote): number {
@@ -255,7 +255,9 @@ function findKeyPointAt(note: VoiceNote, positionMs: number): VoiceNoteKeyPoint 
 /** 이어 말하기의 시작 상태. 저장된 문장을 확정된 글자로, 저장된 길이를 이미 들은 시간으로 잇는다 */
 function toCaptureSeed(note: Pick<VoiceNote, 'sentences' | 'durationMs'>): VoiceCaptureSeed {
   return {
-    transcript: createVoiceTranscript({ sentences: note.sentences.map(({ text }) => text) }),
+    transcript: VoiceTranscriptPolicy.createVoiceTranscript({
+      sentences: note.sentences.map(({ text }) => text),
+    }),
     elapsedMs: note.durationMs,
   };
 }

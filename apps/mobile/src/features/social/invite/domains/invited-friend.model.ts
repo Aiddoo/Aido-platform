@@ -8,16 +8,16 @@ import { match } from 'ts-pattern';
 
 import type { InvitedFriend } from '../schemas/invited-friend.schema';
 
-export function orderByJoinedAtDesc(friend: InvitedFriend) {
+function orderByJoinedAtDesc(friend: InvitedFriend) {
   return -toEpochMs(friend.joinedAt);
 }
 
 // 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다
-export function orderByWaitingFirst(friend: InvitedFriend) {
+function orderByWaitingFirst(friend: InvitedFriend) {
   return friend.status === REDEMPTION_STATUS.JOINED ? 0 : 1;
 }
 
-export function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
+function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
   return Math.max(requiredDays - activeDays, 0);
 }
 
@@ -43,4 +43,7 @@ export const InvitedFriendPolicy = {
   hasStartedActiveDays,
   getActiveDaysLeft,
   getPawPrintState,
+  orderByJoinedAtDesc,
+  orderByWaitingFirst,
+  calculateActiveDaysLeft,
 } as const;

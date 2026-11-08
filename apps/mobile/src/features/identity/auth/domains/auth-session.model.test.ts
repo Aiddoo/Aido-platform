@@ -1,7 +1,7 @@
 import {
   type AuthSessionEvent,
+  AuthSessionPolicy,
   type AuthSessionState,
-  transitionAuthSession,
 } from './auth-session.model';
 
 const LOADING: AuthSessionState = { status: 'loading' };
@@ -47,7 +47,7 @@ describe('transitionAuthSession', () => {
     ['인증 중 만료', AUTHENTICATED, { type: 'sessionExpired' }, EXPIRED],
   ])('판정과 만료: %s', (_name, state, event, expected) => {
     // When
-    const next = transitionAuthSession(state, event);
+    const next = AuthSessionPolicy.transitionAuthSession(state, event);
 
     // Then
     expect(next).toEqual(expected);
@@ -55,7 +55,7 @@ describe('transitionAuthSession', () => {
 
   it.each(ANY_STATE)('어느 상태에서든 로그인하면 인증이 된다: %j', (state) => {
     // When
-    const next = transitionAuthSession(state, { type: 'signedIn' });
+    const next = AuthSessionPolicy.transitionAuthSession(state, { type: 'signedIn' });
 
     // Then
     expect(next).toEqual(AUTHENTICATED);
@@ -63,7 +63,7 @@ describe('transitionAuthSession', () => {
 
   it.each(ANY_STATE)('어느 상태에서든 로그아웃하면 사용자가 나간 미인증이 된다: %j', (state) => {
     // When
-    const next = transitionAuthSession(state, { type: 'signedOut' });
+    const next = AuthSessionPolicy.transitionAuthSession(state, { type: 'signedOut' });
 
     // Then
     expect(next).toEqual(SIGNED_OUT);
@@ -79,7 +79,7 @@ describe('transitionAuthSession', () => {
     ),
   )('판정이 끝난 뒤 늦게 온 판정은 무시한다: %j %j', (state, event) => {
     // When
-    const next = transitionAuthSession(state, event);
+    const next = AuthSessionPolicy.transitionAuthSession(state, event);
 
     // Then
     expect(next).toBe(state);
@@ -89,7 +89,7 @@ describe('transitionAuthSession', () => {
     '인증 중이 아니면 만료는 무시한다: %j',
     (state) => {
       // When
-      const next = transitionAuthSession(state, { type: 'sessionExpired' });
+      const next = AuthSessionPolicy.transitionAuthSession(state, { type: 'sessionExpired' });
 
       // Then
       expect(next).toBe(state);

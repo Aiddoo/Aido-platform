@@ -13,7 +13,7 @@ import type {
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
 
-export function isTodoAction(action: PlannedAction): action is PlannedTodo {
+function isTodoAction(action: PlannedAction): action is PlannedTodo {
   return action.type === 'create-todo';
 }
 
@@ -27,25 +27,25 @@ function getDefaultSelection(plan: VoicePlan): PlanSelection {
   );
 }
 
-export function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
+function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
   return plan.actions.filter((action) => selection[action.actionId] === true);
 }
 
-export function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
+function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).filter(isTodoAction).length;
 }
 
-export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
+function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
 /** 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다 */
-export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
+function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
   return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
 }
 
 /** 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다 */
-export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
+function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
   if (todo.repeat != null) {
     return {
       ...todo,
@@ -64,18 +64,16 @@ function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): Pla
   return { ...todo, scheduledTime };
 }
 
-export type PlanGroupableAction =
-  | Pick<PlannedTodo, 'type' | 'categoryId'>
-  | Pick<PlannedMemo, 'type'>;
+type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;
 
 /** 한 카테고리의 카드들. 메모는 카테고리가 없어 `categoryId`가 null인 묶음으로 맨 뒤에 모인다 */
-export interface PlanActionGroup {
+interface PlanActionGroup {
   categoryId: number | null;
   /** 폼 배열에서의 자리. 묶어 보여도 카드를 고칠 때는 이 자리를 쓴다 */
   indexes: number[];
 }
 
-export function getPlanActionGroups(
+function getPlanActionGroups(
   actions: readonly PlanGroupableAction[],
   fallbackCategoryId: number,
 ): PlanActionGroup[] {
@@ -101,7 +99,7 @@ export function getPlanActionGroups(
 }
 
 /** 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다 */
-export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
+function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
   actions: readonly TAction[],
   fallbackCategoryId: number,
 ): TAction[] {

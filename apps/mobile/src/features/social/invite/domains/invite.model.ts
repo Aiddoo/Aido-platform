@@ -4,12 +4,12 @@ import { match } from 'ts-pattern';
 import type { Invite, InviterRewardMilestone } from '../schemas/invite.schema';
 import { InviteRewardPolicy } from './invite-reward.model';
 
-export function calculateRemainingInvites(qualifiedCount: number, targetCount: number) {
+function calculateRemainingInvites(qualifiedCount: number, targetCount: number) {
   return Math.max(targetCount - qualifiedCount, 0);
 }
 
 // 반복하지 않는 단계(3·5·10명 등)만 발자국 판에 생선 칸으로 미리 보여 준다
-export function findOneTimeMilestoneCounts(milestones: readonly InviterRewardMilestone[]) {
+function findOneTimeMilestoneCounts(milestones: readonly InviterRewardMilestone[]) {
   return milestones
     .filter((milestone) => milestone.repeatEvery == null)
     .map((milestone) => milestone.qualifiedCount);
@@ -79,4 +79,6 @@ export const InvitePolicy = {
   getMilestoneQualifiedCounts,
   hasInvitedAnyone,
   getProgress,
+  calculateRemainingInvites,
+  findOneTimeMilestoneCounts,
 } as const;

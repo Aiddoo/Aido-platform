@@ -7,10 +7,9 @@ import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import {
   type BriefingTodo,
   type ForecastTodo,
-  getForecastTodos,
-  isHot,
+  WeatherBriefingPolicy,
 } from './weather-briefing.model';
-import { isWetHour } from './weather-report.model';
+import { WeatherReportPolicy } from './weather-report.model';
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
@@ -102,8 +101,8 @@ function getRainyTodos(
   todos: readonly BriefingTodo[],
   now: Instant,
 ): ForecastTodo[] {
-  return getForecastTodos(hourly, todos, now).filter(
-    (todo) => !todo.completed && isWetHour(todo.hour),
+  return WeatherBriefingPolicy.getForecastTodos(hourly, todos, now).filter(
+    (todo) => !todo.completed && WeatherReportPolicy.isWetHour(todo.hour),
   );
 }
 
@@ -113,7 +112,9 @@ function getHotTodos(
   todos: readonly BriefingTodo[],
   now: Instant,
 ): ForecastTodo[] {
-  return getForecastTodos(hourly, todos, now).filter((todo) => !todo.completed && isHot(todo.hour));
+  return WeatherBriefingPolicy.getForecastTodos(hourly, todos, now).filter(
+    (todo) => !todo.completed && WeatherBriefingPolicy.isHot(todo.hour),
+  );
 }
 
 function getAffectedTodos(
@@ -148,14 +149,16 @@ function getRescheduleOptions(
   const ordered = match(reason)
     .with('rain', () =>
       orderBy(
-        sameDayHours.filter((hour) => !isWetHour(hour)),
+        sameDayHours.filter((hour) => !WeatherReportPolicy.isWetHour(hour)),
         [(hour) => hour.precipitationChance, distance],
         ['asc', 'asc'],
       ),
     )
     .with('heat', () =>
       orderBy(
-        sameDayHours.filter((hour) => !isWetHour(hour) && !isHot(hour)),
+        sameDayHours.filter(
+          (hour) => !WeatherReportPolicy.isWetHour(hour) && !WeatherBriefingPolicy.isHot(hour),
+        ),
         [distance, (hour) => hour.apparentTemperature],
         ['asc', 'asc'],
       ),

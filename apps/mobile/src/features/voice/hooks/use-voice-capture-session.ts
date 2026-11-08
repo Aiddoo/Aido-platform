@@ -19,16 +19,11 @@ import {
 } from '../constants/voice.constants';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import {
-  createVoiceCaptureState,
-  getRecognizerStartOptions,
-  reduceVoiceCapture,
   type VoiceCaptureEvent,
-  type VoiceCaptureSeed,
   VoiceCapturePolicy,
+  type VoiceCaptureSeed,
 } from '../domains/voice-capture.model';
 import {
-  createVoiceRecognizerLink,
-  reduceRecognizerLink,
   type VoiceRecognizerLinkEvent,
   VoiceRecognizerLinkPolicy,
 } from '../domains/voice-recognizer-link.model';
@@ -89,20 +84,20 @@ export function useVoiceCaptureSession({
   const haptics = useHaptics();
   const telemetry = useVoiceCaptureTelemetry({ entry, mode });
 
-  const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
+  const [state, setState] = useState<VoiceCaptureState>(VoiceCapturePolicy.createVoiceCaptureState);
   const level = useSharedValue(0);
   const stateRef = useRef(state);
   const startOptionsRef = useRef<SpeechStartOptions | null>(null);
   const [timers] = useState(() =>
     createTimerSlots<'finalize' | 'deferredStart' | 'stallRestart'>(),
   );
-  const linkRef = useRef(createVoiceRecognizerLink());
+  const linkRef = useRef(VoiceRecognizerLinkPolicy.createVoiceRecognizerLink());
   /** 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜면 아무도 끄지 못한다 */
   const isUnmountedRef = useRef(false);
 
   const dispatch = useCallback((event: VoiceCaptureEvent) => {
     const previous = stateRef.current;
-    const next = reduceVoiceCapture(previous, event);
+    const next = VoiceCapturePolicy.reduceVoiceCapture(previous, event);
     if (next !== previous) {
       stateRef.current = next;
       setState(next);
@@ -111,7 +106,7 @@ export function useVoiceCaptureSession({
   }, []);
 
   const updateLink = (event: VoiceRecognizerLinkEvent) => {
-    linkRef.current = reduceRecognizerLink(linkRef.current, event);
+    linkRef.current = VoiceRecognizerLinkPolicy.reduceRecognizerLink(linkRef.current, event);
   };
 
   const getStatus = () => stateRef.current.status;
@@ -194,7 +189,7 @@ export function useVoiceCaptureSession({
       return;
     }
     updateLink({ type: 'segment-restarted', at: now });
-    speechRecognizer.start(getRecognizerStartOptions(startOptions));
+    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(startOptions));
   };
 
   /**
@@ -245,7 +240,7 @@ export function useVoiceCaptureSession({
       return;
     }
     updateLink({ type: 'start-requested', at: Date.now() });
-    speechRecognizer.start(getRecognizerStartOptions(startOptions));
+    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(startOptions));
   }
 
   useSpeechEvent((event) => {

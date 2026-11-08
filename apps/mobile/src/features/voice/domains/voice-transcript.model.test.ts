@@ -1,14 +1,5 @@
 import { createTranscript } from '../__tests__/voice.fixtures';
-import {
-  appendFinalResult,
-  applyResult,
-  getLowConfidenceWords,
-  getTranscriptText,
-  isTranscriptEmpty,
-  mergeHeardTextIntoTitle,
-  VoiceTranscriptPolicy,
-  withInterimFinalized,
-} from './voice-transcript.model';
+import { VoiceTranscriptPolicy } from './voice-transcript.model';
 
 describe('applyResult', () => {
   it('Android처럼 문장마다 final이 오면 문장으로 쌓고 다음 interim은 꼬리로 보여준다', () => {
@@ -16,11 +7,11 @@ describe('applyResult', () => {
     let transcript = createTranscript();
 
     // When
-    transcript = applyResult(transcript, {
+    transcript = VoiceTranscriptPolicy.applyResult(transcript, {
       transcript: '매일 아침 8시에 영양제',
       isFinal: true,
     });
-    transcript = applyResult(transcript, {
+    transcript = VoiceTranscriptPolicy.applyResult(transcript, {
       transcript: '월수금',
       isFinal: false,
     });
@@ -28,7 +19,9 @@ describe('applyResult', () => {
     // Then
     expect(VoiceTranscriptPolicy.getFinalText(transcript)).toBe('매일 아침 8시에 영양제');
     expect(transcript.interim).toBe('월수금');
-    expect(getTranscriptText(transcript)).toBe('매일 아침 8시에 영양제 월수금');
+    expect(VoiceTranscriptPolicy.getTranscriptText(transcript)).toBe(
+      '매일 아침 8시에 영양제 월수금',
+    );
   });
 
   it('iOS처럼 interim이 누적되면 꼬리를 통째로 바꾸고 마지막 final 하나로 확정한다', () => {
@@ -37,12 +30,12 @@ describe('applyResult', () => {
 
     // When
     for (const text of ['내일', '내일 회의', '내일 회의 준비']) {
-      transcript = applyResult(transcript, {
+      transcript = VoiceTranscriptPolicy.applyResult(transcript, {
         transcript: text,
         isFinal: false,
       });
     }
-    transcript = applyResult(transcript, {
+    transcript = VoiceTranscriptPolicy.applyResult(transcript, {
       transcript: '내일 회의 준비',
       isFinal: true,
     });
@@ -59,7 +52,7 @@ describe('appendFinalResult', () => {
     const transcript = createTranscript({ sentences: ['장보기'] });
 
     // When
-    const result = appendFinalResult(transcript, ' 장보기 ');
+    const result = VoiceTranscriptPolicy.appendFinalResult(transcript, ' 장보기 ');
 
     // Then
     expect(result.sentences).toEqual(['장보기']);
@@ -70,7 +63,7 @@ describe('appendFinalResult', () => {
     const transcript = createTranscript({ sentences: ['장보기'], interim: '우유' });
 
     // When
-    const result = appendFinalResult(transcript, '  ');
+    const result = VoiceTranscriptPolicy.appendFinalResult(transcript, '  ');
 
     // Then
     expect(result).toEqual({ sentences: ['장보기'], interim: '' });
@@ -83,7 +76,7 @@ describe('withInterimFinalized', () => {
     const transcript = createTranscript({ sentences: ['장보기'], interim: '우유 계란' });
 
     // When
-    const result = withInterimFinalized(transcript);
+    const result = VoiceTranscriptPolicy.withInterimFinalized(transcript);
 
     // Then
     expect(result.sentences).toEqual(['장보기', '우유 계란']);
@@ -93,7 +86,7 @@ describe('withInterimFinalized', () => {
 describe('isTranscriptEmpty', () => {
   it('글자가 없으면 비어 있다고 판단한다', () => {
     // When
-    const isEmpty = isTranscriptEmpty(createTranscript());
+    const isEmpty = VoiceTranscriptPolicy.isTranscriptEmpty(createTranscript());
 
     // Then
     expect(isEmpty).toBe(true);
@@ -113,7 +106,7 @@ describe('getLowConfidenceWords', () => {
     const segments = [segment('높음', 0.9), segment('낮음', 0.2), segment('경계', 0.5)];
 
     // When
-    const words = getLowConfidenceWords(segments);
+    const words = VoiceTranscriptPolicy.getLowConfidenceWords(segments);
 
     // Then
     expect(words).toEqual(['낮음']);
@@ -124,7 +117,7 @@ describe('getLowConfidenceWords', () => {
     const segments = [segment('단어', confidence)];
 
     // When
-    const words = getLowConfidenceWords(segments);
+    const words = VoiceTranscriptPolicy.getLowConfidenceWords(segments);
 
     // Then
     expect(words).toEqual([]);
@@ -150,7 +143,7 @@ describe('mergeHeardTextIntoTitle', () => {
     ],
   ])('%s', (_name, title, heardText, expected) => {
     // When
-    const merged = mergeHeardTextIntoTitle(title, heardText);
+    const merged = VoiceTranscriptPolicy.mergeHeardTextIntoTitle(title, heardText);
 
     // Then
     expect(merged).toBe(expected);

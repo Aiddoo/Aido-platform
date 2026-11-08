@@ -12,7 +12,7 @@ import { match } from 'ts-pattern';
 import type { PendingRedemption, RedemptionResult } from '../schemas/invite-redemption.schema';
 import { InviteRewardPolicy } from './invite-reward.model';
 
-export function isWithinDays(from: Instant, now: Instant, days: number) {
+function isWithinDays(from: Instant, now: Instant, days: number) {
   return diffMs(now, from) < days * DAY_MS;
 }
 
@@ -92,4 +92,5 @@ export const InviteRedemptionPolicy = {
   getMissingRewardReason,
   getRewardStart,
   isRewardExpected,
+  isWithinDays,
 } as const;

@@ -5,11 +5,11 @@ import { type Instant, toDateKey, toEpochMs } from '@src/shared/date/instant';
 import type { PremiumAccess } from '../schemas/premium-access.schema';
 
 /** 끝나는 날까지 남은 달력 일수. 이미 지난 날은 0일이다 */
-export function calculateDaysLeft(endsAt: Instant, now: Instant, timeZone: string) {
+function calculateDaysLeft(endsAt: Instant, now: Instant, timeZone: string) {
   return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);
 }
 
-export function hasPassed(endsAt: Instant, now: Instant) {
+function hasPassed(endsAt: Instant, now: Instant) {
   return toEpochMs(endsAt) <= toEpochMs(now);
 }
 
@@ -100,4 +100,6 @@ export const PremiumAccessPolicy = {
   getRecentGrantEndedAt,
   hasEndedSince,
   hasChanged,
+  calculateDaysLeft,
+  hasPassed,
 } as const;

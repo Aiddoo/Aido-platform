@@ -3,7 +3,7 @@ import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS } from '../constants/voice-note.constants';
-import { withSentences } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
 
 const STORED_NOTE = {
@@ -111,10 +111,17 @@ describe('VoiceNoteDraftRepository', () => {
 
     // When
     repository.scheduleSave('user-1', note);
-    repository.scheduleSave('user-1', withSentences(note, [createVoiceNoteSentence()], 1_000));
     repository.scheduleSave(
       'user-1',
-      withSentences(note, [createVoiceNoteSentence(), createVoiceNoteSentence()], 2_000),
+      VoiceNotePolicy.withSentences(note, [createVoiceNoteSentence()], 1_000),
+    );
+    repository.scheduleSave(
+      'user-1',
+      VoiceNotePolicy.withSentences(
+        note,
+        [createVoiceNoteSentence(), createVoiceNoteSentence()],
+        2_000,
+      ),
     );
     jest.advanceTimersByTime(VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS);
 

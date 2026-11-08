@@ -17,7 +17,7 @@ export type AuthSessionEvent =
   | { type: 'signedOut' }
   | { type: 'sessionExpired' };
 
-export function isAuthBootPending({ status }: Pick<AuthSessionState, 'status'>) {
+function isAuthBootPending({ status }: Pick<AuthSessionState, 'status'>) {
   return status === 'loading' || status === 'locked';
 }
 
@@ -34,10 +34,7 @@ function resolveBootState(status: ResolvedAuthStatus): AuthSessionState {
  * 부팅 판정은 판정 중에만 반영한다. 늦게 끝난 판정이 로그아웃을 되돌리면 안 된다.
  * 만료는 인증 중에만 반영한다. 로그인 화면에서 난 401은 세션 만료가 아니다.
  */
-export function transitionAuthSession(
-  state: AuthSessionState,
-  event: AuthSessionEvent,
-): AuthSessionState {
+function transitionAuthSession(state: AuthSessionState, event: AuthSessionEvent): AuthSessionState {
   const pending = { status: P.union('loading', 'locked') };
 
   return match<[AuthSessionState, AuthSessionEvent], AuthSessionState>([state, event])
@@ -57,3 +54,8 @@ export function transitionAuthSession(
     }))
     .otherwise(() => state);
 }
+
+export const AuthSessionPolicy = {
+  isAuthBootPending,
+  transitionAuthSession,
+} as const;
