@@ -4,7 +4,7 @@ import type { ImageSource } from 'expo-image';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { LIGHT_BUTTON_TEXT_CLASS } from '../constants/weather-colors';
+import { LIGHT_BUTTON_TEXT_CLASS } from '../constants/weather-colors.constants';
 import { WeatherMascot } from './weather-mascot';
 
 interface WeatherResultProps {

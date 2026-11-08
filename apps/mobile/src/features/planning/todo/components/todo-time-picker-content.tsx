@@ -21,7 +21,7 @@ import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { DEFAULT_TODO_TIME } from '../constants/todo-default-time';
+import { DEFAULT_TODO_TIME } from '../constants/todo-default-time.constants';
 import { PickerHeader } from './picker-header';
 
 const IS_IOS = process.env.EXPO_OS === 'ios';

@@ -9,7 +9,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import { UV_METER_COLORS } from '../constants/weather-colors';
+import { UV_METER_COLORS } from '../constants/weather-colors.constants';
 import {
   CLOUD_COVER_LEVEL_LABEL_KEYS,
   CLOUD_COVER_NOTE_KEYS,

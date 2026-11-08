@@ -45,7 +45,7 @@ import {
   SHEET_INDEX,
   SHEET_OVERLAY_OPACITY,
   SHEET_RADIUS,
-} from './constants';
+} from './bottom-sheet.constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';

@@ -11,7 +11,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
-import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors';
+import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors.constants';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';

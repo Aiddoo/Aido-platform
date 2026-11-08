@@ -4,7 +4,7 @@ import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 
-import { AIR_METER_COLORS } from '../constants/weather-colors';
+import { AIR_METER_COLORS } from '../constants/weather-colors.constants';
 import { AIR_GRADE_LABEL_KEYS, AIR_QUALITY_SOURCE_LABEL_KEYS } from '../constants/weather-labels';
 import { type AirPollutant, WeatherIndicatorPolicy } from '../domains/weather-indicator.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';

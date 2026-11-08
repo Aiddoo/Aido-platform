@@ -19,7 +19,7 @@ import { memo, type ReactNode } from 'react';
 import { FlatList } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors';
+import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors.constants';
 import {
   PRECIPITATION_SUBJECT_LABEL_KEYS,
   SKY_AFTER_KEYS,

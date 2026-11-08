@@ -5,7 +5,7 @@ import { Card, GlassView } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { useUniwind } from 'uniwind';
 
-import { ALERT_SURFACE_COLORS } from '../constants/weather-colors';
+import { ALERT_SURFACE_COLORS } from '../constants/weather-colors.constants';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 
 const GLASS_INTENSITY = 40;

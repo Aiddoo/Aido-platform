@@ -8,7 +8,7 @@ import { formatPercent } from '@src/shared/utils/number-format';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
 
-import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
+import { SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
 import type { AiReport } from '../schemas/report.schema';
 import { ReportTypeChip } from './report-type-chip';
 

@@ -38,7 +38,7 @@ import { PressableFeedback, Separator } from 'heroui-native';
 import { Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
-import { BRIEFING_ROW_TONES } from '../constants/weather-colors';
+import { BRIEFING_ROW_TONES } from '../constants/weather-colors.constants';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';

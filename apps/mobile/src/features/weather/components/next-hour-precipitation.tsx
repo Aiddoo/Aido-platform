@@ -23,7 +23,7 @@ import Animated, {
 import Svg, { Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import { match } from 'ts-pattern';
 
-import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors';
+import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors.constants';
 import {
   PRECIPITATION_LEVEL_LABEL_KEYS,
   PRECIPITATION_SUBJECT_LABEL_KEYS,

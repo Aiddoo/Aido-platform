@@ -1,5 +1,5 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
-import { isSampleReportId } from '@src/features/insights/report/constants/sample-reports';
+import { isSampleReportId } from '@src/features/insights/report/constants/sample-reports.constants';
 import { z } from 'zod';
 
 import { routeIdSchema, routeIntegerStringSchema } from './route-params.schema';

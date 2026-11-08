@@ -8,7 +8,7 @@ import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
-import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports';
+import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
 import { useReportType } from '../hooks/use-report-type';
 import {
   useGetReportsQueryOptions,

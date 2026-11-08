@@ -1,4 +1,4 @@
-import { SHEET_MAX_WIDTH } from './constants';
+import { SHEET_MAX_WIDTH } from './bottom-sheet.constants';
 
 export interface SheetHorizontalMargins {
   left: number;

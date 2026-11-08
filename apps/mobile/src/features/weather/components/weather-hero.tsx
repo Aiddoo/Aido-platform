@@ -22,7 +22,7 @@ import { useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
-import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors';
+import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
 import {

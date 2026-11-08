@@ -7,7 +7,7 @@ import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
-import type { BriefingRowTone } from '../constants/weather-colors';
+import type { BriefingRowTone } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type BriefingResult,

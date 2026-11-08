@@ -1,7 +1,7 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { SavedActivityReport } from '@src/features/insights/report/components/saved-activity-report';
-import { getSampleReport } from '@src/features/insights/report/constants/sample-reports';
+import { getSampleReport } from '@src/features/insights/report/constants/sample-reports.constants';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {

@@ -3,7 +3,7 @@ import { Box } from '@src/shared/ui';
 import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { SUN_COLORS } from '../constants/weather-colors';
+import { SUN_COLORS } from '../constants/weather-colors.constants';
 import { useIsWeatherSceneRunning } from '../hooks/use-is-weather-scene-running';
 import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
 import type { DialPoint } from '../utils/weather-dial.geometry';

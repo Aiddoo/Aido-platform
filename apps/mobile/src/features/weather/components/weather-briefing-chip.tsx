@@ -5,7 +5,7 @@ import { cn } from '@src/shared/utils/cn';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors';
+import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
 import { WeatherIcon } from './weather-icon';
 
 const CHIP_ICON_SIZE = 15;

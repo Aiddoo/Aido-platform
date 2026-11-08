@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { match } from 'ts-pattern';
 
-import { VOICE_NOTE_MEDIA, VOICE_TODO_MEDIA } from '../constants/release-1-15-0-media';
+import { VOICE_NOTE_MEDIA, VOICE_TODO_MEDIA } from '../constants/release-1-15-0-media.constants';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';

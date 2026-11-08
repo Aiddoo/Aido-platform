@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 
 import { Box } from '../box';
 import { VStack } from '../v-stack/v-stack';
-import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './constants';
+import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './bottom-sheet.constants';
 import { SheetScrollArea } from './sheet-scroll-area';
 
 export const SheetFixedHeaderContext = createContext(false);

@@ -5,6 +5,6 @@ export { SheetHeaderLayout } from './sheet-header-layout';
 export { SHEET_ROUTE_SCREEN_OPTIONS, type SheetRouteExit } from './sheet-route';
 export { SheetRouteScreen } from './sheet-route-screen';
 export { usePortalTarget } from './portal-target';
-export { SHEET_CONTENT_PADDING, SHEET_RADIUS } from './constants';
+export { SHEET_CONTENT_PADDING, SHEET_RADIUS } from './bottom-sheet.constants';
 export { useSheetRoute } from './use-sheet-route';
 export { SheetScrollShadow } from './sheet-scroll-area';

@@ -6,7 +6,7 @@ import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 
-import { ALERT_GLYPH_COLORS } from '../constants/weather-colors';
+import { ALERT_GLYPH_COLORS } from '../constants/weather-colors.constants';
 
 const StyledSvg = createStyledIcon(Svg);
 

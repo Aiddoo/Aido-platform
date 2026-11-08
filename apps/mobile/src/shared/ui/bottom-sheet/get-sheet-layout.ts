@@ -1,7 +1,7 @@
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import type { ReservedRegion } from 'react-native-reserved-regions';
 
-import { MIN_CONTENT_HEIGHT, TOP_MARGIN } from './constants';
+import { MIN_CONTENT_HEIGHT, TOP_MARGIN } from './bottom-sheet.constants';
 import {
   getSheetHorizontalMargins,
   type SheetHorizontalMargins,
