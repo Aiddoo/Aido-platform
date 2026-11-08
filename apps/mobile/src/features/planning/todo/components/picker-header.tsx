@@ -20,7 +20,7 @@ export function PickerHeader({
   const { t } = useTranslation('common');
 
   return (
-    <HStack className="items-center" px={16}>
+    <HStack className="items-center px-4">
       <Box className="flex-1 items-start">
         <CloseButton
           variant="ghost"

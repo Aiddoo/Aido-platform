@@ -131,9 +131,8 @@ MemoList.Item = function Item({ memo }: { memo: Memo }) {
     <PressableFeedback onPress={() => selectMemo(memo.id)} className="rounded-2xl">
       <VStack
         gap={8}
-        p={16}
         className={cn(
-          'rounded-2xl border bg-gray-1',
+          'rounded-2xl border bg-gray-1 p-4',
           selectedMemoId === memo.id ? 'border-main' : 'border-transparent',
         )}
       >
@@ -170,7 +169,7 @@ MemoList.Loading = function Loading() {
       {range(columnCount).map((column) => (
         <VStack key={column} flex={1} gap={12}>
           {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
-            <VStack key={row} gap={8} p={16} className="rounded-2xl bg-gray-1">
+            <VStack key={row} gap={8} className="rounded-2xl bg-gray-1 p-4">
               <TextSkeleton size="b3" className="w-full" />
               <TextSkeleton size="b3" className="w-3/4" />
               <TextSkeleton size="e1" className="w-1/2" />

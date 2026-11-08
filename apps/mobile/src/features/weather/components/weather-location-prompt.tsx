@@ -90,7 +90,7 @@ WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
 
   return match(location)
     .with({ status: 'unavailable' }, ({ retry }) => (
-      <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
+      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
         <Text size="b4" align="center" className="shrink text-on-sky/85">
           {t('weather:locationPrompt.savedLocationNotice')}
         </Text>
@@ -100,7 +100,7 @@ WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
       </HStack>
     ))
     .with({ status: 'ready', isLastKnown: true }, ({ request }) => (
-      <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
+      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
         <Text size="b4" align="center" className="shrink text-on-sky/85">
           {t('weather:locationPrompt.lastLocationNotice')}
         </Text>

@@ -327,7 +327,7 @@ TodoDetailSummary.Empty = function Empty() {
   const { t } = useTranslation('todo');
 
   return (
-    <Box flex={1} px={32} className="bg-white">
+    <Box flex={1} className="bg-white px-8">
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title={t('detail.emptyTitle')}

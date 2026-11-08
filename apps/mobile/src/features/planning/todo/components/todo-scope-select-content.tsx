@@ -89,7 +89,7 @@ export function TodoScopeSelectContent({
 
   return (
     <VStack gap={8} testID="todo-scope-select">
-      <HStack align="center" px={16} className="py-2">
+      <HStack align="center" className="py-2 px-4">
         <Box className="flex-1 items-start">
           {onBack != null && (
             <IconButton

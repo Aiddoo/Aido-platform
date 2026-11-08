@@ -30,7 +30,7 @@ export function TodoCommentTitleBar({ date }: { date: string }) {
   const { t } = useTranslation('todo');
 
   return (
-    <HStack align="center" gap={4} pl={20} pr={4} className="min-h-14">
+    <HStack align="center" gap={4} className="min-h-14 pl-5 pr-1">
       <Text size="b2" weight="bold" numberOfLines={1} className="min-w-0 flex-1">
         {t('detail.pageTitle')}
       </Text>

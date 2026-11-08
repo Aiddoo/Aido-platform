@@ -24,7 +24,7 @@ export default function InviteCardScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <StyledSafeAreaView edges={['left', 'right']} className="grow">
-            <ReadableContent px={24} pt={4} pb={24} className="grow">
+            <ReadableContent className="grow px-6 pt-1 pb-6">
               <Suspense fallback={<InvitePreview.Loading />}>
                 <InvitePreview />
               </Suspense>

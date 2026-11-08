@@ -14,7 +14,7 @@ export function QuotaSummary() {
   }
 
   return (
-    <VStack gap={12} p={16} className="rounded-2xl bg-gray-1" testID="quota-summary">
+    <VStack gap={12} className="rounded-2xl bg-gray-1 p-4" testID="quota-summary">
       <HStack gap={6} align="center">
         <AiIcon width={16} height={16} colorClassName="text-main" />
         <Text size="b4" weight="semibold" shade={7}>

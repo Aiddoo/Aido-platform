@@ -17,7 +17,7 @@ export default function DeleteAccountRoute() {
               entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
             >
               <Spacing size={16} />
-              <VStack p={16} gap={4} className="bg-warning-1 rounded-xl">
+              <VStack gap={4} className="bg-warning-1 rounded-xl p-4">
                 <WordWrapText size="b3" shade={7}>
                   {t('deleteAccount.restoreNotice')}
                 </WordWrapText>

@@ -11,7 +11,6 @@ import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { refetchWeather } from '../queries/weather-cache';
 import { WeatherTopFade } from './weather-top-fade';
 
-const SCREEN_GUTTER = 16;
 /** 마지막 카드 아래 여백. 안전 영역과 `bottomInset`에 더한다. */
 const SCREEN_BOTTOM_PADDING = 24;
 /** 헤더 아래로 페이드가 이어지는 길이 */
@@ -70,9 +69,7 @@ WeatherScrollView.Status = function Status({ children }: PropsWithChildren) {
 
   return (
     <WeatherScrollView bottomInset={IS_IOS ? headerHeight : 0}>
-      <Box px={SCREEN_GUTTER} className="flex-1 justify-center">
-        {children}
-      </Box>
+      <Box className="flex-1 justify-center px-4">{children}</Box>
     </WeatherScrollView>
   );
 };

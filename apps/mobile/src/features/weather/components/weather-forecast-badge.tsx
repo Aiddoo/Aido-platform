@@ -124,7 +124,7 @@ WeatherForecastBadge.Entry = function Entry() {
 
 WeatherForecastBadge.Loading = function Loading() {
   return (
-    <HStack align="center" px={4} className="min-h-11 min-w-16">
+    <HStack align="center" className="min-h-11 min-w-16 px-1">
       <TextSkeleton size="b4" className="w-8" />
     </HStack>
   );

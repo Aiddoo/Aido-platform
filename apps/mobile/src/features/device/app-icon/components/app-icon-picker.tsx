@@ -43,7 +43,7 @@ export function AppIconPicker({ value, onValueChange, isLocked, ...props }: AppI
     >
       <Grid columns={3}>
         {APP_ICONS.map((icon) => (
-          <GridItem key={icon.key} p={8} className="items-center">
+          <GridItem key={icon.key} className="items-center p-2">
             <AppIconPicker.Item icon={icon} isLocked={isLocked?.(icon.key)} />
           </GridItem>
         ))}
@@ -72,7 +72,7 @@ AppIconPicker.Item = function Item({ icon, isLocked, ...props }: AppIconPickerIt
       {...props}
     >
       {({ isSelected }) => (
-        <VStack align="center" gap={8} p={8} className="overflow-visible">
+        <VStack align="center" gap={8} className="overflow-visible p-2">
           <Box>
             <Avatar isSelected={isSelected} alt={label} className="w-20 h-20 rounded-2xl">
               <Avatar.Image source={icon.preview} />
@@ -101,7 +101,7 @@ AppIconPicker.Loading = function Loading() {
   return (
     <Grid columns={3}>
       {range(APP_ICONS.length).map((index) => (
-        <GridItem key={index} p={8} className="items-center">
+        <GridItem key={index} className="items-center p-2">
           <VStack align="center" gap={8} p={8}>
             <Skeleton className="w-20 h-20 rounded-2xl" />
             <TextSkeleton size="b4" className="w-16" />

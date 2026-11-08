@@ -77,7 +77,7 @@ export function NudgeLimitBanner() {
       isDisabled={!isLimitReached}
       className="rounded-xl"
     >
-      <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+      <HStack className="rounded-xl bg-gray-1 px-3" align="center" gap={12}>
         <Image
           source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
           className="size-[72px]"
@@ -96,7 +96,7 @@ export function NudgeLimitBanner() {
 
 NudgeLimitBanner.Loading = function Loading() {
   return (
-    <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+    <HStack className="rounded-xl bg-gray-1 px-3" align="center" gap={12}>
       <Skeleton className="size-[72px] rounded-xl" />
       <VStack flex={1}>
         <TextSkeleton size="b3" className="w-3/4" />
@@ -109,7 +109,7 @@ NudgeLimitBanner.Loading = function Loading() {
 NudgeLimitBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <HStack p={12} gap={8} align="center" className="rounded-xl bg-gray-1">
+    <HStack gap={8} align="center" className="rounded-xl bg-gray-1 p-3">
       <Text size="b4" shade={6} className="flex-1">
         {t('todo:nudge.statusUnavailable')}
       </Text>

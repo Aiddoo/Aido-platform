@@ -267,7 +267,7 @@ function FriendFeedTodos() {
 
           <Spacing size={16} />
 
-          <Box px={16} pb={24} className="grow">
+          <Box className="grow px-4 pb-6">
             <QueryErrorBoundary
               resetKeys={[friend.id, selectedDateKey]}
               fallback={FriendTodoList.Error}
@@ -324,7 +324,7 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
 
-        <Box px={16} pb={24} className="grow">
+        <Box className="grow px-4 pb-6">
           <FriendTodoList.Error {...props} />
         </Box>
       </StyledSafeAreaView>

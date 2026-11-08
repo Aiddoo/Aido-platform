@@ -98,7 +98,7 @@ export function TodoCommentComposerBar() {
 
   return (
     <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }} enabled={isScreenFocused}>
-      <Box px={12} pt={8} className="bg-white" testID="todo-comment-composer">
+      <Box className="bg-white px-3 pt-2" testID="todo-comment-composer">
         <Box ref={composerRef} collapsable={false} onLayout={handleContentLayout}>
           <Suspense fallback={<TodoCommentComposerBar.Loading />}>
             <ComposerInput />
@@ -123,7 +123,7 @@ function ComposerInput() {
 
   if (!detail.permissions.canComment) {
     return (
-      <Box py={8} className="items-center">
+      <Box className="items-center py-2">
         <Text size="b4" shade={6}>
           {t('input.commentingDisabled')}
         </Text>

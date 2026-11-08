@@ -19,7 +19,7 @@ export function PickerMonthHeader({
   const dateFormatContext = useDateFormatContext();
 
   return (
-    <HStack className="items-center justify-between" px={16}>
+    <HStack className="items-center justify-between px-4">
       <IconButton
         accessibilityLabel={t('calendar.previousMonth')}
         icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}

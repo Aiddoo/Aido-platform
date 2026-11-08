@@ -117,7 +117,7 @@ NotificationListRow.SectionHeader = function SectionHeader({
   const { t } = useTranslation('common');
 
   return (
-    <Box px={16} py={8} className="bg-white">
+    <Box className="bg-white px-4 py-2">
       <Text size="b3" shade={5} weight="semibold">
         {t(`dateSections.${section}`)}
       </Text>
