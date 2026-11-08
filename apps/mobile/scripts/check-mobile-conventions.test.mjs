@@ -1578,6 +1578,29 @@ test('Icon 컴포넌트 prop과 그려 둔 icon 요소, 아이콘이 아닌 icon
   );
 });
 
+test('네임스페이스 조각의 함수 이름이 속성 이름과 다르면 거부하고 ErrorFallback과 가린 import는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/components/daily-forecast.tsx': `
+        import { Button } from 'heroui-native';
+        DailyForecast.TemperatureBar = function TemperatureBarTrack() { return null; };
+        DailyForecast.Loading = function Loading() { return null; };
+        DailyForecast.Error = function ErrorFallback() { return null; };
+        DailyForecast.Button = function DailyForecastButton() { return null; };
+      `,
+      'apps/mobile/src/shared/__tests__/mocks/router.tsx': `
+        Toolbar.Menu = function ToolbarMenu() { return null; };
+      `,
+    },
+    (errors) => {
+      const names = errors
+        .filter((error) => error.includes('네임스페이스 조각의 함수 이름'))
+        .map((error) => /(?:\d+:\d+) (\w+):/u.exec(error)?.[1]);
+      assert.deepEqual(names, ['TemperatureBarTrack']);
+    },
+  );
+});
+
 test('네임스페이스의 *Skeleton 조각을 거부하고 X.Loading과 TextSkeleton은 통과한다', () => {
   withFixture(
     {

@@ -464,7 +464,7 @@ PlanReview.TodoRow = function PlanTodoRow({
   );
 };
 
-PlanReview.MemoRow = function PlanMemoRow({
+PlanReview.MemoRow = function MemoRow({
   form,
   index,
 }: {

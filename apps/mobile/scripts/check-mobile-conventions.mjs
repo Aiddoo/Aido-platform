@@ -1582,6 +1582,56 @@ function checkLoadingNamespaceNames(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+function collectImportedNames(sourceFile) {
+  const names = new Set();
+  for (const statement of sourceFile.statements) {
+    const clause = ts.isImportDeclaration(statement) ? statement.importClause : undefined;
+    if (clause?.name != null) {
+      names.add(clause.name.text);
+    }
+    if (clause?.namedBindings != null && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements) {
+        names.add(element.name.text);
+      }
+    }
+  }
+  return names;
+}
+
+function checkNamespaceFunctionNames(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName);
+  if (isTestSource(relativePath)) {
+    return;
+  }
+  const importedNames = collectImportedNames(sourceFile);
+
+  function visit(node) {
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(node.left) &&
+      isComponentName(node.left.name.text) &&
+      ts.isFunctionExpression(node.right) &&
+      node.right.name != null
+    ) {
+      const property = node.left.name.text;
+      const functionName = node.right.name.text;
+      const isAllowed =
+        functionName === property ||
+        (property === 'Error' && functionName === 'ErrorFallback') ||
+        (importedNames.has(property) && functionName !== property);
+      if (!isAllowed) {
+        errors.push(
+          `${getLocation(sourceFile, node.right.name, repositoryRoot)} ${functionName}: 네임스페이스 조각의 함수 이름은 속성 이름(\`${property}\`)과 같게 쓰세요. \`.Error\`는 \`ErrorFallback\`, 가져온 이름을 가리면 다른 이름을 씁니다.`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   function visit(node) {
     if (ts.isPropertyAccessExpression(node)) {
@@ -2302,6 +2352,7 @@ export function checkMobileConventions(
     checkPredicateNames(sourceFile, repositoryRoot, errors);
     checkIconPropNames(sourceFile, repositoryRoot, errors);
     checkLoadingNamespaceNames(sourceFile, repositoryRoot, errors);
+    checkNamespaceFunctionNames(sourceFile, repositoryRoot, errors);
     checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors);
   }
 
