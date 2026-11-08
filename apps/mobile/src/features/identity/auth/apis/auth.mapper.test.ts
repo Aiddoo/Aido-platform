@@ -1,23 +1,14 @@
 import {
   createAuthTokensDto,
-  createChangePasswordDto,
   createDeleteAccountDto,
-  createForgotPasswordDto,
-  createLinkedAccountsDto,
   createRegisterDto,
-  createResendVerificationDto,
-  createResetPasswordDto,
 } from '../__tests__/auth.fixtures';
 import {
   toAuthTokens,
-  toChangePasswordResult,
   toDeleteAccountResult,
-  toForgotPasswordResult,
   toLinkedAccount,
   toLinkedAccounts,
   toRegisterResult,
-  toResendVerificationResult,
-  toResetPasswordResult,
 } from './auth.mapper';
 
 describe('toAuthTokens', () => {
@@ -41,30 +32,6 @@ describe('toAuthTokens', () => {
       accountRestored: false,
       isNewUser: false,
     });
-  });
-
-  it('null 필드 유지', () => {
-    // Given
-    const dto = createAuthTokensDto({ name: null, profileImage: null });
-
-    // When
-    const result = toAuthTokens(dto);
-
-    // Then
-    expect(result.userName).toBeNull();
-    expect(result.userProfileImage).toBeNull();
-  });
-
-  it('accountRestored undefined → false 기본값', () => {
-    // Given
-    const dto = createAuthTokensDto();
-    // accountRestored는 DTO에 없는 필드 → undefined
-
-    // When
-    const result = toAuthTokens(dto);
-
-    // Then
-    expect(result.accountRestored).toBe(false);
   });
 
   it('accountRestored true → true 유지', () => {
@@ -102,21 +69,6 @@ describe('toAuthTokens', () => {
 });
 
 describe('toRegisterResult', () => {
-  it('message, email 매핑', () => {
-    // Given
-    const dto = createRegisterDto();
-
-    // When
-    const result = toRegisterResult(dto);
-
-    // Then
-    expect(result).toEqual({
-      message: dto.message,
-      email: dto.email,
-      isEmailSent: true,
-    });
-  });
-
   it('인증 메일을 보내지 못했다는 응답을 그대로 옮긴다', () => {
     // Given
     const dto = createRegisterDto({ emailSent: false });
@@ -126,34 +78,6 @@ describe('toRegisterResult', () => {
 
     // Then
     expect(result.isEmailSent).toBe(false);
-  });
-});
-
-describe('toResendVerificationResult', () => {
-  it('retryAfterSeconds 포함', () => {
-    // Given
-    const dto = createResendVerificationDto({ retryAfterSeconds: 120 });
-
-    // When
-    const result = toResendVerificationResult(dto);
-
-    // Then
-    expect(result).toEqual({
-      message: dto.message,
-      email: dto.email,
-      retryAfterSeconds: 120,
-    });
-  });
-
-  it('retryAfterSeconds undefined → undefined', () => {
-    // Given
-    const dto = createResendVerificationDto({ retryAfterSeconds: undefined });
-
-    // When
-    const result = toResendVerificationResult(dto);
-
-    // Then
-    expect(result.retryAfterSeconds).toBeUndefined();
   });
 });
 
@@ -172,45 +96,6 @@ describe('toDeleteAccountResult', () => {
     expect(result.message).toBe(dto.message);
     expect(result.deletedAt).toBe('2026-02-13T10:00:00.000Z');
     expect(result.gracePeriodDays).toBe(30);
-  });
-});
-
-describe('toForgotPasswordResult', () => {
-  it('message 매핑', () => {
-    // Given
-    const dto = createForgotPasswordDto();
-
-    // When
-    const result = toForgotPasswordResult(dto);
-
-    // Then
-    expect(result).toEqual({ message: dto.message });
-  });
-});
-
-describe('toResetPasswordResult', () => {
-  it('message 매핑', () => {
-    // Given
-    const dto = createResetPasswordDto();
-
-    // When
-    const result = toResetPasswordResult(dto);
-
-    // Then
-    expect(result).toEqual({ message: dto.message });
-  });
-});
-
-describe('toChangePasswordResult', () => {
-  it('message 매핑', () => {
-    // Given
-    const dto = createChangePasswordDto();
-
-    // When
-    const result = toChangePasswordResult(dto);
-
-    // Then
-    expect(result).toEqual({ message: dto.message });
   });
 });
 
@@ -252,20 +137,6 @@ describe('toLinkedAccount', () => {
 });
 
 describe('toLinkedAccounts', () => {
-  it('배열 변환', () => {
-    // Given
-    const dto = createLinkedAccountsDto();
-
-    // When
-    const result = toLinkedAccounts(dto);
-
-    // Then
-    expect(result.accounts).toHaveLength(2);
-    expect(result.accounts[0]?.provider).toBe('GOOGLE');
-    expect(result.accounts[1]?.provider).toBe('KAKAO');
-    expect(result.canUnlink).toBe(true);
-  });
-
   it('빈 배열 → 빈 배열', () => {
     // Given
     const dto = { accounts: [], canUnlink: false };

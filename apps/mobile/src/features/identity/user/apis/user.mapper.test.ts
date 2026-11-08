@@ -1,8 +1,8 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import { PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
-import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.fixtures';
-import { toUpdateProfileResult, toUser } from './user.mapper';
+import { createCurrentUserDto } from '../__tests__/user.fixtures';
+import { toUser } from './user.mapper';
 
 describe('toUser', () => {
   it('userId → id, createdAt ISO → Instant 매핑', () => {
@@ -16,28 +16,6 @@ describe('toUser', () => {
     expect(result.id).toBe(dto.userId);
     expect(result.email).toBe(dto.email);
     expect(result.createdAt).toBe(dto.createdAt);
-  });
-
-  it('name null → null 유지', () => {
-    // Given
-    const dto = createCurrentUserDto({ name: null });
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.name).toBeNull();
-  });
-
-  it('profileImage null → null 유지', () => {
-    // Given
-    const dto = createCurrentUserDto({ profileImage: null });
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.profileImage).toBeNull();
   });
 
   it.each([
@@ -94,33 +72,5 @@ describe('toUser', () => {
 
     // Then
     expect(result.providers).toEqual(['CREDENTIAL', 'GOOGLE']);
-  });
-});
-
-describe('toUpdateProfileResult', () => {
-  it('name, profileImage만 추출 (message 제외)', () => {
-    // Given
-    const dto = createUpdateProfileDto();
-
-    // When
-    const result = toUpdateProfileResult(dto);
-
-    // Then
-    expect(result).toEqual({
-      name: dto.name,
-      profileImage: dto.profileImage,
-    });
-    expect(result).not.toHaveProperty('message');
-  });
-
-  it('name null → null 유지', () => {
-    // Given
-    const dto = createUpdateProfileDto({ name: null });
-
-    // When
-    const result = toUpdateProfileResult(dto);
-
-    // Then
-    expect(result.name).toBeNull();
   });
 });

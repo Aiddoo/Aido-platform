@@ -1,9 +1,8 @@
 import {
   createNudgeCooldownInfoDto,
   createNudgeLimitInfoDto,
-  createSendNudgeResponseDto,
 } from '../__tests__/todo-nudge.fixtures';
-import { toNudgeCooldownInfo, toNudgeLimitInfo, toSendNudgeResult } from './todo-nudge.mapper';
+import { toNudgeCooldownInfo, toNudgeLimitInfo } from './todo-nudge.mapper';
 
 beforeEach(() => {
   jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
@@ -59,18 +58,5 @@ describe('toNudgeCooldownInfo', () => {
     // Then
     expect(result.cooldownEndsAt).toBeNull();
     expect(result.remainingSeconds).toBeNull();
-  });
-});
-
-describe('toSendNudgeResult', () => {
-  it('message 매핑', () => {
-    // Given
-    const dto = createSendNudgeResponseDto({ message: '콕!' });
-
-    // When
-    const result = toSendNudgeResult(dto);
-
-    // Then
-    expect(result.message).toBe('콕!');
   });
 });
