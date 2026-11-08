@@ -2,7 +2,7 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { round } from 'es-toolkit';
 
-import type { DailyForecastEntry } from '../schemas/weather-report.schema';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
 import { toUnitPosition } from './weather-bar.geometry';
 import type { DialPoint } from './weather-dial.geometry';
 

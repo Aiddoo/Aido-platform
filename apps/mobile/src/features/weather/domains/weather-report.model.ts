@@ -1,18 +1,167 @@
 import {
+  WEATHER_AIR_QUALITY_SOURCES,
+  WEATHER_ALERT_SEVERITIES,
   WEATHER_BRIEFING_RULES,
+  WEATHER_CONDITIONS,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
+  WEATHER_MOON_PHASES,
+  WEATHER_NEXT_HOUR_CONDITIONS,
+  WEATHER_PRECIPITATION_TYPES,
+  WEATHER_PRESSURE_TRENDS,
+  WEATHER_PROVIDERS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
-import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
+import {
+  type Instant,
+  fromEpochMs,
+  instantSchema,
+  toDateKey,
+  toEpochMs,
+} from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type {
-  DailyForecastEntry,
-  HourlyForecastEntry,
-  NextHourForecast,
-  WeatherAlert,
-  WeatherReport,
-} from '../schemas/weather-report.schema';
+const weatherConditionSchema = z.enum(WEATHER_CONDITIONS);
+const precipitationTypeSchema = z.enum(WEATHER_PRECIPITATION_TYPES);
+
+export const registeredLocationSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  timezone: z.string(),
+});
+export type RegisteredLocation = z.infer<typeof registeredLocationSchema>;
+
+const currentWeatherSchema = z.object({
+  observedAt: instantSchema,
+  condition: weatherConditionSchema,
+  isDaylight: z.boolean(),
+  temperature: z.number(),
+  apparentTemperature: z.number(),
+  dewPoint: z.number(),
+  humidity: z.number(),
+  cloudCover: z.number(),
+  uvIndex: z.number(),
+  windSpeed: z.number(),
+  windGust: z.number().nullable(),
+  windDirection: z.number().nullable(),
+  visibility: z.number(),
+  pressure: z.number(),
+  pressureTrend: z.enum(WEATHER_PRESSURE_TRENDS),
+  precipitationIntensity: z.number(),
+});
+export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
+
+const minuteForecastSchema = z.object({
+  startsAt: instantSchema,
+  precipitationChance: z.number(),
+  precipitationIntensity: z.number(),
+});
+export type MinuteForecast = z.infer<typeof minuteForecastSchema>;
+
+const nextHourPeriodSchema = z.object({
+  condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS),
+  precipitationType: precipitationTypeSchema.nullable(),
+  startsAt: instantSchema,
+  endsAt: instantSchema.nullable(),
+  precipitationChance: z.number(),
+  precipitationIntensity: z.number(),
+});
+
+const nextHourForecastSchema = z.object({
+  periods: z.array(nextHourPeriodSchema),
+  minutes: z.array(minuteForecastSchema),
+});
+export type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
+
+const hourlyForecastSchema = z.object({
+  startsAt: instantSchema,
+  condition: weatherConditionSchema,
+  isDaylight: z.boolean(),
+  temperature: z.number(),
+  apparentTemperature: z.number(),
+  humidity: z.number(),
+  uvIndex: z.number(),
+  windSpeed: z.number(),
+  windDirection: z.number().nullable(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+});
+export type HourlyForecastEntry = z.infer<typeof hourlyForecastSchema>;
+
+const dayPartForecastSchema = z.object({
+  condition: weatherConditionSchema,
+  temperatureMin: z.number().nullable(),
+  temperatureMax: z.number().nullable(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+});
+
+const dailyForecastSchema = z.object({
+  date: z.string(),
+  condition: weatherConditionSchema,
+  temperatureMin: z.number(),
+  temperatureMax: z.number(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+  snowfallAmount: z.number(),
+  uvIndexMax: z.number(),
+  windSpeedMax: z.number().nullable(),
+  windGustMax: z.number().nullable(),
+  sunrise: instantSchema.nullable(),
+  sunset: instantSchema.nullable(),
+  moonPhase: z.enum(WEATHER_MOON_PHASES),
+  moonrise: instantSchema.nullable(),
+  moonset: instantSchema.nullable(),
+  restOfDay: dayPartForecastSchema.nullable(),
+  daytime: dayPartForecastSchema.nullable(),
+  overnight: dayPartForecastSchema.nullable(),
+});
+export type DailyForecastEntry = z.infer<typeof dailyForecastSchema>;
+
+const weatherAlertSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  severity: z.enum(WEATHER_ALERT_SEVERITIES),
+  source: z.string(),
+  areaName: z.string().nullable(),
+  effectiveAt: instantSchema,
+  expiresAt: instantSchema,
+  detailsUrl: z.string(),
+});
+export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
+
+const airQualitySchema = z.object({
+  pm10: z.number().nullable(),
+  pm25: z.number().nullable(),
+  source: z.enum(WEATHER_AIR_QUALITY_SOURCES),
+});
+export type AirQuality = z.infer<typeof airQualitySchema>;
+
+const attributionLogoSchema = z.object({ '1x': z.string(), '2x': z.string(), '3x': z.string() });
+
+const attributionSchema = z.object({
+  provider: z.enum(WEATHER_PROVIDERS),
+  serviceName: z.string(),
+  legalPageUrl: z.string(),
+  logo: z.object({ light: attributionLogoSchema, dark: attributionLogoSchema }).nullable(),
+});
+export type AttributionInfo = z.infer<typeof attributionSchema>;
+
+export const weatherReportSchema = z.object({
+  location: registeredLocationSchema,
+  current: currentWeatherSchema,
+  nextHour: nextHourForecastSchema.nullable(),
+  hourly: z.array(hourlyForecastSchema),
+  daily: z.array(dailyForecastSchema),
+  alerts: z.array(weatherAlertSchema),
+  airQuality: airQualitySchema.nullable(),
+  attribution: attributionSchema,
+  fetchedAt: instantSchema,
+});
+export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
 const NEXT_HOUR_RANGE_MS = HOUR_MS;
 const STALE_AFTER_MS = 30 * MINUTE_MS;

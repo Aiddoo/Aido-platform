@@ -34,9 +34,9 @@ import {
   type PrecipitationWindow,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
+import type { MinuteForecast } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { MinuteForecast } from '../schemas/weather-report.schema';
 import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';

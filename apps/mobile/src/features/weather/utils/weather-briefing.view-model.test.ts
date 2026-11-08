@@ -1,4 +1,4 @@
-import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
 
 import {
   createBriefingTodo,
@@ -6,11 +6,7 @@ import {
   createWeatherReport,
 } from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
-import {
-  type BriefingViewDeps,
-  toBriefingState,
-  toBriefingView,
-} from './weather-briefing.view-model';
+import { type BriefingViewDeps, toBriefingView } from './weather-briefing.view-model';
 
 /** 서울 15:26. 16~17시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
@@ -36,38 +32,6 @@ function viewFor(todos: BriefingTodo[]) {
   });
   return toBriefingView(briefing, DEPS);
 }
-
-describe('toBriefingState', () => {
-  it('리포트를 받기 전이거나 받지 못했으면 자리만 잡고 실패는 리포트 경계에 맡긴다', () => {
-    // When
-    const state = toBriefingState(undefined, { now: NOW, deviceTimeZone: 'Asia/Seoul' });
-
-    // Then
-    expect(state).toBe('loading');
-  });
-
-  it('6시간 넘게 갱신되지 않은 리포트로는 브리핑하지 않는다', () => {
-    // Given
-    const later = fromEpochMs(toEpochMs(NOW) + 7 * 60 * 60_000);
-
-    // When
-    const state = toBriefingState(report, { now: later, deviceTimeZone: 'Asia/Seoul' });
-
-    // Then
-    expect(state).toBe('hidden');
-  });
-
-  it.each([
-    ['Asia/Tokyo', 'visible'],
-    ['America/Los_Angeles', 'hidden'],
-  ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimeZone, expected) => {
-    // When
-    const state = toBriefingState(report, { now: NOW, deviceTimeZone });
-
-    // Then
-    expect(state).toBe(expected);
-  });
-});
 
 describe('toBriefingView', () => {
   it('비와 겹치는 할 일 하나는 제목을 넣어 알리고, 마른 시각과 강수 확률을 행에 보인다', () => {

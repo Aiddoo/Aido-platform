@@ -8,9 +8,10 @@ import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import type { Coordinates } from '../domains/weather-location.model';
+import type { RegisteredLocation } from '../domains/weather-report.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
-import type { Coordinates, RegisteredLocation } from '../schemas/weather-location.schema';
-import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toRegisteredLocation, toWeatherReport } from './weather.mapper';
 
 export class WeatherService {

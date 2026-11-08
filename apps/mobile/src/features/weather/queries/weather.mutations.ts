@@ -5,7 +5,7 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { type Coordinates } from '../schemas/weather-location.schema';
+import { type Coordinates } from '../domains/weather-location.model';
 import { invalidateWeatherReports, setRegisteredWeatherLocation } from './weather-cache';
 
 /** 서버에 위치가 없다고 응답했을 때(WEATHER_1902) 마지막으로 읽은 위치를 다시 등록한다. */

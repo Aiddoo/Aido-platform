@@ -3,7 +3,8 @@ import { last } from 'es-toolkit';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { LocationReading, RegisteredLocation } from '../schemas/weather-location.schema';
+import type { LocationReading } from '../domains/weather-location.model';
+import type { RegisteredLocation } from '../domains/weather-report.model';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
 
 /** 리포트 쿼리 키의 인자는 객체 하나이고 항상 마지막에 둔다 */

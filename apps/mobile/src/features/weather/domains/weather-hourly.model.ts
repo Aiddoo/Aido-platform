@@ -3,7 +3,7 @@ import { type Instant, toDateKey } from '@src/shared/date/instant';
 import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
+import type { HourlyForecastEntry, WeatherReport } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */

@@ -40,15 +40,14 @@ import { match } from 'ts-pattern';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors.constants';
 import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
+import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { toWeatherBriefingKind } from '../utils/weather-analytics';
 import {
   type BriefingAction,
   type BriefingCopy,
   type BriefingRow,
-  toBriefingState,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
 import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link';
@@ -94,7 +93,7 @@ export function WeatherBriefing() {
   });
   const now = useMinuteNow();
   const { timeZone: deviceTimeZone } = useDateFormatContext();
-  const state = toBriefingState(report, { now, deviceTimeZone });
+  const state = WeatherBriefingPolicy.getBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
     return <WeatherBriefing.Loading />;

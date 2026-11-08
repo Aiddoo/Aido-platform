@@ -24,7 +24,9 @@ import { match, P } from 'ts-pattern';
 
 import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
+import type { PlaceName } from '../domains/weather-location.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
 import {
   isOfflineError,
   isTimeoutError,
@@ -34,8 +36,6 @@ import {
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { PlaceName } from '../schemas/weather-location.schema';
-import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import { findForeignCountryName } from '../utils/find-foreign-country-name';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import {

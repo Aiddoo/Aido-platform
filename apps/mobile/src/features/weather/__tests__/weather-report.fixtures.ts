@@ -3,7 +3,7 @@ import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { toWeatherReport } from '../apis/weather.mapper';
 import type { BriefingTodo } from '../domains/weather-briefing.model';
-import type { WeatherReport } from '../schemas/weather-report.schema';
+import type { WeatherReport } from '../domains/weather-report.model';
 
 const HOUR_MS = 60 * 60_000;
 

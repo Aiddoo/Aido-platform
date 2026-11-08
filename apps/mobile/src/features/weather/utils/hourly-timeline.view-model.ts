@@ -3,7 +3,7 @@ import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { orderBy } from 'es-toolkit';
 
 import { WeatherReportPolicy } from '../domains/weather-report.model';
-import type { HourlyForecastEntry, WeatherReport } from '../schemas/weather-report.schema';
+import type { HourlyForecastEntry, WeatherReport } from '../domains/weather-report.model';
 
 export type HourlyTimelineItem =
   | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }

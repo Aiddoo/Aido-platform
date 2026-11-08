@@ -11,8 +11,8 @@ import { toError } from '@src/shared/errors';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import type { Coordinates, LocationReading } from '../domains/weather-location.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
-import type { Coordinates, LocationReading } from '../schemas/weather-location.schema';
 import type { WeatherService } from './weather.service';
 
 interface ResolveLocationInput {

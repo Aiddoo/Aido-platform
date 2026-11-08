@@ -19,12 +19,12 @@ import { act, waitFor } from '@testing-library/react-native';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
+import type { LocationReading } from '../domains/weather-location.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import {
   useGetWeatherReportQueryOptions,
   useWeatherLocationRevision,
 } from '../queries/weather.queries';
-import type { LocationReading } from '../schemas/weather-location.schema';
 import { useWeatherLocation } from './use-weather-location';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };

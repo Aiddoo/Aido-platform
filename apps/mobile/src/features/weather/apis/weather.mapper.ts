@@ -1,8 +1,8 @@
 import type { WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type { RegisteredLocation } from '../schemas/weather-location.schema';
-import type { WeatherReport } from '../schemas/weather-report.schema';
+import type { RegisteredLocation } from '../domains/weather-report.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 
 export function toRegisteredLocation(dto: WeatherLocationResponse): RegisteredLocation {
   return {

@@ -19,10 +19,10 @@ import { pick } from 'es-toolkit';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import { type LocationReading } from '../domains/weather-location.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { type WeatherReport } from '../domains/weather-report.model';
 import { withDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
-import { type LocationReading } from '../schemas/weather-location.schema';
-import { type WeatherReport } from '../schemas/weather-report.schema';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import { removeOutdatedWeatherReports } from './weather-cache';
 

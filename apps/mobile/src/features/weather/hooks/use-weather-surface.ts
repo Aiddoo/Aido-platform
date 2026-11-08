@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
 import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toWeatherScene, type WeatherSceneSky } from '../utils/weather-scene.view-model';
 import { useIsReduceTransparencyEnabled } from './use-is-reduce-transparency-enabled';
 

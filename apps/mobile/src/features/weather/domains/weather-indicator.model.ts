@@ -1,5 +1,5 @@
 import { PM10_UPPER_BOUNDS, PM25_UPPER_BOUNDS } from '../constants/weather.constants';
-import type { AirQuality, CurrentWeather } from '../schemas/weather-report.schema';
+import type { AirQuality, CurrentWeather } from './weather-report.model';
 
 function getGradeIndex(value: number, upperBounds: readonly number[]): number {
   const index = upperBounds.findIndex((bound) => value <= bound);

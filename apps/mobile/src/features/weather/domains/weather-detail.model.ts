@@ -2,7 +2,7 @@ import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
 import { round, sumBy } from 'es-toolkit';
 
-import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
+import type { DailyForecastEntry, HourlyForecastEntry } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
 /** WHO 기준 자외선 지수 3(보통) 이상부터 차단제를 권한다. */

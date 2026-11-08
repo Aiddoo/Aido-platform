@@ -29,10 +29,10 @@ import {
 } from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { type HourlySummary, WeatherHourlyPolicy } from '../domains/weather-hourly.model';
+import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import { type HourlyTimelineItem, toHourlyTimeline } from '../utils/hourly-timeline.view-model';
 import {
   formatDegrees,

@@ -10,9 +10,9 @@ import {
   type WeatherLocationStatus,
   WeatherLocationPolicy,
 } from '../domains/weather-location.model';
+import type { PlaceName } from '../domains/weather-location.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
-import type { PlaceName } from '../schemas/weather-location.schema';
 import { toPermissionResult } from '../utils/weather-analytics';
 
 export type WeatherLocation =

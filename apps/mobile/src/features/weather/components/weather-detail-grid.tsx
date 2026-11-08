@@ -24,10 +24,10 @@ import {
 } from '../constants/weather-labels';
 import { WeatherDetailPolicy } from '../domains/weather-detail.model';
 import { WeatherIndicatorPolicy } from '../domains/weather-indicator.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { WeatherReport } from '../schemas/weather-report.schema';
 import { toVisibilityKilometers } from '../utils/to-visibility-kilometers';
 import { toUvMeterPosition } from '../utils/weather-bar.geometry';
 import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';

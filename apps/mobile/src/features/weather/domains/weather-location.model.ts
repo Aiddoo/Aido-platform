@@ -1,7 +1,30 @@
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
-import type { Coordinates, LocationReading, PlaceName } from '../schemas/weather-location.schema';
+import { type RegisteredLocation, registeredLocationSchema } from './weather-report.model';
+
+export type Coordinates = Pick<RegisteredLocation, 'latitude' | 'longitude'>;
+
+const revisionSchema = z.int().nonnegative();
+
+const placeNameSchema = z.object({ city: z.string(), district: z.string().nullable() });
+export type PlaceName = z.infer<typeof placeNameSchema>;
+
+export const locationReadingSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('needsPermission') }),
+  z.object({ status: z.literal('denied') }),
+  z.object({ status: z.literal('unavailable'), revision: revisionSchema }),
+  z.object({
+    status: z.literal('located'),
+    registered: registeredLocationSchema,
+    place: placeNameSchema.nullable(),
+    countryCode: z.string().nullable(),
+    revision: revisionSchema,
+    isLastKnown: z.boolean().optional(),
+  }),
+]);
+export type LocationReading = z.infer<typeof locationReadingSchema>;
 
 /** 약 1km(위도 0.01°) 안에서의 이동은 같은 날씨 격자로 보고 서버에 다시 등록하지 않는다. */
 const RELOCATION_THRESHOLD_DEGREES = 0.01;

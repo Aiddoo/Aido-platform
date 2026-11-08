@@ -3,12 +3,12 @@ import { type Instant, toDateKey, toEpochMs, toHHmm } from '@src/shared/date/ins
 import { keyBy, orderBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 import {
   type BriefingTodo,
   type ForecastTodo,
   WeatherBriefingPolicy,
 } from './weather-briefing.model';
+import type { HourlyForecastEntry } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */

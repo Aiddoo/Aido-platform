@@ -2,7 +2,7 @@ import { clamp, maxBy, minBy } from 'es-toolkit';
 
 import { PM10_UPPER_BOUNDS, PM25_UPPER_BOUNDS } from '../constants/weather.constants';
 import type { AirPollutant } from '../domains/weather-indicator.model';
-import type { DailyForecastEntry } from '../schemas/weather-report.schema';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
 
 /** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */
 const METER_MIN = 0.03;

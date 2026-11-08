@@ -13,9 +13,9 @@ import { PressableFeedback } from 'heroui-native';
 
 import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors.constants';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { WeatherAlert } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { WeatherAlert } from '../schemas/weather-report.schema';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 

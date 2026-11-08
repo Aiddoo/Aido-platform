@@ -1,5 +1,5 @@
 import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
-import type { LocationReading } from '../schemas/weather-location.schema';
+import type { LocationReading } from './weather-location.model';
 import { WeatherLocationPolicy } from './weather-location.model';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };

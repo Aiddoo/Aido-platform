@@ -7,13 +7,14 @@ import {
   fromEpochMs,
   fromWallClock,
   getZonedHour,
+  hasSameWallClock,
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
 import { maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { DailyForecastEntry, HourlyForecastEntry } from '../schemas/weather-report.schema';
+import type { DailyForecastEntry, HourlyForecastEntry } from './weather-report.model';
 import { WeatherReportPolicy } from './weather-report.model';
 
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
@@ -381,7 +382,39 @@ function getSuggestedStartAt(
   return next?.startsAt ?? null;
 }
 
+export type BriefingState = 'loading' | 'hidden' | 'visible';
+
+function getBriefingState(
+  report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
+  { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
+): BriefingState {
+  if (report == null) {
+    return 'loading';
+  }
+  if (
+    WeatherReportPolicy.isNowcastExpired(report, now) ||
+    !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
+  ) {
+    return 'hidden';
+  }
+  return 'visible';
+}
+
+function isTodoWithinRange(todo: Pick<ForecastTodo, 'scheduledAt'>, range: HourRange): boolean {
+  return (
+    toEpochMs(range.startsAt) <= toEpochMs(todo.scheduledAt) &&
+    toEpochMs(todo.scheduledAt) < toEpochMs(range.endsAt)
+  );
+}
+
+function getUncompletedTodoIds(todos: readonly Pick<ForecastTodo, 'todoId' | 'completed'>[]) {
+  return todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
+}
+
 export const WeatherBriefingPolicy = {
+  getBriefingState,
+  isTodoWithinRange,
+  getUncompletedTodoIds,
   toBriefingTodo,
   getWeatherBriefing,
   getSuggestedStartAt,

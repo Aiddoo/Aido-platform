@@ -6,7 +6,7 @@ import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 
 import { WeatherReportPolicy } from '../../domains/weather-report.model';
-import type { HourlyForecastEntry } from '../../schemas/weather-report.schema';
+import type { HourlyForecastEntry } from '../../domains/weather-report.model';
 import { toUnitPosition } from '../../utils/weather-bar.geometry';
 
 const CHART_HEIGHT = 40;

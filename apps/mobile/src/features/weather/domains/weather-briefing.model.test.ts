@@ -1,4 +1,4 @@
-import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
@@ -544,5 +544,91 @@ describe('getForecastTodos', () => {
 
     // Then
     expect(forecast?.completed).toBe(true);
+  });
+});
+
+const STATE_REPORT = createWeatherReport({
+  fetchedAt: '2026-11-02T06:20:00.000Z',
+  hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
+});
+
+describe('getBriefingState', () => {
+  it('리포트를 받기 전이거나 받지 못했으면 자리만 잡고 실패는 리포트 경계에 맡긴다', () => {
+    // When
+    const state = WeatherBriefingPolicy.getBriefingState(undefined, {
+      now: NOW,
+      deviceTimeZone: 'Asia/Seoul',
+    });
+
+    // Then
+    expect(state).toBe('loading');
+  });
+
+  it('6시간 넘게 갱신되지 않은 리포트로는 브리핑하지 않는다', () => {
+    // Given
+    const later = fromEpochMs(toEpochMs(NOW) + 7 * 60 * 60_000);
+
+    // When
+    const state = WeatherBriefingPolicy.getBriefingState(STATE_REPORT, {
+      now: later,
+      deviceTimeZone: 'Asia/Seoul',
+    });
+
+    // Then
+    expect(state).toBe('hidden');
+  });
+
+  it.each([
+    ['Asia/Tokyo', 'visible'],
+    ['America/Los_Angeles', 'hidden'],
+  ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimeZone, expected) => {
+    // When
+    const state = WeatherBriefingPolicy.getBriefingState(STATE_REPORT, {
+      now: NOW,
+      deviceTimeZone,
+    });
+
+    // Then
+    expect(state).toBe(expected);
+  });
+});
+
+describe('isTodoWithinRange', () => {
+  const hours = {
+    startsAt: toInstant('2026-11-02T07:00:00.000Z'),
+    endsAt: toInstant('2026-11-02T09:00:00.000Z'),
+  };
+
+  it.each([
+    ['2026-11-02T06:59:00.000Z', false],
+    ['2026-11-02T07:00:00.000Z', true],
+    ['2026-11-02T08:59:00.000Z', true],
+    ['2026-11-02T09:00:00.000Z', false],
+  ] as const)('할 일 시각이 %s이면 추천 시간대 안인지는 %s다', (scheduledAt, expected) => {
+    // Given
+    const todo = { scheduledAt: toInstant(scheduledAt) };
+
+    // When
+    const result = WeatherBriefingPolicy.isTodoWithinRange(todo, hours);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getUncompletedTodoIds', () => {
+  it('완료한 할 일은 빼고 남은 할 일 ID만 순서대로 반환한다', () => {
+    // Given
+    const todos = [
+      { todoId: 1, completed: false },
+      { todoId: 2, completed: true },
+      { todoId: 3, completed: false },
+    ];
+
+    // When
+    const ids = WeatherBriefingPolicy.getUncompletedTodoIds(todos);
+
+    // Then
+    expect(ids).toEqual([1, 3]);
   });
 });

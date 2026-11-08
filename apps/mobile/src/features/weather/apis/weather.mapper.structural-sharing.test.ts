@@ -1,7 +1,7 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
-import type { WeatherReport } from '../schemas/weather-report.schema';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { toWeatherReport } from './weather.mapper';
 
 describe('날씨 리포트 재조회의 구조 공유', () => {

@@ -30,11 +30,11 @@ import {
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import type { DailyForecastEntry } from '../schemas/weather-report.schema';
 import { getTemperatureColor } from '../utils/get-temperature-color';
 import {
   type TemperatureBar,

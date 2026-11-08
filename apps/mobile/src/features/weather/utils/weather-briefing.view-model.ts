@@ -3,7 +3,7 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import { hasSameWallClock, type Instant, toEpochMs } from '@src/shared/date/instant';
+import type { Instant } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
@@ -15,9 +15,8 @@ import {
   type HourRange,
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
-import type { HourlyForecastEntry } from '../schemas/weather-report.schema';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
 function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
@@ -73,28 +72,6 @@ export interface BriefingViewDeps {
   formatChance: (percent: number) => string;
 }
 
-export type BriefingState = 'loading' | 'hidden' | 'visible';
-
-/**
- * 리포트를 아직 받지 못했으면(실패 포함) 자리만 잡고 실패는 리포트 경계에 맡긴다.
- * 6시간 넘게 갱신되지 않았거나, 위치 벽시계가 기기와 달라 기기 시각인 할 일과 맞춰 보면 헷갈리면 숨긴다.
- */
-export function toBriefingState(
-  report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
-  { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
-): BriefingState {
-  if (report == null) {
-    return 'loading';
-  }
-  if (
-    WeatherReportPolicy.isNowcastExpired(report, now) ||
-    !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
-  ) {
-    return 'hidden';
-  }
-  return 'visible';
-}
-
 /** 브리핑 종류를 화면 문구·할 일 행·버튼으로 바꾼다. */
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
   const { hourly, now, timeZone, formatClock, formatHour, formatTemperature, formatChance } = deps;
@@ -112,7 +89,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     reason: WeatherRescheduleReason,
     label: BriefingCopy,
   ): BriefingAction | null => {
-    const todoIds = todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
+    const todoIds = WeatherBriefingPolicy.getUncompletedTodoIds(todos);
     return todoIds.length === 0 ? null : { kind: 'reschedule', reason, label, todoIds };
   };
 
@@ -260,8 +237,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
       const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, hourly, now);
       const isInRange = (todo: ForecastTodo) =>
-        toEpochMs(hours.startsAt) <= toEpochMs(todo.scheduledAt) &&
-        toEpochMs(todo.scheduledAt) < toEpochMs(hours.endsAt);
+        WeatherBriefingPolicy.isTodoWithinRange(todo, hours);
       const isEmpty = todos.length === 0;
       return {
         headline: { key: isEmpty ? 'briefing.clear.emptyTitle' : 'briefing.clear.title' },
