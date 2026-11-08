@@ -51,11 +51,20 @@ export function AppToast({
         {resolvedIcon && <Box className="shrink-0">{resolvedIcon}</Box>}
 
         <Box className="flex-1">
-          <Text size="b2" weight="medium" className="text-white dark:text-gray-9">
+          <Text
+            size="b2"
+            weight="medium"
+            lineBreakStrategyIOS="hangul-word"
+            className="text-white dark:text-gray-9"
+          >
             {label}
           </Text>
           {description != null && description.length > 0 && (
-            <Text size="b3" className="text-gray-3 dark:text-gray-7">
+            <Text
+              size="b3"
+              lineBreakStrategyIOS="hangul-word"
+              className="text-gray-3 dark:text-gray-7"
+            >
               {description}
             </Text>
           )}

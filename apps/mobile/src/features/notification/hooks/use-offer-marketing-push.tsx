@@ -34,11 +34,17 @@ export function useOfferMarketingPushAfterCompletion() {
 
   const offer = useEffectEvent(async () => {
     const me = getCachedMe(queryClient);
-    const preference = queryClient.getQueryData(preferenceQueryOptions.queryKey);
-    if (hasOfferedRef.current || me == null || preference == null) {
+    if (hasOfferedRef.current || me == null) {
       return;
     }
-    const [consent, permission] = await Promise.all([
+    // 설정 화면을 열지 않았어도 제안할 수 있게 캐시가 없으면 받아 온다
+    const [preference, consent, permission] = await Promise.all([
+      queryClient.ensureQueryData(preferenceQueryOptions).catch((error: unknown) => {
+        logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
+          error: getErrorMessage(error),
+        });
+        return null;
+      }),
       readWithoutBlocking(
         queryClient.getQueryData(consentQueryOptions.queryKey),
         () => queryClient.ensureQueryData(consentQueryOptions),
@@ -51,6 +57,7 @@ export function useOfferMarketingPushAfterCompletion() {
     ]);
     // 기기 알림이나 앱 푸시가 꺼져 있으면 동의를 받아도 알림이 닿지 않는다
     if (
+      preference == null ||
       consent == null ||
       hasOfferedRef.current ||
       !PushPermissionPolicy.canReceivePush(permission, preference) ||
