@@ -3,7 +3,7 @@ import { WhatsNewMenuItem } from '@src/features/app-config/whats-new/components/
 import { AccessTierChip } from '@src/features/billing/subscription/components/access-tier-chip';
 import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
 import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
-import { MyPageMenu } from '@src/features/identity/user/components/my-page-menu';
+import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -13,8 +13,22 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
+  AiIcon,
+  BellIcon,
+  BlockIcon,
+  ChatBubbleIcon,
+  CrownIcon,
   DocsIcon,
+  EditIcon,
+  FlagIcon,
   H3,
+  KoreanIcon,
+  ListIcon,
+  MemoIcon,
+  MicIcon,
+  MoonIcon,
+  PawIcon,
+  PersonIcon,
   QueryErrorBoundary,
   Result,
   SettingsListGroup,
@@ -49,7 +63,7 @@ export default function MyPageScreen() {
 
 /** 넓은 화면의 메뉴 화면(`(mypage-menu)/_layout`)도 이 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
 export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
-  const { t } = useTranslation('user');
+  const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
@@ -83,15 +97,93 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           </QueryErrorBoundary>
         )}
 
-        <MyPageMenu.Activity whatsNewItem={<WhatsNewMenuItem />} />
+        <SettingsListGroup label={t('mypage.sections.activity')}>
+          <MyPageMenuItem Icon={PersonIcon} label={t('mypage.items.friends')} pathname="/friends" />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={BlockIcon}
+            label={t('mypage.items.blockedUsers')}
+            pathname="/settings/blocked-users"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={ListIcon}
+            label={t('mypage.items.categories')}
+            pathname="/settings/category-settings"
+          />
+          <SettingsListGroup.Separator />
+          <WhatsNewMenuItem />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={FlagIcon}
+            label={t('mypage.items.achievements')}
+            pathname="/achievements"
+          />
+        </SettingsListGroup>
 
         <QuotaSummary />
 
-        <MyPageMenu.Subscription />
+        <SettingsListGroup label={t('mypage.sections.subscription')}>
+          <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={PawIcon}
+            label={t('mypage.items.appIcon')}
+            pathname="/settings/app-icon"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={CrownIcon}
+            label={t('mypage.items.subscription')}
+            pathname="/settings/subscription"
+          />
+        </SettingsListGroup>
 
-        <MyPageMenu.Settings />
+        <SettingsListGroup label={t('mypage.sections.settings')}>
+          <MyPageMenuItem
+            Icon={BellIcon}
+            label={t('mypage.items.notifications')}
+            pathname="/settings/notifications"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={MoonIcon}
+            label={t('mypage.items.theme')}
+            pathname="/settings/theme"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={EditIcon}
+            label={t('mypage.items.fontSize')}
+            pathname="/settings/font-size"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={KoreanIcon}
+            label={t('settings:titles.language')}
+            pathname="/settings/language"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={MicIcon}
+            label={t('settings:titles.voiceStorage')}
+            pathname="/settings/voice-storage"
+          />
+        </SettingsListGroup>
 
-        <MyPageMenu.Support />
+        <SettingsListGroup>
+          <MyPageMenuItem
+            Icon={ChatBubbleIcon}
+            label={t('mypage.items.inquiry')}
+            pathname="/settings/inquiry"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={MemoIcon}
+            label={t('mypage.items.terms')}
+            pathname="/settings/terms"
+          />
+        </SettingsListGroup>
 
         <AppVersionCheck />
       </VStack>
