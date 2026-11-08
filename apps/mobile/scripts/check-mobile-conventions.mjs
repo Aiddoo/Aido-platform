@@ -1651,6 +1651,56 @@ function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+const ENTITY_FILE_FOLDERS = new Set([
+  'schemas',
+  'domains',
+  'apis',
+  'queries',
+  'constants',
+  '__tests__',
+]);
+const ENTITY_FILE_NAME =
+  /^(.+?)(?:\.schema|\.model|\.mapper|\.service|\.error|-query-keys|-mutation-keys|-cache|\.events|-log-events|-labels|\.constants|\.queries|\.mutations|\.fixtures)\.tsx?$/u;
+const ROLE_SCHEMA_NAME = /-(?:params|form|request|draft|query-key|persisted|response)$/u;
+
+function getEntityNames(featureDirectory) {
+  const schemaDirectory = resolve(featureDirectory, 'schemas');
+  if (!existsSync(schemaDirectory)) {
+    return [];
+  }
+  return readdirSync(schemaDirectory)
+    .filter((name) => name.endsWith('.schema.ts'))
+    .map((name) => name.slice(0, -'.schema.ts'.length))
+    .filter((name) => !ROLE_SCHEMA_NAME.test(name));
+}
+
+function checkFeatureFilePrefixes(repositoryRoot, errors) {
+  for (const file of getSourceFiles(repositoryRoot, 'apps/mobile/src/features')) {
+    const featureName = getFeatureName(file);
+    const fileName = relative(repositoryRoot, file);
+    const [folder, baseName, ...rest] = fileName
+      .slice(`apps/mobile/src/features/${featureName}/`.length)
+      .split('/');
+    if (!ENTITY_FILE_FOLDERS.has(folder) || rest.length > 0 || /\.test\.tsx?$/u.test(baseName)) {
+      continue;
+    }
+    const shortName = featureName.split('/').at(-1);
+    const prefix = ENTITY_FILE_NAME.exec(baseName)?.[1];
+    if (prefix !== shortName) {
+      continue;
+    }
+    const entityNames = getEntityNames(
+      resolve(repositoryRoot, `apps/mobile/src/features/${featureName}`),
+    );
+    const entityName = entityNames.find((name) => name.endsWith(`-${shortName}`));
+    if (entityName != null && !entityNames.includes(shortName)) {
+      errors.push(
+        `${fileName} 파일 접두사는 entity 이름 ${entityName}입니다. feature 이름 ${shortName}만으로 시작하지 않습니다.`,
+      );
+    }
+  }
+}
+
 function loadAllowlist() {
   return JSON.parse(readFileSync(ALLOWLIST_PATH, 'utf8'));
 }
@@ -2355,6 +2405,8 @@ export function checkMobileConventions(
     checkNamespaceFunctionNames(sourceFile, repositoryRoot, errors);
     checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors);
   }
+
+  checkFeatureFilePrefixes(repositoryRoot, errors);
 
   applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);
 

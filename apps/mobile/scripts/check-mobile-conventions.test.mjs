@@ -1616,3 +1616,37 @@ test('네임스페이스의 *Skeleton 조각을 거부하고 X.Loading과 TextSk
     },
   );
 });
+
+test('entity 이름이 feature 이름을 줄인 것이면 feature 수준 파일이 줄인 이름으로 시작하는 것을 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/nudge/schemas/todo-nudge.schema.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/queries/nudge-cache.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/constants/nudge.events.ts': 'export {};',
+    },
+    (errors) => {
+      assert.deepEqual(errors, [
+        'apps/mobile/src/features/social/nudge/constants/nudge.events.ts 파일 접두사는 entity 이름 todo-nudge입니다. feature 이름 nudge만으로 시작하지 않습니다.',
+        'apps/mobile/src/features/social/nudge/queries/nudge-cache.ts 파일 접두사는 entity 이름 todo-nudge입니다. feature 이름 nudge만으로 시작하지 않습니다.',
+      ]);
+    },
+  );
+});
+
+test('다른 entity, 역할 이름 파일, 컴포넌트와 feature 이름과 같은 entity는 접두사 검사를 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/social/nudge/schemas/todo-nudge.schema.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/schemas/nudge-params.schema.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/domains/nudge-interaction.model.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/queries/todo-nudge-cache.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/components/nudge-limit-banner.tsx': 'export {};',
+      'apps/mobile/src/features/planning/todo/schemas/todo.schema.ts': 'export {};',
+      'apps/mobile/src/features/planning/todo/schemas/sub-todo.schema.ts': 'export {};',
+      'apps/mobile/src/features/planning/todo/queries/todo-cache.ts': 'export {};',
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
