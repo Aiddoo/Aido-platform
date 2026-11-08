@@ -58,7 +58,7 @@ export function ReportReasonBottomSheet({
   ...sheetProps
 }: ReportReasonBottomSheetProps) {
   const { t } = useTranslation('moderation');
-  const { success } = useAppToast();
+  const toast = useAppToast();
   const reportUnexpectedError = useReportUnexpectedError('friend');
   const sheet = useSheetRoute('/feed');
   const reportContent = useMutation(useReportContentMutationOptions());
@@ -80,7 +80,7 @@ export function ReportReasonBottomSheet({
     }
 
     sheet.close();
-    success(t('report.toast'), {
+    toast.success(t('report.toast'), {
       description: t('report.toastDescription'),
       action: {
         label: t('report.toastBlockAction'),
