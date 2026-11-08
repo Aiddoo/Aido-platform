@@ -271,11 +271,12 @@ export function DIProvider({
       platform: process.env.EXPO_OS,
     });
     const pushNotification = createExpoPushNotificationGateway(logger);
-    const notificationService = new NotificationService(
-      authHttpClient,
-      pushNotification,
+    const notificationService = new NotificationService({
+      httpClient: authHttpClient,
+      badgeGateway: pushNotification,
       publicHttpClient,
-    );
+      logger,
+    });
     const pushDeviceService = new PushDeviceService({
       gateway: pushNotification,
       deviceIdService,

@@ -312,7 +312,12 @@ export function createTestDi({
     todoService: new TodoService(httpClient),
     todoCommentService: new TodoCommentService(httpClient),
     todoCategoryService: new TodoCategoryService(httpClient),
-    notificationService: new NotificationService(httpClient, pushNotification, httpClient),
+    notificationService: new NotificationService({
+      httpClient,
+      badgeGateway: pushNotification,
+      publicHttpClient: httpClient,
+      logger,
+    }),
     notificationEntryStore: createNotificationEntryStore(),
     pushDeviceService,
     deviceTimezoneService,
