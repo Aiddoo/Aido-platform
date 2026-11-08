@@ -7,7 +7,7 @@ const SUNRISE = toInstant('2026-11-01T21:51:00.000Z');
 const SUNSET = toInstant('2026-11-02T08:28:00.000Z');
 const DAY = { sunrise: SUNRISE, sunset: SUNSET };
 
-describe('getSunscreenWindow', () => {
+describe('findSunscreenWindow', () => {
   const now = toInstant('2026-11-02T02:30:00.000Z');
   const hourly = createWeatherReport({
     hourly: [1, 4, 5, 3, 2, 6].map((uvIndex, index) =>
@@ -20,7 +20,7 @@ describe('getSunscreenWindow', () => {
 
   it('오늘 남은 시간 중 자외선 3 이상인 첫 시각부터 마지막 시각 끝까지다', () => {
     // When
-    const window = WeatherDetailPolicy.getSunscreenWindow(hourly, now, 'Asia/Seoul');
+    const window = WeatherDetailPolicy.findSunscreenWindow(hourly, now, 'Asia/Seoul');
 
     // Then
     // 12~15시와 16시에 자외선 3 이상이라 12시~17시(서울)다
@@ -35,7 +35,7 @@ describe('getSunscreenWindow', () => {
     const weakHourly = hourly.map((hour) => ({ ...hour, uvIndex: 1 }));
 
     // When
-    const window = WeatherDetailPolicy.getSunscreenWindow(weakHourly, now, 'Asia/Seoul');
+    const window = WeatherDetailPolicy.findSunscreenWindow(weakHourly, now, 'Asia/Seoul');
 
     // Then
     expect(window).toBeNull();
@@ -73,7 +73,7 @@ describe('calculateNextDayPrecipitation', () => {
   });
 });
 
-describe('getNextSunEvent', () => {
+describe('findNextSunEvent', () => {
   const tomorrow = { sunrise: toInstant('2026-11-02T21:52:00.000Z') };
 
   it.each([
@@ -82,7 +82,7 @@ describe('getNextSunEvent', () => {
     { now: '2026-11-02T10:00:00.000Z', kind: 'sunriseTomorrow' },
   ] as const)('$now에는 아직 오지 않은 가장 가까운 해 일정이 $kind다', ({ now, kind }) => {
     // When
-    const event = WeatherDetailPolicy.getNextSunEvent(DAY, tomorrow, toInstant(now));
+    const event = WeatherDetailPolicy.findNextSunEvent(DAY, tomorrow, toInstant(now));
 
     // Then
     expect(event?.kind).toBe(kind);
@@ -93,17 +93,17 @@ describe('getNextSunEvent', () => {
     const afterSunset = toInstant('2026-11-02T10:00:00.000Z');
 
     // When
-    const event = WeatherDetailPolicy.getNextSunEvent(DAY, null, afterSunset);
+    const event = WeatherDetailPolicy.findNextSunEvent(DAY, null, afterSunset);
 
     // Then
     expect(event).toBeNull();
   });
 });
 
-describe('getDaylightDuration', () => {
+describe('findDaylightDuration', () => {
   it('일출부터 일몰까지를 시간·분으로 나눈다', () => {
     // When
-    const duration = WeatherDetailPolicy.getDaylightDuration(DAY);
+    const duration = WeatherDetailPolicy.findDaylightDuration(DAY);
 
     // Then
     // 06:51~17:28(서울)이라 10시간 37분이다

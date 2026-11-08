@@ -15,7 +15,7 @@ import {
   snapshotTodo,
 } from './todo-cache';
 
-interface ToggleSubTodoParams {
+interface ToggleSubTodoVariables {
   todoId: number;
   subTodoId: number;
   isCompleted: boolean;
@@ -34,7 +34,7 @@ export function useToggleSubTodoMutationOptions() {
     // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoParams) => {
+    mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoVariables) => {
       const result = await subTodoService.updateSubTodo(todoId, subTodoId, {
         completed: isCompleted,
       });
@@ -66,7 +66,7 @@ export function useToggleSubTodoMutationOptions() {
   });
 }
 
-interface DeleteSubTodoParams {
+interface DeleteSubTodoVariables {
   todoId: number;
   subTodoId: number;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
@@ -84,7 +84,7 @@ export function useDeleteSubTodoMutationOptions() {
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, subTodoId }: DeleteSubTodoParams) => {
+    mutationFn: async ({ todoId, subTodoId }: DeleteSubTodoVariables) => {
       const result = await subTodoService.deleteSubTodo(todoId, subTodoId);
       return unwrap(result);
     },
@@ -119,7 +119,7 @@ export function useDeleteSubTodoMutationOptions() {
   });
 }
 
-interface ReorderSubTodosParams {
+interface ReorderSubTodosVariables {
   todoId: number;
   subTodoIds: number[];
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
@@ -137,7 +137,7 @@ export function useReorderSubTodosMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, subTodoIds }: ReorderSubTodosParams) => {
+    mutationFn: async ({ todoId, subTodoIds }: ReorderSubTodosVariables) => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },

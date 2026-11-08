@@ -1,6 +1,6 @@
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import {
-  getComposerTarget,
+  findComposerTarget,
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
@@ -85,10 +85,10 @@ describe('getTrimmedContents', () => {
   });
 });
 
-describe('getComposerTarget', () => {
+describe('findComposerTarget', () => {
   it('새 글이면 대상이 없다', () => {
     // When
-    const target = getComposerTarget({ type: 'new' });
+    const target = findComposerTarget({ type: 'new' });
 
     // Then
     expect(target).toBeNull();
@@ -100,8 +100,8 @@ describe('getComposerTarget', () => {
 
     // When
     const targets = [
-      getComposerTarget({ type: 'reply', target: comment }),
-      getComposerTarget({ type: 'edit', target: comment }),
+      findComposerTarget({ type: 'reply', target: comment }),
+      findComposerTarget({ type: 'edit', target: comment }),
     ];
 
     // Then

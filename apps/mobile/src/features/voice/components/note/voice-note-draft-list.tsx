@@ -87,7 +87,7 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const dateFormatContext = useDateFormatContext();
   const push = useSingleTap(router.push);
-  const title = VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle');
+  const title = VoiceNotePolicy.findDigestTitle(note) ?? t('result.defaultTitle');
 
   return (
     <PressableFeedback

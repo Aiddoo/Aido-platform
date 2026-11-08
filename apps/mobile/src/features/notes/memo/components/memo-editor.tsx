@@ -714,7 +714,7 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     if (defaultCategoryId == null || gate.promptIfBlocked()) {
       return;
     }
-    const consent = await aiConsent.ensureAgreed();
+    const consent = await aiConsent.requestAgreementIfNeeded();
     if (!consent.hasAgreed) {
       return;
     }

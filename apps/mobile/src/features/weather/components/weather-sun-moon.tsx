@@ -35,7 +35,7 @@ export function WeatherSunMoon() {
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const localTime = useFormatLocalTime(data.location.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = WeatherReportPolicy.getTodayOrFirstForecast(data, now);
+  const today = WeatherReportPolicy.findTodayOrFirstForecast(data, now);
   if (today == null) {
     return null;
   }
@@ -43,12 +43,12 @@ export function WeatherSunMoon() {
   const sunEvents = WeatherReportPolicy.getSunEvents(today, {
     isDaylight: data.current.isDaylight,
   });
-  const nextEvent = WeatherDetailPolicy.getNextSunEvent(
+  const nextEvent = WeatherDetailPolicy.findNextSunEvent(
     today,
     WeatherDetailPolicy.findDayAfter(data.daily, todayKey),
     now,
   );
-  const daylight = WeatherDetailPolicy.getDaylightDuration(today);
+  const daylight = WeatherDetailPolicy.findDaylightDuration(today);
   const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(data.daily, todayKey);
   const headline = match(sunEvents)
     .with({ kind: 'polarDay' }, () => ({ value: t('sunMoon.polarDay'), label: null }))

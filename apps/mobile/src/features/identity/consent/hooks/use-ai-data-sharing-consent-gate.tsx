@@ -118,7 +118,7 @@ export function useAiDataSharingConsentGate() {
    * 이미 동의했으면 바로, 아니면 안내를 띄워 답을 받는다. wasAsked는 이번에 안내를 띄웠는지로,
    * 한 번의 AI 시도에서 안내를 두 번 띄우지 않는 데 쓴다. [나중에]는 미응답을 그대로 둔다.
    */
-  const ensureAgreed = async (): Promise<AiConsentCheck> => {
+  const requestAgreementIfNeeded = async (): Promise<AiConsentCheck> => {
     // 동의 상태를 읽지 못하면 막지 않고 서버 판단에 맡긴다. 동의가 없으면 AI_1311로 다시 안내한다
     const consent = await readConsent();
     if (consent == null) {
@@ -136,7 +136,7 @@ export function useAiDataSharingConsentGate() {
    * 호출한 쪽은 그 자리에서 멈춘다. 이전 안내에 동의한 사람은 재안내에서 [나중에]를 눌러도 이어 간다.
    * 내 정보를 아직 못 받았으면 제한 시간까지 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
    */
-  const ensureAgreedBeforeListening = async (): Promise<AiConsentCheck> => {
+  const requestAgreementBeforeListening = async (): Promise<AiConsentCheck> => {
     const [consent, me] = await Promise.all([
       readConsent(),
       readWithoutBlocking(
@@ -160,5 +160,10 @@ export function useAiDataSharingConsentGate() {
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };
 
-  return { ensureAgreed, ensureAgreedBeforeListening, requestAgreement, isConsentRequired };
+  return {
+    requestAgreementIfNeeded,
+    requestAgreementBeforeListening,
+    requestAgreement,
+    isConsentRequired,
+  };
 }

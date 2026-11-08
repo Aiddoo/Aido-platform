@@ -4,7 +4,7 @@ import {
   createPurchasesGatewayStub,
 } from '@src/shared/__tests__';
 
-import { SubscriptionErrorCode } from '../domains/subscription.error';
+import { SUBSCRIPTION_ERROR_CODE } from '../domains/subscription.error';
 import { PurchasesSession } from './purchases-session';
 import { SubscriptionService } from './subscription.service';
 
@@ -32,7 +32,7 @@ describe('SubscriptionService', () => {
     // Then
     expect(result).toMatchObject({
       ok: false,
-      error: { code: SubscriptionErrorCode.OFFERINGS_UNAVAILABLE },
+      error: { code: SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE },
     });
   });
 

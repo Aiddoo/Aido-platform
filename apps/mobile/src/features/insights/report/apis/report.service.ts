@@ -4,7 +4,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { REPORT_LOG_EVENT } from '../constants/report-log-events';
 import {
-  type GetAiReportsParams,
+  type GetAiReportsQuery,
   reportDetailResultSchema,
   reportListResultSchema,
   reportStatusResultSchema,
@@ -28,7 +28,7 @@ export class ReportService {
       this.#logInvalid('getReportStatus'),
     );
 
-  getReports = async (params?: GetAiReportsParams, signal?: AbortSignal) =>
+  getReports = async (params?: GetAiReportsQuery, signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/ai/reports', {
         signal,

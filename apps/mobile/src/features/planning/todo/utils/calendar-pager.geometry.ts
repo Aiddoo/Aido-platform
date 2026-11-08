@@ -4,7 +4,7 @@ export function clampCalendarPage(page: number, totalPages: number): number {
   return clamp(page, 0, totalPages - 1);
 }
 
-interface CalendarPageAtOffsetParams {
+interface CalendarPageAtOffsetInput {
   offsetX: number;
   viewportWidth: number;
   totalPages: number;
@@ -15,6 +15,6 @@ export function getCalendarPageAtOffset({
   offsetX,
   viewportWidth,
   totalPages,
-}: CalendarPageAtOffsetParams): number {
+}: CalendarPageAtOffsetInput): number {
   return clampCalendarPage(Math.round(offsetX / viewportWidth), totalPages);
 }

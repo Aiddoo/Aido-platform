@@ -10,14 +10,14 @@ const PENDING_REVOCATION_KEY = 'pendingRevocation';
 
 export interface PendingRevocationRepository {
   /** @throws 키체인 접근 실패 시 */
-  get(): Promise<PendingRevocation | null>;
+  find(): Promise<PendingRevocation | null>;
   save(pending: PendingRevocation): Promise<void>;
   clear(): Promise<void>;
 }
 
 export function createPendingRevocationRepository(storage: Storage): PendingRevocationRepository {
   return {
-    get: () => storage.get(PENDING_REVOCATION_KEY, pendingRevocationSchema),
+    find: () => storage.get(PENDING_REVOCATION_KEY, pendingRevocationSchema),
     save: (pending) => storage.set(PENDING_REVOCATION_KEY, pending),
     clear: () => storage.remove(PENDING_REVOCATION_KEY),
   };

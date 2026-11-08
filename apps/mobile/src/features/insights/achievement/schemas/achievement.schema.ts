@@ -20,7 +20,7 @@ const weeklyAchievementsResultSchema = weeklyAchievementListResponseSchema.shape
   });
 export type WeeklyAchievementsResult = z.infer<typeof weeklyAchievementsResultSchema>;
 
-export interface AchievementPaginationParams {
+export interface GetAchievementsQuery {
   year: number;
   cursor?: number;
   size?: number;

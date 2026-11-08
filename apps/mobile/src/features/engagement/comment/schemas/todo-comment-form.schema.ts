@@ -29,7 +29,7 @@ export type TodoCommentUpdateInput = z.infer<typeof updateTodoCommentSchema>;
 
 const EMPTY_ITEMS: TodoCommentFormValues['items'] = [{ content: '' }];
 
-export const NEW_TODO_COMMENT_FORM_VALUES: TodoCommentFormValues = {
+export const EMPTY_TODO_COMMENT_FORM_VALUES: TodoCommentFormValues = {
   mode: { type: 'new' },
   items: EMPTY_ITEMS,
 };

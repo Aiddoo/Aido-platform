@@ -220,7 +220,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     // Then
     await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
     await expect(session.tokenStore.getAccessToken()).resolves.toBeNull();
-    await expect(session.pendingRevocation.get()).resolves.toMatchObject({
+    await expect(session.pendingRevocation.find()).resolves.toMatchObject({
       refreshToken: ACCOUNT_A_TOKENS.refreshToken,
     });
     expect(session.requestRefresh).not.toHaveBeenCalled();
@@ -250,7 +250,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
-    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+    await expect(session.pendingRevocation.find()).resolves.toBeNull();
     await expect(session.tokenStore.getRefreshToken()).resolves.toBeNull();
   });
 
@@ -266,7 +266,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
-    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+    await expect(session.pendingRevocation.find()).resolves.toBeNull();
 
     // Then
     expect(result.current.status).toBe('unauthenticated');
@@ -286,7 +286,7 @@ describe('오프라인 로그아웃 뒤 복귀', () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
-    await expect(session.pendingRevocation.get()).resolves.toBeNull();
+    await expect(session.pendingRevocation.find()).resolves.toBeNull();
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });

@@ -2,7 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { isApiError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 
 /** 클라이언트가 판단한 날씨 오류 사유. 오류 보고의 errorCode로만 쓴다. */
-export const WeatherErrorCode = {
+export const WEATHER_ERROR_CODE = {
   LOCATION_UNAVAILABLE: 'WEATHER_LOCATION_UNAVAILABLE',
 } as const;
 

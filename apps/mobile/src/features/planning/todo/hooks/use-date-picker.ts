@@ -29,12 +29,12 @@ function datePickerReducer(state: DatePickerState, action: DatePickerAction): Da
     .exhaustive();
 }
 
-interface UseDatePickerParams {
+interface UseDatePickerOptions {
   /** 처음 선택된 날짜이자 처음 보이는 달 */
   initialDate: Date;
 }
 
-export function useDatePicker({ initialDate }: UseDatePickerParams) {
+export function useDatePicker({ initialDate }: UseDatePickerOptions) {
   const { timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
     selectedDate: initialDate,

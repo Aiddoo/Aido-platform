@@ -77,7 +77,7 @@ export function NotificationListRow({
   );
 }
 
-NotificationListRow.ListLoading = function ListLoading() {
+NotificationListRow.Loading = function Loading() {
   return (
     <ScrollView className="flex-1">
       <Box px={16} py={8}>

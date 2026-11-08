@@ -27,7 +27,7 @@ export function createAndroidWidgetsBridge(): WidgetBridge {
   return {
     async writeSnapshot(snapshot, userId = null) {
       if (WidgetSnapshotPolicy.isLoggedOut(snapshot)) {
-        const pendingCommand = navigationRepository.getPendingCommand();
+        const pendingCommand = navigationRepository.findPendingCommand();
         if (pendingCommand == null) {
           navigationRepository.removeCorrupted();
         } else {

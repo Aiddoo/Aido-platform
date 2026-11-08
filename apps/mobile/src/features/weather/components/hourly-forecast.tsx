@@ -143,13 +143,13 @@ HourlyForecast.Summary = function Summary({
   const hourLabel = (date: Instant) => localTime(formatInstantHour(date, timeFormat, dateFormat));
 
   const sentence = match(summary)
-    .with({ kind: 'precipitationOngoing' }, ({ precipitationType, endsAt, endsOnLaterDay }) => {
+    .with({ kind: 'precipitationOngoing' }, ({ precipitationType, endsAt, isEndingOnLaterDay }) => {
       const subject = t(PRECIPITATION_SUBJECT_LABEL_KEYS[precipitationType]);
       if (endsAt == null) {
         return t('hourly.summary.ongoingAllDay', { subject });
       }
       const time = hourLabel(endsAt);
-      return endsOnLaterDay
+      return isEndingOnLaterDay
         ? t('hourly.summary.ongoingTomorrow', { subject, time })
         : t('hourly.summary.ongoing', { subject, time });
     })
@@ -159,7 +159,7 @@ HourlyForecast.Summary = function Summary({
         time: hourLabel(upcoming.startsAt),
         sky: t(SKY_BEFORE_KEYS[upcoming.skyBefore]),
       };
-      return upcoming.startsOnLaterDay
+      return upcoming.isStartingOnLaterDay
         ? t('hourly.summary.upcomingTomorrow', params)
         : t('hourly.summary.upcoming', params);
     })
@@ -169,7 +169,7 @@ HourlyForecast.Summary = function Summary({
         from: t(SKY_BEFORE_KEYS[change.from]),
         to: t(SKY_AFTER_KEYS[change.to]),
       };
-      return change.changesOnLaterDay
+      return change.isChangingOnLaterDay
         ? t('hourly.summary.skyChangeTomorrow', params)
         : t('hourly.summary.skyChange', params);
     })

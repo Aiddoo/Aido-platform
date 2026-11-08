@@ -43,7 +43,7 @@ export function isVerificationAttemptsExceededError(error: unknown) {
 }
 
 /** 재발송 실패가 쿨다운 중(VERIFY_0753)이면 서버가 알려 준 남은 초를, 아니면 null을 돌려준다. */
-export function getResendCooldownAfterError(error: unknown): number | null {
+export function findResendCooldown(error: unknown): number | null {
   if (!isApiError(error) || !error.hasCode(ErrorCode.VERIFY_0753)) {
     return null;
   }

@@ -17,13 +17,13 @@ import {
   getPreviousTodoCommentPageParam,
 } from '../utils/todo-comment-page-params';
 
-interface TodoCommentThreadsParams {
+interface TodoCommentThreadsQueryInput {
   todoId: number;
   sort: TodoCommentSort;
   anchorCommentId: string | null;
 }
 
-interface TodoCommentRepliesParams {
+interface TodoCommentRepliesQueryInput {
   todoId: number;
   commentId: string;
   aroundReplyId: string | null;
@@ -46,7 +46,7 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
   todoId,
   sort,
   anchorCommentId,
-}: TodoCommentThreadsParams) {
+}: TodoCommentThreadsQueryInput) {
   const todoCommentService = useTodoCommentService();
 
   return infiniteQueryOptions({
@@ -77,7 +77,7 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
   commentId,
   aroundReplyId,
   isEnabled,
-}: TodoCommentRepliesParams) {
+}: TodoCommentRepliesQueryInput) {
   const todoCommentService = useTodoCommentService();
 
   return infiniteQueryOptions({

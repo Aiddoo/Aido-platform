@@ -9,7 +9,7 @@ import {
   toConvertMemoToTodosRequest,
   toMemoPage,
   toMemoRequest,
-  toVoicePlanFromParsedMemo,
+  toMemoVoicePlan,
 } from './memo.mapper';
 
 describe('메모 페이지 응답 매핑', () => {
@@ -187,7 +187,7 @@ describe('toConvertMemoToTodosRequest', () => {
   });
 });
 
-describe('toVoicePlanFromParsedMemo', () => {
+describe('toMemoVoicePlan', () => {
   it('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
     // Given
     const dto = createParseMemoResponseDto();
@@ -205,7 +205,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     }));
 
     // When
-    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+    const plan = toMemoVoicePlan('plan-1', dto);
 
     // Then
     expect(plan.actions[0]).toMatchObject({ startDate: '2026-11-07', endDate: null, repeat: null });
@@ -227,7 +227,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     }));
 
     // When
-    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+    const plan = toMemoVoicePlan('plan-1', dto);
 
     // Then
     expect(plan.actions[0]).toMatchObject({
@@ -251,7 +251,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     }));
 
     // When
-    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+    const plan = toMemoVoicePlan('plan-1', dto);
 
     // Then
     expect(plan.source).toBe('memo');
@@ -271,7 +271,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     dto.data.todos = dto.data.todos.map((todo) => ({ ...todo, duplicateOfTodoId }));
 
     // When
-    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+    const plan = toMemoVoicePlan('plan-1', dto);
 
     // Then
     expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: expected });
@@ -287,7 +287,7 @@ describe('toVoicePlanFromParsedMemo', () => {
     }));
 
     // When
-    const plan = toVoicePlanFromParsedMemo('plan-1', dto);
+    const plan = toMemoVoicePlan('plan-1', dto);
 
     // Then
     expect(plan.actions[0]).toMatchObject({

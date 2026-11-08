@@ -337,7 +337,7 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   );
 }
 
-Calendar.Error = function ErrorState({ onRetry }: { onRetry: () => void }) {
+Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (

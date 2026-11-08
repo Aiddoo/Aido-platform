@@ -68,7 +68,7 @@ function withMultiDayTodoSpans(
   return withCompletions(result, [...byDate.values()]);
 }
 
-function withDailyCompletionFromTodos(
+function withTodoDailyCompletion(
   result: DailyCompletionsResult,
   date: string,
   todos: readonly Todo[],
@@ -97,6 +97,6 @@ function withDailyCompletionFromTodos(
 }
 
 export const DailyCompletionPolicy = {
-  withDailyCompletionFromTodos,
+  withTodoDailyCompletion,
   withMultiDayTodoSpans,
 } as const;

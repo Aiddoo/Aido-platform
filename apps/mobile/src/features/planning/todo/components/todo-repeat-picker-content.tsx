@@ -368,7 +368,7 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
         );
   const lastOccurrenceKey =
     endType === 'COUNT' && repeat != null
-      ? TodoRepeatPolicy.getLastRepeatOccurrenceDateKey(repeat, startDateKey)
+      ? TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(repeat, startDateKey)
       : null;
   const endDate = match(endType)
     .with('UNTIL', () => (untilDate == null ? null : toDate(untilDate)))
@@ -429,7 +429,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
 
       return repeat == null
         ? null
-        : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+        : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
             repeat,
             toDateKey(values.startDate, dateFormatContext.timeZone),
           );

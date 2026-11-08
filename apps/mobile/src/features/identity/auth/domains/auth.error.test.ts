@@ -1,15 +1,15 @@
 import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
-import { getResendCooldownAfterError } from './auth.error';
+import { findResendCooldown } from './auth.error';
 
-describe('getResendCooldownAfterError', () => {
+describe('findResendCooldown', () => {
   it('쿨다운 중(VERIFY_0753) 오류면 남은 초만큼 다시 기다리게 한다', () => {
     // Given
     const error = new ApiError(ErrorCode.VERIFY_0753, 'cooldown', 429, { remainingSeconds: 17 });
 
     // When
-    const result = getResendCooldownAfterError(error);
+    const result = findResendCooldown(error);
 
     // Then
     expect(result).toBe(17);
@@ -20,7 +20,7 @@ describe('getResendCooldownAfterError', () => {
     const error = new ApiError(ErrorCode.VERIFY_0753, 'cooldown', 429, { remainingSeconds: '17' });
 
     // When
-    const result = getResendCooldownAfterError(error);
+    const result = findResendCooldown(error);
 
     // Then
     expect(result).toBeNull();
@@ -31,7 +31,7 @@ describe('getResendCooldownAfterError', () => {
     const error = new ApiError(ErrorCode.VERIFY_0751, 'invalid', 400, { remainingSeconds: 17 });
 
     // When
-    const result = getResendCooldownAfterError(error);
+    const result = findResendCooldown(error);
 
     // Then
     expect(result).toBeNull();
@@ -42,7 +42,7 @@ describe('getResendCooldownAfterError', () => {
     const error = new Error('network');
 
     // When
-    const result = getResendCooldownAfterError(error);
+    const result = findResendCooldown(error);
 
     // Then
     expect(result).toBeNull();

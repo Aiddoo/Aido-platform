@@ -15,7 +15,7 @@ import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-
 import { friendUserPagesSchema } from '@src/features/social/friend/schemas/friend.schema';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
 import { locationReadingSchema } from '@src/features/weather/schemas/weather-location.schema';
-import { weatherReportSchema } from '@src/features/weather/schemas/weather-report.schema';
+import { weatherReportModelSchema } from '@src/features/weather/schemas/weather-report.schema';
 
 import type { PersistedQuerySchema } from './query-cache-persistence';
 
@@ -29,5 +29,5 @@ export const PERSISTED_QUERY_SCHEMAS: readonly PersistedQuerySchema[] = [
   { queryKey: PREFERENCE_QUERY_KEYS.current(), schema: preferenceSchema },
   { queryKey: FRIEND_QUERY_KEYS.friends(), schema: friendUserPagesSchema },
   { queryKey: WEATHER_QUERY_KEYS.location(), schema: locationReadingSchema },
-  { queryKey: WEATHER_QUERY_KEYS.reports(), schema: weatherReportSchema },
+  { queryKey: WEATHER_QUERY_KEYS.reports(), schema: weatherReportModelSchema },
 ];

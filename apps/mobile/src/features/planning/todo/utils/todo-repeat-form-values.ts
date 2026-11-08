@@ -131,7 +131,7 @@ export function getTodoRepeatFormFirstOccurrenceKey(
   const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, timeZone);
   return repeat == null
     ? null
-    : TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+    : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
         repeat,
         toDateKey(values.startDate, timeZone),
       );

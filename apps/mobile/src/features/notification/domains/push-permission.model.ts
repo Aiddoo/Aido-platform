@@ -9,7 +9,7 @@ import type { PushPermission } from '../schemas/push-permission.schema';
 type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
 
 /** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
-function canDeliverPush(permission: PushPermission): boolean {
+function isPushDeliverable(permission: PushPermission): boolean {
   return (
     permission.status === PUSH_PERMISSION_STATUS.GRANTED ||
     permission.status === PUSH_PERMISSION_STATUS.PROVISIONAL
@@ -21,11 +21,11 @@ function isNotDetermined(permission: PushPermission): boolean {
 }
 
 function canRequestSystemDialog(permission: PushPermission): boolean {
-  return !canDeliverPush(permission) && permission.canAskAgain;
+  return !isPushDeliverable(permission) && permission.canAskAgain;
 }
 
 function isSettingsRequired(permission: PushPermission): boolean {
-  return !canDeliverPush(permission) && !permission.canAskAgain;
+  return !isPushDeliverable(permission) && !permission.canAskAgain;
 }
 
 function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
@@ -41,7 +41,7 @@ function getNextStep(
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {
   return match(permission)
-    .when(canDeliverPush, () =>
+    .when(isPushDeliverable, () =>
       pushEnabled ? PUSH_PERMISSION_STEP.NONE : PUSH_PERMISSION_STEP.ENABLE_IN_APP,
     )
     .when(isSettingsRequired, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
@@ -50,7 +50,7 @@ function getNextStep(
 }
 
 export const PushPermissionPolicy = {
-  canDeliverPush,
+  isPushDeliverable,
   isNotDetermined,
   canRequestSystemDialog,
   isPromptSnoozed,

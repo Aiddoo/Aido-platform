@@ -221,7 +221,7 @@ function getRepeatOccurrenceDateKeys(
 }
 
 /** 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null */
-function getFirstRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
+function findFirstRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
   const [first] = walkOccurrenceDateKeys(
     repeat,
     startDate,
@@ -230,7 +230,7 @@ function getFirstRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string):
   return first ?? null;
 }
 
-function getLastRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
+function findLastRepeatOccurrenceDateKey(repeat: TodoRepeat, startDate: string): string | null {
   const limit = match(repeat.end)
     .with({ type: 'NEVER' }, () => null)
     .with({ type: 'UNTIL' }, ({ date }) => date)
@@ -269,6 +269,6 @@ export const TodoRepeatPolicy = {
   withRepeatStartDate,
   isRepeatMonthDayClamped,
   getRepeatOccurrenceDateKeys,
-  getFirstRepeatOccurrenceDateKey,
-  getLastRepeatOccurrenceDateKey,
+  findFirstRepeatOccurrenceDateKey,
+  findLastRepeatOccurrenceDateKey,
 } as const;

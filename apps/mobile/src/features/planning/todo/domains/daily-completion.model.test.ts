@@ -2,7 +2,7 @@ import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { type DailyCompletionsResult } from '../schemas/todo.schema';
 import { DailyCompletionPolicy } from './daily-completion.model';
 
-describe('withDailyCompletionFromTodos', () => {
+describe('withTodoDailyCompletion', () => {
   const DATE = '2026-11-05';
   const RED = { id: 1, name: '빨강', color: '#FF0000' };
   const BLUE = { id: 2, name: '파랑', color: '#0000FF' };
@@ -38,7 +38,7 @@ describe('withDailyCompletionFromTodos', () => {
     ];
 
     // When
-    const result = DailyCompletionPolicy.withDailyCompletionFromTodos(createResult(), DATE, todos);
+    const result = DailyCompletionPolicy.withTodoDailyCompletion(createResult(), DATE, todos);
 
     // Then
     expect(result.completions[1]).toEqual({
@@ -57,12 +57,8 @@ describe('withDailyCompletionFromTodos', () => {
     const done = [createParentTodo({ startDate: DATE, category: RED, completed: true })];
 
     // When
-    const completed = DailyCompletionPolicy.withDailyCompletionFromTodos(
-      createResult(),
-      DATE,
-      done,
-    );
-    const emptied = DailyCompletionPolicy.withDailyCompletionFromTodos(createResult(), DATE, []);
+    const completed = DailyCompletionPolicy.withTodoDailyCompletion(createResult(), DATE, done);
+    const emptied = DailyCompletionPolicy.withTodoDailyCompletion(createResult(), DATE, []);
 
     // Then
     expect(completed.totalCompleteDays).toBe(2);
@@ -74,7 +70,7 @@ describe('withDailyCompletionFromTodos', () => {
     const todos = [createParentTodo({ startDate: '2026-11-04', category: RED })];
 
     // When
-    const result = DailyCompletionPolicy.withDailyCompletionFromTodos(
+    const result = DailyCompletionPolicy.withTodoDailyCompletion(
       createResult(),
       '2026-11-04',
       todos,
@@ -94,10 +90,8 @@ describe('withDailyCompletionFromTodos', () => {
     const multiDay = createParentTodo({ startDate: '2026-11-04', endDate: DATE, category: BLUE });
 
     // When
-    const outside = DailyCompletionPolicy.withDailyCompletionFromTodos(given, '2026-11-20', [
-      multiDay,
-    ]);
-    const counted = DailyCompletionPolicy.withDailyCompletionFromTodos(given, DATE, [
+    const outside = DailyCompletionPolicy.withTodoDailyCompletion(given, '2026-11-20', [multiDay]);
+    const counted = DailyCompletionPolicy.withTodoDailyCompletion(given, DATE, [
       multiDay,
       createParentTodo({ id: 2, startDate: DATE, category: RED }),
     ]);

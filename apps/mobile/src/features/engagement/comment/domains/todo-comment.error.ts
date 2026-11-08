@@ -21,6 +21,6 @@ export function isTodoCommentRejectedError(error: unknown): error is ApiError {
 }
 
 /** 로그에 남길 서버 응답 코드. 서버 오류가 아니면 없다 */
-export function getTodoCommentErrorStatus(error: unknown) {
+export function findTodoCommentErrorStatus(error: unknown) {
   return isApiError(error) ? error.status : null;
 }

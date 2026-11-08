@@ -4,7 +4,7 @@ import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 /** 프로필·콕·응원 메시지는 연 화면이 대상과 이름을 모두 알아 route 값만으로 그린다 */
-export default function UserReportSheetScreen() {
+export default function UserReportSheetRoute() {
   const params = userReportParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {

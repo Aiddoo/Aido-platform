@@ -6,7 +6,7 @@ export interface PreparedPlanRequest<TInput> {
   input: TInput;
 }
 
-interface PreparePlanRequestParams<TInput> {
+interface PreparePlanRequestInput<TInput> {
   previous: PreparedPlanRequest<TInput> | null;
   input: TInput;
   createIdempotencyKey: () => string;
@@ -16,7 +16,7 @@ function preparePlanRequest<TInput>({
   previous,
   input,
   createIdempotencyKey,
-}: PreparePlanRequestParams<TInput>): PreparedPlanRequest<TInput> {
+}: PreparePlanRequestInput<TInput>): PreparedPlanRequest<TInput> {
   const fingerprint = JSON.stringify(input);
   if (previous?.fingerprint === fingerprint) {
     return previous;

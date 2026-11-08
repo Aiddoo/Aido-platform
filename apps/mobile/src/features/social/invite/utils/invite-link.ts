@@ -79,7 +79,7 @@ export function createInviteLinkOpenStamp() {
  * 시스템이 연 URL 중 초대 링크만 앱 라우트로 바꾼다.
  * 초대가 아니면 null을 돌려주어 OAuth 콜백·위젯·알림 URI를 그대로 통과시킨다.
  */
-export function resolveInviteSystemPath(
+export function findInviteSystemPath(
   path: string,
   options: InviteSystemPathOptions,
   { openedAt }: { openedAt: number },

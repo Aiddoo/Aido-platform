@@ -27,13 +27,13 @@ interface StepsDotProps {
   index: number;
   passedColor: string;
   upcomingColor: string;
-  isReduced: boolean;
+  isReducedMotion: boolean;
 }
 
-function StepsDot({ dotIndex, index, passedColor, upcomingColor, isReduced }: StepsDotProps) {
+function StepsDot({ dotIndex, index, passedColor, upcomingColor, isReducedMotion }: StepsDotProps) {
   const animatedStyle = useAnimatedStyle(() => {
     const color = index >= dotIndex ? passedColor : upcomingColor;
-    return { backgroundColor: fadeTo(color, isReduced) };
+    return { backgroundColor: fadeTo(color, isReducedMotion) };
   });
 
   return <Animated.View style={[styles.dot, animatedStyle]} />;
@@ -41,13 +41,13 @@ function StepsDot({ dotIndex, index, passedColor, upcomingColor, isReduced }: St
 
 /** 점 뒤 막대가 현재 단계까지 늘어나고, 지난 점은 막대 위에서 밝아진다 */
 export function StepsDots({ index, count }: StepsDotsProps) {
-  const isReduced = useIsReduceMotionEnabled();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const passedColor = useBackgroundColor('bg-white dark:bg-gray-9');
   const upcomingColor = useBackgroundColor('bg-gray-4');
   const barColor = useBackgroundColor('bg-main');
 
   const barStyle = useAnimatedStyle(() => ({
-    width: springTo((index + 1) * DOT_SIZE + index * DOT_SPACING + BAR_PADDING, isReduced),
+    width: springTo((index + 1) * DOT_SIZE + index * DOT_SPACING + BAR_PADDING, isReducedMotion),
   }));
 
   return (
@@ -64,7 +64,7 @@ export function StepsDots({ index, count }: StepsDotsProps) {
           index={index}
           passedColor={passedColor}
           upcomingColor={upcomingColor}
-          isReduced={isReduced}
+          isReducedMotion={isReducedMotion}
         />
       ))}
     </View>

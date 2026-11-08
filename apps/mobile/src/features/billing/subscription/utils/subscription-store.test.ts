@@ -1,6 +1,6 @@
-import { getSubscriptionStore } from './subscription-store';
+import { findSubscriptionStore } from './subscription-store';
 
-describe('getSubscriptionStore', () => {
+describe('findSubscriptionStore', () => {
   it.each([
     ['ios', 'appStore'],
     ['macos', 'appStore'],
@@ -10,7 +10,7 @@ describe('getSubscriptionStore', () => {
     const platform = os;
 
     // When
-    const store = getSubscriptionStore(platform);
+    const store = findSubscriptionStore(platform);
 
     // Then
     expect(store).toBe(expected);
@@ -21,7 +21,7 @@ describe('getSubscriptionStore', () => {
     const platform = 'web';
 
     // When
-    const store = getSubscriptionStore(platform);
+    const store = findSubscriptionStore(platform);
 
     // Then
     expect(store).toBeNull();

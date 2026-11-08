@@ -1,6 +1,6 @@
 import {
   clearColdStartPath,
-  getColdStartPath,
+  findColdStartPath,
   rememberColdStartLink,
   toColdStartAppPath,
 } from './cold-start-link';
@@ -44,11 +44,11 @@ describe('콜드 스타트 링크 보관', () => {
     rememberColdStartLink('aido://settings/theme', 'aido');
 
     // When
-    const beforeClear = getColdStartPath();
+    const beforeClear = findColdStartPath();
     clearColdStartPath();
 
     // Then
     expect(beforeClear).toBe('/settings/theme');
-    expect(getColdStartPath()).toBeNull();
+    expect(findColdStartPath()).toBeNull();
   });
 });

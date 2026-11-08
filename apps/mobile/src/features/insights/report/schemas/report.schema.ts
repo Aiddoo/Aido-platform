@@ -29,7 +29,7 @@ export const reportListResultSchema = aiReportListResponseSchema.extend({
 });
 export const reportDetailResultSchema = aiReportResponseSchema.extend({ report: aiReportSchema });
 
-export interface GetAiReportsParams {
+export interface GetAiReportsQuery {
   type?: ReportType;
   limit?: number;
 }

@@ -25,7 +25,7 @@ export function useVoiceNoteCaptions({
   const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
     seedNote == null
       ? VoiceNoteCaptionPolicy.createVoiceNoteCaptions()
-      : VoiceNoteCaptionPolicy.createCaptionsFromNote(seedNote),
+      : VoiceNoteCaptionPolicy.toVoiceNoteCaptions(seedNote),
   );
   const captionsRef = useRef(captions);
 

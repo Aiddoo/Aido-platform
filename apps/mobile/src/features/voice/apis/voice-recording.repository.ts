@@ -35,7 +35,7 @@ export interface VoiceRecordingRepository {
 }
 
 const ROOT = [VOICE_RECORDING_ROOT_DIRECTORY] as const;
-function ownerDirectory(accountId: string) {
+function createOwnerDirectory(accountId: string) {
   return [...ROOT, encodeURIComponent(accountId)];
 }
 
@@ -71,7 +71,7 @@ export function createVoiceRecordingRepository(
   return {
     prepareDirectory: (accountId) => {
       try {
-        return files.ensureDirectory(ownerDirectory(accountId));
+        return files.ensureDirectory(createOwnerDirectory(accountId));
       } catch (error) {
         logger.warn(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'prepare',
@@ -84,8 +84,8 @@ export function createVoiceRecordingRepository(
     save: async ({ accountId, draftId, partIndex, sourceUri }) => {
       const fileName = `${encodeURIComponent(draftId)}-${partIndex}.${getExtension(sourceUri)}`;
       try {
-        files.ensureDirectory(ownerDirectory(accountId));
-        await files.moveFile(sourceUri, ownerDirectory(accountId), fileName);
+        files.ensureDirectory(createOwnerDirectory(accountId));
+        await files.moveFile(sourceUri, createOwnerDirectory(accountId), fileName);
         return fileName;
       } catch (error) {
         logger.warn(VOICE_LOG_EVENT.RECORDING_SAVE_FAILED, {
@@ -98,7 +98,7 @@ export function createVoiceRecordingRepository(
 
     findUri: (accountId, fileName) => {
       try {
-        return files.findFileUri(ownerDirectory(accountId), fileName);
+        return files.findFileUri(createOwnerDirectory(accountId), fileName);
       } catch (error) {
         logger.warn(VOICE_LOG_EVENT.RECORDING_READ_FAILED, {
           error: getErrorMessage(error),
@@ -107,7 +107,7 @@ export function createVoiceRecordingRepository(
       }
     },
 
-    remove: (accountId, fileName) => removeSafely(ownerDirectory(accountId), fileName),
+    remove: (accountId, fileName) => removeSafely(createOwnerDirectory(accountId), fileName),
 
     removeSource: (sourceUri) => {
       try {
@@ -119,12 +119,12 @@ export function createVoiceRecordingRepository(
 
     getFileSizes: (accountId) =>
       Object.fromEntries(
-        listSafely(ownerDirectory(accountId)).map((file) => [file.name, file.sizeBytes]),
+        listSafely(createOwnerDirectory(accountId)).map((file) => [file.name, file.sizeBytes]),
       ),
 
     removeOwned: (accountId) => {
       try {
-        files.removeDirectory(ownerDirectory(accountId));
+        files.removeDirectory(createOwnerDirectory(accountId));
       } catch (error) {
         logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),
@@ -133,7 +133,7 @@ export function createVoiceRecordingRepository(
     },
 
     removeExpired: (accountId, now, referencedFileNames) => {
-      const directory = ownerDirectory(accountId);
+      const directory = createOwnerDirectory(accountId);
       const expired = listSafely(directory).filter(
         (file) =>
           !referencedFileNames.has(file.name) &&

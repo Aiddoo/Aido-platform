@@ -83,16 +83,16 @@ export interface WeatherScene {
   fog: number;
   wind: number;
   atmosphere: WeatherSceneAtmosphere;
-  lightning: boolean;
+  hasLightning: boolean;
   sun: WeatherSceneSun;
-  lensFlare: boolean;
-  moon: boolean;
+  hasLensFlare: boolean;
+  hasMoon: boolean;
   /** 달의 위상. 0은 삭, 0.5는 보름, 1에 가까울수록 그믐이다. */
   moonPhase: number;
   /** 남반구에서는 달의 밝은 면이 반대로 보인다. */
   isSouthernHemisphere: boolean;
-  stars: boolean;
-  shootingStars: boolean;
+  hasStars: boolean;
+  hasShootingStars: boolean;
 }
 
 export type WeatherSceneInput = {
@@ -116,10 +116,10 @@ type ConditionProfile = {
   clouds: readonly [min: number, max: number];
   fog: number;
   minWind: number;
-  lightning: boolean;
+  hasLightning: boolean;
   atmosphere: WeatherSceneAtmosphere;
   sun: VisibleSun;
-  lensFlare: boolean;
+  hasLensFlare: boolean;
 };
 
 const CLEAR_SKY: SkyPair = { day: 'clearDay', night: 'clearNight' };
@@ -135,10 +135,10 @@ const BASE_PROFILE = {
   speed: 0,
   fog: 0,
   minWind: 0,
-  lightning: false,
+  hasLightning: false,
   atmosphere: 'calm',
   sun: 'bright',
-  lensFlare: false,
+  hasLensFlare: false,
 } as const satisfies Omit<ConditionProfile, 'sky' | 'clouds'>;
 
 function getConditionProfile(condition: WeatherCondition): ConditionProfile {
@@ -148,13 +148,13 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       ...BASE_PROFILE,
       sky: CLEAR_SKY,
       clouds: [0, 0.15],
-      lensFlare: true,
+      hasLensFlare: true,
     }))
     .with('MOSTLY_CLEAR', () => ({
       ...BASE_PROFILE,
       sky: CLEAR_SKY,
       clouds: [0.1, 0.3],
-      lensFlare: true,
+      hasLensFlare: true,
     }))
     .with('PARTLY_CLOUDY', () => ({ ...BASE_PROFILE, sky: CLOUDY_SKY, clouds: [0.3, 0.6] }))
     .with('MOSTLY_CLOUDY', () => ({ ...BASE_PROFILE, sky: CLOUDY_SKY, clouds: [0.55, 0.85] }))
@@ -218,7 +218,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       clouds: [0.9, 1],
       fog: 0.15,
       minWind: 0.3,
-      lightning: true,
+      hasLightning: true,
     }))
     .with('SLEET', () => ({
       ...BASE_PROFILE,
@@ -354,13 +354,13 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
     },
     wind,
     atmosphere: profile.atmosphere,
-    lightning: profile.lightning,
+    hasLightning: profile.hasLightning,
     sun,
     lensFlare: profile.lensFlare && sun !== 'hidden',
     moon,
     moonPhase: input.moonPhase == null ? 0 : MOON_PHASE_CYCLE[input.moonPhase],
     isSouthernHemisphere: input.latitude < 0,
-    stars: isNight && isSkyVisible(sky, STARS_MAX_CLOUDS),
-    shootingStars: moon && isSkyVisible(sky, SHOOTING_STARS_MAX_CLOUDS),
+    hasStars: isNight && isSkyVisible(sky, STARS_MAX_CLOUDS),
+    hasShootingStars: hasMoon && isSkyVisible(sky, SHOOTING_STARS_MAX_CLOUDS),
   };
 }

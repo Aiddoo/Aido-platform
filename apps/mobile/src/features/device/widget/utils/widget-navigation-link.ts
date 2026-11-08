@@ -3,7 +3,7 @@ import { match } from 'ts-pattern';
 
 import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
 
-export function getWidgetRoute(uri: string | null): Href | null {
+export function findWidgetRoute(uri: string | null): Href | null {
   const destination = parseWidgetNavigationUri(uri);
   if (!destination) {
     return null;

@@ -7,10 +7,10 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { getTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
+import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
 
-interface StopTodoSeriesMutationParams {
+interface StopTodoSeriesVariables {
   todoId: number;
 }
 
@@ -24,7 +24,7 @@ export function useStopTodoSeriesMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 반복 끝내기가 끝나지 않는다. 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async ({ todoId }: StopTodoSeriesMutationParams) =>
+    mutationFn: async ({ todoId }: StopTodoSeriesVariables) =>
       unwrap(await todoService.stopTodoSeries(todoId)),
     onSuccess: () => {
       invalidateTodos(queryClient);
@@ -32,7 +32,7 @@ export function useStopTodoSeriesMutationOptions() {
       trackEvent('todo_series_stopped');
     },
     onError: (error) => {
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {

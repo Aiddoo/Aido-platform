@@ -27,13 +27,13 @@ export type HourlySummary =
       kind: 'precipitationOngoing';
       precipitationType: WeatherPrecipitationType;
       endsAt: Instant | null;
-      endsOnLaterDay: boolean;
+      isEndingOnLaterDay: boolean;
     }
   | {
       kind: 'precipitationUpcoming';
       precipitationType: WeatherPrecipitationType;
       startsAt: Instant;
-      startsOnLaterDay: boolean;
+      isStartingOnLaterDay: boolean;
       skyBefore: HourlySky;
     }
   | {
@@ -41,7 +41,7 @@ export type HourlySummary =
       from: HourlySky;
       to: HourlySky;
       changesAt: Instant;
-      changesOnLaterDay: boolean;
+      isChangingOnLaterDay: boolean;
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
 
@@ -162,7 +162,7 @@ function getHourlySummary(
       kind: 'precipitationOngoing',
       precipitationType: currentPrecipitation ?? first.precipitationType,
       endsAt: dryHour?.startsAt ?? null,
-      endsOnLaterDay: dryHour != null && isLaterDay(dryHour.startsAt),
+      isEndingOnLaterDay: dryHour != null && isLaterDay(dryHour.startsAt),
     };
   }
 
@@ -172,14 +172,14 @@ function getHourlySummary(
       kind: 'precipitationUpcoming',
       precipitationType: wetHour.precipitationType,
       startsAt: wetHour.startsAt,
-      startsOnLaterDay: isLaterDay(wetHour.startsAt),
+      isStartingOnLaterDay: isLaterDay(wetHour.startsAt),
       skyBefore: getDominantSky(hours.slice(0, hours.indexOf(wetHour))),
     };
   }
 
   const change = findSkyChange(hours);
   if (change != null) {
-    return { kind: 'skyChange', ...change, changesOnLaterDay: isLaterDay(change.changesAt) };
+    return { kind: 'skyChange', ...change, isChangingOnLaterDay: isLaterDay(change.changesAt) };
   }
 
   return {

@@ -165,7 +165,7 @@ VoiceStorageScreen.Row = function Row({
     <HStack gap={12} align="center" px={16} py={12} testID="voice-storage-row">
       <VStack flex={1} gap={2}>
         <Text size="b3" weight="medium" numberOfLines={1}>
-          {VoiceNotePolicy.getDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
+          {VoiceNotePolicy.findDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
         </Text>
         <Text size="e1" shade={6} numberOfLines={1} className="tabular-nums">
           {tVoiceNote('result.meta', {

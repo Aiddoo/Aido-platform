@@ -17,13 +17,13 @@ import { FriendPolicy } from '../domains/friend.model';
 import {
   friendRequestsPageSchema,
   friendsPageSchema,
-  type PaginationParams,
+  type PaginationQuery,
   type SearchedUser,
   type SendRequestResult,
   type ReorderFriendInput,
   reorderedFriendSchema,
   searchedUsersPageSchema,
-  type SearchUsersParams,
+  type SearchUsersQuery,
   sendRequestResultSchema,
 } from '../schemas/friend.schema';
 import { toFriendRequestsPage, toFriendsPage, toSearchedUsersPage } from './friend.mapper';
@@ -56,7 +56,7 @@ export class FriendService {
     );
   };
 
-  getReceivedRequests = async (params?: PaginationParams, signal?: AbortSignal) =>
+  getReceivedRequests = async (params?: PaginationQuery, signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/follows/requests/received', {
         signal,
@@ -67,7 +67,7 @@ export class FriendService {
       '[FriendService] Invalid getReceivedRequests response',
     );
 
-  getSentRequests = async (params?: PaginationParams, signal?: AbortSignal) =>
+  getSentRequests = async (params?: PaginationQuery, signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/follows/requests/sent', {
         signal,
@@ -102,7 +102,7 @@ export class FriendService {
       '[FriendService] Invalid cancelRequest response',
     );
 
-  getFriends = async (params?: PaginationParams, signal?: AbortSignal) =>
+  getFriends = async (params?: PaginationQuery, signal?: AbortSignal) =>
     parseApiResponse(
       await this.#httpClient.get('v1/follows/friends', {
         signal,
@@ -114,7 +114,7 @@ export class FriendService {
     );
 
   searchUsers = async (
-    params: SearchUsersParams,
+    params: SearchUsersQuery,
     signal?: AbortSignal,
   ): Promise<Result<Page<SearchedUser>, FriendServiceError>> => {
     const query = params.query.trim();

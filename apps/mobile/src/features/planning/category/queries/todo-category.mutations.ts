@@ -89,7 +89,7 @@ export function useCreateTodoCategoryMutationOptions() {
   });
 }
 
-interface UpdateTodoCategoryParams {
+interface UpdateTodoCategoryVariables {
   id: number;
   input: TodoCategoryChange;
 }
@@ -103,7 +103,7 @@ export function useUpdateTodoCategoryMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async ({ id, input }: UpdateTodoCategoryParams) =>
+    mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
       unwrap(await todoCategoryService.updateCategory(id, input)),
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
@@ -151,7 +151,7 @@ export function useUpdateTodoCategoryMutationOptions() {
   });
 }
 
-interface DeleteTodoCategoryParams {
+interface DeleteTodoCategoryVariables {
   id: number;
   query?: TodoCategoryRemoval;
 }
@@ -166,7 +166,7 @@ export function useDeleteTodoCategoryMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
     networkMode: 'always',
-    mutationFn: async ({ id, query }: DeleteTodoCategoryParams) =>
+    mutationFn: async ({ id, query }: DeleteTodoCategoryVariables) =>
       unwrap(await todoCategoryService.deleteCategory(id, query)),
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
@@ -205,7 +205,7 @@ export function useDeleteTodoCategoryMutationOptions() {
   });
 }
 
-interface ReorderTodoCategoryParams {
+interface ReorderTodoCategoryVariables {
   id: number;
   input: TodoCategoryReorder;
 }
@@ -220,7 +220,7 @@ export function useReorderTodoCategoryMutationOptions() {
   return mutationOptions({
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
-    mutationFn: async ({ id, input }: ReorderTodoCategoryParams) =>
+    mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>
       unwrap(await todoCategoryService.reorderCategory(id, input)),
     onSuccess: () => {
       invalidateTodoCategories(queryClient);

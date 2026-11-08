@@ -201,13 +201,13 @@ describe('getRepeatOccurrenceDateKeys', () => {
   });
 });
 
-describe('getFirstRepeatOccurrenceDateKey', () => {
+describe('findFirstRepeatOccurrenceDateKey', () => {
   it('시작일이 회차가 아니면 그 뒤 첫 회차다', () => {
     // Given
     const repeat = createWeekly({ weekdays: ['SAT', 'SUN'] });
 
     // When
-    const first = TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
+    const first = TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
 
     // Then
     expect(first).toBe('2026-11-07');
@@ -218,14 +218,14 @@ describe('getFirstRepeatOccurrenceDateKey', () => {
     const repeat = withUntil(createWeekly({ weekdays: ['SAT'] }), '2026-11-06');
 
     // When
-    const first = TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
+    const first = TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(repeat, WEDNESDAY);
 
     // Then
     expect(first).toBeNull();
   });
 });
 
-describe('getLastRepeatOccurrenceDateKey', () => {
+describe('findLastRepeatOccurrenceDateKey', () => {
   it('횟수 종료는 마지막 회차, 끝이 없으면 null이다', () => {
     // Given
     const counted = withCount(createWeekly({ weekdays: ['MON', 'WED'] }), 3);
@@ -233,7 +233,7 @@ describe('getLastRepeatOccurrenceDateKey', () => {
 
     // When
     const results = [counted, forever].map((repeat) =>
-      TodoRepeatPolicy.getLastRepeatOccurrenceDateKey(repeat, MONDAY),
+      TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(repeat, MONDAY),
     );
 
     // Then

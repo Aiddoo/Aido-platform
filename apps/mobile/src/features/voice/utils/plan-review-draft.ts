@@ -43,7 +43,7 @@ export function createPlanReviewDraft(
   return { omittedTodoCount: plan.omittedTodoCount, form };
 }
 
-export function toVoicePlanFromDraft(
+export function toDraftVoicePlan(
   { planId, source, sourceMemoId }: Pick<VoicePlan, 'planId' | 'source' | 'sourceMemoId'>,
   draft: PlanReviewDraft,
 ): VoicePlan {

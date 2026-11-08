@@ -34,7 +34,7 @@ export class ActivationService {
   }
 
   recordTodoCreated = ({ config, user, now }: ActivationActionInput): ActivationProgress | null => {
-    const identity = ActivationPolicy.getActivationIdentity(config, user);
+    const identity = ActivationPolicy.findActivationIdentity(config, user);
     if (!identity) {
       return null;
     }
@@ -47,7 +47,7 @@ export class ActivationService {
     isCompleted,
     now,
   }: TodoCompletionInput): TodoCompletionResult => {
-    const identity = ActivationPolicy.getActivationIdentity(config, user);
+    const identity = ActivationPolicy.findActivationIdentity(config, user);
     if (!isCompleted || !identity || !user) {
       return { progress: null, event: null };
     }
@@ -70,7 +70,7 @@ export class ActivationService {
     user,
     now,
   }: ActivationActionInput): PushRegistrationUnlockResult | null => {
-    const identity = ActivationPolicy.getActivationIdentity(config, user);
+    const identity = ActivationPolicy.findActivationIdentity(config, user);
     if (!identity) {
       return null;
     }

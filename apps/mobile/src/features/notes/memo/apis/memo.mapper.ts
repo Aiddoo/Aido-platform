@@ -89,7 +89,7 @@ function toParsedMemoRepeat({
   return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
 }
 
-export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
+export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
   const actions = dto.data.todos.map((todo, index): PlannedAction => ({
     type: 'create-todo',
     actionId: `memo-todo-${index}`,

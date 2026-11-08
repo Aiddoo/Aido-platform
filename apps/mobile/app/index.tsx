@@ -1,4 +1,4 @@
-import { clearColdStartPath, getColdStartPath } from '@src/bootstrap/navigation/cold-start-link';
+import { clearColdStartPath, findColdStartPath } from '@src/bootstrap/navigation/cold-start-link';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useIsRestoring } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ function Index() {
   const entry = useNotificationEntry();
   const isReady = !isRestoring && !entry.isResolving && status === 'authenticated';
   // 지운 뒤 다시 그려져도 같은 곳으로 보내도록 처음 값을 묶어 둔다
-  const [coldStartPath] = useState(getColdStartPath);
+  const [coldStartPath] = useState(findColdStartPath);
   const href = entry.href ?? coldStartPath;
 
   useEffect(() => {

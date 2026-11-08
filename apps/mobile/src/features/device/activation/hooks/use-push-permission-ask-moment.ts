@@ -24,7 +24,7 @@ export function usePushPermissionAskMoment() {
   });
   const [completedKey, setCompletedKey] = useState<string | null>(null);
 
-  const canAsk =
+  const shouldAsk =
     activation.hasUserError ||
     (activation.isReady &&
       ActivationPolicy.shouldRegisterPushAutomatically({
@@ -34,13 +34,13 @@ export function usePushPermissionAskMoment() {
       }));
 
   const askKey = useMemo(() => {
-    if (!canAsk) {
+    if (!shouldAsk) {
       return null;
     }
     const unlockedAt =
       activation.progress.activatedAt ?? activation.progress.pushRegistrationUnlockedAt;
     return `${activation.user?.id ?? UNKNOWN_ACCOUNT_KEY}:${unlockedAt ?? NO_UNLOCK_MOMENT_KEY}`;
-  }, [activation.progress, activation.user, canAsk]);
+  }, [activation.progress, activation.user, shouldAsk]);
 
   const isDue =
     askKey != null &&

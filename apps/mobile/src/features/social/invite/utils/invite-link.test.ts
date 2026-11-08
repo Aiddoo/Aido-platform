@@ -1,9 +1,9 @@
-import { createInviteLinkOpenStamp, resolveInviteSystemPath } from './invite-link';
+import { createInviteLinkOpenStamp, findInviteSystemPath } from './invite-link';
 
 const options = { appScheme: 'aido', kakaoScheme: 'kakao0000test' };
 const opened = { openedAt: 1000 };
 
-describe('resolveInviteSystemPath', () => {
+describe('findInviteSystemPath', () => {
   it.each([
     ['https://aido.kr/i/K7M2QX', '/invite/K7M2QX?source=universal_link&openedAt=1000'],
     [
@@ -18,7 +18,7 @@ describe('resolveInviteSystemPath', () => {
     ['kakao0000test://kakaolink', '/invite?source=kakao&openedAt=1000'],
   ])('초대 링크 %s를 열면 %s로 바꾼다', (path, expected) => {
     // When
-    const result = resolveInviteSystemPath(path, options, opened);
+    const result = findInviteSystemPath(path, options, opened);
 
     // Then
     expect(result).toBe(expected);
@@ -35,7 +35,7 @@ describe('resolveInviteSystemPath', () => {
     ['초대가 아닌 웹 주소', 'https://aido.kr/terms'],
   ])('%s(%s)는 null을 반환해 그대로 통과시킨다', (_name, path) => {
     // When
-    const result = resolveInviteSystemPath(path, options, opened);
+    const result = findInviteSystemPath(path, options, opened);
 
     // Then
     expect(result).toBeNull();
@@ -43,7 +43,7 @@ describe('resolveInviteSystemPath', () => {
 
   it('카카오 키가 없는 빌드는 카카오 링크를 통과시킨다', () => {
     // When
-    const result = resolveInviteSystemPath(
+    const result = findInviteSystemPath(
       'kakao0000test://kakaolink?inviteCode=K7M2QX',
       { appScheme: 'aido', kakaoScheme: null },
       opened,

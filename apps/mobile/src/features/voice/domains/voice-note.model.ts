@@ -210,7 +210,7 @@ function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
   return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
 }
 
-function getDigestTitle(note: VoiceNote): string | null {
+function findDigestTitle(note: VoiceNote): string | null {
   return note.digest == null || note.digest.title === '' ? null : note.digest.title;
 }
 
@@ -314,7 +314,7 @@ export const VoiceNotePolicy = {
   getPlannedTodoCount,
   getCharacterCount,
   getMarkCount,
-  getDigestTitle,
+  findDigestTitle,
   getRecordingSizeBytes,
   isExpired,
   isRecordingFileExpired,

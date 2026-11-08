@@ -25,7 +25,7 @@ export function useOpenSubscriptionManagement() {
   return useSingleTap(async () => {
     const productId =
       process.env.EXPO_OS === 'android'
-        ? await subscriptionService.getActiveStoreProductId('PLAY_STORE')
+        ? await subscriptionService.findActiveStoreProductId('PLAY_STORE')
         : null;
     const url = createManagementUrl(process.env.EXPO_OS, {
       productId,

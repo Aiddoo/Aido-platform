@@ -68,7 +68,7 @@ const UNSELECTED_ICON_SCALE = 1.8;
 const INDICATOR_ICON_SIZE = 14;
 
 function AnimatedIndicatorIcon({ Icon, isSelected }: AnimatedIndicatorIconProps) {
-  const isReduceMotionEnabled = useIsReduceMotionEnabled();
+  const isReducedMotion = useIsReduceMotionEnabled();
 
   return (
     <Animated.View
@@ -76,7 +76,7 @@ function AnimatedIndicatorIcon({ Icon, isSelected }: AnimatedIndicatorIconProps)
         transform: [{ scale: isSelected ? 1 : UNSELECTED_ICON_SCALE }],
         opacity: isSelected ? 1 : 0,
         transitionProperty: ['transform', 'opacity'],
-        transitionDuration: isReduceMotionEnabled
+        transitionDuration: isReducedMotion
           ? 0
           : [ANIMATION.duration.slow, ANIMATION.duration.normal],
         transitionTimingFunction: [SCALE_EASING, OPACITY_EASING],

@@ -26,7 +26,7 @@ describe('Android 위젯 첫 동기화 전 렌더링', () => {
     // Given
     const renderWidget = jest.fn();
     const renderStoredWidget = createStoredAndroidWidgetRenderer({
-      snapshotRepository: { getSnapshot: () => null, getUserId: () => null },
+      snapshotRepository: { findSnapshot: () => null, findUserId: () => null },
       readLocalDateKey: () => '2026-11-07',
       readDeviceLanguage: () => language,
       readAppScheme: () => 'aido-dev',

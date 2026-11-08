@@ -30,7 +30,7 @@ import { Separator } from 'heroui-native';
 
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
-import { getSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
+import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
 
 export function Paywall() {
   const { t } = useTranslation('subscription');
@@ -162,7 +162,7 @@ const RENEWAL_NOTICE_KEYS = {
 
 Paywall.RenewalNotice = function RenewalNotice() {
   const { t } = useTranslation('subscription');
-  const store = getSubscriptionStore(process.env.EXPO_OS);
+  const store = findSubscriptionStore(process.env.EXPO_OS);
 
   if (store == null) {
     return null;

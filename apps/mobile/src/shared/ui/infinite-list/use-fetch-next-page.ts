@@ -2,7 +2,7 @@ import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useEffect, useRef } from 'react';
 
-interface UseFetchNextPageParams {
+interface UseFetchNextPageOptions {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
@@ -20,7 +20,7 @@ export function useFetchNextPage({
   isFetchingNextPage,
   isFetchNextPageError,
   fetchNextPage,
-}: UseFetchNextPageParams) {
+}: UseFetchNextPageOptions) {
   const isRequestingRef = useRef(false);
   const previous = useRef({ isFetchingNextPage, isFetchNextPageError });
   const canFetchNextPage = hasNextPage && !isFetchingNextPage;

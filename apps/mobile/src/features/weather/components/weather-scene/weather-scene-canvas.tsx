@@ -163,11 +163,14 @@ export function WeatherSceneCanvas({
 }
 
 /** 해·달이 떠 있으면 그 자리와 빛 색을 구름에 알려 가장자리가 빛나고 가린 정도를 잴 수 있게 한다. */
-function getCloudLight(scene: WeatherScene, position: { x: number; y: number }): CloudLight | null {
+function findCloudLight(
+  scene: WeatherScene,
+  position: { x: number; y: number },
+): CloudLight | null {
   if (scene.sun !== 'hidden') {
     return { ...position, rgb: SUN_LIGHT_RGB };
   }
-  return scene.moon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
+  return scene.hasMoon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
 }
 
 type SceneLayersProps = {
@@ -233,7 +236,7 @@ function SceneLayers({
             {...area}
             sun={scene.sun}
             center={celestialCenter}
-            hasLensFlare={scene.lensFlare}
+            hasLensFlare={scene.hasLensFlare}
             clouds={scene.clouds}
             isDark={isDark}
             occlusion={occlusion}
@@ -241,14 +244,14 @@ function SceneLayers({
         )}
         <NightSkyLayer
           {...area}
-          hasMoon={scene.moon}
+          hasMoon={scene.hasMoon}
           celestialCenter={celestialCenter}
           moonPhase={scene.moonPhase}
           isDark={isDark}
           occlusion={occlusion}
           isSouthernHemisphere={scene.isSouthernHemisphere}
-          hasStars={scene.stars}
-          hasShootingStars={scene.shootingStars && isAnimating}
+          hasStars={scene.hasStars}
+          hasShootingStars={scene.hasShootingStars && isAnimating}
           clouds={scene.clouds}
         />
       </BelowHeader>
@@ -258,7 +261,7 @@ function SceneLayers({
         wind={scene.wind}
         sky={scene.sky}
         isDaylight={scene.isDaylight}
-        light={getCloudLight(scene, celestialCenter)}
+        light={findCloudLight(scene, celestialCenter)}
         occlusion={occlusion}
       />
       {match(scene.atmosphere)
@@ -296,7 +299,7 @@ function SceneLayers({
         .with('heat', () => <HeatLayer {...particles} />)
         .with('calm', 'fogBands', 'haze', 'gusts', () => null)
         .exhaustive()}
-      {scene.lightning && isAnimating && <LightningLayer {...area} />}
+      {scene.hasLightning && isAnimating && <LightningLayer {...area} />}
     </Group>
   );
 }

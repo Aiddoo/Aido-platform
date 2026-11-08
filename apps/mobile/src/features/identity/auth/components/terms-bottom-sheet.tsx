@@ -15,10 +15,10 @@ import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
-import type { SignUpFormInput } from '../schemas/sign-up-form.schema';
+import type { SignUpFormValues } from '../schemas/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
-  form: UseFormReturn<SignUpFormInput>;
+  form: UseFormReturn<SignUpFormValues>;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   /** 동의 확인 시 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. 입력이 올바르지 않아 보내지 않았으면 false */
@@ -38,7 +38,7 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
   const isAllAgreed = termsAgreed && privacyAgreed && marketingAgreed && marketingPushAgreed;
   const isRequiredAgreed = termsAgreed && privacyAgreed;
 
-  const toggleAll = (isSelected: boolean) => {
+  const setAllAgreed = (isSelected: boolean) => {
     form.setValue('termsAgreed', isSelected, { shouldDirty: true });
     form.setValue('privacyAgreed', isSelected, { shouldDirty: true });
     form.setValue('marketingAgreed', isSelected, { shouldDirty: true });
@@ -56,7 +56,7 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={32}>
         <VStack gap={16}>
-          <ControlField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
+          <ControlField isSelected={isAllAgreed} onSelectedChange={setAllAgreed}>
             <ControlField.Indicator>
               <Checkbox className="shadow-none border border-main size-5 rounded-md" />
             </ControlField.Indicator>

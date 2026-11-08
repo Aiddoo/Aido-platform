@@ -85,7 +85,7 @@ export function getTodoRepeatFormIssue(
   if (repeat == null) {
     return 'until-required';
   }
-  return TodoRepeatPolicy.getFirstRepeatOccurrenceDateKey(
+  return TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
     repeat,
     toDateKey(values.startDate, timeZone),
   ) == null

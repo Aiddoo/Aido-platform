@@ -19,8 +19,8 @@ describe('Android 위젯 스냅샷 저장소', () => {
     const repository = createAndroidWidgetSnapshotRepository(storage);
 
     // Then
-    expect(repository.getSnapshot()).toEqual({ version: 2, updatedAtIso, days });
-    expect(repository.getUserId()).toBeNull();
+    expect(repository.findSnapshot()).toEqual({ version: 2, updatedAtIso, days });
+    expect(repository.findUserId()).toBeNull();
   });
 
   it('오늘과 내일을 담은 v2 snapshot을 같은 저장 키로 쓰고 그대로 읽는다', () => {
@@ -34,7 +34,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
 
     // Then
     expect(storage.get('aido_widget_snapshot_v1')).toBe(JSON.stringify(snapshot));
-    expect(repository.getSnapshot()).toEqual(snapshot);
+    expect(repository.findSnapshot()).toEqual(snapshot);
   });
 
   it('로그아웃은 이전 계정 식별자를 지우고 공개 안내만 남긴다', () => {
@@ -46,8 +46,8 @@ describe('Android 위젯 스냅샷 저장소', () => {
     repository.writeSnapshot(createWidgetSnapshot({ state: 'loggedOut' }), 'previous-user');
 
     // Then
-    expect(repository.getSnapshot()?.days[0].state).toBe('loggedOut');
-    expect(repository.getUserId()).toBeNull();
+    expect(repository.findSnapshot()?.days[0].state).toBe('loggedOut');
+    expect(repository.findUserId()).toBeNull();
   });
 
   it.each(['{broken', '{}', '{"version":2}'])('손상된 저장값 %s는 렌더하지 않는다', (raw) => {
@@ -56,7 +56,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
     storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, raw);
 
     // When
-    const snapshot = createAndroidWidgetSnapshotRepository(storage).getSnapshot();
+    const snapshot = createAndroidWidgetSnapshotRepository(storage).findSnapshot();
 
     // Then
     expect(snapshot).toBeNull();

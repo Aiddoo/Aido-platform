@@ -14,7 +14,7 @@ interface TimeWindow {
 }
 
 /** 오늘(위치 시간대) 남은 시간 중 자외선 차단이 필요한 첫 시각~마지막 시각. 없으면 null이다. */
-function getSunscreenWindow(
+function findSunscreenWindow(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
   timeZone: string,
@@ -54,7 +54,7 @@ export type NextSunEvent =
   | { kind: 'sunriseTomorrow'; at: Instant };
 
 /** 오늘 아직 지나지 않은 일출·일몰, 둘 다 지났으면 내일 일출. 모두 없으면 null이다. */
-function getNextSunEvent(
+function findNextSunEvent(
   today: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   tomorrow: Pick<DailyForecastEntry, 'sunrise'> | null,
   now: Instant,
@@ -78,7 +78,9 @@ interface Duration {
   minutes: number;
 }
 
-function getDaylightDuration(day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>): Duration | null {
+function findDaylightDuration(
+  day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
+): Duration | null {
   if (day.sunrise == null || day.sunset == null) {
     return null;
   }
@@ -106,10 +108,10 @@ function findNextFullMoon(daily: readonly DailyForecastEntry[], dateKey: string)
 }
 
 export const WeatherDetailPolicy = {
-  getSunscreenWindow,
+  findSunscreenWindow,
   calculateNextDayPrecipitation,
-  getNextSunEvent,
-  getDaylightDuration,
+  findNextSunEvent,
+  findDaylightDuration,
   findDayAfter,
   findNextFullMoon,
 } as const;

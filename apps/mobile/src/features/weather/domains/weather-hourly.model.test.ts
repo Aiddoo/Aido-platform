@@ -25,7 +25,7 @@ describe('getHourlySummary', () => {
       kind: 'precipitationOngoing',
       precipitationType: 'RAIN',
       endsAt: toInstant('2026-11-02T08:00:00.000Z'),
-      endsOnLaterDay: false,
+      isEndingOnLaterDay: false,
     });
   });
 
@@ -77,7 +77,7 @@ describe('getHourlySummary', () => {
       kind: 'precipitationUpcoming',
       precipitationType: 'RAIN',
       startsAt: toInstant('2026-11-02T16:00:00.000Z'),
-      startsOnLaterDay: true,
+      isStartingOnLaterDay: true,
       skyBefore: 'cloudy',
     });
   });
@@ -113,7 +113,7 @@ describe('getHourlySummary', () => {
       from: 'clear',
       to: 'cloudy',
       changesAt: toInstant('2026-11-02T09:00:00.000Z'),
-      changesOnLaterDay: false,
+      isChangingOnLaterDay: false,
     });
   });
 

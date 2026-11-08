@@ -1,6 +1,6 @@
 import { BusinessError } from '@src/shared/errors/business-error';
 
-export const SubscriptionErrorCode = {
+export const SUBSCRIPTION_ERROR_CODE = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
   STORE_UNAVAILABLE: 'SUBSCRIPTION_STORE_UNAVAILABLE',
   /** 스토어가 잠시 응답하지 못했다. 설정 문제와 달리 나중에 다시 하면 풀릴 수 있다 */
@@ -16,7 +16,7 @@ export const SubscriptionErrorCode = {
 } as const;
 
 export type SubscriptionErrorCode =
-  (typeof SubscriptionErrorCode)[keyof typeof SubscriptionErrorCode];
+  (typeof SUBSCRIPTION_ERROR_CODE)[keyof typeof SUBSCRIPTION_ERROR_CODE];
 
 export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
   // Sentry breadcrumb 메시지가 오류 이름을 쓴다
@@ -33,26 +33,26 @@ export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
 
 export const SubscriptionErrors = {
   storeUnavailable: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.STORE_UNAVAILABLE, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE, storeErrorCode),
 
   storeProblem: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.STORE_PROBLEM, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM, storeErrorCode),
 
   offeringsUnavailable: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.OFFERINGS_UNAVAILABLE, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE, storeErrorCode),
 
   network: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.NETWORK, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.NETWORK, storeErrorCode),
 
   purchaseCancelled: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.PURCHASE_CANCELLED, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_CANCELLED, storeErrorCode),
 
   paymentPending: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.PAYMENT_PENDING, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PAYMENT_PENDING, storeErrorCode),
 
   purchaseFailed: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.PURCHASE_FAILED, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_FAILED, storeErrorCode),
 
   restoreFailed: (storeErrorCode?: string | null) =>
-    new SubscriptionError(SubscriptionErrorCode.RESTORE_FAILED, storeErrorCode),
+    new SubscriptionError(SUBSCRIPTION_ERROR_CODE.RESTORE_FAILED, storeErrorCode),
 } as const;

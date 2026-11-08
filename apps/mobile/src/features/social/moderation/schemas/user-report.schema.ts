@@ -7,7 +7,7 @@ import {
 import type { z } from 'zod';
 
 export const userReportFormSchema = userReportFormContractSchema;
-export type UserReportFormInput = z.infer<typeof userReportFormSchema>;
+export type UserReportFormValues = z.infer<typeof userReportFormSchema>;
 
 export type UserReportRequest = CreateUserReportInput;
 

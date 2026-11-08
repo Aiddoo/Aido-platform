@@ -1,7 +1,7 @@
 import { WidgetNavigationPolicy } from '@src/features/device/widget/domains/widget-navigation.model';
 import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
 import {
-  getWidgetRoute,
+  findWidgetRoute,
   isWidgetRouteShown,
 } from '@src/features/device/widget/utils/widget-navigation-link';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -32,12 +32,12 @@ export function useWidgetAppEntry() {
   const url = useLinkingUrl();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,
-    widgetNavigationRepository.getPendingCommand,
+    widgetNavigationRepository.findPendingCommand,
     () => null,
   );
   const previousUrlRef = useRef(url);
   const [pendingInitialUrl, setPendingInitialUrl] = useState<string | null>(() =>
-    getWidgetRoute(url) ? url : null,
+    findWidgetRoute(url) ? url : null,
   );
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
 
@@ -46,7 +46,7 @@ export function useWidgetAppEntry() {
       if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
         return;
       }
-      const currentCommand = widgetNavigationRepository.getPendingCommand();
+      const currentCommand = widgetNavigationRepository.findPendingCommand();
       const isCommandCurrent =
         command == null
           ? currentCommand == null
@@ -69,7 +69,7 @@ export function useWidgetAppEntry() {
         }
       }
 
-      const destination = getWidgetRoute(destinationUrl);
+      const destination = findWidgetRoute(destinationUrl);
       if (!destination) {
         return;
       }
@@ -108,7 +108,7 @@ export function useWidgetAppEntry() {
       setPendingInitialUrl(null);
       return;
     }
-    setPendingInitialUrl(getWidgetRoute(url) ? url : null);
+    setPendingInitialUrl(findWidgetRoute(url) ? url : null);
   }, [url, status, isAuthenticatedRouteMounted]);
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export function useWidgetAppEntry() {
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
-    if (!destinationUrl || !getWidgetRoute(destinationUrl)) {
+    if (!destinationUrl || !findWidgetRoute(destinationUrl)) {
       widgetNavigationRepository.removeCorrupted();
       return;
     }

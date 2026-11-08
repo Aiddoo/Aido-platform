@@ -20,7 +20,7 @@ import { isSuggestionUnavailableError } from '../domains/suggestion.error';
 import type { AiSuggestionActionInput } from '../schemas/suggestion.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
 
-interface ActOnSuggestionParams {
+interface ActOnSuggestionVariables {
   suggestionId: number;
   input: AiSuggestionActionInput;
 }
@@ -38,7 +38,7 @@ export function useActOnSuggestionMutationOptions() {
   return mutationOptions({
     // 수락 시트와 거절 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async ({ suggestionId, input }: ActOnSuggestionParams) =>
+    mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
       unwrap(await suggestionService.actOnSuggestion(suggestionId, input)),
     onSuccess: async (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });

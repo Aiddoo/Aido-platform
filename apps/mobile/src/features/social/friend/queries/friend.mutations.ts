@@ -14,7 +14,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { getFriendLimitFromError } from '../domains/friend.error';
+import { findFriendLimit } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
 import type { FriendUser } from '../schemas/friend.schema';
 import type { ReorderFriendInput } from '../schemas/friend.schema';
@@ -163,7 +163,7 @@ export function useRemoveFriendMutationOptions() {
   });
 }
 
-interface ReorderFriendParams {
+interface ReorderFriendVariables {
   followId: string;
   input: ReorderFriendInput;
 }
@@ -178,7 +178,7 @@ export function useReorderFriendMutationOptions() {
   return mutationOptions({
     // 순서를 저장하는 동안 끌기가 막힌다. 오프라인에 멈춰 두면 연결될 때까지 막히니 바로 실패해 제자리로 돌린다
     networkMode: 'always',
-    mutationFn: async ({ followId, input }: ReorderFriendParams) => {
+    mutationFn: async ({ followId, input }: ReorderFriendVariables) => {
       const result = await friendService.reorderFriend(followId, input);
       return unwrap(result);
     },
@@ -244,7 +244,7 @@ export function useSendRequestByTagMutationOptions({
             : {
                 description: t('invite:entry.friendLimitDescription', {
                   limit: FriendPolicy.getFriendLimit({
-                    serverLimit: getFriendLimitFromError(error),
+                    serverLimit: findFriendLimit(error),
                     knownLimit,
                   }),
                   activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,

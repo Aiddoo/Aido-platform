@@ -37,7 +37,7 @@ export function createMemoPlanRequestDraftKey({
   });
 }
 
-export function prepareMemoPlanIdempotencyKey(
+export function restoreOrCreateMemoPlanIdempotencyKey(
   draftService: Pick<DraftService, 'restore' | 'save'>,
   {
     userId,

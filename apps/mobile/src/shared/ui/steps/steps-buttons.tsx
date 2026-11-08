@@ -42,17 +42,17 @@ export function StepsButtons({
   onBack,
   onNext,
 }: StepsButtonsProps) {
-  const isReduced = useIsReduceMotionEnabled();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const containerWidth = useSharedValue(0);
   const canGoBack = index > 0;
   const handleBack = useSingleTap(onBack);
   const handleNext = useSingleTap(onNext);
 
   const backProgress = useDerivedValue(() =>
-    springTo(canGoBack ? 1 : 0, isReduced, STEPS_SPRING_CONFIG),
+    springTo(canGoBack ? 1 : 0, isReducedMotion, STEPS_SPRING_CONFIG),
   );
   const checkProgress = useDerivedValue(() =>
-    springTo(isLast ? 1 : 0, isReduced, STEPS_SPRING_CONFIG),
+    springTo(isLast ? 1 : 0, isReducedMotion, STEPS_SPRING_CONFIG),
   );
 
   const backWidth = useDerivedValue(() => (containerWidth.get() - GAP) * BACK_WIDTH_RATIO);

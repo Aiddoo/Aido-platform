@@ -10,8 +10,8 @@ import { createInitialWidgetProps } from '../utils/widget-initial-props';
 
 interface StoredAndroidWidgetRendererDependencies<Rendered> {
   snapshotRepository: {
-    getSnapshot: () => WidgetSnapshot | null;
-    getUserId: () => string | null;
+    findSnapshot: () => WidgetSnapshot | null;
+    findUserId: () => string | null;
   };
   readLocalDateKey: () => string;
   readDeviceLanguage: () => string | null;
@@ -30,8 +30,8 @@ export function createStoredAndroidWidgetRenderer<Rendered>({
     const definition = ANDROID_WIDGET_DEFINITIONS.find(
       (widget) => widget.name === widgetInfo.widgetName,
     );
-    const snapshot = snapshotRepository.getSnapshot();
-    const userId = snapshotRepository.getUserId();
+    const snapshot = snapshotRepository.findSnapshot();
+    const userId = snapshotRepository.findUserId();
     const appScheme = readAppScheme();
     const props =
       snapshot == null

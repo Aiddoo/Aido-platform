@@ -15,7 +15,7 @@ import type { TodoCategoriesResult } from '@src/features/planning/category/schem
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
-  getTodoSeriesFailure,
+  findTodoSeriesFailure,
   shouldRefreshTodos,
 } from '@src/features/planning/todo/domains/todo-series.error';
 import {
@@ -53,7 +53,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-interface CreateTodoParams {
+interface CreateTodoVariables {
   input: CreateTodoInput;
 }
 
@@ -69,7 +69,7 @@ export function useCreateTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ input }: CreateTodoParams) => {
+    mutationFn: async ({ input }: CreateTodoVariables) => {
       const result = await todoService.createTodo(input);
       return unwrap(result);
     },
@@ -161,7 +161,7 @@ export function useCreateTodoMutationOptions() {
   });
 }
 
-interface AddSubTodoParams {
+interface AddSubTodoVariables {
   todoId: number;
   title: string;
   /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
@@ -179,7 +179,7 @@ export function useAddSubTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ todoId, title }: AddSubTodoParams) => {
+    mutationFn: async ({ todoId, title }: AddSubTodoVariables) => {
       const result = await subTodoService.addSubTodo(todoId, { title });
       return unwrap(result);
     },
@@ -225,7 +225,7 @@ export function useAddSubTodoMutationOptions() {
   });
 }
 
-interface CreateRecurringTodoParams {
+interface CreateRecurringTodoVariables {
   input: RepeatingTodoDraft;
 }
 
@@ -240,7 +240,7 @@ export function useCreateRecurringTodoMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
-    mutationFn: async ({ input }: CreateRecurringTodoParams) => {
+    mutationFn: async ({ input }: CreateRecurringTodoVariables) => {
       const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
     },
@@ -267,7 +267,7 @@ export function useCreateRecurringTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {
@@ -296,7 +296,7 @@ export function useCreateRecurringTodoMutationOptions() {
   });
 }
 
-interface UpdateSubTodoParams {
+interface UpdateSubTodoVariables {
   todoId: number;
   subTodoId: number;
   title: string;
@@ -315,7 +315,7 @@ export function useUpdateSubTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoParams) => {
+    mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoVariables) => {
       const result = await subTodoService.updateSubTodo(todoId, subTodoId, { title });
       return unwrap(result);
     },
@@ -351,7 +351,7 @@ export function useUpdateSubTodoMutationOptions() {
   });
 }
 
-interface UpdateTodoMutationParams {
+interface UpdateTodoVariables {
   todoId: number;
   input: UpdateTodoInput;
   options?: TodoSeriesEditOptions;
@@ -367,7 +367,7 @@ export function useUpdateTodoMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
-    mutationFn: async ({ todoId, input, options }: UpdateTodoMutationParams) => {
+    mutationFn: async ({ todoId, input, options }: UpdateTodoVariables) => {
       const result = await todoService.updateTodo(todoId, input, options);
       return unwrap(result);
     },
@@ -385,7 +385,7 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {

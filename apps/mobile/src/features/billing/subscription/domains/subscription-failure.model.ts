@@ -1,7 +1,7 @@
 import { NetworkError, TimeoutError } from '@src/shared/errors';
 import { match, P } from 'ts-pattern';
 
-import { SubscriptionError, SubscriptionErrorCode } from './subscription.error';
+import { SUBSCRIPTION_ERROR_CODE, SubscriptionError } from './subscription.error';
 
 /**
  * 구독 화면이 실패를 어떻게 안내할지 정하는 원인.
@@ -20,17 +20,17 @@ export type SubscriptionFailureCause =
 
 function getSubscriptionErrorCause(error: SubscriptionError): SubscriptionFailureCause {
   return match(error.code)
-    .with(SubscriptionErrorCode.NETWORK, () => 'network' as const)
+    .with(SUBSCRIPTION_ERROR_CODE.NETWORK, () => 'network' as const)
     .with(
-      SubscriptionErrorCode.STORE_UNAVAILABLE,
-      SubscriptionErrorCode.STORE_PROBLEM,
-      SubscriptionErrorCode.OFFERINGS_UNAVAILABLE,
+      SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE,
+      SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM,
+      SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE,
       () => 'store' as const,
     )
-    .with(SubscriptionErrorCode.PURCHASE_CANCELLED, () => 'purchaseCancelled' as const)
-    .with(SubscriptionErrorCode.PAYMENT_PENDING, () => 'paymentPending' as const)
-    .with(SubscriptionErrorCode.PURCHASE_FAILED, () => 'purchaseFailed' as const)
-    .with(SubscriptionErrorCode.RESTORE_FAILED, () => 'restoreFailed' as const)
+    .with(SUBSCRIPTION_ERROR_CODE.PURCHASE_CANCELLED, () => 'purchaseCancelled' as const)
+    .with(SUBSCRIPTION_ERROR_CODE.PAYMENT_PENDING, () => 'paymentPending' as const)
+    .with(SUBSCRIPTION_ERROR_CODE.PURCHASE_FAILED, () => 'purchaseFailed' as const)
+    .with(SUBSCRIPTION_ERROR_CODE.RESTORE_FAILED, () => 'restoreFailed' as const)
     .exhaustive();
 }
 
@@ -46,14 +46,14 @@ function getFailureCause(error: unknown): SubscriptionFailureCause {
  * - setup: 앱·스토어 설정 문제다
  * - temporary: 스토어가 잠시 응답하지 못했다
  */
-function getStoreUnavailableKind(error: unknown): 'setup' | 'temporary' | null {
+function findStoreUnavailableKind(error: unknown): 'setup' | 'temporary' | null {
   return match(error)
     .with(
-      P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),
+      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE }),
       () => 'setup' as const,
     )
     .with(
-      P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_PROBLEM }),
+      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM }),
       () => 'temporary' as const,
     )
     .otherwise(() => null);
@@ -61,5 +61,5 @@ function getStoreUnavailableKind(error: unknown): 'setup' | 'temporary' | null {
 
 export const SubscriptionFailurePolicy = {
   getFailureCause,
-  getStoreUnavailableKind,
+  findStoreUnavailableKind,
 } as const;

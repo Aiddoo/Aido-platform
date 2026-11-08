@@ -1,7 +1,7 @@
 import { rememberColdStartLink } from '@src/bootstrap/navigation/cold-start-link';
 import {
   createInviteLinkOpenStamp,
-  resolveInviteSystemPath,
+  findInviteSystemPath,
 } from '@src/features/social/invite/utils/invite-link';
 import { ENV } from '@src/shared/config/env';
 
@@ -14,7 +14,7 @@ const stampInviteLinkOpen = createInviteLinkOpenStamp();
  */
 export function redirectSystemPath({ path, initial }: { path: string; initial: boolean }) {
   try {
-    const invitePath = resolveInviteSystemPath(
+    const invitePath = findInviteSystemPath(
       path,
       { appScheme: ENV.SCHEME, kakaoScheme: ENV.KAKAO_SCHEME },
       { openedAt: stampInviteLinkOpen(path, Date.now()) },

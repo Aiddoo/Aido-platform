@@ -41,7 +41,7 @@ interface LiveWaveform {
 
 /** 듣는 동안 UI 스레드에서 음량을 칸으로 모은다. JS가 바빠도 파형이 멈추지 않고 React가 다시 그리지 않는다 */
 function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWaveform {
-  const reduceMotion = useIsReduceMotionEnabled();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const bars = useSharedValue<readonly number[]>([]);
   const barCount = useSharedValue(0);
   const shift = useSharedValue(0);
@@ -63,7 +63,7 @@ function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWav
     }
     bars.set(appendTimelineBar(bars.get(), next.bar, WAVEFORM_BAR.maxLiveBars));
     barCount.set(barCount.get() + 1);
-    if (!reduceMotion) {
+    if (!isReducedMotion) {
       shift.set(STEP);
       shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
     }

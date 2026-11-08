@@ -5,7 +5,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { AchievementPaginationParams } from '../schemas/achievement.schema';
+import type { GetAchievementsQuery } from '../schemas/achievement.schema';
 import { toWeeklyAchievement, toWeeklyAchievementsResult } from './achievement.mapper';
 
 export class AchievementService {
@@ -16,7 +16,7 @@ export class AchievementService {
   }
 
   getWeeklyAchievements = async (
-    { year, cursor, size }: AchievementPaginationParams,
+    { year, cursor, size }: GetAchievementsQuery,
     signal?: AbortSignal,
   ) =>
     parseApiResponse(

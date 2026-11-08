@@ -6,7 +6,7 @@ import { cn } from '@src/shared/utils/cn';
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 
-import { getResendCooldownAfterError } from '../domains/auth.error';
+import { findResendCooldown } from '../domains/auth.error';
 import { useCooldown } from '../hooks/use-cooldown';
 import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
 import { maskEmail } from '../utils/mask-email';
@@ -76,7 +76,7 @@ export function EmailVerificationCodeStep({
       setIsInvalid(false);
       clearCode();
     } catch (error) {
-      const remainingSeconds = getResendCooldownAfterError(error);
+      const remainingSeconds = findResendCooldown(error);
       if (remainingSeconds != null) {
         setCooldown(remainingSeconds);
       }

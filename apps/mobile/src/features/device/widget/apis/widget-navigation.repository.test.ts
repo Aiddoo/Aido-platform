@@ -21,11 +21,11 @@ describe('위젯 탐색 명령 저장소', () => {
     const repository = createWidgetNavigationRepository(storage);
 
     // When
-    const pending = repository.getPendingCommand();
+    const pending = repository.findPendingCommand();
 
     // Then
     expect(pending).toEqual(command);
-    expect(repository.getPendingCommand()).toBe(pending);
+    expect(repository.findPendingCommand()).toBe(pending);
   });
 
   it('이전 명령을 소비하는 동안 도착한 최신 명령은 삭제하지 않는다', () => {
@@ -41,7 +41,7 @@ describe('위젯 탐색 명령 저장소', () => {
 
     // Then
     expect(cleared).toBe(false);
-    expect(repository.getPendingCommand()).toEqual(latest);
+    expect(repository.findPendingCommand()).toEqual(latest);
     expect(repository.clearIfCurrent(latest)).toBe(true);
     expect(repository.clearIfCurrent(latest)).toBe(false);
   });
@@ -53,10 +53,10 @@ describe('위젯 탐색 명령 저장소', () => {
     storage.set(WIDGET_NAVIGATION_COMMAND_KEY, '{broken');
 
     // When
-    const before = repository.getPendingCommand();
+    const before = repository.findPendingCommand();
     const cleared = repository.removeCorrupted();
     const saved = repository.save({ ...command, uri: 'https://example.com' });
-    const after = repository.getPendingCommand();
+    const after = repository.findPendingCommand();
 
     // Then
     expect(before).toBeNull();
@@ -76,7 +76,7 @@ describe('위젯 탐색 명령 저장소', () => {
 
     // Then
     expect(stored).toBe(false);
-    expect(repository.getPendingCommand()).toEqual(latest);
+    expect(repository.findPendingCommand()).toEqual(latest);
   });
 
   it('구독을 해제한 화면에는 다음 위젯 명령을 알리지 않는다', () => {

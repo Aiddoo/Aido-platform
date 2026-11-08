@@ -61,7 +61,7 @@ export function SentNudgeList() {
   );
 }
 
-SentNudgeList.Loading = NotificationListRow.ListLoading;
+SentNudgeList.Loading = NotificationListRow.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);

@@ -66,7 +66,7 @@ describe('SessionRevocationService', () => {
 
     // Then
     expect(set).toHaveBeenCalledWith('pendingRevocation', expect.anything());
-    await expect(repository.get()).resolves.toEqual({
+    await expect(repository.find()).resolves.toEqual({
       refreshToken: REFRESH_A,
       expiresAt: NOW + PENDING_REVOCATION_TTL_MS,
     });
@@ -87,7 +87,7 @@ describe('SessionRevocationService', () => {
       undefined,
       expect.objectContaining({ headers: { Authorization: `Bearer ${ROTATED.accessToken}` } }),
     );
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 
   it('처리한 뒤에는 다시 요청하지 않는다', async () => {
@@ -125,7 +125,7 @@ describe('SessionRevocationService', () => {
 
     // Then
     expect(requestRefresh).not.toHaveBeenCalled();
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 
   it('TTL 직전까지는 해제한다', async () => {
@@ -156,7 +156,7 @@ describe('SessionRevocationService', () => {
 
     // Then
     expect(publicHttpClient.post).not.toHaveBeenCalled();
-    await expect(repository.get()).resolves.toMatchObject({ refreshToken: REFRESH_A });
+    await expect(repository.find()).resolves.toMatchObject({ refreshToken: REFRESH_A });
   });
 
   it('갱신이 401이면 세션이 이미 끝난 것이라 기록만 지운다', async () => {
@@ -170,7 +170,7 @@ describe('SessionRevocationService', () => {
 
     // Then
     expect(publicHttpClient.post).not.toHaveBeenCalled();
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 
   it.each([
@@ -186,7 +186,7 @@ describe('SessionRevocationService', () => {
     await service.flush();
 
     // Then
-    await expect(repository.get()).resolves.toEqual({
+    await expect(repository.find()).resolves.toEqual({
       refreshToken: ROTATED.refreshToken,
       expiresAt: NOW + PENDING_REVOCATION_TTL_MS,
     });
@@ -196,7 +196,7 @@ describe('SessionRevocationService', () => {
 
     // Then
     expect(requestRefresh).toHaveBeenLastCalledWith(ROTATED.refreshToken);
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 
   it('다시 시도해도 처음 기록한 TTL을 늘리지 않는다', async () => {
@@ -210,7 +210,7 @@ describe('SessionRevocationService', () => {
     await service.flush();
 
     // Then
-    await expect(repository.get()).resolves.toMatchObject({
+    await expect(repository.find()).resolves.toMatchObject({
       expiresAt: NOW + PENDING_REVOCATION_TTL_MS,
     });
   });
@@ -227,7 +227,7 @@ describe('SessionRevocationService', () => {
     await service.flush();
 
     // Then
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 
   it('다른 계정으로 로그인한 뒤의 해제 실패가 그 계정의 토큰과 세션을 건드리지 않는다', async () => {
@@ -326,6 +326,6 @@ describe('SessionRevocationService', () => {
     // Then
     expect(sent).toEqual([`Bearer ${ROTATED.accessToken}`]);
     expect(requestRefresh).toHaveBeenCalledTimes(1);
-    await expect(repository.get()).resolves.toBeNull();
+    await expect(repository.find()).resolves.toBeNull();
   });
 });

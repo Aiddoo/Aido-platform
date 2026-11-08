@@ -3,7 +3,7 @@ import { getScaledFontSize } from '@src/shared/utils/scaled-font-style';
 import type { NativeStackNavigationOptions } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
-interface UseStackScreenOptionsParams {
+interface UseStackScreenOptionsInput {
   background?: 'bg-white';
   hasContentBackground?: boolean;
 }
@@ -12,7 +12,7 @@ interface UseStackScreenOptionsParams {
 export function useStackScreenOptions({
   background = 'bg-white',
   hasContentBackground = false,
-}: UseStackScreenOptionsParams = {}): NativeStackNavigationOptions {
+}: UseStackScreenOptionsInput = {}): NativeStackNavigationOptions {
   const { backgroundColor } = useResolveClassNames(background);
   const { color, fontFamily } = useResolveClassNames('font-bold text-gray-9');
   const { fontScale } = useFontScale();

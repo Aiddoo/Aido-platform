@@ -1,4 +1,4 @@
-import { getWidgetRoute, isWidgetRouteShown } from './widget-navigation-link';
+import { findWidgetRoute, isWidgetRouteShown } from './widget-navigation-link';
 
 describe('위젯 앱 진입 경로 검증', () => {
   it.each(['aido', 'aido-dev', 'aido-preview'])('%s 위젯의 오늘 생성 요청을 유지한다', (scheme) => {
@@ -6,7 +6,7 @@ describe('위젯 앱 진입 경로 검증', () => {
     const url = `${scheme}://feed?date=today&action=add-todo`;
 
     // When
-    const route = getWidgetRoute(url);
+    const route = findWidgetRoute(url);
 
     // Then
     expect(route).toEqual({ pathname: '/feed', params: { date: 'today', action: 'add-todo' } });
@@ -17,7 +17,7 @@ describe('위젯 앱 진입 경로 검증', () => {
     const url = 'aido://feed?date=2026-10-05';
 
     // When
-    const route = getWidgetRoute(url);
+    const route = findWidgetRoute(url);
 
     // Then
     expect(route).toEqual({ pathname: '/feed', params: { date: '2026-10-05' } });
@@ -28,7 +28,7 @@ describe('위젯 앱 진입 경로 검증', () => {
     const url = 'aido://todo/123';
 
     // When
-    const route = getWidgetRoute(url);
+    const route = findWidgetRoute(url);
 
     // Then
     expect(route).toEqual({ pathname: '/todo/[todoId]', params: { todoId: '123' } });
@@ -53,7 +53,7 @@ describe('위젯 앱 진입 경로 검증', () => {
     const initialUrl = url;
 
     // When
-    const route = getWidgetRoute(initialUrl);
+    const route = findWidgetRoute(initialUrl);
 
     // Then
     expect(route).toBeNull();

@@ -25,7 +25,7 @@ export function toOfferingsAvailability(
     return { status: 'available', offering: result.value };
   }
 
-  const kind = SubscriptionFailurePolicy.getStoreUnavailableKind(result.error);
+  const kind = SubscriptionFailurePolicy.findStoreUnavailableKind(result.error);
   if (kind == null) {
     throw result.error;
   }

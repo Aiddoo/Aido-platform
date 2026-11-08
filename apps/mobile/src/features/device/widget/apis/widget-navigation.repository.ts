@@ -10,7 +10,7 @@ import {
 export const WIDGET_NAVIGATION_COMMAND_KEY = 'aido_widget_pending_navigation_v1';
 
 export interface WidgetNavigationRepository {
-  getPendingCommand(): WidgetNavigationCommand | null;
+  findPendingCommand(): WidgetNavigationCommand | null;
   subscribe(listener: () => void): () => void;
   save(command: WidgetNavigationCommand): boolean;
   clearIfCurrent(command: WidgetNavigationCommand): boolean;
@@ -24,7 +24,7 @@ export function createWidgetNavigationRepository(
   let cachedRaw: string | undefined;
   let cachedCommand: WidgetNavigationCommand | null = null;
 
-  const getPendingCommand = (): WidgetNavigationCommand | null => {
+  const findPendingCommand = (): WidgetNavigationCommand | null => {
     const raw = storage.get(WIDGET_NAVIGATION_COMMAND_KEY);
     if (raw === cachedRaw) {
       return cachedCommand;
@@ -36,14 +36,14 @@ export function createWidgetNavigationRepository(
   };
 
   return {
-    getPendingCommand,
+    findPendingCommand,
     subscribe: (listener) => storage.subscribe(WIDGET_NAVIGATION_COMMAND_KEY, listener),
     save: (command) => {
       const result = widgetNavigationCommandSchema.safeParse(command);
       if (!result.success) {
         return false;
       }
-      const current = getPendingCommand();
+      const current = findPendingCommand();
       if (current && current.createdAt > result.data.createdAt) {
         return false;
       }
@@ -51,7 +51,7 @@ export function createWidgetNavigationRepository(
       return true;
     },
     clearIfCurrent: (command) => {
-      const current = getPendingCommand();
+      const current = findPendingCommand();
       if (current == null || !WidgetNavigationPolicy.isSameCommand(command, current)) {
         return false;
       }
@@ -59,7 +59,7 @@ export function createWidgetNavigationRepository(
       return true;
     },
     removeCorrupted: () => {
-      if (getPendingCommand() != null || cachedRaw == null) {
+      if (findPendingCommand() != null || cachedRaw == null) {
         return false;
       }
       storage.remove(WIDGET_NAVIGATION_COMMAND_KEY);

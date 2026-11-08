@@ -33,7 +33,7 @@ import {
   TodoCommentComposerPolicy,
 } from '../../domains/todo-comment-composer.model';
 import {
-  getTodoCommentErrorStatus,
+  findTodoCommentErrorStatus,
   isTodoCommentRejectedError,
 } from '../../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
@@ -45,7 +45,7 @@ import {
 import {
   type TodoCommentFormValues,
   type TodoCommentComposerMode,
-  NEW_TODO_COMMENT_FORM_VALUES,
+  EMPTY_TODO_COMMENT_FORM_VALUES,
   toReplyFormValues,
   toEditFormValues,
 } from '../../schemas/todo-comment-form.schema';
@@ -58,7 +58,7 @@ import {
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
-  getComposerTarget,
+  findComposerTarget,
 } from '../../utils/todo-comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/todo-comment-form-layout';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
@@ -90,7 +90,7 @@ export function TodoCommentForm({ user, style, ...scrollViewProps }: TodoComment
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
   const submit = useTodoCommentSubmit({ userId: user.id });
-  const targetId = getComposerTarget(mode)?.id;
+  const targetId = findComposerTarget(mode)?.id;
 
   const focusFieldAfterLayout = (index: number) => {
     if (pendingFocusFrameRef.current != null) {
@@ -117,7 +117,7 @@ export function TodoCommentForm({ user, style, ...scrollViewProps }: TodoComment
     const subscription = KeyboardEvents.addListener('keyboardDidHide', () => {
       const { mode: currentMode, items } = getValues();
       if (currentMode.type !== 'new' && isComposerBlank({ items })) {
-        reset(NEW_TODO_COMMENT_FORM_VALUES);
+        reset(EMPTY_TODO_COMMENT_FORM_VALUES);
       }
     });
 
@@ -209,7 +209,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 
   const finish = (mode: TodoCommentComposerMode) => {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
-    reset(NEW_TODO_COMMENT_FORM_VALUES);
+    reset(EMPTY_TODO_COMMENT_FORM_VALUES);
     KeyboardController.dismiss().catch((error) =>
       logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
         error: getErrorMessage(error),
@@ -241,7 +241,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
           preparedSubmissionRef.current = submission;
           const chain = await createCommentChain.mutateAsync({
             input: submission.input,
-            target: getComposerTarget(writeMode),
+            target: findComposerTarget(writeMode),
           });
           preparedSubmissionRef.current = null;
           const threadCommentId = chain.comments[0]?.threadCommentId;
@@ -256,7 +256,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         preparedSubmissionRef.current = null;
       }
       logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {
-        status: getTodoCommentErrorStatus(error),
+        status: findTodoCommentErrorStatus(error),
       });
     }
   });
@@ -275,7 +275,7 @@ function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComp
   });
   const [initialValues] = useState(() =>
     match(mode)
-      .with({ type: 'new' }, () => NEW_TODO_COMMENT_FORM_VALUES)
+      .with({ type: 'new' }, () => EMPTY_TODO_COMMENT_FORM_VALUES)
       .with({ type: 'reply' }, ({ target }) => toReplyFormValues(target))
       .with({ type: 'edit' }, ({ target }) => toEditFormValues(target))
       .exhaustive(),
@@ -342,7 +342,7 @@ function TargetBanner({
         isDisabled={isSubmitting}
         accessibilityLabel={t('actions.closeComposer')}
         onPress={() => {
-          reset(NEW_TODO_COMMENT_FORM_VALUES);
+          reset(EMPTY_TODO_COMMENT_FORM_VALUES);
           KeyboardController.dismiss().catch((error) =>
             logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
               error: getErrorMessage(error),

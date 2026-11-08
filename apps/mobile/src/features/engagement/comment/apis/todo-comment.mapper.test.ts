@@ -8,7 +8,7 @@ import {
 import {
   toRepliesQuery,
   toThreadsQuery,
-  toTodoCommentFromV1,
+  toWrittenTodoComment,
   toTodoCommentThreadPage,
 } from './todo-comment.mapper';
 
@@ -110,7 +110,7 @@ describe('todo comment mapper', () => {
     });
 
     // When
-    const comment = toTodoCommentFromV1(42, dto);
+    const comment = toWrittenTodoComment(42, dto);
 
     // Then
     expect(comment).toMatchObject({

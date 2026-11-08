@@ -36,7 +36,7 @@ import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-ana
 import { planInProgressRetryOptions } from './plan-in-progress-retry';
 import { reflectFeatureQuota } from './voice-plan-cache';
 
-export interface ApplyActionPlanParams {
+export interface ApplyActionPlanVariables {
   source: VoicePlanSource;
   sourceMemoId: number | null;
   actions: readonly PlannedAction[];
@@ -45,7 +45,7 @@ export interface ApplyActionPlanParams {
   idempotencyKey: string;
 }
 
-interface UseApplyActionPlanMutationOptionsParams {
+interface ApplyActionPlanMutationOptionsInput {
   /** 저장이 끝났다. `mutate` 콜백과 달리 화면이 내려간 뒤에 응답이 와도 불린다 */
   onSaved?: (saved: { todoCount: number }) => void;
   /** 메모가 생기거나 원본 메모가 사라졌다. 메모 목록을 다시 읽는 일은 메모를 아는 쪽이 맡는다 */
@@ -60,7 +60,7 @@ interface UseApplyActionPlanMutationOptionsParams {
 export function useApplyActionPlanMutationOptions({
   onSaved,
   onMemoChanged,
-}: UseApplyActionPlanMutationOptionsParams) {
+}: ApplyActionPlanMutationOptionsInput) {
   const haptics = useHaptics();
   const voiceService = useVoiceService();
   const activationService = useActivationService();
@@ -77,7 +77,7 @@ export function useApplyActionPlanMutationOptions({
       actions,
       fallbackCategoryId,
       idempotencyKey,
-    }: ApplyActionPlanParams) =>
+    }: ApplyActionPlanVariables) =>
       unwrap(
         await voiceService.applyActionPlan(
           { source, sourceMemoId, actions, fallbackCategoryId },
@@ -149,13 +149,13 @@ interface CreateQuickPlanVariables extends PreparedPlanRequest<CreateQuickPlanIn
   signal?: AbortSignal;
 }
 
-interface UseCreateQuickPlanMutationOptionsParams {
+interface CreateQuickPlanMutationOptionsInput {
   onSubscribe?: () => void;
 }
 
 export function useCreateQuickPlanMutationOptions({
   onSubscribe,
-}: UseCreateQuickPlanMutationOptionsParams = {}) {
+}: CreateQuickPlanMutationOptionsInput = {}) {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();

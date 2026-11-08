@@ -1,9 +1,9 @@
-import { getForeignCountryName } from './get-foreign-country-name';
+import { findForeignCountryName } from './find-foreign-country-name';
 
-describe('getForeignCountryName', () => {
+describe('findForeignCountryName', () => {
   it('기기 지역과 다른 나라에 있으면 앱 언어로 나라 이름을 돌려준다', () => {
     // When
-    const name = getForeignCountryName({ countryCode: 'VN' }, 'KR', 'ko');
+    const name = findForeignCountryName({ countryCode: 'VN' }, 'KR', 'ko');
 
     // Then
     expect(name).toBe('베트남');
@@ -11,7 +11,7 @@ describe('getForeignCountryName', () => {
 
   it('기기 지역과 같은 나라면 나라 이름을 붙이지 않는다', () => {
     // When
-    const name = getForeignCountryName({ countryCode: 'kr' }, 'KR', 'ko');
+    const name = findForeignCountryName({ countryCode: 'kr' }, 'KR', 'ko');
 
     // Then
     expect(name).toBeNull();
@@ -22,7 +22,7 @@ describe('getForeignCountryName', () => {
     ['JP', null],
   ])('나라(%s)나 기기 지역(%s)을 모르면 나라 이름을 붙이지 않는다', (countryCode, region) => {
     // When
-    const name = getForeignCountryName({ countryCode }, region, 'ko');
+    const name = findForeignCountryName({ countryCode }, region, 'ko');
 
     // Then
     expect(name).toBeNull();

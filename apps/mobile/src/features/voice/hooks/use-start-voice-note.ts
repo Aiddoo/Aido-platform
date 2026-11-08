@@ -32,7 +32,7 @@ export function useStartVoiceNote() {
     if (gate.promptIfBlocked({ onSubscribe })) {
       return;
     }
-    const consent = await aiConsent.ensureAgreedBeforeListening();
+    const consent = await aiConsent.requestAgreementBeforeListening();
     if (!consent.hasAgreed) {
       toast.toast(t('ai:consent.notice.voice'));
       return;

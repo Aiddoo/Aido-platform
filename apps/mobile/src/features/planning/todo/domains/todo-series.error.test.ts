@@ -1,19 +1,19 @@
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
-  getTodoSeriesFailure,
+  findTodoSeriesFailure,
   shouldRefreshTodos,
   shouldReopenRepeatPicker,
   type TodoSeriesFailure,
 } from './todo-series.error';
 
-describe('getTodoSeriesFailure', () => {
+describe('findTodoSeriesFailure', () => {
   it('지난 회차가 너무 많아 시작일을 거절하면 too-many-past다', () => {
     // Given
     const error = new ApiError('TODO_0845', '거절', 400, { field: 'startDate' });
 
     // When
-    const failure = getTodoSeriesFailure(error);
+    const failure = findTodoSeriesFailure(error);
 
     // Then
     expect(failure).toBe('too-many-past');
@@ -24,7 +24,7 @@ describe('getTodoSeriesFailure', () => {
     const error = new ApiError('TODO_0845', '거절', 400, { field: 'endDate' });
 
     // When
-    const failure = getTodoSeriesFailure(error);
+    const failure = findTodoSeriesFailure(error);
 
     // Then
     expect(failure).toBe('invalid');
@@ -35,7 +35,7 @@ describe('getTodoSeriesFailure', () => {
     const error = new ApiError('TODO_0811', '가득 참', 403);
 
     // When
-    const failure = getTodoSeriesFailure(error);
+    const failure = findTodoSeriesFailure(error);
 
     // Then
     expect(failure).toBe('category-full');
@@ -46,7 +46,7 @@ describe('getTodoSeriesFailure', () => {
     const error = new ApiError('TODO_0842', '상한', 403, { limit: 100, activeCount: 100 });
 
     // When
-    const failure = getTodoSeriesFailure(error);
+    const failure = findTodoSeriesFailure(error);
 
     // Then
     expect(failure).toBe('limit');

@@ -106,7 +106,9 @@ export class PushDeviceService {
     const epoch = this.#sessionEpoch.current();
     const unregisterCount = this.#unregisterCount;
     const permission = await this.getPermission();
-    const token = PushPermissionPolicy.canDeliverPush(permission) ? await this.#issueToken() : null;
+    const token = PushPermissionPolicy.isPushDeliverable(permission)
+      ? await this.#issueToken()
+      : null;
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();

@@ -390,7 +390,7 @@ describe('createVoiceNoteFromTranscript', () => {
   });
 });
 
-describe('createCaptionsFromNote', () => {
+describe('toVoiceNoteCaptions', () => {
   const input = {
     draftId: 'draft-1',
     locale: 'ko-KR',

@@ -43,7 +43,7 @@ import { createMemoDraftKey } from '../utils/memo-draft';
 import {
   createMemoPlanDraftKey,
   createMemoPlanRequestDraftKey,
-  prepareMemoPlanIdempotencyKey,
+  restoreOrCreateMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
 import {
   invalidateMemoList,
@@ -281,7 +281,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       const idempotencyKey =
         accountId == null
           ? idGenerator.create()
-          : prepareMemoPlanIdempotencyKey(draftService, {
+          : restoreOrCreateMemoPlanIdempotencyKey(draftService, {
               userId: accountId,
               memoId,
               content,

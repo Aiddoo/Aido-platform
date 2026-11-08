@@ -12,7 +12,7 @@ export type TodoSeriesFailure =
   | 'category-full'
   | 'ended';
 
-export function getTodoSeriesFailure(error: unknown): TodoSeriesFailure | null {
+export function findTodoSeriesFailure(error: unknown): TodoSeriesFailure | null {
   if (!isApiError(error)) {
     return null;
   }
@@ -35,7 +35,7 @@ export function getTodoSeriesFailure(error: unknown): TodoSeriesFailure | null {
 }
 
 export function shouldReopenRepeatPicker(error: unknown): boolean {
-  const failure = getTodoSeriesFailure(error);
+  const failure = findTodoSeriesFailure(error);
   return failure === 'no-dates' || failure === 'invalid' || failure === 'too-many-past';
 }
 

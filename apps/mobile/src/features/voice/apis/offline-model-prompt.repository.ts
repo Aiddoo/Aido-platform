@@ -8,7 +8,7 @@ export interface OfflineModelPromptRepository {
   saveDeclined(accountId: string, locale: SpeechLocale): void;
 }
 
-function offlineModelDeclinedStorageKey(accountId: string, locale: SpeechLocale) {
+function createOfflineModelDeclinedKey(accountId: string, locale: SpeechLocale) {
   return `${KEY_PREFIX}:${encodeURIComponent(accountId)}:${locale}`;
 }
 
@@ -22,14 +22,14 @@ export function createOfflineModelPromptRepository(
   return {
     hasDeclined: (accountId, locale) => {
       try {
-        return storage.get(offlineModelDeclinedStorageKey(accountId, locale)) != null;
+        return storage.get(createOfflineModelDeclinedKey(accountId, locale)) != null;
       } catch {
         return false;
       }
     },
     saveDeclined: (accountId, locale) => {
       try {
-        storage.set(offlineModelDeclinedStorageKey(accountId, locale), 'declined');
+        storage.set(createOfflineModelDeclinedKey(accountId, locale), 'declined');
       } catch {
         // 저장하지 못하면 다음 녹음에 한 번 더 물을 뿐이다.
       }

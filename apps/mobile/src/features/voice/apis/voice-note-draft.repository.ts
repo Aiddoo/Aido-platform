@@ -44,7 +44,7 @@ interface PendingSave {
 function createOwnerPrefix(accountId: string) {
   return `${KEY_PREFIX}${encodeURIComponent(accountId)}${KEY_SEPARATOR}`;
 }
-function createKey(accountId: string, draftId: string) {
+function createVoiceNoteDraftKey(accountId: string, draftId: string) {
   return `${createOwnerPrefix(accountId)}${encodeURIComponent(draftId)}`;
 }
 
@@ -105,7 +105,7 @@ export function createVoiceNoteDraftRepository({
   const write = (accountId: string, note: VoiceNote) => {
     try {
       storage.set(
-        createKey(accountId, note.draftId),
+        createVoiceNoteDraftKey(accountId, note.draftId),
         JSON.stringify(createVoiceNoteSchema(getTimeZone()).encode(note)),
       );
       replaceInSnapshot(accountId, note);
@@ -148,17 +148,17 @@ export function createVoiceNoteDraftRepository({
       return snapshot.notes;
     },
 
-    find: (accountId, draftId) => read(createKey(accountId, draftId)),
+    find: (accountId, draftId) => read(createVoiceNoteDraftKey(accountId, draftId)),
 
     findAll: findAllOwned,
 
     save: (accountId, note) => {
-      cancelPending(createKey(accountId, note.draftId));
+      cancelPending(createVoiceNoteDraftKey(accountId, note.draftId));
       write(accountId, note);
     },
 
     scheduleSave: (accountId, note) => {
-      const key = createKey(accountId, note.draftId);
+      const key = createVoiceNoteDraftKey(accountId, note.draftId);
       const pending = pendingSaves.get(key);
       if (pending != null) {
         pending.note = note;
@@ -182,11 +182,11 @@ export function createVoiceNoteDraftRepository({
     },
 
     flush: (accountId, draftId) => {
-      pendingSaves.get(createKey(accountId, draftId))?.run.flush();
+      pendingSaves.get(createVoiceNoteDraftKey(accountId, draftId))?.run.flush();
     },
 
     remove: (accountId, draftId) => {
-      const key = createKey(accountId, draftId);
+      const key = createVoiceNoteDraftKey(accountId, draftId);
       cancelPending(key);
       storage.remove(key);
       invalidateSnapshot();

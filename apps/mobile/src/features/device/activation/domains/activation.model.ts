@@ -34,7 +34,7 @@ interface ChecklistEligibilityInput extends PushRegistrationInput {
   now: Instant;
 }
 
-function resolveEnabledCampaign(
+function findEnabledCampaign(
   config: FeatureCampaignConfig,
 ): { campaignId: string; launchedAt: Instant } | null {
   if (config.enabled && ACTIVATION_CAMPAIGN_IDS.has(config.campaignId)) {
@@ -46,11 +46,11 @@ function resolveEnabledCampaign(
   return null;
 }
 
-function getActivationIdentity(
+function findActivationIdentity(
   config: FeatureCampaignConfig | undefined,
   user: ActivationUser | undefined,
 ): ActivationIdentity | null {
-  const campaign = config ? resolveEnabledCampaign(config) : null;
+  const campaign = config ? findEnabledCampaign(config) : null;
   if (!campaign || !user || toEpochMs(user.createdAt) < toEpochMs(campaign.launchedAt)) {
     return null;
   }
@@ -64,7 +64,7 @@ function isNewUserCohort(
   config: FeatureCampaignConfig | undefined,
   user: ActivationUser | undefined,
 ): boolean {
-  return getActivationIdentity(config, user) != null;
+  return findActivationIdentity(config, user) != null;
 }
 
 function isWithinTimeWindow(createdAt: number, now: number, window: number): boolean {
@@ -134,7 +134,7 @@ function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
 }
 
 export const ActivationPolicy = {
-  getActivationIdentity,
+  findActivationIdentity,
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,

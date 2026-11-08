@@ -10,17 +10,20 @@ export interface PawPrintCelebrationRepository {
   saveCelebratedCount(userId: string, count: number): void;
 }
 
+function createPawPrintCelebrationKey(userId: string) {
+  return `${PAW_PRINT_CELEBRATION_KEY_PREFIX}:${userId}`;
+}
+
 /** 찍히는 애니메이션을 이미 본 발자국 수. 계정마다 따로 두어 같은 기기 다른 계정과 섞이지 않는다 */
 export function createPawPrintCelebrationRepository(
   storage: SyncStorage,
 ): PawPrintCelebrationRepository {
-  const toKey = (userId: string) => `${PAW_PRINT_CELEBRATION_KEY_PREFIX}:${userId}`;
-
   return {
-    getCelebratedCount: (userId) => celebratedCountSchema.parse(storage.get(toKey(userId))),
+    getCelebratedCount: (userId) =>
+      celebratedCountSchema.parse(storage.get(createPawPrintCelebrationKey(userId))),
     saveCelebratedCount: (userId, count) => {
       try {
-        storage.set(toKey(userId), String(count));
+        storage.set(createPawPrintCelebrationKey(userId), String(count));
       } catch {
         // 저장하지 못하면 축하가 한 번 더 보일 뿐이다.
       }

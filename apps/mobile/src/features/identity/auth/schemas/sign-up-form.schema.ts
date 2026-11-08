@@ -19,4 +19,4 @@ export const signUpFormSchema = z
     path: ['passwordConfirm'],
   });
 
-export type SignUpFormInput = z.input<typeof signUpFormSchema>;
+export type SignUpFormValues = z.input<typeof signUpFormSchema>;

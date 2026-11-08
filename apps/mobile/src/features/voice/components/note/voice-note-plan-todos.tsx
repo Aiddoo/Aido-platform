@@ -18,7 +18,7 @@ import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { voicePlanIdSchema } from '../../schemas/voice-plan.schema';
-import { toVoicePlanFromDraft } from '../../utils/plan-review-draft';
+import { toDraftVoicePlan } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
 
 interface VoiceNotePlanTodosProps extends Pick<
@@ -85,7 +85,7 @@ export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNote
         <PlanReview
           className={className}
           form={form}
-          plan={toVoicePlanFromDraft(
+          plan={toDraftVoicePlan(
             {
               planId: voicePlanIdSchema.parse(draftId),
               source: 'voice-note',

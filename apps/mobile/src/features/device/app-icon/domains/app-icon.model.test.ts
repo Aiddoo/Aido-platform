@@ -1,14 +1,14 @@
 import { AppIconPolicy } from './app-icon.model';
 
-describe('resolveAppIconKey', () => {
+describe('toAppIconKey', () => {
   it('네이티브가 모르는 이름이면 기본 아이콘으로 본다', () => {
     // Given
     const unknownNativeKey = 'future_icon';
 
     // When
-    const unknown = AppIconPolicy.resolveAppIconKey(unknownNativeKey);
-    const missing = AppIconPolicy.resolveAppIconKey(null);
-    const known = AppIconPolicy.resolveAppIconKey('tuxedo_cat');
+    const unknown = AppIconPolicy.toAppIconKey(unknownNativeKey);
+    const missing = AppIconPolicy.toAppIconKey(null);
+    const known = AppIconPolicy.toAppIconKey('tuxedo_cat');
 
     // Then
     expect(unknown).toBe('default');
@@ -29,11 +29,11 @@ describe('isPremiumIcon', () => {
   });
 });
 
-describe('getNativeAppIconName', () => {
+describe('toNativeAppIconName', () => {
   it('기본 아이콘은 네이티브에 이름 없이 전달한다', () => {
     // When
-    const defaultName = AppIconPolicy.getNativeAppIconName('default');
-    const creamCatName = AppIconPolicy.getNativeAppIconName('cream_cat');
+    const defaultName = AppIconPolicy.toNativeAppIconName('default');
+    const creamCatName = AppIconPolicy.toNativeAppIconName('cream_cat');
 
     // Then
     expect(defaultName).toBeNull();

@@ -10,7 +10,7 @@ import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
 import type { Preference, PreferenceChange } from '../schemas/preference.schema';
 
-type UpdatePreferenceArgs = PreferenceChange & {
+type UpdatePreferenceVariables = PreferenceChange & {
   /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */
   trackAs?: { setting: 'weatherEnabled'; value: boolean };
 };
@@ -36,7 +36,7 @@ export function useUpdatePreferenceMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
     networkMode: 'always',
-    mutationFn: async ({ trackAs: _trackAs, ...change }: UpdatePreferenceArgs) =>
+    mutationFn: async ({ trackAs: _trackAs, ...change }: UpdatePreferenceVariables) =>
       unwrap(await preferenceService.updatePreference(change)),
     onMutate: async ({ trackAs: _trackAs, ...change }) => {
       await queryClient.cancelQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });

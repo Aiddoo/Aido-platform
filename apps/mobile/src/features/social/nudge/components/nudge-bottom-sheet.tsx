@@ -23,7 +23,7 @@ import {
   useSendRemindNudgeMutationOptions,
   useSendTodoNudgeMutationOptions,
 } from '../queries/nudge.mutations';
-import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
+import { type NudgeFormValues, nudgeFormSchema } from '../schemas/nudge-form.schema';
 import { remindNudgeParamsSchema } from '../schemas/nudge-params.schema';
 
 export interface NudgeReceiver {
@@ -124,7 +124,7 @@ function NudgeMessageSheet({
     onOpenChange(open);
   };
 
-  const handleSubmitNudge = async ({ message }: NudgeFormInput) => {
+  const handleSubmitNudge = async ({ message }: NudgeFormValues) => {
     try {
       await onSend(message);
       handleOpenChange(false);

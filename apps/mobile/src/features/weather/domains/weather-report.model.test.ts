@@ -62,7 +62,7 @@ describe('getPrecipitationWindow', () => {
       startsAt: toInstant('2026-11-02T06:43:00.000Z'),
       endsAt: toInstant('2026-11-02T08:00:00.000Z'),
       endPrecision: 'hour',
-      endsOnLaterDay: false,
+      isEndingOnLaterDay: false,
     });
   });
 
@@ -89,7 +89,7 @@ describe('getPrecipitationWindow', () => {
       precipitationType: 'RAIN',
       endsAt: toInstant('2026-11-02T06:50:00.000Z'),
       endPrecision: 'minute',
-      endsOnLaterDay: false,
+      isEndingOnLaterDay: false,
     });
   });
 
@@ -104,7 +104,7 @@ describe('getPrecipitationWindow', () => {
     const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
 
     // Then
-    expect(window).toMatchObject({ kind: 'upcoming', endsAt: null, endsOnLaterDay: false });
+    expect(window).toMatchObject({ kind: 'upcoming', endsAt: null, isEndingOnLaterDay: false });
   });
 
   it('이미 끝난 비 구간은 건너뛰고 분 단위 예보 이후의 시간별 예보를 본다', () => {
@@ -147,7 +147,7 @@ describe('getPrecipitationWindow', () => {
       startsAt: toInstant('2026-11-02T07:00:00.000Z'),
       endsAt: toInstant('2026-11-02T09:00:00.000Z'),
       endPrecision: 'hour',
-      endsOnLaterDay: false,
+      isEndingOnLaterDay: false,
     });
   });
 
@@ -204,7 +204,7 @@ describe('getPrecipitationWindow', () => {
       expect(window).toMatchObject({
         kind: 'ongoing',
         endsAt: toInstant('2026-11-02T15:00:00.000Z'),
-        endsOnLaterDay: expected,
+        isEndingOnLaterDay: expected,
       });
     },
   );
@@ -224,7 +224,7 @@ describe('getPrecipitationWindow', () => {
       startsAt: toInstant('2026-11-02T07:00:00.000Z'),
       endsAt: toInstant('2026-11-02T09:00:00.000Z'),
       endPrecision: 'hour',
-      endsOnLaterDay: false,
+      isEndingOnLaterDay: false,
     });
   });
 
@@ -236,7 +236,11 @@ describe('getPrecipitationWindow', () => {
     const window = WeatherReportPolicy.getPrecipitationWindow(report, NOW);
 
     // Then
-    expect(window).toMatchObject({ kind: 'upcoming', precision: 'minute', endsOnLaterDay: false });
+    expect(window).toMatchObject({
+      kind: 'upcoming',
+      precision: 'minute',
+      isEndingOnLaterDay: false,
+    });
   });
 });
 
@@ -466,7 +470,7 @@ describe('getSunEvents', () => {
   });
 });
 
-describe('getHourlyPrecipitationOutlook', () => {
+describe('findHourlyPrecipitationOutlook', () => {
   it('6시간 안에 비 오는 시간이 있으면 그 첫 시간과 확률을 돌려준다', () => {
     // Given
     const { hourly } = createWeatherReport({
@@ -474,7 +478,7 @@ describe('getHourlyPrecipitationOutlook', () => {
     });
 
     // When
-    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(hourly, NOW);
 
     // Then
     expect(outlook?.hour.startsAt).toEqual('2026-11-02T07:00:00.000Z');
@@ -489,7 +493,7 @@ describe('getHourlyPrecipitationOutlook', () => {
     });
 
     // When
-    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(hourly, NOW);
 
     // Then
     expect(outlook?.isOngoing).toBe(true);
@@ -502,7 +506,7 @@ describe('getHourlyPrecipitationOutlook', () => {
     });
 
     // When
-    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(hourly, NOW);
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(hourly, NOW);
 
     // Then
     expect(outlook).toBeNull();

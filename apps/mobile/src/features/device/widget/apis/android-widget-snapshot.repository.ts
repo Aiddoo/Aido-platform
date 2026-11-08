@@ -7,8 +7,8 @@ import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot-persisted
 import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
 
 export interface AndroidWidgetSnapshotRepository {
-  getSnapshot(): WidgetSnapshot | null;
-  getUserId(): string | null;
+  findSnapshot(): WidgetSnapshot | null;
+  findUserId(): string | null;
   writeSnapshot(snapshot: WidgetSnapshot, userId: string | null): void;
 }
 
@@ -16,12 +16,12 @@ export function createAndroidWidgetSnapshotRepository(
   storage: SyncStorage,
 ): AndroidWidgetSnapshotRepository {
   return {
-    getSnapshot: () =>
+    findSnapshot: () =>
       parseStoredJson(
         storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot),
         storedWidgetSnapshotSchema,
       ),
-    getUserId: () => {
+    findUserId: () => {
       const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
       return userId && userId.trim().length > 0 ? userId : null;
     },

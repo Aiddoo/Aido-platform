@@ -36,7 +36,7 @@ import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import type { PlaceName } from '../schemas/weather-location.schema';
 import type { DailyForecastEntry } from '../schemas/weather-report.schema';
-import { getForeignCountryName } from '../utils/get-foreign-country-name';
+import { findForeignCountryName } from '../utils/find-foreign-country-name';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import {
   type TemperatureReading,
@@ -113,7 +113,7 @@ export function WeatherHero() {
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = WeatherReportPolicy.getTodayOrFirstForecast(data, now);
+  const today = WeatherReportPolicy.findTodayOrFirstForecast(data, now);
   const readyLocation = location.status === 'ready' ? location : null;
   const place = readyLocation?.place ?? null;
   const countryCode = readyLocation?.countryCode ?? null;
@@ -201,7 +201,7 @@ WeatherHero.LocationLabel = function LocationLabel({
   const { t, i18n } = useTranslation('weather');
   const deviceLocale = useSystemLocale();
   const minimumFontScale = useMinimumFontScale('b4');
-  const country = getForeignCountryName({ countryCode }, deviceLocale.regionCode, i18n.language);
+  const country = findForeignCountryName({ countryCode }, deviceLocale.regionCode, i18n.language);
   const area = compact([country, district]).join(' · ');
 
   return (

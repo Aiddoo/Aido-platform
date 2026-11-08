@@ -112,7 +112,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       { pathname: '/todo/[todoId]', params: { todoId: '12' } },
       { withAnchor: true },
     );
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
     await hook.rerender(undefined);
     await flushFrames();
     expect(router.navigate).toHaveBeenCalledTimes(1);
@@ -152,7 +152,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
 
     // When
     jest.mocked(usePathname).mockReturnValue('/feed');
@@ -188,7 +188,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
-      expect(mockRepository.getPendingCommand()).toBeNull();
+      expect(mockRepository.findPendingCommand()).toBeNull();
     },
   );
 
@@ -204,7 +204,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
   });
 
   it.each(['aido://todo/12', 'aido://feed?date=today&action=add-todo'])(
@@ -225,7 +225,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
-      expect(mockRepository.getPendingCommand()).toBeNull();
+      expect(mockRepository.findPendingCommand()).toBeNull();
     },
   );
 
@@ -242,6 +242,6 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toEqual(command);
+    expect(mockRepository.findPendingCommand()).toEqual(command);
   });
 });

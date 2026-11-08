@@ -57,7 +57,7 @@ export type PrecipitationWindow =
       precipitationType: WeatherPrecipitationType | null;
       endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
-      endsOnLaterDay: boolean;
+      isEndingOnLaterDay: boolean;
     }
   | {
       kind: 'upcoming';
@@ -66,7 +66,7 @@ export type PrecipitationWindow =
       startsAt: Instant;
       endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
-      endsOnLaterDay: boolean;
+      isEndingOnLaterDay: boolean;
     };
 
 function getNextHourHorizon(nextHour: NextHourForecast, now: Instant): number {
@@ -99,17 +99,17 @@ function toWindow(
     precipitationType: WeatherPrecipitationType | null;
   },
 ): PrecipitationWindow {
-  const endsOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
+  const isEndingOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
   if (toEpochMs(wet.startsAt) <= toEpochMs(now)) {
     return {
       kind: 'ongoing',
       precipitationType: wet.precipitationType,
       endsAt: wet.endsAt,
       endPrecision: wet.endPrecision,
-      endsOnLaterDay,
+      isEndingOnLaterDay,
     };
   }
-  return { kind: 'upcoming', ...wet, endsOnLaterDay };
+  return { kind: 'upcoming', ...wet, isEndingOnLaterDay };
 }
 
 /**
@@ -160,7 +160,7 @@ export interface HourlyPrecipitationOutlook {
 }
 
 /** 지금 시간부터 6시간 안에서 비가 오는 첫 시간을 고른다. 없으면 빈 카드를 만들지 않도록 null이다. */
-function getHourlyPrecipitationOutlook(
+function findHourlyPrecipitationOutlook(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
 ): HourlyPrecipitationOutlook | null {
@@ -196,7 +196,7 @@ function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): str
 }
 
 /** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
-function getTodayOrFirstForecast(
+function findTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
   now: Instant,
 ): DailyForecastEntry | null {
@@ -246,12 +246,12 @@ export const WeatherReportPolicy = {
   isFrozenPrecipitation,
   getUpcomingHours,
   getPrecipitationWindow,
-  getHourlyPrecipitationOutlook,
+  findHourlyPrecipitationOutlook,
   getMinutesUntil,
   isReportStale,
   isNowcastExpired,
   getTodayKey,
-  getTodayOrFirstForecast,
+  findTodayOrFirstForecast,
   getActiveAlerts,
   isAlertInEffect,
   getSunEvents,

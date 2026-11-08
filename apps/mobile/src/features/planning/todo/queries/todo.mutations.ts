@@ -15,7 +15,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { getTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
+import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import type { TodoUpdateScope, TodoEditScope } from '../schemas/todo-repeat.schema';
 import type {
@@ -39,7 +39,7 @@ import {
   settleTodoListWrite,
 } from './todo-cache';
 
-interface ToggleTodoMutationParams {
+interface ToggleTodoVariables {
   todoId: number;
   body: ToggleTodoCompleteInput;
   /** 체크한 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
@@ -59,7 +59,7 @@ export function useToggleTodoMutationOptions() {
     // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
+    mutationFn: async ({ todoId, body }: ToggleTodoVariables) => {
       const result = await todoService.toggleTodoComplete(todoId, body);
       return unwrap(result);
     },
@@ -107,7 +107,7 @@ export function useToggleTodoMutationOptions() {
   });
 }
 
-interface ChangeTodoCategoryMutationParams {
+interface ChangeTodoCategoryVariables {
   todoId: number;
   input: ChangeTodoCategoryInput;
   scope?: TodoUpdateScope;
@@ -123,7 +123,7 @@ export function useChangeTodoCategoryMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 카테고리 변경 버튼이 로딩만 돈다. 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryMutationParams) => {
+    mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryVariables) => {
       const result = await todoService.changeTodoCategory(todoId, input, scope);
       return unwrap(result);
     },
@@ -136,7 +136,7 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {
@@ -159,7 +159,7 @@ export function useChangeTodoCategoryMutationOptions() {
   });
 }
 
-interface DeleteTodoMutationParams {
+interface DeleteTodoVariables {
   todoId: number;
   /** 지운 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: string;
@@ -177,7 +177,7 @@ export function useDeleteTodoMutationOptions() {
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ todoId, scope }: DeleteTodoMutationParams) => {
+    mutationFn: async ({ todoId, scope }: DeleteTodoVariables) => {
       const result = await todoService.deleteTodo(todoId, scope);
       return unwrap(result);
     },
@@ -203,7 +203,7 @@ export function useDeleteTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {
@@ -231,7 +231,7 @@ export function useDeleteTodoMutationOptions() {
   });
 }
 
-interface ReorderTodoParams {
+interface ReorderTodoVariables {
   id: number;
   input: ReorderTodoInput;
 }
@@ -247,7 +247,7 @@ export function useReorderTodoMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ id, input }: ReorderTodoParams) => {
+    mutationFn: async ({ id, input }: ReorderTodoVariables) => {
       const result = await todoService.reorderTodo(id, input);
       return unwrap(result);
     },
@@ -269,7 +269,7 @@ export function useReorderTodoMutationOptions() {
   });
 }
 
-export interface UpdateTodoScheduleMutationParams {
+export interface UpdateTodoScheduleVariables {
   todoId: number;
   input: UpdateTodoScheduleInput;
   /** 사용자가 고친 칸. 저장 안내 문구를 고른다. 안내를 따로 띄우는 곳(날씨 일괄 옮기기)은 넘기지 않는다 */
@@ -287,7 +287,7 @@ export function useUpdateTodoScheduleMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈추면 저장 중인 시트가 잠긴 채 남고 연결되는 순간 일정이 바뀐다. 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async ({ todoId, input, scope }: UpdateTodoScheduleMutationParams) => {
+    mutationFn: async ({ todoId, input, scope }: UpdateTodoScheduleVariables) => {
       const result = await todoService.updateTodoSchedule(todoId, input, scope);
       return unwrap(result);
     },
@@ -301,7 +301,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = getTodoSeriesFailure(error);
+      const seriesFailure = findTodoSeriesFailure(error);
       if (seriesFailure != null) {
         haptics.notify('error');
         if (shouldRefreshTodos(seriesFailure)) {

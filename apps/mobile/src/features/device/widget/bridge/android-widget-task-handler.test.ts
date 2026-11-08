@@ -57,7 +57,7 @@ describe('Android 위젯 작업 처리', () => {
     // Given
     const { handler, navigationRepository, openApp } = createHandler();
     openApp.mockImplementation(async () => {
-      expect(navigationRepository.getPendingCommand()).toEqual({
+      expect(navigationRepository.findPendingCommand()).toEqual({
         id: 'widget-tap',
         uri: 'aido://todo/12',
         userId: 'widget-owner',
@@ -85,8 +85,8 @@ describe('Android 위젯 작업 처리', () => {
 
     // Then
     expect(openApp).toHaveBeenCalledWith(wakeUri);
-    expect(navigationRepository.getPendingCommand()?.uri).toBe(uri);
-    expect(navigationRepository.getPendingCommand()?.userId).toBe('previous-widget-owner');
+    expect(navigationRepository.findPendingCommand()?.uri).toBe(uri);
+    expect(navigationRepository.findPendingCommand()?.userId).toBe('previous-widget-owner');
   });
 
   it('이미 열린 앱은 저장된 명령만 소비하고 생성 링크를 중복 열지 않는다', async () => {
@@ -104,7 +104,7 @@ describe('Android 위젯 작업 처리', () => {
     );
 
     // Then
-    expect(navigationRepository.getPendingCommand()?.uri).toBe(
+    expect(navigationRepository.findPendingCommand()?.uri).toBe(
       'aido-dev://feed?date=today&action=add-todo',
     );
     expect(openApp).not.toHaveBeenCalled();
@@ -120,7 +120,7 @@ describe('Android 위젯 작업 처리', () => {
       await handler(createTask({ clickActionData: { uri, userId: 'widget-owner' } }));
 
       // Then
-      expect(navigationRepository.getPendingCommand()).toBeNull();
+      expect(navigationRepository.findPendingCommand()).toBeNull();
       expect(openApp).not.toHaveBeenCalled();
     },
   );
@@ -145,7 +145,7 @@ describe('Android 위젯 작업 처리', () => {
 
     // Then
     expect(openApp).toHaveBeenCalledWith('aido-dev://feed?date=today');
-    expect(navigationRepository.getPendingCommand()).toBeNull();
+    expect(navigationRepository.findPendingCommand()).toBeNull();
   });
 
   it('렌더 요청은 저장된 스냅샷을 사용하고 삭제된 위젯은 갱신하지 않는다', async () => {

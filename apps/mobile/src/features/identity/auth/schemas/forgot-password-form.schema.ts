@@ -6,4 +6,4 @@ export const forgotPasswordFormSchema = resetPasswordSchema.safeExtend({
   code: verifyEmailSchema.shape.code,
 });
 
-export type ForgotPasswordFormInput = z.input<typeof forgotPasswordFormSchema>;
+export type ForgotPasswordFormValues = z.input<typeof forgotPasswordFormSchema>;

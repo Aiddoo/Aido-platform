@@ -1,8 +1,7 @@
 import { weatherLocationSchema } from '@aido/api';
 import { z } from 'zod';
 
-const registeredLocationSchema = weatherLocationSchema;
-export type RegisteredLocation = z.infer<typeof registeredLocationSchema>;
+export type RegisteredLocation = z.infer<typeof weatherLocationSchema>;
 
 const coordinatesSchema = weatherLocationSchema.pick({ latitude: true, longitude: true });
 export type Coordinates = z.infer<typeof coordinatesSchema>;
@@ -23,7 +22,7 @@ export const locationReadingSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('unavailable'), revision: revisionSchema }),
   z.object({
     status: z.literal('located'),
-    registered: registeredLocationSchema,
+    registered: weatherLocationSchema,
     place: placeNameSchema.nullable(),
     countryCode: z.string().nullable(),
     revision: revisionSchema,

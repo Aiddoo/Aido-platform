@@ -64,12 +64,12 @@ export const reorderedFriendSchema = reorderFriendResponseSchema.extend({
 });
 
 /** 친구·요청 목록 페이지 입력. 생략하면 서버 기본값(limit 20)을 쓴다 */
-export interface PaginationParams {
+export interface PaginationQuery {
   cursor?: string;
   limit?: number;
 }
 
-export interface SearchUsersParams extends PaginationParams {
+export interface SearchUsersQuery extends PaginationQuery {
   query: string;
 }
 

@@ -23,7 +23,7 @@ export interface PreparedTodoCommentSubmission {
   input: TodoCommentChainInput;
 }
 
-interface PrepareSubmissionParams {
+interface PrepareSubmissionInput {
   previousSubmission: PreparedTodoCommentSubmission | null;
   todoId: number;
   parentId: string | null;
@@ -38,7 +38,7 @@ function prepareSubmission({
   parentId,
   contents,
   createClientRequestId,
-}: PrepareSubmissionParams): PreparedTodoCommentSubmission {
+}: PrepareSubmissionInput): PreparedTodoCommentSubmission {
   const fingerprint = JSON.stringify([todoId, parentId, contents]);
 
   if (previousSubmission?.fingerprint === fingerprint) {

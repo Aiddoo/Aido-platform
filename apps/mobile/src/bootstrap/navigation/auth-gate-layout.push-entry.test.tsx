@@ -129,7 +129,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     pushNotification: gateway,
     widgetNavigationRepository: {
       subscribe: () => () => {},
-      getPendingCommand: () => null,
+      findPendingCommand: () => null,
       clearIfCurrent: () => false,
       removeCorrupted: () => false,
       save: () => true,

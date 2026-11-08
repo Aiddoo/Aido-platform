@@ -10,7 +10,7 @@ import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { useAndroidTodoCommentBackHandler } from '../hooks/use-android-todo-comment-back-handler';
 import { TodoCommentFormProvider } from '../hooks/use-todo-comment-form';
 import {
-  NEW_TODO_COMMENT_FORM_VALUES,
+  EMPTY_TODO_COMMENT_FORM_VALUES,
   todoCommentFormSchema,
 } from '../schemas/todo-comment-form.schema';
 import { TodoCommentExpansionProvider } from './todo-comment-expansion';
@@ -25,7 +25,7 @@ interface TodoCommentSessionProps extends PropsWithChildren {
 export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps) {
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
-    defaultValues: NEW_TODO_COMMENT_FORM_VALUES,
+    defaultValues: EMPTY_TODO_COMMENT_FORM_VALUES,
     mode: 'onChange',
   });
 

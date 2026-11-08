@@ -22,7 +22,7 @@ interface ReorderedList<TItem, TId> {
   items: TItem[];
 }
 
-interface UseReorderableListParams<TItem, TId> {
+interface UseReorderableListOptions<TItem, TId> {
   items: TItem[];
   updatedAt: number;
   isPending: boolean;
@@ -47,7 +47,7 @@ export function useReorderableList<TItem, TId>({
   isPending,
   getItemId,
   onReorder,
-}: UseReorderableListParams<TItem, TId>) {
+}: UseReorderableListOptions<TItem, TId>) {
   const haptics = useHaptics();
   const [hold, setHold] = useState<ReorderHold<TItem> | null>(null);
   const isHolding = hold != null && (hold.isDragging || isPending || hold.updatedAt === updatedAt);

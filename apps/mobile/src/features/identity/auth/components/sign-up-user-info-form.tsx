@@ -14,7 +14,7 @@ import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { type SignUpFormValues, signUpFormSchema } from '../schemas/sign-up-form.schema';
 import { RevealedField } from './revealed-field';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
@@ -26,7 +26,7 @@ const STEP_DESCRIPTION_KEYS = {
 } as const satisfies Record<UserInfoStep, string>;
 
 interface SignUpUserInfoFormProps {
-  form: UseFormReturn<SignUpFormInput>;
+  form: UseFormReturn<SignUpFormValues>;
   onNextStep: () => void;
 }
 

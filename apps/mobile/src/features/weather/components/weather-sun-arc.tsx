@@ -118,13 +118,13 @@ export function WeatherSunArc({
 
 /** 시안 wxPulse: 해 점에서 퍼지는 빛. 동작 줄이기·화면 밖·앱 비활성에서는 멈춘다. */
 function SunPulse() {
-  const isRunning = useIsWeatherSceneRunning();
+  const isAnimating = useIsWeatherSceneRunning();
 
   return (
     <Animated.View
       pointerEvents="none"
       className="absolute inset-0 rounded-full"
-      style={[{ backgroundColor: SUN_COLORS.glow }, isRunning ? SUN_PULSE_STYLE : { opacity: 0 }]}
+      style={[{ backgroundColor: SUN_COLORS.glow }, isAnimating ? SUN_PULSE_STYLE : { opacity: 0 }]}
     />
   );
 }

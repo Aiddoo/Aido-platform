@@ -21,13 +21,13 @@ interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'child
 }
 
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
-  const reduceMotion = useIsReduceMotionEnabled();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const beamColor = useSkiaColor('text-main');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const offset = useSharedValue(-BEAM.height);
 
   useEffect(() => {
-    if (reduceMotion || size.height === 0) {
+    if (isReducedMotion || size.height === 0) {
       return;
     }
     offset.set(-BEAM.height);
@@ -37,7 +37,7 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
         -1,
       ),
     );
-  }, [reduceMotion, size.height, offset]);
+  }, [isReducedMotion, size.height, offset]);
 
   const transform = useDerivedValue(() => [{ translateY: offset.get() }]);
 
@@ -62,7 +62,7 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
           {paragraph}
         </Text>
       ))}
-      {!reduceMotion && (
+      {!isReducedMotion && (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
           <Group transform={transform} opacity={BEAM.opacity}>
             <Rect x={0} y={0} width={size.width} height={BEAM.height}>

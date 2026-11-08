@@ -157,7 +157,7 @@ FriendTodoList.Loading = function Loading() {
   );
 };
 
-FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+FriendTodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (

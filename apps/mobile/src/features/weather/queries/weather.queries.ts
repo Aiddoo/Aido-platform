@@ -20,7 +20,7 @@ import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
-import { applyDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
+import { withDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type LocationReading } from '../schemas/weather-location.schema';
 import { type WeatherReport } from '../schemas/weather-report.schema';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
@@ -137,8 +137,8 @@ export function useGetWeatherReportQueryOptions() {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
-      applyDevWeatherOverride(await queryClient.ensureQueryData(reportOptions), devOverride),
-    initialData: cached == null ? undefined : applyDevWeatherOverride(cached, devOverride),
+      withDevWeatherOverride(await queryClient.ensureQueryData(reportOptions), devOverride),
+    initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,
   });

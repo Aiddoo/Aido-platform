@@ -89,7 +89,7 @@ export class SessionRevocationService {
   };
 
   #revoke = async (): Promise<void> => {
-    const pending = await this.#repository.get();
+    const pending = await this.#repository.find();
     if (pending == null) {
       return;
     }

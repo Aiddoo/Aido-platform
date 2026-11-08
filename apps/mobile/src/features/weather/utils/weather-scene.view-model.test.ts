@@ -92,17 +92,17 @@ describe('날씨 장면 변환', () => {
     expect(dayScene).toMatchObject({
       sky: 'clearDay',
       sun: 'bright',
-      lensFlare: true,
-      moon: false,
-      stars: false,
+      hasLensFlare: true,
+      hasMoon: false,
+      hasStars: false,
     });
     expect(nightScene).toMatchObject({
       sky: 'clearNight',
       sun: 'hidden',
-      lensFlare: false,
-      moon: true,
-      stars: true,
-      shootingStars: true,
+      hasLensFlare: false,
+      hasMoon: true,
+      hasStars: true,
+      hasShootingStars: true,
     });
   });
 
@@ -164,7 +164,7 @@ describe('날씨 장면 변환', () => {
     // Then
     expect(scene.sky.endsWith(isDaylight ? 'Day' : 'Night')).toBe(true);
     if (isDaylight) {
-      expect(scene).toMatchObject({ moon: false, stars: false, shootingStars: false });
+      expect(scene).toMatchObject({ hasMoon: false, hasStars: false, hasShootingStars: false });
     } else {
       expect(scene.sun).toBe('hidden');
     }
@@ -182,9 +182,9 @@ describe('날씨 장면 변환', () => {
       sky: 'overcastNight',
       atmosphere: 'calm',
       sun: 'hidden',
-      lensFlare: false,
-      moon: false,
-      stars: false,
+      hasLensFlare: false,
+      hasMoon: false,
+      hasStars: false,
     });
   });
 
@@ -194,7 +194,7 @@ describe('날씨 장면 변환', () => {
 
     // When
     const flared = inputs
-      .filter((input) => toWeatherScene(input).lensFlare)
+      .filter((input) => toWeatherScene(input).hasLensFlare)
       .map((input) => input.condition);
 
     // Then
@@ -221,8 +221,8 @@ describe('날씨 장면 변환', () => {
     const [clearScene, cloudyScene] = [clear, cloudy].map(toWeatherScene);
 
     // Then
-    expect(clearScene?.shootingStars).toBe(true);
-    expect(cloudyScene).toMatchObject({ moon: true, stars: true, shootingStars: false });
+    expect(clearScene?.hasShootingStars).toBe(true);
+    expect(cloudyScene).toMatchObject({ hasMoon: true, hasStars: true, hasShootingStars: false });
   });
 
   test.each(PRECIPITATING_CONDITIONS)(
@@ -235,7 +235,7 @@ describe('날씨 장면 변환', () => {
       const scene = toWeatherScene(input);
 
       // Then
-      expect(scene).toMatchObject({ sun: 'hidden', moon: false, stars: false });
+      expect(scene).toMatchObject({ sun: 'hidden', hasMoon: false, hasStars: false });
       expect(scene.precipitation.kind).not.toBe('none');
       expect(scene.precipitation.density).toBeGreaterThan(0);
     },
@@ -270,7 +270,7 @@ describe('날씨 장면 변환', () => {
     // When
     const withLightning = conditions
       .map(toWeatherScene)
-      .flatMap((scene, index) => (scene.lightning ? [conditions[index]?.condition] : []));
+      .flatMap((scene, index) => (scene.hasLightning ? [conditions[index]?.condition] : []));
 
     // Then
     expect(withLightning).toEqual(['THUNDERSTORMS']);
@@ -284,7 +284,7 @@ describe('날씨 장면 변환', () => {
     const scene = toWeatherScene(input);
 
     // Then
-    expect(scene).toMatchObject({ moon: false, stars: false });
+    expect(scene).toMatchObject({ hasMoon: false, hasStars: false });
   });
 
   test('운량은 상태가 허용하는 범위 안으로 맞춘다', () => {

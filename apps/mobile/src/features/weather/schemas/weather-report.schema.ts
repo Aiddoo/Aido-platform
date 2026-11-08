@@ -48,19 +48,18 @@ const weatherAlertModelSchema = weatherAlertSchema.extend({
 });
 export type WeatherAlert = z.infer<typeof weatherAlertModelSchema>;
 
-const airQualitySchema = weatherAirQualitySchema;
-export type AirQuality = z.infer<typeof airQualitySchema>;
+export type AirQuality = z.infer<typeof weatherAirQualitySchema>;
 
-export const weatherReportSchema = z.object({
+export const weatherReportModelSchema = z.object({
   location: weatherLocationSchema,
   current: currentWeatherSchema,
   nextHour: nextHourForecastSchema.nullable(),
   hourly: z.array(hourlyForecastSchema),
   daily: z.array(dailyForecastSchema),
   alerts: z.array(weatherAlertModelSchema),
-  airQuality: airQualitySchema.nullable(),
+  airQuality: weatherAirQualitySchema.nullable(),
   attribution: weatherAttributionSchema,
   fetchedAt: instantSchema,
 });
-export type WeatherReport = z.infer<typeof weatherReportSchema>;
+export type WeatherReport = z.infer<typeof weatherReportModelSchema>;
 export type AttributionInfo = WeatherReport['attribution'];

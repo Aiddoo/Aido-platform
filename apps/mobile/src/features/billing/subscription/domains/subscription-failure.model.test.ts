@@ -28,25 +28,31 @@ describe('getFailureCause', () => {
   });
 });
 
-describe('getStoreUnavailableKind', () => {
-  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.getStoreUnavailableKind>]>([
-    ['SDK가 초기화되지 않았으면 설정 문제로 본다', SubscriptionErrors.storeUnavailable(), 'setup'],
-    ['스토어 설정 오류면 설정 문제로 본다', SubscriptionErrors.storeUnavailable('23'), 'setup'],
+describe('findStoreUnavailableKind', () => {
+  it.each<[string, unknown, ReturnType<typeof SubscriptionFailurePolicy.findStoreUnavailableKind>]>(
     [
-      '스토어가 잠시 응답하지 못하면 일시적 문제로 본다',
-      SubscriptionErrors.storeProblem('2'),
-      'temporary',
+      [
+        'SDK가 초기화되지 않았으면 설정 문제로 본다',
+        SubscriptionErrors.storeUnavailable(),
+        'setup',
+      ],
+      ['스토어 설정 오류면 설정 문제로 본다', SubscriptionErrors.storeUnavailable('23'), 'setup'],
+      [
+        '스토어가 잠시 응답하지 못하면 일시적 문제로 본다',
+        SubscriptionErrors.storeProblem('2'),
+        'temporary',
+      ],
+      ['연결 문제는 스토어 상태가 아니다', SubscriptionErrors.network('10'), null],
+      [
+        '팔 요금제를 받지 못한 것은 스토어 상태가 아니다',
+        SubscriptionErrors.offeringsUnavailable('16'),
+        null,
+      ],
+      ['서버 오류는 스토어 상태가 아니다', new ServerError(503), null],
     ],
-    ['연결 문제는 스토어 상태가 아니다', SubscriptionErrors.network('10'), null],
-    [
-      '팔 요금제를 받지 못한 것은 스토어 상태가 아니다',
-      SubscriptionErrors.offeringsUnavailable('16'),
-      null,
-    ],
-    ['서버 오류는 스토어 상태가 아니다', new ServerError(503), null],
-  ])('%s', (_case, error, expected) => {
+  )('%s', (_case, error, expected) => {
     // When
-    const kind = SubscriptionFailurePolicy.getStoreUnavailableKind(error);
+    const kind = SubscriptionFailurePolicy.findStoreUnavailableKind(error);
 
     // Then
     expect(kind).toBe(expected);

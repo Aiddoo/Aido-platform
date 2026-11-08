@@ -34,7 +34,7 @@ function toTodoComment(dto: TodoCommentV2): TodoComment {
 }
 
 /** 쓰기 응답은 v1 모양이다. v1의 parentId는 묶음 머리라 v2의 threadCommentId와 같다 */
-export function toTodoCommentFromV1(todoId: number, dto: TodoCommentV1DTO): TodoComment {
+export function toWrittenTodoComment(todoId: number, dto: TodoCommentV1DTO): TodoComment {
   return {
     id: dto.id,
     todoId,
@@ -81,11 +81,11 @@ export function toTodoCommentChain(
   todoId: number,
   dto: TodoCommentChainResponse,
 ): TodoCommentChain {
-  return { comments: dto.comments.map((comment) => toTodoCommentFromV1(todoId, comment)) };
+  return { comments: dto.comments.map((comment) => toWrittenTodoComment(todoId, comment)) };
 }
 
 export function toMutatedComment(todoId: number, dto: TodoCommentMutationResponse): TodoComment {
-  return toTodoCommentFromV1(todoId, dto.comment);
+  return toWrittenTodoComment(todoId, dto.comment);
 }
 
 export function toTodoCommentLikeResult(dto: TodoCommentLikeResponse): TodoCommentLikeResult {

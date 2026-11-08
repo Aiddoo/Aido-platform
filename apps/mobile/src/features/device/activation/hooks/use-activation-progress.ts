@@ -22,7 +22,7 @@ export function useActivationProgress() {
   const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const repository = useActivationProgressRepository();
   const identity = isAuthenticated
-    ? ActivationPolicy.getActivationIdentity(configQuery.data, userQuery.data)
+    ? ActivationPolicy.findActivationIdentity(configQuery.data, userQuery.data)
     : null;
   const accountId = identity?.accountId;
   const campaignId = identity?.campaignId;

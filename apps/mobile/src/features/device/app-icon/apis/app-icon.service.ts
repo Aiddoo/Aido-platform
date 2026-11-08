@@ -18,7 +18,7 @@ export class AppIconService {
     if (signal?.aborted) {
       throw new Error('App icon lookup cancelled');
     }
-    return AppIconPolicy.resolveAppIconKey(nativeKey);
+    return AppIconPolicy.toAppIconKey(nativeKey);
   };
 
   changeIcon = (key: AppIconKey): Promise<AppIconKey> => {
@@ -27,8 +27,8 @@ export class AppIconService {
     }
 
     const operation = this.#gateway
-      .changeIcon(AppIconPolicy.getNativeAppIconName(key))
-      .then((nativeKey) => AppIconPolicy.resolveAppIconKey(nativeKey));
+      .changeIcon(AppIconPolicy.toNativeAppIconName(key))
+      .then((nativeKey) => AppIconPolicy.toAppIconKey(nativeKey));
     const pendingChange = operation.finally(() => {
       if (this.#pendingChange === pendingChange) {
         this.#pendingChange = null;

@@ -8,7 +8,7 @@ import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormInput, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { type SignUpFormValues, signUpFormSchema } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
@@ -17,7 +17,7 @@ import { TermsBottomSheet } from './terms-bottom-sheet';
 type PasswordStep = 'password' | 'passwordConfirm';
 
 interface SignUpPasswordFormProps {
-  form: UseFormReturn<SignUpFormInput>;
+  form: UseFormReturn<SignUpFormValues>;
   /** 약관 동의 후 호출하는 회원가입 제출 함수 */
   onSubmit: () => Promise<boolean>;
 }

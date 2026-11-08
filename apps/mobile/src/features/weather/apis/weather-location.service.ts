@@ -11,7 +11,7 @@ import { toError } from '@src/shared/errors';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { WeatherErrorCode } from '../domains/weather.error';
+import { WEATHER_ERROR_CODE } from '../domains/weather.error';
 import type { Coordinates, LocationReading } from '../schemas/weather-location.schema';
 import type { WeatherService } from './weather.service';
 
@@ -132,7 +132,7 @@ export class WeatherLocationService {
       this.#logger.warn(WEATHER_LOG_EVENT.LOCATION_READ_FAILED, { reason: 'unexpected' });
       this.#errorReporter.captureException(toError(error), {
         feature: 'weather_location',
-        errorCode: WeatherErrorCode.LOCATION_UNAVAILABLE,
+        errorCode: WEATHER_ERROR_CODE.LOCATION_UNAVAILABLE,
       });
       return null;
     }

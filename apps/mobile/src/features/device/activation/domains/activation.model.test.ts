@@ -300,13 +300,13 @@ describe('shouldRegisterPushAutomatically', () => {
   });
 });
 
-describe('getActivationIdentity', () => {
+describe('findActivationIdentity', () => {
   it('캠페인 설정을 읽지 못하면 사용자의 활성화 식별자를 만들지 않는다', () => {
     // Given
     const user = { id: 'new', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
 
     // When
-    const identity = ActivationPolicy.getActivationIdentity(undefined, user);
+    const identity = ActivationPolicy.findActivationIdentity(undefined, user);
 
     // Then
     expect(identity).toBeNull();

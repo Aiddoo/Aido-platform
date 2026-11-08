@@ -24,7 +24,7 @@ function createStoreReviewKey(accountId: string): string {
 }
 
 /** 이미 리뷰를 요청받은 사용자는 그 시각을 지난 요청 한 번으로 이어받아 곧바로 다시 묻지 않는다 */
-function fromLegacy(legacy: LegacyStoreReviewState): StoreReviewState {
+function toStoreReviewState(legacy: LegacyStoreReviewState): StoreReviewState {
   return storeReviewStateSchema.parse({
     activeDays: uniq(legacy.completions.map(({ localDate }) => localDate)).slice(
       -STORE_REVIEW_MIN_ACTIVE_DAYS,
@@ -54,7 +54,7 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
         return StoreReviewPolicy.createEmptyState();
       }
       // 읽기만 한다. 옛 모양은 다음 update가 새 모양으로 저장한다
-      return fromLegacy(legacy.data);
+      return toStoreReviewState(legacy.data);
     } catch {
       return StoreReviewPolicy.createEmptyState();
     }

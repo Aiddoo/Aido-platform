@@ -51,7 +51,7 @@ export function rememberColdStartLink(url: string, appScheme: string): void {
   pendingPath = toColdStartAppPath(url, appScheme);
 }
 
-export function getColdStartPath(): AppPath | null {
+export function findColdStartPath(): AppPath | null {
   return pendingPath;
 }
 
