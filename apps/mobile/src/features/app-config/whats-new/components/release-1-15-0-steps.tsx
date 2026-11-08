@@ -98,7 +98,7 @@ export function Release1150Steps() {
                 actionLabel={t('v1_15_0.voiceNote.action')}
                 onAction={() => {
                   flow.trackCta({ step: 'voiceNote', feature: 'voice_note' });
-                  startVoiceNote({ navigate: flow.leaveTo });
+                  startVoiceNote({ onReadyToRecord: () => flow.leaveTo('/voice-notes/record') });
                 }}
               />
             )}

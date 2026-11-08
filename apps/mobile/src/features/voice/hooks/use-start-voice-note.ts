@@ -3,17 +3,15 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { type Href, router } from 'expo-router';
+import { router } from 'expo-router';
 
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
   onSubscribe?: () => void;
-  /** 녹음 화면으로 가기 직전에 부른다. 이어 갈 글자를 저장하는 등 준비를 마치고 갈 곳을 돌려준다 */
-  prepareRecordHref?: () => Href;
-  /** 녹음 화면으로 넘어가는 방법. 기본은 지금 화면 위에 쌓는다 */
-  navigate?: (href: Href) => void;
+  /** 한도·동의·마이크 권한을 모두 통과했다. 기본은 녹음 화면을 지금 화면 위에 쌓는다 */
+  onReadyToRecord?: () => void;
 }
 
 export function useStartVoiceNote() {
@@ -26,8 +24,7 @@ export function useStartVoiceNote() {
 
   return async ({
     onSubscribe,
-    prepareRecordHref,
-    navigate = push,
+    onReadyToRecord = () => push('/voice-notes/record'),
   }: StartVoiceNoteOptions = {}) => {
     if (gate.promptIfBlocked({ onSubscribe })) {
       return;
@@ -40,6 +37,6 @@ export function useStartVoiceNote() {
     if (!(await ensureMicrophonePermission('note', locale))) {
       return;
     }
-    navigate(prepareRecordHref?.() ?? '/voice-notes/record');
+    onReadyToRecord();
   };
 }

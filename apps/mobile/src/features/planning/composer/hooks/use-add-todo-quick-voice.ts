@@ -25,10 +25,12 @@ import type { CapturedPlan } from '@src/features/voice/schemas/voice-capture.sch
 import type { CreateQuickPlanInput } from '@src/features/voice/schemas/voice-plan.schema';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
@@ -50,6 +52,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   const idGenerator = useIdGenerator();
   const voiceNoteDraftRepository = useVoiceNoteDraftRepository();
   const startVoiceNote = useStartVoiceNote();
+  const pushRecordScreen = useSingleTap(router.push);
   const logger = useLogger();
   const toast = useAppToast();
   const { t } = useTranslation(['voice', 'ai']);
@@ -153,7 +156,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
     return startVoiceNote({
       onSubscribe: onExit,
-      prepareRecordHref: () => {
+      onReadyToRecord: () => {
         const { transcript, elapsedMs } = session.state;
         const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
           draftId: idGenerator.create(),
@@ -162,18 +165,19 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
           transcript,
           durationMs: elapsedMs,
         });
-        if (note.sentences.length > 0) {
+        const hasHeardText = note.sentences.length > 0;
+        if (hasHeardText) {
           voiceNoteDraftRepository.save(me.id, note);
         }
         session.handOff();
         onExit();
-        return {
+        pushRecordScreen({
           pathname: '/voice-notes/record',
           params: {
-            draftId: note.sentences.length > 0 ? note.draftId : undefined,
+            draftId: hasHeardText ? note.draftId : undefined,
             entry: 'quick_voice_upgrade',
           },
-        };
+        });
       },
     });
   };
