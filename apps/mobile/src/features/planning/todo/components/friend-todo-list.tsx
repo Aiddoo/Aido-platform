@@ -33,6 +33,7 @@ import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 interface FriendTodoListProps {
+  /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
   friendId: string;
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
   rowAction: ComponentType<{ todo: Todo }>;
