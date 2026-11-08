@@ -50,6 +50,7 @@ import { DeviceIdService } from '@src/features/notification/apis/device-id.servi
 import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
 import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
@@ -211,6 +212,10 @@ export function createTestDi({
     installReferrerRepository: createInstallReferrerRepository(syncStorage),
     installReferrerGateway,
   });
+  const notificationService = new NotificationService({
+    httpClient,
+    publicHttpClient: httpClient,
+  });
   const deviceTimezoneService = new DeviceTimezoneService(
     createDeviceTimezoneRepository(syncStorage),
   );
@@ -321,10 +326,10 @@ export function createTestDi({
     todoService: new TodoService(httpClient),
     todoCommentService: new TodoCommentService(httpClient),
     todoCategoryService: new TodoCategoryService(httpClient),
-    notificationService: new NotificationService({
-      httpClient,
+    notificationService,
+    notificationBadgeService: new NotificationBadgeService({
       badgeGateway: pushNotification,
-      publicHttpClient: httpClient,
+      notificationService,
       logger,
     }),
     notificationEntryStore: createNotificationEntryStore(),

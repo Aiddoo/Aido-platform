@@ -2,6 +2,7 @@ import {
   useExternalLink,
   useHaptics,
   useLogger,
+  useNotificationBadgeService,
   useNotificationService,
   usePushDeviceService,
   useSessionEpoch,
@@ -32,6 +33,7 @@ import {
 const PUSH_OPENED_RETRIES = 3;
 
 export function useMarkAllAsReadMutationOptions() {
+  const notificationBadgeService = useNotificationBadgeService();
   const haptics = useHaptics();
   const toast = useAppToast();
   const notificationService = useNotificationService();
@@ -41,7 +43,7 @@ export function useMarkAllAsReadMutationOptions() {
   // 배지는 겉모습이다 — 일부 안드로이드 런처에서 이 네이티브 호출이 거부하는데,
   // 그것 때문에 읽음 처리가 통째로 실패하면 안 된다.
   const clearBadgeQuietly = () => {
-    notificationService
+    notificationBadgeService
       .clearBadge()
       .catch((error) =>
         logger.warn(NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED, { error: getErrorMessage(error) }),
@@ -63,7 +65,7 @@ export function useMarkAllAsReadMutationOptions() {
       if (context?.snapshot) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
-      notificationService
+      notificationBadgeService
         .syncBadgeCount()
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
@@ -77,6 +79,7 @@ export function useMarkAllAsReadMutationOptions() {
 }
 
 export function useMarkAsReadMutationOptions() {
+  const notificationBadgeService = useNotificationBadgeService();
   const haptics = useHaptics();
   const notificationService = useNotificationService();
   const logger = useLogger();
@@ -91,7 +94,7 @@ export function useMarkAsReadMutationOptions() {
       // 읽지 않은 수를 아직 모르면 배지를 0으로 지우지 않고 성공 뒤 서버 값으로 맞춘다.
       // 일부 Android 런처는 배지 호출을 거부하므로 그 실패로 읽음 처리가 멈추지 않게 한다
       if (count != null) {
-        notificationService.setBadgeCount(count).catch((error) =>
+        notificationBadgeService.setBadgeCount(count).catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
             error: getErrorMessage(error),
           }),
@@ -102,7 +105,7 @@ export function useMarkAsReadMutationOptions() {
     onSuccess: (_data, _notificationId, context) => {
       invalidateNotifications(queryClient);
       if (!context.hasBadgeCount) {
-        notificationService.syncBadgeCount().catch((error) =>
+        notificationBadgeService.syncBadgeCount().catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
             error: getErrorMessage(error),
           }),
@@ -113,7 +116,7 @@ export function useMarkAsReadMutationOptions() {
       if (context?.snapshot) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
-      notificationService
+      notificationBadgeService
         .syncBadgeCount()
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
@@ -203,6 +206,7 @@ function shouldRetryPushOpened(failureCount: number, error: unknown) {
  * 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다. 오프라인이면 연결될 때까지 멈춰 있다.
  */
 export function useRecordPushOpenedMutationOptions() {
+  const notificationBadgeService = useNotificationBadgeService();
   const notificationService = useNotificationService();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
@@ -218,7 +222,7 @@ export function useRecordPushOpenedMutationOptions() {
       optimisticallyMarkNotificationsRead(queryClient, notificationId, {
         shouldApply: isSameSession,
       })
-        .then(() => (isSameSession() ? notificationService.syncBadgeCount() : undefined))
+        .then(() => (isSameSession() ? notificationBadgeService.syncBadgeCount() : undefined))
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
             error: getErrorMessage(error),
@@ -231,7 +235,7 @@ export function useRecordPushOpenedMutationOptions() {
       sessionEpoch.current() === epoch
         ? Promise.all([
             invalidateNotifications(queryClient),
-            notificationService.syncBadgeCount().catch((error) =>
+            notificationBadgeService.syncBadgeCount().catch((error) =>
               logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, {
                 error: getErrorMessage(error),
               }),

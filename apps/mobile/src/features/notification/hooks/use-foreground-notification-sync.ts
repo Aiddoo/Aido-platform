@@ -1,4 +1,4 @@
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { useLogger, useNotificationBadgeService } from '@src/bootstrap/providers/di-context';
 import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { toError } from '@src/shared/errors';
@@ -25,7 +25,7 @@ export function useForegroundNotificationSync({
   isAuthenticated,
   invalidateByType,
 }: UseForegroundNotificationSyncOptions) {
-  const notificationService = useNotificationService();
+  const notificationBadgeService = useNotificationBadgeService();
   const queryClient = useQueryClient();
   const logger = useLogger();
   const syncNotification = useMemo(() => {
@@ -36,7 +36,7 @@ export function useForegroundNotificationSync({
       pendingTypes.clear();
       const tasks: Promise<unknown>[] = [
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
-        notificationService.syncBadgeCount(),
+        notificationBadgeService.syncBadgeCount(),
         ...types.map((type) => invalidateByType(type)),
       ];
 
@@ -58,7 +58,7 @@ export function useForegroundNotificationSync({
         flush.cancel();
       },
     };
-  }, [invalidateByType, logger, notificationService, queryClient]);
+  }, [invalidateByType, logger, notificationBadgeService, queryClient]);
 
   useEffect(() => {
     return () => {

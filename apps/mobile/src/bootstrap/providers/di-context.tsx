@@ -42,6 +42,7 @@ import type { ReportService } from '@src/features/insights/report/apis/report.se
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import type { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
@@ -133,6 +134,7 @@ export interface DIContainer extends SharedDependencies {
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
+  notificationBadgeService: NotificationBadgeService;
   /** 눌린 푸시 응답 슬롯 */
   notificationEntryStore: NotificationEntryStore;
   pushDeviceService: PushDeviceService;
@@ -328,6 +330,9 @@ export function useTodoCommentService() {
 }
 export function useTodoCategoryService() {
   return useDI().todoCategoryService;
+}
+export function useNotificationBadgeService() {
+  return useDI().notificationBadgeService;
 }
 export function useNotificationService() {
   return useDI().notificationService;
