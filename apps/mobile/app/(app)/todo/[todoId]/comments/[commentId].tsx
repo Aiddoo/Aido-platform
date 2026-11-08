@@ -1,4 +1,4 @@
-import { legacyTodoCommentThreadParamsSchema } from '@src/features/engagement/comment/schemas/comment-params.schema';
+import { legacyTodoCommentThreadParamsSchema } from '@src/features/engagement/comment/schemas/todo-comment-params.schema';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 /** 1.14.0 이하 대화 링크. 할 일 상세 한 화면의 그 댓글 위치로 옮긴다 */

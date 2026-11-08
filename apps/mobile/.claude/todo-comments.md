@@ -21,7 +21,7 @@
 | 구분      | 무엇                                                 | 어디서                                                                       |
 | --------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- |
 | 서버 상태 | 묶음 페이지, 묶음별 답글 페이지, 할 일 상세          | TanStack Query 무한 쿼리 2종 + 상세 쿼리                                     |
-| URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `useCommentParams()`                                                         |
+| URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `useTodoCommentParams()`                                                     |
 | 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentSession`이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState` |
 | 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`(게시하면 작성 바가 그 묶음을 펼친다)          |
 | 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useMinuteNow`, `TodoCommentPolicy`, Reanimated shared value                 |
@@ -177,14 +177,14 @@ features/engagement/comment/
   apis/ todo-comment.service.ts  todo-comment.mapper.ts
   constants/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
   queries/ todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
-  hooks/ use-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts
+  hooks/ use-todo-comment-params.ts  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts  use-is-todo-comment-submitting.ts
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
               todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
               todo-comment-sort-bar.tsx  todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
               todo-comment-session.tsx  todo-comment-keyboard-area.tsx  todo-detail-summary.tsx  todo-detail-header.tsx
               comment-report-bottom-sheet.tsx
   utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts  comment-form-*.ts
-  schemas/ todo-comment.schema.ts  todo-comment-form.schema.ts  todo-comment-draft.schema.ts  comment-params.schema.ts
+  schemas/ todo-comment.schema.ts  todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts
 ```
 
 ## 검증

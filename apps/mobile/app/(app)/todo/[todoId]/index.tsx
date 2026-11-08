@@ -4,7 +4,7 @@ import { TodoCommentSession } from '@src/features/engagement/comment/components/
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
-import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
+import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -15,7 +15,7 @@ import { Suspense } from 'react';
 /** 할 일 상세와 댓글·답글 한 화면. 알림·링크는 `?comment=`로 그 댓글 위치를 연다 */
 export default function TodoDetailScreen() {
   const params = todoParamsSchema.safeParse(useLocalSearchParams());
-  const [{ sort, comment }] = useCommentParams();
+  const [{ sort, comment }] = useTodoCommentParams();
   const goBack = useSingleTap(router.back);
 
   if (!params.success) {

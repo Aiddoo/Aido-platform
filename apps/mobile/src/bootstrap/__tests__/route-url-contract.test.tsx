@@ -1,5 +1,5 @@
 import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view';
-import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
+import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
@@ -108,7 +108,7 @@ describe('공개 URL 계약', () => {
 
   it('댓글: 정렬을 바꾸면 알림으로 연 위치가 사라진다', async () => {
     // Given
-    const route = await renderRouteHook(() => useCommentParams(), {
+    const route = await renderRouteHook(() => useTodoCommentParams(), {
       url: `/feed?sort=LATEST&comment=${COMMENT}`,
     });
 

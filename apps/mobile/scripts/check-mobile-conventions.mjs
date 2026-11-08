@@ -75,7 +75,7 @@ const FORBIDDEN_ROUTE_PATHS = [
 const ALLOWED_TODO_COMMENT_ROUTE_FILES = new Set([
   'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]/report.tsx',
 ]);
-const TODO_COMMENT_NAVIGATION_OWNER = `${TODO_COMMENT_ROOT}/hooks/use-comment-params.ts`;
+const TODO_COMMENT_NAVIGATION_OWNER = `${TODO_COMMENT_ROOT}/hooks/use-todo-comment-params.ts`;
 const ROUTE_IDENTIFIER_PROP_NAMES = new Set([
   'anchorCommentId',
   'commentId',
@@ -896,7 +896,7 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
       relative(repositoryRoot, sourceFile.fileName) !== TODO_COMMENT_NAVIGATION_OWNER
     ) {
       errors.push(
-        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 댓글 위치는 use-comment-params가 search로만 바꿉니다.`,
+        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 댓글 위치는 use-todo-comment-params가 search로만 바꿉니다.`,
       );
     }
 

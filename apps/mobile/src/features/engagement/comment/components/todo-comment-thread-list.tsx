@@ -35,7 +35,7 @@ import Animated, {
 
 import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import { useCommentParams } from '../hooks/use-comment-params';
+import { useTodoCommentParams } from '../hooks/use-todo-comment-params';
 import { invalidateTodoComments } from '../queries/todo-comment-cache';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import type { TodoCommentThread, TodoCommentThreadAnchor } from '../schemas/todo-comment.schema';
@@ -86,7 +86,7 @@ function renderThreadListScrollView(props: ScrollViewProps) {
  */
 export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
   const [todoId] = useTodoId();
-  const [{ sort, comment }] = useCommentParams();
+  const [{ sort, comment }] = useTodoCommentParams();
   const queryClient = useQueryClient();
   const { listRef } = useTodoCommentReveal();
   const threadsQuery = useSuspenseInfiniteQuery(
@@ -239,7 +239,7 @@ function useScrollToAnchor({
   threads: readonly TodoCommentThread[];
   anchor: TodoCommentThreadAnchor | null;
 }): boolean {
-  const [{ comment }] = useCommentParams();
+  const [{ comment }] = useTodoCommentParams();
   const { listRef } = useTodoCommentReveal();
   const [isHighlightActive, setIsHighlightActive] = useState(false);
   const toast = useAppToast();

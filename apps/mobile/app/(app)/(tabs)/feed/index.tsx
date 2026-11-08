@@ -8,7 +8,7 @@ import { TodoCommentSession } from '@src/features/engagement/comment/components/
 import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
-import { useCommentParams } from '@src/features/engagement/comment/hooks/use-comment-params';
+import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
@@ -62,7 +62,7 @@ import { match, P } from 'ts-pattern';
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
-  const [{ sort, comment }] = useCommentParams();
+  const [{ sort, comment }] = useTodoCommentParams();
   const [selectedDateKey] = useFeedDateKey();
   const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
