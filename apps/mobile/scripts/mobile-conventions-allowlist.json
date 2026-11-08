@@ -12,7 +12,7 @@
     "entries": {
       "planning/category <-> planning/todo": {
         "count": 1,
-        "reason": "todo→category는 할 일 화면이 카테고리 조회, 부품, 스키마, 캐시를 쓴다. category→todo는 카테고리 변경 뒤 todo-cache 갱신 한 줄이라 끊는다면 이 줄이다"
+        "reason": "todo→category는 할 일 화면이 카테고리 조회, 부품, 스키마, 캐시를 쓴다. category→todo는 카테고리 변경 뒤 todo-cache 갱신이다. 변경마다 다시 받는 범위가 달라(추가·삭제는 할 일 전체, 이름·색은 목록과 완료 통계, 순서는 위젯 요약) meta 태그 하나로 묶으면 다시 받는 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨겨 남긴다"
       }
     }
   },

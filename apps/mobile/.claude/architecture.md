@@ -133,12 +133,12 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **끊는 방법**
 
-| 위층이 필요한 이유                         | 끊는 방법                                                                                                                                                                                                                 |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileRow`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                              |
-| 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `accountGuides`)       |
-| 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`) |
-| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-completion-changed`)                                                                                                                          |
+| 위층이 필요한 이유                         | 끊는 방법                                                                                                                                                                                                                                                                        |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileRow`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                                                                                     |
+| 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `accountGuides`)                                                              |
+| 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`, `invalidateAfterBlockChange`와 `refreshOnBlockChange`) |
+| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-completion-changed`)                                                                                                                                                                                 |
 
 코드에 있는 7가지는 위 4가지로 묶인다. 컴포넌트 prop은 슬롯, 콜백은 인자, `meta`는 캐시다. 새 방법을 더하지 않는다.
 
@@ -175,7 +175,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                    |
 | 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                   |
 
-**이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
+**이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`) 하나(`planning/category <-> planning/todo`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 
 아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
 
@@ -183,15 +183,11 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-08 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                              | 지금 코드                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| utils 파일                        | 평탄한 `*.view-model.ts` 10개가 `utils/`에 있다. `weather-briefing`·`subscription-receipt`·`plan-todo-subtitle`·`todo-comment-replies`(답글 아래 줄과 펼침은 화면 상태라 Policy에 넣지 않는다)는 유지하고, `subscription-failure`(i18n 키 조합)·`hourly-timeline`은 판단이 남았다. `memo`·`invite-code`·`plan-benefit`·`voice-caption`·`weather-scene`은 아직 가르지 않았다 |
-| [Service 파싱](#service와-mapper) | `parseApiResponse`를 쓰는 파일 25개. Service의 `safeParse` 1곳이 남았다: `session-revocation.service`(`HttpClient`가 아닌 raw `Response`, 실패하면 던지지 않고 `null`)                                                                                                                                                                                                      |
-| [계약 경계](#서버-응답과-모델)    | `apis`·`schemas` 밖에서 `@aido/api` 루트를 import하는 파일 5개(`shared/infra/http` 2, `shared/date/time-of-day`, `shared/utils/semantic-version`, `billing/subscription/domains/entitlement.error`). `common`의 서브패스가 없어 남겼다                                                                                                                                      |
-| [Context](#context-대신-쓰는-것)  | 표 아래 "아직 남은 Context"                                                                                                                                                                                                                                                                                                                                                 |
-| [사용성](#사용성)                 | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                              |
-| [층과 의존](#층과-의존)           | 양방향 6쌍, 허용 외 위층 import 없음                                                                                                                                                                                                                                                                                                                                        |
-| 테스트·UI                         | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                            |
+| 규칙                    | 지금 코드                                                                                                                                                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                     |
+| [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음 |
+| 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                   |
 
 ---
 
@@ -480,14 +476,15 @@ MemoList.Loading = function Loading() {
 
 **UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 
-**아직 남은 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다):
+**판단해 남긴 Context** (옮기기 전에 전후 동작을 확인한다. 동등하지 않으면 유지하고 이유를 남긴다):
 
-| Context                                                      | 판단                                  | 근거                                                                                                                                                                                                                                                                     |
-| ------------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `theme-provider`, `font-scale-provider`, `language-provider` | 유지(저장소는 `useSyncStorageString`) | 값의 원천은 `ObservableSyncStorage` 하나다. 셋은 DI 위에 있어 `syncStorage` prop(기본 `deviceSyncStorage`)을 `useSyncStorageString(storage, key)`에 넘기고, 파생(해석·적용)만 Provider가 한다. 키(`aido_theme_mode`, `aido_font_scale`, `aido_language`)와 값은 그대로다 |
-| `local-date-provider`                                        | 유지                                  | 저장 값이 아니라 자정 타이머·AppState·기기 달력에서 파생한 상태의 단일 소유자다. 원천이 MMKV가 아니다                                                                                                                                                                    |
-| `keyboard-bottom-gap-provider`                               | 유지                                  | 하위 트리마다 `measureInWindow`로 잰 레이아웃 값이다. 저장소가 아니라 서브트리 범위 값이다                                                                                                                                                                               |
-| `todo-comment-expansion`, `todo-comment-reveal`              | 아직 판단하지 않음                    |                                                                                                                                                                                                                                                                          |
+| Context                                                      | 판단                                  | 근거                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `theme-provider`, `font-scale-provider`, `language-provider` | 유지(저장소는 `useSyncStorageString`) | 값의 원천은 `ObservableSyncStorage` 하나다. 셋은 DI 위에 있어 `syncStorage` prop(기본 `deviceSyncStorage`)을 `useSyncStorageString(storage, key)`에 넘기고, 파생(해석·적용)만 Provider가 한다. 키(`aido_theme_mode`, `aido_font_scale`, `aido_language`)와 값은 그대로다                                     |
+| `local-date-provider`                                        | 유지                                  | 저장 값이 아니라 자정 타이머·AppState·기기 달력에서 파생한 상태의 단일 소유자다. 원천이 MMKV가 아니다                                                                                                                                                                                                        |
+| `keyboard-bottom-gap-provider`                               | 유지                                  | 하위 트리마다 `measureInWindow`로 잰 레이아웃 값이다. 저장소가 아니라 서브트리 범위 값이다                                                                                                                                                                                                                   |
+| `todo-comment-expansion`                                     | 유지(UI 내부)                         | 댓글 세션 하나의 펼친 묶음 `Map`이다. 묶음 행과 작성 바(게시하면 그 묶음을 펼친다)가 `FlashList` 행 안팎에서 함께 쓰고 세션이 끝나면 사라져야 한다. props로는 목록·행·답글 여러 층을 거치고, 모듈 저장소는 세션(넓은 화면 pane과 Stack 화면)마다 나뉘지 않고 화면을 떠나도 남는다. 서버 값도 URL 값도 아니다 |
+| `todo-comment-reveal`                                        | 유지(UI 내부)                         | 목록·작성 바 ref, Reanimated 공유 값, 키보드 이벤트 뒤 `measureInWindow`로 재는 스크롤 동작을 나눈다. 값은 바뀌지 않는 ref와 함수라 소비자가 다시 그려지지 않는다. `keyboard-bottom-gap-provider`처럼 서브트리 범위의 레이아웃 값이다                                                                        |
 
 ### 함수 형태
 
@@ -498,7 +495,7 @@ MemoList.Loading = function Loading() {
 | Service 메서드                                                    | arrow class field. DI로 넘겨도 `this`가 유지됨 | `getMemo = async () => {}`                                        |
 | 컴포넌트 안 핸들러                                                | 화살표 `const`                                 | `const handleBack = () => {}`                                     |
 | 인라인 콜백, 쿼리 키 객체 값                                      | 화살표                                         | `onPress={() => …}`, `detail: ({ memoId }) => […]`                |
-| Policy Facade                                                     | 이름 있는 함수 참조만                          | `{ canCreateMemo, getMemoPreview }`                               |
+| Policy Facade                                                     | 이름 있는 함수 참조만                          | `{ canCreateMemo }`                                               |
 
 ### 유틸 이름과 인터페이스
 
@@ -507,6 +504,7 @@ MemoList.Loading = function Loading() {
 - 파일: export가 하나면 파일 이름이 함수 이름 kebab-case다(`to-screen-name.ts`). 같은 대상의 묶음은 `{대상}.ts`나 정해진 접미사(`{feature}-draft`, `{feature}-analytics`, `{name}.geometry`, `{name}.view-model`)다. `helpers`, `utils`, `common`, `misc`는 쓰지 않는다. 저장소는 `*-store.ts`(`shared/stores/`)이고 `hooks/`에는 `use-*`만 둔다.
 - 함수: 동사로 시작한다(`get`, `calculate`, `is/has/can/should`, `find`, `create`, `with`, `to`, `format`, `parse`). 판별 접두사 뜻은 [이름](#이름)의 표를 따른다. `xxxOf`와 축약(`res`, `tmp`, `cb`, `opts`)은 쓰지 않는다. 넓은 범위의 `result`·`data`는 내용 이름으로 바꾼다.
 - 순수성: 네트워크, 저장소, 로그, 현재 시각, 전역 `t`, 시간대 읽기를 하지 않고 인자로 받는다. 부수효과가 있으면 Service나 훅이다.
+- `*.view-model.ts`와 이웃의 경계: 업무 규칙(허용, 한도, 상태 판정)이면 Policy, 화면 좌표·도형 계산이면 `*.geometry.ts`, 화면에 보일 값의 조합(i18n 키, 줄 나누기, 표시 목록, 그리기 값)이면 view-model, Policy를 감싸기만 하면 지운다. 지금 view-model 11개는 모두 화면 조합이다. 규칙은 이미 Policy에서 받는다(`subscription-failure`는 `SubscriptionFailurePolicy.getFailureCause`, `hourly-timeline`은 `WeatherReportPolicy.getUpcomingHours`, `plan-benefit`은 `EntitlementPolicy.getFreeLimit`). `weather-scene`은 날씨를 하늘·비·해·달의 그리기 값으로 바꾸고 좌표는 각 레이어가 정한다
 - 인자: 위치 인자는 3개까지다. 4개 이상이면 이름 있는 객체다. 단 worklet과 프레임마다 도는 함수(`followLevel`)는 성능 때문에 위치 인자를 유지하고 이유를 주석으로 남긴다. 위치 불리언은 쓰지 않는다. 넓은 모델 대신 쓰는 칸만 `Pick`으로 받는다.
 
 ### 메모리 누수를 만들지 않는다
@@ -777,19 +775,12 @@ function canCreateMemo(limit: MemoResourceLimit) {
   return limit.currentCount < limit.maxPerUser;
 }
 
-function getMemoPreview(memo: Pick<Memo, 'content'>) {
-  const [title = '', ...rest] = memo.content.trim().split('\n');
-
-  return { title: title.trim(), body: rest.join('\n').trim() };
-}
-
 export const MemoPolicy = {
   canCreateMemo,
-  getMemoPreview,
 } as const;
 ```
 
-**화면은 Policy로 소비한다.** `MemoPolicy.canCreateMemo(resourceLimit)`처럼 쓴다. 모델을 불필요하게 여러 개 만들지 않는다.
+**화면은 Policy로 소비한다.** `MemoPolicy.canCreateMemo(resourceLimit)`처럼 쓴다. 카드의 제목·본문 나누기(`toMemoPreview`)는 표시 값이라 `utils/memo.view-model.ts`에 둔다. 모델을 불필요하게 여러 개 만들지 않는다.
 
 **이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정, 접두사 뜻은 [이름](#이름)의 표), `find*`(검색), `create*`(생성), `with*`(불변 갱신). 부정 이름은 쓰지 않는다. `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
 
@@ -811,11 +802,12 @@ export const MemoPolicy = {
 
 함수와 화면은 서버 응답 모양에 의존하지 않고 앱 타입만 안다. 서버 필드가 바뀌면 mapper와 `schemas/`만 고친다. 요청·응답 계약은 `@aido/api`가 소유하고 앱 모델은 앱이 소유한다.
 
-| `@aido/api` 진입점                        | 내용                                  | import할 수 있는 곳                                     |
-| ----------------------------------------- | ------------------------------------- | ------------------------------------------------------- |
-| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`MEMO_LIMITS` 등) | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`, 폼 스키마) |
-| `@aido/api/errors`                        | `ErrorCode`                           | 어디서나                                                |
-| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입           | `apis/`와 `schemas/`만                                  |
+| `@aido/api` 진입점                        | 내용                                                        | import할 수 있는 곳                                                                                                     |
+| ----------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`MEMO_LIMITS` 등)                       | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`, 폼 스키마)                                                                 |
+| `@aido/api/errors`                        | `ErrorCode`, 오류 상세 스키마(`quotaErrorDetailsSchema` 등) | 어디서나                                                                                                                |
+| `@aido/api/common`                        | 응답 봉투, 날짜·시각 스키마, SemVer 비교                    | `shared`의 날짜·버전 도구, `shared/infra/http`                                                                          |
+| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입                                 | `apis/`와 `schemas/`, HTTP 어댑터(`shared/infra/http/token-refresher`의 `contracts/auth`). 테스트 fixture는 루트를 쓴다 |
 
 - 옮긴 모델은 `CLIENT_OWNED_MODEL_PATHS`에 올린다. 아직 옮기지 않은 모델의 `@aido/api` 재사용은 손댈 때 함께 옮긴다.
 - 공유할 값이 앱에만 있으면 `vocabulary`로 올린다. 숫자를 앱에서 다시 적지 않는다.
@@ -873,7 +865,7 @@ export function toMemo(dto: MemoDto): Memo {
 
 - 생성자는 포트만 받고 기본값을 두지 않는다. 시각(`now`)처럼 바뀌는 값도 조립하는 곳이 넘긴다. 포트가 셋까지면 위치 인자, 넷부터 `{Class}Ports` 객체 하나다. 다른 Service는 쓰는 메서드만 `Pick<XService, 'method'>`로 받는다.
 - `HttpClient`의 성공 값은 `unknown`이다. 응답 타입을 generic으로 단정하지 않고 공유 스키마로 전부 검증한다.
-- 파싱 반복은 `parseApiResponse`(`shared/errors/parse-api-response.ts`)로 쓴다. 오류 문구 접두어를 그대로 받아 기존 문구, 테스트, Sentry 묶음을 유지한다. 파싱 실패 때 로그를 남기는 Service는 옮길 때 로그를 유지한다.
+- 파싱 반복은 `parseApiResponse`(`shared/errors/parse-api-response.ts`)로 쓴다. 오류 문구 접두어를 그대로 받아 기존 문구, 테스트, Sentry 묶음을 유지한다. 파싱 실패 때 로그를 남기는 Service는 옮길 때 로그를 유지한다. 예외는 `SessionRevocationService` 하나다. `HttpClient`의 `Result`가 아니라 refresh 요청의 raw `Response`를 읽고, 응답이 계약과 다르면 던지지 않고 경고를 남긴 뒤 `null`로 기록을 지운다(로그아웃한 계정의 정리라 다시 시도할 일이 아니다). `parseApiResponse`는 4xx를 `Result`로, 계약 위반을 throw로 다뤄 이 흐름과 맞지 않는다.
 - Mapper는 DTO·OS 값을 모델로 바꾸는 유일한 지점이고 순수 함수다.
 - 컴포넌트는 `HttpClient`나 `Result`를 직접 다루지 않는다. `{feature}Service`와 `unwrap`을 거친다.
 
