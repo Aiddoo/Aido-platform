@@ -13,10 +13,6 @@
       "planning/category <-> planning/todo": {
         "count": 1,
         "reason": "todo→category는 할 일 화면이 카테고리 조회, 부품, 스키마, 캐시를 쓴다. category→todo는 카테고리 변경 뒤 todo-cache 갱신 한 줄이라 끊는다면 이 줄이다"
-      },
-      "social/moderation <-> social/nudge": {
-        "count": 1,
-        "reason": "moderation→nudge는 차단 뒤 콕 캐시 정리, nudge→moderation은 콕 상세 툴바의 신고 판별 모델"
       }
     }
   },

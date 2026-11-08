@@ -3,7 +3,6 @@ import {
   invalidateFeedTodos,
   invalidateFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { invalidateNudges } from '@src/features/social/nudge/queries/nudge-cache';
 import type { Query, QueryClient } from '@tanstack/react-query';
 
 import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
@@ -24,6 +23,5 @@ export function invalidateAfterBlockChange(queryClient: QueryClient) {
     invalidateFriendTodos(queryClient),
     invalidateFeedTodos(queryClient),
     queryClient.invalidateQueries({ predicate: isBlockDependentQuery }),
-    invalidateNudges(queryClient),
   ]);
 }

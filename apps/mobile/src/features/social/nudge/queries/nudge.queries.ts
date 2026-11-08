@@ -29,6 +29,7 @@ export function useGetNudgeInteractionAvailabilityQueryOptions() {
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getInteractionAvailability(signal)),
     staleTime: NUDGE_STALE_TIME_MS,
+    meta: { refreshOnBlockChange: true },
   });
 }
 
@@ -39,7 +40,7 @@ export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: numbe
     queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
     staleTime: NUDGE_STALE_TIME_MS,
-    meta: { refreshOnTodoChange: true },
+    meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
   });
 }
 
@@ -64,7 +65,7 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
       page.hasNext && page.nextCursor != null ? { cursor: page.nextCursor } : undefined,
     select: selectNudgeInteractions,
     staleTime: NUDGE_STALE_TIME_MS,
-    meta: { refreshOnTodoChange: true },
+    meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
   });
 }
 
@@ -87,7 +88,7 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
         ? { cursor: lastPage.nextCursor, throughNudgeId: lastPage.throughNudgeId }
         : undefined,
     staleTime: NUDGE_STALE_TIME_MS,
-    meta: { refreshOnTodoChange: true },
+    meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
   });
 }
 
@@ -99,6 +100,7 @@ export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: stri
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getRemindCooldownInfo(userId, signal)),
     staleTime: MINUTE_MS,
+    meta: { refreshOnBlockChange: true },
   });
 }
 
@@ -109,6 +111,6 @@ export function useGetTodoNudgeLimitQueryOptions() {
     queryKey: NUDGE_QUERY_KEYS.limit(),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getLimitInfo(signal)),
     staleTime: MINUTE_MS,
-    meta: { refreshOnPremiumChange: true },
+    meta: { refreshOnPremiumChange: true, refreshOnBlockChange: true },
   });
 }
