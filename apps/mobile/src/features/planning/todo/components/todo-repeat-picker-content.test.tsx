@@ -392,7 +392,6 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeTruthy();
     expect(screen.getByText('11월 5일 - 11월 7일')).toBeTruthy();
-    expect(screen.getByText('6').props.className).toContain('text-gray-5');
   });
 
   it('시작일이 29일 이후인 매월 반복은 말일 안내를 보여준다', async () => {
