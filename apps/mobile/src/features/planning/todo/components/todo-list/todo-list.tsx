@@ -61,7 +61,12 @@ import {
   TodoTitleLine,
 } from '../todo-row';
 
-export function TodoList() {
+interface TodoListProps {
+  /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
+  isReminderOff?: boolean;
+}
+
+export function TodoList({ isReminderOff = false }: TodoListProps) {
   const { timeZone } = useDateFormatContext();
   const [selectedDate] = useFeedDate();
   const date = toDateKey(selectedDate, timeZone);
@@ -95,6 +100,7 @@ export function TodoList() {
             items={group.todos}
             updatedAt={dataUpdatedAt}
             date={date}
+            isReminderOff={isReminderOff}
             onOpenDetail={openTodoDetail}
           />
         </Box>
@@ -161,10 +167,17 @@ interface TodoReorderableListProps {
   updatedAt: number;
   /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
   date: string;
+  isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }
 
-function TodoReorderableList({ items, updatedAt, date, onOpenDetail }: TodoReorderableListProps) {
+function TodoReorderableList({
+  items,
+  updatedAt,
+  date,
+  isReminderOff,
+  onOpenDetail,
+}: TodoReorderableListProps) {
   const reorderMutation = useMutation(useReorderTodoMutationOptions());
   const reorderableList = useReorderableList({
     items,
@@ -186,7 +199,13 @@ function TodoReorderableList({ items, updatedAt, date, onOpenDetail }: TodoReord
       scrollEnabled={false}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => (
-        <TodoList.Item todo={item} updatedAt={updatedAt} date={date} onOpenDetail={onOpenDetail} />
+        <TodoList.Item
+          todo={item}
+          updatedAt={updatedAt}
+          date={date}
+          isReminderOff={isReminderOff}
+          onOpenDetail={onOpenDetail}
+        />
       )}
     />
   );
@@ -196,10 +215,17 @@ interface TodoListItemProps {
   todo: Todo;
   updatedAt: number;
   date: string;
+  isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }
 
-TodoList.Item = function Item({ todo, updatedAt, date, onOpenDetail }: TodoListItemProps) {
+TodoList.Item = function Item({
+  todo,
+  updatedAt,
+  date,
+  isReminderOff,
+  onOpenDetail,
+}: TodoListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const selectTodo = useSingleTap(onOpenDetail);
@@ -299,7 +325,11 @@ TodoList.Item = function Item({ todo, updatedAt, date, onOpenDetail }: TodoListI
       }
       middle={
         formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
-          <TodoScheduleLine todo={todo} timeLabel={formattedTime} />
+          <TodoScheduleLine
+            todo={todo}
+            timeLabel={formattedTime}
+            isReminderOff={isReminderOff && !todo.completed}
+          />
         ) : undefined
       }
       bottom={

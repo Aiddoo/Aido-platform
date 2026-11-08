@@ -166,7 +166,8 @@
     "stopRepeat": "Stop repeating"
   },
   "list": {
-    "loadError": "Something went wrong while loading your to-dos."
+    "loadError": "Something went wrong while loading your to-dos.",
+    "reminderOff": "Notifications off"
   },
   "friendTodo": {
     "emptyTitle": "Your friend has no to-dos yet",

@@ -11,6 +11,7 @@ export {
   ArrowUpIcon,
   BellFilledIcon,
   BellIcon,
+  BellOffIcon,
   BlockIcon,
   CalendarIcon,
   ChatBubbleIcon,

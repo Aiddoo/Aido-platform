@@ -1,6 +1,7 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  BellOffIcon,
   Box,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
@@ -169,9 +170,15 @@ interface TodoScheduleLineProps {
   todo: Todo;
   /** 표시할 시간. 종일이면 null */
   timeLabel: string | null;
+  /** 알림이 닿지 않아 시간 옆에 종 꺼짐을 그린다 */
+  isReminderOff?: boolean;
 }
 
-export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
+export function TodoScheduleLine({
+  todo,
+  timeLabel,
+  isReminderOff = false,
+}: TodoScheduleLineProps) {
   const { t, i18n } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
@@ -186,7 +193,14 @@ export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
             weekdaySeparator: SPOKEN_WEEKDAY_SEPARATOR,
           }),
         });
-  const spokenLabel = [timeLabel, isRepeating ? spokenRule : null].filter(isNotNil).join(', ');
+  const hasReminderOffMark = isReminderOff && timeLabel != null;
+  const spokenLabel = [
+    timeLabel,
+    hasReminderOffMark ? t('list.reminderOff') : null,
+    isRepeating ? spokenRule : null,
+  ]
+    .filter(isNotNil)
+    .join(', ');
 
   return (
     <HStack gap={4} align="center" className="flex-wrap" accessibilityLabel={spokenLabel}>
@@ -194,6 +208,9 @@ export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
         <Text size="e1" shade={6} className="tabular-nums">
           {timeLabel}
         </Text>
+      )}
+      {hasReminderOffMark && (
+        <BellOffIcon width={repeatIconSize} height={repeatIconSize} colorClassName="text-gray-5" />
       )}
       {timeLabel != null && isRepeating && (
         <Text size="e1" shade={6}>

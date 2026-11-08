@@ -97,6 +97,9 @@
       "title": "Device notifications are off",
       "description": "Turn them on to get the alerts below"
     },
+    "todoTime": {
+      "off": "Notifications are off, so we can't remind you"
+    },
     "status": {
       "label": "Device notifications",
       "granted": "Allowed",

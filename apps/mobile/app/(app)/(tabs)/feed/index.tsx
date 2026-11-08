@@ -12,6 +12,7 @@ import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
+import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
@@ -159,6 +160,7 @@ function MyFeed() {
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
+  const isReminderOff = useIsPushReminderOff();
   const [weatherIntroduction] = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useIsInviteAvailable();
   const whatsNew = useWhatsNewFeed({
@@ -188,7 +190,7 @@ function MyFeed() {
         <Box px={16}>
           <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
             <Suspense fallback={<TodoList.Loading />}>
-              <TodoList key={selectedDateKey} />
+              <TodoList key={selectedDateKey} isReminderOff={isReminderOff} />
             </Suspense>
           </QueryErrorBoundary>
         </Box>

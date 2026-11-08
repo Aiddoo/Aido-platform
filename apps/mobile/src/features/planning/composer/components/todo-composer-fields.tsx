@@ -1,4 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { TodoTimePushNotice } from '@src/features/notification/components/todo-time-push-notice';
+import { usePromptPushPermission } from '@src/features/notification/hooks/use-prompt-push-permission';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -33,6 +35,7 @@ import {
   RepeatIcon,
   SHEET_CONTENT_PADDING,
   useOverlay,
+  VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -62,28 +65,40 @@ export function TodoComposerChips({
   const overlay = useOverlay();
 
   return (
-    // RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="always"
-      style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-      contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-    >
-      <DateChip form={form} isSeriesOccurrence={isSeriesOccurrence} />
-      <TimeChip form={form} />
-      {canChangeRepeat && (
-        <RepeatChip form={form} onPress={() => openTodoRepeatPicker(overlay, form)} />
-      )}
-      <VisibilityChip form={form} />
-      {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-      <QueryErrorBoundary fallback={() => null}>
-        <Suspense fallback={<ActionButton.Loading />}>
-          <CategoryChip form={form} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </ScrollView>
+    <VStack gap={8}>
+      {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
+        contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
+      >
+        <DateChip form={form} isSeriesOccurrence={isSeriesOccurrence} />
+        <TimeChip form={form} />
+        {canChangeRepeat && (
+          <RepeatChip form={form} onPress={() => openTodoRepeatPicker(overlay, form)} />
+        )}
+        <VisibilityChip form={form} />
+        {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+        <QueryErrorBoundary fallback={() => null}>
+          <Suspense fallback={<ActionButton.Loading />}>
+            <CategoryChip form={form} />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ScrollView>
+      <TimePushNotice form={form} />
+    </VStack>
   );
+}
+
+function TimePushNotice({ form }: { form: ComposerForm }) {
+  const [scheduledTime, isAllDay] = useWatch({
+    control: form.control,
+    name: ['scheduledTime', 'isAllDay'],
+  });
+
+  return <TodoTimePushNotice isTimed={!isAllDay && scheduledTime != null} />;
 }
 
 /** 저장이 거절됐을 때 제출 함수에서도 열어야 해 훅이 아니라 함수다 */
@@ -249,6 +264,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
   // 설정을 아직 모르면 칩이 경계로 터지지 않게 24시간 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
   const { setFocus, setValue } = form;
+  const promptPushPermission = usePromptPushPermission();
   const [startDate, scheduledTime, isAllDay] = useWatch({
     control: form.control,
     name: ['startDate', 'scheduledTime', 'isAllDay'],
@@ -273,6 +289,9 @@ function TimeChip({ form }: { form: ComposerForm }) {
                 setValue('scheduledTime', nextTime.scheduledTime);
                 setValue('isAllDay', nextTime.isAllDay);
                 close();
+                if (!nextTime.isAllDay && nextTime.scheduledTime != null) {
+                  promptPushPermission();
+                }
               }}
               onCancel={close}
             />

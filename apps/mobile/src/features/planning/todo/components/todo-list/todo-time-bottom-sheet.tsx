@@ -27,9 +27,12 @@ import { TodoTimePickerContent } from '../todo-time-picker-content';
 type TodoTimeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
   'children' | 'isOpen' | 'onOpenChange'
->;
+> & {
+  /** 종일이 아닌 시각을 저장한 뒤 불린다. 알림 권한은 위층 기능이라 route가 넘긴다 */
+  onTimeScheduled?: () => void;
+};
 
-export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
+export function TodoTimeBottomSheet({ onTimeScheduled, ...props }: TodoTimeBottomSheetProps) {
   const sheet = useSheetRoute('/feed');
 
   return (
@@ -43,14 +46,23 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
         )}
       >
         <Suspense fallback={<TodoTimeBottomSheet.Loading />}>
-          <TodoTimeBottomSheet.TimeForm onClose={() => sheet.close()} />
+          <TodoTimeBottomSheet.TimeForm
+            onClose={() => sheet.close()}
+            onTimeScheduled={onTimeScheduled}
+          />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
   );
 }
 
-TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => void }) {
+TodoTimeBottomSheet.TimeForm = function TimeForm({
+  onClose,
+  onTimeScheduled,
+}: {
+  onClose: () => void;
+  onTimeScheduled?: () => void;
+}) {
   const { timeZone } = useDateFormatContext();
   const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();
@@ -107,7 +119,14 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({ onClose }: { onClose: () => v
                 },
               },
               // 실패하면 시트를 남겨 고른 시간으로 다시 저장할 수 있게 한다
-              { onSuccess: () => onClose() },
+              {
+                onSuccess: () => {
+                  onClose();
+                  if (!isAllDay) {
+                    onTimeScheduled?.();
+                  }
+                },
+              },
             );
           if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
             saveTime();

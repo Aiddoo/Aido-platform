@@ -163,7 +163,8 @@
     "stopRepeat": "반복 끝내기"
   },
   "list": {
-    "loadError": "할 일을 불러오지 못했어요."
+    "loadError": "할 일을 불러오지 못했어요.",
+    "reminderOff": "알림 꺼짐"
   },
   "friendTodo": {
     "emptyTitle": "친구가 아직 할 일을 만들지 않았어요",
