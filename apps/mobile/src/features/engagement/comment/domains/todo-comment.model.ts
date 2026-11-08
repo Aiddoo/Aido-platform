@@ -4,7 +4,7 @@ import { uniqBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const todoCommentAuthorSchema = z.object({
+const todoCommentAuthorSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
   userTag: z.string().nullable(),
@@ -56,13 +56,13 @@ export const todoCommentThreadSchema = z.object({
 });
 export type TodoCommentThread = z.infer<typeof todoCommentThreadSchema>;
 
-export const todoCommentThreadAnchorSchema = z.object({
+const todoCommentThreadAnchorSchema = z.object({
   threadCommentId: z.string(),
   replyId: z.string().nullable(),
 });
 export type TodoCommentThreadAnchor = z.infer<typeof todoCommentThreadAnchorSchema>;
 
-export const todoCommentPaginationSchema = z.object({
+const todoCommentPaginationSchema = z.object({
   previousCursor: z.string().nullable(),
   nextCursor: z.string().nullable(),
   hasPrevious: z.boolean(),
@@ -78,16 +78,16 @@ export const todoCommentThreadPageSchema = z.object({
 });
 export type TodoCommentThreadPage = z.infer<typeof todoCommentThreadPageSchema>;
 
-export const todoCommentReplyPageSchema = z.object({
+const todoCommentReplyPageSchema = z.object({
   items: z.array(todoCommentSchema),
   pagination: todoCommentPaginationSchema,
 });
 export type TodoCommentReplyPage = z.infer<typeof todoCommentReplyPageSchema>;
 
-export const todoCommentChainSchema = z.object({ comments: z.array(todoCommentSchema) });
+const todoCommentChainSchema = z.object({ comments: z.array(todoCommentSchema) });
 export type TodoCommentChain = z.infer<typeof todoCommentChainSchema>;
 
-export const todoCommentLikeResultSchema = z.object({
+const todoCommentLikeResultSchema = z.object({
   commentId: z.string(),
   isLiked: z.boolean(),
   likeCount: z.int().nonnegative(),

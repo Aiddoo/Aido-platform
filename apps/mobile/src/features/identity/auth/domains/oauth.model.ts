@@ -25,7 +25,7 @@ export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
 const oauthStartModeSchema = z.enum(['login', 'link']);
 export type OAuthStartMode = z.infer<typeof oauthStartModeSchema>;
 
-export const linkedAccountSchema = z.object({
+const linkedAccountSchema = z.object({
   provider: oauthProviderSchema,
   linked: z.boolean(),
   providerAccountId: z.string().nullable(),
@@ -33,7 +33,7 @@ export const linkedAccountSchema = z.object({
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
-export const linkedAccountsResultSchema = z.object({
+const linkedAccountsResultSchema = z.object({
   accounts: z.array(linkedAccountSchema),
   canUnlink: z.boolean(),
 });

@@ -11,7 +11,7 @@ export const blockedUserSchema = z.object({
 export type BlockedUser = z.infer<typeof blockedUserSchema>;
 
 // 이름이 없으면 화면이 대체 이름을 넣는다
-export const blockTargetSchema = z.object({
+const blockTargetSchema = z.object({
   userId: z.string(),
   displayName: z.string(),
 });

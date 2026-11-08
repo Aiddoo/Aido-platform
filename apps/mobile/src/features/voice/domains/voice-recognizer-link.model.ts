@@ -9,7 +9,7 @@ import {
 } from '../constants/voice.constants';
 import type { VoiceCaptureState } from './voice-capture.model';
 
-export const voiceStallWatchSchema = z.object({
+const voiceStallWatchSchema = z.object({
   // 마지막 글자를 받았거나 구간이 열린 시각
   lastTextAt: z.number(),
   // 그 뒤로 말소리 크기로 들린 시간의 합(ms)

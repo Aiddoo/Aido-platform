@@ -9,7 +9,7 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const activationProgressSchema = z.object({
+const activationProgressSchema = z.object({
   todoCreatedAt: instantSchema.nullable(),
   activatedAt: instantSchema.nullable(),
   pushRegistrationUnlockedAt: instantSchema.nullable(),
@@ -26,7 +26,7 @@ const activationChecklistStepsSchema = z.object({
   hasCreatedTodo: z.boolean(),
   hasCompletedTodo: z.boolean(),
 });
-export type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
+type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
 
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
 const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([

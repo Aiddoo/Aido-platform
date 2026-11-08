@@ -19,19 +19,19 @@ export const consentSchema = z.object({
 });
 export type Consent = z.infer<typeof consentSchema>;
 
-export const updateMarketingConsentResultSchema = z.object({
+const updateMarketingConsentResultSchema = z.object({
   marketingAgreedAt: instantSchema.nullable(),
 });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
 
-export const updateMarketingPushConsentResultSchema = z.object({
+const updateMarketingPushConsentResultSchema = z.object({
   marketingPushAgreedAt: instantSchema.nullable(),
 });
 export type UpdateMarketingPushConsentResult = z.infer<
   typeof updateMarketingPushConsentResultSchema
 >;
 
-export const updateAiDataSharingConsentResultSchema = z.object({
+const updateAiDataSharingConsentResultSchema = z.object({
   aiDataSharingDecision: z.enum(AI_DATA_SHARING_DECISIONS),
   aiDataSharingAgreedAt: instantSchema.nullable(),
   aiDataSharingConsentVersion: z.string().nullable(),

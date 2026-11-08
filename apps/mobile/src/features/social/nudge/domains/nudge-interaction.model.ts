@@ -22,7 +22,7 @@ export const nudgeInteractionSchema = z.object({
 });
 export type NudgeInteraction = z.infer<typeof nudgeInteractionSchema>;
 
-export const nudgeInteractionPageSchema = z.object({
+const nudgeInteractionPageSchema = z.object({
   items: z.array(nudgeInteractionSchema),
   nextCursor: z.number().nullable(),
   hasNext: z.boolean(),
@@ -38,7 +38,7 @@ const nudgeInteractionStatusSchema = z.enum([
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
 
-export const nudgeThanksPreviewSchema = z.object({
+const nudgeThanksPreviewSchema = z.object({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
   totalRecipients: z.int().nonnegative(),
@@ -57,7 +57,7 @@ export const nudgeThanksPreviewSchema = z.object({
 export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
 
 const nudgeThanksSummaryStateSchema = z.enum(['NONE', 'PENDING', 'SENT', 'SENT_WITH_PENDING']);
-export type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
+type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
 
 interface NudgeThanksSummary {
   state: NudgeThanksSummaryState;

@@ -29,13 +29,13 @@ import {
   TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
 
-export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
+const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 // 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다
-export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
+const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
-export const todoRepeatEndSchema = z.discriminatedUnion('type', [
+const todoRepeatEndSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('NEVER') }),
   z.object({ type: z.literal('UNTIL'), date: z.iso.date() }),
   z.object({

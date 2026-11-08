@@ -1,10 +1,10 @@
 import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
 import { z } from 'zod';
 
-export const appStoreVersionSchema = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+const appStoreVersionSchema = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
 
-export const appVersionPlatformSchema = z.enum(['ios', 'android']);
-export type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
+const appVersionPlatformSchema = z.enum(['ios', 'android']);
+type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
 
 const enabledAppVersionConfigSchema = z.object({
   enabled: z.literal(true),
@@ -13,7 +13,7 @@ const enabledAppVersionConfigSchema = z.object({
     android: appStoreVersionSchema,
   }),
 });
-export type EnabledAppVersionConfig = z.infer<typeof enabledAppVersionConfigSchema>;
+type EnabledAppVersionConfig = z.infer<typeof enabledAppVersionConfigSchema>;
 
 export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),

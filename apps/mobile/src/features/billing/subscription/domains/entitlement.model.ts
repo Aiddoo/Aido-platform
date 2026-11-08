@@ -22,7 +22,7 @@ const accessTierSchema = z.enum(ACCESS_TIERS);
 export type AccessTier = z.infer<typeof accessTierSchema>;
 
 const quotaPeriodSchema = z.enum(PLAN_QUOTA_PERIODS);
-export type QuotaPeriod = z.infer<typeof quotaPeriodSchema>;
+type QuotaPeriod = z.infer<typeof quotaPeriodSchema>;
 
 /** 서버가 계산한 기능 하나의 한도·사용량. 앱은 이 값을 그대로 쓰고 다시 계산하지 않는다 */
 export const featureQuotaSchema = z.object({

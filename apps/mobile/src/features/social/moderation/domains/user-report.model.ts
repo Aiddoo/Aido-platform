@@ -8,7 +8,7 @@ import { z } from 'zod';
 export type { UserReportReason, UserReportTargetType };
 
 // 시트를 연 화면이 대상을 정하고 시트는 사유와 상세만 받는다
-export const userReportTargetSchema = z.object({
+const userReportTargetSchema = z.object({
   targetUserId: z.string(),
   targetType: z.enum(USER_REPORT_TARGET_TYPES),
   targetId: z.string().optional(),

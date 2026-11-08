@@ -40,7 +40,7 @@ export const todoListResultSchema = z.object({
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
 // 기기와 무관한 서버 기록이다
-export const todoExistenceSchema = z.object({
+const todoExistenceSchema = z.object({
   hasTodo: z.boolean(),
   hasCompletedTodo: z.boolean(),
 });

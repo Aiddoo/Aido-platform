@@ -11,7 +11,7 @@ export const voiceTranscriptSchema = z.object({
 });
 export type VoiceTranscript = z.infer<typeof voiceTranscriptSchema>;
 
-export const speechResultSchema = z.object({
+const speechResultSchema = z.object({
   transcript: z.string(),
   isFinal: z.boolean(),
 });

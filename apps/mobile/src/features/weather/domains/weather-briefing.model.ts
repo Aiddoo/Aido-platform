@@ -373,7 +373,7 @@ function getSuggestedStartAt(
   return next?.startsAt ?? null;
 }
 
-export type BriefingState = 'loading' | 'hidden' | 'visible';
+type BriefingState = 'loading' | 'hidden' | 'visible';
 
 function getBriefingState(
   report: { location: { timezone: string }; fetchedAt: Instant } | undefined,

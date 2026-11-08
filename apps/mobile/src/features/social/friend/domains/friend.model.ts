@@ -3,7 +3,7 @@ import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 // 서버 경로 검증(userTagParamSchema)과 같은 규칙이다
-export const userTagSchema = z
+const userTagSchema = z
   .string()
   .length(8)
   .regex(/^[A-Z0-9]+$/u);
@@ -32,7 +32,7 @@ export const searchedUserSchema = friendProfileSchema.extend({
 });
 export type SearchedUser = z.infer<typeof searchedUserSchema>;
 
-export const sendFriendRequestResultSchema = z.object({
+const sendFriendRequestResultSchema = z.object({
   autoAccepted: z.boolean(),
 });
 export type SendFriendRequestResult = z.infer<typeof sendFriendRequestResultSchema>;

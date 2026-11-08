@@ -5,13 +5,12 @@ import { z } from 'zod';
 
 import { InviteRewardPolicy, inviteRewardSchema } from './invite-reward.model';
 
-export const inviteMilestoneSchema = z.object({
+const inviteMilestoneSchema = z.object({
   qualifiedCount: z.int().positive(),
   rewards: z.array(inviteRewardSchema),
 });
-export type InviteMilestone = z.infer<typeof inviteMilestoneSchema>;
 
-export const inviterRewardMilestoneSchema = inviteMilestoneSchema.extend({
+const inviterRewardMilestoneSchema = inviteMilestoneSchema.extend({
   repeatEvery: z.int().positive().nullable(),
 });
 export type InviterRewardMilestone = z.infer<typeof inviterRewardMilestoneSchema>;

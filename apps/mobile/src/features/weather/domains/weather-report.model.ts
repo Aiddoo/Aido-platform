@@ -71,7 +71,7 @@ const nextHourForecastSchema = z.object({
   periods: z.array(nextHourPeriodSchema),
   minutes: z.array(minuteForecastSchema),
 });
-export type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
+type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
 
 const hourlyForecastSchema = z.object({
   startsAt: instantSchema,

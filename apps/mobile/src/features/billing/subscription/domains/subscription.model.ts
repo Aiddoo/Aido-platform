@@ -1,10 +1,10 @@
 import { round } from 'es-toolkit';
 import { z } from 'zod';
 
-export const planTypeSchema = z.enum(['monthly', 'annual']);
+const planTypeSchema = z.enum(['monthly', 'annual']);
 export type PlanType = z.infer<typeof planTypeSchema>;
 
-export const subscriptionPlanSchema = z.object({
+const subscriptionPlanSchema = z.object({
   identifier: z.string(),
   planType: planTypeSchema,
   priceString: z.string(),

@@ -10,14 +10,14 @@ export const memoSchema = z.object({
 });
 export type Memo = z.infer<typeof memoSchema>;
 
-export const memoPageSchema = z.object({
+const memoPageSchema = z.object({
   items: z.array(memoSchema),
   nextCursor: z.int().nullable(),
   hasNext: z.boolean(),
 });
 export type MemoPage = z.infer<typeof memoPageSchema>;
 
-export const memoResourceLimitSchema = z.object({
+const memoResourceLimitSchema = z.object({
   currentCount: z.int().nonnegative(),
   maxPerUser: z.int().positive(),
 });

@@ -1,7 +1,7 @@
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const featureCampaignConfigSchema = z.discriminatedUnion('enabled', [
+const featureCampaignConfigSchema = z.discriminatedUnion('enabled', [
   z.object({ enabled: z.literal(false) }),
   z.object({
     enabled: z.literal(true),

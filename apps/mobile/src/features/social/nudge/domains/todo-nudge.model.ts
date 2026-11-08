@@ -18,7 +18,7 @@ export const nudgeCooldownInfoSchema = z.object({
 });
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
-export const sendTodoNudgeResultSchema = z.object({
+const sendTodoNudgeResultSchema = z.object({
   message: z.string(),
 });
 export type SendTodoNudgeResult = z.infer<typeof sendTodoNudgeResultSchema>;

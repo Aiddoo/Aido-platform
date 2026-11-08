@@ -46,26 +46,26 @@ export const voiceNoteDigestSchema = z.object({
 export type VoiceNoteDigest = z.infer<typeof voiceNoteDigestSchema>;
 
 // 멈췄다 이어 들으면 인식기가 파일을 새로 써서 조각마다 노트 시계의 시작을 든다
-export const voiceNoteRecordingSchema = z.object({
+const voiceNoteRecordingSchema = z.object({
   fileName: z.string().min(1),
   startMs: z.int().nonnegative(),
 });
 export type VoiceNoteRecording = z.infer<typeof voiceNoteRecordingSchema>;
 
 // 앱을 다시 켜도 같은 멱등 키를 써 차감이 겹치지 않는다
-export const voiceNoteDigestRequestSchema = z.object({
+const voiceNoteDigestRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
 });
 export type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
 
 // 카드를 고쳐서 보내면 새 키를 쓰도록 내용 지문을 함께 든다
-export const voiceNotePlanApplyRequestSchema = z.object({
+const voiceNotePlanApplyRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
   fingerprint: z.string(),
 });
 export type VoiceNotePlanApplyRequest = z.infer<typeof voiceNotePlanApplyRequestSchema>;
 
-export const voiceNoteMemoSaveRequestSchema = z.object({
+const voiceNoteMemoSaveRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
 });
 export type VoiceNoteMemoSaveRequest = z.infer<typeof voiceNoteMemoSaveRequestSchema>;

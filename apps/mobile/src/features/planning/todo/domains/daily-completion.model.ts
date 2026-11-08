@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { type Todo, TodoPolicy } from './todo.model';
 
-export const dailyCompletionSummarySchema = z.object({
+const dailyCompletionSummarySchema = z.object({
   date: z.string(),
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
@@ -22,7 +22,7 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
-export const multiDayTodoSpanSchema = z.object({
+const multiDayTodoSpanSchema = z.object({
   startDate: z.iso.date(),
   endDate: z.iso.date(),
   completed: z.boolean(),

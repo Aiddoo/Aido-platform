@@ -19,7 +19,7 @@ const ILLUSTRATION_SIZES = {
 
 export type IllustrationSize = keyof typeof ILLUSTRATION_SIZES;
 
-export interface IllustrationProps {
+interface IllustrationProps {
   size?: IllustrationSize;
 }
 

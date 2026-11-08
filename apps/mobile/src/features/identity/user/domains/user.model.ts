@@ -22,7 +22,7 @@ export const userSchema = z.object({
 export type User = z.infer<typeof userSchema>;
 
 /** profileImage null은 사진을 지운 상태다 */
-export const updateProfileResultSchema = z.object({
+const updateProfileResultSchema = z.object({
   name: z.string().nullable(),
   profileImage: z.string().nullable(),
 });

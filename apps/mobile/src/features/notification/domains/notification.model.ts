@@ -16,12 +16,12 @@ import {
 } from '../constants/notification.constants';
 import type { PushNotificationPayload } from '../schemas/push-notification-payload.schema';
 
-export const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
+const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
 
-export const notificationContextSchema = z.object({
+const notificationContextSchema = z.object({
   todoId: z.number().optional(),
   friendId: z.string().optional(),
   nudgeId: z.number().optional(),
@@ -29,7 +29,7 @@ export const notificationContextSchema = z.object({
 });
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 
-export const notificationRoutingSchema = z.object({
+const notificationRoutingSchema = z.object({
   commentId: z.string().optional(),
   threadRootId: z.string().optional(),
   activityKind: z.enum(NOTIFICATION_ACTIVITY_KIND).optional(),
@@ -40,13 +40,13 @@ export const notificationRoutingSchema = z.object({
 });
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 
-export const notificationActionSchema = z.object({
+const notificationActionSchema = z.object({
   type: z.enum(NOTIFICATION_ACTION_TYPE),
   url: z.string().optional(),
 });
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
-export const notificationSchema = z.object({
+const notificationSchema = z.object({
   id: z.number(),
   userId: z.string(),
   type: notificationTypeSchema,
@@ -61,7 +61,7 @@ export const notificationSchema = z.object({
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
-export const notificationListResultSchema = z.object({
+const notificationListResultSchema = z.object({
   notifications: z.array(notificationSchema),
   hasMore: z.boolean(),
   nextCursor: z.number().nullable(),

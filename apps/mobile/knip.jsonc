@@ -1,5 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // 모델의 순수 함수는 같은 파일의 Policy가 묶어 쓰고 테스트·필터 인자로도 export한다
+  "ignoreExportsUsedInFile": { "function": true },
   "workspaces": {
     "apps/mobile": {
       "entry": [

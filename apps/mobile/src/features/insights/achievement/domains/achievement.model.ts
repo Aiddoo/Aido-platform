@@ -14,14 +14,13 @@ export const weeklyAchievementSchema = z.object({
 });
 export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
 
-export const weeklyAchievementSummarySchema = z.object({
+const weeklyAchievementSummarySchema = z.object({
   totalWeeks: z.int().nonnegative(),
   perfectWeeks: z.int().nonnegative(),
   currentStreak: z.int().nonnegative(),
   bestStreak: z.int().nonnegative(),
   averageRate: z.number().min(0).max(100),
 });
-export type WeeklyAchievementSummary = z.infer<typeof weeklyAchievementSummarySchema>;
 
 export const weeklyAchievementPageSchema = z.object({
   items: z.array(weeklyAchievementSchema),
@@ -31,7 +30,7 @@ export const weeklyAchievementPageSchema = z.object({
 });
 export type WeeklyAchievementPage = z.infer<typeof weeklyAchievementPageSchema>;
 
-export const badgeTypeSchema = z.enum(['perfect', 'almost', 'completed']);
+const badgeTypeSchema = z.enum(['perfect', 'almost', 'completed']);
 export type BadgeType = z.infer<typeof badgeTypeSchema>;
 
 const PERFECT_COMPLETION_RATE = 100;

@@ -6,13 +6,13 @@ import { z } from 'zod';
 
 import { PUSH_PERMISSION_STEP, PUSH_PROMPT_SNOOZE_DAYS } from '../constants/notification.constants';
 
-export const pushPermissionSchema = z.object({
+const pushPermissionSchema = z.object({
   status: z.enum(PUSH_PERMISSION_STATUS),
   canAskAgain: z.boolean(),
 });
 export type PushPermission = z.infer<typeof pushPermissionSchema>;
 
-export const pushDeviceSchema = z.object({
+const pushDeviceSchema = z.object({
   permission: pushPermissionSchema,
   hasActiveToken: z.boolean(),
   reportedAt: instantSchema,
