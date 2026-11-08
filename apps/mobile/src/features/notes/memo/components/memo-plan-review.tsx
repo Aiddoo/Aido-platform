@@ -25,12 +25,8 @@ import { useRefreshMemos } from '../hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 
-interface MemoPlanReviewProps {
-  className?: string;
-}
-
 /** 메모를 나눈 결과의 검토 폼. 기기에 남긴 초안으로 시작하고 저장하면 피드로 간다 */
-export function MemoPlanReview({ className }: MemoPlanReviewProps) {
+export function MemoPlanReview() {
   const { t } = useTranslation('memo');
   const { timeZone } = useDateFormatContext();
   const goBack = useSingleTap(router.back);
@@ -92,7 +88,7 @@ export function MemoPlanReview({ className }: MemoPlanReviewProps) {
 
   return (
     <PlanReview
-      className={className}
+      className="flex-1"
       form={form}
       plan={toDraftVoicePlan(createMemoPlanIdentity(memoId), restoredDraft)}
       fallbackCategoryId={fallbackCategoryId}
