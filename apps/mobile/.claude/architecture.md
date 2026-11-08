@@ -918,6 +918,7 @@ export function toMemo(dto: MemoDto): Memo {
 - 파싱 반복은 `parseApiResponse`(`shared/errors/parse-api-response.ts`)로 쓴다. 오류 문구 접두어를 그대로 받아 기존 문구, 테스트, Sentry 묶음을 유지한다. 파싱 실패 때 로그를 남기는 Service는 옮길 때 로그를 유지한다. 예외는 `SessionRevocationService` 하나다. `HttpClient`의 `Result`가 아니라 refresh 요청의 raw `Response`를 읽고, 응답이 계약과 다르면 던지지 않고 경고를 남긴 뒤 `null`로 기록을 지운다(로그아웃한 계정의 정리라 다시 시도할 일이 아니다). `parseApiResponse`는 4xx를 `Result`로, 계약 위반을 throw로 다뤄 이 흐름과 맞지 않는다.
 - Mapper는 DTO·OS 값을 모델로 바꾸는 유일한 지점이고 순수 함수다.
 - 컴포넌트는 `HttpClient`나 `Result`를 직접 다루지 않는다. `{feature}Service`와 `unwrap`을 거친다.
+- 서버를 부르는 Service는 `queries/`(query·mutation 옵션)에서만 부른다. 기기 안에서 끝나는 Service(초안, 녹음 저장소, 코치마크, 대기 중인 초대, 앱 아이콘)는 캐시할 서버 상태가 없어 컴포넌트·훅의 이벤트 핸들러에서 `use{Name}Service()`로 바로 불러도 된다.
 
 ---
 
