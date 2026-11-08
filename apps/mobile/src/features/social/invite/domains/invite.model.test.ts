@@ -149,3 +149,129 @@ describe('getProgress', () => {
     expect(result).toBe('in-progress');
   });
 });
+
+describe('getNextFriendSlots', () => {
+  it('다음 발자국에서 받는 친구 칸 수를 돌려준다', () => {
+    // Given
+    const invite = createInvite({
+      nextMilestone: {
+        qualifiedCount: 3,
+        rewards: [
+          { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+          { rewardType: 'FRIEND_SLOT', quantity: 2 },
+        ],
+      },
+    });
+
+    // When
+    const slots = InvitePolicy.getNextFriendSlots(invite);
+
+    // Then
+    expect(slots).toBe(2);
+  });
+
+  it('다음 발자국이 없으면 0칸이다', () => {
+    // Given
+    const invite = createInvite({ nextMilestone: null });
+
+    // When
+    const slots = InvitePolicy.getNextFriendSlots(invite);
+
+    // Then
+    expect(slots).toBe(0);
+  });
+});
+
+describe('getEarnedPremiumDays', () => {
+  it('이미 받은 보상 중 프리미엄 일수를 더한다', () => {
+    // Given
+    const invite = createInvite({
+      rewardsEarned: [
+        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+        { rewardType: 'FRIEND_SLOT', quantity: 1 },
+        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+      ],
+    });
+
+    // When
+    const days = InvitePolicy.getEarnedPremiumDays(invite);
+
+    // Then
+    // 7 + 7 = 14
+    expect(days).toBe(14);
+  });
+
+  it('받은 보상이 없으면 0일이다', () => {
+    // Given
+    const invite = createInvite({ rewardsEarned: [] });
+
+    // When
+    const days = InvitePolicy.getEarnedPremiumDays(invite);
+
+    // Then
+    expect(days).toBe(0);
+  });
+});
+
+describe('getEarnedFriendSlots', () => {
+  it('이미 받은 보상 중 친구 칸을 더한다', () => {
+    // Given
+    const invite = createInvite({
+      rewardsEarned: [
+        { rewardType: 'FRIEND_SLOT', quantity: 1 },
+        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+        { rewardType: 'FRIEND_SLOT', quantity: 1 },
+      ],
+    });
+
+    // When
+    const slots = InvitePolicy.getEarnedFriendSlots(invite);
+
+    // Then
+    // 1 + 1 = 2
+    expect(slots).toBe(2);
+  });
+
+  it('받은 보상이 없으면 0칸이다', () => {
+    // Given
+    const invite = createInvite({ rewardsEarned: [] });
+
+    // When
+    const slots = InvitePolicy.getEarnedFriendSlots(invite);
+
+    // Then
+    expect(slots).toBe(0);
+  });
+});
+
+describe('hasInvitedAnyone', () => {
+  it.each([
+    {
+      title: '가입한 친구가 없으면 아직 초대하지 않았다',
+      qualifiedCount: 0,
+      waitingCount: 0,
+      expected: false,
+    },
+    {
+      title: '발자국을 기다리는 친구 한 명도 초대한 것이다',
+      qualifiedCount: 0,
+      waitingCount: 1,
+      expected: true,
+    },
+    {
+      title: '발자국을 찍은 친구 한 명도 초대한 것이다',
+      qualifiedCount: 1,
+      waitingCount: 0,
+      expected: true,
+    },
+  ])('$title', ({ qualifiedCount, waitingCount, expected }) => {
+    // Given
+    const invite = createInvite({ qualifiedCount, waitingCount });
+
+    // When
+    const result = InvitePolicy.hasInvitedAnyone(invite);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

@@ -104,3 +104,23 @@ describe('getPawPrintState', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('hasStartedActiveDays', () => {
+  it.each([
+    { activeDayCount: 0, expected: false },
+    { activeDayCount: 1, expected: true },
+    { activeDayCount: 3, expected: true },
+  ])(
+    '활동한 날이 $activeDayCount일이면 시작했는지는 $expected다',
+    ({ activeDayCount, expected }) => {
+      // Given
+      const friend = createInvitedFriend({ activeDayCount });
+
+      // When
+      const result = InvitedFriendPolicy.hasStartedActiveDays(friend);
+
+      // Then
+      expect(result).toBe(expected);
+    },
+  );
+});

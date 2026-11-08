@@ -122,3 +122,30 @@ describe('isPromptSnoozed', () => {
     expect(atBoundary).toBe(false);
   });
 });
+
+describe('isNotDetermined', () => {
+  it('아직 묻지 않은 권한이면 시스템 창을 띄울 차례다', () => {
+    // Given
+    const permission = createPushPermission({ status: 'NOT_DETERMINED' });
+
+    // When
+    const result = PushPermissionPolicy.isNotDetermined(permission);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it.each(['GRANTED', 'PROVISIONAL', 'DENIED'] as const)(
+    '%s로 이미 답한 권한은 정해진 상태다',
+    (status) => {
+      // Given
+      const permission = createPushPermission({ status });
+
+      // When
+      const result = PushPermissionPolicy.isNotDetermined(permission);
+
+      // Then
+      expect(result).toBe(false);
+    },
+  );
+});

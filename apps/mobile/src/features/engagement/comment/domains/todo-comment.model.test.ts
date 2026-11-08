@@ -485,3 +485,78 @@ describe('flattenReplies', () => {
     expect(replies.map((reply) => reply.id)).toEqual(['first', 'older', 'posted']);
   });
 });
+
+describe('isReply', () => {
+  it('묶음 머리 댓글이 있으면 답글이다', () => {
+    // Given
+    const reply = createTodoCommentReply(createTodoComment());
+
+    // When
+    const result = TodoCommentPolicy.isReply(reply);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('묶음 머리 댓글이 없으면 첫 댓글이다', () => {
+    // Given
+    const comment = createTodoComment({ threadCommentId: null });
+
+    // When
+    const result = TodoCommentPolicy.isReply(comment);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('hasRepliesToShow', () => {
+  it.each([
+    { totalCount: 0, expected: false },
+    { totalCount: 1, expected: true },
+    { totalCount: 12, expected: true },
+  ])(
+    '답글이 모두 $totalCount개면 답글 보기를 보여 주는지는 $expected다',
+    ({ totalCount, expected }) => {
+      // Given
+      const thread = createTodoCommentThread({
+        comment: createTodoComment({ replyCount: totalCount }),
+      });
+
+      // When
+      const result = TodoCommentPolicy.hasRepliesToShow(thread);
+
+      // Then
+      expect(result).toBe(expected);
+    },
+  );
+});
+
+describe('withRepliesRemoved', () => {
+  const head = createTodoComment();
+  const first = createTodoCommentReply(head, { id: 'reply-1' });
+  const second = createTodoCommentReply(head, { id: 'reply-2' });
+
+  it('지운 답글만 목록에서 빼고 나머지 순서는 그대로 둔다', () => {
+    // Given
+    const replies = [first, second];
+
+    // When
+    const next = TodoCommentPolicy.withRepliesRemoved(replies, 'reply-1');
+
+    // Then
+    expect(next).toEqual([second]);
+  });
+
+  it('목록에 없는 답글이면 같은 내용의 새 목록을 돌려준다', () => {
+    // Given
+    const replies = [first, second];
+
+    // When
+    const next = TodoCommentPolicy.withRepliesRemoved(replies, 'reply-unknown');
+
+    // Then
+    expect(next).toEqual(replies);
+    expect(next).not.toBe(replies);
+  });
+});

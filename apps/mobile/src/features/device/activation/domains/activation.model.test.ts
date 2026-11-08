@@ -312,3 +312,61 @@ describe('findActivationIdentity', () => {
     expect(identity).toBeNull();
   });
 });
+
+describe('getDaysSinceSignup', () => {
+  const user = { id: 'new', createdAt: toInstant('2026-08-01T09:00:00.000Z') };
+
+  it('가입한 순간에는 0일이다', () => {
+    // When
+    const days = ActivationPolicy.getDaysSinceSignup(user, user.createdAt);
+
+    // Then
+    expect(days).toBe(0);
+  });
+
+  it('24시간이 되기 1ms 전까지는 0일이다', () => {
+    // Given
+    const now = toInstant('2026-08-02T08:59:59.999Z');
+
+    // When
+    const days = ActivationPolicy.getDaysSinceSignup(user, now);
+
+    // Then
+    // 23:59:59.999 / 24h → 내림 0일
+    expect(days).toBe(0);
+  });
+
+  it('24시간이 되면 1일이다', () => {
+    // Given
+    const now = toInstant('2026-08-02T09:00:00.000Z');
+
+    // When
+    const days = ActivationPolicy.getDaysSinceSignup(user, now);
+
+    // Then
+    expect(days).toBe(1);
+  });
+
+  it('달력 날짜가 아니라 지난 시간으로 센다', () => {
+    // Given
+    const now = toInstant('2026-08-08T08:59:59.999Z');
+
+    // When
+    const days = ActivationPolicy.getDaysSinceSignup(user, now);
+
+    // Then
+    // 7일 - 1ms → 내림 6일
+    expect(days).toBe(6);
+  });
+
+  it('기기 시계가 가입보다 앞서도 음수가 아니라 0일이다', () => {
+    // Given
+    const now = toInstant('2026-08-01T08:00:00.000Z');
+
+    // When
+    const days = ActivationPolicy.getDaysSinceSignup(user, now);
+
+    // Then
+    expect(days).toBe(0);
+  });
+});

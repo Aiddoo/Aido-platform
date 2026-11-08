@@ -1,5 +1,8 @@
 import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
-import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
+import {
+  parseWidgetNavigationUri,
+  type WidgetNavigationCommand,
+} from '../schemas/widget-navigation.schema';
 import { WidgetNavigationPolicy } from './widget-navigation.model';
 
 describe('isFresh', () => {
@@ -116,5 +119,42 @@ describe('canOpenWithoutOwner', () => {
     expect(addTodo).not.toBeNull();
     expect(canOpenFeed).toBe(true);
     expect(canOpenAddTodo).toBe(false);
+  });
+});
+
+describe('isSameCommand', () => {
+  const createCommand = (overrides: Partial<WidgetNavigationCommand> = {}) => ({
+    id: 'command-1',
+    uri: 'aido://feed',
+    userId: 'user-1',
+    createdAt: 1000,
+    ...overrides,
+  });
+
+  it('id·주소·계정·만든 시각이 모두 같으면 같은 명령이다', () => {
+    // Given
+    const stored = createCommand();
+
+    // When
+    const result = WidgetNavigationPolicy.isSameCommand(stored, createCommand());
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it.each([
+    { field: 'id', overrides: { id: 'command-2' } },
+    { field: '주소', overrides: { uri: 'aido://feed?date=2026-10-05&action=add-todo' } },
+    { field: '계정', overrides: { userId: 'user-2' } },
+    { field: '만든 시각', overrides: { createdAt: 1001 } },
+  ])('$field만 달라도 다른 명령이라 지우지 않는다', ({ overrides }) => {
+    // Given
+    const stored = createCommand();
+
+    // When
+    const result = WidgetNavigationPolicy.isSameCommand(stored, createCommand(overrides));
+
+    // Then
+    expect(result).toBe(false);
   });
 });

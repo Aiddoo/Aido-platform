@@ -1,6 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { createParentTodo } from '../__tests__/sub-todo.fixtures';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
 import { TodoPolicy } from './todo.model';
 
 describe('isLastOpenTodo', () => {
@@ -361,5 +361,91 @@ describe('canReorderTodos', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('findSubTodo', () => {
+  const first = createSubTodo({ id: 11, title: '물 사기' });
+  const second = createSubTodo({ id: 12, title: '우유 사기', sortOrder: 1 });
+
+  it('할 일의 하위 할 일 중 같은 id를 찾는다', () => {
+    // Given
+    const todo = createParentTodo({ subTodos: [first, second] });
+
+    // When
+    const result = TodoPolicy.findSubTodo(todo, 12);
+
+    // Then
+    expect(result).toEqual(second);
+  });
+
+  it('하위 할 일에 없는 id면 null이다', () => {
+    // Given
+    const todo = createParentTodo({ subTodos: [first, second] });
+
+    // When
+    const result = TodoPolicy.findSubTodo(todo, 13);
+
+    // Then
+    expect(result).toBeNull();
+  });
+
+  it('할 일을 아직 찾지 못했으면 null이다', () => {
+    // When
+    const result = TodoPolicy.findSubTodo(null, 11);
+
+    // Then
+    expect(result).toBeNull();
+  });
+});
+
+describe('isRecurringTodo', () => {
+  it('반복 묶음에 속한 할 일은 반복 할 일이다', () => {
+    // Given
+    const todo = createParentTodo({ recurrenceGroupId: 'group-1' });
+
+    // When
+    const result = TodoPolicy.isRecurringTodo(todo);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('반복 묶음이 없으면 한 번만 하는 할 일이다', () => {
+    // Given
+    const todo = createParentTodo({ recurrenceGroupId: null });
+
+    // When
+    const result = TodoPolicy.isRecurringTodo(todo);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('hasSubTodos', () => {
+  it.each([
+    { total: 0, expected: false },
+    { total: 1, expected: true },
+  ])('하위 할 일이 $total개면 있는지는 $expected다', ({ total, expected }) => {
+    // Given
+    const todo = createParentTodo({ subTodoStats: { total, completed: 0 } });
+
+    // When
+    const result = TodoPolicy.hasSubTodos(todo);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  it('목록 응답에 하위 할 일이 실리지 않아도 서버 집계로 판단한다', () => {
+    // Given
+    const todo = createParentTodo({ subTodos: [], subTodoStats: { total: 3, completed: 1 } });
+
+    // When
+    const result = TodoPolicy.hasSubTodos(todo);
+
+    // Then
+    expect(result).toBe(true);
   });
 });

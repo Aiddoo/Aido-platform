@@ -174,3 +174,27 @@ describe('getResponseStage', () => {
     expect(stage).toBe(expected);
   });
 });
+
+describe('isReceivedBy', () => {
+  it('내가 받은 찌르기면 true다', () => {
+    // Given
+    const nudge = { receiverId: 'me' };
+
+    // When
+    const result = NudgeInteractionPolicy.isReceivedBy(nudge, 'me');
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('내가 보낸 찌르기면 false다', () => {
+    // Given
+    const nudge = { receiverId: 'friend' };
+
+    // When
+    const result = NudgeInteractionPolicy.isReceivedBy(nudge, 'me');
+
+    // Then
+    expect(result).toBe(false);
+  });
+});

@@ -436,3 +436,113 @@ describe('getSuggestedStartAt', () => {
     expect(startAt).toBe('2026-11-02T06:30:00.000Z');
   });
 });
+
+function createHour(row: Parameters<typeof createWeatherReportWithHours>[0][number]) {
+  const [hour] = createWeatherReportWithHours([row]).hourly;
+  if (hour == null) {
+    throw new Error('예보 한 시간을 만들지 못했다');
+  }
+  return hour;
+}
+
+describe('isHot', () => {
+  it.each([
+    {
+      title: '낮 체감 33°C면 더운 시간이다',
+      isDaylight: true,
+      apparentTemperature: 33,
+      expected: true,
+    },
+    {
+      title: '낮 체감 32.9°C면 덥지 않다',
+      isDaylight: true,
+      apparentTemperature: 32.9,
+      expected: false,
+    },
+    {
+      title: '밤에는 체감 35°C여도 더위 안내를 하지 않는다',
+      isDaylight: false,
+      apparentTemperature: 35,
+      expected: false,
+    },
+  ])('$title', ({ isDaylight, apparentTemperature, expected }) => {
+    // Given
+    const hour = createHour({ isDaylight, apparentTemperature });
+
+    // When
+    const result = WeatherBriefingPolicy.isHot(hour);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getForecastTodos', () => {
+  /** 06:00Z부터 4시간 예보 */
+  const { hourly } = createWeatherReportWithHours(DRY_HOURS.slice(0, 4));
+
+  it('시각이 정한 할 일을 그 시각이 속한 시간 예보와 묶는다', () => {
+    // Given
+    const todo = createBriefingTodo({ scheduledAt: toInstant('2026-11-02T07:30:00.000Z') });
+
+    // When
+    const [forecast] = WeatherBriefingPolicy.getForecastTodos(hourly, [todo], NOW);
+
+    // Then
+    expect(forecast?.todoId).toBe(todo.id);
+    expect(forecast?.hour.startsAt).toBe('2026-11-02T07:00:00.000Z');
+  });
+
+  it('정각의 할 일은 그 정각에 시작하는 시간과 묶는다', () => {
+    // Given
+    const todo = createBriefingTodo({ scheduledAt: toInstant('2026-11-02T08:00:00.000Z') });
+
+    // When
+    const [forecast] = WeatherBriefingPolicy.getForecastTodos(hourly, [todo], NOW);
+
+    // Then
+    expect(forecast?.hour.startsAt).toBe('2026-11-02T08:00:00.000Z');
+  });
+
+  it('지금 시각의 할 일은 남기고 1ms라도 지난 할 일은 뺀다', () => {
+    // Given
+    const atNow = createBriefingTodo({ id: 1, scheduledAt: NOW });
+    const justPassed = createBriefingTodo({
+      id: 2,
+      scheduledAt: fromEpochMs(Date.parse(NOW) - 1),
+    });
+
+    // When
+    const forecasts = WeatherBriefingPolicy.getForecastTodos(hourly, [atNow, justPassed], NOW);
+
+    // Then
+    expect(forecasts.map(({ todoId }) => todoId)).toEqual([1]);
+  });
+
+  it('시각이 없거나 예보 범위 밖인 할 일은 뺀다', () => {
+    // Given
+    const unscheduled = createBriefingTodo({ id: 1, scheduledAt: null });
+    // 예보 마지막 시간은 09:00Z~10:00Z다
+    const beyond = createBriefingTodo({
+      id: 2,
+      scheduledAt: toInstant('2026-11-02T10:00:00.000Z'),
+    });
+
+    // When
+    const forecasts = WeatherBriefingPolicy.getForecastTodos(hourly, [unscheduled, beyond], NOW);
+
+    // Then
+    expect(forecasts).toEqual([]);
+  });
+
+  it('끝낸 할 일도 완료 여부를 남겨 함께 보여 준다', () => {
+    // Given
+    const done = createBriefingTodo({ completed: true });
+
+    // When
+    const [forecast] = WeatherBriefingPolicy.getForecastTodos(hourly, [done], NOW);
+
+    // Then
+    expect(forecast?.completed).toBe(true);
+  });
+});

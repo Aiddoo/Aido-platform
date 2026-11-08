@@ -743,3 +743,82 @@ describe('isChargedReview', () => {
     expect(results).toEqual([true, false, false]);
   });
 });
+
+describe('isManualInput', () => {
+  it.each([
+    { status: 'idle', expected: true },
+    { status: 'failed', expected: true },
+    { status: 'preparing', expected: false },
+    { status: 'listening', expected: false },
+    { status: 'paused', expected: false },
+    { status: 'finalizing', expected: false },
+    { status: 'planning', expected: false },
+    { status: 'review', expected: false },
+  ] as const)('$status 상태에서 손으로 입력하는지는 $expected다', ({ status, expected }) => {
+    // When
+    const result = VoiceCapturePolicy.isManualInput({ status });
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getElapsedMs', () => {
+  it('듣는 중이면 앞서 들은 시간에 이번 구간에 지난 시간을 더한다', () => {
+    // Given
+    const state = createCaptureState({
+      status: 'listening',
+      elapsedMs: 3_000,
+      listeningSince: NOW - 2_500,
+    });
+
+    // When
+    const elapsedMs = VoiceCapturePolicy.getElapsedMs(state, NOW);
+
+    // Then
+    // 3,000 + (100,000 - 97,500) = 5,500
+    expect(elapsedMs).toBe(5_500);
+  });
+
+  it('듣기 시작한 순간이면 앞서 들은 시간만이다', () => {
+    // Given
+    const state = createCaptureState({
+      status: 'listening',
+      elapsedMs: 3_000,
+      listeningSince: NOW,
+    });
+
+    // When
+    const elapsedMs = VoiceCapturePolicy.getElapsedMs(state, NOW);
+
+    // Then
+    expect(elapsedMs).toBe(3_000);
+  });
+
+  it('기기 시계가 시작보다 앞서도 시간을 빼지 않는다', () => {
+    // Given
+    const state = createCaptureState({
+      status: 'listening',
+      elapsedMs: 3_000,
+      listeningSince: NOW + 1_000,
+    });
+
+    // When
+    const elapsedMs = VoiceCapturePolicy.getElapsedMs(state, NOW);
+
+    // Then
+    // 3,000 + max(0, -1,000) = 3,000
+    expect(elapsedMs).toBe(3_000);
+  });
+
+  it('멈춘 상태는 시간이 흘러도 저장한 시간 그대로다', () => {
+    // Given
+    const state = createCaptureState({ status: 'paused', cause: 'user', elapsedMs: 7_000 });
+
+    // When
+    const elapsedMs = VoiceCapturePolicy.getElapsedMs(state, NOW + 60_000);
+
+    // Then
+    expect(elapsedMs).toBe(7_000);
+  });
+});

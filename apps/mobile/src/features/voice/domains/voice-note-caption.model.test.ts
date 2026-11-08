@@ -410,3 +410,48 @@ describe('toVoiceNoteCaptions', () => {
     expect(captions.provisional).toEqual([]);
   });
 });
+
+describe('hasCaptionText', () => {
+  it('글자가 하나도 없으면 지울 때 묻지 않는다', () => {
+    // Given
+    const captions = VoiceNoteCaptionPolicy.createVoiceNoteCaptions();
+
+    // When
+    const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it('아직 확정되지 않은 꼬리만 있어도 들은 글자다', () => {
+    // Given
+    const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      VoiceNoteCaptionPolicy.createVoiceNoteCaptions(),
+      interim('첫 문장'),
+      clock(1_000),
+    );
+
+    // When
+    const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+
+    // Then
+    expect(captions.provisional).toHaveLength(1);
+    expect(result).toBe(true);
+  });
+
+  it('확정된 문장이 있으면 들은 글자다', () => {
+    // Given
+    const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      VoiceNoteCaptionPolicy.createVoiceNoteCaptions(),
+      final('첫 문장.'),
+      clock(1_000),
+    );
+
+    // When
+    const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+
+    // Then
+    expect(captions.sentences).toHaveLength(1);
+    expect(result).toBe(true);
+  });
+});

@@ -6,6 +6,8 @@ import {
   createSeoulReportDto,
   createTokyoReportDto,
   createWeatherReport,
+  createWeatherReportDto,
+  createWeatherReportWithHours,
 } from '../__tests__/weather-report.fixtures';
 import { toWeatherReport } from '../apis/weather.mapper';
 import { WeatherReportPolicy } from './weather-report.model';
@@ -545,5 +547,85 @@ describe('isFrozenPrecipitation', () => {
 
     // Then
     expect(isFrozen).toBe(expected);
+  });
+});
+
+function createHour(row: Parameters<typeof createWeatherReportWithHours>[0][number]) {
+  const [hour] = createWeatherReportWithHours([row]).hourly;
+  if (hour == null) {
+    throw new Error('예보 한 시간을 만들지 못했다');
+  }
+  return hour;
+}
+
+describe('isWetHour', () => {
+  it.each([
+    { precipitationChance: 49, expected: false },
+    { precipitationChance: 50, expected: true },
+    { precipitationChance: 51, expected: true },
+    { precipitationChance: 0, expected: false },
+  ])(
+    '강수 확률 $precipitationChance%면 비 오는 시간인지는 $expected다',
+    ({ precipitationChance, expected }) => {
+      // Given
+      const hour = createHour({ precipitationChance });
+
+      // When
+      const result = WeatherReportPolicy.isWetHour(hour);
+
+      // Then
+      // 50% 이상이면 비 오는 시간이다(서버 날씨 알림과 같은 기준)
+      expect(result).toBe(expected);
+    },
+  );
+});
+
+describe('findTodayOrFirstForecast', () => {
+  const createDays = (...dates: string[]) =>
+    dates.flatMap((date) => createWeatherReportDto().daily.map((day) => ({ ...day, date })));
+  const report = createWeatherReport({ daily: createDays('2026-11-01', '2026-11-02') });
+
+  it('위치 시간대의 오늘 예보를 고른다', () => {
+    // When
+    // 06:26Z는 서울 11월 2일 15:26이다
+    const today = WeatherReportPolicy.findTodayOrFirstForecast(report, NOW);
+
+    // Then
+    expect(today?.date).toBe('2026-11-02');
+  });
+
+  it('서울 자정 직전에는 그날, 자정에는 다음 날 예보를 고른다', () => {
+    // Given
+    const beforeMidnight = toInstant('2026-11-01T14:59:59.000Z');
+    const atMidnight = toInstant('2026-11-01T15:00:00.000Z');
+
+    // When
+    const before = WeatherReportPolicy.findTodayOrFirstForecast(report, beforeMidnight);
+    const after = WeatherReportPolicy.findTodayOrFirstForecast(report, atMidnight);
+
+    // Then
+    expect([before?.date, after?.date]).toEqual(['2026-11-01', '2026-11-02']);
+  });
+
+  it('일별 예보에 오늘이 없으면 첫 예보를 오늘처럼 쓴다', () => {
+    // Given
+    const lagging = createWeatherReport({ daily: createDays('2026-11-03', '2026-11-04') });
+
+    // When
+    const today = WeatherReportPolicy.findTodayOrFirstForecast(lagging, NOW);
+
+    // Then
+    expect(today?.date).toBe('2026-11-03');
+  });
+
+  it('일별 예보가 없으면 null이다', () => {
+    // Given
+    const empty = createWeatherReport({ daily: [] });
+
+    // When
+    const today = WeatherReportPolicy.findTodayOrFirstForecast(empty, NOW);
+
+    // Then
+    expect(today).toBeNull();
   });
 });

@@ -270,3 +270,78 @@ describe('getHeadline', () => {
     expect(headline).toEqual(expected);
   });
 });
+
+describe('isTodoAction', () => {
+  it('할 일 카드면 true다', () => {
+    // When
+    const result = VoicePlanPolicy.isTodoAction(todo());
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('메모 카드면 false다', () => {
+    // When
+    const result = VoicePlanPolicy.isTodoAction(memo());
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('isDuplicateAction', () => {
+  it('이미 있는 할 일과 겹친다고 서버가 짚은 할 일 카드는 중복이다', () => {
+    // Given
+    const action = todo({ duplicateOfTodoId: 42 });
+
+    // When
+    const result = VoicePlanPolicy.isDuplicateAction(action);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('겹치는 할 일이 없으면 중복이 아니다', () => {
+    // Given
+    const action = todo({ duplicateOfTodoId: null });
+
+    // When
+    const result = VoicePlanPolicy.isDuplicateAction(action);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it('메모 카드는 겹침을 보지 않는다', () => {
+    // When
+    const result = VoicePlanPolicy.isDuplicateAction(memo());
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('withScheduledTime', () => {
+  it('시각만 바꾸고 나머지 카드 값은 그대로 둔다', () => {
+    // Given
+    const action = todo({ scheduledTime: '08:00' });
+
+    // When
+    const next = VoicePlanPolicy.withScheduledTime(action, '21:30');
+
+    // Then
+    expect(next).toEqual({ ...action, scheduledTime: '21:30' });
+    expect(action.scheduledTime).toBe('08:00');
+  });
+
+  it('null이면 시각 없는 할 일이 된다', () => {
+    // Given
+    const action = todo({ scheduledTime: '08:00' });
+
+    // When
+    const next = VoicePlanPolicy.withScheduledTime(action, null);
+
+    // Then
+    expect(next.scheduledTime).toBeNull();
+  });
+});

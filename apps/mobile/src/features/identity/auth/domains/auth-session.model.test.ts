@@ -96,3 +96,19 @@ describe('transitionAuthSession', () => {
     },
   );
 });
+
+describe('isAuthBootPending', () => {
+  it.each<[string, AuthSessionState, boolean]>([
+    ['토큰을 읽는 중이면 부팅을 기다린다', LOADING, true],
+    ['기기 잠금을 풀기 전이면 부팅을 기다린다', LOCKED, true],
+    ['인증이 끝났으면 기다리지 않는다', AUTHENTICATED, false],
+    ['세션이 없다고 판정했으면 기다리지 않는다', NO_SESSION, false],
+    ['부팅에 실패해 미인증이면 기다리지 않는다', BOOT_FAILED, false],
+  ])('%s', (_title, state, expected) => {
+    // When
+    const result = AuthSessionPolicy.isAuthBootPending(state);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

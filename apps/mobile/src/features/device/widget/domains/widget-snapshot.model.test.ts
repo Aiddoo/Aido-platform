@@ -4,6 +4,41 @@ import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot-persisted.schema';
 import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
+describe('isLoggedOut', () => {
+  it('첫 day가 loggedOut이면 로그아웃 스냅샷이다', () => {
+    // Given
+    const snapshot = createWidgetSnapshot({ state: 'loggedOut' });
+
+    // When
+    const result = WidgetSnapshotPolicy.isLoggedOut(snapshot);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it.each(['data', 'empty'] as const)('첫 day가 %s면 로그인한 스냅샷이다', (state) => {
+    // Given
+    const snapshot = createWidgetSnapshot({ state });
+
+    // When
+    const result = WidgetSnapshotPolicy.isLoggedOut(snapshot);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it('로그아웃은 첫 day로만 판단한다', () => {
+    // Given
+    const snapshot = createWidgetSnapshot({ state: 'data' }, { state: 'loggedOut' });
+
+    // When
+    const result = WidgetSnapshotPolicy.isLoggedOut(snapshot);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
 describe('getDay', () => {
   it('오늘 key와 같은 day의 상태를 그대로 표시한다', () => {
     // Given
