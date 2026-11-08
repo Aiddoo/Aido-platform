@@ -29,12 +29,14 @@ import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.mo
 import {
   appendTodoToList,
   beginTodoWrite,
-  getSnapshotDateSpan,
+  findCachedTodo,
+  getCachedTodoDateSpan,
   getTodoDateSpan,
+  getTodoExistenceFilters,
   invalidateTodos,
   removeTodoFromList,
+  settleTodoEdit,
   settleTodoWrite,
-  snapshotTodo,
   syncDailyCompletionWithList,
   updateCachedTodo,
   updateCachedTodoExistence,
@@ -196,14 +198,15 @@ export function useAddSubTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, date }) => {
+      // 끝낸 일에 더할 때만 완료가 풀려 달력·위젯·시작 체크리스트가 바뀐다. 취소는 진행 중 조회를 되돌려 먼저 읽어도 같다
+      const wasCompleted = findCachedTodo(queryClient, { date, todoId })?.completed ?? false;
       const ticket = await beginTodoWrite(queryClient, {
         date,
         todoId,
-        isCompletionAffected: true,
+        isCompletionAffected: wasCompleted,
       });
       const optimisticId = createOptimisticId();
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      const wasCompleted = snapshot?.todo.completed ?? false;
+      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoAdded(todo, {
           id: optimisticId,
@@ -212,14 +215,11 @@ export function useAddSubTodoMutationOptions() {
           sortOrder: todo.subTodos.length,
         }),
       );
-      syncDailyCompletionWithList(queryClient, { date });
+      if (wasCompleted) {
+        syncDailyCompletionWithList(queryClient, { date });
+      }
 
-      return {
-        optimisticId,
-        wasCompleted,
-        ticket,
-        span: getSnapshotDateSpan(snapshot, date),
-      };
+      return { optimisticId, wasCompleted, ticket, span };
     },
     onSuccess: (saved, { todoId, date }, { optimisticId }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -238,17 +238,21 @@ export function useAddSubTodoMutationOptions() {
           ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
           completed: context.wasCompleted,
         }));
-        syncDailyCompletionWithList(queryClient, { date });
+        if (context.wasCompleted) {
+          syncDailyCompletionWithList(queryClient, { date });
+        }
       }
     },
     onSettled: (_saved, error, { todoId, date }, context) => {
+      const wasCompleted = context?.wasCompleted ?? true;
       settleTodoWrite(queryClient, {
         date,
         todoId,
         span: context?.span ?? { startDate: date, endDate: date },
-        isCompletionAffected: true,
+        isCompletionAffected: wasCompleted,
         hasFailed: error != null,
         ticket: context?.ticket,
+        extra: wasCompleted ? getTodoExistenceFilters() : [],
       });
     },
   });
@@ -354,8 +358,9 @@ export function useUpdateSubTodoMutationOptions() {
         todoId,
         isCompletionAffected: false,
       });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      const previous = snapshot?.todo.subTodos.find((subTodo) => subTodo.id === subTodoId);
+      const previous = findCachedTodo(queryClient, { date, todoId })?.subTodos.find(
+        (subTodo) => subTodo.id === subTodoId,
+      );
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
       );
@@ -363,7 +368,7 @@ export function useUpdateSubTodoMutationOptions() {
       return {
         previousTitle: previous?.title,
         ticket,
-        span: getSnapshotDateSpan(snapshot, date),
+        span: getCachedTodoDateSpan(queryClient, { date, todoId }),
       };
     },
     onSuccess: (_data, { todoId, subTodoId }) => {
@@ -410,12 +415,20 @@ export function useUpdateTodoMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
+    // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, options }: UpdateTodoVariables) => {
       const result = await todoService.updateTodo(todoId, input, options);
       return unwrap(result);
     },
-    onSuccess: (_data, variables) => {
-      invalidateTodos(queryClient);
+    onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
+    onSuccess: (saved, variables, { before }) => {
+      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다. nullish-strict: repeat null은 반복 끝내기다
+      if (variables.options?.scope == null && variables.options?.repeat === undefined) {
+        settleTodoEdit(queryClient, { before, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
       toast.success(t('todo:toast.todoUpdated'));
       const field = Object.keys(variables.input).join(',');
       trackEvent('todo_edited', { todo_id: variables.todoId, field });

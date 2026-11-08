@@ -1051,6 +1051,9 @@ onSettled: () => invalidateTodoCategories(queryClient),
 - `onError`: 스냅샷을 통째로 덮지 않고 그 변경만 되돌린다. 통째로 덮으면 함께 진행 중인 다른 변경을 지운다.
 - `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다.
 - `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoWrite`만 부른다. 확정된 목록·하루짜리 달력은 다시 받지 않고, 기간 안의 다른 날짜 목록·겹치는 달력 범위·위젯 요약만 낡음(`refetchType: 'none'`)으로 표시한다. 실패했거나 다른 쓰기와 겹쳤으면 고친 목록·상세·달력까지 맞춘다. 마지막 쓰기만 화면에 붙은 낡은 조회를 다시 받아 낙관적 값이 되돌아가지 않는다.
+- 되돌릴 값과 기간은 `findCachedTodo`로 그날 목록 → 상세 → 다른 날짜 목록 순으로 읽는다. 알림으로 연 상세는 그날 목록이 없다.
+- 저장을 기다리는 시트(제목·날짜·시각·카테고리 고치기)는 낙관적으로 쓰지 않는다. 같은 `listWrites` 키로 세고 `onSuccess`에서 `settleTodoEdit`로 고치기 전·후 값의 날짜 목록·위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 맞춘다. 반복 범위·규칙을 바꾸면 바뀐 회차를 몰라 `invalidateTodos`다.
+- 하위 항목 진행(막대·"2/4")은 저장하지 않고 `SubTodoPolicy.getSubTodoStats`로 항목 목록에서 센다. 항목 추가는 끝낸 할 일일 때만 완료가 풀려 달력·위젯·존재 여부를 맞춘다.
 - 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다.
 
 ---

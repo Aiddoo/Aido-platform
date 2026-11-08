@@ -9,6 +9,7 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
 import type { Todo, TodoListResult, TodoSummary } from '../domains/todo.model';
 import {
+  getCachedTodoDateSpan,
   invalidateFeedTodos,
   invalidateTodoDependentQueries,
   invalidateTodos,
@@ -103,6 +104,37 @@ describe('목록 updater', () => {
     // Then
     expect(created).toBe(existence);
     expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true });
+  });
+});
+
+describe('캐시에서 할 일 찾기', () => {
+  it('알림으로 연 상세처럼 그날 목록이 없으면 상세의 여러 날 기간으로 달력 범위를 고른다', () => {
+    // Given
+    const queryClient = createTestQueryClient();
+    const multiDay = createParentTodo({ id: 7, startDate: DAY, endDate: '2026-07-22' });
+    queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
+      todo: multiDay,
+      owner: { id: 'u', name: null, profileImage: null },
+      permissions: { canEdit: true, canComment: true, canNudge: false },
+      metrics: { viewCount: 0, commentCount: 0 },
+    });
+
+    // When
+    const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
+
+    // Then
+    expect(span).toEqual({ startDate: DAY, endDate: '2026-07-22' });
+  });
+
+  it('어디에도 없으면 보고 있는 하루로 본다', () => {
+    // Given
+    const queryClient = createTestQueryClient();
+
+    // When
+    const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
+
+    // Then
+    expect(span).toEqual({ startDate: NEXT_DAY, endDate: NEXT_DAY });
   });
 });
 

@@ -31,12 +31,14 @@ import type {
 import {
   beginTodoWrite,
   getCachedTodosByDate,
-  getSnapshotDateSpan,
+  findCachedTodo,
+  getCachedTodoDateSpan,
   getUpcomingRepeatFilters,
   invalidateTodoDependentQueries,
   invalidateTodos,
   removeTodoFromList,
   restoreTodo,
+  settleTodoEdit,
   settleTodoReorder,
   settleTodoWrite,
   snapshotTodo,
@@ -76,17 +78,14 @@ export function useToggleTodoMutationOptions() {
         todoId,
         isCompletionAffected: true,
       });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
         ...todo,
         completed: body.completed,
       }));
       syncDailyCompletionWithList(queryClient, { date });
 
-      return {
-        ticket,
-        span: getSnapshotDateSpan(snapshot, date),
-      };
+      return { ticket, span };
     },
     onSuccess: (_data, variables) => {
       trackEvent('todo_completed', {
@@ -150,12 +149,20 @@ export function useChangeTodoCategoryMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 카테고리 변경 버튼이 로딩만 돈다. 바로 실패해 안내한다
     networkMode: 'always',
+    // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, scope }: ChangeTodoCategoryVariables) => {
       const result = await todoService.changeTodoCategory(todoId, input, scope);
       return unwrap(result);
     },
-    onSuccess: (_data, variables) => {
-      invalidateTodos(queryClient);
+    onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
+    onSuccess: (saved, variables, { before }) => {
+      // 이후 회차까지 바꾸면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (variables.scope == null) {
+        settleTodoEdit(queryClient, { before, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
       toast.success(t('todo:toast.categoryChanged'));
       trackEvent('todo_edited', { todo_id: variables.todoId, field: 'categoryId' });
       if (variables.scope != null) {
@@ -215,10 +222,11 @@ export function useDeleteTodoMutationOptions() {
         isCompletionAffected: true,
       });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       removeTodoFromList(queryClient, { date, todoId });
       syncDailyCompletionWithList(queryClient, { date });
 
-      return { snapshot, ticket };
+      return { snapshot, span, ticket };
     },
     onSuccess: (_, { todoId, scope }, context) => {
       toast.success(t('todo:toast.todoDeleted'));
@@ -267,7 +275,7 @@ export function useDeleteTodoMutationOptions() {
       settleTodoWrite(queryClient, {
         date,
         todoId,
-        span: getSnapshotDateSpan(snapshot ?? null, date),
+        span: context?.span ?? { startDate: date, endDate: date },
         isCompletionAffected: true,
         hasFailed: error != null,
         ticket: context?.ticket,
@@ -337,12 +345,20 @@ export function useUpdateTodoScheduleMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈추면 저장 중인 시트가 잠긴 채 남고 연결되는 순간 일정이 바뀐다. 바로 실패해 안내한다
     networkMode: 'always',
+    // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, input, scope }: UpdateTodoScheduleVariables) => {
       const result = await todoService.updateTodoSchedule(todoId, input, scope);
       return unwrap(result);
     },
-    onSuccess: (_data, { changedField, scope }) => {
-      invalidateTodos(queryClient);
+    onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
+    onSuccess: (saved, { changedField, scope }, { before }) => {
+      // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (scope == null) {
+        settleTodoEdit(queryClient, { before, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
       toast.success(
         changedField === 'time' ? t('todo:toast.timeChanged') : t('todo:toast.dateChanged'),
       );

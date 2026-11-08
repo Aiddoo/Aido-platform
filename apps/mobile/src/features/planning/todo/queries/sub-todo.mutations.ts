@@ -10,9 +10,9 @@ import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
   beginTodoWrite,
-  getSnapshotDateSpan,
+  findCachedTodo,
+  getCachedTodoDateSpan,
   settleTodoWrite,
-  snapshotTodo,
   updateCachedTodo,
 } from './todo-cache';
 
@@ -47,7 +47,7 @@ export function useToggleSubTodoMutationOptions() {
         todoId,
         isCompletionAffected: false,
       });
-      const span = getSnapshotDateSpan(snapshotTodo(queryClient, { date, todoId }), date);
+      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, isCompleted),
       );
@@ -109,8 +109,7 @@ export function useDeleteSubTodoMutationOptions() {
         todoId,
         isCompletionAffected: false,
       });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      const subTodos = snapshot?.todo.subTodos ?? [];
+      const subTodos = findCachedTodo(queryClient, { date, todoId })?.subTodos ?? [];
       const index = subTodos.findIndex((subTodo) => subTodo.id === subTodoId);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoRemoved(todo, subTodoId),
@@ -120,7 +119,7 @@ export function useDeleteSubTodoMutationOptions() {
         removed: subTodos[index],
         index,
         ticket,
-        span: getSnapshotDateSpan(snapshot, date),
+        span: getCachedTodoDateSpan(queryClient, { date, todoId }),
       };
     },
     onSuccess: (_data, { todoId, subTodoId }) => {
@@ -179,13 +178,18 @@ export function useReorderSubTodosMutationOptions() {
         todoId,
         isCompletionAffected: false,
       });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      const previousIds = snapshot?.todo.subTodos.map((subTodo) => subTodo.id);
+      const previousIds = findCachedTodo(queryClient, { date, todoId })?.subTodos.map(
+        (subTodo) => subTodo.id,
+      );
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodosOrdered(todo, subTodoIds),
       );
 
-      return { previousIds, ticket, span: getSnapshotDateSpan(snapshot, date) };
+      return {
+        previousIds,
+        ticket,
+        span: getCachedTodoDateSpan(queryClient, { date, todoId }),
+      };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });

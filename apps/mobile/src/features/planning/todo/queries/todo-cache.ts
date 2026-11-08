@@ -28,9 +28,13 @@ export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): Date
   return { startDate: todo.startDate, endDate: todo.endDate ?? todo.startDate };
 }
 
-/** 목록에 있는 할 일의 기간. 목록을 아직 불러오지 않았으면 보고 있는 하루로 본다 */
-export function getSnapshotDateSpan(snapshot: TodoSnapshot | null, date: string): DateSpan {
-  return snapshot == null ? { startDate: date, endDate: date } : getTodoDateSpan(snapshot.todo);
+/** 할 일의 기간. 그날 목록도 상세도 불러오지 않았으면 보고 있는 하루로 본다 */
+export function getCachedTodoDateSpan(
+  queryClient: QueryClient,
+  { date, todoId }: { date: string; todoId: number },
+): DateSpan {
+  const todo = findCachedTodo(queryClient, { date, todoId });
+  return todo == null ? { startDate: date, endDate: date } : getTodoDateSpan(todo);
 }
 
 // ---- setQueryData updater로 쓰는 순수 함수 ----
@@ -92,6 +96,25 @@ export function snapshotTodo(
   }
 
   return { date, todo, index };
+}
+
+/**
+ * 캐시에 있는 그 할 일. 보고 있는 날짜 목록 → 상세 → 다른 날짜 목록 순으로 찾는다.
+ * 알림으로 연 상세처럼 그날 목록이 없어도 원래 값으로 되돌리고 기간을 안다
+ */
+export function findCachedTodo(
+  queryClient: QueryClient,
+  { date, todoId }: { date?: string; todoId: number },
+): Todo | undefined {
+  const isTarget = (todo: Todo) => todo.id === todoId;
+  return (
+    (date == null ? undefined : getCachedTodosByDate(queryClient, { date })?.find(isTarget)) ??
+    queryClient.getQueryData(TODO_QUERY_KEYS.detail({ todoId }))?.todo ??
+    queryClient
+      .getQueriesData<TodoListResult>({ queryKey: TODO_QUERY_KEYS.lists() })
+      .flatMap(([, data]) => data?.todos ?? [])
+      .find(isTarget)
+  );
 }
 
 /** 그 날짜 목록에 지금 보이는 할 일. 아직 불러오지 않았으면 undefined */
@@ -242,6 +265,20 @@ function otherTodoListsFilter({ date, todoId, span }: TodoWriteTarget): Invalida
   };
 }
 
+/** 그 할 일을 보여 주거나 기간들 중 하나에 드는 날짜 목록. 날짜를 옮기면 옛 날짜와 새 날짜가 모두 바뀐다 */
+function todoListsFilter(todoId: number, spans: readonly DateSpan[]): InvalidateQueryFilters {
+  return {
+    queryKey: TODO_QUERY_KEYS.lists(),
+    predicate: (query) => {
+      const listDate = getKeyDate(query.queryKey);
+      return (
+        listDate != null &&
+        (spans.some((span) => isDateInSpan(listDate, span)) || showsTodo(query, todoId))
+      );
+    },
+  };
+}
+
 /** 이 할 일을 보여 주는 목록(내 목록·친구 목록) */
 function listsShowingTodoFilter(queryKey: QueryKey, todoId: number): InvalidateQueryFilters {
   return { queryKey, predicate: (query) => showsTodo(query, todoId) };
@@ -363,6 +400,50 @@ export function settleTodoReorder(queryClient: QueryClient, { todoId }: { todoId
     listsShowingTodoFilter(TODO_QUERY_KEYS.lists(), todoId),
     { queryKey: TODO_QUERY_KEYS.widgetSummary() },
   ]);
+}
+
+function isSameSpan(a: DateSpan, b: DateSpan) {
+  return a.startDate === b.startDate && a.endDate === b.endDate;
+}
+
+/**
+ * 반복 묶음이 아닌 할 일 하나를 고친 뒤 고치기 전·후 값으로 바뀐 조회만 맞춘다(TanStack "Updates from Mutation Responses").
+ * 상세는 응답으로 고치고, 옛 날짜·새 날짜 목록과 위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 다시 받는다.
+ * 고치기 전 값을 모르면 옛 날짜를 몰라 넓게 맞춘다
+ */
+export function settleTodoEdit(
+  queryClient: QueryClient,
+  { before, after }: { before: Todo | undefined; after: Todo },
+) {
+  if (before == null) {
+    return invalidateTodos(queryClient);
+  }
+  queryClient.setQueryData(
+    TODO_QUERY_KEYS.detail({ todoId: after.id }),
+    (old) => old && { ...old, todo: after },
+  );
+  const beforeSpan = getTodoDateSpan(before);
+  const afterSpan = getTodoDateSpan(after);
+  const spans = isSameSpan(beforeSpan, afterSpan) ? [afterSpan] : [beforeSpan, afterSpan];
+  const isCategoryChanged = before.category.id !== after.category.id;
+  const isCalendarChanged =
+    !isSameSpan(beforeSpan, afterSpan) || before.category.color !== after.category.color;
+  const filters: InvalidateQueryFilters[] = [
+    todoListsFilter(after.id, spans),
+    ...spans.map(widgetSummariesFilter),
+    ...(isCalendarChanged ? spans.map(completionRangesFilter) : []),
+    ...getUpcomingRepeatFilters(before),
+  ];
+  if (isCategoryChanged) {
+    invalidateTodoCategories(queryClient);
+  }
+  invalidateTodoDependentQueries(queryClient);
+  return settleTodoQueries(queryClient, filters);
+}
+
+/** 완료를 풀거나 지우면 완료한 할 일·할 일이 남았는지 서버만 안다 */
+export function getTodoExistenceFilters(): InvalidateQueryFilters[] {
+  return [{ queryKey: TODO_QUERY_KEYS.existence() }];
 }
 
 /** 반복 회차는 다음 3개월 반복 안내를 바꿀 수 있다 */
