@@ -13,7 +13,6 @@ import {
   getIsoWeekYear,
   getMondayOfDateKey,
   getMonthEndDateKey,
-  getYearOfDateKey,
   isSameMonthDateKey,
   isSameYearDateKey,
 } from './date-key';
@@ -208,22 +207,6 @@ describe('날짜 key의 달 계산', () => {
 
     // Then
     expect(result).toBe(expected);
-  });
-});
-
-describe('getYearOfDateKey', () => {
-  it('연말과 연초 key의 해를 시간대 없이 읽는다', () => {
-    // Given
-    const newYearEve = '2026-12-31';
-    const newYear = '2027-01-01';
-
-    // When
-    const eveYear = getYearOfDateKey(newYearEve);
-    const newYearYear = getYearOfDateKey(newYear);
-
-    // Then
-    expect(eveYear).toBe(2026);
-    expect(newYearYear).toBe(2027);
   });
 });
 

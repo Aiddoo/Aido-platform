@@ -1,7 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
-import { getYearOfDateKey } from '@src/shared/date/date-key';
+import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareViewCapture } from '@src/shared/hooks/use-share-view-capture';
@@ -48,7 +48,7 @@ export function AchievementSummary() {
   const todayKey = useTodayKey();
   usePrefetchQuery(useGetMeQueryOptions());
   const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
-    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getYearOfDateKey(todayKey) }),
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(todayKey) }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const fontScaledSize = useFontScaledSize();
