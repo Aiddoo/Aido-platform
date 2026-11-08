@@ -5,8 +5,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
-import { type VoiceTranscript } from '../../schemas/voice-transcript.schema';
+import { VoiceTranscriptPolicy, type VoiceTranscript } from '../../domains/voice-transcript.model';
 
 const MAX_ANIMATED_WORDS = 40;
 const WORD_FADE_MS = 450;

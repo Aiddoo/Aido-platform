@@ -13,11 +13,10 @@ import type { ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { VoiceNotePolicy } from '../../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
+import { voicePlanIdSchema } from '../../domains/voice-plan.model';
 import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
-import { type VoiceNote } from '../../schemas/voice-note.schema';
-import { voicePlanIdSchema } from '../../schemas/voice-plan.schema';
 import { toDraftVoicePlan } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
 

@@ -5,7 +5,7 @@ import {
   parseMemoResponseSchema,
 } from '@aido/api';
 import { AI_PARSE_LIMITS } from '@aido/api/vocabulary';
-import type { QuickPlanResult } from '@src/features/voice/schemas/voice-plan.schema';
+import type { QuickPlanResult } from '@src/features/voice/domains/voice-plan.model';
 import { z } from 'zod';
 
 /** 지금 서버는 반복 규칙, 겹치는 할 일, 생략한 개수를 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */

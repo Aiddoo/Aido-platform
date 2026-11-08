@@ -21,9 +21,8 @@ import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
-import { VoiceNotePolicy } from '../../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
 import { useVoiceNotes } from '../../hooks/use-voice-notes';
-import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 
 export function VoiceNoteDraftList() {

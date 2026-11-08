@@ -41,13 +41,12 @@ import { Suspense } from 'react';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 import { ScrollView } from 'react-native-gesture-handler';
 
-import { VoicePlanPolicy } from '../../domains/voice-plan.model';
+import { VoicePlanPolicy, type PlannedTodo } from '../../domains/voice-plan.model';
 import {
   type PlanTodoEditFormValues,
   planTodoEditFormSchema,
   type PlanTodoFormValues,
 } from '../../schemas/plan-review-form.schema';
-import { type PlannedTodo } from '../../schemas/voice-plan.schema';
 
 interface PlanTodoEditBottomSheetProps {
   todo: PlanTodoFormValues;

@@ -1,16 +1,17 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
-import { type PlanSelection, VoicePlanPolicy } from '../domains/voice-plan.model';
+import {
+  type PlanSelection,
+  VoicePlanPolicy,
+  plannedActionSchema,
+  type PlannedAction,
+  type VoicePlan,
+} from '../domains/voice-plan.model';
 import {
   createPlanReviewDraftSchema,
   type PlanReviewDraft,
   type PlanReviewFormValues,
 } from '../schemas/plan-review-form.schema';
-import {
-  plannedActionSchema,
-  type PlannedAction,
-  type VoicePlan,
-} from '../schemas/voice-plan.schema';
 
 export function createPlanReviewFormValues(
   plan: VoicePlan,

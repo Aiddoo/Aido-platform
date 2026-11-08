@@ -15,7 +15,7 @@ import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
-import type { CapturedPlan } from '../schemas/voice-capture.schema';
+import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 let logger: ReturnType<typeof createLoggerStub>;

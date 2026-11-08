@@ -1,18 +1,57 @@
-import type { SpeechErrorCode, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import {
+  SPEECH_ERROR_CODES,
+  type SpeechErrorCode,
+  type SpeechStartOptions,
+} from '@src/core/ports/speech-recognizer';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
+import { z } from 'zod';
 
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
 import { AUTO_FINISH_SILENCE_MS, QUICK_CAPTURE_MAX_SECONDS } from '../constants/voice.constants';
-import type {
-  CapturedPlan,
-  VoiceCaptureFailureReason,
-  VoiceCaptureState,
-  VoicePauseCause,
-} from '../schemas/voice-capture.schema';
-import type { SpeechResult, VoiceTranscript } from '../schemas/voice-transcript.schema';
-import { VoiceTranscriptPolicy } from './voice-transcript.model';
+import { voicePlanSchema } from './voice-plan.model';
+import {
+  type SpeechResult,
+  type VoiceTranscript,
+  VoiceTranscriptPolicy,
+  voiceTranscriptSchema,
+} from './voice-transcript.model';
+
+const voiceCaptureFailureReasonSchema = z.enum([...SPEECH_ERROR_CODES, 'planning-failed']);
+export type VoiceCaptureFailureReason = z.infer<typeof voiceCaptureFailureReasonSchema>;
+
+const voicePauseCauseSchema = z.enum(['app-background', 'interrupted', 'user', 'limit']);
+export type VoicePauseCause = z.infer<typeof voicePauseCauseSchema>;
+
+const captureBaseSchema = z.object({
+  transcript: voiceTranscriptSchema,
+  // 이미 끝난 듣기 구간들의 합(ms)
+  elapsedMs: z.int().nonnegative(),
+  pauseCount: z.int().nonnegative(),
+});
+
+const capturedPlanSchema = z.object({
+  plan: voicePlanSchema,
+  isCharged: z.boolean(),
+});
+export type CapturedPlan = z.infer<typeof capturedPlanSchema>;
+
+// 어느 상태에서도 들은 글자(transcript)는 지우지 않는다
+export const voiceCaptureStateSchema = z.discriminatedUnion('status', [
+  captureBaseSchema.extend({ status: z.literal('idle') }),
+  captureBaseSchema.extend({ status: z.literal('preparing') }),
+  captureBaseSchema.extend({ status: z.literal('listening'), listeningSince: z.number() }),
+  captureBaseSchema.extend({ status: z.literal('paused'), cause: voicePauseCauseSchema }),
+  captureBaseSchema.extend({ status: z.literal('finalizing') }),
+  captureBaseSchema.extend({ status: z.literal('planning') }),
+  captureBaseSchema.extend(capturedPlanSchema.shape).extend({ status: z.literal('review') }),
+  captureBaseSchema.extend({
+    status: z.literal('failed'),
+    reason: voiceCaptureFailureReasonSchema,
+  }),
+]);
+export type VoiceCaptureState = z.infer<typeof voiceCaptureStateSchema>;
 
 export interface VoiceCaptureSeed {
   transcript: VoiceTranscript;
@@ -34,7 +73,7 @@ export type VoiceCaptureEvent =
   | { type: 'retry-plan' }
   | { type: 'cancel' };
 
-function createVoiceCaptureState(): VoiceCaptureState {
+export function createVoiceCaptureState(): VoiceCaptureState {
   return {
     status: 'idle',
     transcript: VoiceTranscriptPolicy.createVoiceTranscript(),
@@ -43,7 +82,7 @@ function createVoiceCaptureState(): VoiceCaptureState {
   };
 }
 
-function getElapsedMs(state: VoiceCaptureState, now: number): number {
+export function getElapsedMs(state: VoiceCaptureState, now: number): number {
   return state.status === 'listening'
     ? state.elapsedMs + Math.max(0, now - state.listeningSince)
     : state.elapsedMs;
@@ -109,11 +148,14 @@ const RECOGNIZER_FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
   'unknown',
 ]);
 
-function isRecognizerFailure(state: VoiceCaptureState, error: RecognizerError): boolean {
+export function isRecognizerFailure(state: VoiceCaptureState, error: RecognizerError): boolean {
   return RECOGNIZER_FAILURE_CODES.has(error.code) && !isStopAcknowledgement(state, error);
 }
 
-function reduceVoiceCapture(state: VoiceCaptureState, event: VoiceCaptureEvent): VoiceCaptureState {
+export function reduceVoiceCapture(
+  state: VoiceCaptureState,
+  event: VoiceCaptureEvent,
+): VoiceCaptureState {
   return (
     match([state, event] as const)
       .returnType<VoiceCaptureState>()
@@ -212,11 +254,11 @@ function reduceVoiceCapture(state: VoiceCaptureState, event: VoiceCaptureEvent):
 }
 
 /** 듣기가 끝났는데 사용자가 끝내지 않았다면(침묵·인식기 제한 시간) 같은 세션을 다시 연다 */
-function shouldRestartSegment(state: VoiceCaptureState): boolean {
+export function shouldRestartSegment(state: VoiceCaptureState): boolean {
   return state.status === 'listening';
 }
 
-function isActive(state: VoiceCaptureState): boolean {
+export function isActive(state: VoiceCaptureState): boolean {
   return (
     state.status === 'preparing' ||
     state.status === 'listening' ||
@@ -226,15 +268,15 @@ function isActive(state: VoiceCaptureState): boolean {
 }
 
 /** 음성이 돌지 않고 계획도 없어 손으로 입력하는 때 */
-function isManualInput(state: Pick<VoiceCaptureState, 'status'>): boolean {
+export function isManualInput(state: Pick<VoiceCaptureState, 'status'>): boolean {
   return state.status === 'idle' || state.status === 'failed';
 }
 
-function isWrappingUp(state: VoiceCaptureState): boolean {
+export function isWrappingUp(state: VoiceCaptureState): boolean {
   return state.status === 'finalizing' || state.status === 'planning';
 }
 
-function canFinish(state: VoiceCaptureState): boolean {
+export function canFinish(state: VoiceCaptureState): boolean {
   const isStopped =
     state.status === 'paused' || (state.status === 'failed' && state.reason !== 'planning-failed');
   return (
@@ -243,7 +285,7 @@ function canFinish(state: VoiceCaptureState): boolean {
   );
 }
 
-function canResume(state: VoiceCaptureState): boolean {
+export function canResume(state: VoiceCaptureState): boolean {
   return match(state)
     .with({ status: 'paused' }, () => true)
     .with(
@@ -262,11 +304,11 @@ function canResume(state: VoiceCaptureState): boolean {
     .otherwise(() => false);
 }
 
-function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
+export function canResumeWithinLimit(state: VoiceCaptureState, limitMs: number | null): boolean {
   return canResume(state) && (limitMs == null || state.elapsedMs < limitMs);
 }
 
-function canRetryPlanning(state: VoiceCaptureState): boolean {
+export function canRetryPlanning(state: VoiceCaptureState): boolean {
   return (
     state.status === 'failed' &&
     state.reason === 'planning-failed' &&
@@ -274,7 +316,7 @@ function canRetryPlanning(state: VoiceCaptureState): boolean {
   );
 }
 
-function shouldAutoFinish(
+export function shouldAutoFinish(
   state: VoiceCaptureState,
   silentMs: number,
   silenceLimitMs: number = AUTO_FINISH_SILENCE_MS,
@@ -285,7 +327,7 @@ function shouldAutoFinish(
 type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
 
 /** 시트의 바깥 탭과 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다 */
-function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
+export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
   return match(state)
     .returnType<VoiceDismissAction | null>()
     .with({ status: 'review' }, ({ plan }) =>
@@ -297,16 +339,20 @@ function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
 }
 
 /** 차감된 계획을 고르는 단계인지. 떠나면 이미 쓴 횟수를 잃는다 */
-function isChargedReview(state: VoiceCaptureState): boolean {
+export function isChargedReview(state: VoiceCaptureState): boolean {
   return state.status === 'review' && state.isCharged;
 }
 
 /** 일시정지를 지나도 앞서 들은 시간을 뺀 만큼만 더 듣는다 */
-function getRemainingCaptureMs(state: VoiceCaptureState, maxSeconds: number, now: number): number {
+export function getRemainingCaptureMs(
+  state: VoiceCaptureState,
+  maxSeconds: number,
+  now: number,
+): number {
   return Math.max(0, maxSeconds * SECOND_MS - getElapsedMs(state, now));
 }
 
-function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
+export function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
   return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * SECOND_MS;
 }
 
@@ -314,7 +360,7 @@ function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
  * 인식기에 줄 힌트를 정한다. 흔한 단어는 늘 주고, 내 카테고리·할 일 이름은 기기 안 인식일 때만 앞에 둔다.
  * 네트워크 인식이면 음성 인식 서비스로 나가므로 개인 단어를 비운다. 어댑터를 바꿔도 이 규칙은 남는다.
  */
-function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
+export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
   const commonHints = COMMON_SPEECH_HINTS[options.locale];
 
   return {

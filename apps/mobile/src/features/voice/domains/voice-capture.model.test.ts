@@ -2,8 +2,8 @@ import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
-import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { VoiceCapturePolicy } from './voice-capture.model';
+import { voicePlanSchema } from './voice-plan.model';
 
 const NOW = 100_000;
 

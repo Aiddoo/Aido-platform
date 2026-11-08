@@ -12,7 +12,7 @@ interface PreparePlanRequestInput<TInput> {
   createIdempotencyKey: () => string;
 }
 
-function preparePlanRequest<TInput>({
+export function preparePlanRequest<TInput>({
   previous,
   input,
   createIdempotencyKey,
@@ -30,7 +30,7 @@ function preparePlanRequest<TInput>({
  * 서버는 같은 키를 한 번만 차감하고, 결과를 잃었으면 추가 차감 없이 다시 만들어 준다.
  * 어느 경우도 자동으로 다시 보내지 않는다. 다음 요청은 사용자가 눌렀을 때만 간다.
  */
-function getRequestToRetry<TInput>(
+export function getRequestToRetry<TInput>(
   request: PreparedPlanRequest<TInput> | null,
   error: unknown,
 ): PreparedPlanRequest<TInput> | null {

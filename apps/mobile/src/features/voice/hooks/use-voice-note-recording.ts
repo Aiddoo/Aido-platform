@@ -13,8 +13,7 @@ import { match } from 'ts-pattern';
 
 import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
-import { VoiceNotePolicy } from '../domains/voice-note.model';
-import { type VoiceNote } from '../schemas/voice-note.schema';
+import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
 import { useOfferOnDeviceModel } from './use-offer-on-device-model';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';

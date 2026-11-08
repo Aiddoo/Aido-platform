@@ -9,10 +9,9 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { createVoiceNoteSchema } from '../schemas/voice-note.schema';
-import { voicePlanSchema } from '../schemas/voice-plan.schema';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { VoiceNotePolicy } from './voice-note.model';
+import { voicePlanSchema } from './voice-plan.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
   createPlanReviewDraft(
@@ -256,98 +255,6 @@ describe('isRecordingFileExpired', () => {
 
     // Then
     expect(result).toBe(true);
-  });
-});
-
-const voiceNoteSchema = createVoiceNoteSchema('Asia/Seoul');
-
-describe('voiceNoteSchema', () => {
-  const plan = voicePlanSchema.parse({
-    planId: 'draft-1',
-    source: 'voice-note',
-    sourceMemoId: null,
-    omittedTodoCount: 0,
-    actions: [
-      {
-        type: 'create-todo',
-        actionId: 'a1',
-        title: '시안 받기',
-        startDate: '2026-11-06',
-        endDate: null,
-        scheduledTime: null,
-        repeat: null,
-        visibility: null,
-        items: [],
-        categoryId: 1,
-        duplicateOfTodoId: null,
-      },
-    ],
-  });
-
-  it('저장한 순간은 ISO 문자열로 남고 읽으면 Date로 돌아온다', () => {
-    // Given
-    const note = createSpokenVoiceNote({ digest: createVoiceNoteDigest() });
-
-    // When
-    const stored = voiceNoteSchema.encode(note);
-    const restored = voiceNoteSchema.decode(JSON.parse(JSON.stringify(stored)));
-
-    // Then
-    expect(stored.createdAt).toBe('2026-11-01T00:00:00.000Z');
-    expect(restored).toEqual(note);
-  });
-
-  it('고친 카드까지 저장했다가 달력 날짜를 그대로 되살린다', () => {
-    // Given
-    const note = createSpokenVoiceNote({
-      planDraft: createPlanReviewDraft(plan),
-    });
-
-    // When
-    const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
-    const restored = voiceNoteSchema.decode(stored);
-
-    // Then
-    const [action] = restored.planDraft?.form.actions ?? [];
-    expect(action?.type === 'create-todo' && action.startDate).toBe('2026-11-06');
-  });
-
-  it('검토 초안이 깨졌으면 글자는 살리고 그 칸만 비운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
-
-    // When
-    const restored = voiceNoteSchema.decode({ ...stored, planDraft: { form: 'broken' } });
-
-    // Then
-    expect(restored.planDraft).toBeNull();
-    expect(restored.sentences).toHaveLength(1);
-  });
-
-  it('저장된 초안에 제목이 빈 카드가 있어도 나머지 카드를 살리고 못 살린 수를 남긴다', () => {
-    // Given
-    const plan = voicePlanSchema.parse({
-      planId: 'draft-1',
-      source: 'voice-note',
-      sourceMemoId: null,
-      omittedTodoCount: 1,
-      actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
-    });
-    const note = VoiceNotePolicy.withPlanDraft(
-      createSpokenVoiceNote(),
-      createPlanReviewDraft(plan),
-    );
-    const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
-    stored.planDraft.form.actions[0].title = '';
-
-    // When
-    const restored = voiceNoteSchema.decode(stored);
-
-    // Then
-    expect(restored.planDraft?.form.actions.map(({ title }) => title)).toEqual(['장보기']);
-    expect(restored.planDraft?.omittedTodoCount).toBe(2);
-    expect(VoiceNotePolicy.hasEmptyPlan(restored)).toBe(false);
   });
 });
 

@@ -1,40 +1,44 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import { VoiceNotePolicy } from '../domains/voice-note.model';
 import {
   type VoiceNote,
   type VoiceNoteDigest,
+  voiceNoteDigestSchema,
   type VoiceNoteKeyPoint,
+  voiceNoteKeyPointSchema,
+  VoiceNotePolicy,
+  voiceNoteSchema,
   type VoiceNoteSentence,
-} from '../schemas/voice-note.schema';
+  voiceNoteSentenceSchema,
+} from '../domains/voice-note.model';
 
 export function createVoiceNoteSentence(
   overrides: Partial<VoiceNoteSentence> = {},
 ): VoiceNoteSentence {
-  return {
+  return voiceNoteSentenceSchema.parse({
     text: '이번 주 목표는 온보딩 이탈을 줄이는 거예요.',
     startMs: 12_000,
     endMs: 16_000,
     isBookmarked: false,
     lowConfidenceWords: [],
     ...overrides,
-  };
+  });
 }
 
 export function createVoiceNoteKeyPoint(
   overrides: Partial<VoiceNoteKeyPoint> = {},
 ): VoiceNoteKeyPoint {
-  return {
+  return voiceNoteKeyPointSchema.parse({
     id: 'key-point-1',
     text: '목표는 온보딩 이탈 줄이기',
     startMs: 12_000,
     isBookmarked: false,
     ...overrides,
-  };
+  });
 }
 
 export function createVoiceNoteDigest(overrides: Partial<VoiceNoteDigest> = {}): VoiceNoteDigest {
-  return {
+  return voiceNoteDigestSchema.parse({
     title: '온보딩 개선 주간 회의',
     summary: '온보딩 이탈을 줄이는 게 이번 주 목표예요.',
     keyPoints: [
@@ -43,7 +47,7 @@ export function createVoiceNoteDigest(overrides: Partial<VoiceNoteDigest> = {}):
       createVoiceNoteKeyPoint({ id: 'key-point-3', text: 'A/B 실험 시작', startMs: 117_000 }),
     ],
     ...overrides,
-  };
+  });
 }
 
 type VoiceNoteOverrides = Partial<Omit<VoiceNote, 'draftId'>> & { draftId?: string };
@@ -52,7 +56,7 @@ export function createSpokenVoiceNote({
   draftId = 'draft-1',
   ...overrides
 }: VoiceNoteOverrides = {}): VoiceNote {
-  return {
+  return voiceNoteSchema.parse({
     ...VoiceNotePolicy.createVoiceNote({
       draftId,
       locale: 'ko-KR',
@@ -62,5 +66,5 @@ export function createSpokenVoiceNote({
     sentences: [createVoiceNoteSentence()],
     recordings: [{ fileName: `${draftId}-0.wav`, startMs: 0 }],
     ...overrides,
-  };
+  });
 }

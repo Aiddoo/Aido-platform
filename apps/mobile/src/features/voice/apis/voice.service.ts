@@ -10,18 +10,18 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
-import {
-  lenientQuickPlanResponseSchema,
-  lenientVoiceNoteDigestResponseSchema,
-} from '../schemas/voice-plan-response.schema';
 import type {
   AppliedPlanResult,
-  CreateQuickPlanInput,
   PlannedAction,
   QuickPlanResult,
   VoiceNoteDigestResult,
   VoicePlanSource,
-} from '../schemas/voice-plan.schema';
+} from '../domains/voice-plan.model';
+import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import {
+  lenientQuickPlanResponseSchema,
+  lenientVoiceNoteDigestResponseSchema,
+} from '../schemas/voice-plan-response.schema';
 import {
   toAppliedPlanResult,
   toApplyActionPlanRequest,

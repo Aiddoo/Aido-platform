@@ -29,7 +29,7 @@ import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
-import { voicePlanSchema } from '../schemas/voice-plan.schema';
+import { voicePlanSchema } from '../domains/voice-plan.model';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 import { createVoiceNoteDigestDto } from './voice.fixtures';

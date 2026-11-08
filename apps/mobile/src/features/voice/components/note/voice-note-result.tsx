@@ -26,7 +26,7 @@ import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { VoiceNotePolicy } from '../../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
 import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import {
   useVoiceNotePlayback,
@@ -34,7 +34,6 @@ import {
   type VoiceNotePlayer,
 } from '../../hooks/use-voice-note-player';
 import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-params.schema';
-import { type VoiceNote } from '../../schemas/voice-note.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { getDurationBucket } from '../../utils/voice-analytics';
 import { createSpeechLevels, getFlagBarIndexes } from '../../utils/waveform.geometry';

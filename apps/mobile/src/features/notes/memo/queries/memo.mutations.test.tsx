@@ -2,7 +2,7 @@ import type { Memo as MemoDto } from '@aido/api';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { voicePlanSchema } from '@src/features/voice/schemas/voice-plan.schema';
+import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,

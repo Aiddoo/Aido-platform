@@ -4,10 +4,8 @@ import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
 import { clamp, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
-import { type VoiceNote, type VoiceNoteSentence } from '../schemas/voice-note.schema';
-import { type VoiceTranscript } from '../schemas/voice-transcript.schema';
-import { VoiceNotePolicy } from './voice-note.model';
-import { VoiceTranscriptPolicy } from './voice-transcript.model';
+import { type VoiceNote, type VoiceNoteSentence, VoiceNotePolicy } from './voice-note.model';
+import { type VoiceTranscript, VoiceTranscriptPolicy } from './voice-transcript.model';
 
 /** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
 interface ProvisionalSentence {
@@ -40,7 +38,7 @@ interface CaptionClock {
   segmentStartMs: number;
 }
 
-function createVoiceNoteCaptions(): VoiceNoteCaptions {
+export function createVoiceNoteCaptions(): VoiceNoteCaptions {
   return { sentences: [], provisional: [], bookmarksMs: [] };
 }
 
@@ -122,7 +120,7 @@ function toTimedSentences(
   });
 }
 
-function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
   if (captions.provisional.length === 0) {
     return captions;
   }
@@ -194,7 +192,7 @@ function applyFinal(
   };
 }
 
-function applyCaptionResult(
+export function applyCaptionResult(
   captions: VoiceNoteCaptions,
   result: SpeechResultInput,
   clock: CaptionClock,
@@ -204,12 +202,15 @@ function applyCaptionResult(
     : applyInterim(captions, result.transcript, clock.nowMs);
 }
 
-function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+export function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
   return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
 }
 
 /** 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다 */
-function getCaptionSentences(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteSentence[] {
+export function getCaptionSentences(
+  captions: VoiceNoteCaptions,
+  nowMs: number,
+): VoiceNoteSentence[] {
   const { sentences } = commitProvisional(captions, nowMs);
 
   return sentences.map((sentence, index) => {
@@ -223,7 +224,7 @@ function getCaptionSentences(captions: VoiceNoteCaptions, nowMs: number): VoiceN
 }
 
 /** 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다 */
-function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
+export function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
   const settling = captions.provisional.at(-1);
 
   return getCaptionSentences(
@@ -233,7 +234,7 @@ function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
 }
 
 /** 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다 */
-function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
+export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
   const sentences = getCaptionSentences(captions, 0);
   if (sentences.length === 0) {
     return Math.min(captions.bookmarksMs.length, 1);
@@ -243,11 +244,11 @@ function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
 }
 
 /** 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다 */
-function hasCaptionText(captions: VoiceNoteCaptions): boolean {
+export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
   return captions.sentences.length > 0 || captions.provisional.length > 0;
 }
 
-function getCaptionInterimText(captions: VoiceNoteCaptions): string {
+export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';
 }
 
@@ -260,7 +261,7 @@ interface CreateTranscribedVoiceNoteInput {
 }
 
 /** 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다 */
-function createTranscribedVoiceNote({
+export function createTranscribedVoiceNote({
   draftId,
   locale,
   createdAt,
@@ -278,7 +279,7 @@ function createTranscribedVoiceNote({
   );
 }
 
-function toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
+export function toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
   return {
     sentences,
     provisional: [],

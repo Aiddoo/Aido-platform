@@ -1,51 +1,126 @@
+import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import type { FeatureQuota } from '@src/features/billing/subscription/schemas/entitlement.schema';
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
+import {
+  type TodoRepeat,
+  todoRepeatSchema,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';
+import { z } from 'zod';
 
-import type {
-  PlannedAction,
-  PlannedMemo,
-  PlannedTodo,
-  VoicePlan,
-} from '../schemas/voice-plan.schema';
+export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
+const plannedActionIdSchema = z.string().min(1);
+
+const plannedTodoShape = {
+  type: z.literal('create-todo'),
+  actionId: plannedActionIdSchema,
+  title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
+  startDate: z.iso.date(),
+  endDate: z.iso.date().nullable(),
+  scheduledTime: z.iso.time({ precision: -1 }).nullable(),
+  repeat: todoRepeatSchema.nullable(),
+  visibility: z.enum(TODO_VISIBILITIES).nullable(),
+  items: z
+    .array(
+      z.object({ title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH) }),
+    )
+    .max(TODO_ITEM_LIMITS.MAX_PER_TODO),
+  categoryId: z.int().positive().nullable(),
+  duplicateOfTodoId: z.int().positive().nullable(),
+};
+
+const plannedMemoShape = {
+  type: z.literal('create-memo'),
+  actionId: plannedActionIdSchema,
+  title: z.string().trim().max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
+  content: z.string().trim().min(1),
+};
+
+// 서버가 저장 때 막는 규칙(반복에는 종료일 없음, 종료일은 시작일 이후)을 카드를 고치는 동안에도 지킨다
+export const plannedTodoSchema = z
+  .object(plannedTodoShape)
+  .refine((todo) => todo.repeat == null || todo.endDate == null, { path: ['endDate'] })
+  .refine((todo) => todo.endDate == null || todo.startDate <= todo.endDate, { path: ['endDate'] });
+export const plannedMemoSchema = z.object(plannedMemoShape);
+
+export const plannedActionSchema = z.discriminatedUnion('type', [
+  plannedTodoSchema,
+  plannedMemoSchema,
+]);
+export type PlannedTodo = z.infer<typeof plannedTodoSchema>;
+export type PlannedMemo = z.infer<typeof plannedMemoSchema>;
+export type PlannedAction = z.infer<typeof plannedActionSchema>;
+
+const voicePlanSourceSchema = z.enum(['quick-voice', 'quick-text', 'voice-note', 'memo']);
+export type VoicePlanSource = z.infer<typeof voicePlanSourceSchema>;
+
+export const voicePlanSchema = z.object({
+  planId: voicePlanIdSchema,
+  source: voicePlanSourceSchema,
+  // 저장에 성공하면 서버가 이 원본 메모를 지운다
+  sourceMemoId: z.int().positive().nullable(),
+  actions: z
+    .array(plannedActionSchema)
+    .max(ACTION_PLAN_LIMITS.MAX_TODOS + ACTION_PLAN_LIMITS.MAX_MEMOS),
+  omittedTodoCount: z.int().nonnegative(),
+});
+export type VoicePlan = z.infer<typeof voicePlanSchema>;
+
+export interface QuickPlanResult {
+  plan: VoicePlan;
+  // 서버가 한도를 싣지 못하면 null이다. 결과는 보여 주고 한도는 다시 묻는다
+  featureQuota: FeatureQuota | null;
+  isCharged: boolean;
+}
+
+export interface VoiceNoteDigestResult extends QuickPlanResult {
+  title: string;
+  summary: string;
+  keyPoints: { text: string; startMs: number | null }[];
+}
+
+export interface AppliedPlanResult {
+  todoCount: number;
+  hasMemo: boolean;
+}
 
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
 
-function isTodoAction(action: PlannedAction): action is PlannedTodo {
+export function isTodoAction(action: PlannedAction): action is PlannedTodo {
   return action.type === 'create-todo';
 }
 
-function isDuplicateAction(action: PlannedAction) {
+export function isDuplicateAction(action: PlannedAction) {
   return isTodoAction(action) && action.duplicateOfTodoId != null;
 }
 
-function getDefaultSelection(plan: VoicePlan): PlanSelection {
+export function getDefaultSelection(plan: VoicePlan): PlanSelection {
   return Object.fromEntries(
     plan.actions.map((action) => [action.actionId, !isDuplicateAction(action)]),
   );
 }
 
-function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
+export function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
   return plan.actions.filter((action) => selection[action.actionId] === true);
 }
 
-function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
+export function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).filter(isTodoAction).length;
 }
 
-function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
+export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
   return getSelectedActions(plan, selection).length > 0;
 }
 
 /** 반복으로 바꾸면 기간(종료일)은 지운다. 서버가 둘을 함께 받지 않는다 */
-function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
+export function withRepeat(todo: PlannedTodo, repeat: TodoRepeat | null): PlannedTodo {
   return { ...todo, repeat, endDate: repeat == null ? todo.endDate : null };
 }
 
 /** 시작일을 옮기면 기간이 거꾸로 되지 않게 종료일을 같은 길이만큼 옮기고, 반복은 시작일을 따라오는 값을 맞춘다 */
-function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
+export function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
   if (todo.repeat != null) {
     return {
       ...todo,
@@ -60,7 +135,7 @@ function withStartDate(todo: PlannedTodo, startDate: string): PlannedTodo {
   return { ...todo, startDate, endDate: addDaysToDateKey(startDate, spanInDays) };
 }
 
-function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
+export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | null): PlannedTodo {
   return { ...todo, scheduledTime };
 }
 
@@ -73,7 +148,7 @@ interface PlanActionGroup {
   indexes: number[];
 }
 
-function getPlanActionGroups(
+export function getPlanActionGroups(
   actions: readonly PlanGroupableAction[],
   fallbackCategoryId: number,
 ): PlanActionGroup[] {
@@ -99,7 +174,7 @@ function getPlanActionGroups(
 }
 
 /** 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다 */
-function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
+export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
   actions: readonly TAction[],
   fallbackCategoryId: number,
 ): TAction[] {
@@ -114,7 +189,7 @@ export type PlanHeadline =
   | { kind: 'already-added' };
 
 /** 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다 */
-function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
+export function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
   const selectedTodoCount = getSelectedTodoCount(plan, selection);
   if (selectedTodoCount > 0) {
     return { kind: 'todos', count: selectedTodoCount };

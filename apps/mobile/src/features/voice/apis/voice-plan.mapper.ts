@@ -13,21 +13,21 @@ import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-rep
 import { match } from 'ts-pattern';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
-import type {
-  LenientActionPlan,
-  LenientQuickPlanResponse,
-  LenientVoiceNoteDigestResponse,
-} from '../schemas/voice-plan-response.schema';
 import {
   type AppliedPlanResult,
-  type CreateQuickPlanInput,
   type PlannedAction,
   type QuickPlanResult,
   type VoiceNoteDigestResult,
   type VoicePlan,
   type VoicePlanSource,
   voicePlanSchema,
-} from '../schemas/voice-plan.schema';
+} from '../domains/voice-plan.model';
+import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type {
+  LenientActionPlan,
+  LenientQuickPlanResponse,
+  LenientVoiceNoteDigestResponse,
+} from '../schemas/voice-plan-response.schema';
 
 const KNOWN_ACTION_TYPES: readonly string[] = PLANNED_ACTION_TYPES;
 

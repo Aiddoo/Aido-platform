@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import {
   SPEAKING_VOLUME_THRESHOLD,
@@ -6,13 +7,33 @@ import {
   VOICE_RESTART_LOOP,
   VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
-import type { VoiceCaptureState, VoiceStallWatch } from '../schemas/voice-capture.schema';
+import type { VoiceCaptureState } from './voice-capture.model';
 
-function createVoiceStallWatch(now: number, lastRestartAt: number | null = null): VoiceStallWatch {
+export const voiceStallWatchSchema = z.object({
+  // 마지막 글자를 받았거나 구간이 열린 시각
+  lastTextAt: z.number(),
+  // 그 뒤로 말소리 크기로 들린 시간의 합(ms)
+  voicedMs: z.number().nonnegative(),
+  lastSampleAt: z.number().nullable(),
+  // 조용할 때는 다시 열지 않는다
+  isVoiceAudible: z.boolean(),
+  // 글자가 오면 인식기가 살아난 것이라 지운다
+  lastRestartAt: z.number().nullable(),
+});
+export type VoiceStallWatch = z.infer<typeof voiceStallWatchSchema>;
+
+export function createVoiceStallWatch(
+  now: number,
+  lastRestartAt: number | null = null,
+): VoiceStallWatch {
   return { lastTextAt: now, voicedMs: 0, lastSampleAt: null, isVoiceAudible: false, lastRestartAt };
 }
 
-function withVolumeSample(watch: VoiceStallWatch, level: number, now: number): VoiceStallWatch {
+export function withVolumeSample(
+  watch: VoiceStallWatch,
+  level: number,
+  now: number,
+): VoiceStallWatch {
   const isVoiceAudible = level >= SPEAKING_VOLUME_THRESHOLD;
   const gapMs = watch.lastSampleAt == null ? 0 : Math.max(0, now - watch.lastSampleAt);
   return {
@@ -24,7 +45,7 @@ function withVolumeSample(watch: VoiceStallWatch, level: number, now: number): V
   };
 }
 
-function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
+export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
   return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
 }
 
@@ -32,7 +53,7 @@ function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
  * 파형은 움직이는데 글자가 오지 않아 구간을 닫고 다시 열 때인가.
  * 앱이 이미 stop을 부른 구간은 곧 `end`가 오므로 다시 열지 않는다.
  */
-function shouldRestartStalledRecognizer(
+export function shouldRestartStalledRecognizer(
   {
     isStopRequested,
     stallWatch: watch,
@@ -78,7 +99,7 @@ export type VoiceRecognizerLinkEvent =
   | { type: 'text-heard'; transcript: string; at: number }
   | { type: 'volume-sampled'; level: number; at: number };
 
-function createVoiceRecognizerLink(): VoiceRecognizerLink {
+export function createVoiceRecognizerLink(): VoiceRecognizerLink {
   return {
     isRunning: false,
     isStopRequested: false,
@@ -97,7 +118,7 @@ function getQuickEndCount(
   return now - lastStartedAt < VOICE_RESTART_LOOP.windowMs ? quickEndCount + 1 : 0;
 }
 
-function isRestartLooping(
+export function isRestartLooping(
   link: Pick<VoiceRecognizerLink, 'lastStartedAt' | 'quickEndCount'>,
   now: number,
 ): boolean {
@@ -105,7 +126,7 @@ function isRestartLooping(
 }
 
 /** 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다 */
-function isSpeaking(
+export function isSpeaking(
   { lastTextAt }: Pick<VoiceRecognizerLink, 'lastTextAt'>,
   level: number,
   now: number,
@@ -116,7 +137,7 @@ function isSpeaking(
   );
 }
 
-function reduceRecognizerLink(
+export function reduceRecognizerLink(
   link: VoiceRecognizerLink,
   event: VoiceRecognizerLinkEvent,
 ): VoiceRecognizerLink {

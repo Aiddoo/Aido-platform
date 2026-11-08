@@ -17,13 +17,13 @@ import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
+import type { VoiceCaptureState } from '../../domains/voice-capture.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { useReadSpeechContext } from '../../hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { useVoiceNoteRecordExit } from '../../hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '../../hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '../../hooks/use-voice-note-recording';
-import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
 import { voiceNoteRecordParamsSchema } from '../../schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 import { RecognizerWaveform } from './recognizer-waveform';

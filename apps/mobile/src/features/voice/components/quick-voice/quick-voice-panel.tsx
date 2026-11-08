@@ -30,12 +30,14 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
-import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
-import { VoiceTranscriptPolicy } from '../../domains/voice-transcript.model';
+import {
+  VoiceCapturePolicy,
+  type CapturedPlan,
+  type VoiceCaptureState,
+} from '../../domains/voice-capture.model';
+import { VoiceTranscriptPolicy, type VoiceTranscript } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
-import { type CapturedPlan, type VoiceCaptureState } from '../../schemas/voice-capture.schema';
-import type { VoiceTranscript } from '../../schemas/voice-transcript.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';

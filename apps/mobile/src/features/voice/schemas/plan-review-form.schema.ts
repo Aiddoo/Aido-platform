@@ -1,7 +1,7 @@
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-import { plannedMemoSchema, plannedTodoSchema } from './voice-plan.schema';
+import { plannedMemoSchema, plannedTodoSchema } from '../domains/voice-plan.model';
 
 const selectedField = { isSelected: z.boolean() };
 
@@ -16,6 +16,12 @@ const planActionFormSchema = z.discriminatedUnion('type', [
 export const planReviewFormSchema = z.object({ actions: z.array(planActionFormSchema) });
 
 export type PlanReviewFormValues = z.infer<typeof planReviewFormSchema>;
+
+export const planReviewDraftSchema = z.object({
+  omittedTodoCount: z.int().nonnegative(),
+  form: planReviewFormSchema,
+});
+export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
 
 export const planTodoEditFormSchema = z.object({ todo: planTodoFormSchema });
 export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
@@ -50,7 +56,7 @@ function restoreActionDates(action: unknown, timeZone: string) {
  * 결과를 받은 뒤 고친 카드를 기기에 남겨 앱을 다시 켜도 이어 보는 초안.
  * 읽지 못한 카드가 있어도 나머지는 살리고, 못 살린 수를 `omittedTodoCount`에 더해 화면이 알리게 한다.
  */
-export function createPlanReviewDraftSchema(timeZone: string) {
+export function createPlanReviewDraftSchema(timeZone: string): z.ZodType<PlanReviewDraft> {
   return z
     .object({
       omittedTodoCount: z.int().nonnegative(),
@@ -67,4 +73,3 @@ export function createPlanReviewDraftSchema(timeZone: string) {
       };
     });
 }
-export type PlanReviewDraft = z.infer<ReturnType<typeof createPlanReviewDraftSchema>>;

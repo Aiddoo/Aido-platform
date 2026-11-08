@@ -11,7 +11,7 @@ import { Button } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import type { PlannedAction } from '../schemas/voice-plan.schema';
+import type { PlannedAction } from '../domains/voice-plan.model';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
 const TODO_ACTION: PlannedAction = {

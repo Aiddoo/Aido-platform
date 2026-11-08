@@ -1,10 +1,23 @@
 import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
 import { compact } from 'es-toolkit';
+import { z } from 'zod';
 
 import { LOW_CONFIDENCE_THRESHOLD } from '../constants/voice.constants';
-import type { SpeechResult, VoiceTranscript } from '../schemas/voice-transcript.schema';
 
-function createVoiceTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
+// Android는 문장마다 final, iOS는 interim이 쌓이다 끝에 final 하나. interim은 꼬리를 바꾸고 final은 문장으로 확정한다
+export const voiceTranscriptSchema = z.object({
+  sentences: z.array(z.string().min(1)),
+  interim: z.string(),
+});
+export type VoiceTranscript = z.infer<typeof voiceTranscriptSchema>;
+
+export const speechResultSchema = z.object({
+  transcript: z.string(),
+  isFinal: z.boolean(),
+});
+export type SpeechResult = z.infer<typeof speechResultSchema>;
+
+export function createVoiceTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
   return { sentences: [], interim: '', ...overrides };
 }
 
@@ -12,7 +25,7 @@ function replaceInterimResult(transcript: VoiceTranscript, text: string): VoiceT
   return { ...transcript, interim: text.trim() };
 }
 
-function appendFinalResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
+export function appendFinalResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
   const sentence = text.trim();
   if (sentence.length === 0) {
     return { ...transcript, interim: '' };
@@ -23,21 +36,21 @@ function appendFinalResult(transcript: VoiceTranscript, text: string): VoiceTran
   return { sentences: [...transcript.sentences, sentence], interim: '' };
 }
 
-function applyResult(transcript: VoiceTranscript, result: SpeechResult): VoiceTranscript {
+export function applyResult(transcript: VoiceTranscript, result: SpeechResult): VoiceTranscript {
   return result.isFinal
     ? appendFinalResult(transcript, result.transcript)
     : replaceInterimResult(transcript, result.transcript);
 }
 
-function getFinalText(transcript: VoiceTranscript): string {
+export function getFinalText(transcript: VoiceTranscript): string {
   return transcript.sentences.join(' ');
 }
 
-function getTranscriptText(transcript: VoiceTranscript): string {
+export function getTranscriptText(transcript: VoiceTranscript): string {
   return compact([getFinalText(transcript), transcript.interim]).join(' ');
 }
 
-function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
+export function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
   return getTranscriptText(transcript).length === 0;
 }
 
@@ -45,7 +58,7 @@ function isTranscriptEmpty(transcript: VoiceTranscript): boolean {
  * 들은 글자를 입력 칸의 글자 뒤에 합친다. 친 글자는 지우지 않는다.
  * 실패로 이미 옮긴 글자가 겹치지 않게, 칸에 들어 있으면 그대로 두고 이어 말해 늘어났으면 늘어난 글자로 바꾼다.
  */
-function mergeHeardTextIntoTitle(transcript: VoiceTranscript, title: string): string {
+export function mergeHeardTextIntoTitle(transcript: VoiceTranscript, title: string): string {
   const typed = title.trim();
   const heard = getTranscriptText(transcript).trim();
   if (heard.length === 0 || typed.includes(heard)) {
@@ -57,7 +70,7 @@ function mergeHeardTextIntoTitle(transcript: VoiceTranscript, title: string): st
   return `${typed} ${heard}`;
 }
 
-function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscript {
+export function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscript {
   return appendFinalResult(transcript, transcript.interim);
 }
 
@@ -65,7 +78,7 @@ function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscript {
  * 잘못 들었을 수 있는 단어(밑줄용). 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라
  * 아무것도 고르지 않는다.
  */
-function getLowConfidenceWords(
+export function getLowConfidenceWords(
   segments: readonly SpeechSegment[],
   threshold: number = LOW_CONFIDENCE_THRESHOLD,
 ): string[] {

@@ -3,8 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, PauseIcon, StopIcon, Text, VStack } from '@src/shared/ui';
 import { match, P } from 'ts-pattern';
 
-import { VoiceCapturePolicy } from '../../domains/voice-capture.model';
-import type { VoiceCaptureState } from '../../schemas/voice-capture.schema';
+import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
 import { RECORD_BUTTON_ICON_SIZE, RecordButton } from './record-button';
 import { VoiceNoteMarkControl } from './voice-note-mark-control';
 

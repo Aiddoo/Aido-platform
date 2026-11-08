@@ -6,9 +6,9 @@ import { useTranslation } from '@src/shared/i18n';
 import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { router, Stack } from 'expo-router';
 
+import type { VoiceNote } from '../../domains/voice-note.model';
 import { useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteSaveMemo } from '../../hooks/use-voice-note-save-memo';
-import type { VoiceNote } from '../../schemas/voice-note.schema';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
   saveMemo: process.env.EXPO_OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,

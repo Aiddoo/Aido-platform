@@ -40,11 +40,10 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
-import { VoicePlanPolicy } from '../../domains/voice-plan.model';
+import { VoicePlanPolicy, type VoicePlan } from '../../domains/voice-plan.model';
 import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
-import { type VoicePlan } from '../../schemas/voice-plan.schema';
 import { toPlanSelection, toPlannedActions } from '../../utils/plan-review-draft';
 import { getPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
 import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';

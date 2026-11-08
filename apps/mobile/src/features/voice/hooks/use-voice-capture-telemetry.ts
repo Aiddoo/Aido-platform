@@ -10,12 +10,12 @@ import { getErrorMessage } from '@src/shared/errors';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceCaptureEntry, VoiceCaptureOutcome } from '../constants/voice.events';
-import { VoiceCapturePolicy } from '../domains/voice-capture.model';
 import {
+  VoiceCapturePolicy,
   type VoiceCaptureFailureReason,
   type VoiceCaptureState,
   type VoicePauseCause,
-} from '../schemas/voice-capture.schema';
+} from '../domains/voice-capture.model';
 import { getDurationBucket } from '../utils/voice-analytics';
 
 const PAUSE_CAUSE_PARAMS = {

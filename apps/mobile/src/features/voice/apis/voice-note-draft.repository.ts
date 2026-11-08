@@ -9,7 +9,8 @@ import {
   VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
   VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 } from '../constants/voice-note.constants';
-import { createVoiceNoteSchema, type VoiceNote } from '../schemas/voice-note.schema';
+import type { VoiceNote } from '../domains/voice-note.model';
+import { createVoiceNoteDraftSchema } from '../schemas/voice-note-draft.schema';
 
 const KEY_PREFIX = 'aido_voice_note_draft_v1:';
 const KEY_SEPARATOR = ':';
@@ -85,7 +86,7 @@ export function createVoiceNoteDraftRepository({
     }
 
     try {
-      const parsed = createVoiceNoteSchema(getTimeZone()).safeDecode(JSON.parse(raw));
+      const parsed = createVoiceNoteDraftSchema(getTimeZone()).safeDecode(JSON.parse(raw));
       if (parsed.success) {
         return parsed.data;
       }
@@ -106,7 +107,7 @@ export function createVoiceNoteDraftRepository({
     try {
       storage.set(
         createVoiceNoteDraftKey(accountId, note.draftId),
-        JSON.stringify(createVoiceNoteSchema(getTimeZone()).encode(note)),
+        JSON.stringify(createVoiceNoteDraftSchema(getTimeZone()).encode(note)),
       );
       replaceInSnapshot(accountId, note);
       notifyListeners();

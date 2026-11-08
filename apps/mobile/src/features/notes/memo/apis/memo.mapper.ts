@@ -13,7 +13,7 @@ import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
-} from '@src/features/voice/schemas/voice-plan.schema';
+} from '@src/features/voice/domains/voice-plan.model';
 import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';

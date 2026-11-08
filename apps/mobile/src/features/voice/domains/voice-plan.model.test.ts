@@ -3,8 +3,9 @@ import {
   type PlannedTodo,
   voicePlanIdSchema,
   type VoicePlan,
-} from '../schemas/voice-plan.schema';
-import { type PlanHeadline, VoicePlanPolicy } from './voice-plan.model';
+  type PlanHeadline,
+  VoicePlanPolicy,
+} from './voice-plan.model';
 
 const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({
   type: 'create-todo',

@@ -5,9 +5,8 @@ import type {
   VoiceDurationBucket,
   VoicePlanAnalyticsSource,
 } from '../constants/voice.events';
-import { VoicePlanPolicy } from '../domains/voice-plan.model';
-import type { VoiceCaptureState } from '../schemas/voice-capture.schema';
-import { type VoicePlan, type VoicePlanSource } from '../schemas/voice-plan.schema';
+import type { VoiceCaptureState } from '../domains/voice-capture.model';
+import { VoicePlanPolicy, type VoicePlan, type VoicePlanSource } from '../domains/voice-plan.model';
 
 const SECONDS = { thirtySeconds: 30, threeMinutes: 180, tenMinutes: 600 } as const;
 
