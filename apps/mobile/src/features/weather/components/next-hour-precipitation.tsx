@@ -1,7 +1,7 @@
 import type { WeatherPrecipitationType } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
+import { getMinutesUntil, type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -363,7 +363,7 @@ function useFormatPrecipitationMessage({
       }))
       .with({ kind: 'upcoming', precision: 'minute' }, (wet) => ({
         headline: t('nextHour.startsInMinutes', {
-          minutes: WeatherReportPolicy.getMinutesUntil(wet.startsAt, now),
+          minutes: getMinutesUntil(wet.startsAt, now),
           subject: toSubject(wet.precipitationType),
         }),
         detail: formatEnd(wet),

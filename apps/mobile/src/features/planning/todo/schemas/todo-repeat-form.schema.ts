@@ -1,5 +1,6 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
 import { getDayOfMonth } from '@src/shared/date/date-key';
+import { sortDaysOfWeek } from '@src/shared/date/day-of-week';
 import { instantFieldSchema, toDateKey } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -67,7 +68,7 @@ export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): To
   return {
     frequency: 'WEEKLY',
     interval: values.interval,
-    weekdays: TodoRepeatPolicy.sortWeekdays(values.weekdays),
+    weekdays: sortDaysOfWeek(values.weekdays),
     end,
   };
 }

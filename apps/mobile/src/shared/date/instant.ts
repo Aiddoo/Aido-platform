@@ -68,6 +68,11 @@ export function hasInstantPassed(instant: Instant, now: Instant): boolean {
   return toEpochMs(instant) <= toEpochMs(now);
 }
 
+/** 목표 순간까지 남은 분(올림). 이미 지났으면 0분이다 */
+export function getMinutesUntil(target: Instant, now: Instant): number {
+  return Math.max(0, Math.ceil(diffMs(target, now) / MINUTE_MS));
+}
+
 /** 끝나는 날까지 남은 달력 일수(시간대 기준). 이미 지난 날은 0일이다 */
 export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZone: string): number {
   return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);

@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 
 import {
   SPEAKING_VOLUME_THRESHOLD,
+  SPEECH_TEXT_GRACE_MS,
   VOICE_RESTART_LOOP,
   VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
@@ -103,6 +104,18 @@ function isRestartLooping(
   return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
 }
 
+/** 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다 */
+function isSpeaking(
+  { lastTextAt }: Pick<VoiceRecognizerLink, 'lastTextAt'>,
+  level: number,
+  now: number,
+): boolean {
+  return (
+    level >= SPEAKING_VOLUME_THRESHOLD &&
+    (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
+  );
+}
+
 function reduceRecognizerLink(
   link: VoiceRecognizerLink,
   event: VoiceRecognizerLinkEvent,
@@ -150,6 +163,7 @@ function reduceRecognizerLink(
 
 export const VoiceRecognizerLinkPolicy = {
   isRestartLooping,
+  isSpeaking,
   shouldRestartStalledRecognizer,
   createVoiceStallWatch,
   withVolumeSample,

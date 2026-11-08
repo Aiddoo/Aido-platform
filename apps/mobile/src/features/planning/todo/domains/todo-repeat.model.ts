@@ -1,20 +1,18 @@
-import {
-  DAY_OF_WEEK_MAP,
-  DAYS_OF_WEEK,
-  type DayOfWeek,
-  TODO_EDIT_SCOPES,
-  TODO_SERIES_LIMITS,
-} from '@aido/api/vocabulary';
+import { DAYS_OF_WEEK, TODO_EDIT_SCOPES, TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,
   getDayOfMonth,
-  getDayOfWeek,
   getDaysInDateKeyMonth,
   getMondayOfDateKey,
   getMonthEndDateKey,
 } from '@src/shared/date/date-key';
+import {
+  getDateKeyDayOfWeek,
+  hasSameDaysOfWeek,
+  sortDaysOfWeek,
+} from '@src/shared/date/day-of-week';
 import { isEqual } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -35,19 +33,6 @@ const TODO_REPEAT_KINDS = [
 ] as const;
 type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
 
-function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
-  return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
-}
-
-function hasSameWeekdays(weekdays: readonly DayOfWeek[], expected: readonly DayOfWeek[]): boolean {
-  return weekdays.length === expected.length && expected.every((day) => weekdays.includes(day));
-}
-
-function getWeekday(dateKey: string): DayOfWeek {
-  const weekday = getDayOfWeek(dateKey);
-  return DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday) ?? 'MON';
-}
-
 function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
   return match(repeat)
     .returnType<TodoRepeatKind>()
@@ -62,11 +47,11 @@ function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
           () => 'DAILY',
         )
         .when(
-          (days) => hasSameWeekdays(days, WEEKDAYS),
+          (days) => hasSameDaysOfWeek(days, WEEKDAYS),
           () => 'WEEKDAYS',
         )
         .when(
-          (days) => hasSameWeekdays(days, WEEKEND_DAYS),
+          (days) => hasSameDaysOfWeek(days, WEEKEND_DAYS),
           () => 'WEEKENDS',
         )
         .otherwise(() => 'WEEKLY'),
@@ -95,8 +80,8 @@ function withRepeatStartDate(
       monthDay: getDayOfMonth(nextStartDate),
     }))
     .with({ frequency: 'WEEKLY' }, (weekly) =>
-      hasSameWeekdays(weekly.weekdays, [getWeekday(previousStartDate)])
-        ? { ...weekly, weekdays: [getWeekday(nextStartDate)] }
+      hasSameDaysOfWeek(weekly.weekdays, [getDateKeyDayOfWeek(previousStartDate)])
+        ? { ...weekly, weekdays: [getDateKeyDayOfWeek(nextStartDate)] }
         : weekly,
     )
     .exhaustive();
@@ -117,7 +102,7 @@ function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
   }
   return repeat.interval === 1 && repeat.weekdays.length === DAYS_OF_WEEK.length
     ? { frequency: 'DAILY', end: repeat.end }
-    : { ...repeat, weekdays: sortWeekdays(repeat.weekdays) };
+    : { ...repeat, weekdays: sortDaysOfWeek(repeat.weekdays) };
 }
 
 type TodoEditScopeDecision = 'no-scope' | 'this-only' | 'ask' | 'ask-following-only';
@@ -182,7 +167,7 @@ function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: str
       const weeks =
         diffDateKeysInDays(getMondayOfDateKey(startDate), getMondayOfDateKey(dateKey)) /
         DAYS_PER_WEEK;
-      return weekdays.includes(getWeekday(dateKey)) && weeks % interval === 0;
+      return weekdays.includes(getDateKeyDayOfWeek(dateKey)) && weeks % interval === 0;
     })
     .with(
       { frequency: 'MONTHLY' },
@@ -255,9 +240,6 @@ function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean 
 }
 
 export const TodoRepeatPolicy = {
-  getWeekday,
-  hasSameWeekdays,
-  sortWeekdays,
   getRepeatKind,
   hasSameRepeat,
   isBeyondRepeatHorizon,

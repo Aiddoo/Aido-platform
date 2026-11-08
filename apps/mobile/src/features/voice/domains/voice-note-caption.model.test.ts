@@ -1,5 +1,4 @@
 import { toInstant } from '@src/shared/date/instant';
-import { range } from 'es-toolkit';
 
 import { VoiceNoteCaptionPolicy } from './voice-note-caption.model';
 
@@ -9,33 +8,6 @@ const final = (
   transcript: string,
   segments: { text: string; startMs: number; endMs: number; confidence: number }[] = [],
 ) => ({ transcript, isFinal: true, segments });
-
-describe('splitIntoSentences', () => {
-  it('문장부호에서 나눈다', () => {
-    // Given
-    const text = '목표는 이탈 줄이기예요. 시안은 언제까지죠? 수요일이요.';
-
-    // When
-    const sentences = VoiceNoteCaptionPolicy.splitIntoSentences(text);
-
-    // Then
-    expect(sentences).toEqual(['목표는 이탈 줄이기예요.', '시안은 언제까지죠?', '수요일이요.']);
-  });
-
-  it('문장부호가 없는 긴 말은 띄어쓰기에서 끊어 카드가 끝없이 길어지지 않게 한다', () => {
-    // Given
-    const text = range(40)
-      .map(() => '가나다라')
-      .join(' ');
-
-    // When
-    const sentences = VoiceNoteCaptionPolicy.splitIntoSentences(text, 30);
-
-    // Then
-    expect(sentences.every((sentence) => sentence.length <= 30)).toBe(true);
-    expect(sentences.join(' ')).toBe(text);
-  });
-});
 
 describe('applyCaptionResult', () => {
   it('Android처럼 문장마다 final이 오면 문장을 차례로 쌓는다', () => {

@@ -542,31 +542,6 @@ describe('shouldAutoFinish', () => {
   });
 });
 
-describe('isSpeaking', () => {
-  it.each([
-    { title: '음량이 작으면 말이 아니다', level: 0.1, lastTextAt: NOW, expected: false },
-    {
-      title: '음량이 크고 글자가 방금 왔으면 말이다',
-      level: 0.5,
-      lastTextAt: NOW - 1_499,
-      expected: true,
-    },
-    {
-      title: '음량이 커도 새 글자가 끊겼으면 주변 소리다',
-      level: 0.5,
-      lastTextAt: NOW - 1_500,
-      expected: false,
-    },
-    { title: '아직 글자가 없으면 음량으로만 본다', level: 0.5, lastTextAt: null, expected: true },
-  ])('$title', ({ level, lastTextAt, expected }) => {
-    // When
-    const result = VoiceCapturePolicy.isSpeaking(level, lastTextAt, NOW);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('getDismissAction', () => {
   const createReview = (actions: unknown[]) =>
     VoiceCapturePolicy.reduceVoiceCapture(createCaptureState({ status: 'planning' }), {

@@ -231,11 +231,7 @@ export function useVoiceCaptureSession({
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
         silence.noteVolume(
-          VoiceCapturePolicy.isSpeaking(
-            nextLevel,
-            recognizer.linkRef.current.lastTextAt,
-            Date.now(),
-          ),
+          VoiceRecognizerLinkPolicy.isSpeaking(recognizer.linkRef.current, nextLevel, Date.now()),
         );
         stall.sampleVolume(nextLevel);
       })

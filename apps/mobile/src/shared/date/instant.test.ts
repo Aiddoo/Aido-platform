@@ -5,6 +5,7 @@ import {
   diffMs,
   fromDate,
   fromWallClock,
+  getMinutesUntil,
   getNowInstant,
   getZonedHour,
   hasInstantPassed,
@@ -473,5 +474,52 @@ describe('calculateCalendarDaysLeft', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('getMinutesUntil', () => {
+  const now = toInstant('2026-11-02T06:26:00.000Z');
+
+  it('목표까지 남은 분을 돌려준다', () => {
+    // Given
+    const target = toInstant('2026-11-02T06:43:00.000Z');
+
+    // When
+    const minutes = getMinutesUntil(target, now);
+
+    // Then
+    // 06:43 - 06:26 = 17분
+    expect(minutes).toBe(17);
+  });
+
+  it('1분이 안 남아도 1분으로 올린다', () => {
+    // Given
+    const target = toInstant('2026-11-02T06:26:00.001Z');
+
+    // When
+    const minutes = getMinutesUntil(target, now);
+
+    // Then
+    // 1ms / 60,000ms → 올림 1분
+    expect(minutes).toBe(1);
+  });
+
+  it('목표가 지금이면 0분이다', () => {
+    // When
+    const minutes = getMinutesUntil(now, now);
+
+    // Then
+    expect(minutes).toBe(0);
+  });
+
+  it('목표가 이미 지났으면 음수가 아니라 0분이다', () => {
+    // Given
+    const target = toInstant('2026-11-02T06:20:00.000Z');
+
+    // When
+    const minutes = getMinutesUntil(target, now);
+
+    // Then
+    expect(minutes).toBe(0);
   });
 });

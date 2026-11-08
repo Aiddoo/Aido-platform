@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
+import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
@@ -279,12 +280,11 @@ TodoRepeatPickerContent.RepeatSummary = function RepeatSummary({ form }: { form:
       () => t('picker.repeatDaily'),
     )
     .when(
-      ({ weekdays: selected }) => TodoRepeatPolicy.hasSameWeekdays(selected, TODO_REPEAT_WEEKDAYS),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, TODO_REPEAT_WEEKDAYS),
       () => t('picker.repeatWeekdays'),
     )
     .when(
-      ({ weekdays: selected }) =>
-        TodoRepeatPolicy.hasSameWeekdays(selected, TODO_REPEAT_WEEKEND_DAYS),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, TODO_REPEAT_WEEKEND_DAYS),
       () => t('picker.repeatWeekends'),
     )
     .otherwise(() => t('picker.repeatWeekly', { days }));

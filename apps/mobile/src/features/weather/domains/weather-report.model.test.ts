@@ -244,19 +244,6 @@ describe('getPrecipitationWindow', () => {
   });
 });
 
-describe('getMinutesUntil', () => {
-  it('지금부터 목표 시각까지 남은 분을 반환한다', () => {
-    // Given
-    const target = toInstant('2026-11-02T06:43:00.000Z');
-
-    // When
-    const minutes = WeatherReportPolicy.getMinutesUntil(target, NOW);
-
-    // Then
-    expect(minutes).toBe(17);
-  });
-});
-
 describe('getUpcomingHours', () => {
   it('지금이 속한 시간부터 남기고 이미 지난 시간은 뺀다', () => {
     // Given
@@ -542,32 +529,6 @@ describe('isNowcastExpired', () => {
     // Then
     expect(expired).toBe(true);
   });
-});
-
-describe('isDifferentWallClock', () => {
-  const now = toInstant('2026-10-01T06:00:00Z');
-
-  it.each([
-    { deviceTimeZone: 'Asia/Seoul', expected: false },
-    { deviceTimeZone: 'Asia/Tokyo', expected: false },
-    { deviceTimeZone: 'Asia/Bangkok', expected: true },
-    { deviceTimeZone: 'America/Los_Angeles', expected: true },
-  ])(
-    '기기 시간대가 $deviceTimeZone이면 서울 리포트의 벽시계가 다른지는 $expected다',
-    ({ deviceTimeZone, expected }) => {
-      // Given
-      // When
-      const isDifferent = WeatherReportPolicy.isDifferentWallClock(
-        'Asia/Seoul',
-        deviceTimeZone,
-        now,
-      );
-
-      // Then
-      // 지금 시각의 UTC 오프셋이 서울과 다를 때만 다르다
-      expect(isDifferent).toBe(expected);
-    },
-  );
 });
 
 describe('isFrozenPrecipitation', () => {

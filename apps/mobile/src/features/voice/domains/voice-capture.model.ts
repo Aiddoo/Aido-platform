@@ -4,12 +4,7 @@ import { uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
-import {
-  AUTO_FINISH_SILENCE_MS,
-  QUICK_CAPTURE_MAX_SECONDS,
-  SPEAKING_VOLUME_THRESHOLD,
-  SPEECH_TEXT_GRACE_MS,
-} from '../constants/voice.constants';
+import { AUTO_FINISH_SILENCE_MS, QUICK_CAPTURE_MAX_SECONDS } from '../constants/voice.constants';
 import type {
   CapturedPlan,
   VoiceCaptureFailureReason,
@@ -279,13 +274,6 @@ function canRetryPlanning(state: VoiceCaptureState): boolean {
   );
 }
 
-function isSpeaking(level: number, lastTextAt: number | null, now: number): boolean {
-  return (
-    level >= SPEAKING_VOLUME_THRESHOLD &&
-    (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
-  );
-}
-
 function shouldAutoFinish(
   state: VoiceCaptureState,
   silentMs: number,
@@ -347,7 +335,6 @@ export const VoiceCapturePolicy = {
   canResumeWithinLimit,
   canRetryPlanning,
   shouldAutoFinish,
-  isSpeaking,
   shouldOfferVoiceNote,
   getDismissAction,
   isChargedReview,

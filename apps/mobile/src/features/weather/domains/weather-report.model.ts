@@ -4,13 +4,7 @@ import {
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
-import {
-  type Instant,
-  fromEpochMs,
-  hasSameWallClock,
-  toDateKey,
-  toEpochMs,
-} from '@src/shared/date/instant';
+import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
 
 import type {
   DailyForecastEntry,
@@ -177,10 +171,6 @@ function findHourlyPrecipitationOutlook(
   return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
 }
 
-function getMinutesUntil(target: Instant, now: Instant): number {
-  return Math.max(0, Math.ceil((toEpochMs(target) - toEpochMs(now)) / MINUTE_MS));
-}
-
 function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
@@ -232,22 +222,12 @@ function getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boo
   return { kind: 'regular', sunrise: day.sunrise, sunset: day.sunset };
 }
 
-/**
- * 날씨 시각은 위치 시간대로 보여 준다. 지금 그 벽시계가 기기와 다를 때만 '현지' 시각임을 밝힌다.
- * 서울·도쿄처럼 이름만 다르고 오프셋이 같으면 다르지 않다.
- */
-function isDifferentWallClock(timeZone: string, deviceTimeZone: string, now: Instant): boolean {
-  return !hasSameWallClock(now, timeZone, deviceTimeZone);
-}
-
 export const WeatherReportPolicy = {
-  isDifferentWallClock,
   isWetHour,
   isFrozenPrecipitation,
   getUpcomingHours,
   getPrecipitationWindow,
   findHourlyPrecipitationOutlook,
-  getMinutesUntil,
   isReportStale,
   isNowcastExpired,
   getTodayKey,

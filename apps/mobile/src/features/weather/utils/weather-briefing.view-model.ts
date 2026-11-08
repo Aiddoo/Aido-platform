@@ -3,7 +3,7 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { hasSameWallClock, type Instant, toEpochMs } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
@@ -88,7 +88,7 @@ export function toBriefingState(
   }
   if (
     WeatherReportPolicy.isNowcastExpired(report, now) ||
-    WeatherReportPolicy.isDifferentWallClock(report.location.timezone, deviceTimeZone, now)
+    !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
   ) {
     return 'hidden';
   }

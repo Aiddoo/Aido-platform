@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import { getDateKeyDayOfWeek, hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -14,7 +15,7 @@ export function toTodoRepeatFormValues(
   repeat: TodoRepeat | null,
   timeZone: string,
 ): TodoRepeatFormValues {
-  const startWeekday = [TodoRepeatPolicy.getWeekday(toDateKey(startDate, timeZone))];
+  const startWeekday = [getDateKeyDayOfWeek(toDateKey(startDate, timeZone))];
   const base = {
     startDate,
     weekdays: startWeekday,
@@ -77,11 +78,7 @@ export function isTodoRepeatFormPreset(
   values: Pick<TodoRepeatFormValues, 'isMonthly' | 'interval' | 'weekdays'>,
   days: readonly DayOfWeek[],
 ): boolean {
-  return (
-    !values.isMonthly &&
-    values.interval === 1 &&
-    TodoRepeatPolicy.hasSameWeekdays(values.weekdays, days)
-  );
+  return !values.isMonthly && values.interval === 1 && hasSameDaysOfWeek(values.weekdays, days);
 }
 
 export function withTodoRepeatFormPreset(

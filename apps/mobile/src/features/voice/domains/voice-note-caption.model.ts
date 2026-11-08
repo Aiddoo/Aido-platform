@@ -1,5 +1,6 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
 import type { Instant } from '@src/shared/date/instant';
+import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
 import { clamp, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
@@ -43,26 +44,9 @@ function createVoiceNoteCaptions(): VoiceNoteCaptions {
   return { sentences: [], provisional: [], bookmarksMs: [] };
 }
 
-/** 문장부호에서 나누고, 부호가 없는 긴 말(문장부호를 못 넣는 인식기)은 띄어쓰기에서 끊는다 */
-function splitIntoSentences(
-  text: string,
-  maxLength: number = VOICE_NOTE_SENTENCE_MAX_LENGTH,
-): string[] {
-  const parts = text
-    .split(/(?<=[.!?。！？])\s+/)
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
-
-  return parts.flatMap((part) => splitLongPart(part, maxLength));
-}
-
-function splitLongPart(part: string, maxLength: number): string[] {
-  if (part.length <= maxLength) {
-    return part.length > 0 ? [part] : [];
-  }
-  const lastSpace = part.lastIndexOf(' ', maxLength);
-  const cut = lastSpace > 0 ? lastSpace : maxLength;
-  return [part.slice(0, cut).trim(), ...splitLongPart(part.slice(cut).trim(), maxLength)];
+/** 자막 카드 한 장의 글자 수를 넘지 않게 문장으로 나눈다 */
+function splitIntoCaptionSentences(text: string): string[] {
+  return splitIntoSentences(text, VOICE_NOTE_SENTENCE_MAX_LENGTH);
 }
 
 function removeSpaces(text: string) {
@@ -178,7 +162,7 @@ function applyInterim(
 
   return {
     ...base,
-    provisional: splitIntoSentences(transcript).map((text, index) => ({
+    provisional: splitIntoCaptionSentences(transcript).map((text, index) => ({
       text,
       startMs: base.provisional[index]?.startMs ?? nowMs,
     })),
@@ -190,7 +174,7 @@ function applyFinal(
   { transcript, segments }: SpeechResultInput,
   { nowMs, segmentStartMs }: CaptionClock,
 ): VoiceNoteCaptions {
-  const pieces = splitIntoSentences(transcript);
+  const pieces = splitIntoCaptionSentences(transcript);
   const lastCommitted = captions.sentences.at(-1)?.text;
   // 끝난 뒤 같은 문장을 한 번 더 주는 기기가 있다
   const fresh = pieces[0] === lastCommitted ? pieces.slice(1) : pieces;
@@ -284,7 +268,7 @@ function createTranscribedVoiceNote({
   durationMs,
 }: CreateTranscribedVoiceNoteInput): VoiceNote {
   const pieces = [...transcript.sentences, transcript.interim].flatMap((text) =>
-    splitIntoSentences(text),
+    splitIntoCaptionSentences(text),
   );
 
   return VoiceNotePolicy.withSentences(
@@ -314,5 +298,4 @@ export const VoiceNoteCaptionPolicy = {
   getCaptionInterimText,
   getMarkedSentenceCount,
   hasCaptionText,
-  splitIntoSentences,
 } as const;

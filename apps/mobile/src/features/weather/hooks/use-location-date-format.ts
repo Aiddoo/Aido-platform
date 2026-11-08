@@ -1,9 +1,7 @@
 import type { DateFormatContext } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
+import { hasSameWallClock, type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-
-import { WeatherReportPolicy } from '../domains/weather-report.model';
 
 /** 날씨 시각은 예보 위치 시간대로 읽고, 글자 모양만 앱 표시 언어를 따른다. */
 export function useLocationDateFormat(timeZone: string): DateFormatContext {
@@ -17,6 +15,6 @@ export function useLocationDateFormat(timeZone: string): DateFormatContext {
 export function useFormatLocalTime(timeZone: string, now: Instant): (time: string) => string {
   const { t } = useTranslation('weather');
   const { timeZone: deviceTimeZone } = useDateFormatContext();
-  const isDifferent = WeatherReportPolicy.isDifferentWallClock(timeZone, deviceTimeZone, now);
+  const isDifferent = !hasSameWallClock(now, timeZone, deviceTimeZone);
   return (time) => (isDifferent ? t('localTime', { time }) : time);
 }
