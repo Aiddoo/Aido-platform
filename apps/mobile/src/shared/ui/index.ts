@@ -23,7 +23,7 @@ export { ConfirmDialog, useConfirmDialog } from './confirm-dialog';
 export { DashedDivider } from './dashed-divider';
 export { FeatureMedia, type FeatureMediaProps } from './feature-media';
 export { Flex } from './flex';
-export { FormStepLayout } from './form-step-layout';
+export { FormScrollView, FormStepLayout } from './form-step-layout';
 export { Grid, GridItem } from './grid';
 export { HStack } from './h-stack';
 export { HINT_OFFSET, HintPopoverContent, type HintPopoverContentProps } from './hint-popover';

@@ -4,12 +4,11 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { Input, KeyboardAdaptiveButton, StyledSafeAreaView } from '@src/shared/ui';
+import { FormScrollView, Input, KeyboardAdaptiveButton, StyledSafeAreaView } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
-import { ScrollView } from 'react-native';
 
 import { useSendRequestByTagMutationOptions } from '../queries/friend.mutations';
 import {
@@ -48,11 +47,9 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
 
   return (
     <>
-      <ScrollView
-        className="flex-1"
+      <FormScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
         keyboardShouldPersistTaps="always"
-        showsVerticalScrollIndicator={false}
         bounces={false}
         alwaysBounceVertical={false}
         overScrollMode="never"
@@ -91,7 +88,7 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
             )}
           />
         </StyledSafeAreaView>
-      </ScrollView>
+      </FormScrollView>
 
       <KeyboardAdaptiveButton
         onPress={() => submit()}

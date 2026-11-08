@@ -90,6 +90,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `SheetHeaderLayout`                                                                             | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤                                                                           | `src/shared/ui/bottom-sheet/bottom-sheet.md`                      |
 | `SheetRouteScreen`, `useSheetRoute`                                                             | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기                                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                      |
 | `useStackScreenOptions`, `useStackBackToolbar`                                                  | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기                                                                     | `src/shared/ui/stack-header/stack-header.md`                      |
+| `FormScrollView`                                                                                | 화면 폼 스크롤 (`KeyboardAwareScrollView` + 키보드 버튼 높이 `bottomOffset`)                                                               | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `FormStepLayout`                                                                                | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)                                                                           | `src/shared/ui/form-step-layout/form-step-layout.md`              |
 | `ActionButton`                                                                                  | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                    |
 | `ListRow`                                                                                       | 목록 행 (`left`·`contents`·`right`, `.Texts`·`.Image`, `onPress`면 행 전체가 버튼)                                                         | `src/shared/ui/list-row/list-row.md`                              |
@@ -234,6 +235,20 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 - **머리글 고정:** "확인"이 머리글에 있는 시트는 `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다.
 - **대상이 있는 시트:** Stack에 `SHEET_ROUTE_SCREEN_OPTIONS`로 등록하고 시트가 route hook으로 id를 읽어 조회한다. `sheet.close(next?)`, `sheet.exit()`로 떠난다.
 - **배치:** `getSheetLayout`이 정한다(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백).
+
+## 키보드
+
+[Expo 키보드 가이드](https://docs.expo.dev/guides/keyboard-handling/)대로 `react-native-keyboard-controller`를 쓴다. 입력이 있는 곳마다 아래 셋 중 하나다.
+
+| 곳                                     | 스크롤                                                         | 주 동작 버튼                                   |
+| -------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
+| 화면 폼                                | `FormStepLayout`·`FormScrollView`(`KeyboardAwareScrollView`)   | `KeyboardAdaptiveButton`(`KeyboardStickyView`) |
+| 시트                                   | `KeyboardBottomSheet`(gorhom `keyboardBehavior="interactive"`) | `footer`                                       |
+| 전체 화면 편집기·목록(메모, 친구 찾기) | `KeyboardAvoidingView behavior="padding"`                      | 화면 머리글 버튼                               |
+
+- 화면 폼은 `bottomOffset`을 `KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET`보다 키우지 않는다. 다음 칸은 `returnKeyType="next"`로 넘어간다.
+- 시트의 주 버튼과 입력을 돕는 칩 줄은 `footer`에 둔다. 키보드 위 높이가 좁은 기기(접은 Duo·SE·가로)에서는 내용이 스크롤되고 `footer`는 키보드 위에 남는다.
+- 댓글처럼 목록 아래에 붙는 작성 바만 `KeyboardStickyView`를 직접 쓴다.
 
 ## 아직 옮기지 않은 것
 
@@ -460,7 +475,7 @@ Expo 공식 스킬(expo-animation·native-ui·data-fetching·router·ui)을 따�
 - **오디오**: 녹음·재생은 `expo-audio`를 쓴다(녹음 조각을 잇는 다시 듣기는 `useAudioPlaylist`). `expo-av`는 쓰지 않는다.
 - **데이터 화면 4상태**: 로딩(스켈레톤)·오류(`QueryErrorBoundary`)·빈 상태(`.Empty`)·데이터를 모두 그린다. 저장 실패는
   입력값을 지우지 않는다. 숫자 카운터는 `tabular-nums`로 폭이 흔들리지 않게 한다.
-- **키보드**: `react-native-keyboard-controller`를 쓴다.
+- **키보드**: [키보드](#키보드)를 따른다.
 - **따르지 않는 것**: 할 일 추가 시트는 앱 디자인 시스템(`KeyboardBottomSheet`, rounded 32, 같은 칩)과 시트 안에서
   모드가 바뀌는 흐름 때문에 `@expo/ui` BottomSheet로 바꾸지 않는다.
 

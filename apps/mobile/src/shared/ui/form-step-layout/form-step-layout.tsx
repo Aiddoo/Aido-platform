@@ -1,14 +1,14 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import type { ComponentProps, ReactNode } from 'react';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET } from '../button';
 import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { H3 } from '../text';
+import { FormScrollView } from './form-scroll-view';
 
 export interface FormStepLayoutProps extends Omit<
-  ComponentProps<typeof KeyboardAwareScrollView>,
+  ComponentProps<typeof FormScrollView>,
   'children'
 > {
   /** 단계 제목. 바뀌면 제목만 다시 페이드인한다. */
@@ -19,14 +19,11 @@ export interface FormStepLayoutProps extends Omit<
 export function FormStepLayout({
   title,
   children,
-  style,
   contentContainerStyle,
   ...props
 }: FormStepLayoutProps) {
   return (
-    <KeyboardAwareScrollView
-      bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET}
-      style={[{ flex: 1 }, style]}
+    <FormScrollView
       contentContainerStyle={[
         {
           paddingHorizontal: 16,
@@ -35,8 +32,6 @@ export function FormStepLayout({
         },
         contentContainerStyle,
       ]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
       {...props}
     >
       <StyledSafeAreaView edges={['left', 'right']}>
@@ -50,6 +45,6 @@ export function FormStepLayout({
 
         {children}
       </StyledSafeAreaView>
-    </KeyboardAwareScrollView>
+    </FormScrollView>
   );
 }

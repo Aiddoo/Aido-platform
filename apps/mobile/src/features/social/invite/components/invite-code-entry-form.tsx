@@ -6,6 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   CopyIcon,
+  FormScrollView,
   HStack,
   InfoIcon,
   KeyboardAdaptiveButton,
@@ -20,7 +21,6 @@ import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'react';
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
-import { ScrollView } from 'react-native';
 
 import { InviteCodePolicy } from '../domains/invite-code.model';
 import { useInviteParams } from '../hooks/use-invite-params';
@@ -130,12 +130,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
 
   return (
     <>
-      <ScrollView
-        className="flex-1"
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <FormScrollView contentInsetAdjustmentBehavior="automatic">
         <StyledSafeAreaView edges={['left', 'right']}>
           <ReadableContent px={24} pt={20}>
             {children}
@@ -198,7 +193,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
             )}
           </ReadableContent>
         </StyledSafeAreaView>
-      </ScrollView>
+      </FormScrollView>
 
       <KeyboardAdaptiveButton
         testID="invite-code-submit"

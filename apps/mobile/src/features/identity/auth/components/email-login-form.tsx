@@ -3,8 +3,8 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
+  FormScrollView,
   Input,
-  KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET,
   KeyboardAdaptiveButton,
   Spacing,
   StyledSafeAreaView,
@@ -12,14 +12,10 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
 import { emailLoginFormSchema } from '../schemas/email-login-form.schema';
 import { PasswordInput } from './password-input';
-
-/** 이메일 칸에 있을 때 아래 비밀번호 칸까지 버튼 위에 보여 바로 누를 수 있게 조금 더 올린다 */
-const NEXT_FIELD_OFFSET = 52;
 
 interface EmailLoginFormProps {
   children: ReactNode;
@@ -48,11 +44,9 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
 
   return (
     <>
-      <KeyboardAwareScrollView
-        bottomOffset={KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET + NEXT_FIELD_OFFSET}
+      {/* 다음 칸은 returnKeyType="next"로 넘어가므로 포커스한 칸보다 더 띄우지 않는다. 마지막 칸(비밀번호)까지 과하게 밀려 올라갔다 */}
+      <FormScrollView
         contentContainerStyle={{ paddingHorizontal: 16 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
         onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
       >
         {/* 스크롤 내용 전체를 가운데 두면 키보드 높이만큼 끼는 여백에 칸이 함께 밀려 스크롤 계산이 어긋난다. 화면 높이만 가운데 둔다 */}
@@ -121,7 +115,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
 
           {footer}
         </StyledSafeAreaView>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
 
       <KeyboardAdaptiveButton
         testID="email-login-submit"
