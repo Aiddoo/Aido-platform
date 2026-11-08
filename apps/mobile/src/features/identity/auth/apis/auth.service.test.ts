@@ -41,8 +41,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── emailLogin ─────────────────────────────
-
   describe('emailLogin', () => {
     it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
@@ -123,8 +121,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── exchangeCode ───────────────────────────
-
   describe('exchangeCode', () => {
     it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
@@ -168,8 +164,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── logout ─────────────────────────────────
-
   describe('logout', () => {
     it('성공하면 서버 세션만 끝내고 토큰은 지우지 않는다', async () => {
       // Given
@@ -196,8 +190,6 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── verifyEmail ────────────────────────────
 
   describe('verifyEmail', () => {
     it('서버 응답이 성공하면 토큰 저장 + 도메인 모델 반환', async () => {
@@ -240,8 +232,6 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid auth tokens response');
     });
   });
-
-  // ── register ───────────────────────────────
 
   describe('register', () => {
     const registerInput = {
@@ -293,8 +283,6 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid register response');
     });
   });
-
-  // ── resendVerification ─────────────────────
 
   describe('resendVerification', () => {
     it('서버 응답이 성공하면 retryAfterSeconds 포함', async () => {
@@ -354,8 +342,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── getLinkedAccounts ──────────────────────
-
   describe('getLinkedAccounts', () => {
     it('서버 응답이 성공하면 LinkedAccount 배열, linkedAt Instant 변환', async () => {
       // Given
@@ -413,8 +399,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── linkAccount ────────────────────────────
-
   describe('linkAccount(브라우저 연결 코드 교환)', () => {
     beforeEach(() => {
       socialAuthGateway.openOAuthSession.mockResolvedValue({
@@ -452,8 +436,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── unlinkAccount ──────────────────────────
-
   describe('unlinkAccount', () => {
     it('성공 → 결과 반환', async () => {
       // Given
@@ -480,8 +462,6 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── changePassword ─────────────────────────
 
   describe('changePassword', () => {
     const input = {
@@ -529,8 +509,6 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid changePassword response');
     });
   });
-
-  // ── deleteAccount ──────────────────────────
 
   describe('deleteAccount', () => {
     const input = { password: 'Password1!', reason: '더 이상 사용하지 않음' };
@@ -594,8 +572,6 @@ describe('AuthService', () => {
     });
   });
 
-  // ── forgotPassword ────────────────────────
-
   describe('forgotPassword', () => {
     const input = { email: 'test@example.com' };
 
@@ -635,8 +611,6 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid forgotPassword response');
     });
   });
-
-  // ── resetPassword ────────────────────────
 
   describe('resetPassword', () => {
     const input = {
@@ -682,8 +656,4 @@ describe('AuthService', () => {
       await expect(result).rejects.toThrow('Invalid resetPassword response');
     });
   });
-
-  // ── OAuth 네이티브 메서드 ──────────────────
-  // openKakaoLogin, openNaverLogin, openGoogleLogin, openAppleLogin,
-  // 네이티브 모듈에 의존하므로 별도 통합/E2E 테스트에서 검증
 });

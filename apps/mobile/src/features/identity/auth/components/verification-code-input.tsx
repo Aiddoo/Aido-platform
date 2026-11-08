@@ -7,11 +7,9 @@ interface VerificationCodeInputProps extends Omit<
   ComponentProps<typeof InputOTP>,
   'maxLength' | 'children'
 > {
-  /** 코드를 절반씩 나누고 가운데 구분선을 보여 준다. */
   isSeparated?: boolean;
 }
 
-/** 서버 인증 코드 길이만큼 칸을 만드는 인증 코드 입력 */
 export function VerificationCodeInput({
   isSeparated = false,
   ...props

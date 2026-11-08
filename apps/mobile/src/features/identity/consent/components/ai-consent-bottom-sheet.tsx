@@ -28,16 +28,10 @@ const ITEM_ICON_SIZE = 16;
 const PRIVACY_LINK_MIN_HEIGHT = 44;
 
 type AiConsentBottomSheetProps = Omit<ComponentProps<typeof ModalBottomSheet>, 'children'> & {
-  /** 동의를 저장한 뒤 호출된다. 시트를 닫고 원래 하려던 AI 동작을 잇는다 */
   onAgree: () => void;
-  /** 이전 안내에 동의한 사람에게 바뀐 내용을 다시 알린다. 답하지 않아도 이전 동의는 그대로다 */
   isRenewal?: boolean;
 };
 
-/**
- * AI에 내용을 처음 보내기 전에 무엇을 어디로 보내는지 알리고 동의를 받는다.
- * 동의 저장은 시트가 맡고, 저장에 실패하면 토스트로 알리고 시트를 그대로 둔다.
- */
 export function AiConsentBottomSheet({
   onAgree,
   onOpenChange,
@@ -185,7 +179,7 @@ function ConsentItem({ icon, title, description, children }: ConsentItemProps) {
   );
 }
 
-/** 가장 큰 글자 크기에서는 두 버튼을 나란히 두면 라벨이 잘려 세로로 쌓고 동의를 위에 둔다 */
+// 가장 큰 글자 크기에서는 라벨이 잘려 세로로 쌓고 동의를 위에 둔다
 function ConsentActions({ later, agree }: { later: ReactNode; agree: ReactNode }) {
   const { fontScale } = useFontScale();
 

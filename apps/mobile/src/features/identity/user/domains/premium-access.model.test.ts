@@ -14,7 +14,6 @@ describe('isStoreSubscribed', () => {
     [null, false],
   ] as const)('출처가 %s면 %s를 반환한다', (source, expected) => {
     // Given
-    // 보상 프리미엄만 쓰는 중(GRANT)이거나 프리미엄이 없으면 구독을 권할 수 있다
     const access = createPremiumAccess({ source });
 
     // When
@@ -164,7 +163,6 @@ describe('isExpiringSoon', () => {
 
   it('구독을 취소했어도 이어서 받을 보상이 남았으면 false를 반환한다', () => {
     // Given
-    // 스토어 구독이 내일 끝나지만 보상 7일이 이어진다
     const access = createPremiumAccess({ source: 'STORE', willRenew: false, bankedDays: 7 });
 
     // When
@@ -212,7 +210,6 @@ describe('hasChanged', () => {
 });
 
 describe('hasEndedSince', () => {
-  // 기본 보상 기간은 11월 1일 14:30 KST(05:30Z)에 끝난다
   it.each([
     ['끝나기 1분 전이면 false다', '2026-11-01T05:28:00Z', '2026-11-01T05:29:00Z', false],
     ['끝나는 시각에 닿으면 true다', '2026-11-01T05:29:00Z', '2026-11-01T05:30:00Z', true],
@@ -241,7 +238,6 @@ describe('hasEndedSince', () => {
 
   it('쌓아 둔 보상이 남아도 지금 기간이 끝나면 true다', () => {
     // Given
-    // 지금 보상은 11월 1일에 끝나고 이어서 받을 7일이 있다
     const access = createPremiumAccess({
       endsAt: toInstant('2026-11-08T05:30:00Z'),
       bankedDays: 7,
@@ -303,7 +299,6 @@ describe('getRecentGrantEndedAt', () => {
 
   it('다시 프리미엄이면 지난 보상이 끝난 것을 알리지 않는다', () => {
     // Given
-    // 끝난 시각이 남아 있어도 지금은 보상 기간이다
     const premiumAccess = createPremiumAccess({
       source: 'GRANT',
       grantEndedAt: toInstant('2028-03-04T04:00:00.000Z'),

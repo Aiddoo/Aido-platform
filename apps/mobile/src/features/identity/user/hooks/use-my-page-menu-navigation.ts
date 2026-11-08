@@ -9,13 +9,12 @@ import {
 
 export type MyPageMenuPathname = Extract<Href, string>;
 
-/** 마이페이지 목록 항목의 이동 방식(push/replace)과 선택 여부를 현재 경로로 정한다. */
 export function useMyPageMenuNavigation() {
   const currentPathname = usePathname();
   const rootNavigationState = useRootNavigationState();
   const push = useSingleTap(router.push);
   const replaceDetail = useSingleTap((target: Href) => {
-    // 상세 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다. 첫 화면에서 걷으면 메뉴 화면까지 닫힌다
+    // 첫 화면에서 걷으면 메뉴 화면까지 닫혀 상세 안의 화면만 먼저 걷어 낸다
     if (hasPushedScreen(rootNavigationState)) {
       router.dismissAll();
     }

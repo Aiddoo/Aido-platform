@@ -15,13 +15,11 @@ export const userSchema = z.object({
   subscriptionExpiresAt: instantSchema.nullable(),
   providers: z.array(z.enum(ACCOUNT_PROVIDERS)),
   premiumAccess: premiumAccessSchema,
-  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). 앱의 결제 사용자 판별은 UserPolicy.hasPremiumAccess 하나다 */
   isPremium: z.boolean(),
   createdAt: instantSchema,
 });
 export type User = z.infer<typeof userSchema>;
 
-/** 이름·프로필 사진 수정 결과. profileImage null은 사진을 지운 상태다 */
 export const updateProfileResultSchema = z.object({
   name: z.string().nullable(),
   profileImage: z.string().nullable(),
@@ -36,12 +34,10 @@ function isAdmin(user: Pick<User, 'role'>) {
   return user.role === USER_ROLE.ADMIN;
 }
 
-/** 서버의 isPremium은 ADMIN을 반영하지 않는다. 앱의 "결제 사용자" 판별은 여기 하나다 */
 function hasPremiumAccess(user: Pick<User, 'role' | 'isPremium'>) {
   return isAdmin(user) || user.isPremium;
 }
 
-/** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
 function hasEntitlementChanged(
   previous: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
   next: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,

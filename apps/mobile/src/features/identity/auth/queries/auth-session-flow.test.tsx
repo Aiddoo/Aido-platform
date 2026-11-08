@@ -64,7 +64,6 @@ const memoDraftKey = createDraftKey({
   schema: z.object({ content: z.string() }),
 });
 
-// 로그아웃이 마운트된 위젯 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
 beforeEach(() => {
   jest.useFakeTimers();
 });
@@ -785,7 +784,6 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
     session.userHttp.get.mockResolvedValue(ok(ACCOUNT_A));
-    // 앱의 기본값. 신선한 값이면 다음 계정이 그대로 읽는다
     session.queryClient.setDefaultOptions({
       queries: { retry: false, gcTime: Infinity, staleTime: 5 * 60 * 1000 },
       mutations: { retry: false, gcTime: Infinity },
@@ -917,7 +915,6 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       await result.current.logout.mutateAsync();
     });
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    // 관찰자가 마운트된 채 다시 그려지면 정리에서 비운 콜백이 복구되어 이 쓰기가 일어날 수 있다
     session.queryClient.setQueryData(ME_KEY, staleMe);
     session.userHttp.get.mockResolvedValue(ok(ACCOUNT_B));
     session.draftService.save(draftKeyOfB, { content: 'B의 초안' });

@@ -57,7 +57,6 @@ interface AuthServicePorts {
   authHttpClient: HttpClient;
   tokenStore: TokenStore;
   socialAuthGateway: SocialAuthGateway;
-  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
   deviceType: 'IOS' | 'ANDROID';
   logger: Logger;
 }
@@ -86,7 +85,6 @@ export class AuthService {
     this.#logger = logger;
   }
 
-  /** 로그인 응답의 토큰을 저장한다. 다음 요청부터 이 토큰을 쓴다 */
   #saveTokens = async (response: Result<unknown, ApiError>) => {
     const result = parseApiResponse(
       response,
@@ -118,7 +116,6 @@ export class AuthService {
         if (code) {
           return ok(code);
         }
-        // 서버가 실어 보낸 오류 코드면 errors 카탈로그의 문구를 쓴다
         if (queryParams.error || queryParams.error_description) {
           return err(new BusinessError(queryParams.error ?? AUTH_ERROR_CODE.PROVIDER_ERROR));
         }
@@ -181,13 +178,12 @@ export class AuthService {
   exchangeCode = async (request: ExchangeCodeInput) =>
     this.#saveTokens(await this.#publicHttpClient.post('v1/auth/exchange', request));
 
-  /** 서버 세션만 끝낸다. 토큰 삭제는 응답을 기다린 사이 세션이 바뀌었는지 보는 `logOutDevice`가 정한다 */
+  // 토큰 삭제는 세션 변경을 확인하는 logOutDevice가 정한다
   logout = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const result = await this.#authHttpClient.post('v1/auth/logout', undefined, config);
     return result.ok ? ok(undefined) : result;
   };
 
-  /** 명시적 로그아웃/탈퇴 — 세션 만료(SessionManager.end)와 더불어 토큰을 지우는 유일한 경로. */
   clearLocalSession = (): Promise<void> => this.#tokenStore.clear();
 
   verifyEmail = async (input: VerifyEmailInput) =>
@@ -299,7 +295,7 @@ export class AuthService {
       '[AuthService] Invalid deleteAccount response',
     );
     if (result.ok) {
-      // 서버에서는 이미 탈퇴했다. 기기 토큰을 못 지워도 실패로 돌리지 않고 남은 토큰은 다음 요청 거부로 정리된다
+      // 서버에서는 이미 탈퇴했으니 토큰을 못 지워도 실패로 돌리지 않는다
       await this.clearLocalSession().catch((error: unknown) => {
         this.#logger.warn(AUTH_LOG_EVENT.LOCAL_SESSION_CLEAR_FAILED, {
           error: getErrorMessage(error),

@@ -30,11 +30,9 @@ type ChangePasswordStepContexts = {
 };
 
 interface ChangePasswordFormProps {
-  /** 단계마다 위에 놓는 제목 */
   stepTitles: Record<keyof ChangePasswordStepContexts, string>;
 }
 
-/** 비밀번호 변경 2단계(현재 비밀번호, 새 비밀번호)의 입력과 제출. 실패하면 토스트로 알리고 입력값은 그대로 둔다 */
 export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   const form = useForm({
     resolver: zodResolver(changePasswordFormSchema),

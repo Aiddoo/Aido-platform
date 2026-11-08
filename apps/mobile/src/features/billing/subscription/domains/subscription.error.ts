@@ -1,13 +1,10 @@
 import { BusinessError } from '@src/shared/errors';
 
 export const SUBSCRIPTION_ERROR_CODE = {
-  /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
   STORE_UNAVAILABLE: 'SUBSCRIPTION_STORE_UNAVAILABLE',
-  /** 스토어가 잠시 응답하지 못했다. 설정 문제와 달리 나중에 다시 하면 풀릴 수 있다 */
+  // 설정 문제와 달리 나중에 다시 하면 풀릴 수 있다
   STORE_PROBLEM: 'SUBSCRIPTION_STORE_PROBLEM',
-  /** 스토어에는 닿았지만 팔 수 있는 요금제를 받지 못했다 */
   OFFERINGS_UNAVAILABLE: 'SUBSCRIPTION_OFFERINGS_UNAVAILABLE',
-  /** 기기 연결 때문에 스토어에 닿지 못했다 */
   NETWORK: 'SUBSCRIPTION_NETWORK',
   PURCHASE_CANCELLED: 'SUBSCRIPTION_PURCHASE_CANCELLED',
   PAYMENT_PENDING: 'SUBSCRIPTION_PAYMENT_PENDING',
@@ -24,7 +21,7 @@ export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
 
   constructor(
     code: SubscriptionErrorCode,
-    /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
+    // 문의·진단에만 쓰고 화면 분기는 code로 한다
     readonly storeErrorCode: string | null = null,
   ) {
     super(code);

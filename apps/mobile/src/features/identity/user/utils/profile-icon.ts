@@ -8,7 +8,6 @@ const ICON_MAP = new Map<string, ImageSourcePropType>(
 
 const DEFAULT_ICON: ImageSourcePropType = defaultProfileIconImage;
 
-/** profileImage 값(아이콘 키 | URL | null)을 Image source로 변환 */
 export function getProfileIconSource(profileImage: string | null): ImageSourcePropType {
   if (!profileImage) {
     return DEFAULT_ICON;

@@ -8,7 +8,6 @@ export const authTokensSchema = z.object({
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
   accountRestored: z.boolean(),
-  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 기존 계정으로 본다 */
   isNewUser: z.boolean().optional().default(false),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
@@ -16,7 +15,6 @@ export type AuthTokens = z.infer<typeof authTokensSchema>;
 export const registerResultSchema = z.object({
   message: z.string(),
   email: z.string(),
-  /** 인증 메일을 발송 큐에 담았는지. false면 가입은 됐고 재발송으로 다시 받는다 */
   isEmailSent: z.boolean(),
 });
 export type RegisterResult = z.infer<typeof registerResultSchema>;

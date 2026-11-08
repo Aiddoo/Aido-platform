@@ -21,7 +21,6 @@ interface TermsBottomSheetProps {
   form: UseFormReturn<SignUpFormValues>;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** 동의 확인 시 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. 입력이 올바르지 않아 보내지 않았으면 false */
   onSubmit: () => Promise<boolean>;
 }
 
@@ -69,7 +68,6 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
 
           <Separator />
 
-          {/* 필수 동의를 먼저, 선택 동의를 아래에 둔다 */}
           <VStack gap={20}>
             <Controller
               control={form.control}

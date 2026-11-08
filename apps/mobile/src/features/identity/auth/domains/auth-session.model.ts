@@ -1,7 +1,6 @@
 import type { ResolvedAuthStatus } from '@src/core/session/auth-status';
 import { match, P } from 'ts-pattern';
 
-/** 미인증인 이유. 초안을 지울지는 이 값으로 갈린다. 사용자가 나간 경우만 지운다 */
 type SignedOutReason = 'none' | 'signed-out' | 'expired' | 'boot-failed';
 
 export type AuthSessionState =
@@ -30,10 +29,6 @@ function resolveBootState(status: ResolvedAuthStatus): AuthSessionState {
     .exhaustive();
 }
 
-/**
- * 부팅 판정은 판정 중에만 반영한다. 늦게 끝난 판정이 로그아웃을 되돌리면 안 된다.
- * 만료는 인증 중에만 반영한다. 로그인 화면에서 난 401은 세션 만료가 아니다.
- */
 function transitionAuthSession(state: AuthSessionState, event: AuthSessionEvent): AuthSessionState {
   const pending = { status: P.union('loading', 'locked') };
 

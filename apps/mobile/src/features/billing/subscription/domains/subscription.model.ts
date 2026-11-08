@@ -21,7 +21,6 @@ export const subscriptionOfferingSchema = z.object({
 });
 export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
-/** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
 function getAnnualDiscountPercent(
   monthlyPlan: Pick<SubscriptionPlan, 'price'>,
   annualPlan: Pick<SubscriptionPlan, 'price'>,

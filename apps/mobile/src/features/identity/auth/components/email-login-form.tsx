@@ -18,17 +18,13 @@ import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
 import { emailLoginFormSchema } from '../schemas/email-login-form.schema';
 import { PasswordInput } from './password-input';
 
-/** 이메일 칸에 있을 때 아래 비밀번호 칸까지 버튼 위에 보여 바로 누를 수 있게 조금 더 올린다 */
 const NEXT_FIELD_OFFSET = 52;
 
 interface EmailLoginFormProps {
-  /** 입력 위에 놓는 제목과 간격 */
   children: ReactNode;
-  /** 입력 아래에 놓는 안내 링크 */
   footer: ReactNode;
 }
 
-/** 이메일·비밀번호 입력과 키보드 위 로그인 버튼. 제목과 링크는 화면이 children과 footer로 넘긴다 */
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const reportUnexpectedError = useReportUnexpectedError('auth');
@@ -58,7 +54,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
         showsVerticalScrollIndicator={false}
         onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
       >
-        {/* 스크롤 내용 전체를 가운데 두면 키보드 높이만큼 끼는 여백에 칸이 함께 밀려 스크롤 계산이 어긋난다. 화면 높이만 가운데 둔다 */}
+        {/* 내용 전체를 가운데 두면 키보드 높이만큼 끼는 여백에 스크롤 계산이 어긋나 화면 높이만 가운데 둔다 */}
         <StyledSafeAreaView
           edges={['left', 'right']}
           className="justify-center pb-10"

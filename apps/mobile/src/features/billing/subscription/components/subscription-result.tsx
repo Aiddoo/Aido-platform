@@ -13,7 +13,6 @@ import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inqui
 import type { SubscriptionSupportFailure } from '../utils/subscription-failure.view-model';
 
 interface SubscriptionResultProps extends ComponentProps<typeof Result> {
-  /** 화면이 실패 안내로 바뀌면 스크린 리더에도 알린다 */
   isAlert?: boolean;
 }
 
@@ -44,7 +43,7 @@ interface SubscriptionOfflineResultProps {
   target: 'receipt' | 'plans';
 }
 
-/** 오프라인은 실패가 아니라 기다리면 풀리는 상태라 다시 시도·문의 대신 자동으로 이어진다고 알린다 */
+// 오프라인은 실패가 아니라 기다리면 풀리는 상태다
 SubscriptionResult.Offline = function Offline({ target }: SubscriptionOfflineResultProps) {
   const { t } = useTranslation('subscription');
 
@@ -63,7 +62,6 @@ interface SubscriptionFailureResultProps {
   onRetry: () => void;
 }
 
-/** 구독 실패 안내. 무엇이 실패했는지 → 할 일 → 다시 시도 → 문의하기 순서를 모든 실패에서 지킨다 */
 SubscriptionResult.Failure = function Failure({
   failure,
   onRetry,

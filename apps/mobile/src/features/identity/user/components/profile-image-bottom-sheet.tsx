@@ -17,9 +17,9 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
   const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
-  // undefined는 아직 고르지 않았다는 뜻이라 저장된 사진을 보여 준다. 서버 값을 state로 복사하지 않는다
+  // undefined는 아직 고르지 않았다는 뜻이라 서버 값을 state로 복사하지 않는다
   const [chosenIcon, setChosenIcon] = useState<string | null | undefined>(undefined);
-  // nullish-strict: chosenIcon null은 사진 지우기를 고른 것이고 undefined만 아직 고르지 않은 것이다
+  // nullish-strict: null은 사진 지우기, undefined는 아직 고르지 않음
   const selectedIcon = chosenIcon === undefined ? user.profileImage : chosenIcon;
 
   const handleOpenChange = (nextOpen: boolean) => {

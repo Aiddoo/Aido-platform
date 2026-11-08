@@ -66,7 +66,6 @@ describe('hasPremiumAccess', () => {
     const result = UserPolicy.hasPremiumAccess(user);
 
     // Then
-    // 서버의 isPremium은 ADMIN을 반영하지 않는다
     expect(result).toBe(expected);
   });
 });

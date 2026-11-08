@@ -14,7 +14,6 @@ import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 
 type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 
-/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 function Ending({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();
@@ -24,7 +23,7 @@ function Ending({ className }: PremiumNoticeProps) {
   }
   const { variant, endingNotice } = receipt;
 
-  // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
+  // 보상 기간은 구독으로, 취소한 결제 구독은 스토어에서 자동 갱신을 켜서 이어 간다
   const { badge, message } = match({ variant, endingNotice })
     .with({ variant: 'paid', endingNotice: 'today' }, () => ({
       badge: t('endingNotice.badgeToday'),

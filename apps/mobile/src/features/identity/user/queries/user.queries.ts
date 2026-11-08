@@ -25,7 +25,7 @@ export function useGetMeQueryOptions() {
     queryKey: USER_QUERY_KEYS.me(),
     queryFn: async ({ signal }) => unwrap(await userService.getCurrentUser(signal)),
     select,
-    // 오프라인으로 다시 열어도 프로필·프리미엄 판정이 마지막 서버 값을 유지한다
+    // 오프라인으로 다시 열어도 마지막 서버 값을 유지한다
     ...PERSISTED_QUERY_OPTIONS,
   });
 }

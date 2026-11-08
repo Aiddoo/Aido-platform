@@ -42,7 +42,6 @@ describe('이름 수정 화면', () => {
     await fireEvent.press(screen.getByTestId('edit-name-submit'));
 
     // Then
-    // 오류 화면으로 바뀌지 않고 토스트로 알리며 화면과 입력값은 그대로다
     expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
     expect(screen.getByTestId('edit-name-input').props.value).toBe('새이름');
     expect(router.back).not.toHaveBeenCalled();

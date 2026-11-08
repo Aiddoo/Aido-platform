@@ -5,17 +5,15 @@ import { type User } from '@src/features/identity/user/domains/user.model';
 import { hasInstantPassed, type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
-/** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
 type PremiumEndingNotice = 'tomorrow' | 'today';
 
-/** 영수증 출처. 관리자, 스토어 구독(결제), 초대 보상 기간 */
 type SubscriptionReceiptVariant = 'admin' | 'paid' | 'reward';
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
   | { type: 'rewardRecord'; endsAt: Instant }
   | { type: 'nextBillingDate'; date: Instant }
-  /** 결제 예정 시각이 지났는데 스토어 갱신이 아직 서버에 반영되지 않았다(최대 유예 3시간) */
+  // 결제 예정 시각이 지나도 스토어 갱신이 서버에 반영되기 전이다(최대 유예 3시간)
   | { type: 'renewalPending' }
   | { type: 'subscriptionEndsOn'; date: Instant }
   | { type: 'autoRenewal'; willRenew: boolean }
@@ -24,7 +22,6 @@ export type SubscriptionReceiptRow =
   | { type: 'overallPeriod'; endsAt: Instant }
   | { type: 'daysLeft'; days: number; endingNotice: PremiumEndingNotice | null };
 
-/** 영수증 아래 한 줄. "그다음엔 어떻게 되나"가 행만으로 드러나지 않을 때만 붙인다 */
 type SubscriptionReceiptFootnote =
   | { type: 'returnsToFreePlan'; date: Instant }
   | { type: 'rewardStartsAfterSubscription'; days: number }
@@ -38,7 +35,7 @@ interface SubscriptionReceiptContents {
   primaryAction: SubscriptionReceiptAction | null;
 }
 
-/** 관리자는 기간이 끝나도 모든 기능을 쓰므로 끝남 안내가 없다 */
+// 관리자는 기간이 끝나도 모든 기능을 쓴다
 export type SubscriptionReceiptViewModel =
   | (SubscriptionReceiptContents & { variant: 'admin'; endingNotice: null })
   | (SubscriptionReceiptContents & {
@@ -102,7 +99,7 @@ function toPaidRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow
     return [];
   }
 
-  // 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
+  // 자동 갱신 중이면 보상 시작일이 갱신마다 밀려 일수만 보인다
   return [
     toBillingRow(access, periodEndsAt, now),
     { type: 'autoRenewal', willRenew: access.willRenew },
@@ -173,10 +170,6 @@ function toRewardReceipt(
   };
 }
 
-/**
- * 프리미엄 영수증에 무엇을 보일지 정한다. 출처·기간·자동 갱신·이어서 받을 보상은 서버 값을 그대로 쓰고,
- * 여기서는 기기 시간대 기준 남은 일수와 보일 행·안내만 고른다.
- */
 export function toSubscriptionReceiptViewModel(
   user: Pick<User, 'role' | 'premiumAccess'>,
   context: SubscriptionReceiptContext,

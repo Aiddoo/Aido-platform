@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 const { email, password, passwordConfirm, name } = registerSchema.shape;
 
-/** 회원가입 폼. 서버 계약과 달리 닉네임은 필수이고, 약관 동의는 체크 전 false를 허용한다. */
 export const signUpFormSchema = z
   .object({
     email,

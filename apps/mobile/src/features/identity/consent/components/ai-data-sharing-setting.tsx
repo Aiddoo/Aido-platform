@@ -11,13 +11,8 @@ import { ConsentPolicy } from '../domains/consent.model';
 import { useUpdateAiDataSharingConsentMutationOptions } from '../queries/consent.mutations';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
-/**
- * AI 기능 데이터 제공 동의. 켜면 동의, 끄면 결과를 확인받고 철회한다.
- * 아직 답하지 않은 사용자는 꺼진 채로 두고, 묻기 전에 미리 "사용 안 함"을 고를 수 있다.
- */
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
-/** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
 export function AiDataSharingSetting(props: SettingsSectionProps) {
   const { t } = useTranslation(['settings', 'common']);
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
@@ -48,7 +43,7 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
       <SettingsListGroup.Toggle
         label={t('settings:terms.aiDataSharing.label')}
         description={
-          // 이전 안내에 동의한 사람의 글자는 서버가 그 안내의 처리 업체(Google)로만 보낸다
+          // 이전 안내 동의자의 글자는 그 안내의 처리 업체(Google)로만 간다
           ConsentPolicy.shouldShowAiConsentRenewal(consent)
             ? t('settings:terms.aiDataSharing.descriptionGoogleOnly')
             : t('settings:terms.aiDataSharing.description')

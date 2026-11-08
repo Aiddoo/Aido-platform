@@ -40,7 +40,7 @@ import {
   type VerifyEmailInput,
 } from '../schemas/auth-request.schema';
 
-// 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
+// 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const push = useSingleTap(router.push);
@@ -94,7 +94,6 @@ export function useExchangeCodeMutationOptions() {
     },
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -124,7 +123,6 @@ export function useOpenAppleLoginMutationOptions() {
     },
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -144,7 +142,6 @@ export function useOpenGoogleLoginMutationOptions() {
     mutationFn: async () => unwrap(await authService.openGoogleLogin()),
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -164,7 +161,6 @@ export function useOpenKakaoLoginMutationOptions() {
     mutationFn: async () => unwrap(await authService.openKakaoLogin()),
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -184,7 +180,6 @@ export function useOpenNaverLoginMutationOptions() {
     mutationFn: async () => unwrap(await authService.openNaverLogin()),
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -200,10 +195,8 @@ export function useLogoutMutationOptions() {
   const { signOut } = useAuthSession();
 
   return mutationOptions({
-    // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
+    // 세션 만료가 먼저 커밋되면 정리가 콜백을 지우므로 사용자가 나간 처리는 콜백에 두지 않는다
     networkMode: 'always',
-    // 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다. 사용자가 나간 것으로 끝나도록 콜백에 두지 않는다.
-    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
     mutationFn: async () => {
       const outcome = await logOutDeviceService.logOut({ isOnline: onlineManager.isOnline() });
       if (outcome === 'superseded') {
@@ -227,10 +220,7 @@ export function useDeleteAccountMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    // 푸시 기기는 서버 탈퇴가 전 세션과 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
-    // 탈퇴가 성공한 뒤 기다리는 사이 세션 만료가 먼저 커밋되면 정리가 이 변경의 콜백을 지운다.
-    // 지운 계정의 초안과 안내 기록이 남지 않도록 콜백에 두지 않는다.
-    // 캐시 정리는 미인증 전환이 커밋된 뒤 부팅 훅이 수행한다.
+    // 푸시 기기는 서버 탈퇴가 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     mutationFn: async (input: DeleteAccountInput) => {
       const accountId = getCachedMe(queryClient)?.id;
       unwrap(await authService.deleteAccount(input));
@@ -424,12 +414,11 @@ export function useLinkAccountMutationOptions() {
         }),
       );
       trackEvent('auth_social_linked', { provider });
-      // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
+      // 새 연결 상태를 받을 때까지 버튼을 꺼 옛 버튼의 중복 요청을 막는다
       await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
     onError: (error) => {
       haptics.notify('error');
-      // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         return;
       }
@@ -457,7 +446,7 @@ export function useUnlinkAccountMutationOptions() {
       trackEvent('auth_social_unlinked', {
         provider: OAuthPolicy.toOAuthProviderSlug(provider),
       });
-      // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
+      // 새 연결 상태를 받을 때까지 버튼을 꺼 옛 버튼의 중복 요청을 막는다
       await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
     },
     onError: (error) => {

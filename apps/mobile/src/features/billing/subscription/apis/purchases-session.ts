@@ -5,7 +5,6 @@ import { getErrorMessage } from '@src/shared/errors';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 
-/** 운영 알림에서 구독 이벤트의 기기·앱 버전을 보도록 붙이는 값. 개인 정보가 아니다 */
 export interface SubscriberAttributes {
   appVersion: string | null;
   deviceModel: string | null;
@@ -86,7 +85,6 @@ export class PurchasesSession {
     return this.#configured;
   };
 
-  // 바뀐 사용자에게도 다시 설정한다
   #syncSubscriberAttributes = async (): Promise<void> => {
     try {
       await this.#purchases.setAttributes({ ...this.#subscriberAttributes });
@@ -97,7 +95,7 @@ export class PurchasesSession {
     }
   };
 
-  // 결제 공급자의 분석 연동이 구독 이벤트를 분석 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
+  // 분석 ID 귀속을 위해 configure·logIn 직후마다 다시 설정한다
   #syncAnalyticsId = async (): Promise<void> => {
     try {
       const analyticsId = await this.#analytics.getAnalyticsId();

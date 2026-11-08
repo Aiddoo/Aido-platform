@@ -33,7 +33,6 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
 
 interface PlanOptionProps {
   plan: SubscriptionPlan;
-  /** 연간 요금제가 월간보다 싼 정도(%) */
   discountPercent?: number;
 }
 

@@ -41,7 +41,7 @@ export function useMyPagePaneLayout() {
     scrollRef.current?.scrollTo({ y: offset, animated: false });
   }, [isFocused]);
 
-  // 내용이 로딩 중이면 Android가 위치를 내용 높이로 자르고 이벤트를 보낸다. 복원이 끝나기 전 이벤트로 저장값을 덮지 않는다
+  // Android는 로딩 중 내용 높이로 위치를 자르고 이벤트를 보내 복원 전 이벤트로 저장값을 덮지 않는다
   const handleScroll = ({
     nativeEvent,
   }: {

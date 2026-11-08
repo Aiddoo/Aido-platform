@@ -30,7 +30,6 @@ interface PlanPickerProps extends Omit<
   onValueChange: (planId: string) => void;
 }
 
-/** 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 요금제 자리에서 안내한다 */
 export function PlanPicker(props: PlanPickerProps) {
   const { data: availability, refetch } = useSuspenseQuery(useGetOfferingsQueryOptions());
 
@@ -53,7 +52,7 @@ PlanPicker.Plans = function Plans({
   const [view] = useSubscriptionView();
   const { trackEvent } = useTrack();
 
-  // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
+  // 요금제를 받아 보였을 때만 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널)
   useEffect(() => {
     trackEvent('paywall_viewed', { view });
   }, [trackEvent, view]);
@@ -67,7 +66,7 @@ PlanPicker.Plans = function Plans({
   );
 };
 
-/** 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 요금제를 채운다 */
+// 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않고 연결되면 이어서 채운다
 PlanPicker.Loading = function Loading() {
   const isOnline = useIsOnline();
 
@@ -98,7 +97,7 @@ PlanPicker.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackPr
   );
 };
 
-/** 안내를 실제로 보였을 때 관측을 남긴다(앱 실행마다 코드별 한 번) */
+// 앱 실행마다 코드별 한 번만 남긴다
 function StoreUnavailableFailure({
   unavailable,
   onRetry,
