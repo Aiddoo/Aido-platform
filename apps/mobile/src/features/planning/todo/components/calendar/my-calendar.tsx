@@ -29,7 +29,7 @@ export function MyCalendar() {
   const status = match({ isError: query.isError, isHorizonHintVisible })
     .with({ isError: true }, () => <Calendar.Error onRetry={() => query.refetch()} />)
     .with({ isHorizonHintVisible: true }, () => (
-      <Box className="mx-4 items-start">
+      <Box className="items-start">
         <RepeatHorizonHint />
       </Box>
     ))

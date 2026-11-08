@@ -98,7 +98,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
           .with('month', () => <CalendarMonthPager completions={completions} />)
           .exhaustive()}
       </Box>
-      {status}
+      {status != null && <Box px={16}>{status}</Box>}
     </VStack>
   );
 }
@@ -341,7 +341,7 @@ Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <HStack px={16} py={4} align="center" gap={8}>
+    <HStack py={4} align="center" gap={8}>
       <Text size="e1" shade={6} className="flex-1">
         {t('todo:calendar.loadFailed')}
       </Text>
