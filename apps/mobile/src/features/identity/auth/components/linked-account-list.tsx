@@ -20,7 +20,7 @@ import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
+import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import { OAuthPolicy } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,

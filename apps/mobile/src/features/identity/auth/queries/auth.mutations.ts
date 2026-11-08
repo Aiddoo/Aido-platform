@@ -15,8 +15,8 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
-import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
+import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import {
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
