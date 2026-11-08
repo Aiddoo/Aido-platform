@@ -1527,6 +1527,25 @@ function checkIconPropNames(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+function checkLoadingNamespaceNames(sourceFile, repositoryRoot, errors) {
+  function visit(node) {
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(node.left) &&
+      isComponentName(node.left.name.text) &&
+      node.left.name.text.endsWith('Skeleton')
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node.left.name, repositoryRoot)} ${node.left.name.text}: 로딩 자리 조각은 \`X.Loading\`으로 거세요. 행마다 다르면 \`X.Item.Loading\`처럼 그 행에 겁니다.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
   function visit(node) {
     if (ts.isPropertyAccessExpression(node)) {
@@ -2246,6 +2265,7 @@ export function checkMobileConventions(
     checkRangeComparisonOrder(sourceFile, repositoryRoot, errors);
     checkPredicateNames(sourceFile, repositoryRoot, errors);
     checkIconPropNames(sourceFile, repositoryRoot, errors);
+    checkLoadingNamespaceNames(sourceFile, repositoryRoot, errors);
     checkSpacingPropsWithClassName(sourceFile, repositoryRoot, errors);
   }
 

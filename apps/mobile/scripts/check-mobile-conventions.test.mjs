@@ -1537,3 +1537,19 @@ test('Icon 컴포넌트 prop과 그려 둔 icon 요소, 아이콘이 아닌 icon
     },
   );
 });
+
+test('네임스페이스의 *Skeleton 조각을 거부하고 X.Loading과 TextSkeleton은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/ui/group/group.tsx': `
+        SettingsListGroup.ItemSkeleton = function ItemSkeleton() { return null; };
+        SettingsListGroupItem.Loading = function Loading() { return null; };
+        export function TextSkeleton() { return null; }
+      `,
+    },
+    (errors) => {
+      const names = errors.map((error) => /(?:\d+:\d+) (\w+):/u.exec(error)?.[1]);
+      assert.deepEqual(names, ['ItemSkeleton']);
+    },
+  );
+});
