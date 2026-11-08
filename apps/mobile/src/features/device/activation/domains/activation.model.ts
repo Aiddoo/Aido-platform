@@ -23,7 +23,7 @@ const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
 ]);
 // 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다
 const PUSH_REGISTRATION_DEFERRED_SINCE = toInstant('2026-08-01T00:00:00.000Z');
-export const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
+const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
 interface PushRegistrationInput {
   config: FeatureCampaignConfig | undefined;
@@ -32,10 +32,6 @@ interface PushRegistrationInput {
 }
 interface ChecklistEligibilityInput extends PushRegistrationInput {
   now: Instant;
-}
-// 친구 초대는 선택 단계라 노출 판단에 넣지 않는다. 필수 단계(만들기·완료)만 본다
-interface ChecklistVisibilityInput extends ChecklistEligibilityInput {
-  steps: ActivationChecklistSteps;
 }
 
 function resolveEnabledCampaign(
@@ -110,9 +106,9 @@ function getChecklistSteps(
   };
 }
 
-/** 대상이고 필수 단계를 아직 다 끝내지 않았을 때만 보인다. 선택 단계(친구 초대)는 카드를 붙잡아 두지 않는다 */
-function shouldShowChecklist({ steps, ...input }: ChecklistVisibilityInput): boolean {
-  return shouldOfferChecklist(input) && !(steps.hasCreatedTodo && steps.hasCompletedTodo);
+/** 필수 단계(만들기·완료)만 본다. 친구 초대는 선택 단계라 끝내지 않아도 된다 */
+function hasFinishedRequiredSteps(steps: ActivationChecklistSteps): boolean {
+  return steps.hasCreatedTodo && steps.hasCompletedTodo;
 }
 
 function shouldRegisterPushAutomatically({
@@ -142,6 +138,6 @@ export const ActivationPolicy = {
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,
-  shouldShowChecklist,
+  hasFinishedRequiredSteps,
   shouldRegisterPushAutomatically,
 } as const;

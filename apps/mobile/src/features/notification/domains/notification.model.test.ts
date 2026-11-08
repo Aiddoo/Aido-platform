@@ -16,23 +16,6 @@ const baseNotification: Notification = {
   readAt: null,
 };
 
-describe('canSelectDirection', () => {
-  it.each([
-    ['SOCIAL', true, true],
-    ['SOCIAL', false, false],
-    ['ALL', true, false],
-  ] as const)(
-    '%s 알림에서 콕 상호작용 사용 가능이 %s면 방향 선택은 %s다',
-    (category, isAvailable, expected) => {
-      // When
-      const result = NotificationPolicy.canSelectDirection(category, isAvailable);
-
-      // Then
-      expect(result).toBe(expected);
-    },
-  );
-});
-
 describe('findReceivedCheer', () => {
   it('받은 응원 알림은 신고할 응원과 보낸 친구를 반환한다', () => {
     // When

@@ -1,6 +1,6 @@
 import { chunk, clamp, range } from 'es-toolkit';
 
-import { InvitePolicy } from '../domains/invite.model';
+import { ONE_TIME_MILESTONE_COUNTS } from '../constants/invite.constants';
 import type { Invite } from '../schemas/invite.schema';
 
 export type PawPrintState = 'stamped' | 'waiting' | 'empty' | 'milestone';
@@ -174,7 +174,7 @@ export function createPawPrintBoard(
   const counts: PawPrintCountInput = {
     pawPrintedCount: invite.qualifiedCount,
     waitingCount: invite.waitingCount,
-    milestoneCounts: InvitePolicy.getMilestoneQualifiedCounts(),
+    milestoneCounts: ONE_TIME_MILESTONE_COUNTS,
   };
   const isPawPrinted = (index: number) => index < counts.pawPrintedCount;
   const boardIndex = calculateBoardIndex(counts.pawPrintedCount, celebratedCount);

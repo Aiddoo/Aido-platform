@@ -78,12 +78,6 @@ export function useActivationChecklist() {
     isVisible:
       shouldOfferChecklist &&
       hasSettledTodoExistence &&
-      ActivationPolicy.shouldShowChecklist({
-        config: activation.config,
-        user: activation.user,
-        progress: activation.progress,
-        now,
-        steps,
-      }),
+      !ActivationPolicy.hasFinishedRequiredSteps(steps),
   };
 }

@@ -1,4 +1,4 @@
-import { INVITER_REWARD_MILESTONES, PREMIUM_CAP_STATE } from '@aido/api/vocabulary';
+import { PREMIUM_CAP_STATE } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
 
 import type { Invite, InviterRewardMilestone } from '../schemas/invite.schema';
@@ -42,10 +42,6 @@ function getEarnedFriendSlots(invite: Pick<Invite, 'rewardsEarned'>) {
   return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
 }
 
-function getMilestoneQualifiedCounts() {
-  return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
-}
-
 /** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
 function hasInvitedAnyone(invite: Pick<Invite, 'qualifiedCount' | 'waitingCount'>) {
   return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
@@ -76,7 +72,6 @@ export const InvitePolicy = {
   getNextFriendSlots,
   getEarnedPremiumDays,
   getEarnedFriendSlots,
-  getMilestoneQualifiedCounts,
   hasInvitedAnyone,
   getProgress,
   calculateRemainingInvites,

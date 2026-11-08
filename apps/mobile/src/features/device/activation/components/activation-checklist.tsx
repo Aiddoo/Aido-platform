@@ -1,4 +1,4 @@
-import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import { INVITEE_PREMIUM_DAYS } from '@src/features/social/invite/constants/invite.constants';
 import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -148,7 +148,7 @@ function ActivationInviteStep({ isCompleted, onPress }: ActivationInviteStepProp
   const { t } = useTranslation(['todo', 'invite']);
   const label = t('invite:entry.checklistStep');
   const reward = t('invite:entry.checklistReward', {
-    days: InviteRewardPolicy.getWelcomePremiumDays(),
+    days: INVITEE_PREMIUM_DAYS,
   });
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
 

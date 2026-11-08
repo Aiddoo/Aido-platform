@@ -10,7 +10,7 @@ import {
   FRIEND_LIST_VIEW,
   friendListViewSchema,
 } from '@src/features/social/friend/schemas/friend-params.schema';
-import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import { INVITEE_PREMIUM_DAYS } from '@src/features/social/invite/constants/invite.constants';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -84,7 +84,7 @@ export default function FriendsScreen() {
                   <Suspense fallback={<FriendList.Loading />}>
                     <FriendList
                       onInvite={isInviteAvailable ? () => openMyInvite('friends_empty') : undefined}
-                      inviteWelcomeDays={InviteRewardPolicy.getWelcomePremiumDays()}
+                      inviteWelcomeDays={INVITEE_PREMIUM_DAYS}
                     />
                   </Suspense>
                 </QueryErrorBoundary>

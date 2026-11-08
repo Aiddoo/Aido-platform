@@ -1,13 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
 
-import { InviteRewardPolicy } from '../domains/invite-reward.model';
+import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteShareContent } from '../schemas/invite-share.schema';
 import type { Invite } from '../schemas/invite.schema';
 
 /** 내 초대와 보내는 사람 이름으로 사용자 언어의 공유 문구를 만드는 함수를 돌려준다 */
 export function useCreateInviteShareContent() {
   const { t } = useTranslation('invite');
-  const days = InviteRewardPolicy.getWelcomePremiumDays();
+  const days = INVITEE_PREMIUM_DAYS;
 
   return (myInvite: Invite, inviterName: string): InviteShareContent => ({
     inviteCode: myInvite.code,

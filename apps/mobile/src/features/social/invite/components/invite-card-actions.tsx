@@ -11,8 +11,8 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
+import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { InviteRewardPolicy } from '../domains/invite-reward.model';
 import { toRedeemFailureReason } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
@@ -151,7 +151,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
           isDisabled={redeem.isPending}
         >
           {isRewardExpected
-            ? t('card.redeemWithReward', { count: InviteRewardPolicy.getWelcomePremiumDays() })
+            ? t('card.redeemWithReward', { count: INVITEE_PREMIUM_DAYS })
             : t('card.connect', { name: inviterName })}
         </Button>
       </ReadableContent>

@@ -2,7 +2,6 @@ import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
-import { NotificationPolicy } from '@src/features/notification/domains/notification.model';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
 import {
   notificationCategoryParamSchema,
@@ -33,10 +32,9 @@ export default function NotificationsScreen() {
   const { data: isNudgeInteractionAvailable = false } = useQuery(
     useGetNudgeInteractionAvailabilityQueryOptions(),
   );
-  const isDirectionSelectable = NotificationPolicy.canSelectDirection(
-    category,
-    isNudgeInteractionAvailable,
-  );
+  // 받은 콕과 보낸 콕을 나눠 보는 것은 소셜 알림뿐이고 콕 상호작용을 쓸 수 있어야 한다
+  const isDirectionSelectable =
+    category === NOTIFICATION_CATEGORY.SOCIAL && isNudgeInteractionAvailable;
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
   return (

@@ -2,7 +2,7 @@ import type { FeatureCampaignConfig } from '@src/features/app-config/feature-cam
 import { toInstant } from '@src/shared/date/instant';
 
 import type { ActivationProgress } from '../schemas/activation.schema';
-import { ACTIVATION_CHECKLIST_WINDOW_MS, ActivationPolicy } from './activation.model';
+import { ActivationPolicy } from './activation.model';
 
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
 
@@ -139,79 +139,24 @@ describe('shouldOfferChecklist', () => {
   });
 });
 
-describe('shouldShowChecklist', () => {
-  const user = { id: 'new-user', createdAt: toInstant(LAUNCHED_AT.toISOString()) };
-  const withinWindow = toInstant('2026-08-03T00:00:00.000Z');
-  const requiredDone = { hasCreatedTodo: true, hasCompletedTodo: true };
-
-  it('필수 단계를 끝내면 친구 초대를 하지 않았어도 체크리스트를 숨긴다', () => {
+describe('hasFinishedRequiredSteps', () => {
+  it('할 일을 만들고 완료하면 친구 초대를 하지 않았어도 필수 단계를 끝낸 것이다', () => {
     // Given
-    const steps = requiredDone;
+    const steps = { hasCreatedTodo: true, hasCompletedTodo: true };
 
     // When
-    const result = ActivationPolicy.shouldShowChecklist({
-      config: createConfig(),
-      user,
-      progress: createProgress(),
-      now: withinWindow,
-      steps,
-    });
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('필수 단계가 남아 있으면 7일 안에서는 체크리스트를 보여준다', () => {
-    // Given
-    const steps = { hasCreatedTodo: true, hasCompletedTodo: false };
-
-    // When
-    const result = ActivationPolicy.shouldShowChecklist({
-      config: createConfig(),
-      user,
-      progress: createProgress(),
-      now: withinWindow,
-      steps,
-    });
+    const result = ActivationPolicy.hasFinishedRequiredSteps(steps);
 
     // Then
     expect(result).toBe(true);
   });
 
-  it('필수 단계가 남아 있어도 가입 후 7일이 지나면 숨긴다', () => {
+  it('완료한 할 일이 없으면 필수 단계가 남아 있다', () => {
     // Given
-    const steps = { hasCreatedTodo: false, hasCompletedTodo: false };
+    const steps = { hasCreatedTodo: true, hasCompletedTodo: false };
 
     // When
-    const result = ActivationPolicy.shouldShowChecklist({
-      config: createConfig(),
-      user,
-      progress: createProgress(),
-      now: toInstant(
-        new Date(LAUNCHED_AT.getTime() + ACTIVATION_CHECKLIST_WINDOW_MS).toISOString(),
-      ),
-      steps,
-    });
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('캠페인 전에 가입한 기존 사용자는 업데이트 후에도 체크리스트를 보지 않는다', () => {
-    // Given
-    const existingUser = {
-      id: 'existing-user',
-      createdAt: toInstant('2026-07-01T00:00:00.000Z'),
-    };
-
-    // When
-    const result = ActivationPolicy.shouldShowChecklist({
-      config: createConfig(),
-      user: existingUser,
-      progress: createProgress(),
-      now: withinWindow,
-      steps: { hasCreatedTodo: false, hasCompletedTodo: false },
-    });
+    const result = ActivationPolicy.hasFinishedRequiredSteps(steps);
 
     // Then
     expect(result).toBe(false);

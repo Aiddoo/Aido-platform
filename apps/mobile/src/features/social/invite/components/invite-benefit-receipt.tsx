@@ -16,7 +16,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 
-import { InviteRewardPolicy } from '../domains/invite-reward.model';
+import { INVITEE_PREMIUM_DAYS, FIRST_INVITER_PREMIUM_DAYS } from '../constants/invite.constants';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
 import type { InviteCode } from '../schemas/invite.schema';
@@ -45,7 +45,7 @@ InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: 
 
           <VStack gap={2} className="flex-1">
             <Text size="t3" weight="bold" tone="brand">
-              {t('card.receipt.title', { count: InviteRewardPolicy.getWelcomePremiumDays() })}
+              {t('card.receipt.title', { count: INVITEE_PREMIUM_DAYS })}
             </Text>
 
             <Text size="b4" shade={7}>
@@ -74,7 +74,7 @@ InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: 
           {t('card.receipt.inviterReward', {
             name: inviterName,
             activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-            days: InviteRewardPolicy.getInviterPremiumDays(),
+            days: FIRST_INVITER_PREMIUM_DAYS,
           })}
         </Text>
 

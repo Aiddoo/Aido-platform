@@ -5,7 +5,10 @@ import { InviteShareActions } from '@src/features/social/invite/components/invit
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
 import { MyInviteCode } from '@src/features/social/invite/components/my-invite-code';
-import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
+import {
+  INVITEE_PREMIUM_DAYS,
+  FIRST_INVITER_PREMIUM_DAYS,
+} from '@src/features/social/invite/constants/invite.constants';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -160,13 +163,13 @@ function InviteRewardLines() {
     <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4">
       <RewardLine
         label={t('myInvite.rewardInviteeLabel')}
-        value={t('myInvite.rewardInvitee', { days: InviteRewardPolicy.getWelcomePremiumDays() })}
+        value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
       />
       <RewardLine
         label={t('myInvite.rewardInviterLabel')}
         value={t('myInvite.rewardInviter', {
           activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-          days: InviteRewardPolicy.getInviterPremiumDays(),
+          days: FIRST_INVITER_PREMIUM_DAYS,
         })}
       />
     </VStack>
