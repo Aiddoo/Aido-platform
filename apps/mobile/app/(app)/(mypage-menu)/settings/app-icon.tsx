@@ -14,11 +14,11 @@ import { match } from 'ts-pattern';
 export default function AppIconScreen() {
   const { t } = useTranslation('appIcon');
   // 지원 여부는 기기의 동기 값이라 쿼리 없이 읽는다
-  const isSupported = useAppIconService().isSupported();
+  const isAvailable = useAppIconService().isAvailable();
 
   return (
     <SettingsScreenLayout gap={8}>
-      {match(isSupported)
+      {match(isAvailable)
         .with(false, () => (
           <HStack justify="center" align="center">
             <Text size="b4" shade={6}>

@@ -11,7 +11,7 @@ export class AppIconService {
     this.#gateway = gateway;
   }
 
-  isSupported = (): boolean => this.#gateway.isSupported();
+  isAvailable = (): boolean => this.#gateway.isAvailable();
 
   getCurrentIcon = async (signal?: AbortSignal): Promise<AppIconKey> => {
     const nativeKey = await this.#gateway.getCurrentIcon();
