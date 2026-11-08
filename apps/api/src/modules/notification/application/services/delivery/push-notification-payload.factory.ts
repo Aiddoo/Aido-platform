@@ -1,11 +1,14 @@
 import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
 
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../../domain/services/delivery/feature-marketing-capability.js";
 import {
   notificationMinAppVersion,
   toWireNotificationType,
 } from "../../../domain/services/delivery/notification-client-capability.js";
 import { isMarketingNotification } from "../../../domain/services/delivery/push-eligibility.js";
+import { withMarketingPushLabel } from "../../messages/delivery/marketing-push-label.js";
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import type { PushPayload } from "../../ports/delivery/push-provider.port.js";
@@ -16,6 +19,8 @@ interface CreatePushNotificationPayloadInput {
   readonly data: CreateNotificationData;
   readonly notificationId: number;
   readonly dispatchId: number;
+  /** 받는 사람 언어. 광고성 표기 문구에 쓴다. */
+  readonly locale?: SupportedLocale;
 }
 
 export interface BatchPushNotificationPayload extends Omit<PushPayload, "token"> {
@@ -24,6 +29,11 @@ export interface BatchPushNotificationPayload extends Omit<PushPayload, "token">
   readonly requiresFeatureCapability: boolean;
   /** 이 버전 미만 기기에는 보내지 않는다. 없으면 모든 활성 기기 대상이다. */
   readonly minAppVersion?: string;
+}
+
+/** 광고성 동의가 필요한 푸시. 표기·카테고리·수신 거부 토큰이 모두 이 판단을 따른다. */
+function isMarketingPush(data: CreateNotificationData): boolean {
+  return data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
 }
 
 /** 모바일 라우팅·컨텍스트·마케팅 메타데이터를 푸시 provider payload로 변환한다. */
@@ -40,16 +50,19 @@ export class PushNotificationPayloadFactory {
 
   createSingle(input: CreatePushNotificationPayloadInput): Omit<PushPayload, "token"> {
     const { data, notificationId, dispatchId } = input;
+    const isMarketing = isMarketingPush(data);
+    // 광고성 표기는 푸시 문구에만 붙인다. 알림함 기록은 원래 문구 그대로다
+    const content = isMarketing
+      ? withMarketingPushLabel(data, input.locale ?? DEFAULT_LOCALE)
+      : { title: data.title, body: data.body };
     return {
-      title: data.title,
-      body: data.body,
+      title: content.title,
+      body: content.body,
       data: {
         ...this.#createNotificationData(data, notificationId),
         dispatchId,
       },
-      ...((data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type)) && {
-        categoryId: "MARKETING",
-      }),
+      ...(isMarketing && { categoryId: "MARKETING" }),
     };
   }
 
@@ -102,7 +115,7 @@ export class PushNotificationPayloadFactory {
       ...(data.campaignKey && { campaignKey: data.campaignKey }),
       ...(data.variantId && { variantId: data.variantId }),
       ...(data.purpose && { purpose: data.purpose }),
-      ...((data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type)) && {
+      ...(isMarketingPush(data) && {
         marketingOptOutToken: this.#dependencies.marketingOptOutTokens.issue(data.userId),
       }),
     };

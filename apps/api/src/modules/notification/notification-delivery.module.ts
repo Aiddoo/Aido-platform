@@ -8,6 +8,7 @@ import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/delivery/active-push-token.reader.port.js";
 import { CLIENT_APP_VERSION_READER } from "./application/ports/delivery/client-app-version.reader.port.js";
+import { MARKETING_CONSENT_RECONFIRM_ACCESS } from "./application/ports/delivery/marketing-consent-reconfirm.port.js";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/delivery/marketing-push-opt-out-token.port.js";
 import { NOTIFICATION_CACHE } from "./application/ports/delivery/notification-cache.port.js";
 import {
@@ -48,6 +49,8 @@ import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/not
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/delivery/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/delivery/notification-dedup.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/delivery/user-notification-settings.adapter.js";
+import { MarketingConsentReconfirmJob } from "./infrastructure/jobs/delivery/marketing-consent-reconfirm.job.js";
+import { MarketingConsentReconfirmProcessor } from "./infrastructure/jobs/delivery/marketing-consent-reconfirm.processor.js";
 import { NotificationQueueModule } from "./infrastructure/jobs/delivery/notification-queue.module.js";
 import { NotificationQueueProcessor } from "./infrastructure/jobs/delivery/notification-queue.processor.js";
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/delivery/push-delivery-queue.processor.js";
@@ -101,6 +104,7 @@ import {
   sendNotificationWithDedupProvider,
   sendNudgeNotificationProvider,
   unregisterPushDeviceProvider,
+  reconfirmMarketingConsentsProvider,
 } from "./notification-delivery-application.providers.js";
 import { NotificationInboxController } from "./presentation/controllers/delivery/v1/notification-inbox.controller.js";
 import { NotificationController } from "./presentation/controllers/delivery/v1/notification.controller.js";
@@ -169,10 +173,12 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
       useExisting: HmacMarketingPushOptOutTokenAdapter,
     },
     // user-settings의 공개 알림 설정 capability에 연결하는 ACL 어댑터
-    {
-      provide: USER_NOTIFICATION_SETTINGS,
-      useClass: UserNotificationSettingsAdapter,
-    },
+    UserNotificationSettingsAdapter,
+    { provide: USER_NOTIFICATION_SETTINGS, useExisting: UserNotificationSettingsAdapter },
+    { provide: MARKETING_CONSENT_RECONFIRM_ACCESS, useExisting: UserNotificationSettingsAdapter },
+    reconfirmMarketingConsentsProvider,
+    MarketingConsentReconfirmJob,
+    MarketingConsentReconfirmProcessor,
     // 조회 캐시 포트 (application → CacheService 직접 의존 역전)
     { provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
     NotificationDedupAdapter,

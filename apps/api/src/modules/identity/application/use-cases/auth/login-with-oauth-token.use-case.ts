@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
+import { type OAUTH_PROVIDERS, TERMS_VERSION } from "@aido/api/vocabulary";
 
 import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
 import {
@@ -222,6 +222,7 @@ export class LoginWithOAuthToken {
         consent: {
           termsAgreedAt: currentTime,
           privacyAgreedAt: currentTime,
+          agreedTermsVersion: TERMS_VERSION.CURRENT,
           // OAuth 가입 시 선택 동의 화면이 없으므로 마케팅 동의를 자동 처리하지 않는다.
         },
         locale: data.locale,

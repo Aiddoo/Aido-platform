@@ -1,6 +1,10 @@
 import type { UserConsentRecord } from "../../../domain/records/settings/user-consent.record.js";
 import type { UserPreferenceRecord } from "../../../domain/records/settings/user-preference.record.js";
-import type { ConsentSeedInput, UserConsentRecordWithId } from "./user-consent.repository.port.js";
+import type {
+  ConsentSeedInput,
+  UserConsentRecordWithId,
+  UserConsentRepositoryPort,
+} from "./user-consent.repository.port.js";
 import type { UserPreferenceRecordWithId } from "./user-preference.repository.port.js";
 
 export const USER_SETTINGS_PROVISIONER = Symbol("USER_SETTINGS_PROVISIONER");
@@ -34,4 +38,6 @@ export interface UserNotificationSettingsAccessPort {
   getConsentRecord(userId: string): Promise<UserConsentRecord | null>;
   getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]>;
   updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void>;
+  findMarketingReconfirmTargets: UserConsentRepositoryPort["findMarketingReconfirmTargets"];
+  claimMarketingReconfirm: UserConsentRepositoryPort["claimMarketingReconfirm"];
 }

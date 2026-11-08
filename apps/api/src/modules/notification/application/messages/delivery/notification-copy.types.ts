@@ -161,6 +161,8 @@ export interface SystemCopyVariablesByKey {
   readonly PREMIUM_GRANT_ENDING: undefined;
   readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialEndingCopyVariables;
   readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
+  /** 처음 동의한 날을 받는 사람 시간대·언어로 쓴 값 */
+  readonly MARKETING_CONSENT_RECONFIRM: { readonly agreedOn: string };
   readonly ONBOARDING_DAY0: undefined;
   readonly ONBOARDING_DAY1: undefined;
   readonly ONBOARDING_DAY2: undefined;

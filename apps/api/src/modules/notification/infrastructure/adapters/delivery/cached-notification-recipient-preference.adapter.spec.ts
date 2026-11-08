@@ -43,8 +43,8 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
 
     // Then
     expect(preference).toMatchObject({
-      pushEnabled: false,
-      nightPushEnabled: false,
+      pushEnabled: true,
+      nightPushEnabled: true,
       timezone: "UTC",
       locale: "ko",
     });

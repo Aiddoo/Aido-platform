@@ -115,7 +115,8 @@ export class OnboardingStrategy implements TimezoneReminderStrategy {
       notifications.push({
         userId: user.id,
         type: "SYSTEM_NOTICE",
-        purpose: "ENGAGEMENT",
+        // 사용법 안내라 서비스 알림이다. 광고성 동의·참여 유도 한도를 적용하지 않으니 문구에 프로모션을 넣지 않는다
+        purpose: "SCHEDULED_SERVICE",
         campaignKey: SCHEDULER_CAMPAIGN_KEY.ONBOARDING,
         variantId: message.variantId,
         title: message.title,

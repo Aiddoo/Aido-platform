@@ -349,6 +349,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
       data: claimed.item.data,
       notificationId: 111,
       dispatchId: 11,
+      locale: "ko",
     });
     expect(lifecycle.finalizeResults).toHaveBeenCalledWith([
       {

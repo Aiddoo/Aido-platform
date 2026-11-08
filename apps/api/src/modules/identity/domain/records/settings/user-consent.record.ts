@@ -11,4 +11,6 @@ export interface UserConsentRecord {
   aiDataSharingAgreedAt: Date | null;
   /** 마지막으로 답한 AI 데이터 처리 안내 버전. 답한 적 없으면 null */
   aiDataSharingVersion: string | null;
+  /** 광고성 수신 동의 사실을 2년마다 다시 알린 마지막 시각. 알린 적 없으면 null */
+  marketingReconfirmedAt: Date | null;
 }

@@ -3,6 +3,7 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { PushDeliveryClaimRecoveryConflictError } from "../../errors/delivery/push-delivery-claim-recovery-conflict.error.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../../errors/delivery/push-delivery-rate-limit-reservation-conflict.error.js";
@@ -138,6 +139,7 @@ export class DeliverPushNotifications {
         data,
         notificationId: claimed.item.notificationId,
         dispatchId: claimed.fence.dispatchId,
+        locale: toSupportedLocale(recipient.preference.locale),
       }),
     });
     if (delivery.status === "skipped") {
@@ -202,6 +204,7 @@ export class DeliverPushNotifications {
           data: candidate.data,
           notificationId: candidate.claimed.item.notificationId,
           dispatchId: candidate.dispatchId,
+          locale: toSupportedLocale(recipients.get(candidate.data.userId)?.preference?.locale),
         }),
       ),
     );

@@ -595,6 +595,10 @@ export const SYSTEM_TEMPLATES = {
         `${date}까지 이용 · 결제는 없어요`,
       ),
   },
+  MARKETING_CONSENT_RECONFIRM: {
+    copy: ({ agreedOn }) =>
+      copy("광고성 알림 수신에 동의 중이에요", `${agreedOn} 동의 · 설정에서 바꿀 수 있어요`),
+  },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 적어볼까요? 🌱", "지금 떠오르는 작은 일 하나면 충분해요"),
   },

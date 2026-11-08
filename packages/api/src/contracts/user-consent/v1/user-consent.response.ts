@@ -81,6 +81,11 @@ export const updateMarketingConsentResponseSchema = z
     marketingAgreedAt: nullableDatetimeSchema.describe(
       "마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 철회 시 null)",
     ),
+    marketingWithdrawnAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "이번 요청으로 철회를 처리한 서버 시각 (동의 시 null, 1.15.0+ 서버). 앱은 결과 안내에 기기 시각 대신 이 값을 쓴다",
+      ),
   })
   .meta({
     example: {
@@ -95,6 +100,11 @@ export const updateMarketingPushConsentResponseSchema = z
     marketingPushAgreedAt: nullableDatetimeSchema.describe(
       "광고성 앱 푸시 수신 동의 시각 (철회 시 null)",
     ),
+    marketingPushWithdrawnAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "이번 요청으로 철회를 처리한 서버 시각 (동의 시 null, 1.15.0+ 서버). 앱은 결과 안내에 기기 시각 대신 이 값을 쓴다",
+      ),
   })
   .meta({ example: { marketingPushAgreedAt: "2026-01-17T10:00:00.000Z" } });
 

@@ -148,7 +148,11 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       expect(fixture.seeder.settings).toEqual([
         {
           userId: result.userId,
-          consent: { termsAgreedAt: AUTH_CREDENTIAL_TIME, privacyAgreedAt: AUTH_CREDENTIAL_TIME },
+          consent: {
+            termsAgreedAt: AUTH_CREDENTIAL_TIME,
+            privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+            agreedTermsVersion: "1.0.0",
+          },
         },
       ]);
       expect(fixture.seeder.categoryUserIds).toEqual([result.userId]);

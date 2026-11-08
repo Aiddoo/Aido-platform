@@ -87,6 +87,7 @@ describe("Register — 이메일 계정 등록", () => {
         consent: {
           termsAgreedAt: AUTH_CREDENTIAL_TIME,
           privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+          agreedTermsVersion: "1.0.0",
           marketingAgreedAt: undefined,
           marketingPushAgreedAt: undefined,
         },

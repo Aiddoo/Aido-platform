@@ -557,6 +557,10 @@ export const SYSTEM_TEMPLATES = {
         `Use it until ${date} · No charge`,
       ),
   },
+  MARKETING_CONSENT_RECONFIRM: {
+    copy: ({ agreedOn }) =>
+      copy("You’re opted in to marketing alerts", `Agreed ${agreedOn} · Change in Settings`),
+  },
   ONBOARDING_DAY0: {
     copy: staticCopy("Let’s add your first to-do 🌱", "One small thing is all it takes"),
   },

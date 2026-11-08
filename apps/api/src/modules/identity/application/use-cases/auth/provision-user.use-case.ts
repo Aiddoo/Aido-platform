@@ -31,6 +31,8 @@ export interface ProvisionUserInput {
   consent: {
     termsAgreedAt?: Date;
     privacyAgreedAt?: Date;
+    /** 동의한 약관 버전(TERMS_VERSION.CURRENT). 약관에 동의하지 않았으면 비운다. */
+    agreedTermsVersion?: string;
     marketingAgreedAt?: Date;
     marketingPushAgreedAt?: Date;
   };

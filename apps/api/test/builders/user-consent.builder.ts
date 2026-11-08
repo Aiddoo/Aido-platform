@@ -27,6 +27,7 @@ export class UserConsentBuilder {
       marketingPushAgreedAt: null,
       aiDataSharingAgreedAt: null,
       aiDataSharingVersion: null,
+      marketingReconfirmedAt: null,
     };
   }
 

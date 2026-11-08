@@ -4,6 +4,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 export interface ProvisioningConsent {
   termsAgreedAt?: Date;
   privacyAgreedAt?: Date;
+  agreedTermsVersion?: string;
   marketingAgreedAt?: Date;
   marketingPushAgreedAt?: Date;
 }

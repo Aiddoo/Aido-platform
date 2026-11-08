@@ -1,6 +1,10 @@
+/** 이용약관·개인정보 처리방침의 지금 버전. 가입할 때 agreedTermsVersion으로 남긴다. */
 export const TERMS_VERSION = {
   CURRENT: "1.0.0",
 } as const;
+
+/** 광고성 정보 수신 동의를 다시 알리는 주기(년). 정보통신망법 시행령 제62조 */
+export const MARKETING_CONSENT_RECONFIRM_YEARS = 2;
 
 export const CONSENT_TYPE = {
   TERMS: "TERMS",

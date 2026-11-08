@@ -49,19 +49,25 @@ export function buildAiDataSharingConsentView(
   };
 }
 
+/** 광고성 앱 푸시 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingPushConsentView(
   consent: UserConsentRecord,
+  processedAt: Date,
 ): UpdateMarketingPushConsentResponse {
   return {
     marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
+    marketingPushWithdrawnAt:
+      consent.marketingPushAgreedAt == null ? toISOStringOrNull(processedAt) : null,
   };
 }
 
-/** 마케팅 동의 변경 응답 뷰. */
+/** 마케팅 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingConsentView(
   consent: UserConsentRecord,
+  processedAt: Date,
 ): UpdateMarketingConsentResponse {
   return {
     marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
+    marketingWithdrawnAt: consent.marketingAgreedAt == null ? toISOStringOrNull(processedAt) : null,
   };
 }

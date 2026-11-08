@@ -39,6 +39,7 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
       marketingPushAgreedAt: SETTINGS_TIME,
       aiDataSharingAgreedAt: null,
       aiDataSharingVersion: null,
+      marketingReconfirmedAt: null,
     });
   });
 });

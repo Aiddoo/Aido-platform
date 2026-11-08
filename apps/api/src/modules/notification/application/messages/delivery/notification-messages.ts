@@ -29,6 +29,7 @@ export {
 export {
   createAiSuggestionNotificationMessage,
   createBillingIssueNotificationMessage,
+  createMarketingConsentReconfirmNotificationMessage,
   createMilestoneNotificationMessage,
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,

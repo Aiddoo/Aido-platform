@@ -1,5 +1,6 @@
 import type { RegisterInput as RegisterBody } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { TERMS_VERSION } from "@aido/api/vocabulary";
 
 import type {
   RegisterResult,
@@ -84,6 +85,7 @@ export class Register {
           consent: {
             termsAgreedAt: termsAgreed ? currentTime : undefined,
             privacyAgreedAt: privacyAgreed ? currentTime : undefined,
+            agreedTermsVersion: termsAgreed ? TERMS_VERSION.CURRENT : undefined,
             marketingAgreedAt: marketingAgreed ? currentTime : undefined,
             marketingPushAgreedAt: marketingPushAgreed ? currentTime : undefined,
           },

@@ -15,6 +15,7 @@ import type {
 import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/application/ports/settings/todo-timezone-rebase.enqueuer.port";
 import type {
   ConsentSeedInput,
+  MarketingReconfirmTarget,
   UserConsentRecordWithId,
   UserConsentRepositoryPort,
 } from "#api/modules/identity/application/ports/settings/user-consent.repository.port";
@@ -164,6 +165,7 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
       marketingPushAgreedAt: input.marketingPushAgreedAt ?? null,
       aiDataSharingAgreedAt: null,
       aiDataSharingVersion: null,
+      marketingReconfirmedAt: null,
     };
     this.records.set(userId, record);
     return { ...record };
@@ -204,6 +206,12 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
     this.records.set(userId, updated);
     return { ...updated };
   }
+  async findMarketingReconfirmTargets(): Promise<MarketingReconfirmTarget[]> {
+    return [];
+  }
+  async claimMarketingReconfirm(): Promise<MarketingReconfirmTarget[]> {
+    return [];
+  }
   #existingOrCreate(userId: string): UserConsentRecord {
     return (
       this.records.get(userId) ?? {
@@ -214,6 +222,7 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
         marketingPushAgreedAt: null,
         aiDataSharingAgreedAt: null,
         aiDataSharingVersion: null,
+        marketingReconfirmedAt: null,
       }
     );
   }

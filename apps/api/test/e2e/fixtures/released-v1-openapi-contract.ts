@@ -317,8 +317,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: /me(CurrentUserResponseDto)에 선택 칸 premiumIsTrial(스토어 무료 체험 중인지)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/subscription.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
 	preStoreTrialSchemasFingerprint:
 		"808205645551c8b0030137499cddf95e63782645cc6fe9cd9fd27a5cc7052c56",
-	schemasFingerprint:
+	/** 1.15.0: 광고성 동의 변경 응답(UpdateMarketingConsentResponseDto·UpdateMarketingPushConsentResponseDto)에 선택 칸 marketingWithdrawnAt·marketingPushWithdrawnAt(철회 처리 서버 시각)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/consent-records.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	preMarketingWithdrawnSchemasFingerprint:
 		"0be330447e0fccab4294698ba69a64e4c5418d2ddb4c3f3631199454e813ea88",
+	schemasFingerprint:
+		"94854f7143e4150eb621cd55280d8f51e7c9329197b97155a2c2baef3cbe1f39",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",

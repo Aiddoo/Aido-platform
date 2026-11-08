@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
+  type MarketingReconfirmTarget,
   USER_NOTIFICATION_SETTINGS_ACCESS,
   type UserConsentRecord,
   type UserConsentRecordWithId,
@@ -9,13 +10,16 @@ import {
   type UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
 
+import type { MarketingConsentReconfirmPort } from "../../../application/ports/delivery/marketing-consent-reconfirm.port.js";
 import type { UserNotificationSettingsPort } from "../../../application/ports/delivery/user-notification-settings.port.js";
 
 /**
  * notification의 설정 포트를 user-settings의 공개 capability에 연결한다.
  */
 @Injectable()
-export class UserNotificationSettingsAdapter implements UserNotificationSettingsPort {
+export class UserNotificationSettingsAdapter
+  implements UserNotificationSettingsPort, MarketingConsentReconfirmPort
+{
   constructor(
     @Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
     private readonly userSettingsAccess: UserNotificationSettingsAccessPort,
@@ -47,5 +51,20 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
 
   async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
     await this.userSettingsAccess.updateMarketingPushConsent(userId, agreed);
+  }
+
+  findMarketingReconfirmTargets(params: {
+    readonly cutoff: Date;
+    readonly afterUserId?: string;
+    readonly limit: number;
+  }): Promise<MarketingReconfirmTarget[]> {
+    return this.userSettingsAccess.findMarketingReconfirmTargets(params);
+  }
+
+  claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.userSettingsAccess.claimMarketingReconfirm(userIds, params);
   }
 }

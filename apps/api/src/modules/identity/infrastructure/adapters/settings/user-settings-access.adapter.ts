@@ -1,6 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import type { ConsentSeedInput } from "../../../application/ports/settings/user-consent.repository.port.js";
+import {
+  type ConsentSeedInput,
+  type FindMarketingReconfirmTargetsParams,
+  type MarketingReconfirmTarget,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
+} from "../../../application/ports/settings/user-consent.repository.port.js";
 import type {
   UserNotificationSettingsAccessPort,
   UserSettingsProvisionerPort,
@@ -36,6 +42,11 @@ export class UserSettingsAccessAdapter
     private readonly upsertPushTimezoneUseCase: UpsertPushTimezone,
     private readonly upsertPushLocaleUseCase: UpsertPushLocale,
     private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
+    @Inject(USER_CONSENT_REPOSITORY)
+    private readonly consentRepository: Pick<
+      UserConsentRepositoryPort,
+      "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+    >,
   ) {}
 
   seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void> {
@@ -77,5 +88,18 @@ export class UserSettingsAccessAdapter
 
   async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
     await this.updateMarketingPushConsentUseCase.execute({ userId, agreed });
+  }
+
+  findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.consentRepository.findMarketingReconfirmTargets(params);
+  }
+
+  claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.consentRepository.claimMarketingReconfirm(userIds, params);
   }
 }

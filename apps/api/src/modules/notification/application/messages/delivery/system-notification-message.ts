@@ -1,4 +1,8 @@
-import { calendarDaysBetween, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import {
+  calendarDaysBetween,
+  localDateInTimezone,
+  resolveTimezone,
+} from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
@@ -128,6 +132,28 @@ export function createPremiumTrialEndingNotificationMessage(
         variantContext: input.variantContext,
         templateKey: "premium_trial_ending.cancelled",
       });
+}
+
+/** 2년 재확인 안내. 날짜는 받는 사람 시간대로 ko "2024.11.09", en "Nov 9, 2024"다. */
+export function createMarketingConsentReconfirmNotificationMessage(input: {
+  readonly locale: SupportedLocale;
+  readonly timezone: string;
+  readonly agreedAt: Date;
+}): NotificationMessage {
+  const timeZone = resolveTimezone(input.timezone);
+  const agreedOn =
+    input.locale === "ko"
+      ? localDateInTimezone(input.agreedAt, timeZone).replaceAll("-", ".")
+      : new Intl.DateTimeFormat("en", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone,
+        }).format(input.agreedAt);
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.MARKETING_CONSENT_RECONFIRM,
+    variables: { agreedOn },
+  });
 }
 
 export function createWinbackNotificationMessage({
