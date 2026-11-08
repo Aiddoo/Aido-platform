@@ -14,6 +14,8 @@ export function useFeedDate() {
   const selectedDateKey = toFeedDateKey(date, currentLocalDateKey);
   const selectedDate = useMemo(
     () => toDate(selectedDateKey),
+    // toDate는 기기 시간대로 날짜 키를 읽는다. 시간대가 바뀌면 같은 키라도 다시 만든다
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- 위 이유로 시간대 값을 키로 둔다
     [selectedDateKey, currentTimeZone, currentUtcOffsetMinutes],
   );
   const setSelectedDate = useCallback(

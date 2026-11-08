@@ -6,5 +6,3 @@ declare module '@src/shared/analytics/event-map' {
     coachmark_dismissed: { kind: CoachmarkKind };
   }
 }
-
-export {};

@@ -228,7 +228,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
   });
 });
 
-describe('pushNotificationPayloadSchema', () => {
+describe('pushNotificationPayloadSchema의 navigation·깨진 필드 처리', () => {
   const BASE = { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } };
 
   it('navigation을 앱 모델로 넘긴다', () => {

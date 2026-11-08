@@ -37,16 +37,16 @@ describe('위치 구독의 종료와 복구', () => {
         }),
     );
     const result = expoLocationGateway.getCoordinates(controller.signal);
-    const rejection = expect(result).rejects.toThrow('Location cancelled');
     await jest.advanceTimersByTimeAsync(0);
 
     // When
     controller.abort();
     resolveWatch?.({ remove });
-    await rejection;
-    await jest.advanceTimersByTimeAsync(0);
+    const settling = jest.advanceTimersByTimeAsync(0);
 
     // Then
+    await expect(result).rejects.toThrow('Location cancelled');
+    await settling;
     expect(remove).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
     expect(watchLocation).toHaveBeenCalledWith(
@@ -61,13 +61,13 @@ describe('위치 구독의 종료와 복구', () => {
     const remove = jest.fn();
     watchLocation.mockResolvedValue({ remove });
     const result = expoLocationGateway.getCoordinates(new AbortController().signal);
-    const rejection = expect(result).rejects.toThrow('Location timeout');
 
     // When
-    await jest.advanceTimersByTimeAsync(10_001);
-    await rejection;
+    const elapsing = jest.advanceTimersByTimeAsync(10_001);
 
     // Then
+    await expect(result).rejects.toThrow('Location timeout');
+    await elapsing;
     expect(remove).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
   });

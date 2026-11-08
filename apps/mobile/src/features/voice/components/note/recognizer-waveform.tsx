@@ -235,6 +235,7 @@ export function RecognizerWaveform({
   const [flagBars, setFlagBars] = useState<ReadonlyMap<number, number>>(new Map());
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- 표시는 찍은 순간의 막대 위치에 쌓아 두어야 해서 렌더 중에 계산할 수 없다
     setFlagBars((previous) => withFlagBars(previous, bookmarksMs, barCount.get() - 1));
   }, [barCount, bookmarksMs]);
 

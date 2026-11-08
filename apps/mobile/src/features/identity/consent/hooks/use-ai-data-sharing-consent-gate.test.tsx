@@ -116,7 +116,9 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('듣기 전 확인'));
 
       // Then
-      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
+      expect(
+        await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false })),
+      ).toBeTruthy();
     });
 
     it('동의 상태가 캐시에 없으면 AI 시작도 막지 않고 서버 판단에 맡긴다', async () => {
@@ -128,7 +130,9 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('시작'));
 
       // Then
-      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
+      expect(
+        await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false })),
+      ).toBeTruthy();
     });
 
     it('캐시에 동의가 있으면 내 정보를 기다리지 않고 이어 간다', async () => {
@@ -140,7 +144,9 @@ describe('useAiDataSharingConsentGate', () => {
       fireEvent.press(screen.getByText('듣기 전 확인'));
 
       // Then
-      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
+      expect(
+        await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false })),
+      ).toBeTruthy();
     });
 
     it('캐시가 미응답이면 안내를 띄우고 동의 저장은 멈춰 있지 않고 바로 실패해 시트를 그대로 둔다', async () => {
@@ -171,7 +177,7 @@ describe('useAiDataSharingConsentGate', () => {
 
     // Then
     // 앞 요청이 시트에 밀려 영영 끝나지 않으면 두 번째까지만 센다
-    await screen.findByText('끝난 요청 2개');
+    expect(await screen.findByText('끝난 요청 2개')).toBeTruthy();
   });
 
   it('듣기 전 확인에서 미응답이 나중에를 누르면 멈추라고 알리고 다시 물으면 또 안내한다', async () => {
@@ -222,7 +228,9 @@ describe('useAiDataSharingConsentGate', () => {
     fireEvent.press(screen.getByText('시작'));
 
     // Then
-    await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false }));
+    expect(
+      await screen.findByText(JSON.stringify({ hasAgreed: true, wasAsked: false })),
+    ).toBeTruthy();
   });
 
   it('내 정보를 아직 못 받았으면 받을 때까지 기다린 뒤 재안내를 보여 준다', async () => {

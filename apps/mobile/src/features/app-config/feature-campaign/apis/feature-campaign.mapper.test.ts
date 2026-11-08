@@ -17,10 +17,7 @@ describe('toFeatureCampaignConfig', () => {
     const result = toFeatureCampaignConfig(response);
 
     // Then
-    expect(result.enabled).toBe(true);
-    if (result.enabled) {
-      expect(result.launchedAt).toBe('2026-08-01T00:00:00.000Z');
-    }
+    expect(result).toMatchObject({ enabled: true, launchedAt: '2026-08-01T00:00:00.000Z' });
   });
 
   it('비활성 응답은 비활성 도메인 값으로 유지한다', () => {

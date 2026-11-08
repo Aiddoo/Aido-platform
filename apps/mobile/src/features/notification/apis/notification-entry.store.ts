@@ -38,7 +38,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
 
   function setState(next: NotificationEntryState) {
     state = next;
-    for (const listener of [...listeners]) {
+    for (const listener of Array.from(listeners)) {
       listener();
     }
   }

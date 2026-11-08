@@ -332,7 +332,7 @@ describe('toBriefingTodo', () => {
 
     // Then
     // 시작일이 아니라 오늘 16:30이라 지난 시각으로 버려지지 않는다
-    expect(todo.scheduledAt).toEqual('2026-11-02T07:30:00.000Z');
+    expect(todo.scheduledAt).toBe('2026-11-02T07:30:00.000Z');
     expect(briefing.kind === 'rainy').toBe(true);
   });
 
@@ -349,8 +349,8 @@ describe('toBriefingTodo', () => {
 
     // Then
     // 11월은 로스앤젤레스가 UTC-8이다
-    expect(seoul.scheduledAt).toEqual('2026-11-02T07:30:00.000Z');
-    expect(losAngeles.scheduledAt).toEqual('2026-11-03T00:30:00.000Z');
+    expect(seoul.scheduledAt).toBe('2026-11-02T07:30:00.000Z');
+    expect(losAngeles.scheduledAt).toBe('2026-11-03T00:30:00.000Z');
   });
 
   it('서머타임이 끝나는 날에도 벽시계 그대로의 순간을 만든다', () => {
@@ -366,7 +366,7 @@ describe('toBriefingTodo', () => {
 
     // Then
     // 표준시 UTC-8로 읽는다
-    expect(todo.scheduledAt).toEqual('2026-11-01T23:00:00.000Z');
+    expect(todo.scheduledAt).toBe('2026-11-01T23:00:00.000Z');
   });
 
   it('하위 할 일이 있으면 진행을, 없으면 null을 담는다', () => {
@@ -404,7 +404,7 @@ describe('getSuggestedStartAt', () => {
 
     // Then
     // 15~17시 추천을 15:26에 고르면 다음 정시는 16시다
-    expect(startAt).toEqual('2026-11-02T07:00:00.000Z');
+    expect(startAt).toBe('2026-11-02T07:00:00.000Z');
   });
 
   it('추천 시간대의 예보 시각이 모두 지났으면 제안하지 않는다', () => {
@@ -433,6 +433,6 @@ describe('getSuggestedStartAt', () => {
     const startAt = WeatherBriefingPolicy.getSuggestedStartAt(offsetRange, offsetHourly, NOW);
 
     // Then
-    expect(startAt).toEqual('2026-11-02T06:30:00.000Z');
+    expect(startAt).toBe('2026-11-02T06:30:00.000Z');
   });
 });

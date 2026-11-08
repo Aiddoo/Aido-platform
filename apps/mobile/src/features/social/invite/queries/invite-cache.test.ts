@@ -33,9 +33,9 @@ describe('invite-cache', () => {
 
       // Then
       expect(queryClient.getQueryData(INVITE_QUERY_KEYS.me())).toEqual(myInvite);
-      expect(queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }))).toBe(
-        undefined,
-      );
+      expect(
+        queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' })),
+      ).toBeUndefined();
     });
   });
 
@@ -55,9 +55,9 @@ describe('invite-cache', () => {
         FRIEND_QUERY_KEYS.all,
         USER_QUERY_KEYS.me(),
       ]);
-      expect(queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }))).toBe(
-        undefined,
-      );
+      expect(
+        queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' })),
+      ).toBeUndefined();
     });
   });
 

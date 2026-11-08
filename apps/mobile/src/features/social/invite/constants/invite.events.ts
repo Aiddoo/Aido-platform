@@ -18,5 +18,3 @@ declare module '@src/shared/analytics/event-map' {
     invite_redeem_failed: { reason: RedeemFailureReason };
   }
 }
-
-export {};

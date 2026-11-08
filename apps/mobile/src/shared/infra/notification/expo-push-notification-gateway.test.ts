@@ -1,4 +1,5 @@
 import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { TimeoutError } from 'es-toolkit';
 import { PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';
 
@@ -104,13 +105,13 @@ describe('createExpoPushNotificationGateway', () => {
     jest.useFakeTimers();
     getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
     const issuing = gateway.getToken();
-    const failure = expect(issuing).rejects.toThrow();
 
     // When
-    await jest.advanceTimersByTimeAsync(PUSH_TOKEN_ISSUE_TIMEOUT_MS);
+    const elapsing = jest.advanceTimersByTimeAsync(PUSH_TOKEN_ISSUE_TIMEOUT_MS);
 
     // Then
-    await failure;
+    await expect(issuing).rejects.toThrow(TimeoutError);
+    await elapsing;
     jest.useRealTimers();
   });
 

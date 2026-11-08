@@ -1,3 +1,4 @@
+import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -37,10 +38,9 @@ describe('TodoService', () => {
         params: expect.objectContaining({ startDate: '2026-03-08' }),
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.todos).toHaveLength(1);
-        expect(result.value.hasNext).toBe(false);
-      }
+      const page = unwrap(result);
+      expect(page.todos).toHaveLength(1);
+      expect(page.hasNext).toBe(false);
     });
 
     it('응답에 모르는 반복 빈도가 있어도 목록은 살리고 그 할 일만 규칙을 비운다', async () => {
@@ -63,12 +63,11 @@ describe('TodoService', () => {
 
       // Then
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.todos.map(({ id, repeat }) => ({ id, repeat }))).toEqual([
-          { id: 1, repeat: null },
-          { id: 2, repeat: { frequency: 'DAILY', end: { type: 'NEVER' } } },
-        ]);
-      }
+      const page = unwrap(result);
+      expect(page.todos.map(({ id, repeat }) => ({ id, repeat }))).toEqual([
+        { id: 1, repeat: null },
+        { id: 2, repeat: { frequency: 'DAILY', end: { type: 'NEVER' } } },
+      ]);
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {
@@ -258,10 +257,7 @@ describe('TodoService', () => {
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/complete', { completed: true });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.completed).toBe(true);
-      }
+      expect(result).toMatchObject({ ok: true, value: { completed: true } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {
@@ -571,10 +567,7 @@ describe('TodoService', () => {
 
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/category', { categoryId: 2 });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.category.id).toBe(2);
-      }
+      expect(result).toMatchObject({ ok: true, value: { category: { id: 2 } } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {

@@ -1,3 +1,5 @@
+import { ZodError } from 'zod';
+
 import {
   diffMs,
   fromDate,
@@ -136,7 +138,7 @@ describe('toInstant', () => {
       const action = () => toInstant(value);
 
       // Then
-      expect(action).toThrow();
+      expect(action).toThrow(ZodError);
     },
   );
 });

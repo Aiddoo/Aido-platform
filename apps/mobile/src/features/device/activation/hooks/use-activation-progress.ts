@@ -60,6 +60,7 @@ export function useActivationChecklist() {
   const activation = useActivationProgress();
   // React Compiler가 인자 없는 new Date()를 렌더 사이에 붙잡아 두므로, 날짜가 바뀔 때 다시 읽는다
   const todayKey = useTodayKey();
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- todayKey는 날짜가 바뀔 때 now를 다시 읽게 하는 키다
   const now = useMemo(() => getNowInstant(), [todayKey]);
   const shouldOfferChecklist =
     activation.isReady &&

@@ -8,5 +8,3 @@ declare module '@src/shared/analytics/event-map' {
     remind_nudge_sent: undefined;
   }
 }
-
-export {};

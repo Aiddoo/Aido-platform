@@ -8,15 +8,7 @@
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   },
-  "ignorePatterns": [
-    "**/*.generated.*",
-    "apps/mobile/assets/**",
-    "apps/mobile/.agents/**",
-    "apps/mobile/.claude/skills/**",
-    "**/dist/**",
-    "**/build/**",
-    "**/coverage/**"
-  ],
+  "ignorePatterns": ["**/*.generated.*", "**/dist/**", "**/build/**", "**/coverage/**"],
   "rules": {
     "eslint/eqeqeq": [
       "error",
@@ -49,30 +41,6 @@
   },
   "overrides": [
     {
-      "files": ["apps/mobile/**/*.{js,jsx,ts,tsx,mjs,cjs}"],
-      "rules": {
-        "eslint/curly": ["error", "all"],
-        "eslint/no-void": "error"
-      }
-    },
-    {
-      "files": ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
-      "rules": {
-        "eslint/no-console": "error"
-      }
-    },
-    {
-      "files": [
-        "apps/mobile/src/shared/infra/logger/**",
-        "apps/mobile/src/shared/infra/error-reporter/console-error-reporter.ts",
-        "apps/mobile/src/shared/infra/analytics/console-analytics.ts",
-        "apps/mobile/**/*.test.{ts,tsx}"
-      ],
-      "rules": {
-        "eslint/no-console": "off"
-      }
-    },
-    {
       "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
@@ -97,12 +65,6 @@
             "ts-nocheck": true
           }
         ]
-      }
-    },
-    {
-      "files": ["apps/mobile/index.ts"],
-      "rules": {
-        "typescript/consistent-type-imports": "off"
       }
     },
     {

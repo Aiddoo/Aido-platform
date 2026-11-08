@@ -1,4 +1,4 @@
-import { err, ok } from '@src/core/errors/result';
+import { err, ok, unwrap } from '@src/core/errors/result';
 import {
   createHttpClientStub,
   createLoggerStub,
@@ -47,10 +47,9 @@ describe('NotificationService', () => {
         params: expect.objectContaining({ limit: 20 }),
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.notifications).toHaveLength(2);
-        expect(result.value.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
-      }
+      const page = unwrap(result);
+      expect(page.notifications).toHaveLength(2);
+      expect(page.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     });
 
     it('응답이 계약과 다르면 ParseError를 던진다', async () => {

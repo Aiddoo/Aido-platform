@@ -33,7 +33,7 @@ export function createAuthSessionStore(
         return;
       }
       state = next;
-      for (const listener of [...listeners]) {
+      for (const listener of Array.from(listeners)) {
         listener();
       }
     },

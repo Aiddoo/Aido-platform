@@ -136,7 +136,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     if (restoredDraft != null) {
       form.reset({ content: memo.content }, { keepValues: true });
     }
-  }, [memo.content, form.reset, restoredDraft]);
+  }, [memo.content, form, restoredDraft]);
 
   // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
   const updateChangedContent = async (content: string) => {

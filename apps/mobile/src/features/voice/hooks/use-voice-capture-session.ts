@@ -302,6 +302,7 @@ export function useVoiceCaptureSession({
   };
 
   const pauseForBackground = useEffectEvent(() => pause('app-background'));
+  const clearTimersOnUnmount = useEffectEvent(clearTimers);
 
   useEffect(() => {
     isUnmountedRef.current = false;
@@ -314,7 +315,7 @@ export function useVoiceCaptureSession({
     return () => {
       isUnmountedRef.current = true;
       appStateSubscription.remove();
-      clearTimers();
+      clearTimersOnUnmount();
       if (VoiceCapturePolicy.isActive(stateRef.current)) {
         speechRecognizer.abort();
       }
@@ -340,6 +341,7 @@ export function useVoiceCaptureSession({
 
   const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
   const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
+  const trackPlanRequested = useEffectEvent(() => telemetry.planRequested());
   const isPlanning = state.status === 'planning';
   useEffect(() => {
     if (!isPlanning) {
@@ -347,7 +349,7 @@ export function useVoiceCaptureSession({
     }
     let isCurrent = true;
     const text = VoiceTranscriptPolicy.getTranscriptText(stateRef.current.transcript);
-    telemetry.planRequested();
+    trackPlanRequested();
     runCaptured(text)
       .then((result) => {
         if (isCurrent) {

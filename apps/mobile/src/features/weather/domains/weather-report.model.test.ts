@@ -481,7 +481,7 @@ describe('findHourlyPrecipitationOutlook', () => {
     const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(hourly, NOW);
 
     // Then
-    expect(outlook?.hour.startsAt).toEqual('2026-11-02T07:00:00.000Z');
+    expect(outlook?.hour.startsAt).toBe('2026-11-02T07:00:00.000Z');
     expect(outlook?.hour.precipitationChance).toBe(70);
     expect(outlook?.isOngoing).toBe(false);
   });

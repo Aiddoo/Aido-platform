@@ -139,39 +139,37 @@ describe('Android 위젯 표시 계약', () => {
   });
 
   it.each([
-    [0, 0],
-    [2, 2],
-    [4, 4],
-    [3, 2],
-    [8, 4],
-  ])('현재·이전 크기 %i에서 할 일을 %i행까지 표시한다', (maxRows, rows) => {
-    // Given
-    const props = createProps(maxRows);
+    [0, 0, ['🔥 12일'], ['＋ 할 일 만들기']],
+    [2, 2, ['＋ 할 일 만들기'], []],
+    [4, 4, ['＋ 할 일 만들기', '+4개 더'], []],
+    [3, 2, ['＋ 할 일 만들기'], []],
+    [8, 4, ['＋ 할 일 만들기', '+4개 더'], []],
+  ])(
+    '현재·이전 크기 %i에서 할 일을 %i행까지 표시한다',
+    (maxRows, rows, shownTexts, hiddenTexts) => {
+      // Given
+      const props = createProps(maxRows);
 
-    // When
-    const nodes = render(props);
+      // When
+      const nodes = render(props);
 
-    // Then
-    expect(texts(nodes).filter((text) => text?.startsWith('Widget QA '))).toEqual(
-      props.topTodos.slice(0, rows).map((todo) => todo.title),
-    );
-    expect(texts(nodes)).toContain('3');
-    expect(texts(nodes)).toContain('/8');
-    expect(
-      nodes
-        .filter((node) => node.props.svg)
-        .every((node) => (node.props.svg?.match(/<path /g) ?? []).length === 2),
-    ).toBe(true);
-    if (rows === 0) {
-      expect(texts(nodes)).toContain('🔥 12일');
-      expect(texts(nodes)).not.toContain('＋ 할 일 만들기');
-    } else {
-      expect(texts(nodes)).toContain('＋ 할 일 만들기');
-    }
-    if (rows === 4) {
-      expect(texts(nodes)).toContain('+4개 더');
-    }
-  });
+      // Then
+      expect(texts(nodes).filter((text) => text?.startsWith('Widget QA '))).toEqual(
+        props.topTodos.slice(0, rows).map((todo) => todo.title),
+      );
+      expect(texts(nodes)).toContain('3');
+      expect(texts(nodes)).toContain('/8');
+      expect(
+        nodes
+          .filter((node) => node.props.svg)
+          .every((node) => (node.props.svg?.match(/<path /g) ?? []).length === 2),
+      ).toBe(true);
+      expect(texts(nodes)).toEqual(expect.arrayContaining(shownTexts));
+      hiddenTexts.forEach((text) => {
+        expect(texts(nodes)).not.toContain(text);
+      });
+    },
+  );
 
   it.each(['ko', 'en'] as const)(
     '%s 대형 위젯의 할 일·7개 날짜·작성 클릭에 정확한 계정과 목적지를 붙인다',

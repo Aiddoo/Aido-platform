@@ -20,5 +20,3 @@ declare module '@src/shared/analytics/event-map' {
     whats_new_cta_pressed: { release_id: ReleaseId; step: string };
   }
 }
-
-export {};

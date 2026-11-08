@@ -390,6 +390,7 @@ function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
     }
   }, [
     celebratedCount,
+    haptics,
     hasNewPawPrint,
     pawPrintCelebrationRepository,
     qualifiedCount,

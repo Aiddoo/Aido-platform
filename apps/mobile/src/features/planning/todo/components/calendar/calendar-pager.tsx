@@ -85,6 +85,7 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
   // 아직 0이면 그 명령이 0으로 잘려 260번째 주가 화면 밖에 그려지고 날짜 줄이 빈다.
   // 목록은 너비마다 새로 만들므로 이 값도 너비가 바뀔 때만 다시 계산한다.
   const initialContentOffset = useMemo(
+    // oxlint-disable-next-line react/refs -- 목록을 새로 만들 때 한 번만 지금 쪽을 시작 위치로 읽는다
     () => ({ x: currentPageRef.current * pageWidth, y: 0 }),
     [pageWidth],
   );
@@ -102,6 +103,7 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
         keyExtractor={(page) => String(page)}
         renderItem={renderItem}
         getItemLayout={getItemLayout}
+        // oxlint-disable-next-line react/refs -- 위 contentOffset과 같은 이유로 새 목록의 시작 쪽만 정한다
         initialScrollIndex={currentPageRef.current}
         contentOffset={initialContentOffset}
         showsHorizontalScrollIndicator={false}

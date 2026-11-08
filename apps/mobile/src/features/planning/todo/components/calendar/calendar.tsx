@@ -16,7 +16,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Tabs } from 'heroui-native';
-import { type ReactNode, useCallback, useRef } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
@@ -167,21 +167,22 @@ interface CalendarWeekPagerProps {
 function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
-  const baseWeekRef = useRef(getWeekStart(selectedDate, timeZone));
+  // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
+  const [baseWeek] = useState(() => getWeekStart(selectedDate, timeZone));
 
   const weekAtPage = useCallback(
     (page: number) =>
-      addLocalDays(baseWeekRef.current, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK, timeZone),
-    [timeZone],
+      addLocalDays(baseWeek, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK, timeZone),
+    [baseWeek, timeZone],
   );
 
   const pageOfWeek = useCallback(
     (week: Date) =>
       clampCalendarPage(
-        diffWeeks(week, baseWeekRef.current, timeZone) + CALENDAR_CENTER_PAGE,
+        diffWeeks(week, baseWeek, timeZone) + CALENDAR_CENTER_PAGE,
         CALENDAR_TOTAL_PAGES,
       ),
-    [timeZone],
+    [baseWeek, timeZone],
   );
 
   const handleChange = (page: number) => {
@@ -203,20 +204,21 @@ interface CalendarMonthPagerProps {
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
-  const baseMonthRef = useRef(startOfLocalMonth(selectedDate, timeZone));
+  // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
+  const [baseMonth] = useState(() => startOfLocalMonth(selectedDate, timeZone));
 
   const monthAtPage = useCallback(
-    (page: number) => addLocalMonths(baseMonthRef.current, page - CALENDAR_CENTER_PAGE, timeZone),
-    [timeZone],
+    (page: number) => addLocalMonths(baseMonth, page - CALENDAR_CENTER_PAGE, timeZone),
+    [baseMonth, timeZone],
   );
 
   const pageOfMonth = useCallback(
     (month: Date) =>
       clampCalendarPage(
-        diffLocalMonths(month, baseMonthRef.current, timeZone) + CALENDAR_CENTER_PAGE,
+        diffLocalMonths(month, baseMonth, timeZone) + CALENDAR_CENTER_PAGE,
         CALENDAR_TOTAL_PAGES,
       ),
-    [timeZone],
+    [baseMonth, timeZone],
   );
 
   const handleChange = (page: number) => {

@@ -42,21 +42,30 @@ function getHrefPathname(href: Href): string | undefined {
   return pathname?.split('?')[0];
 }
 
+/** 화면으로 가는 목적지만 남겨 그 경로를 돌려준다. */
+function getRouteDestinationPathnames(
+  destinations: readonly ReturnType<typeof resolveNotificationDestination>[],
+): (string | undefined)[] {
+  return destinations.flatMap((destination) =>
+    destination.kind === 'route' ? [getHrefPathname(destination.href)] : [],
+  );
+}
+
 describe('알림 목적지와 라우트 파일', () => {
   const routePathnames = getRoutePathnames();
 
   it.each(Object.values(NOTIFICATION_TYPE))('%s 알림의 목적지는 있는 화면이다', (type) => {
-    WINDOW_SIZE_CLASSES.forEach((windowSizeClass) => {
-      // When
-      const destination = resolveNotificationDestination(
+    // When
+    const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
+      resolveNotificationDestination(
         { type, context: CONTEXT, action: { type: 'DEEP_LINK' } },
         { windowSizeClass, shouldOpenToday: true },
-      );
+      ),
+    );
 
-      // Then
-      if (destination.kind === 'route') {
-        expect(routePathnames).toContain(getHrefPathname(destination.href));
-      }
+    // Then
+    getRouteDestinationPathnames(destinations).forEach((pathname) => {
+      expect(routePathnames).toContain(pathname);
     });
   });
 
@@ -65,17 +74,17 @@ describe('알림 목적지와 라우트 파일', () => {
       navigation == null ? [] : [{ name, navigation }],
     ),
   )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
-    WINDOW_SIZE_CLASSES.forEach((windowSizeClass) => {
-      // When
-      const destination = resolveNotificationDestination(
+    // When
+    const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
+      resolveNotificationDestination(
         { type: null, navigation },
         { windowSizeClass, shouldOpenToday: true },
-      );
+      ),
+    );
 
-      // Then
-      if (destination.kind === 'route') {
-        expect(routePathnames).toContain(getHrefPathname(destination.href));
-      }
+    // Then
+    getRouteDestinationPathnames(destinations).forEach((pathname) => {
+      expect(routePathnames).toContain(pathname);
     });
   });
 
@@ -102,8 +111,7 @@ describe('알림 목적지와 라우트 파일', () => {
 
     // Then
     expect(destination.kind).toBe('route');
-    if (destination.kind === 'route') {
-      expect(routePathnames).toContain(getHrefPathname(destination.href));
-    }
+    const [pathname] = getRouteDestinationPathnames([destination]);
+    expect(routePathnames).toContain(pathname);
   });
 });

@@ -69,14 +69,22 @@ async function renderMutations() {
   const queryClient = createTestQueryClient();
   const current: { value: ReturnType<typeof useTodoMutations> | null } = { value: null };
 
-  function Probe() {
-    current.value = useTodoMutations();
+  function Probe({
+    onRender,
+  }: {
+    onRender: (mutations: ReturnType<typeof useTodoMutations>) => void;
+  }) {
+    onRender(useTodoMutations());
     return null;
   }
 
   await renderUi(
     <LocalDateProvider>
-      <Probe />
+      <Probe
+        onRender={(mutations) => {
+          current.value = mutations;
+        }}
+      />
     </LocalDateProvider>,
     {
       queryClient,

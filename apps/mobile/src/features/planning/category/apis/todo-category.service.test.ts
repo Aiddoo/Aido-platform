@@ -1,3 +1,4 @@
+import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -30,10 +31,9 @@ describe('TodoCategoryService', () => {
       // Then
       expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', { signal: undefined });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.categories).toHaveLength(2);
-        expect(result.value.categories[0]?.todoCount).toBe(5);
-      }
+      const list = unwrap(result);
+      expect(list.categories).toHaveLength(2);
+      expect(list.categories[0]?.todoCount).toBe(5);
     });
 
     it('Zod 검증 실패 → ParseError throw', async () => {

@@ -154,7 +154,7 @@ Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureExceptio
 - 상수는 기능 `constants/<feature>-log-events.ts`, 공용 코드는 쓰는 파일 옆에 둔다(`shared/observability` 폴더는 없다). 예: `NOTIFICATION_LOG_EVENT`.
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다.
 - context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.
-- 어댑터(`console-*`, `composite-logger`) 밖에서 `console.*`을 쓰지 않는다. `.oxlintrc.json`의 `eslint/no-console`이 `apps/mobile/src`·`app`에서 막고, 어댑터와 테스트만 예외다.
+- 어댑터(`console-*`, `composite-logger`) 밖에서 `console.*`을 쓰지 않는다. `apps/mobile/.oxlintrc.json`의 `eslint/no-console`이 `apps/mobile/src`·`app`에서 막고, 어댑터와 테스트만 예외다.
 - 이벤트 키는 `feature.action.result` 세 마디 kebab-case다. 값은 Sentry 대시보드에서 쓰므로 바꾸지 않는다. `core/observability/log-event-keys.test.ts`가 형식, `*_LOG_EVENT` 상수 하나, 문자열 직접 사용 금지를 검사한다.
 
 | 상황                               | 호출                                                   | Sentry                                     |

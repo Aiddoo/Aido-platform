@@ -19,7 +19,7 @@ export function subscribeSessionExpired(listener: SessionExpiredListener): () =>
 }
 
 export function emitSessionExpired(details: SessionExpiredDetails): void {
-  for (const listener of [...listeners]) {
+  for (const listener of Array.from(listeners)) {
     try {
       listener(details);
     } catch {

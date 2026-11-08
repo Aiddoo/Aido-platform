@@ -12,9 +12,9 @@ describe('toWeatherReport', () => {
     const report = toWeatherReport(dto);
 
     // Then
-    expect(report.current.observedAt).toEqual('2026-11-02T06:26:00.000Z');
-    expect(report.hourly[0]?.startsAt).toEqual('2026-11-02T06:00:00.000Z');
-    expect(report.daily[0]?.sunrise).toEqual('2026-11-01T21:51:00.000Z');
+    expect(report.current.observedAt).toBe('2026-11-02T06:26:00.000Z');
+    expect(report.hourly[0]?.startsAt).toBe('2026-11-02T06:00:00.000Z');
+    expect(report.daily[0]?.sunrise).toBe('2026-11-01T21:51:00.000Z');
     expect(report.daily[0]?.date).toBe('2026-11-02');
   });
 

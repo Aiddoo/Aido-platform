@@ -50,11 +50,7 @@ describe('UserService', () => {
       const result = await service.getCurrentUser();
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.name).toBeNull();
-        expect(result.value.profileImage).toBeNull();
-      }
+      expect(result).toMatchObject({ ok: true, value: { name: null, profileImage: null } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {
@@ -123,10 +119,7 @@ describe('UserService', () => {
       const result = await service.updateProfile(input);
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.name).toBeNull();
-      }
+      expect(result).toMatchObject({ ok: true, value: { name: null } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {

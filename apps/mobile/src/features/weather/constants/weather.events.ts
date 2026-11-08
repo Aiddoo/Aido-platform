@@ -27,5 +27,3 @@ declare module '@src/shared/analytics/event-map' {
     weather_report_failed: { cause: WeatherReportFailedCause };
   }
 }
-
-export {};

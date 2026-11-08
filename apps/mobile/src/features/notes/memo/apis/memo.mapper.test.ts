@@ -2,6 +2,7 @@ import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { fromDate } from '@src/shared/date/instant';
 import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import { ZodError } from 'zod';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
 import { memoFormSchema } from '../schemas/memo-form.schema';
@@ -183,7 +184,7 @@ describe('toConvertMemoToTodosRequest', () => {
     const convert = () => toConvertMemoToTodosRequest(values, TIME_ZONE);
 
     // Then
-    expect(convert).toThrow();
+    expect(convert).toThrow(ZodError);
   });
 });
 

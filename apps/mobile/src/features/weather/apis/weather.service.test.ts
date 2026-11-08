@@ -18,7 +18,7 @@ describe('WeatherService.getReport', () => {
 
     // Then
     expect(httpClient.get).toHaveBeenCalledWith('v2/weather', { signal });
-    expect(result.ok && result.value.fetchedAt).toEqual('2026-11-02T06:20:00.000Z');
+    expect(result.ok && result.value.fetchedAt).toBe('2026-11-02T06:20:00.000Z');
   });
 
   it('응답이 공유 계약과 다르면 ParseError를 던진다', async () => {

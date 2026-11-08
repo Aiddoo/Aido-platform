@@ -1542,7 +1542,7 @@ function isIconComponentType(type) {
   if (ts.isTypeReferenceNode(type)) {
     return ts.isIdentifier(type.typeName) && type.typeName.text === 'StyledIcon';
   }
-  return ts.isTypeQueryNode(type) && /Icon$/u.test(type.exprName.getText());
+  return ts.isTypeQueryNode(type) && type.exprName.getText().endsWith('Icon');
 }
 
 function checkIconPropNames(sourceFile, repositoryRoot, errors) {

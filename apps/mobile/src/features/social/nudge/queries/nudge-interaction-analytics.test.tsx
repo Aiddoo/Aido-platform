@@ -28,12 +28,25 @@ async function setup() {
   const analytics = createAnalyticsStub();
   let reply: ReturnType<typeof useReplyMutation> | undefined;
   let thanks: ReturnType<typeof useThanksMutation> | undefined;
-  function Capture() {
-    reply = useReplyMutation();
-    thanks = useThanksMutation();
+  function Capture({
+    onRender,
+  }: {
+    onRender: (
+      replyMutation: ReturnType<typeof useReplyMutation>,
+      thanksMutation: ReturnType<typeof useThanksMutation>,
+    ) => void;
+  }) {
+    onRender(useReplyMutation(), useThanksMutation());
     return null;
   }
-  await renderUi(<Capture />, {
+  const capture = (
+    replyMutation: ReturnType<typeof useReplyMutation>,
+    thanksMutation: ReturnType<typeof useThanksMutation>,
+  ) => {
+    reply = replyMutation;
+    thanks = thanksMutation;
+  };
+  await renderUi(<Capture onRender={capture} />, {
     withOverlay: true,
     di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
   });

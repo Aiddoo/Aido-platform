@@ -105,6 +105,7 @@ export function useWidgetAppEntry() {
       status === 'unauthenticated' ||
       (status === 'authenticated' && isAuthenticatedRouteMounted)
     ) {
+      // oxlint-disable-next-line react/set-state-in-effect -- 들어온 링크와 인증 상태가 바뀔 때 대기 중인 위젯 링크를 맞춘다
       setPendingInitialUrl(null);
       return;
     }
@@ -113,6 +114,7 @@ export function useWidgetAppEntry() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
+      // oxlint-disable-next-line react/set-state-in-effect -- 로그아웃하면 대기 중인 위젯 링크를 버린다
       setPendingInitialUrl(null);
       if (pendingCommand == null) {
         widgetNavigationRepository.removeCorrupted();

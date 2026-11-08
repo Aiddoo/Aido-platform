@@ -101,7 +101,7 @@ describe('formatCappedCount', () => {
     // Then
     expect(justOver).toBe('99+');
     expect(large).toBe('99+');
-    expect(large.length).toBe(3);
+    expect(large).toHaveLength(3);
   });
 
   it('상한은 자리마다 다르게 줄 수 있다', () => {

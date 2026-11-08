@@ -28,14 +28,17 @@ export async function renderRouteHook<T>(
   { url, from, routes = [], wrapper: Wrapper = Fragment }: RenderRouteHookOptions,
 ) {
   let latest: { value: T } | undefined;
-  function RunHook() {
-    latest = { value: useHook() };
+  const capture = (value: T) => {
+    latest = { value };
+  };
+  function RunHook({ onRender }: { onRender: (value: T) => void }) {
+    onRender(useHook());
     return null;
   }
   function HookScreen() {
     return (
       <Wrapper>
-        <RunHook />
+        <RunHook onRender={capture} />
       </Wrapper>
     );
   }

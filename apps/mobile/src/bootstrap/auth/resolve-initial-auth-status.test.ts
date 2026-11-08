@@ -109,7 +109,7 @@ describe('앱 부팅 인증 판정 — 클라이언트는 세션을 먼저 끊�
       const result = resolveInitialAuthStatus(tokenStore);
 
       // Then
-      await expect(result).rejects.toThrow();
+      await expect(result).rejects.toThrow('Could not decrypt the value');
       expect(tokenStore.clear).not.toHaveBeenCalled();
     });
 

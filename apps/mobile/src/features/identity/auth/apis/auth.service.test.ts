@@ -80,11 +80,10 @@ describe('AuthService', () => {
       const result = await service.emailLogin('test@example.com', 'password123');
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.userName).toBeNull();
-        expect(result.value.userProfileImage).toBeNull();
-      }
+      expect(result).toMatchObject({
+        ok: true,
+        value: { userName: null, userProfileImage: null },
+      });
     });
 
     it('accountRestored 미포함 → 기본값 false', async () => {
@@ -96,10 +95,7 @@ describe('AuthService', () => {
       const result = await service.emailLogin('test@example.com', 'password123');
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.accountRestored).toBe(false);
-      }
+      expect(result).toMatchObject({ ok: true, value: { accountRestored: false } });
     });
 
     it('HTTP 에러 → Result.err + 토큰 미저장', async () => {
@@ -331,10 +327,7 @@ describe('AuthService', () => {
       const result = await service.resendVerification({ email: 'test@example.com' });
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.retryAfterSeconds).toBeUndefined();
-      }
+      expect(result).toMatchObject({ ok: true, value: { retryAfterSeconds: undefined } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {

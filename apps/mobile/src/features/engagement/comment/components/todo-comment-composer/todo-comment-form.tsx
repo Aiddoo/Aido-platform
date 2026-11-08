@@ -217,49 +217,50 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
     );
   };
 
-  return handleSubmit(async ({ mode, items }) => {
-    const contents = getTrimmedContents(items);
-    if (contents == null) {
-      return;
-    }
-
-    try {
-      await match(mode)
-        .with({ type: 'edit' }, async ({ target }) => {
-          if (!TodoCommentComposerPolicy.isSameAsOriginal(target, contents[0])) {
-            await updateComment.mutateAsync({ target, input: { content: contents[0] } });
-          }
-        })
-        .with({ type: 'new' }, { type: 'reply' }, async (writeMode) => {
-          const submission = TodoCommentComposerPolicy.prepareSubmission({
-            previousSubmission: preparedSubmissionRef.current,
-            todoId,
-            parentId: TodoCommentComposerPolicy.getReplyParentId(writeMode),
-            contents,
-            createClientRequestId: () => idGenerator.create(),
-          });
-          preparedSubmissionRef.current = submission;
-          const chain = await createCommentChain.mutateAsync({
-            input: submission.input,
-            target: findComposerTarget(writeMode),
-          });
-          preparedSubmissionRef.current = null;
-          const threadCommentId = chain.comments[0]?.threadCommentId;
-          if (threadCommentId != null) {
-            expandThread(threadCommentId);
-          }
-        })
-        .exhaustive();
-      finish(mode);
-    } catch (error) {
-      if (isTodoCommentRejectedError(error)) {
-        preparedSubmissionRef.current = null;
+  return () =>
+    handleSubmit(async ({ mode, items }) => {
+      const contents = getTrimmedContents(items);
+      if (contents == null) {
+        return;
       }
-      logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {
-        status: findTodoCommentErrorStatus(error),
-      });
-    }
-  });
+
+      try {
+        await match(mode)
+          .with({ type: 'edit' }, async ({ target }) => {
+            if (!TodoCommentComposerPolicy.isSameAsOriginal(target, contents[0])) {
+              await updateComment.mutateAsync({ target, input: { content: contents[0] } });
+            }
+          })
+          .with({ type: 'new' }, { type: 'reply' }, async (writeMode) => {
+            const submission = TodoCommentComposerPolicy.prepareSubmission({
+              previousSubmission: preparedSubmissionRef.current,
+              todoId,
+              parentId: TodoCommentComposerPolicy.getReplyParentId(writeMode),
+              contents,
+              createClientRequestId: () => idGenerator.create(),
+            });
+            preparedSubmissionRef.current = submission;
+            const chain = await createCommentChain.mutateAsync({
+              input: submission.input,
+              target: findComposerTarget(writeMode),
+            });
+            preparedSubmissionRef.current = null;
+            const threadCommentId = chain.comments[0]?.threadCommentId;
+            if (threadCommentId != null) {
+              expandThread(threadCommentId);
+            }
+          })
+          .exhaustive();
+        finish(mode);
+      } catch (error) {
+        if (isTodoCommentRejectedError(error)) {
+          preparedSubmissionRef.current = null;
+        }
+        logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {
+          status: findTodoCommentErrorStatus(error),
+        });
+      }
+    })();
 }
 
 /** 작성 중인 글을 모드별 초안으로 저장하고 다시 열면 이어 쓴다 */

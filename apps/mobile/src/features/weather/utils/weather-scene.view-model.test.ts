@@ -44,7 +44,7 @@ const PRECIPITATING_CONDITIONS = [
 ] as const satisfies readonly WeatherCondition[];
 
 describe('날씨 장면 변환', () => {
-  test.each(
+  it.each(
     WEATHER_CONDITIONS.flatMap((condition) => [
       [condition, true] as const,
       [condition, false] as const,
@@ -61,7 +61,7 @@ describe('날씨 장면 변환', () => {
     expect(scene.isDaylight).toBe(isDaylight);
   });
 
-  test.each([
+  it.each([
     ['DRIZZLE', 'drizzle'],
     ['RAIN', 'rain'],
     ['SLEET', 'sleet'],
@@ -80,7 +80,7 @@ describe('날씨 장면 변환', () => {
     expect(scene.precipitation.kind).toBe(kind);
   });
 
-  test('맑은 낮에는 렌즈 반사가 있는 해를, 맑은 밤에는 달·별·별똥별을 보여 준다', () => {
+  it('맑은 낮에는 렌즈 반사가 있는 해를, 맑은 밤에는 달·별·별똥별을 보여 준다', () => {
     // Given
     const day = createInput({ isDaylight: true });
     const night = createInput({ isDaylight: false });
@@ -106,7 +106,7 @@ describe('날씨 장면 변환', () => {
     });
   });
 
-  test.each([
+  it.each([
     ['CLEAR', 'calm'],
     ['MOSTLY_CLEAR', 'calm'],
     ['PARTLY_CLOUDY', 'calm'],
@@ -136,7 +136,7 @@ describe('날씨 장면 변환', () => {
     },
   );
 
-  test.each([
+  it.each([
     ['CLEAR', 'bright'],
     ['HAZY', 'diffuse'],
     ['HOT', 'blazing'],
@@ -149,28 +149,32 @@ describe('날씨 장면 변환', () => {
     expect(scene.sun).toBe(sun);
   });
 
-  test.each(
+  it.each(
     WEATHER_CONDITIONS.flatMap((condition) => [
-      [condition, true] as const,
-      [condition, false] as const,
+      [
+        condition,
+        true,
+        'Day',
+        { hasMoon: false, hasStars: false, hasShootingStars: false },
+      ] as const,
+      [condition, false, 'Night', { sun: 'hidden' }] as const,
     ]),
-  )('%s(낮 %s)는 하늘색과 해·달·별이 같은 낮밤을 따른다', (condition, isDaylight) => {
-    // Given
-    const input = createInput({ condition, isDaylight, cloudCover: 0 });
+  )(
+    '%s(낮 %s)는 하늘색과 해·달·별이 같은 낮밤을 따른다',
+    (condition, isDaylight, skySuffix, celestialBodies) => {
+      // Given
+      const input = createInput({ condition, isDaylight, cloudCover: 0 });
 
-    // When
-    const scene = toWeatherScene(input);
+      // When
+      const scene = toWeatherScene(input);
 
-    // Then
-    expect(scene.sky.endsWith(isDaylight ? 'Day' : 'Night')).toBe(true);
-    if (isDaylight) {
-      expect(scene).toMatchObject({ hasMoon: false, hasStars: false, hasShootingStars: false });
-    } else {
-      expect(scene.sun).toBe('hidden');
-    }
-  });
+      // Then
+      expect(scene.sky.endsWith(skySuffix)).toBe(true);
+      expect(scene).toMatchObject(celestialBodies);
+    },
+  );
 
-  test('흐린 밤은 해·달·별·서리 없이 흐린 밤하늘만 그린다', () => {
+  it('흐린 밤은 해·달·별·서리 없이 흐린 밤하늘만 그린다', () => {
     // Given
     const input = createInput({ condition: 'CLOUDY', isDaylight: false, cloudCover: 90 });
 
@@ -188,7 +192,7 @@ describe('날씨 장면 변환', () => {
     });
   });
 
-  test('렌즈 반사는 맑은 날에만 비친다', () => {
+  it('렌즈 반사는 맑은 날에만 비친다', () => {
     // Given
     const inputs = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
 
@@ -201,7 +205,7 @@ describe('날씨 장면 변환', () => {
     expect(flared).toEqual(['CLEAR', 'MOSTLY_CLEAR']);
   });
 
-  test('뿌연 하늘은 구름이 많아도 흐릿한 해가 비친다', () => {
+  it('뿌연 하늘은 구름이 많아도 흐릿한 해가 비친다', () => {
     // Given
     const input = createInput({ condition: 'HAZY', cloudCover: 100 });
 
@@ -212,7 +216,7 @@ describe('날씨 장면 변환', () => {
     expect(scene.sun).toBe('diffuse');
   });
 
-  test('별똥별은 구름이 거의 없는 밤에만 지나간다', () => {
+  it('별똥별은 구름이 거의 없는 밤에만 지나간다', () => {
     // Given
     const clear = createInput({ condition: 'MOSTLY_CLEAR', isDaylight: false, cloudCover: 10 });
     const cloudy = createInput({ condition: 'PARTLY_CLOUDY', isDaylight: false, cloudCover: 50 });
@@ -225,7 +229,7 @@ describe('날씨 장면 변환', () => {
     expect(cloudyScene).toMatchObject({ hasMoon: true, hasStars: true, hasShootingStars: false });
   });
 
-  test.each(PRECIPITATING_CONDITIONS)(
+  it.each(PRECIPITATING_CONDITIONS)(
     '%s 상태에서는 해와 별을 숨기고 강수를 보여 준다',
     (condition) => {
       // Given
@@ -241,7 +245,7 @@ describe('날씨 장면 변환', () => {
     },
   );
 
-  test.each([
+  it.each([
     ['DRIZZLE', true, 'rainDay'],
     ['RAIN', false, 'rainNight'],
     ['HEAVY_RAIN', true, 'rainDay'],
@@ -263,7 +267,7 @@ describe('날씨 장면 변환', () => {
     expect(scene.sky).toBe(sky);
   });
 
-  test('번개는 천둥번개에서만 친다', () => {
+  it('번개는 천둥번개에서만 친다', () => {
     // Given
     const conditions = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
 
@@ -276,7 +280,7 @@ describe('날씨 장면 변환', () => {
     expect(withLightning).toEqual(['THUNDERSTORMS']);
   });
 
-  test('안개 밤에는 달과 별이 가려진다', () => {
+  it('안개 밤에는 달과 별이 가려진다', () => {
     // Given
     const input = createInput({ condition: 'FOGGY', isDaylight: false, cloudCover: 0 });
 
@@ -287,7 +291,7 @@ describe('날씨 장면 변환', () => {
     expect(scene).toMatchObject({ hasMoon: false, hasStars: false });
   });
 
-  test('운량은 상태가 허용하는 범위 안으로 맞춘다', () => {
+  it('운량은 상태가 허용하는 범위 안으로 맞춘다', () => {
     // Given
     const clearWithClouds = createInput({ condition: 'CLEAR', cloudCover: 100 });
     const cloudyWithoutClouds = createInput({ condition: 'CLOUDY', cloudCover: 0 });
@@ -306,7 +310,7 @@ describe('강수 강도와 밀도', () => {
     toWeatherScene(createInput({ condition: 'RAIN', precipitationIntensity })).precipitation
       .density;
 
-  test.each([10, 500, Number.POSITIVE_INFINITY])(
+  it.each([10, 500, Number.POSITIVE_INFINITY])(
     '강수 강도 %pmm/h 이상은 밀도가 1에서 멈춘다',
     (intensity) => {
       // When
@@ -317,7 +321,7 @@ describe('강수 강도와 밀도', () => {
     },
   );
 
-  test('강수 강도가 클수록 밀도가 높다', () => {
+  it('강수 강도가 클수록 밀도가 높다', () => {
     // Given
     const intensities = [2, 5, 8];
 
@@ -329,7 +333,7 @@ describe('강수 강도와 밀도', () => {
     expect(new Set(densities).size).toBe(3);
   });
 
-  test('비 상태는 강도 값이 없거나 잘못돼도 최소 밀도를 유지하고 1을 넘지 않는다', () => {
+  it('비 상태는 강도 값이 없거나 잘못돼도 최소 밀도를 유지하고 1을 넘지 않는다', () => {
     // Given
     const intensities = [Number.NaN, -1, 0, 1_000_000];
 
@@ -340,7 +344,7 @@ describe('강수 강도와 밀도', () => {
     expect(densities).toEqual([0.4, 0.4, 0.4, 1]);
   });
 
-  test('맑은 날은 강수 강도 값이 있어도 내리지 않는다', () => {
+  it('맑은 날은 강수 강도 값이 있어도 내리지 않는다', () => {
     // Given
     const input = createInput({ condition: 'CLEAR', precipitationIntensity: 5 });
 
@@ -353,7 +357,7 @@ describe('강수 강도와 밀도', () => {
 });
 
 describe('바람과 강수 각도', () => {
-  test.each([
+  it.each([
     [-10, 0],
     [Number.NaN, 0],
     [0, 0],
@@ -371,7 +375,7 @@ describe('바람과 강수 각도', () => {
     expect(angle).toBeCloseTo(expected);
   });
 
-  test('강한 바람 상태는 풍속이 약해도 비스듬히 내린다', () => {
+  it('강한 바람 상태는 풍속이 약해도 비스듬히 내린다', () => {
     // Given
     const input = createInput({ condition: 'HEAVY_RAIN', windSpeed: 0 });
 
@@ -385,7 +389,7 @@ describe('바람과 강수 각도', () => {
 });
 
 describe('달의 위상', () => {
-  test('서버가 준 오늘의 위상을 한 바퀴 0~1 자리에 놓는다', () => {
+  it('서버가 준 오늘의 위상을 한 바퀴 0~1 자리에 놓는다', () => {
     // Given
     const full = createInput({ isDaylight: false, moonPhase: 'FULL' });
     const firstQuarter = createInput({ isDaylight: false, moonPhase: 'FIRST_QUARTER' });
@@ -399,7 +403,7 @@ describe('달의 위상', () => {
     expect(firstQuarterScene.moonPhase).toBe(0.25);
   });
 
-  test('일별 예보가 없어 위상을 모르면 밤에도 달을 그리지 않는다', () => {
+  it('일별 예보가 없어 위상을 모르면 밤에도 달을 그리지 않는다', () => {
     // Given
     const input = createInput({ isDaylight: false, moonPhase: null });
 
@@ -410,7 +414,7 @@ describe('달의 위상', () => {
     expect(scene.hasMoon).toBe(false);
   });
 
-  test('보름달은 다 밝고 삭은 보이지 않는다', () => {
+  it('보름달은 다 밝고 삭은 보이지 않는다', () => {
     // When
     const [full, fresh] = [0.5, 0].map(getMoonIllumination);
 
@@ -419,7 +423,7 @@ describe('달의 위상', () => {
     expect(fresh).toBeCloseTo(0);
   });
 
-  test('남반구 위치에서는 달을 뒤집어 그리도록 알린다', () => {
+  it('남반구 위치에서는 달을 뒤집어 그리도록 알린다', () => {
     // Given
     const input = createInput({ isDaylight: false, latitude: -33.9 });
 

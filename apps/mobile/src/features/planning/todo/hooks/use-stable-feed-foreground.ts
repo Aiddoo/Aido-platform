@@ -49,11 +49,11 @@ export function useStableFeedForeground({
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    const lifecycle = new AbortController();
     incomingLink
       .getInitialUrl()
       .then((url) => {
-        if (isMounted) {
+        if (!lifecycle.signal.aborted) {
           setHasPendingDeepLink(url != null);
           if (url != null) {
             releasePendingDeepLinkWhenIdle();
@@ -61,7 +61,7 @@ export function useStableFeedForeground({
         }
       })
       .catch(() => {
-        if (isMounted) {
+        if (!lifecycle.signal.aborted) {
           setHasPendingDeepLink(true);
           releasePendingDeepLinkWhenIdle();
         }
@@ -73,7 +73,7 @@ export function useStableFeedForeground({
     });
 
     return () => {
-      isMounted = false;
+      lifecycle.abort();
       if (deepLinkReleaseTaskRef.current != null) {
         cancelIdleCallback(deepLinkReleaseTaskRef.current);
       }

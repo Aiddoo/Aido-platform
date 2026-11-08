@@ -13,7 +13,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, useEffect, useLayoutEffect, useRef } from 'react';
+import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -73,10 +73,14 @@ export function VoiceNoteRecorder() {
   });
   const { state } = recording;
 
-  useEffect(() => {
+  // 화면에 들어올 때 한 번만 녹음을 시작한다. 그 시점의 언어·힌트를 읽는다
+  const startRecording = useEffectEvent(() => {
     recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch(() => {
       toast.error(t('record.failedTitle'));
     });
+  });
+  useEffect(() => {
+    startRecording();
   }, []);
 
   return (

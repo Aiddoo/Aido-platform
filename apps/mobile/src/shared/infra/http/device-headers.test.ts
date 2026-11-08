@@ -2,20 +2,19 @@ import * as Device from 'expo-device';
 
 import { getDeviceHeaders } from './device-headers';
 
-jest.mock('expo-device', () => ({ modelName: 'iPhone 15 Pro' }));
+jest.mock('expo-device', () => ({ modelName: 'iPhone 15 Pro', osVersion: null }));
 
 const setModelName = (value: string | null) => {
-  Object.defineProperty(Device, 'modelName', { value, configurable: true });
+  jest.replaceProperty(Device, 'modelName', value);
 };
 
 const setOsVersion = (value: string | null) => {
-  Object.defineProperty(Device, 'osVersion', { value, configurable: true });
+  jest.replaceProperty(Device, 'osVersion', value);
 };
 
 describe('getDeviceHeaders', () => {
   afterEach(() => {
-    setModelName('iPhone 15 Pro');
-    setOsVersion(null);
+    jest.restoreAllMocks();
   });
 
   it('iOS 플랫폼과 모델명을 반환한다', () => {

@@ -1792,7 +1792,7 @@ async function resetLocale(ctx: Context, locale: Locale, content: LocaleContent)
     }
   }
   await deleteUsersCascade(ctx.db, ids);
-  for (const key of [...ctx.env.keys()]) {
+  for (const key of Array.from(ctx.env.keys())) {
     if (key.startsWith(`SCREENS_${locale.toUpperCase()}_`)) {
       ctx.env.delete(key);
     }

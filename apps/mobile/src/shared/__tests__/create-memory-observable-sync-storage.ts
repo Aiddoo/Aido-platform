@@ -6,7 +6,7 @@ export function createMemoryObservableSyncStorage(): DIContainer['syncStorage'] 
   const listenersByKey = new Map<string, Set<() => void>>();
 
   const notify = (key: string) => {
-    for (const listener of [...(listenersByKey.get(key) ?? [])]) {
+    for (const listener of Array.from(listenersByKey.get(key) ?? [])) {
       listener();
     }
   };

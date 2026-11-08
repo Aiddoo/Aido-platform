@@ -32,10 +32,7 @@ describe('TodoNudgeService', () => {
       });
 
       // Then
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.code).toBe('TODO_NUDGE_MESSAGE_TOO_LONG');
-      }
+      expect(result).toMatchObject({ ok: false, error: { code: 'TODO_NUDGE_MESSAGE_TOO_LONG' } });
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
@@ -130,11 +127,7 @@ describe('TodoNudgeService', () => {
 
       // Then
       expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/limit', { signal: undefined });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.dailyLimit).toBe(5);
-        expect(result.value.remainingToday).toBe(3);
-      }
+      expect(result).toMatchObject({ ok: true, value: { dailyLimit: 5, remainingToday: 3 } });
     });
 
     it('HTTP 오류이면 실패 결과를 반환한다', async () => {

@@ -12,5 +12,3 @@ declare module '@src/shared/analytics/event-map' {
     friend_strip_hint_dismissed: { hint: 'invite' | 'search' };
   }
 }
-
-export {};

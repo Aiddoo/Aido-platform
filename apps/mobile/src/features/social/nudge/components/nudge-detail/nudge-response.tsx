@@ -134,6 +134,12 @@ function ThanksStatus() {
   );
 }
 
+const REPLY_ICONS = {
+  STARTING: PawIcon,
+  THANKFUL: HeartFilledIcon,
+  LATER: ClockIcon,
+} satisfies Record<NudgeReplyKind, typeof PawIcon>;
+
 type ReplyButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
   value: NudgeReplyKind;
   isSelected: boolean;
@@ -141,11 +147,7 @@ type ReplyButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
 
 function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
   const { t } = useTranslation('todo');
-  const Icon = match(value)
-    .with('STARTING', () => PawIcon)
-    .with('THANKFUL', () => HeartFilledIcon)
-    .with('LATER', () => ClockIcon)
-    .exhaustive();
+  const Icon = REPLY_ICONS[value];
 
   return (
     <Button

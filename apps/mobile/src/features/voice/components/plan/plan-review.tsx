@@ -241,54 +241,58 @@ function usePlanApply({
   const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved, onMemoChanged }));
   const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
 
-  const apply = form.handleSubmit((values) => {
-    const selected = VoicePlanPolicy.sortPlanActionsByGroup(
-      VoicePlanPolicy.getSelectedActions(
-        { ...plan, actions: toPlannedActions(values) },
-        toPlanSelection(values),
-      ),
-      fallbackCategoryId,
-    );
-    const input = { source: plan.source, actions: selected, fallbackCategoryId };
-    const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
-    // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
-    const prepared = PlanRequestPolicy.preparePlanRequest({
-      previous: previous == null ? null : { ...previous, input },
-      input,
-      createIdempotencyKey: idGenerator.create,
-    });
-    const rememberRequest = (request: PlanApplyRequest | null) => {
-      memoryRequestRef.current = request;
-      requestStore?.save(request);
-    };
-    rememberRequest({ idempotencyKey: prepared.idempotencyKey, fingerprint: prepared.fingerprint });
-
-    applyMutation.mutate(
-      {
-        source: plan.source,
-        sourceMemoId: plan.sourceMemoId,
-        actions: selected,
+  const apply = () =>
+    form.handleSubmit((values) => {
+      const selected = VoicePlanPolicy.sortPlanActionsByGroup(
+        VoicePlanPolicy.getSelectedActions(
+          { ...plan, actions: toPlannedActions(values) },
+          toPlanSelection(values),
+        ),
         fallbackCategoryId,
-        skippedCount: values.actions.length - selected.length,
+      );
+      const input = { source: plan.source, actions: selected, fallbackCategoryId };
+      const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
+      // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
+      const prepared = PlanRequestPolicy.preparePlanRequest({
+        previous: previous == null ? null : { ...previous, input },
+        input,
+        createIdempotencyKey: idGenerator.create,
+      });
+      const rememberRequest = (request: PlanApplyRequest | null) => {
+        memoryRequestRef.current = request;
+        requestStore?.save(request);
+      };
+      rememberRequest({
         idempotencyKey: prepared.idempotencyKey,
-      },
-      {
-        onSuccess: () => {
-          memoryRequestRef.current = null;
-          onApplied?.();
+        fingerprint: prepared.fingerprint,
+      });
+
+      applyMutation.mutate(
+        {
+          source: plan.source,
+          sourceMemoId: plan.sourceMemoId,
+          actions: selected,
+          fallbackCategoryId,
+          skippedCount: values.actions.length - selected.length,
+          idempotencyKey: prepared.idempotencyKey,
         },
-        // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
-        onError: (error) => {
-          if (isPlanKeyConflictError(error)) {
-            rememberRequest(null);
-          }
-          if (isSourceMemoMissingError(error)) {
-            onSourceMissing?.();
-          }
+        {
+          onSuccess: () => {
+            memoryRequestRef.current = null;
+            onApplied?.();
+          },
+          // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
+          onError: (error) => {
+            if (isPlanKeyConflictError(error)) {
+              rememberRequest(null);
+            }
+            if (isSourceMemoMissingError(error)) {
+              onSourceMissing?.();
+            }
+          },
         },
-      },
-    );
-  });
+      );
+    })();
 
   return { apply, isPending: applyMutation.isPending };
 }

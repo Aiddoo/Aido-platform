@@ -319,11 +319,8 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     // Then
     // 로그아웃(endSession) 없이 ApiError로 담긴다. 세션 종료가 아니므로 화면별
     // QueryErrorBoundary가 로컬 재시도로 흡수한다(앱 레벨로 새지 않음).
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toBeInstanceOf(ApiError);
-      expect(result.error.status).toBe(401);
-    }
+    expect(result).toEqual({ ok: false, error: expect.any(ApiError) });
+    expect(result).toMatchObject({ error: { status: 401 } });
     // 원 요청 1 + 재시도 1 — ky가 이중 재시도하지 않음
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(endSession).not.toHaveBeenCalled();
@@ -344,12 +341,8 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
       reason: 'refresh-rejected',
       serverErrorCode: 'SESSION_0704',
     });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toBeInstanceOf(ApiError);
-      expect(result.error.status).toBe(401);
-      expect(result.error.code).toBe('AUTH_0105');
-    }
+    expect(result).toEqual({ ok: false, error: expect.any(ApiError) });
+    expect(result).toMatchObject({ error: { status: 401, code: 'AUTH_0105' } });
   });
 
   it('서버가 5xx를 반환하면 재시도 가능한 ServerError를 던진다', async () => {
@@ -388,12 +381,10 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     const result = await http.get('todos/none');
 
     // Then
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toBeInstanceOf(ApiError);
-      expect(result.error.code).toBe('TODO_0801');
-      expect(result.error.message).toBe('할 일을 찾을 수 없어요');
-    }
+    expect(result).toEqual({ ok: false, error: expect.any(ApiError) });
+    expect(result).toMatchObject({
+      error: { code: 'TODO_0801', message: '할 일을 찾을 수 없어요' },
+    });
   });
 
   it('갱신 성공 후 재시도가 5xx면 ServerError로 표면화한다', async () => {

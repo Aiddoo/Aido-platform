@@ -70,57 +70,58 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
       : t('codeEntry.invalidCharacter.unused', { characters, count: uniqueCount });
   };
 
-  const submitInviteCode = form.handleSubmit(async ({ inviteCode: raw }) => {
-    const inviteCode = InviteCodePolicy.parseInviteCode(raw);
-    if (inviteCode == null) {
-      const invalidCharacterSummary = summarizeInvalidCharacters(
-        InviteCodePolicy.findInvalidCharacters(raw),
-      );
-      form.setError('inviteCode', {
-        message:
-          invalidCharacterSummary == null
-            ? t('errors.invalidCode')
-            : formatInvalidCharacterMessage(invalidCharacterSummary),
-      });
-      // 키보드를 그대로 두어 바로 지우고 고쳐 쓰게 한다
-      inviteCodeInputRef.current?.focus();
-      return;
-    }
-
-    // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌기만 한다. 입력한 코드를 둔 채 바로 알린다
-    if (!onlineManager.isOnline()) {
-      toast.warning(t('errors.offline'));
-      return;
-    }
-
-    try {
-      // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
-      await checkPreview.mutateAsync(inviteCode);
-      // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
-      if (!navigation.isFocused()) {
-        return;
-      }
-      // 시스템 링크로 이 화면에 왔으면 착지할 때 이미 한 번 셌다. 앱 안에서 연 코드 입력만 여기서 센다
-      if (openedAt == null) {
-        trackEvent('invite_link_opened', { source: 'code_entry' });
-      }
-      router.replace({
-        pathname: '/invite/[inviteCode]',
-        params: { inviteCode, source: 'code_entry' },
-      });
-    } catch (error) {
-      // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지우지 않고 둔다
-      if (!isCodedError(error)) {
-        haptics.notify('error');
-        toast.error(getUserFacingMessage(error));
+  const submitInviteCode = () =>
+    form.handleSubmit(async ({ inviteCode: raw }) => {
+      const inviteCode = InviteCodePolicy.parseInviteCode(raw);
+      if (inviteCode == null) {
+        const invalidCharacterSummary = summarizeInvalidCharacters(
+          InviteCodePolicy.findInvalidCharacters(raw),
+        );
+        form.setError('inviteCode', {
+          message:
+            invalidCharacterSummary == null
+              ? t('errors.invalidCode')
+              : formatInvalidCharacterMessage(invalidCharacterSummary),
+        });
+        // 키보드를 그대로 두어 바로 지우고 고쳐 쓰게 한다
+        inviteCodeInputRef.current?.focus();
         return;
       }
 
-      form.setError('inviteCode', {
-        message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
-      });
-    }
-  });
+      // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌기만 한다. 입력한 코드를 둔 채 바로 알린다
+      if (!onlineManager.isOnline()) {
+        toast.warning(t('errors.offline'));
+        return;
+      }
+
+      try {
+        // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
+        await checkPreview.mutateAsync(inviteCode);
+        // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
+        if (!navigation.isFocused()) {
+          return;
+        }
+        // 시스템 링크로 이 화면에 왔으면 착지할 때 이미 한 번 셌다. 앱 안에서 연 코드 입력만 여기서 센다
+        if (openedAt == null) {
+          trackEvent('invite_link_opened', { source: 'code_entry' });
+        }
+        router.replace({
+          pathname: '/invite/[inviteCode]',
+          params: { inviteCode, source: 'code_entry' },
+        });
+      } catch (error) {
+        // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 토스트로 알려 입력한 코드를 지우지 않고 둔다
+        if (!isCodedError(error)) {
+          haptics.notify('error');
+          toast.error(getUserFacingMessage(error));
+          return;
+        }
+
+        form.setError('inviteCode', {
+          message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
+        });
+      }
+    })();
 
   const handlePaste = (value: string) => {
     form.clearErrors('inviteCode');

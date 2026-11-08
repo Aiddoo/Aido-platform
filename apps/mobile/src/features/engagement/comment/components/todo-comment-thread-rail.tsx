@@ -111,14 +111,16 @@ function Rails({ kind }: { kind: TodoCommentRailRowKind }) {
 
 function RowHighlight() {
   const opacity = useSharedValue(0);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const style = useAnimatedStyle(() => ({ opacity: opacity.get() }));
 
   useEffect(() => {
-    opacity.value = withSequence(
-      withTiming(1, { duration: HIGHLIGHT_FADE_IN_MS }),
-      withDelay(
-        TODO_COMMENT_HIGHLIGHT_DURATION_MS - HIGHLIGHT_FADE_IN_MS - HIGHLIGHT_FADE_OUT_MS,
-        withTiming(0, { duration: HIGHLIGHT_FADE_OUT_MS }),
+    opacity.set(
+      withSequence(
+        withTiming(1, { duration: HIGHLIGHT_FADE_IN_MS }),
+        withDelay(
+          TODO_COMMENT_HIGHLIGHT_DURATION_MS - HIGHLIGHT_FADE_IN_MS - HIGHLIGHT_FADE_OUT_MS,
+          withTiming(0, { duration: HIGHLIGHT_FADE_OUT_MS }),
+        ),
       ),
     );
   }, [opacity]);

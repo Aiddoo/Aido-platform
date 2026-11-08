@@ -1,4 +1,4 @@
-import { isCodedError } from '@src/core/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
@@ -32,10 +32,8 @@ describe('FriendService', () => {
       const result = await service.sendRequestByTag('  ');
 
       // Then
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(isCodedError(result.error, FRIEND_ERROR_CODE.EMPTY_TAG)).toBe(true);
-      }
+      expect(result).toEqual({ ok: false, error: expect.any(Error) });
+      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.EMPTY_TAG } });
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
@@ -44,10 +42,8 @@ describe('FriendService', () => {
       const result = await service.sendRequestByTag('abc');
 
       // Then
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(isCodedError(result.error, FRIEND_ERROR_CODE.INVALID_TAG)).toBe(true);
-      }
+      expect(result).toEqual({ ok: false, error: expect.any(Error) });
+      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.INVALID_TAG } });
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
@@ -139,10 +135,9 @@ describe('FriendService', () => {
         params: { cursor: 'c1', limit: 10 },
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.items).toHaveLength(2);
-        expect(result.value.items[0]?.friendsSince).toEqual(expect.stringMatching(/^2026-/));
-      }
+      const page = unwrap(result);
+      expect(page.items).toHaveLength(2);
+      expect(page.items[0]?.friendsSince).toEqual(expect.stringMatching(/^2026-/));
     });
 
     it('HTTP 오류이면 실패 결과를 반환한다', async () => {
@@ -187,10 +182,9 @@ describe('FriendService', () => {
         params: { cursor: undefined, limit: undefined },
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
-      }
+      const page = unwrap(result);
+      expect(page.items).toHaveLength(1);
+      expect(page.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
     });
 
     it('HTTP 오류이면 실패 결과를 반환한다', async () => {
@@ -235,10 +229,9 @@ describe('FriendService', () => {
         params: { cursor: 'c1', limit: 10 },
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
-      }
+      const page = unwrap(result);
+      expect(page.items).toHaveLength(1);
+      expect(page.items[0]?.requestedAt).toEqual(expect.stringMatching(/^2026-/));
     });
 
     it('HTTP 오류이면 실패 결과를 반환한다', async () => {
@@ -346,11 +339,13 @@ describe('FriendService', () => {
         targetFollowId: 'follow-2',
         position: 'after',
       });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.followId).toBe(dto.friend.followId);
-        expect(result.value.friendsSince).toEqual(expect.stringMatching(/^2026-/));
-      }
+      expect(result).toMatchObject({
+        ok: true,
+        value: {
+          followId: dto.friend.followId,
+          friendsSince: expect.stringMatching(/^2026-/),
+        },
+      });
     });
 
     it('HTTP 오류이면 실패 결과를 반환한다', async () => {
@@ -387,10 +382,8 @@ describe('FriendService', () => {
       const result = await service.searchUsers({ query: ' a ' });
 
       // Then
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(isCodedError(result.error, FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT)).toBe(true);
-      }
+      expect(result).toEqual({ ok: false, error: expect.any(Error) });
+      expect(result).toMatchObject({ error: { code: FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT } });
       expect(httpClient.get).not.toHaveBeenCalled();
     });
 
@@ -407,14 +400,13 @@ describe('FriendService', () => {
         params: { q: '홍길동', cursor: 'c1', limit: 20 },
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.items).toHaveLength(4);
-        expect(result.value.nextCursor).toBeNull();
-        // 동명이인 2명이 태그로 구분됨
-        const hongs = result.value.items.filter((u) => u.name === '홍길동');
-        expect(hongs).toHaveLength(2);
-        expect(new Set(hongs.map((u) => u.userTag)).size).toBe(2);
-      }
+      const page = unwrap(result);
+      expect(page.items).toHaveLength(4);
+      expect(page.nextCursor).toBeNull();
+      // 동명이인 2명이 태그로 구분됨
+      const hongs = page.items.filter((u) => u.name === '홍길동');
+      expect(hongs).toHaveLength(2);
+      expect(new Set(hongs.map((u) => u.userTag)).size).toBe(2);
     });
 
     it('HTTP 오류이면 실패 결과를 그대로 돌려준다', async () => {

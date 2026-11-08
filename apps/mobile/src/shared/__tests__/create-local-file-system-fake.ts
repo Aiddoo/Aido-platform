@@ -103,7 +103,7 @@ export function createLocalFileSystemFake(): LocalFileSystemFake {
     },
     removeDirectory: (directory) => {
       const prefix = toKey(directory);
-      for (const key of [...directories.keys()]) {
+      for (const key of Array.from(directories.keys())) {
         if (key === prefix || key.startsWith(`${prefix}/`)) {
           directories.delete(key);
         }

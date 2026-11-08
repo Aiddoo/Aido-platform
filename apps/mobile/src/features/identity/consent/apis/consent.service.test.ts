@@ -57,10 +57,7 @@ describe('ConsentService', () => {
       const result = await service.getConsent();
 
       // Then
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.marketingAgreedAt).toBeNull();
-      }
+      expect(result).toMatchObject({ ok: true, value: { marketingAgreedAt: null } });
     });
 
     it('HTTP 에러 → Result.err 반환', async () => {

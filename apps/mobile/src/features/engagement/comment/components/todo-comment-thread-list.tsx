@@ -258,6 +258,7 @@ function useScrollToAnchor({
       return;
     }
 
+    // oxlint-disable-next-line react/set-state-in-effect -- URL로 들어온 댓글을 처음 맞을 때 한 번만 강조를 켠다
     setIsHighlightActive(true);
     const index = threads.findIndex((thread) => thread.comment.id === anchor.threadCommentId);
     if (index >= 0) {
@@ -327,15 +328,20 @@ function DoubleTapHint({ className }: { className?: string }) {
 function PulsingHeart() {
   const isReducedMotion = useIsReduceMotionEnabled();
   const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   useEffect(() => {
     if (isReducedMotion) {
       return;
     }
-    scale.value = withRepeat(
-      withSequence(withDelay(HINT_PULSE.delayMs, withSpring(HINT_PULSE.peakScale)), withSpring(1)),
-      -1,
+    scale.set(
+      withRepeat(
+        withSequence(
+          withDelay(HINT_PULSE.delayMs, withSpring(HINT_PULSE.peakScale)),
+          withSpring(1),
+        ),
+        -1,
+      ),
     );
 
     return () => cancelAnimation(scale);

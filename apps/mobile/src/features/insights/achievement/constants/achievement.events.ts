@@ -22,5 +22,3 @@ declare module '@src/shared/analytics/event-map' {
     badge_opened_from_notification: undefined;
   }
 }
-
-export {};

@@ -83,7 +83,7 @@ describe('createSecureTokenStore', () => {
     const result = tokenStore.save({ accessToken: 'a', refreshToken: 'r' });
 
     // Then
-    await expect(result).rejects.toThrow();
+    await expect(result).rejects.toThrow('keychain write failed');
     expect(storage.set).toHaveBeenCalledWith(STORAGE_KEYS.REFRESH_TOKEN, 'r');
   });
 

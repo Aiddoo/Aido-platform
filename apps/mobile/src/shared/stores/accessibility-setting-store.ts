@@ -39,9 +39,9 @@ export function createAccessibilitySettingStore({
       update(next);
     });
     read()
-      .then((next) => {
+      .then((initialValue) => {
         if (current === session && !hasHeardChange) {
-          update(next);
+          update(initialValue);
         }
       })
       .catch(onReadError);

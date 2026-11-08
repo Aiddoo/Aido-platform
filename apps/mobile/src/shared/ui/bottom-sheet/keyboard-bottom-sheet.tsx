@@ -225,7 +225,7 @@ export function KeyboardBottomSheet({
       hideSubscription.remove();
       appStateSubscription.remove();
     };
-  }, [isOpen, resizeSheet]);
+  }, [isKeyboardShown, isOpen, resizeSheet]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -237,7 +237,7 @@ export function KeyboardBottomSheet({
       isKeyboardShown.set(false);
       isClosingRef.current = false;
     }
-  }, [isOpen]);
+  }, [isKeyboardShown, isOpen]);
 
   useEffect(() => {
     const wasOpen = prevIsOpenRef.current;
@@ -299,6 +299,7 @@ export function KeyboardBottomSheet({
   // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 requestDismiss만 실행한다.
   const backdropTapGesture = useMemo(
     () =>
+      // oxlint-disable-next-line react/refs -- 탭 제스처가 끝날 때만 불리고 렌더 중에는 실행되지 않는다
       Gesture.Tap().onEnd(() => {
         scheduleOnRN(requestDismiss);
       }),

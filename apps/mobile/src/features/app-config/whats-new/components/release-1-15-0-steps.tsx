@@ -2,7 +2,7 @@ import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-not
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Steps } from '@src/shared/ui';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { match } from 'ts-pattern';
@@ -36,12 +36,13 @@ export function Release1150Steps() {
   });
   const isLast = stepper.step === 'voiceNote';
 
-  const goNext = () => {
-    match(stepper.step)
-      .with('voiceTodo', () => stepper.history.push('voiceNote', {}))
+  const { step, history } = stepper;
+  const goNext = useCallback(() => {
+    match(step)
+      .with('voiceTodo', () => history.push('voiceNote', {}))
       .with('voiceNote', () => undefined)
       .exhaustive();
-  };
+  }, [step, history]);
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
   const fling = useMemo(
     () =>

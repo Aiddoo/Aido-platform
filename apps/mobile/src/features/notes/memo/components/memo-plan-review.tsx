@@ -71,7 +71,7 @@ export function MemoPlanReview() {
       toast.warning(t('aiReview.draftLost'));
       goBack();
     }
-  }, [restoredDraft, goBack]);
+  }, [restoredDraft, goBack, toast, t]);
 
   if (restoredDraft == null) {
     return null;

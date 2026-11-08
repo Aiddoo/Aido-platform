@@ -60,12 +60,12 @@ function inspectLayout(
 
 describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
   it.each([
-    ['systemSmall', 0],
-    ['systemMedium', 2],
-    ['systemLarge', 4],
+    ['systemSmall', 0, [], 0],
+    ['systemMedium', 2, ['aido-dev://feed?date=today&action=add-todo', 'aido-dev://todo/1'], 0],
+    ['systemLarge', 4, ['aido-dev://feed?date=today&action=add-todo', 'aido-dev://todo/1'], 7],
   ] as const)(
     '%s는 %i개 할 일을 표시하고 루트 이동 URL을 한 번만 지정한다',
-    (widgetFamily, visibleRows) => {
+    (widgetFamily, visibleRows, todoDestinations, dateDestinationCount) => {
       // Given
       if (!registration) {
         throw new Error('위젯 등록을 찾지 못했습니다');
@@ -114,15 +114,10 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
       expect(titles.filter((title) => title.startsWith('QA 할 일 '))).toHaveLength(visibleRows);
       expect(widgetUrls).toEqual(['aido-dev://feed?date=today']);
       expect(pawColors.filter((color) => color === '#FF6B43').length).toBeGreaterThanOrEqual(2);
-      if (visibleRows > 0) {
-        expect(destinations).toContain('aido-dev://feed?date=today&action=add-todo');
-        expect(destinations).toContain('aido-dev://todo/1');
-      }
-      if (widgetFamily === 'systemLarge') {
-        expect(
-          destinations.filter((url) => url.includes('/feed?date=') && !url.includes('&action=')),
-        ).toHaveLength(7);
-      }
+      expect(destinations).toEqual(expect.arrayContaining([...todoDestinations]));
+      expect(
+        destinations.filter((url) => url.includes('/feed?date=') && !url.includes('&action=')),
+      ).toHaveLength(dateDestinationCount);
     },
   );
 });

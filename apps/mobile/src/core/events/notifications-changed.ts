@@ -12,7 +12,7 @@ export function subscribeNotificationsChanged(listener: () => void): () => void 
 }
 
 export function emitNotificationsChanged(): void {
-  for (const listener of [...listeners]) {
+  for (const listener of Array.from(listeners)) {
     try {
       listener();
     } catch {

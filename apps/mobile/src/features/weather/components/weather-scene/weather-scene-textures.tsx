@@ -159,8 +159,8 @@ function buildLeafVeinPath(): SkPath {
 
 export function useParticleTexture() {
   const { streak, dot, soft, ice, warm, leaf } = PARTICLE_SPRITES;
-  const crystalPath = useMemo(buildCrystalPath, []);
-  const leafVeinPath = useMemo(buildLeafVeinPath, []);
+  const crystalPath = useMemo(() => buildCrystalPath(), []);
+  const leafVeinPath = useMemo(() => buildLeafVeinPath(), []);
   const dotCenter = getCenter(dot);
   const softCenter = getCenter(soft);
   const iceCenter = getCenter(ice);
@@ -270,7 +270,7 @@ export function createCloudSpriteRect(variant: number) {
 
 /** 뭉게구름은 부드러운 구름 알갱이를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
 export function useCloudTexture() {
-  const clusters = useMemo(createCloudClusters, []);
+  const clusters = useMemo(() => createCloudClusters(), []);
   return useOwnedTexture(
     <Group>
       {clusters.map((puffs, variant) => (
@@ -448,7 +448,7 @@ function createSunRays(): SunRay[] {
 
 /** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
 export function useSunRaysTexture() {
-  const rays = useMemo(createSunRays, []);
+  const rays = useMemo(() => createSunRays(), []);
   const center = SUN_RAYS_SIZE / 2;
   return useOwnedTexture(
     <Group

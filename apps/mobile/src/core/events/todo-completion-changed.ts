@@ -18,7 +18,7 @@ export function subscribeTodoCompletionChanged(
 }
 
 export function emitTodoCompletionChanged(change: TodoCompletionChange): void {
-  for (const listener of [...listeners]) {
+  for (const listener of Array.from(listeners)) {
     listener(change);
   }
 }

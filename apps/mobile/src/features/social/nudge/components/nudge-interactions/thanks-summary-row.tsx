@@ -191,7 +191,7 @@ function useThanksCelebration(thankedRecipientCount: number) {
       return;
     }
     scale.set(withSequence(withSpring(1.2, HEART_SPRING), withSpring(1, HEART_SPRING)));
-  }, [thankedRecipientCount, isReducedMotion, scale]);
+  }, [thankedRecipientCount, isReducedMotion, scale, haptics]);
 
   return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 }

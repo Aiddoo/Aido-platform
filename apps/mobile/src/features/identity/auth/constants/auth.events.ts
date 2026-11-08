@@ -14,5 +14,3 @@ declare module '@src/shared/analytics/event-map' {
     session_expired: { reason: SessionExpiredReason };
   }
 }
-
-export {};
