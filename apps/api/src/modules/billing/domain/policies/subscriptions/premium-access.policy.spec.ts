@@ -177,6 +177,7 @@ describe("PremiumAccessPolicy", () => {
           status: "ACTIVE",
           expiresAt: stored.expiresAt,
           gracePeriodEndsAt: stored.gracePeriodEndsAt,
+          periodType: null,
         },
       ]);
     });
@@ -227,6 +228,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 0,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -250,6 +252,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 0,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -271,6 +274,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -292,6 +296,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -316,6 +321,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: true,
         bankedDays: 21,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -337,6 +343,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -359,6 +366,7 @@ describe("PremiumAccessPolicy", () => {
         willRenew: true,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
       });
     });
 
@@ -398,6 +406,139 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(access.source).toBe(source);
       expect(access.bankedDays).toBe(7);
+    });
+  });
+
+  describe("무료 체험 (STORE + periodType TRIAL)", () => {
+    const TRIAL_ENDS = new Date("2028-02-29T00:00:00.000Z");
+
+    it("체험 중이면 출처는 STORE이고 isTrial이며 기간 끝은 스토어 만료 시각 그대로다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: TRIAL_ENDS, periodType: "TRIAL" })],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        willRenew: true,
+        periodEndsAt: TRIAL_ENDS,
+      });
+    });
+
+    it.each([
+      // 1/31 시작 1개월 체험의 끝은 스토어가 정한 2/29(윤년)를 그대로 쓴다
+      { name: "윤년 2/29", expiresAt: "2028-02-29T09:15:00.000Z" },
+      // 월말 시작이 2/28로 줄어도 서버가 길이를 다시 계산하지 않는다
+      { name: "평년 월말 2/28", expiresAt: "2027-02-28T09:15:00.000Z" },
+    ])("$name: 체험 끝은 스토어 expiration_at_ms 그대로다", ({ expiresAt }) => {
+      // Given
+      const ends = new Date(expiresAt);
+      const now = new Date(ends.getTime() - 60_000);
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: ends, periodType: "TRIAL" })],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, now);
+
+      // Then
+      expect(access.periodEndsAt).toEqual(ends);
+      expect(access.endsAt).toEqual(ends);
+    });
+
+    it("체험 중 받은 보상은 쌓아 두고 체험(자동 갱신 대기 3시간)이 끝난 뒤부터 이어 붙인다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: TRIAL_ENDS, periodType: "TRIAL" })],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        bankedDays: 7,
+        periodEndsAt: TRIAL_ENDS,
+        endsAt: new Date("2028-03-07T03:00:00.000Z"),
+      });
+    });
+
+    it("체험을 해지하면 체험 끝에서 바로 쌓아 둔 보상이 이어진다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [
+          store({ status: "CANCELLED", expiresAt: TRIAL_ENDS, periodType: "TRIAL" }),
+        ],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        willRenew: false,
+        endsAt: new Date("2028-03-07T00:00:00.000Z"),
+      });
+    });
+
+    it("해지한 체험이 끝난 뒤 정리하면 보상은 체험이 끝난 시각부터 시작하고 체험이 아니다", () => {
+      // Given
+      const afterTrial = new Date("2028-02-29T00:10:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [
+          store({ status: "CANCELLED", expiresAt: TRIAL_ENDS, periodType: "TRIAL" }),
+        ],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, afterTrial);
+      const access = PremiumAccessPolicy.resolve(
+        {
+          ...entitlements,
+          premiumGrants: [
+            grant({
+              id: "invite",
+              startsAt: TRIAL_ENDS,
+              endsAt: new Date("2028-03-07T00:00:00.000Z"),
+            }),
+          ],
+        },
+        afterTrial,
+      );
+
+      // Then
+      expect(plan.activations).toEqual([{ grantId: "invite", startsAt: TRIAL_ENDS }]);
+      expect(access).toMatchObject({ source: "GRANT", isTrial: false });
+    });
+
+    it("체험이 결제로 넘어가 NORMAL이 되면 체험이 아니다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [
+          store({ expiresAt: new Date("2029-02-28T00:00:00.000Z"), periodType: "NORMAL" }),
+        ],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access.isTrial).toBe(false);
     });
   });
 

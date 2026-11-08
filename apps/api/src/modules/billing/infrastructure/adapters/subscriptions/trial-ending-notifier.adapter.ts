@@ -1,0 +1,79 @@
+import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
+import { Inject, Injectable } from "@nestjs/common";
+
+import {
+  createPremiumTrialEndingNotificationMessage,
+  NotificationPublisher,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+  type NotificationRecipientLocaleReaderPort,
+  type NotificationRecipientTimezoneReaderPort,
+  PUSH_QUIET_HOURS_READER,
+  type PushQuietHoursReaderPort,
+  SCHEDULER_CAMPAIGN_KEY,
+} from "#api/modules/notification/notification-delivery.public";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+
+import type { TrialEndingNotice } from "../../../application/ports/subscriptions/subscription.repository.port.js";
+import type { TrialEndingNotifierPort } from "../../../application/ports/subscriptions/trial-ending-notifier.port.js";
+
+@Injectable()
+export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
+  constructor(
+    private readonly notificationPublisher: NotificationPublisher,
+    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    private readonly localeReader: NotificationRecipientLocaleReaderPort,
+    @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
+    private readonly timezoneReader: NotificationRecipientTimezoneReaderPort,
+    @Inject(PUSH_QUIET_HOURS_READER)
+    private readonly quietHoursReader: PushQuietHoursReaderPort,
+  ) {}
+
+  findUsersInQuietHours(userIds: readonly string[], at: Date): Promise<ReadonlySet<string>> {
+    return this.quietHoursReader.findUsersInQuietHours(userIds, at);
+  }
+
+  async notifyTrialEnding(notices: readonly TrialEndingNotice[], now: Date): Promise<void> {
+    if (notices.length === 0) {
+      return;
+    }
+    const userIds = notices.map((notice) => notice.userId);
+    const [locales, timezones] = await Promise.all([
+      this.localeReader.getLocales(userIds),
+      this.timezoneReader.getTimezones(userIds),
+    ]);
+    await this.notificationPublisher.publishBatch(
+      notices.map((notice) => {
+        const message = createPremiumTrialEndingNotificationMessage({
+          locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
+          timezone: timezones.get(notice.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
+          endsAt: notice.expiresAt,
+          now,
+          willRenew: notice.willRenew,
+          variantContext: {
+            campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_TRIAL_ENDING,
+            recipientId: notice.userId,
+            occurrenceKey: String(notice.subscriptionId),
+          },
+        });
+        return {
+          userId: notice.userId,
+          type: "PREMIUM_TRIAL_ENDING",
+          title: message.title,
+          body: message.body,
+          // 결제 예정·체험 종료는 거래 정보라 광고성 동의 없이 보낸다
+          purpose: "TRANSACTIONAL",
+          campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_TRIAL_ENDING,
+          variantId: message.variantId,
+          // 앱에는 SYSTEM_NOTICE로 가므로 1.13.0+ 앱이 이 경로로 구독 화면을 연다
+          action: {
+            type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
+            url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION,
+          },
+          metadata: { subscriptionId: notice.subscriptionId, willRenew: notice.willRenew },
+        };
+      }),
+    );
+  }
+}

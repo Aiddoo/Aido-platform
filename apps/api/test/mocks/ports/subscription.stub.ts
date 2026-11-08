@@ -16,8 +16,10 @@ import type { SubscriptionWebhookLockPort } from "#api/modules/billing/applicati
 import type {
   CreateSubscriptionData,
   FindLapsedPremiumUsersParams,
+  FindTrialEndingNoticesParams,
   SubscriptionRepositoryPort,
   SubscriptionUser,
+  TrialEndingNotice,
   UpdateSubscriptionStatusData,
   UpdateUserSubscriptionStatusData,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
@@ -38,6 +40,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
   readonly users = new Map<string, SubscriptionUser>();
   readonly subscriptions = new Map<string, SubscriptionProps>();
   readonly lapsedPremiumUserIds: string[] = [];
+  readonly trialEndingNotifiedIds = new Set<number>();
 
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const user = [...this.users.values()].find(
@@ -53,6 +56,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
         revenueCatId: record.revenueCatId,
         status: record.status,
         expiresAt: new Date(record.expiresAt),
+        periodType: record.periodType,
       }));
   }
 
@@ -100,7 +104,46 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: data.lastProcessedEventId ?? null,
+      periodType: data.periodType ?? null,
     });
+  }
+
+  async findTrialEndingNotices(params: FindTrialEndingNoticesParams): Promise<TrialEndingNotice[]> {
+    return [...this.subscriptions.values()]
+      .filter(
+        (record) =>
+          record.periodType === "TRIAL" &&
+          !this.trialEndingNotifiedIds.has(record.id) &&
+          (record.status === "ACTIVE" || record.status === "CANCELLED") &&
+          record.expiresAt.getTime() > params.now.getTime() &&
+          record.expiresAt.getTime() <= params.endsBefore.getTime(),
+      )
+      .sort(
+        (left, right) => left.expiresAt.getTime() - right.expiresAt.getTime() || left.id - right.id,
+      )
+      .filter(
+        (record) =>
+          params.after == null ||
+          record.expiresAt.getTime() > params.after.expiresAt.getTime() ||
+          (record.expiresAt.getTime() === params.after.expiresAt.getTime() &&
+            record.id > params.after.subscriptionId),
+      )
+      .slice(0, params.limit)
+      .map((record) => ({
+        subscriptionId: record.id,
+        userId: record.userId,
+        startedAt: new Date(record.startedAt),
+        expiresAt: new Date(record.expiresAt),
+        willRenew: record.status === "ACTIVE",
+      }));
+  }
+
+  async claimTrialEndingNotices(subscriptionIds: readonly number[]): Promise<number[]> {
+    const claimed = subscriptionIds.filter((id) => !this.trialEndingNotifiedIds.has(id));
+    for (const id of claimed) {
+      this.trialEndingNotifiedIds.add(id);
+    }
+    return claimed;
   }
 
   async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {

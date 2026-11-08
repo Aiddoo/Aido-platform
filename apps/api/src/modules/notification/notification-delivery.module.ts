@@ -18,6 +18,7 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_RECIPIENT_TIMEZONE_READER } from "./application/ports/delivery/notification-recipient-timezone.reader.port.js";
 import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_CAMPAIGN_OUTCOME_READER } from "./application/ports/delivery/push-campaign-outcome.reader.port.js";
@@ -198,6 +199,10 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
       provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
+    {
+      provide: NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+      useExisting: CachedNotificationRecipientPreferenceAdapter,
+    },
     { provide: CLIENT_APP_VERSION_READER, useClass: DrizzleClientAppVersionReader },
     // application 전달 정책 + durable outbox/queue 경계
     pushDeliveryAfterCommitPublisherProvider,
@@ -241,6 +246,7 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     NotificationPublisher,
     NotificationHistoryReader,
     NOTIFICATION_RECIPIENT_LOCALE_READER,
+    NOTIFICATION_RECIPIENT_TIMEZONE_READER,
     CLIENT_APP_VERSION_READER,
     PUSH_QUIET_HOURS_READER,
     NotificationAccountCleanup,

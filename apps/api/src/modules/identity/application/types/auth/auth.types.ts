@@ -112,6 +112,7 @@ export interface CurrentUserResult {
   willRenew?: boolean;
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
+  premiumIsTrial?: boolean;
   isPremium?: boolean;
   entitlements?: PremiumEntitlements;
 }

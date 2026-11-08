@@ -19,6 +19,7 @@ import {
   DEFAULT_META,
   DEVICE_LABELS,
   EVENT_META,
+  LIFECYCLE_EVENT_KEYS,
   PERIOD_TYPE_LABELS,
   PRODUCT_PERIOD_LABELS,
   REASON_LABELS,
@@ -115,7 +116,10 @@ export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): 
     { label: "상품", value: text(productLabel(payload.productId)), inline: true },
     { label: "스토어", value: text(lookup(STORE_LABELS, payload.store)), inline: true },
     { label: "기기", value: text(deviceLabel(payload)), inline: true },
-    { label: "금액", value: text(priceLabel(payload)), inline: true },
+    // 체험 시작은 ₩0 결제가 아니라 끝나는 날이 중요하다
+    eventKey === "subscription.trial_started"
+      ? { label: "체험 끝", value: dateValue(payload.expiresAt), inline: true }
+      : { label: "금액", value: text(priceLabel(payload)), inline: true },
     { label: "환경", value: text(environmentLabel(payload.environment)), inline: true },
     {
       label: "구독 유형",
@@ -164,6 +168,9 @@ export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): 
 function resolveEventKey(payload: SubscriptionAlertInput): SubscriptionEventKey | undefined {
   if (payload.eventType === "CANCELLATION" && payload.cancelReason === REFUND_CANCEL_REASON) {
     return "subscription.refunded";
+  }
+  if (payload.lifecycle != null) {
+    return LIFECYCLE_EVENT_KEYS[payload.lifecycle];
   }
   return REVENUECAT_EVENT_TO_INTERNAL[payload.eventType];
 }

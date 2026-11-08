@@ -1,5 +1,7 @@
 import type { RevenueCatEventType, RevenueCatStore } from "@aido/api/vocabulary";
 
+import type { SubscriptionLifecycle } from "#api/modules/billing/billing-subscriptions.public";
+
 import type { AdminNotificationSeverity } from "../../read-models/notifications/admin-notification.read-model.js";
 
 /** 관리자 알림에서 사용하는 내부 이벤트 키 */
@@ -14,7 +16,11 @@ export type SubscriptionEventKey =
   | "subscription.product_changed"
   | "subscription.refunded"
   | "subscription.extended"
-  | "subscription.transferred";
+  | "subscription.transferred"
+  | "subscription.trial_started"
+  | "subscription.trial_cancelled"
+  | "subscription.trial_converted"
+  | "subscription.trial_expired";
 
 /** RevenueCat 이벤트 타입 → 내부 이벤트 키 매핑 */
 export const REVENUECAT_EVENT_TO_INTERNAL: Partial<
@@ -97,7 +103,35 @@ export const EVENT_META: Record<SubscriptionEventKey, EventMeta> = {
     severity: "info",
     emoji: "🔁",
   },
+  "subscription.trial_started": {
+    title: "무료 체험 시작",
+    severity: "success",
+    emoji: "🧪",
+  },
+  "subscription.trial_cancelled": {
+    title: "체험 해지 (체험 끝까지 이용)",
+    severity: "warning",
+    emoji: "⏸️",
+  },
+  "subscription.trial_converted": {
+    title: "체험 → 유료 전환",
+    severity: "success",
+    emoji: "💰",
+  },
+  "subscription.trial_expired": {
+    title: "체험 종료 (전환 안 됨)",
+    severity: "info",
+    emoji: "📉",
+  },
 };
+
+/** billing이 판단한 무료 체험 단계 → 내부 이벤트 키 */
+export const LIFECYCLE_EVENT_KEYS = {
+  trial_started: "subscription.trial_started",
+  trial_cancelled: "subscription.trial_cancelled",
+  trial_converted: "subscription.trial_converted",
+  trial_expired: "subscription.trial_expired",
+} as const satisfies Record<SubscriptionLifecycle, SubscriptionEventKey>;
 
 export const DEFAULT_META: EventMeta = {
   title: "구독 이벤트",
@@ -120,6 +154,10 @@ export const AUTO_RENEW_LABELS: Partial<Record<SubscriptionEventKey, string>> = 
   "subscription.refunded": "꺼짐",
   "subscription.expired": "꺼짐",
   "subscription.one_time_purchased": "해당 없음 (일회성)",
+  "subscription.trial_started": "켜짐 (체험 끝에 결제)",
+  "subscription.trial_cancelled": "꺼짐",
+  "subscription.trial_converted": "켜짐",
+  "subscription.trial_expired": "꺼짐",
 };
 
 export const STORE_LABELS: Partial<Record<RevenueCatStore, string>> = {

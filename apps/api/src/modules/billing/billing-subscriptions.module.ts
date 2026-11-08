@@ -18,11 +18,13 @@ import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subsc
 import { SUBSCRIPTION_USER_MUTATION_LOCK } from "./application/ports/subscriptions/subscription-user-mutation-lock.port.js";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/subscription-webhook-lock.port.js";
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
+import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
 import {
   handleWebhookEventProvider,
   notifyEndingPremiumGrantsProvider,
+  notifyEndingTrialsProvider,
   premiumAccessProjectorProvider,
   premiumAccessReaderProvider,
   premiumGranterProvider,
@@ -33,6 +35,7 @@ import { PremiumGrantNotifierAdapter } from "./infrastructure/adapters/subscript
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscriptions/subscription-event-notifier.adapter.js";
 import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter.js";
+import { TrialEndingNotifierAdapter } from "./infrastructure/adapters/subscriptions/trial-ending-notifier.adapter.js";
 import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
 import { PremiumGrantSweepJob } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.job.js";
 import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.processor.js";
@@ -72,12 +75,14 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     },
     { provide: PREMIUM_GRANT_REPOSITORY, useClass: DrizzlePremiumGrantRepository },
     { provide: PREMIUM_GRANT_NOTIFIER, useClass: PremiumGrantNotifierAdapter },
+    { provide: TRIAL_ENDING_NOTIFIER, useClass: TrialEndingNotifierAdapter },
     premiumAccessProjectorProvider,
     premiumAccessReaderProvider,
     premiumGranterProvider,
     sweepPremiumGrantsProvider,
     revokePremiumGrantProvider,
     notifyEndingPremiumGrantsProvider,
+    notifyEndingTrialsProvider,
     { provide: PREMIUM_GRANTER, useExisting: PremiumGranter },
     { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },
     PremiumGrantSweepJob,

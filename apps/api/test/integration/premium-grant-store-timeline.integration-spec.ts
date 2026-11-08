@@ -131,6 +131,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: true,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect((await grantsOf())[0]).toMatchObject({ status: "BANKED" });
   });
@@ -152,6 +153,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(await userProjection()).toEqual({
       subscriptionStatus: "ACTIVE",
@@ -188,6 +190,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 0,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
   });
@@ -250,6 +253,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(premiumInsideGrace).toBe(true);
     expect(grantsInsideGrace).toEqual([

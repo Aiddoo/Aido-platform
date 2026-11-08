@@ -11,6 +11,10 @@ import type {
   SubscriptionEnvironment,
 } from "@aido/api/vocabulary";
 
+import type { SubscriptionLifecycle } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
+
+export type { SubscriptionLifecycle };
+
 /**
  * 구독 이벤트 페이로드
  */
@@ -59,6 +63,8 @@ export interface SubscriptionEventPayload {
   appVersion?: string;
   /** 앱이 RevenueCat subscriber attribute(deviceModel)로 남긴 기기 모델 */
   deviceModel?: string;
+  /** 무료 체험 단계(시작·해지·전환·종료). 체험과 관계없는 이벤트는 비운다. */
+  lifecycle?: SubscriptionLifecycle;
   /** 이 사용자의 첫 스토어 구매인지(구매 이벤트만) */
   isFirstPurchase?: boolean;
   /** 이 이벤트로 다시 계산한 보상 기간 상태. 쌓아 둔 보상이 있거나 보상 기간이 이어질 때만 있다. */

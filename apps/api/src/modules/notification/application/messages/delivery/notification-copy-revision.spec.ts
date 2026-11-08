@@ -23,7 +23,7 @@ describe("알림 문구 버전", () => {
     expect(result.metadata).toEqual({
       stage: "10min",
       message: "친구가 직접 쓴 글",
-      copyRevision: "1.14.0",
+      copyRevision: "1.15.0",
     });
     expect(data.metadata).toEqual({ stage: "10min", message: "친구가 직접 쓴 글" });
     expect(result.campaignKey).toBe(data.campaignKey);

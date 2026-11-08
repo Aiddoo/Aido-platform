@@ -1,4 +1,8 @@
-import type { SubscriptionStatus } from "@aido/api/vocabulary";
+import {
+  STORE_PERIOD_TYPE,
+  type StorePeriodType,
+  type SubscriptionStatus,
+} from "@aido/api/vocabulary";
 
 import { isSame } from "#api/shared/domain/date/utils/compare";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -16,6 +20,8 @@ export interface SubscriptionProps {
   gracePeriodEndsAt: Date | null;
   cancelledAt: Date | null;
   lastProcessedEventId: string | null;
+  /** 지금 기간의 스토어 기간 유형. null은 이 값을 저장하기 전에 만든 행(NORMAL)이다. */
+  periodType: StorePeriodType | null;
 }
 
 export type SubscriptionPersistenceState = Pick<
@@ -26,6 +32,7 @@ export type SubscriptionPersistenceState = Pick<
   | "gracePeriodEndsAt"
   | "cancelledAt"
   | "lastProcessedEventId"
+  | "periodType"
 >;
 
 function copyDate(value: Date | null): Date | null {
@@ -45,6 +52,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       gracePeriodEndsAt: copyDate(props.gracePeriodEndsAt),
       cancelledAt: copyDate(props.cancelledAt),
       lastProcessedEventId: props.lastProcessedEventId,
+      periodType: props.periodType,
     });
   }
 
@@ -75,6 +83,13 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   get lastProcessedEventId(): string | null {
     return this.props.lastProcessedEventId;
   }
+  get periodType(): StorePeriodType | null {
+    return this.props.periodType;
+  }
+
+  isTrial(): boolean {
+    return this.props.periodType === STORE_PERIOD_TYPE.TRIAL;
+  }
 
   get persistenceState(): SubscriptionPersistenceState {
     return {
@@ -84,6 +99,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       gracePeriodEndsAt: copyDate(this.props.gracePeriodEndsAt),
       cancelledAt: copyDate(this.props.cancelledAt),
       lastProcessedEventId: this.props.lastProcessedEventId,
+      periodType: this.props.periodType,
     };
   }
 
@@ -99,9 +115,20 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return this.props.lastProcessedEventId === eventId;
   }
 
-  renew(expiresAt: Date, eventId?: string): boolean {
-    if (this.isActiveWithSameExpiry(expiresAt)) {
+  /**
+   * 새 기간으로 갱신한다. 같은 만료 시각의 재전송은 false다. periodType을 비우면 지금 유형을 둔다
+   * (체험 전환 갱신은 NORMAL을 넘긴다).
+   */
+  renew(expiresAt: Date, eventId?: string, periodType?: StorePeriodType): boolean {
+    // 같은 만료의 재전송과 지난 기간의 늦은 갱신은 이미 반영한 기간을 되돌리지 않는다
+    if (
+      this.isActiveWithSameExpiry(expiresAt) ||
+      expiresAt.getTime() < this.props.expiresAt.getTime()
+    ) {
       return false;
+    }
+    if (periodType != null) {
+      this.props.periodType = periodType;
     }
     this.props.status = "ACTIVE";
     this.props.expiresAt = new Date(expiresAt);
@@ -137,13 +164,31 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return true;
   }
 
-  cancel(input: { refunded: boolean; cancelledAt: Date; eventId?: string }): void {
+  /**
+   * 해지·환불을 기록한다. 이미 결제로 넘어간 체인에 늦게 온 체험 기간의 해지(이벤트 기간 유형이 TRIAL인데
+   * 행은 더 이상 체험이 아님)는 갱신된 상태를 되돌리지 않고 false다. 환불은 기간과 관계없이 끝낸다.
+   */
+  cancel(input: {
+    refunded: boolean;
+    cancelledAt: Date;
+    eventId?: string;
+    eventPeriodType?: StorePeriodType | null;
+  }): boolean {
+    if (
+      !input.refunded &&
+      input.eventPeriodType === STORE_PERIOD_TYPE.TRIAL &&
+      this.props.periodType != null &&
+      !this.isTrial()
+    ) {
+      return false;
+    }
     this.props.status = input.refunded ? "EXPIRED" : "CANCELLED";
     if (input.refunded) {
       this.props.gracePeriodEndsAt = null;
     }
     this.props.cancelledAt = new Date(input.cancelledAt);
     this.#recordEvent(input.eventId);
+    return true;
   }
 
   uncancel(expiresAt: Date | undefined, eventId?: string): void {

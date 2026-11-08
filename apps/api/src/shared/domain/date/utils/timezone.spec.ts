@@ -12,6 +12,7 @@ import { vi } from "vitest";
  * ```
  */
 import {
+  calendarDaysBetween,
   DEFAULT_DELIVERY_TIMEZONE,
   firstOfMonthInTimezone,
   firstOfNextMonthInTimezone,
@@ -197,6 +198,38 @@ describe("timezone", () => {
       const date = new Date("2026-02-06T15:30:00Z");
       const result = startOfDayInTimezone(date, "UTC");
       expect(result).toEqual(new Date("2026-02-06T00:00:00.000Z"));
+    });
+  });
+
+  describe("calendarDaysBetween — 사용자 달력 날짜 차이", () => {
+    it.each([
+      {
+        from: "2026-11-09T14:59:00Z",
+        to: "2026-11-12T14:58:00Z",
+        tz: "Asia/Seoul",
+        expected: 3,
+      },
+      { from: "2026-11-09T15:00:00Z", to: "2026-11-12T15:00:00Z", tz: "Asia/Seoul", expected: 3 },
+      // 72시간 1분이라도 서울 자정을 네 번 넘기면 4일이다
+      { from: "2026-11-09T14:59:00Z", to: "2026-11-12T15:00:00Z", tz: "Asia/Seoul", expected: 4 },
+      // 윤일을 지나도 달력 날짜로 센다
+      { from: "2028-02-27T03:00:00Z", to: "2028-03-01T03:00:00Z", tz: "Asia/Seoul", expected: 3 },
+      // LA 서머타임 해제(11월 첫 일요일)는 하루가 25시간이다
+      {
+        from: "2026-10-31T19:00:00Z",
+        to: "2026-11-03T20:00:00Z",
+        tz: "America/Los_Angeles",
+        expected: 3,
+      },
+    ])("$tz $from → $to는 $expected일이다", ({ from, to, tz, expected }) => {
+      // Given
+      const range = { from: new Date(from), to: new Date(to) };
+
+      // When
+      const days = calendarDaysBetween(range.from, range.to, tz);
+
+      // Then
+      expect(days).toBe(expected);
     });
   });
 

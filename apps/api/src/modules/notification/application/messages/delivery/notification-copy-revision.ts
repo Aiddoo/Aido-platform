@@ -1,6 +1,6 @@
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 
-export const NOTIFICATION_COPY_REVISION = "1.14.0";
+export const NOTIFICATION_COPY_REVISION = "1.15.0";
 
 export const withNotificationCopyRevision = (
   data: CreateNotificationData,

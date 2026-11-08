@@ -17,6 +17,7 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
     gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: "seed",
+    periodType: null,
     ...overrides,
   });
 }
@@ -49,6 +50,7 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: "renewal",
+      periodType: null,
     });
   });
 

@@ -57,6 +57,7 @@ export const notificationType = pgEnum("NotificationType", [
   "PREMIUM_GRANT_ENDING",
   "INVITE_PROGRESS",
   "INVITE_QUALIFY_REMINDER",
+  "PREMIUM_TRIAL_ENDING",
 ]);
 export const nudgeReplyKind = pgEnum("NudgeReplyKind", ["STARTING", "THANKFUL", "LATER"]);
 export const platform = pgEnum("Platform", ["IOS", "ANDROID"]);

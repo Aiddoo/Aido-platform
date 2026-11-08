@@ -63,6 +63,26 @@ export const PREMIUM_SOURCE = {
 
 export type PremiumSource = (typeof PREMIUM_SOURCE)[keyof typeof PREMIUM_SOURCE];
 
+/**
+ * RevenueCat period_type. 체험 전용 이벤트는 없고 이 값과 이벤트 종류로 체험을 판단한다.
+ * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
+ */
+export const STORE_PERIOD_TYPES = ["TRIAL", "INTRO", "NORMAL", "PROMOTIONAL", "PREPAID"] as const;
+
+export type StorePeriodType = (typeof STORE_PERIOD_TYPES)[number];
+
+/** STORE_PERIOD_TYPES의 값을 이름으로 가리킨다. */
+export const STORE_PERIOD_TYPE = {
+  TRIAL: "TRIAL",
+  INTRO: "INTRO",
+  NORMAL: "NORMAL",
+  PROMOTIONAL: "PROMOTIONAL",
+  PREPAID: "PREPAID",
+} as const satisfies Record<StorePeriodType, StorePeriodType>;
+
+/** 무료 체험이 끝나기 며칠 전에 한 번 알릴지. 체험이 이보다 짧게 남은 채 시작했으면 알리지 않는다. */
+export const PREMIUM_TRIAL_ENDING_NOTICE_DAYS = 3;
+
 /** 보상 기간이 끝나기 며칠 전에 안내할지. 서버 PREMIUM_GRANT_ENDING 푸시와 앱 안내가 같은 값을 쓴다. */
 export const PREMIUM_GRANT_ENDING_NOTICE_DAYS = 1;
 

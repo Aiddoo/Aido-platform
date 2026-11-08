@@ -224,6 +224,12 @@ export const currentUserSchema = z
       .describe(
         "마지막 보상 기간이 끝난 시각입니다 (ISO 8601 UTC). 지금 프리미엄이 아니고 최근 7일 안에 끝났을 때만 값이 있고, 그 밖에는 null입니다. 구버전 서버는 생략합니다.",
       ),
+    premiumIsTrial: z
+      .boolean()
+      .optional()
+      .describe(
+        "지금 프리미엄이 스토어 무료 체험 기간인지입니다. premiumSource가 STORE이고 스토어가 알려 준 기간 유형이 TRIAL이면 true입니다. 체험이 끝나는 시각은 premiumPeriodEndsAt(스토어 expiration_at_ms)이고 서버가 체험 길이를 계산하지 않습니다. 결제로 넘어가면 false입니다. 1.15.0+ 서버이며 구버전 서버는 생략합니다.",
+      ),
     isPremium: z
       .boolean()
       .optional()
@@ -258,6 +264,7 @@ export const currentUserSchema = z
       willRenew: false,
       bankedPremiumDays: 0,
       premiumGrantEndedAt: null,
+      premiumIsTrial: false,
       isPremium: false,
     },
   });

@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gt, ne, isNull, not } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lte, ne, not, sql } from "drizzle-orm";
 
 import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
@@ -12,13 +12,16 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type {
   CreateSubscriptionData,
   FindLapsedPremiumUsersParams,
+  FindTrialEndingNoticesParams,
   SubscriptionRepositoryPort,
   SubscriptionUser,
+  TrialEndingNotice,
   UpdateSubscriptionStatusData,
   UpdateUserSubscriptionStatusData,
 } from "../../../application/ports/subscriptions/subscription.repository.port.js";
 import { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
 import type { StoreSubscriptionEntitlement } from "../../../domain/policies/subscriptions/premium-access.policy.js";
+import { toStorePeriodType } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
 
 /**
  * 구독 저장소 Drizzle 어댑터.
@@ -52,10 +55,13 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
         gracePeriodEndsAt: true,
         cancelledAt: true,
         lastProcessedEventId: true,
+        periodType: true,
       },
       where: { revenueCatId },
     });
-    return row == null ? null : Subscription.reconstitute(row);
+    return row == null
+      ? null
+      : Subscription.reconstitute({ ...row, periodType: toStorePeriodType(row.periodType) });
   }
 
   /**
@@ -80,10 +86,66 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
   }
 
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
-    return this.db.query.subscription.findMany({
-      columns: { revenueCatId: true, status: true, expiresAt: true, gracePeriodEndsAt: true },
+    const rows = await this.db.query.subscription.findMany({
+      columns: {
+        revenueCatId: true,
+        status: true,
+        expiresAt: true,
+        gracePeriodEndsAt: true,
+        periodType: true,
+      },
       where: { userId, deletedAt: { isNull: true } },
     });
+    return rows.map((row) => ({ ...row, periodType: toStorePeriodType(row.periodType) }));
+  }
+
+  async findTrialEndingNotices(params: FindTrialEndingNoticesParams): Promise<TrialEndingNotice[]> {
+    const rows = await this.db
+      .select({
+        subscriptionId: subscription.id,
+        userId: subscription.userId,
+        startedAt: subscription.startedAt,
+        expiresAt: subscription.expiresAt,
+        status: subscription.status,
+      })
+      .from(subscription)
+      .where(
+        and(
+          eq(subscription.periodType, "TRIAL"),
+          isNull(subscription.trialEndingNotifiedAt),
+          isNull(subscription.deletedAt),
+          inArray(subscription.status, ["ACTIVE", "CANCELLED"]),
+          gt(subscription.expiresAt, params.now),
+          lte(subscription.expiresAt, params.endsBefore),
+          params.after == null
+            ? undefined
+            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
+        ),
+      )
+      .orderBy(asc(subscription.expiresAt), asc(subscription.id))
+      .limit(params.limit);
+    return rows.map(({ status, ...row }) => ({ ...row, willRenew: status === "ACTIVE" }));
+  }
+
+  async claimTrialEndingNotices(
+    subscriptionIds: readonly number[],
+    notifiedAt: Date,
+  ): Promise<number[]> {
+    if (subscriptionIds.length === 0) {
+      return [];
+    }
+    const claimed = await this.db
+      .update(subscription)
+      .set({ trialEndingNotifiedAt: notifiedAt })
+      .where(
+        and(
+          inArray(subscription.id, [...subscriptionIds]),
+          isNull(subscription.trialEndingNotifiedAt),
+          eq(subscription.periodType, "TRIAL"),
+        ),
+      )
+      .returning({ id: subscription.id });
+    return claimed.map((row) => row.id);
   }
 
   async findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]> {
@@ -116,6 +178,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       expiresAt: data.expiresAt,
       lastProcessedEventId: data.lastProcessedEventId,
       environment: data.environment,
+      periodType: data.periodType,
     });
   }
 

@@ -8,6 +8,7 @@ import {
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { NotificationRecord } from "../../../../application/read-models/delivery/notification.read-model.js";
+import { toWireNotificationType } from "../../../../domain/services/delivery/notification-client-capability.js";
 
 export abstract class NotificationMapper {
   static toDto(notification: NotificationRecord): NotificationDto {
@@ -29,7 +30,7 @@ export abstract class NotificationMapper {
     return {
       id: notification.id,
       userId: notification.userId,
-      type: notification.type,
+      type: toWireNotificationType(notification.type),
       title: notification.title,
       body: notification.body,
       isRead: notification.isRead,

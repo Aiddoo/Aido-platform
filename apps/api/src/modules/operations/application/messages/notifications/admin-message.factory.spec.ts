@@ -307,4 +307,74 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     expect(message.link).toBe(customerUrl);
     expect(message.fields?.map((field) => field.label)).not.toContain("RevenueCat");
   });
+
+  describe("무료 체험 단계", () => {
+    const trialStart: SubscriptionAlertInput = {
+      ...purchase,
+      productId: "aido_premium_yearly",
+      periodType: "TRIAL",
+      priceUsd: 0,
+      priceInPurchasedCurrency: 0,
+      expiresAt: "2026-12-09T00:00:00.000Z",
+      lifecycle: "trial_started",
+    };
+
+    it("체험 시작은 ₩0 새 구매가 아니라 무료 체험 시작과 체험 끝 날짜로 표시한다", () => {
+      // Given
+      const payload = trialStart;
+
+      // When
+      const message = buildSubscriptionEventMessage(payload);
+
+      // Then
+      expect(message.title).toBe("🧪 무료 체험 시작");
+      expect(message.severity).toBe("success");
+      expect(message.fields?.map((field) => field.label)).not.toContain("금액");
+      expect(message.fields?.find((field) => field.label === "체험 끝")?.value).toEqual({
+        kind: "datetime",
+        iso: "2026-12-09T00:00:00.000Z",
+      });
+      expect(fieldText(message, "자동 갱신")).toBe("켜짐 (체험 끝에 결제)");
+    });
+
+    it.each([
+      {
+        lifecycle: "trial_cancelled" as const,
+        eventType: "CANCELLATION",
+        title: "⏸️ 체험 해지 (체험 끝까지 이용)",
+      },
+      { lifecycle: "trial_converted" as const, eventType: "RENEWAL", title: "💰 체험 → 유료 전환" },
+      {
+        lifecycle: "trial_expired" as const,
+        eventType: "EXPIRATION",
+        title: "📉 체험 종료 (전환 안 됨)",
+      },
+    ])("$lifecycle은 같은 양식에 $title 제목을 쓴다", ({ lifecycle, eventType, title }) => {
+      // Given
+      const payload = { ...trialStart, eventType, lifecycle, priceInPurchasedCurrency: 29_900 };
+
+      // When
+      const message = buildSubscriptionEventMessage(payload);
+
+      // Then
+      expect(message.title).toBe(title);
+      expect(message.fields?.map((field) => field.label)).toContain("금액");
+    });
+
+    it("체험 중 환불은 체험 해지보다 환불로 먼저 표시한다", () => {
+      // Given
+      const payload = {
+        ...trialStart,
+        eventType: "CANCELLATION",
+        cancelReason: "CUSTOMER_SUPPORT",
+        lifecycle: "trial_cancelled" as const,
+      };
+
+      // When
+      const message = buildSubscriptionEventMessage(payload);
+
+      // Then
+      expect(message.title).toBe("↩️ 구독 환불");
+    });
+  });
 });

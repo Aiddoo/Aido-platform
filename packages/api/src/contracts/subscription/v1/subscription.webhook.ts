@@ -28,6 +28,10 @@ export const revenueCatEventSchema = z.looseObject({
   original_transaction_id: z.string().optional(),
   is_family_share: z.boolean().optional(),
   cancel_reason: z.string().optional(),
+  /** EXPIRATION의 만료 사유 (UNSUBSCRIBE·BILLING_ERROR 등). 형식이 달라도 이벤트 처리는 막지 않는다 */
+  expiration_reason: z.string().optional().catch(undefined),
+  /** 무료 체험이 끝나 첫 결제로 넘어간 RENEWAL이면 true. 형식이 다르면 전환이 아닌 것으로 본다 */
+  is_trial_conversion: z.boolean().optional().catch(undefined),
   price: z.number().optional(),
   currency: z.string().optional(),
   price_in_purchased_currency: z.number().optional(),

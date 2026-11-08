@@ -1,7 +1,49 @@
 import { isSemanticVersionAtLeast } from "@aido/api";
-import { NOTIFICATION_TYPE } from "@aido/api/vocabulary";
+import {
+  CATEGORY_TYPE_MAP,
+  NOTIFICATION_TYPE,
+  type NotificationCategory,
+  type NotificationType as WireNotificationType,
+} from "@aido/api/vocabulary";
 
 import type { NotificationType } from "../../types/delivery/notification-type.js";
+
+/**
+ * 앱 계약(@aido/api NOTIFICATION_TYPE)에 없는 서버 전용 타입과 앱에 보낼 타입. 저장·중복 방지·분석은
+ * 서버 타입으로 하고, 푸시 type과 알림함은 모든 앱 버전이 아는 타입으로 보낸다(이동은 action url·navigation).
+ */
+const WIRE_NOTIFICATION_TYPE = {
+  PREMIUM_TRIAL_ENDING: NOTIFICATION_TYPE.SYSTEM_NOTICE,
+} as const satisfies Partial<Record<NotificationType, WireNotificationType>>;
+
+/** 알림함 조회에서 계약 타입과 함께 고를 서버 전용 타입과 그 카테고리 */
+const SERVER_ONLY_NOTIFICATIONS: readonly {
+  readonly type: NotificationType;
+  readonly category: Exclude<NotificationCategory, "ALL">;
+}[] = [{ type: "PREMIUM_TRIAL_ENDING", category: "NOTICE" }];
+
+const SERVER_ONLY_NOTIFICATION_TYPES = SERVER_ONLY_NOTIFICATIONS.map(({ type }) => type);
+
+/** 카테고리 필터의 저장 타입. 계약 표(CATEGORY_TYPE_MAP)에 서버 전용 타입을 더한다. */
+export function notificationTypesOfCategory(
+  category: Exclude<NotificationCategory, "ALL">,
+): NotificationType[] {
+  return [
+    ...CATEGORY_TYPE_MAP[category],
+    ...SERVER_ONLY_NOTIFICATIONS.filter((item) => item.category === category).map(
+      ({ type }) => type,
+    ),
+  ];
+}
+
+function isWireNotificationType(type: NotificationType): type is WireNotificationType {
+  return Object.hasOwn(NOTIFICATION_TYPE, type);
+}
+
+/** 푸시 data와 알림함 응답에 실을 타입 */
+export function toWireNotificationType(type: NotificationType): WireNotificationType {
+  return isWireNotificationType(type) ? type : WIRE_NOTIFICATION_TYPE[type];
+}
 
 /** 이 버전보다 낮은 앱은 해당 알림을 해석하지 못해 알림함과 푸시에서 뺀다. */
 const NOTIFICATION_MIN_APP_VERSION = {
@@ -72,7 +114,7 @@ export function visibleNotificationTypes(
   if (resolveNotificationInboxScope(appVersion) === "all") {
     return types ? [...types] : undefined;
   }
-  return (types ?? Object.values(NOTIFICATION_TYPE)).filter((type) =>
-    supportsNotificationType(type, appVersion),
+  return (types ?? [...Object.values(NOTIFICATION_TYPE), ...SERVER_ONLY_NOTIFICATION_TYPES]).filter(
+    (type) => supportsNotificationType(type, appVersion),
   );
 }

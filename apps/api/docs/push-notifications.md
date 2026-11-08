@@ -6,17 +6,17 @@
 
 서버 발송에는 활성 Expo 토큰과 `pushEnabled=true`가 필요하다. OS 알림 권한과 실제 기기 도착은 서버 ticket/receipt만으로 보장하지 못한다. 알림 레코드 생성과 실제 푸시 전송은 분리되어 있으므로, 푸시가 차단돼도 앱 안 알림함 기록은 남을 수 있다.
 
-| 정책             | 기준                                                                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 일반 빈도 제한   | 사용자당 최근 1시간 최대 15회                                                                                                                                              |
-| 참여 유도 제한   | 로컬 날짜 기준 하루 최대 2회, 발송 사이 최소 4시간                                                                                                                         |
-| 참여 유도 대상   | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `AI_SUGGESTION`, `PREMIUM_GRANT_ENDING`, `INVITE_QUALIFY_REMINDER` |
-| 광고성 푸시 동의 | 참여 유도 대상은 `marketingPushAgreedAt`이 있어야 함                                                                                                                       |
-| 야간 시간        | 21:00 이상 08:00 미만                                                                                                                                                      |
-| 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음                                                                                                                                         |
-| 야간 일반 푸시   | `nightPushEnabled=true`일 때 발송                                                                                                                                          |
-| 야간 예외        | 사용자가 시각을 정한 `WEATHER_MORNING`, `WEATHER_EVENING`                                                                                                                  |
-| Redis 장애       | 기존 정책대로 fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용                                                                                                         |
+| 정책             | 기준                                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 일반 빈도 제한   | 사용자당 최근 1시간 최대 15회                                                                                                                      |
+| 참여 유도 제한   | 로컬 날짜 기준 하루 최대 2회, 발송 사이 최소 4시간                                                                                                 |
+| 참여 유도 대상   | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `AI_SUGGESTION`, `INVITE_QUALIFY_REMINDER` |
+| 광고성 푸시 동의 | 참여 유도 대상은 `marketingPushAgreedAt`이 있어야 함                                                                                               |
+| 야간 시간        | 21:00 이상 08:00 미만                                                                                                                              |
+| 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음                                                                                                                 |
+| 야간 일반 푸시   | `nightPushEnabled=true`일 때 발송                                                                                                                  |
+| 야간 예외        | 사용자가 시각을 정한 `WEATHER_MORNING`, `WEATHER_EVENING`                                                                                          |
+| Redis 장애       | 기존 정책대로 fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용                                                                                 |
 
 기본 제한 저장소는 PostgreSQL이다. Redis backend를 선택한 경우 배치는 하나의 Lua 실행으로 입력 순서대로 예약하며 기존 fail-open 의미를 유지한다. 동일 dispatch retry는 reservation을 재사용하고, 저장소 선택과 새 delivery attempt를 혼동하지 않는다.
 
@@ -41,6 +41,7 @@
 | 사용자 설정 오후 시각        | `EVENING_REMINDER`        |         - |               O | 시간·분 커스텀, 하루 1회                                                                                                                                                                         |
 | 20:15                        | `STREAK_AT_RISK`          |         O |               O | 유효 스트릭 3일 이상이며 오늘 미완료                                                                                                                                                             |
 | 10분 주기(UTC)               | `PREMIUM_GRANT_ENDING`    |         O |               O | 스토어 구독 없이 보상 기간만으로 프리미엄인 마지막 기간이 24시간 안에 끝날 때 기간마다 1회. 야간이면 다음 허용 시각 실행으로 미룬다                                                              |
+| 10분 주기(UTC)               | `PREMIUM_TRIAL_ENDING`    |         - |               O | 스토어 무료 체험(`periodType=TRIAL`)이 3일 안에 끝날 때 체인마다 1회. 시작할 때 이미 3일 이하였으면 보내지 않는다. 야간이면 다음 허용 시각 실행으로 미룬다(아래)                                 |
 | 저녁 리마인더 +90분          | `SOCIAL_DIGEST`           |         O |               O | 직전 저녁 리마인더 알림 생성 대상 중 본인 미완료 + 완료 친구 존재. 같은 날 스트릭 위기 수신자는 제외                                                                                             |
 | 18:00 (초대받은 사람 시간대) | `INVITE_QUALIFY_REMINDER` |         O |               O | 초대 정비 작업(03:30 KST)이 예약. JOINED·할 일을 끝낸 날 1일·마감 3일 안·초대한 사람 보상 있음일 때 수락마다 1회(아래)                                                                           |
 
@@ -82,7 +83,8 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 | `STREAK_AT_RISK`          | 스트릭 3일 이상 + 오늘 미완료                                                            | 참여         | 피드                                   |
 | `WEATHER_MORNING`         | 오늘 할 일과 겹친 날씨·오늘 날씨 또는 위치 설정 안내                                     | 서비스       | 날씨 (옮기기 `DEEP_LINK` url, 아래)    |
 | `WEATHER_EVENING`         | 내일 날씨 또는 위치 설정 안내                                                            | 서비스       | 날씨                                   |
-| `PREMIUM_GRANT_ENDING`    | 보상 기간 종료 24시간 전 (1.13.0+)                                                       | 참여         | 구독 화면                              |
+| `PREMIUM_GRANT_ENDING`    | 보상 기간 종료 24시간 전 (1.13.0+). 1.15.0부터 거래 알림(광고성 동의 불필요)             | 거래         | 구독 화면                              |
+| `PREMIUM_TRIAL_ENDING`    | 무료 체험 종료 3일 전. 서버 전용 타입이라 앱에는 `SYSTEM_NOTICE`로 보낸다(아래)          | 거래         | 구독 화면(`/settings/subscription`)    |
 | `INVITE_JOINED`           | 초대받은 사람이 수락해 친구가 됨 (1.13.0+)                                               | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 | `INVITE_REWARDED`         | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 한도를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 | `INVITE_PROGRESS`         | 초대받은 사람이 처음으로 할 일을 끝낸 날 초대한 사람에게 (수락 1건에 1회, 1.13.0+)       | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
@@ -126,6 +128,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 - `INVITE_JOINED`: `InviteRedemption.inviteeId` UNIQUE로 수락 1건에 한 번.
 - `INVITE_REWARDED`: 수락을 REWARDED로 바꾼 실행만 그 수락의 APPLIED 지급 합계로 보낸다. 지급이 나뉘어도 수락마다 한 번이다. 초대받은 사람은 수락 응답에서 보상을 보므로 보내지 않는다.
 - `PREMIUM_GRANT_ENDING`: 같은 트랜잭션에서 `PremiumGrant.endingNotifiedAt`을 기록해 기간마다 한 번.
+- `PREMIUM_TRIAL_ENDING`: `premium-grant-sweep` 잡(같은 큐·잡 이름)이 보상 안내 뒤에 `NotifyEndingTrials`를 돈다. 후보는 `periodType=TRIAL`·`trialEndingNotifiedAt IS NULL`·지금~3일 안에 끝나는 ACTIVE/CANCELLED 행을 `(expiresAt, id)` keyset으로 500건씩 최대 20묶음 읽는다. 시작할 때 이미 3일 이하로 남았거나 현지 야간인 사용자는 표시하지 않는다. 100건씩 `UPDATE … SET trialEndingNotifiedAt WHERE trialEndingNotifiedAt IS NULL RETURNING`으로 표시를 얻은 행만 같은 트랜잭션에 알림을 기록하므로 두 실행이 겹쳐도 한 번만 보낸다. 문구는 자동 갱신이면 "N일 뒤 연간 구독이 시작돼요 / 12월 9일 결제 예정 · 해지는 스토어에서", 해지했으면 "무료 체험이 N일 뒤 끝나요 / 12월 9일까지 이용 · 결제는 없어요"다. N과 날짜는 받는 사람 시간대 달력으로 센다(`calendarDaysBetween`). 체험 끝은 스토어 `expiration_at_ms` 그대로이고 서버가 체험 길이를 계산하지 않는다. 금액은 체험 구매 웹훅에 없어 싣지 않는다.
 - `INVITE_PROGRESS`: 활동일 기록이 수락 행 잠금(`FOR UPDATE`)으로 직렬화되어 활동일이 0→1일로 바뀐 실행만 커밋 뒤 보낸다. 백필하지 않아 지난 소식을 보내지 않는다.
 - `INVITE_QUALIFY_REMINDER`: 정비 작업이 후보(JOINED·미발송·초대한 사람 있음·보상 자격 있음·마감이 지금~3일 안)를 `(expiresAt, id)` keyset으로 500건씩 최대 20묶음 읽고, 할 일을 끝낸 날이 1일인 수락만 초대받은 사람 시간대(미상·UTC는 KST)의 다음 18:00에 `startAfter`로 넣는다(키 `invite-qualify-reminder:<수락>:<발송 시각>`).
   - 보낼 때 수락 행을 잠그고 자격·야간 여부·두 사람이 아직 친구이고 차단이 없는지·초대한 사람이 탈퇴하지 않았는지를 다시 본다. `InviteRedemption.qualifyReminderSentAt`과 알림 기록을 같은 트랜잭션에 남기고 푸시는 커밋 뒤 나간다.
@@ -175,6 +178,8 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. v1.5 계열의 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`은 모두 optional 추가 필드다. 1.14.1의 `navigation`도 optional 추가 필드다. 과거 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0–v1.1, v1.2–v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
+
+앱 계약 enum(`@aido/api` `NOTIFICATION_TYPE`)에 없는 서버 전용 타입(`PREMIUM_TRIAL_ENDING`)은 `notification-client-capability.ts`의 `toWireNotificationType` 한 곳에서 푸시 `type`과 알림함 `type`을 `SYSTEM_NOTICE`로 바꿔 보낸다. 저장·중복 방지·카테고리(`NOTICE`)·`navigation`(`SUBSCRIPTION`)은 서버 타입으로 정하고, `DEEP_LINK` url `/settings/subscription`을 함께 실어 1.13.0+ 앱도 구독 화면을 연다. 그래서 최소 앱 버전이 없고 모든 앱이 받는다.
 
 새 알림 타입의 최소 앱 버전은 `notification-client-capability.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
 

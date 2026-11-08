@@ -198,6 +198,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(await premiumAccess()).toMatchObject({
       source: null,
       recentGrantEndedAt: new Date("2028-02-27T04:00:00.000Z"),
+      isTrial: false,
     });
   });
 
@@ -400,6 +401,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       periodEndsAt: STORE_EXPIRY,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(
       await context.module
@@ -512,6 +514,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       willRenew: false,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(afterPurchase).toEqual({
       source: "STORE",
@@ -520,6 +523,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       willRenew: true,
       bankedDays: 12,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
     expect(await grantsOf(userId)).toEqual([
       {
@@ -542,6 +546,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       endsAt: new Date(STORE_EXPIRY.getTime() + 12 * DAY_MS),
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
   });
 
@@ -663,6 +668,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       willRenew: true,
       bankedDays: 5,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
   });
 

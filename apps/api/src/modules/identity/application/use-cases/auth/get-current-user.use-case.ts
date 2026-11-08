@@ -69,6 +69,7 @@ export class GetCurrentUser {
           willRenew: premiumAccess.willRenew,
           bankedPremiumDays: premiumAccess.bankedDays,
           premiumGrantEndedAt: toISOStringOrNull(premiumAccess.recentGrantEndedAt),
+          premiumIsTrial: premiumAccess.isTrial,
         };
       },
     );
@@ -99,6 +100,7 @@ export class GetCurrentUser {
       willRenew: cachedProfile.willRenew,
       bankedPremiumDays: cachedProfile.bankedPremiumDays,
       premiumGrantEndedAt: cachedProfile.premiumGrantEndedAt,
+      premiumIsTrial: cachedProfile.premiumIsTrial,
       isPremium,
       entitlements,
     };

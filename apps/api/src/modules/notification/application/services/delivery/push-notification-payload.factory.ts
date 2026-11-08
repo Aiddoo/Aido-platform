@@ -1,7 +1,10 @@
 import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
 
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../../domain/services/delivery/feature-marketing-capability.js";
-import { notificationMinAppVersion } from "../../../domain/services/delivery/notification-client-capability.js";
+import {
+  notificationMinAppVersion,
+  toWireNotificationType,
+} from "../../../domain/services/delivery/notification-client-capability.js";
 import { isMarketingNotification } from "../../../domain/services/delivery/push-eligibility.js";
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
@@ -88,7 +91,7 @@ export class PushNotificationPayloadFactory {
 
     return {
       notificationId,
-      type: data.type,
+      type: toWireNotificationType(data.type),
       action: {
         type: action.type,
         ...(action.url && { url: action.url }),

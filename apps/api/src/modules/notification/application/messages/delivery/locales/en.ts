@@ -533,7 +533,29 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
   },
   PREMIUM_GRANT_ENDING: {
-    copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going"),
+    copy: staticCopy("Your Premium ends tomorrow", "See details on the Subscription screen"),
+  },
+  PREMIUM_TRIAL_ENDING_RENEWING: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "Your annual plan starts today"
+          : days === 1
+            ? "Your annual plan starts tomorrow"
+            : `Your annual plan starts in ${days} days`,
+        `Billing on ${date} · Cancel in your store`,
+      ),
+  },
+  PREMIUM_TRIAL_ENDING_CANCELLED: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "Your free trial ends today"
+          : days === 1
+            ? "Your free trial ends tomorrow"
+            : `Your free trial ends in ${days} days`,
+        `Use it until ${date} · No charge`,
+      ),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("Let’s add your first to-do 🌱", "One small thing is all it takes"),

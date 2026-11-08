@@ -139,6 +139,12 @@ export interface SocialCopyVariablesByKey {
 
 export type SocialNotificationCopyCatalog = ExactCatalog<SocialCopyVariablesByKey>;
 
+/** 체험이 끝나기까지 남은 사용자 달력 일수(0 = 오늘)와 그 시간대·언어로 쓴 끝나는 날짜 */
+export interface PremiumTrialEndingCopyVariables {
+  readonly days: number;
+  readonly date: string;
+}
+
 export interface SystemCopyVariablesByKey {
   readonly WINBACK_DAY3: undefined;
   readonly WINBACK_DAY7: undefined;
@@ -153,6 +159,8 @@ export interface SystemCopyVariablesByKey {
   readonly AI_SUGGESTION: undefined;
   readonly BILLING_ISSUE: undefined;
   readonly PREMIUM_GRANT_ENDING: undefined;
+  readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialEndingCopyVariables;
+  readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
   readonly ONBOARDING_DAY0: undefined;
   readonly ONBOARDING_DAY1: undefined;
   readonly ONBOARDING_DAY2: undefined;

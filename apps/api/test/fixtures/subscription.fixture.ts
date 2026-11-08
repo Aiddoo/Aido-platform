@@ -35,6 +35,7 @@ export function createSubscriptionRecord(
     gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: null,
+    periodType: null,
     ...overrides,
   } satisfies SubscriptionProps;
   return {

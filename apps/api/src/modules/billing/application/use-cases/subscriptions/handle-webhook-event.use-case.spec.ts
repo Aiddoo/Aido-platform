@@ -85,6 +85,135 @@ describe("HandleWebhookEvent", () => {
     },
   );
 
+  describe("무료 체험", () => {
+    const TRIAL_EXPIRY = new Date(SUBSCRIPTION_TIME.getTime() + 31 * 24 * 60 * 60 * 1_000);
+    const NEXT_YEAR = new Date(TRIAL_EXPIRY.getTime() + 365 * 24 * 60 * 60 * 1_000);
+
+    function trialPurchase() {
+      const body = payloadFor(
+        SubscriptionEventBuilder.initialPurchase().withPeriodType("TRIAL").withPrice(0),
+        "trial-start",
+      );
+      body.event.expiration_at_ms = TRIAL_EXPIRY.getTime();
+      return body;
+    }
+
+    function conversion() {
+      const body = payloadFor(
+        SubscriptionEventBuilder.renewal().withTrialConversion().withPrice(19.99, "KRW", 29_900),
+        "trial-converted",
+      );
+      body.event.expiration_at_ms = NEXT_YEAR.getTime();
+      return body;
+    }
+
+    function trialCancellation() {
+      const body = payloadFor(
+        SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
+        "trial-cancel",
+      );
+      body.event.expiration_at_ms = TRIAL_EXPIRY.getTime();
+      return body;
+    }
+
+    it("TRIAL 구매는 체험으로 저장하고 스토어 만료 시각까지 프리미엄이며 체험 시작으로 알린다", async () => {
+      // Given
+      const body = trialPurchase();
+
+      // When
+      await useCase.execute({ body });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ periodType: "TRIAL", status: "ACTIVE", expiresAt: TRIAL_EXPIRY });
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: TRIAL_EXPIRY,
+      });
+      expect(fixture.notifier.events).toEqual([
+        expect.objectContaining({ lifecycle: "trial_started", periodType: "TRIAL" }),
+      ]);
+    });
+
+    it("체험 전환 갱신은 NORMAL로 바꾸고 다음 결제일까지 연장한다", async () => {
+      // Given
+      await useCase.execute({ body: trialPurchase() });
+
+      // When
+      await useCase.execute({ body: conversion() });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ periodType: "NORMAL", status: "ACTIVE", expiresAt: NEXT_YEAR });
+      expect(fixture.notifier.events.map((event) => event.lifecycle)).toEqual([
+        "trial_started",
+        "trial_converted",
+      ]);
+    });
+
+    it("전환 뒤 늦게 온 체험 해지·체험 만료는 결제된 구독을 되돌리지 않는다", async () => {
+      // Given
+      await useCase.execute({ body: trialPurchase() });
+      await useCase.execute({ body: conversion() });
+      const lateExpiration = payloadFor(
+        SubscriptionEventBuilder.expiration()
+          .withPeriodType("TRIAL")
+          .withExpirationReason("UNSUBSCRIBE"),
+        "trial-expired",
+      );
+      lateExpiration.event.expiration_at_ms = TRIAL_EXPIRY.getTime();
+
+      // When
+      await useCase.execute({ body: trialCancellation() });
+      await useCase.execute({ body: lateExpiration });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ periodType: "NORMAL", status: "ACTIVE", expiresAt: NEXT_YEAR });
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: NEXT_YEAR,
+      });
+      expect(fixture.notifier.events.map((event) => event.lifecycle)).toEqual([
+        "trial_started",
+        "trial_converted",
+      ]);
+    });
+
+    it("지난 기간의 늦은 갱신은 이미 반영한 다음 결제일을 앞당기지 않는다", async () => {
+      // Given
+      await useCase.execute({ body: trialPurchase() });
+      await useCase.execute({ body: conversion() });
+      const stale = payloadFor(SubscriptionEventBuilder.renewal(), "stale-renewal");
+      stale.event.expiration_at_ms = TRIAL_EXPIRY.getTime() - 1;
+
+      // When
+      await useCase.execute({ body: stale });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ expiresAt: NEXT_YEAR, lastProcessedEventId: "trial-converted" });
+    });
+
+    it("체험 중 해지는 체험 끝까지 이용하고 체험 해지로 알린다", async () => {
+      // Given
+      await useCase.execute({ body: trialPurchase() });
+
+      // When
+      await useCase.execute({ body: trialCancellation() });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ periodType: "TRIAL", status: "CANCELLED", expiresAt: TRIAL_EXPIRY });
+      expect(fixture.notifier.events.at(-1)).toMatchObject({ lifecycle: "trial_cancelled" });
+    });
+  });
+
   it("취소 이벤트가 철회 뒤에 다시 도착해도 구독을 되돌리거나 알림을 중복하지 않는다", async () => {
     // Given
     givenSubscription();

@@ -7,6 +7,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 
 import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
 import { NotifyEndingPremiumGrants } from "../../../application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
+import { NotifyEndingTrials } from "../../../application/use-cases/subscriptions/notify-ending-trials.use-case.js";
 import { SweepPremiumGrants } from "../../../application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 import {
   PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
@@ -22,6 +23,8 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
     private readonly sweepPremiumGrants: Pick<SweepPremiumGrants, "execute">,
     @Inject(NotifyEndingPremiumGrants)
     private readonly notifyEndingPremiumGrants: Pick<NotifyEndingPremiumGrants, "execute">,
+    @Inject(NotifyEndingTrials)
+    private readonly notifyEndingTrials: Pick<NotifyEndingTrials, "execute">,
     @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
   ) {}
 
@@ -39,6 +42,8 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
       // 끝난 기간을 먼저 닫아야 안내 대상이 마지막 기간만 남는다
       await this.sweepPremiumGrants.execute({ now: at });
       await this.notifyEndingPremiumGrants.execute({ now: at });
+      // 같은 10분 주기에 체험 종료 안내를 붙인다. 잡 이름·payload는 그대로다
+      await this.notifyEndingTrials.execute({ now: at });
     } catch (error) {
       this.#logger.error({
         event: BillingLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,

@@ -52,6 +52,7 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
   willRenew: z.boolean().optional(),
   bankedPremiumDays: z.number().optional(),
   premiumGrantEndedAt: z.string().nullable().optional(),
+  premiumIsTrial: z.boolean().optional(),
 }) satisfies z.ZodType<AuthCachedUserProfile>;
 
 @Injectable()

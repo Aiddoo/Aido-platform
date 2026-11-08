@@ -6709,6 +6709,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "name": "매튜",
         "premiumEndsAt": null,
         "premiumGrantEndedAt": null,
+        "premiumIsTrial": false,
         "premiumPeriodEndsAt": null,
         "premiumSource": null,
         "profileImage": "https://example.com/profiles/matthew.jpg",
@@ -7089,6 +7090,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "nullable": true,
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
+        },
+        "premiumIsTrial": {
+          "description": "지금 프리미엄이 스토어 무료 체험 기간인지입니다. premiumSource가 STORE이고 스토어가 알려 준 기간 유형이 TRIAL이면 true입니다. 체험이 끝나는 시각은 premiumPeriodEndsAt(스토어 expiration_at_ms)이고 서버가 체험 길이를 계산하지 않습니다. 결제로 넘어가면 false입니다. 1.15.0+ 서버이며 구버전 서버는 생략합니다.",
+          "type": "boolean",
         },
         "premiumPeriodEndsAt": {
           "description": "지금 출처의 기간만 끝나는 시각입니다 (ISO 8601 UTC). 쌓아 둔 보상은 넣지 않습니다. STORE면 스토어 구독 만료 시각(자동 갱신이면 다음 결제 예정 시각), GRANT면 진행 중인 보상 기간의 끝입니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",

@@ -29,6 +29,8 @@ export interface AuthCachedUserProfile {
   willRenew?: boolean;
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
+  /** 1.15.0 이전 캐시에는 없다. 없으면 응답에서도 생략한다. */
+  premiumIsTrial?: boolean;
 }
 
 export interface AuthCachedSession {

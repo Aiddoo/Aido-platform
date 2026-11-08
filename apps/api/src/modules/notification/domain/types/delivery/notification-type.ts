@@ -36,4 +36,6 @@ export type NotificationType =
   | "INVITE_REWARDED"
   | "INVITE_PROGRESS"
   | "INVITE_QUALIFY_REMINDER"
-  | "PREMIUM_GRANT_ENDING";
+  | "PREMIUM_GRANT_ENDING"
+  /** 서버 전용. 앱 계약 enum에 없어 푸시·알림함에는 SYSTEM_NOTICE로 보낸다(toWireNotificationType). */
+  | "PREMIUM_TRIAL_ENDING";

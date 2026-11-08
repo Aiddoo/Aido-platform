@@ -1,3 +1,4 @@
+import { calendarDaysBetween, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
@@ -82,6 +83,51 @@ export function createPremiumGrantEndingNotificationMessage({
     template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.PREMIUM_GRANT_ENDING,
     variables: undefined,
   });
+}
+
+export interface PremiumTrialEndingNotificationInput {
+  readonly locale: SupportedLocale;
+  /** 받는 사람 시간대. 남은 일수와 날짜를 이 달력으로 센다. */
+  readonly timezone: string;
+  /** 스토어가 알려 준 체험 끝(expiration_at_ms) */
+  readonly endsAt: Date;
+  readonly now: Date;
+  /** 해지하지 않아 체험이 끝나면 결제가 이어지는지 */
+  readonly willRenew: boolean;
+  readonly variantContext?: NotificationVariantContext;
+}
+
+const TRIAL_END_DATE_FORMAT = {
+  ko: { month: "long", day: "numeric" },
+  en: { month: "short", day: "numeric" },
+} as const satisfies Record<SupportedLocale, Intl.DateTimeFormatOptions>;
+
+/** 체험 종료 안내. 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). */
+export function createPremiumTrialEndingNotificationMessage(
+  input: PremiumTrialEndingNotificationInput,
+): NotificationMessage {
+  const templates = LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES;
+  const timeZone = resolveTimezone(input.timezone);
+  const variables = {
+    days: calendarDaysBetween(input.now, input.endsAt, timeZone),
+    date: new Intl.DateTimeFormat(input.locale, {
+      ...TRIAL_END_DATE_FORMAT[input.locale],
+      timeZone,
+    }).format(input.endsAt),
+  };
+  return input.willRenew
+    ? renderLocalizedNotification({
+        template: templates.PREMIUM_TRIAL_ENDING_RENEWING,
+        variables,
+        variantContext: input.variantContext,
+        templateKey: "premium_trial_ending.renewing",
+      })
+    : renderLocalizedNotification({
+        template: templates.PREMIUM_TRIAL_ENDING_CANCELLED,
+        variables,
+        variantContext: input.variantContext,
+        templateKey: "premium_trial_ending.cancelled",
+      });
 }
 
 export function createWinbackNotificationMessage({

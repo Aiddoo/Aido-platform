@@ -43,7 +43,8 @@ export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
           type: "PREMIUM_GRANT_ENDING",
           title: message.title,
           body: message.body,
-          purpose: "ENGAGEMENT",
+          // 받고 있는 보상 기간이 끝난다는 거래 정보라 광고성 동의 없이 보낸다
+          purpose: "TRANSACTIONAL",
           campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_GRANT_ENDING,
           variantId: message.variantId,
         };

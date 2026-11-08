@@ -571,7 +571,29 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해주세요"),
   },
   PREMIUM_GRANT_ENDING: {
-    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요."),
+    copy: staticCopy("내일 프리미엄이 끝나요", "남은 기간은 구독 화면에서 볼 수 있어요"),
+  },
+  PREMIUM_TRIAL_ENDING_RENEWING: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "오늘 연간 구독이 시작돼요"
+          : days === 1
+            ? "내일 연간 구독이 시작돼요"
+            : `${days}일 뒤 연간 구독이 시작돼요`,
+        `${date} 결제 예정 · 해지는 스토어에서`,
+      ),
+  },
+  PREMIUM_TRIAL_ENDING_CANCELLED: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "오늘 무료 체험이 끝나요"
+          : days === 1
+            ? "내일 무료 체험이 끝나요"
+            : `무료 체험이 ${days}일 뒤 끝나요`,
+        `${date}까지 이용 · 결제는 없어요`,
+      ),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 적어볼까요? 🌱", "지금 떠오르는 작은 일 하나면 충분해요"),

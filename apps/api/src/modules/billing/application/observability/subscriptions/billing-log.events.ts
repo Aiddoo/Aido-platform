@@ -17,6 +17,7 @@ export const BillingLogEvent = {
   PREMIUM_GRANT_RECONCILE_FAILED: "billing.premium-grant.reconcile.failed",
   PREMIUM_GRANT_CACHE_INVALIDATION_FAILED: "billing.premium-grant.cache-invalidation.failed",
   PREMIUM_GRANT_ENDING_NOTIFIED: "billing.premium-grant.ending.notified",
+  TRIAL_ENDING_NOTIFIED: "billing.subscription.trial-ending.notified",
   PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED: "billing.premium-grant.sweep.scheduler.registered",
   PREMIUM_GRANT_SWEEP_JOB_FAILED: "billing.premium-grant.sweep.job.failed",
 } as const;

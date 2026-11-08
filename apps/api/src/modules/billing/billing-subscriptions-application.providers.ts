@@ -10,11 +10,13 @@ import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subsc
 import { SUBSCRIPTION_USER_MUTATION_LOCK } from "./application/ports/subscriptions/subscription-user-mutation-lock.port.js";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/subscription-webhook-lock.port.js";
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
+import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
 import { PremiumAccessProjector } from "./application/services/subscriptions/premium-access-projector.service.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
 import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle-webhook-event.use-case.js";
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
+import { NotifyEndingTrials } from "./application/use-cases/subscriptions/notify-ending-trials.use-case.js";
 import { RevokePremiumGrant } from "./application/use-cases/subscriptions/revoke-premium-grant.use-case.js";
 import { SweepPremiumGrants } from "./application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 
@@ -157,6 +159,24 @@ export const notifyEndingPremiumGrantsProvider: FactoryProvider<NotifyEndingPrem
       notifier,
       unitOfWork,
       logger: new Logger(NotifyEndingPremiumGrants.name),
+    }),
+};
+
+export const notifyEndingTrialsProvider: FactoryProvider<NotifyEndingTrials> = {
+  provide: NotifyEndingTrials,
+  inject: [SUBSCRIPTION_REPOSITORY, TRIAL_ENDING_NOTIFIER, UNIT_OF_WORK],
+  useFactory: (
+    subscriptionRepository: ConstructorParameters<
+      typeof NotifyEndingTrials
+    >[0]["subscriptionRepository"],
+    notifier: ConstructorParameters<typeof NotifyEndingTrials>[0]["notifier"],
+    unitOfWork: ConstructorParameters<typeof NotifyEndingTrials>[0]["unitOfWork"],
+  ) =>
+    new NotifyEndingTrials({
+      subscriptionRepository,
+      notifier,
+      unitOfWork,
+      logger: new Logger(NotifyEndingTrials.name),
     }),
 };
 

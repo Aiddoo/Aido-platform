@@ -214,6 +214,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         willRenew: false,
         bankedPremiumDays: 7,
         premiumGrantEndedAt: null,
+        premiumIsTrial: false,
         isPremium: true,
         entitlements: resolveAllFeatureAccess("PREMIUM", NO_RESOURCE_BONUSES),
       };
@@ -223,7 +224,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(21);
+      expect(Object.keys(response)).toHaveLength(22);
     });
   });
 

@@ -174,6 +174,18 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
+  /** 무료 체험이 끝나 첫 결제로 넘어간 RENEWAL */
+  withTrialConversion(): this {
+    this.event.is_trial_conversion = true;
+    this.event.period_type = "NORMAL";
+    return this;
+  }
+
+  withExpirationReason(reason: string): this {
+    this.event.expiration_reason = reason;
+    return this;
+  }
+
   withCancelReason(reason: string): this {
     this.event.cancel_reason = reason;
     return this;

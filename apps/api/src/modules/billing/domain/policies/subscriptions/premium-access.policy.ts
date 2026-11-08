@@ -3,6 +3,8 @@ import {
   PREMIUM_GRANT_ENDING_NOTICE_DAYS,
   PREMIUM_SOURCE,
   type PremiumSource,
+  STORE_PERIOD_TYPE,
+  type StorePeriodType,
   type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
@@ -27,6 +29,8 @@ export interface StoreEntitlement {
   readonly expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
   readonly gracePeriodEndsAt?: Date | null;
+  /** 지금 기간의 스토어 기간 유형. 비우거나 null이면 NORMAL이다. */
+  readonly periodType?: StorePeriodType | null;
 }
 
 /** 스토어 구독 행과 그 거래 체인 ID */
@@ -62,6 +66,8 @@ export interface PremiumAccess {
   /** 지금 출처의 기간이 끝나는 시각. STORE면 스토어 만료, GRANT면 진행 중인 보상 기간의 끝이다. */
   readonly periodEndsAt: Date | null;
   readonly willRenew: boolean;
+  /** 지금 기간이 스토어 무료 체험인지. 체험은 새 출처가 아니라 STORE + periodType TRIAL이다. */
+  readonly isTrial: boolean;
   /** 지금 기간이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 합계 */
   readonly bankedDays: number;
   /** 프리미엄이 아닐 때만, 최근 7일 안에 끝난 마지막 보상 기간의 끝 시각 */
@@ -121,6 +127,7 @@ export interface StoreEventChainState {
   readonly status: SubscriptionStatus;
   readonly expiresAt?: Date | null;
   readonly gracePeriodEndsAt?: Date | null;
+  readonly periodType?: StorePeriodType | null;
 }
 
 /**
@@ -150,6 +157,7 @@ export function applyStoreEventChain(
         status: eventChain.status,
         expiresAt: eventChain.expiresAt ?? subscription.expiresAt,
         gracePeriodEndsAt,
+        periodType: eventChain.periodType ?? subscription.periodType ?? null,
       },
     ];
   });
@@ -215,6 +223,14 @@ function storeHandoffAt(subscription: StoreEntitlement): Date {
 /** 이 시각 이전에 끝나는 마지막 보상 기간을 지금 안내한다. */
 export function premiumGrantEndingNoticeUntil(now: Date): Date {
   return addMilliseconds(PREMIUM_GRANT_ENDING_NOTICE_MS, now);
+}
+
+/** 지금 기간을 정하는(가장 늦게 끝나는) 유효한 스토어 구독이 체험이면 체험 중이다. */
+function isStoreTrial(validStores: readonly StoreEntitlement[]): boolean {
+  const current = maxBy([...validStores], (subscription) =>
+    storePeriodEndsAt(subscription).getTime(),
+  );
+  return current?.periodType === STORE_PERIOD_TYPE.TRIAL;
 }
 
 function hasStoreEntitlement(entitlements: PremiumEntitlements, now: Date): boolean {
@@ -325,6 +341,7 @@ export const PremiumAccessPolicy = {
         willRenew: validStores.some((subscription) =>
           isStoreSubscriptionRenewing(subscription, now),
         ),
+        isTrial: isStoreTrial(validStores),
         bankedDays,
         recentGrantEndedAt: null,
       };
@@ -336,6 +353,7 @@ export const PremiumAccessPolicy = {
         endsAt: null,
         periodEndsAt: null,
         willRenew: false,
+        isTrial: false,
         bankedDays,
         recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
       };
@@ -345,6 +363,7 @@ export const PremiumAccessPolicy = {
       endsAt: chainBanked(activeGrantEndsAt, banked),
       periodEndsAt: activeGrantEndsAt,
       willRenew: false,
+      isTrial: false,
       bankedDays,
       recentGrantEndedAt: null,
     };

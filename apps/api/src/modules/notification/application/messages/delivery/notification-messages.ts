@@ -33,6 +33,7 @@ export {
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,
   createPremiumGrantEndingNotificationMessage,
+  createPremiumTrialEndingNotificationMessage,
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,
 } from "./system-notification-message.js";

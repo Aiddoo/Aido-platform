@@ -139,6 +139,18 @@ export function localDateInTimezone(date: Date, tz: string = DEFAULT_TIMEZONE): 
 }
 
 /**
+ * 지정 타임존 달력에서 from의 날짜부터 to의 날짜까지의 일수. ms ÷ 하루로 세지 않아
+ * DST·자정·윤일 경계에서도 사용자가 보는 달력 날짜 차이와 같다.
+ *
+ * @example calendarDaysBetween(new Date('2026-11-09T14:59:00Z'), new Date('2026-11-12T15:00:00Z'), 'Asia/Seoul') // 4
+ */
+export function calendarDaysBetween(from: Date, to: Date, tz: string = DEFAULT_TIMEZONE): number {
+  return dayjs
+    .utc(localDateInTimezone(to, tz))
+    .diff(dayjs.utc(localDateInTimezone(from, tz)), "day");
+}
+
+/**
  * UTC Date → 지정 타임존의 로컬 시간 문자열 (HH:mm)
  *
  * 단일 할 일을 반복으로 전환할 때처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.

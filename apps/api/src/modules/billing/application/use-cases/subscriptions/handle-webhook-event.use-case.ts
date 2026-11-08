@@ -43,6 +43,8 @@ import type { PremiumAccessProjector } from "../../services/subscriptions/premiu
 import type { SubscriptionEventPayload } from "../../types/subscriptions/subscription-event.payload.js";
 import {
   baseEventPayload,
+  lifecycleEventOf,
+  periodTypeAfter,
   premiumGrantImpactOf,
   transferEventPayload,
   type TransferEvent,
@@ -92,6 +94,7 @@ function chainStateOf(subscription: Subscription): Omit<StoreEventChainState, "r
     status: subscription.status,
     expiresAt: subscription.expiresAt,
     gracePeriodEndsAt: subscription.gracePeriodEndsAt,
+    periodType: subscription.periodType,
   };
 }
 
@@ -515,6 +518,7 @@ export class HandleWebhookEvent {
       expiresAt,
       ...(eventId != null && { lastProcessedEventId: eventId }),
       environment: event.environment ?? null,
+      periodType: periodTypeAfter(event) ?? null,
     });
     this.#dependencies.logger.log({
       event: BillingLogEvent.SUBSCRIPTION_CHAIN_ADOPTED,
@@ -589,6 +593,7 @@ export class HandleWebhookEvent {
       ...(eventId != null && { lastProcessedEventId: eventId }),
       // SANDBOX 구매도 프리미엄을 준다. App Review가 운영 서버에서 sandbox로 결제를 확인한다
       environment: event.environment ?? null,
+      periodType: periodTypeAfter(event) ?? null,
     });
     const access = await this.#projectUser(user.id, transactionId, {
       subscriptionStatus: "ACTIVE",
@@ -625,7 +630,10 @@ export class HandleWebhookEvent {
     });
     return match(event.type)
       .with("RENEWAL", () => {
-        if (renewalExpiresAt == null || !subscription.renew(renewalExpiresAt, eventId)) {
+        if (
+          renewalExpiresAt == null ||
+          !subscription.renew(renewalExpiresAt, eventId, periodTypeAfter(event))
+        ) {
           return null;
         }
         return {
@@ -642,7 +650,16 @@ export class HandleWebhookEvent {
       .with("CANCELLATION", () => {
         const refunded = isRefundCancellation(event.cancel_reason);
         const cancellationExpiresAt = expiresAt ?? subscription.expiresAt;
-        subscription.cancel({ refunded, cancelledAt: now(), eventId });
+        if (
+          !subscription.cancel({
+            refunded,
+            cancelledAt: now(),
+            eventId,
+            eventPeriodType: lifecycleEventOf(event).periodType,
+          })
+        ) {
+          return null;
+        }
         return {
           userState: refunded
             ? { subscriptionStatus: "FREE", subscriptionExpiresAt: null }

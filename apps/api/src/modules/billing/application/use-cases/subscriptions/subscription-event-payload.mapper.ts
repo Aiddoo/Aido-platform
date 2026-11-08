@@ -1,10 +1,19 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
-import { PREMIUM_SOURCE, type SubscriptionEnvironment } from "@aido/api/vocabulary";
+import {
+  PREMIUM_SOURCE,
+  type StorePeriodType,
+  type SubscriptionEnvironment,
+} from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { PremiumAccess } from "../../../domain/policies/subscriptions/premium-access.policy.js";
+import {
+  type StoreLifecycleEvent,
+  SubscriptionLifecyclePolicy,
+  toStorePeriodType,
+} from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
 import type { SubscriptionUser } from "../../ports/subscriptions/subscription.repository.port.js";
 import type {
   PremiumGrantImpact,
@@ -49,6 +58,20 @@ function alertDetails(event: RevenueCatEvent): Partial<SubscriptionEventPayload>
   };
 }
 
+/** 체험 판단에 쓰는 이벤트 값. 웹훅 문자열을 알려진 기간 유형으로 읽는다. */
+export function lifecycleEventOf(event: RevenueCatEvent): StoreLifecycleEvent {
+  return {
+    type: event.type,
+    periodType: toStorePeriodType(event.period_type),
+    isTrialConversion: event.is_trial_conversion === true,
+  };
+}
+
+/** 이 이벤트 뒤 구독 행에 저장할 기간 유형. undefined면 저장값을 둔다. */
+export function periodTypeAfter(event: RevenueCatEvent): StorePeriodType | undefined {
+  return SubscriptionLifecyclePolicy.periodTypeAfter(lifecycleEventOf(event));
+}
+
 export function baseEventPayload(
   user: SubscriptionUser,
   event: RevenueCatEvent,
@@ -65,7 +88,13 @@ export function baseEventPayload(
     appUserId: event.app_user_id,
     ...alertDetails(event),
     ...(transactionId != null && { transactionId }),
+    ...lifecyclePayload(event),
   };
+}
+
+function lifecyclePayload(event: RevenueCatEvent): Pick<SubscriptionEventPayload, "lifecycle"> {
+  const lifecycle = SubscriptionLifecyclePolicy.classify(lifecycleEventOf(event));
+  return lifecycle == null ? {} : { lifecycle };
 }
 
 /** TRANSFER 처리에 필요한 값. RevenueCat TRANSFER에는 구독자·상품 필드가 없다. */

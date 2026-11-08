@@ -1,3 +1,5 @@
+import { revenueCatEventSchema } from "@aido/api";
+
 import { SubscriptionEventBuilder } from "#test/builders/index";
 
 import { baseEventPayload, premiumGrantImpactOf } from "./subscription-event-payload.mapper.js";
@@ -47,11 +49,11 @@ describe("baseEventPayload — 운영 알림 부가 정보", () => {
     const { event } = SubscriptionEventBuilder.initialPurchase()
       .withAppUserId("app-user-1")
       .build();
-    const raw = {
+    const raw = revenueCatEventSchema.parse({
       ...event,
       expiration_reason: 82,
       subscriber_attributes: { appVersion: "1.14.0" },
-    };
+    });
 
     // When
     const payload = baseEventPayload(
@@ -74,6 +76,7 @@ describe("premiumGrantImpactOf — 보상 기간 영향", () => {
     willRenew: false,
     bankedDays: 0,
     recentGrantEndedAt: null,
+    isTrial: false,
   };
 
   it.each([

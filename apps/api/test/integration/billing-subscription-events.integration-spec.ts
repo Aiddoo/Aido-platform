@@ -582,18 +582,21 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         status: "ACTIVE",
         expiresAt: previousExpiry,
         gracePeriodEndsAt: null,
+        periodType: null,
       },
       {
         revenueCatId: "other-subscription-chain",
         status: "CANCELLED",
         expiresAt: nextExpiry,
         gracePeriodEndsAt: null,
+        periodType: null,
       },
       {
         revenueCatId: "shorter-other",
         status: "ACTIVE",
         expiresAt: shorterExpiry,
         gracePeriodEndsAt: null,
+        periodType: null,
       },
     ]);
   });

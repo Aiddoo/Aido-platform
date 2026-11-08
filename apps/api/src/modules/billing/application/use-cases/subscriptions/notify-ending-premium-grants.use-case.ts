@@ -38,8 +38,8 @@ interface NotifyEndingPremiumGrantsDependencies {
 
 /**
  * 보상 기간만으로 프리미엄인 사용자에게 끝나기 24시간 전에 한 번 알린다.
- * 야간 사용자는 표시하지 않고 남겨 다음 허용 시각의 실행이 보낸다. 마케팅 수신 동의가 없어 발송 단계가
- * 거르는 사용자는 표시해 두어 매 실행 다시 고르지 않는다.
+ * 야간 사용자는 표시하지 않고 남겨 다음 허용 시각의 실행이 보낸다. 거래 알림이라 광고성 동의는 보지 않고,
+ * 푸시 설정이 꺼져 발송 단계가 거르는 사용자도 표시해 두어 매 실행 다시 고르지 않는다.
  */
 export class NotifyEndingPremiumGrants {
   readonly #dependencies: NotifyEndingPremiumGrantsDependencies;

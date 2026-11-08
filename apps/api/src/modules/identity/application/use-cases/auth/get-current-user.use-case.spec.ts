@@ -92,6 +92,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       willRenew: false,
       bankedDays: 0,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
 
     // When
@@ -121,6 +122,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       willRenew: true,
       bankedDays: 14,
       recentGrantEndedAt: null,
+      isTrial: false,
     });
 
     // When
