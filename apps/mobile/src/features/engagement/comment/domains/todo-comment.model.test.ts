@@ -156,6 +156,46 @@ describe('canBlockCommentAuthor', () => {
   });
 });
 
+describe('canDeleteComment', () => {
+  it('서버가 지울 수 있다고 준 활성 글이면 true를 반환한다', () => {
+    // Given
+    const comment = createTodoComment();
+
+    // When
+    const result = TodoCommentPolicy.canDeleteComment(comment);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('서버가 지울 수 없다고 줬으면 false를 반환한다', () => {
+    // Given
+    const comment = createTodoComment({
+      viewer: { ...createTodoComment().viewer, canEdit: false, canDelete: false },
+    });
+
+    // When
+    const result = TodoCommentPolicy.canDeleteComment(comment);
+
+    // Then
+    expect(result).toBe(false);
+  });
+
+  it.each([
+    ['이미 지운 글', { isDeleted: true, content: null }],
+    ['차단한 사용자의 글', { isAuthorBlocked: true }],
+  ] as const)('%s은 지울 권한이 있어도 false를 반환한다', (_label, overrides) => {
+    // Given
+    const comment = createTodoComment(overrides);
+
+    // When
+    const result = TodoCommentPolicy.canDeleteComment(comment);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
 describe('canDeleteOnlyAsTodoOwner', () => {
   it('내 할 일의 남의 글은 지울 수만 있어 남의 글 삭제로 확인받는다', () => {
     // Given

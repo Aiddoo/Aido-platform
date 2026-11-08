@@ -64,6 +64,24 @@ describe('getNextStep', () => {
   });
 });
 
+describe('isPushDeliverable', () => {
+  it.each([
+    ['GRANTED', true],
+    ['PROVISIONAL', true],
+    ['DENIED', false],
+    ['NOT_DETERMINED', false],
+  ] as const)('권한이 %s면 푸시를 받을 수 있는지는 %s다', (status, expected) => {
+    // Given
+    const permission = createPushPermission({ status });
+
+    // When
+    const result = PushPermissionPolicy.isPushDeliverable(permission);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('canRequestSystemDialog', () => {
   it('이미 허용했으면 시스템 창을 다시 띄우지 않는다', () => {
     // Given

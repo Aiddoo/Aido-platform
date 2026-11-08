@@ -273,6 +273,41 @@ describe('getResetNotice', () => {
   });
 });
 
+describe('getLimit', () => {
+  it('횟수 기능은 서버가 준 한도를 반환한다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot();
+
+    // When
+    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+
+    // Then
+    expect(limit).toBe(PLAN_CATALOG.FRIEND.free);
+  });
+
+  it('관리자처럼 한도가 없으면 null을 반환한다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot({ tier: 'ADMIN' });
+
+    // When
+    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+
+    // Then
+    expect(limit).toBeNull();
+  });
+
+  it('스냅샷에 없는 기능이면 null을 반환한다', () => {
+    // Given
+    const snapshot = { ...createEntitlementSnapshot(), features: {} };
+
+    // When
+    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+
+    // Then
+    expect(limit).toBeNull();
+  });
+});
+
 describe('getFreeLimit', () => {
   it('무료 사용자는 초대로 늘어난 자리를 반영한 서버 한도를 쓴다', () => {
     // Given
