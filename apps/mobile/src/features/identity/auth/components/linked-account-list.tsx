@@ -165,6 +165,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
         .with({ isPending: false, isLinked: true }, () => (
           <Button
             size="small"
+            display="inline"
             variant="weak"
             onPress={requestUnlink}
             isDisabled={!linkedAccounts.canUnlink}
@@ -173,7 +174,11 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button size="small" onPress={() => link(OAuthPolicy.toOAuthProviderSlug(provider))}>
+          <Button
+            size="small"
+            display="inline"
+            onPress={() => link(OAuthPolicy.toOAuthProviderSlug(provider))}
+          >
             {t('linkedAccounts.connect')}
           </Button>
         ))
