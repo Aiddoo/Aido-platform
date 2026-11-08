@@ -75,7 +75,6 @@ import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.servi
 import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { VoiceService } from '@src/features/voice/apis/voice.service';
-import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -371,7 +370,6 @@ export function createTestDi({
       logger,
       errorReporter,
     }),
-    weatherIntroductionRepository: createWeatherIntroductionRepository(syncStorage),
     deviceLocation,
     clipboard,
     applicationMetadata,

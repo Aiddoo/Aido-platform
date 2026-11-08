@@ -1,0 +1,84 @@
+import '@src/shared/i18n/init';
+import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-campaign/constants/feature-campaign-query-keys';
+import { WHATS_NEW_CAMPAIGN_ID } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
+import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import {
+  createMemoryObservableSyncStorage,
+  createTestQueryClient,
+  renderUiHook,
+} from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
+import { waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
+
+import { RELEASE_ID } from '../constants/whats-new.constants';
+import { useWhatsNewFeed } from './use-whats-new-feed';
+
+const LAUNCHED_AT = toInstant('2026-11-05T00:00:00.000Z');
+
+async function renderFeed({ signedUpAt }: { signedUpAt: string }) {
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ createdAt: toInstant(signedUpAt) }));
+  const config: FeatureCampaignConfig = {
+    enabled: true,
+    campaignId: WHATS_NEW_CAMPAIGN_ID,
+    minAppVersion: '1.15.0',
+    launchedAt: LAUNCHED_AT,
+    autoOpen: true,
+  };
+  queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
+  return renderUiHook(() => useWhatsNewFeed({ isStable: true, isInviteAvailable: true }), {
+    queryClient,
+    withLocalDate: true,
+    di: {
+      authSessionStore: createAuthSessionStoreStub('authenticated'),
+      syncStorage: createMemoryObservableSyncStorage(),
+    },
+  });
+}
+
+describe('useWhatsNewFeed — 업데이트 후 첫 피드', () => {
+  beforeEach(() => {
+    Object.defineProperty(globalThis, 'requestIdleCallback', {
+      configurable: true,
+      value: (callback: IdleRequestCallback) => {
+        callback({ didTimeout: false, timeRemaining: () => 10 });
+        return 1;
+      },
+    });
+    Object.defineProperty(globalThis, 'cancelIdleCallback', {
+      configurable: true,
+      value: () => undefined,
+    });
+  });
+
+  it('출시 전에 가입한 사용자는 다른 안내를 기다리지 않고 바로 한 번만 연다', async () => {
+    // Given
+    const { rerender } = await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z' });
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+
+    // When
+    rerender({});
+
+    // Then
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/whats-new',
+      params: { releaseId: RELEASE_ID.v1_15_0, source: 'auto' },
+    });
+  });
+
+  it('출시 뒤에 가입한 새 사용자에게는 열지 않는다', async () => {
+    // When
+    await renderFeed({ signedUpAt: '2026-11-06T00:00:00.000Z' });
+
+    // Then
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+});

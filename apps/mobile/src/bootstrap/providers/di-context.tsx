@@ -67,7 +67,6 @@ import type { VoiceNoteDraftRepository } from '@src/features/voice/apis/voice-no
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { VoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 import type { VoiceService } from '@src/features/voice/apis/voice.service';
-import type { WeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
@@ -152,7 +151,6 @@ export interface DIContainer extends SharedDependencies {
   upsellDismissalRepository: UpsellDismissalRepository;
   weatherService: WeatherService;
   weatherLocationService: WeatherLocationService;
-  weatherIntroductionRepository: WeatherIntroductionRepository;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
   logOutDeviceService: LogOutDeviceService;
@@ -376,9 +374,6 @@ export function useEntitlementService() {
 }
 export function useUpsellDismissalRepository() {
   return useDI().upsellDismissalRepository;
-}
-export function useWeatherIntroductionRepository() {
-  return useDI().weatherIntroductionRepository;
 }
 export function useWeatherLocationService() {
   return useDI().weatherLocationService;

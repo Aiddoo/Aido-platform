@@ -293,11 +293,6 @@
   "toasts": {
     "locationUpdateFailed": "위치 등록에 실패했어요"
   },
-  "introduction": {
-    "title": "위치 권한을 허용하면\n날씨를 알려드려요",
-    "description": "오늘과 내일 날씨를 알림으로 보내드리고, 할 일 시간에 비나 눈이 오면 미리 알려드려요. 위치는 나중에 날씨 화면에서 등록해도 돼요.",
-    "later": "나중에"
-  },
   "briefing": {
     "title": "아이두 브리핑",
     "itemLabel": "{{title}}, {{time}}, {{advice}}, {{chip}}",

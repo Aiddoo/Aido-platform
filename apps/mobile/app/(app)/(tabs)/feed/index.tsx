@@ -41,7 +41,6 @@ import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/f
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
 import { invalidateNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
-import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
@@ -161,13 +160,8 @@ function MyFeed() {
   });
   useOpenPushOnboarding({ isStable });
   const isReminderOff = useIsPushReminderOff();
-  const [weatherIntroduction] = useWeatherIntroduction({ isStable });
   const isInviteAvailable = useIsInviteAvailable();
-  const whatsNew = useWhatsNewFeed({
-    isStable,
-    isWeatherIntroductionPending: weatherIntroduction.isPending,
-    isInviteAvailable,
-  });
+  const whatsNew = useWhatsNewFeed({ isStable, isInviteAvailable });
   const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );

@@ -297,11 +297,6 @@
   "toasts": {
     "locationUpdateFailed": "Couldn't register your location"
   },
-  "introduction": {
-    "title": "Allow location access\nfor weather updates",
-    "description": "Get today's and tomorrow's weather as notifications, plus a heads-up when rain or snow may affect a to-do. You can also register later on the weather screen.",
-    "later": "Not now"
-  },
   "briefing": {
     "title": "Aido briefing",
     "itemLabel": "{{title}}, {{time}}, {{advice}}, {{chip}}",

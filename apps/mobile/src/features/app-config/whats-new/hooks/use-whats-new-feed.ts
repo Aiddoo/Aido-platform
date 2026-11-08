@@ -15,17 +15,11 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 
 interface WhatsNewFeedInput {
   isStable: boolean;
-  /** 날씨 위치 안내가 뜰 수 있는 동안에는 자동으로 열지 않아 두 안내가 겹치지 않게 한다 */
-  isWeatherIntroductionPending: boolean;
   isInviteAvailable: boolean;
 }
 
-/** 서버가 켠 캠페인을 처음 한 번 자동으로 열고, 14일 동안 피드 카드로 다시 열게 한다 */
-export function useWhatsNewFeed({
-  isStable,
-  isWeatherIntroductionPending,
-  isInviteAvailable,
-}: WhatsNewFeedInput) {
+/** 업데이트한 기존 사용자에게 서버가 켠 캠페인을 첫 피드에서 한 번 자동으로 열고, 피드 카드로 다시 열게 한다 */
+export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInput) {
   const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
@@ -69,7 +63,6 @@ export function useWhatsNewFeed({
   );
   const shouldAutoOpen =
     isAuthenticated &&
-    !isWeatherIntroductionPending &&
     identity != null &&
     WhatsNewPolicy.shouldAutoOpen({
       config,

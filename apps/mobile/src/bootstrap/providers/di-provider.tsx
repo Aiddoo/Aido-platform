@@ -66,7 +66,6 @@ import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-n
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 import { VoiceService } from '@src/features/voice/apis/voice.service';
-import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -458,7 +457,6 @@ export function DIProvider({
         logger,
         errorReporter,
       }),
-      weatherIntroductionRepository: createWeatherIntroductionRepository(deviceSyncStorage),
       deviceLocation: expoLocationGateway,
       clipboard: expoClipboardGateway,
       applicationMetadata: expoNativeApplicationMetadataGateway,

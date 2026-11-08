@@ -20,7 +20,7 @@
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
 | 계정·캠페인별 한 번     | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                          |
 | 기존 가입자만 자동      | `WhatsNewPolicy.shouldAutoOpen`: `user.createdAt < launchedAt`, 지원 버전, 안 봄, 서버 `enabled`·`autoOpen` |
-| 다른 안내와 겹치지 않음 | 날씨 위치 안내 대기, `useStableFeedForeground`                                                              |
+| 다른 안내와 겹치지 않음 | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                       |
 | 다시 열기               | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                   |
 | 안 본 출시 점           | 최신 출시만 본다. 지난 출시까지 세면 점이 오래 사라지지 않는다                                              |
 | 오프라인, 서버 실패     | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                |
