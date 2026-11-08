@@ -21,6 +21,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -112,7 +113,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
       right={
         <HStack align="center" gap={4}>
           <Text size="b3" className="text-main" weight="semibold">
-            {achievement.completionRate}%
+            {formatPercent(achievement.completionRate)}%
           </Text>
           <ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />
         </HStack>

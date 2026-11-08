@@ -24,6 +24,7 @@ import {
   VStack,
   Image,
 } from '@src/shared/ui';
+import { formatPercent } from '@src/shared/utils/number-format';
 import {
   usePrefetchQuery,
   useSuspenseInfiniteQuery,
@@ -161,7 +162,7 @@ export function AchievementSummary() {
               label={t('card.statStreak')}
               value={t('card.streakWeeks', { count: summary.currentStreak })}
             />
-            <Stat label={t('card.statAverage')} value={`${summary.averageRate}%`} />
+            <Stat label={t('card.statAverage')} value={`${formatPercent(summary.averageRate)}%`} />
           </HStack>
         </Certificate>
       </ViewShot>

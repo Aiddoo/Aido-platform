@@ -19,6 +19,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -101,7 +102,7 @@ export function WeeklyAchievementCertificate() {
               weekLabel: achievement.weekLabel,
               total: achievement.totalTodos,
               completed: achievement.completedTodos,
-              rate: achievement.completionRate,
+              rate: formatPercent(achievement.completionRate),
             })}
           </Text>
 

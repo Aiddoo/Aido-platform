@@ -183,7 +183,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
               </Text>
             </HStack>
             <Text size="b4" shade={6}>
-              {item.completed}/{item.total} ({item.rate}%)
+              {item.completed}/{item.total} ({formatPercent(item.rate)}%)
             </Text>
           </HStack>
           <Box className="h-2 bg-gray-3 rounded-full overflow-hidden">

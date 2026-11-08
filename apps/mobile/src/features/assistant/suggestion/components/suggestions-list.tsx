@@ -25,6 +25,7 @@ import {
   VStack,
   Image,
 } from '@src/shared/ui';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -137,7 +138,7 @@ SuggestionsList.Item = function Item({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const push = useSingleTap(router.push);
-  const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
+  const confidenceLabel = `${formatPercent(suggestion.confidence * 100)}%`;
 
   const handleOpenCategorySheet = () =>
     push({
