@@ -10,7 +10,7 @@ import type {
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { noop } from 'es-toolkit';
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -41,7 +41,7 @@ import { toCaptureOutcome } from '../utils/voice-analytics';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
-/** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
+/** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기·멈춤 복구가 함께 쓴다 */
 const FINALIZE_TIMEOUT_MS = 1_500;
 
 interface UseVoiceCaptureSessionOptions {
@@ -88,37 +88,13 @@ export function useVoiceCaptureSession({
   const haptics = useHaptics();
   const telemetry = useVoiceCaptureTelemetry({ entry, mode });
 
-  const [state, setState] = useState<VoiceCaptureState>(VoiceCapturePolicy.createVoiceCaptureState);
+  const { state, stateRef, dispatch } = useVoiceCaptureState();
+  const recognizer = useRecognizerLink();
   const level = useSharedValue(0);
-  const stateRef = useRef(state);
   const startOptionsRef = useRef<SpeechStartOptions | null>(null);
-  const [timers] = useState(() =>
-    createTimerSlots<'finalize' | 'deferredStart' | 'stallRestart'>(),
-  );
-  const linkRef = useRef(VoiceRecognizerLinkPolicy.createVoiceRecognizerLink());
-  /** 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜면 아무도 끄지 못한다 */
-  const isUnmountedRef = useRef(false);
-
-  const dispatch = useCallback((event: VoiceCaptureEvent) => {
-    const previous = stateRef.current;
-    const next = VoiceCapturePolicy.reduceVoiceCapture(previous, event);
-    if (next !== previous) {
-      stateRef.current = next;
-      setState(next);
-    }
-    return { previous, next };
-  }, []);
-
-  const updateLink = (event: VoiceRecognizerLinkEvent) => {
-    linkRef.current = VoiceRecognizerLinkPolicy.reduceRecognizerLink(linkRef.current, event);
-  };
+  const [timers] = useState(() => createTimerSlots<'finalize' | 'deferredStart'>());
 
   const getStatus = () => stateRef.current.status;
-
-  const stopRecognizer = () => {
-    updateLink({ type: 'stop-requested' });
-    speechRecognizer.stop();
-  };
 
   const silence = useSilenceAutoFinish({
     isEnabled: mode === 'quick',
@@ -131,8 +107,15 @@ export function useVoiceCaptureSession({
     onVolumeGap: () => level.set(0),
   });
 
+  const stall = useRecognizerStallRecovery({
+    stateRef,
+    recognizer,
+    onStalled: () => telemetry.stalled(startOptionsRef.current?.isOnDevice ?? false),
+  });
+
   const clearTimers = () => {
     silence.clear();
+    stall.clear();
     level.set(0);
     timers.clearAll();
   };
@@ -151,7 +134,7 @@ export function useVoiceCaptureSession({
       return;
     }
     if (next.status === 'finalizing') {
-      stopRecognizer();
+      recognizer.stop();
       timers.set('finalize', handleFinalized, FINALIZE_TIMEOUT_MS);
       return;
     }
@@ -159,7 +142,7 @@ export function useVoiceCaptureSession({
   }
 
   const handleError = (code: SpeechErrorCode) => {
-    const { isStopRequested } = linkRef.current;
+    const { isStopRequested } = recognizer.linkRef.current;
     const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
     const isOnDevice = startOptionsRef.current?.isOnDevice;
 
@@ -182,57 +165,29 @@ export function useVoiceCaptureSession({
     }
   };
 
+  const pause = (cause: VoicePauseCause) => {
+    const { previous, next } = dispatch({ type: 'pause', cause, at: Date.now() });
+    if (previous === next) {
+      return;
+    }
+    clearTimers();
+    recognizer.stop();
+    telemetry.paused(cause);
+  };
+
   const restartSegment = () => {
     const startOptions = startOptionsRef.current;
     if (startOptions == null) {
       return;
     }
-    const now = Date.now();
-    if (VoiceRecognizerLinkPolicy.isRestartLooping(linkRef.current, now)) {
+    if (!recognizer.restartSegment(startOptions)) {
       handleError('client');
-      return;
-    }
-    updateLink({ type: 'segment-restarted', at: now });
-    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(startOptions));
-  };
-
-  /**
-   * 파형은 움직이는데 글자가 오지 않는 세션을 닫고 이어 듣는다. 일시정지·이어 듣기와 같은 길이고 사용자는 할 일이 없다.
-   * 듣던 글자는 `end`가 확정한다. 멈춘 인식기는 stop에 답하지 않을 수 있어 잠시 뒤 abort로 `end`를 받는다.
-   * abort는 녹음 파일을 마무리하지만 바로 새로 시작하면 Android가 파일을 버린다.
-   */
-  const restartStalledRecognizer = (now: number) => {
-    updateLink({ type: 'stall-restarted', at: now });
-    telemetry.stalled(startOptionsRef.current?.isOnDevice ?? false);
-    stopRecognizer();
-    timers.set(
-      'stallRestart',
-      () => {
-        if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
-          speechRecognizer.abort();
-        }
-      },
-      FINALIZE_TIMEOUT_MS,
-    );
-  };
-
-  const watchRecognizerStall = (nextLevel: number) => {
-    const now = Date.now();
-    updateLink({ type: 'volume-sampled', level: nextLevel, at: now });
-    if (
-      VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
-        linkRef.current,
-        stateRef.current,
-        now,
-      )
-    ) {
-      restartStalledRecognizer(now);
     }
   };
 
   /** 앞 구간이 끝나지 않았는데 다시 열면 Android가 파일을 마무리하지 않고 버린다. `end`까지 미룬다 */
   const startAfterRecognizerEnds = () => {
-    if (!linkRef.current.isRunning) {
+    if (!recognizer.linkRef.current.isRunning) {
       startPrepared();
       return;
     }
@@ -245,14 +200,13 @@ export function useVoiceCaptureSession({
     if (startOptions == null || getStatus() !== 'preparing') {
       return;
     }
-    updateLink({ type: 'start-requested', at: Date.now() });
-    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(startOptions));
+    recognizer.start(startOptions);
   }
 
   useSpeechEvent((event) => {
     if (event.type === 'end') {
-      updateLink({ type: 'ended' });
-      timers.clear('stallRestart');
+      recognizer.update({ type: 'ended' });
+      stall.clear();
     }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
       return;
@@ -261,7 +215,7 @@ export function useVoiceCaptureSession({
       .with({ type: 'start' }, () => {
         const now = Date.now();
         dispatch({ type: 'start', at: now });
-        updateLink({ type: 'started', at: now });
+        recognizer.update({ type: 'started', at: now });
         // 준비 중에는 멈출 수 없어 백그라운드 전환이 무시된다. 뒤늦은 시작 신호로 몰래 듣지 않는다
         if (appLifecycle.getCurrentState() === 'background') {
           pause('app-background');
@@ -270,16 +224,20 @@ export function useVoiceCaptureSession({
       .with({ type: 'result' }, ({ transcript, isFinal }) => {
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
-          updateLink({ type: 'text-heard', transcript, at: Date.now() });
+          recognizer.update({ type: 'text-heard', transcript, at: Date.now() });
           silence.cancelQuiet();
         }
       })
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
         silence.noteVolume(
-          VoiceCapturePolicy.isSpeaking(nextLevel, linkRef.current.lastTextAt, Date.now()),
+          VoiceCapturePolicy.isSpeaking(
+            nextLevel,
+            recognizer.linkRef.current.lastTextAt,
+            Date.now(),
+          ),
         );
-        watchRecognizerStall(nextLevel);
+        stall.sampleVolume(nextLevel);
       })
       .with({ type: 'error' }, ({ code }) => handleError(code))
       .with({ type: 'end' }, () => {
@@ -297,36 +255,14 @@ export function useVoiceCaptureSession({
       .exhaustive();
   });
 
-  const pause = (cause: VoicePauseCause) => {
-    const { previous, next } = dispatch({ type: 'pause', cause, at: Date.now() });
-    if (previous === next) {
-      return;
-    }
+  usePauseOnBackground(() => pause('app-background'));
+  // 인식기 이벤트 구독을 먼저 푼 뒤에 끊어야 abort가 보낸 `end`가 내려가는 화면의 상태를 바꾸지 않는다
+  const isUnmountedRef = useReleaseOnUnmount(() => {
     clearTimers();
-    stopRecognizer();
-    telemetry.paused(cause);
-  };
-
-  const pauseForBackground = useEffectEvent(() => pause('app-background'));
-  const clearTimersOnUnmount = useEffectEvent(clearTimers);
-
-  useEffect(() => {
-    isUnmountedRef.current = false;
-    const removeAppStateListener = appLifecycle.subscribe((nextState) => {
-      if (nextState === 'background') {
-        pauseForBackground();
-      }
-    });
-
-    return () => {
-      isUnmountedRef.current = true;
-      removeAppStateListener();
-      clearTimersOnUnmount();
-      if (VoiceCapturePolicy.isActive(stateRef.current)) {
-        speechRecognizer.abort();
-      }
-    };
-  }, [appLifecycle, speechRecognizer]);
+    if (VoiceCapturePolicy.isActive(stateRef.current)) {
+      speechRecognizer.abort();
+    }
+  });
 
   useTimeoutWhile({
     isActive: state.status === 'listening',
@@ -345,34 +281,14 @@ export function useVoiceCaptureSession({
     restartKey: maxSeconds,
   });
 
-  const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
-  const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
-  const trackPlanRequested = useEffectEvent(() => telemetry.planRequested());
-  const isPlanning = state.status === 'planning';
-  useEffect(() => {
-    if (!isPlanning) {
-      return;
-    }
-    let isCurrent = true;
-    const text = VoiceTranscriptPolicy.getTranscriptText(stateRef.current.transcript);
-    trackPlanRequested();
-    runCaptured(text)
-      .then((result) => {
-        if (isCurrent) {
-          dispatch({ type: 'planned', result });
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          const { next } = dispatch({ type: 'plan-failed' });
-          notifyPlanFailed(next.transcript);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isPlanning, dispatch]);
+  useCapturePlanning({
+    isPlanning: state.status === 'planning',
+    stateRef,
+    dispatch,
+    onCaptured,
+    onFailed,
+    onRequested: () => telemetry.planRequested(),
+  });
 
   // 시작 신호가 오지 않으면 듣는 중처럼 멈춰 있지 않고 글자를 든 실패 상태로 간다
   useTimeoutWhile({
@@ -380,7 +296,7 @@ export function useVoiceCaptureSession({
     getDelayMs: () => VOICE_PREPARING_TIMEOUT_MS,
     onTimeout: () => {
       speechRecognizer.abort();
-      updateLink({ type: 'ended' });
+      recognizer.update({ type: 'ended' });
       handleError('client');
     },
   });
@@ -448,7 +364,7 @@ export function useVoiceCaptureSession({
     if (VoiceCapturePolicy.isActive(previous)) {
       speechRecognizer.abort();
       // abort는 바로 끝난 것으로 본다. 다음 시작은 어댑터가 abort 뒤에 차례로 처리한다
-      updateLink({ type: 'ended' });
+      recognizer.update({ type: 'ended' });
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
       telemetry.finished(
@@ -480,7 +396,7 @@ export function useVoiceCaptureSession({
       telemetry.localeChanged(locale, canRecognizeOnDevice);
     }
     if (getStatus() === 'listening') {
-      stopRecognizer();
+      recognizer.stop();
     }
   };
 
@@ -503,35 +419,119 @@ export function useVoiceCaptureSession({
   };
 }
 
-/** 이름 하나에 타이머 하나. 다시 걸면 앞의 것을 지운다 */
-function createTimerSlots<TKey extends string>() {
-  const slots = new Map<TKey, ReturnType<typeof setTimeout>>();
+/**
+ * 세션 상태와 같은 값을 든 ref. 인식기 이벤트는 렌더를 기다리지 않고 바로 다음 상태를 읽어야 한다.
+ * `dispatch`는 바뀌기 전과 뒤를 돌려주고, 바뀌지 않았으면 같은 객체다.
+ */
+function useVoiceCaptureState() {
+  const [state, setState] = useState<VoiceCaptureState>(VoiceCapturePolicy.createVoiceCaptureState);
+  const stateRef = useRef(state);
 
-  const clear = (key: TKey) => {
-    const timer = slots.get(key);
-    if (timer != null) {
-      clearTimeout(timer);
-      slots.delete(key);
+  const dispatch = useCallback((event: VoiceCaptureEvent) => {
+    const previous = stateRef.current;
+    const next = VoiceCapturePolicy.reduceVoiceCapture(previous, event);
+    if (next !== previous) {
+      stateRef.current = next;
+      setState(next);
     }
+    return { previous, next };
+  }, []);
+
+  return { state, stateRef, dispatch };
+}
+
+type VoiceCaptureDispatch = ReturnType<typeof useVoiceCaptureState>['dispatch'];
+
+/**
+ * 인식기를 켜고 끄며 그 연결을 기록한다. 연결은 그리지 않는 값이라 ref에 두고 `VoiceRecognizerLinkPolicy`로만 바꾼다.
+ */
+function useRecognizerLink() {
+  const speechRecognizer = useSpeechRecognizer();
+  const linkRef = useRef(VoiceRecognizerLinkPolicy.createVoiceRecognizerLink());
+
+  const update = (event: VoiceRecognizerLinkEvent) => {
+    linkRef.current = VoiceRecognizerLinkPolicy.reduceRecognizerLink(linkRef.current, event);
+  };
+
+  const start = (options: SpeechStartOptions) => {
+    update({ type: 'start-requested', at: Date.now() });
+    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(options));
   };
 
   return {
-    set: (key: TKey, callback: () => void, delayMs: number) => {
-      clear(key);
-      slots.set(
-        key,
-        setTimeout(() => {
-          slots.delete(key);
-          callback();
-        }, delayMs),
-      );
+    linkRef,
+    update,
+    start,
+    /** 사용자가 끝내지 않았는데 끝난 구간을 같은 옵션으로 다시 연다. 너무 빨리 끝나기를 되풀이하면 열지 않고 false다 */
+    restartSegment: (options: SpeechStartOptions) => {
+      const now = Date.now();
+      if (VoiceRecognizerLinkPolicy.isRestartLooping(linkRef.current, now)) {
+        return false;
+      }
+      update({ type: 'segment-restarted', at: now });
+      speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(options));
+      return true;
     },
-    clear,
-    has: (key: TKey) => slots.has(key),
-    clearAll: () => {
-      slots.forEach((timer) => clearTimeout(timer));
-      slots.clear();
+    /** 지금 구간을 닫는다. 그 구간의 `end`가 오면 실패가 아니라 멈춤 응답으로 본다 */
+    stop: () => {
+      update({ type: 'stop-requested' });
+      speechRecognizer.stop();
     },
+  };
+}
+
+type RecognizerLink = ReturnType<typeof useRecognizerLink>;
+
+interface UseRecognizerStallRecoveryOptions {
+  stateRef: RefObject<VoiceCaptureState>;
+  recognizer: RecognizerLink;
+  onStalled: () => void;
+}
+
+/**
+ * 파형은 움직이는데 글자가 오지 않는 세션을 닫고 이어 듣는다. 일시정지·이어 듣기와 같은 길이고 사용자는 할 일이 없다.
+ * 듣던 글자는 `end`가 확정한다. 멈춘 인식기는 stop에 답하지 않을 수 있어 잠시 뒤 abort로 `end`를 받는다.
+ * abort는 녹음 파일을 마무리하지만 바로 새로 시작하면 Android가 파일을 버린다.
+ * 남은 abort 대기는 `end`를 받았을 때와 세션 타이머를 지울 때 `clear`로 지운다.
+ */
+function useRecognizerStallRecovery({
+  stateRef,
+  recognizer,
+  onStalled,
+}: UseRecognizerStallRecoveryOptions) {
+  const speechRecognizer = useSpeechRecognizer();
+  const [timers] = useState(() => createTimerSlots<'stallRestart'>());
+
+  const restartStalledRecognizer = (now: number) => {
+    recognizer.update({ type: 'stall-restarted', at: now });
+    onStalled();
+    recognizer.stop();
+    timers.set(
+      'stallRestart',
+      () => {
+        if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
+          speechRecognizer.abort();
+        }
+      },
+      FINALIZE_TIMEOUT_MS,
+    );
+  };
+
+  return {
+    sampleVolume: (level: number) => {
+      const now = Date.now();
+      recognizer.update({ type: 'volume-sampled', level, at: now });
+      if (
+        VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
+          recognizer.linkRef.current,
+          stateRef.current,
+          now,
+        )
+      ) {
+        restartStalledRecognizer(now);
+      }
+    },
+    clear: () => timers.clear('stallRestart'),
   };
 }
 
@@ -600,6 +600,91 @@ function useSilenceAutoFinish({
   };
 }
 
+/**
+ * 화면이 내려가면 `release`로 남은 타이머와 듣던 인식기를 정리한다.
+ * 돌려주는 ref는 화면이 내려간 뒤에 끝난 비동기 확인이 인식기를 다시 켜지 않게 막는다. 그러면 아무도 끄지 못한다.
+ */
+function useReleaseOnUnmount(release: () => void) {
+  const isUnmountedRef = useRef(false);
+  const releaseOnUnmount = useEffectEvent(release);
+
+  useEffect(() => {
+    isUnmountedRef.current = false;
+
+    return () => {
+      isUnmountedRef.current = true;
+      releaseOnUnmount();
+    };
+  }, []);
+
+  return isUnmountedRef;
+}
+
+/** 앱이 백그라운드로 넘어갈 때마다 가장 최근 `onBackground`를 부른다 */
+function usePauseOnBackground(onBackground: () => void) {
+  const appLifecycle = useAppLifecycle();
+  const handleBackground = useEffectEvent(onBackground);
+
+  useEffect(
+    () =>
+      appLifecycle.subscribe((nextState) => {
+        if (nextState === 'background') {
+          handleBackground();
+        }
+      }),
+    [appLifecycle],
+  );
+}
+
+interface UseCapturePlanningOptions {
+  isPlanning: boolean;
+  stateRef: RefObject<VoiceCaptureState>;
+  dispatch: VoiceCaptureDispatch;
+  onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
+  onFailed?: (transcript: VoiceTranscript) => void;
+  onRequested: () => void;
+}
+
+/**
+ * 계획 단계에 들어가면 모은 글자로 계획을 한 번 요청한다.
+ * 결과가 오기 전에 단계를 떠났으면(취소·다시 시도) 그 결과는 버린다.
+ */
+function useCapturePlanning({
+  isPlanning,
+  stateRef,
+  dispatch,
+  onCaptured,
+  onFailed,
+  onRequested,
+}: UseCapturePlanningOptions) {
+  const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
+  const notifyPlanFailed = useEffectEvent((transcript: VoiceTranscript) => onFailed?.(transcript));
+  const trackPlanRequested = useEffectEvent(onRequested);
+
+  useEffect(() => {
+    if (!isPlanning) {
+      return;
+    }
+    const planning = new AbortController();
+    const text = VoiceTranscriptPolicy.getTranscriptText(stateRef.current.transcript);
+    trackPlanRequested();
+    runCaptured(text)
+      .then((result) => {
+        if (!planning.signal.aborted) {
+          dispatch({ type: 'planned', result });
+        }
+      })
+      .catch(() => {
+        if (!planning.signal.aborted) {
+          const { next } = dispatch({ type: 'plan-failed' });
+          notifyPlanFailed(next.transcript);
+        }
+      });
+
+    return () => planning.abort();
+  }, [isPlanning, stateRef, dispatch]);
+}
+
 /** `isActive`인 동안 시간이 지나면 한 번 부른다. `restartKey`가 바뀌면 다시 잰다. 지연이 null이면 걸지 않는다 */
 function useTimeoutWhile({
   isActive,
@@ -627,4 +712,36 @@ function useTimeoutWhile({
 
     return () => clearTimeout(timer);
   }, [isActive, restartKey]);
+}
+
+/** 이름 하나에 타이머 하나. 다시 걸면 앞의 것을 지운다 */
+function createTimerSlots<TKey extends string>() {
+  const slots = new Map<TKey, ReturnType<typeof setTimeout>>();
+
+  const clear = (key: TKey) => {
+    const timer = slots.get(key);
+    if (timer != null) {
+      clearTimeout(timer);
+      slots.delete(key);
+    }
+  };
+
+  return {
+    set: (key: TKey, callback: () => void, delayMs: number) => {
+      clear(key);
+      slots.set(
+        key,
+        setTimeout(() => {
+          slots.delete(key);
+          callback();
+        }, delayMs),
+      );
+    },
+    clear,
+    has: (key: TKey) => slots.has(key),
+    clearAll: () => {
+      slots.forEach((timer) => clearTimeout(timer));
+      slots.clear();
+    },
+  };
 }
