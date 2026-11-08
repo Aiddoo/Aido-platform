@@ -1,7 +1,7 @@
 import { quickPlanRequestSchema } from '@aido/api';
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { type FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
-import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { z } from 'zod';
 
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();

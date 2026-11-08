@@ -6,11 +6,11 @@ import type {
   UpdateTodoScheduleInput,
 } from '@aido/api';
 
+import type { TodoSeries } from '../domains/todo-series.model';
 import type {
   RepeatingTodoDraft,
-  TodoSeries,
   TodoSeriesEditOptions,
-} from '../schemas/todo-repeat.schema';
+} from '../schemas/todo-series-request.schema';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 
 export function toTodoSeries(dto: TodoSeriesResponse): TodoSeries {

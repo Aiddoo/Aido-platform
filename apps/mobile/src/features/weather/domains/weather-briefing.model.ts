@@ -1,5 +1,5 @@
 import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabulary';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {

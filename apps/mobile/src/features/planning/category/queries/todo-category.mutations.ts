@@ -17,14 +17,16 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   OptimisticTodoCategoryWithCount,
   TodoCategoriesResult,
+} from '../domains/todo-category.model';
+import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
+import type {
   TodoCategoryChange,
   TodoCategoryRemoval,
   TodoCategoryReorder,
-} from '../schemas/todo-category.schema';
+} from '../schemas/todo-category-request.schema';
 import { getCategoryUpdatedField } from '../utils/todo-category-analytics';
 import { invalidateTodoCategories } from './todo-category-cache';
 

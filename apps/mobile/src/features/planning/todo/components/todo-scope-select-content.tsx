@@ -16,7 +16,7 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-import type { TodoEditScope } from '../schemas/todo-repeat.schema';
+import type { TodoEditScope } from '../domains/todo-repeat.model';
 
 type TodoScopeAction = 'edit' | 'delete';
 

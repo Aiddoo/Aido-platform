@@ -1,4 +1,4 @@
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { INQUIRY_SHEET_EXIT, QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
 import { Suspense } from 'react';
 

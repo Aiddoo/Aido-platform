@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import type { TodoRepeat } from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 
 import { getPlanTodoSubtitle } from './plan-todo-subtitle.view-model';
 

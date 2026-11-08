@@ -5,7 +5,7 @@ import {
 } from '@src/shared/date/date-format';
 
 import { TodoPolicy } from '../domains/todo.model';
-import type { Todo } from '../schemas/todo.schema';
+import type { Todo } from '../domains/todo.model';
 
 export function formatTodoTime(
   todo: Todo,

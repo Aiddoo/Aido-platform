@@ -10,17 +10,17 @@ import {
   createTodoDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
+import type {
+  Todo,
+  TodoDetails,
+  TodoListResult,
+} from '@src/features/planning/todo/domains/todo.model';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useReorderSubTodosMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import type {
-  DailyCompletionsResult,
-  Todo,
-  TodoDetails,
-  TodoListResult,
-} from '@src/features/planning/todo/schemas/todo.schema';
 import {
   createHttpClientStub,
   createPendingResponse,

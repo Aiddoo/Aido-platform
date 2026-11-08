@@ -1,5 +1,5 @@
-import type { SubTodo } from '../schemas/sub-todo.schema';
-import type { Todo } from '../schemas/todo.schema';
+import type { SubTodo } from '../domains/sub-todo.model';
+import type { Todo } from '../domains/todo.model';
 
 function generateSubTodo(): SubTodo {
   return {

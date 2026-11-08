@@ -1,8 +1,89 @@
+import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key';
-import { toHHmm } from '@src/shared/date/instant';
+import { instantSchema, toHHmm } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type { SubTodo } from '../schemas/sub-todo.schema';
-import type { Todo } from '../schemas/todo.schema';
+import { type SubTodo, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
+import { todoRepeatSchema } from './todo-repeat.model';
+
+export const todoSchema = z.object({
+  id: z.int(),
+  title: z.string(),
+  completed: z.boolean(),
+  isAllDay: z.boolean(),
+  visibility: z.enum(TODO_VISIBILITIES),
+  recurrenceGroupId: z.string().nullable(),
+  commentCount: z.int().nonnegative(),
+  startDate: z.iso.date(),
+  endDate: z.iso.date().nullable(),
+  category: todoCategorySchema.pick({ id: true, name: true, color: true }),
+  /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
+  localTime: z.iso.time({ precision: -1 }).nullable(),
+  /** 서버가 벽시계 칸을 비워 둔 시간 행의 시각을 표시 때 시간대로 계산하려고 순간을 함께 둔다. 시간 없는 할 일은 null */
+  scheduledAt: instantSchema.nullable(),
+  /** 단일 할 일이나 규칙이 없는 옛 묶음, 친구 할 일은 null */
+  repeat: todoRepeatSchema.nullable(),
+  subTodos: z.array(subTodoSchema),
+  subTodoStats: subTodoStatsSchema,
+});
+export type Todo = z.infer<typeof todoSchema>;
+
+const optimisticTodoSchema = todoSchema.extend({ optimistic: z.literal(true).readonly() });
+export type OptimisticTodo = z.infer<typeof optimisticTodoSchema>;
+
+export const todoListResultSchema = z.object({
+  todos: z.array(todoSchema),
+  hasNext: z.boolean(),
+  nextCursor: z.int().nullable(),
+});
+export type TodoListResult = z.infer<typeof todoListResultSchema>;
+
+/** 기기와 무관한 서버 기록이다 */
+export const todoExistenceSchema = z.object({
+  hasTodo: z.boolean(),
+  hasCompletedTodo: z.boolean(),
+});
+export type TodoExistence = z.infer<typeof todoExistenceSchema>;
+
+export const todoSummarySchema = z.object({
+  date: z.string(),
+  totalTodos: z.int().min(0),
+  completedTodos: z.int().min(0),
+  completionRate: z.number().min(0).max(100),
+  isComplete: z.boolean(),
+  currentStreak: z.int().min(0),
+  topTodos: z
+    .array(
+      z.object({
+        id: z.int(),
+        title: z.string(),
+        completed: z.boolean(),
+        categoryColor: z.string(),
+      }),
+    )
+    .max(10),
+});
+export type TodoSummary = z.infer<typeof todoSummarySchema>;
+
+export const todoDetailsSchema = z.object({
+  todo: todoSchema,
+  owner: z.object({
+    id: z.cuid(),
+    name: z.string().nullable(),
+    profileImage: z.string().nullable(),
+  }),
+  permissions: z.object({
+    canEdit: z.boolean(),
+    canComment: z.boolean(),
+    canNudge: z.boolean(),
+  }),
+  metrics: z.object({
+    viewCount: z.int().nonnegative(),
+    commentCount: z.int().nonnegative(),
+  }),
+});
+export type TodoDetails = z.infer<typeof todoDetailsSchema>;
 
 /** 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다 */
 function getVisibility(todo: { visibility?: Todo['visibility'] | null }): Todo['visibility'] {

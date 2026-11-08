@@ -3,7 +3,7 @@ import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { type Instant, toDateKey } from '@src/shared/date/instant';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
-import type { TodoUpdateChanges } from '../schemas/todo-change.schema';
+import type { TodoUpdateChanges } from '../schemas/todo-change-request.schema';
 
 function toNullableDateKey(date: Instant | null, timeZone: string) {
   return date == null ? null : toDateKey(date, timeZone);

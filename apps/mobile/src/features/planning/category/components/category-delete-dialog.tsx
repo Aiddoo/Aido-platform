@@ -16,9 +16,9 @@ import { Dialog, Radio, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-category.model';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
-import type { TodoCategoryWithCount } from '../schemas/todo-category.schema';
 
 interface CategoryDeleteDialogProps {
   categoryId: number;

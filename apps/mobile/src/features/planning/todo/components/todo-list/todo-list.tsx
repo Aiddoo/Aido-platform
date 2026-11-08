@@ -34,7 +34,9 @@ import {
 import { match } from 'ts-pattern';
 
 import { SubTodoPolicy } from '../../domains/sub-todo.model';
+import { type SubTodo } from '../../domains/sub-todo.model';
 import { TodoPolicy } from '../../domains/todo.model';
+import { type Todo } from '../../domains/todo.model';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
@@ -46,8 +48,6 @@ import {
   useToggleTodoMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { type SubTodo } from '../../schemas/sub-todo.schema';
-import { type Todo } from '../../schemas/todo.schema';
 import { formatTodoTime } from '../../utils/format-todo-time';
 import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';

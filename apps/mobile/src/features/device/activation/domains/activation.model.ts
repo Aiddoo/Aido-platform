@@ -4,7 +4,7 @@ import {
   PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
 } from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
-import type { TodoExistence } from '@src/features/planning/todo/schemas/todo.schema';
+import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { z } from 'zod';

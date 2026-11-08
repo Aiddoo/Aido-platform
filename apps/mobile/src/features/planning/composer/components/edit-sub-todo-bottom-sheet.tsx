@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import type { SubTodo } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSubTodoId, useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import type { SubTodo } from '@src/features/planning/todo/schemas/sub-todo.schema';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';

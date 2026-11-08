@@ -20,11 +20,11 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategory } from '../domains/todo-category.model';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
 import { todoCategoryParamsSchema } from '../schemas/todo-category-params.schema';
-import type { TodoCategory } from '../schemas/todo-category.schema';
 import { CategoryFormFields } from './category-form-fields';
 
 type CategoryEditBottomSheetProps = Omit<

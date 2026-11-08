@@ -7,7 +7,7 @@ import {
   createTodoListResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo.fixtures';
-import type { RepeatingTodoDraft } from '../schemas/todo-repeat.schema';
+import type { RepeatingTodoDraft } from '../schemas/todo-series-request.schema';
 import { TodoService } from './todo.service';
 
 function createSut() {

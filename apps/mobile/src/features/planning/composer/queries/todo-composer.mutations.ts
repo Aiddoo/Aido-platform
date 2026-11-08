@@ -10,8 +10,8 @@ import { getCachedActivationContext } from '@src/features/device/activation/quer
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
+import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
-import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
@@ -23,6 +23,7 @@ import {
   isRecurringCategoryTodoLimitError,
 } from '@src/features/planning/todo/domains/todo.error';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
   cancelTodoCompletionQueries,
@@ -37,14 +38,13 @@ import {
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
 import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '@src/features/planning/todo/schemas/todo-repeat.schema';
-import type {
   CreateTodoInput,
   UpdateTodoInput,
 } from '@src/features/planning/todo/schemas/todo-request.schema';
-import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
+import type {
+  RepeatingTodoDraft,
+  TodoSeriesEditOptions,
+} from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';

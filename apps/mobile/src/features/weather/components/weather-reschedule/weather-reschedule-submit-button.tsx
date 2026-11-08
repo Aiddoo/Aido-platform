@@ -1,7 +1,7 @@
 import { useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';

@@ -26,9 +26,9 @@ import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-r
 import { useResolveClassNames } from 'uniwind';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-category.model';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
-import type { TodoCategoryWithCount } from '../schemas/todo-category.schema';
 import { CategoryDeleteDialog } from './category-delete-dialog';
 
 /** 고치기·지우기 탭의 목록 */

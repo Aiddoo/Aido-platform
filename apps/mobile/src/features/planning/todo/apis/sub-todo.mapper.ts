@@ -1,6 +1,6 @@
 import type { TodoItemResponse } from '@aido/api';
 
-import type { SubTodo } from '../schemas/sub-todo.schema';
+import type { SubTodo } from '../domains/sub-todo.model';
 
 export function toSubTodo(dto: TodoItemResponse): SubTodo {
   return {

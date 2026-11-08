@@ -13,11 +13,13 @@ import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import {
   type DailyCompletionSummary,
   type DailyCompletionsResult,
+} from '../domains/daily-completion.model';
+import {
   type Todo,
   type TodoDetails,
   type TodoSummary,
   type TodoListResult,
-} from '../schemas/todo.schema';
+} from '../domains/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat } from './todo-repeat.mapper';
 

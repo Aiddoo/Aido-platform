@@ -17,6 +17,16 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
 
+import type { DailyCompletionsResult } from '../domains/daily-completion.model';
+import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
+import type { TodoSeries } from '../domains/todo-series.model';
+import type {
+  Todo,
+  TodoDetails,
+  TodoExistence,
+  TodoSummary,
+  TodoListResult,
+} from '../domains/todo.model';
 import {
   createRepeatingTodoEnvelopeSchema,
   createTodoEnvelopeSchema,
@@ -24,22 +34,11 @@ import {
   todoDetailsEnvelopeSchema,
   todoListEnvelopeSchema,
   updateTodoEnvelopeSchema,
-} from '../schemas/todo-envelope.schema';
+} from '../schemas/todo-response.schema';
 import type {
   RepeatingTodoDraft,
-  TodoEditScope,
-  TodoSeries,
   TodoSeriesEditOptions,
-  TodoUpdateScope,
-} from '../schemas/todo-repeat.schema';
-import type {
-  DailyCompletionsResult,
-  Todo,
-  TodoDetails,
-  TodoExistence,
-  TodoSummary,
-  TodoListResult,
-} from '../schemas/todo.schema';
+} from '../schemas/todo-series-request.schema';
 import {
   toCreateRepeatingTodoRequest,
   toFollowingCategoryRequest,

@@ -1,8 +1,8 @@
 import { Box } from '@src/shared/ui';
 import type { PropsWithChildren } from 'react';
 
+import type { TodoEditScope } from '../domains/todo-repeat.model';
 import type { ScopeRequest } from '../hooks/use-select-todo-scope';
-import type { TodoEditScope } from '../schemas/todo-repeat.schema';
 import { TodoScopeSelectContent } from './todo-scope-select-content';
 
 interface TodoScopeStepProps extends PropsWithChildren {

@@ -1,4 +1,4 @@
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { toTodoScheduleValues } from '@src/features/planning/todo/utils/todo-schedule-values';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';

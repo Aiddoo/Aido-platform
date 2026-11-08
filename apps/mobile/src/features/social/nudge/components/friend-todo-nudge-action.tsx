@@ -1,5 +1,5 @@
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useRouteFriendQuery } from '@src/features/social/friend/hooks/use-route-friend-query';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

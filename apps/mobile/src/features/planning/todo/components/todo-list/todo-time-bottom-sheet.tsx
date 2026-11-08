@@ -13,13 +13,13 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
+import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import type { TodoUpdateScope } from '../../schemas/todo-repeat.schema';
 import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePickerContent } from '../todo-time-picker-content';

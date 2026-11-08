@@ -10,7 +10,7 @@ import { fromDate } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { screen, userEvent } from '@testing-library/react-native';
 
-import type { TodoRepeat } from '../schemas/todo-repeat.schema';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
 
 const START_DATE = new Date(2026, 10, 5, 12);

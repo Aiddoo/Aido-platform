@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import type { Todo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { Box, HStack, VStack } from '@src/shared/ui';

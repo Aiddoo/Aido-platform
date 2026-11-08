@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { type TodoRepeat, type TodoRepeatEnd } from '../schemas/todo-repeat.schema';
+import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
 
 const todoRepeatFormShape = z.object({
   startDate: instantFieldSchema,

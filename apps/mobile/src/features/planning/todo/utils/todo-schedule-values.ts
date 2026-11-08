@@ -1,7 +1,7 @@
 import { fromDate, type Instant, toDate } from '@src/shared/date/instant';
 
 import { TodoPolicy } from '../domains/todo.model';
-import type { Todo } from '../schemas/todo.schema';
+import type { Todo } from '../domains/todo.model';
 import { parseInstant } from './parse-instant';
 
 interface TodoScheduleValues {

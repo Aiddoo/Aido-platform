@@ -6,7 +6,7 @@ import {
   createSubTodo,
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import type { TodoListResult } from '@src/features/planning/todo/schemas/todo.schema';
+import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import {
   createAnalyticsStub,
   createErrorReporterStub,

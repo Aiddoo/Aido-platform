@@ -1,6 +1,6 @@
 import { createTodoDto } from '../__tests__/todo.fixtures';
 import { toTodo } from '../apis/todo.mapper';
-import type { Todo } from '../schemas/todo.schema';
+import type { Todo } from '../domains/todo.model';
 import { groupFriendTodosByCategory } from './group-friend-todos-by-category';
 
 describe('친구 할 일 목록 표시', () => {

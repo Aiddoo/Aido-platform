@@ -17,8 +17,8 @@ import { ScrollViewContainer } from 'react-native-reorderable-list';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
 import { TODO_QUERY_KEYS } from '../../constants/todo-query-keys';
+import type { Todo } from '../../domains/todo.model';
 import { updateCachedTodo } from '../../queries/todo-cache';
-import type { Todo } from '../../schemas/todo.schema';
 import { TodoList } from './todo-list';
 
 const DATE = '2026-03-08';

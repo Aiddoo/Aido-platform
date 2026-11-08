@@ -9,8 +9,8 @@ import { type QueryState, queryOptions } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import { TodoPolicy } from '../domains/todo.model';
-import { type DailyCompletionSummary } from '../schemas/todo.schema';
 
 const TODOS_PER_DAY_PAGE_SIZE = 200;
 

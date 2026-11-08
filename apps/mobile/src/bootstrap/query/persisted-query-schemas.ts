@@ -5,12 +5,10 @@ import { preferenceSchema } from '@src/features/identity/preference/domains/pref
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
-import { todoCategoriesResultSchema } from '@src/features/planning/category/schemas/todo-category.schema';
+import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-category.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
-import {
-  dailyCompletionsResultSchema,
-  todoListResultSchema,
-} from '@src/features/planning/todo/schemas/todo.schema';
+import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
+import { todoListResultSchema } from '@src/features/planning/todo/domains/todo.model';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
 import { friendUserPagesSchema } from '@src/features/social/friend/schemas/friend.schema';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';

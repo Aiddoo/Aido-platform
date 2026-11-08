@@ -1,4 +1,4 @@
-import type { TodoUpdateChanges } from '../schemas/todo-change.schema';
+import type { TodoUpdateChanges } from '../schemas/todo-change-request.schema';
 
 function hasTodoUpdateChanges({ input, repeat }: TodoUpdateChanges): boolean {
   // nullish-strict: repeat null은 반복 끝내기라 변경이다

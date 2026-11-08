@@ -11,7 +11,7 @@ import { screen } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import type { TodoCategoriesResult } from '../schemas/todo-category.schema';
+import type { TodoCategoriesResult } from '../domains/todo-category.model';
 import {
   useCreateTodoCategoryMutationOptions,
   useDeleteTodoCategoryMutationOptions,

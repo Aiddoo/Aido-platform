@@ -7,7 +7,8 @@ import {
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '../__tests__/todo.fixtures';
-import { dailyCompletionsResultSchema, todoListResultSchema } from '../schemas/todo.schema';
+import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
+import { todoListResultSchema } from '../domains/todo.model';
 import { toDailyCompletionsResult, toTodo, toTodoListResult } from './todo.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });

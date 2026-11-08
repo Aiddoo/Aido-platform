@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import type { TodoRepeat } from '../schemas/todo-repeat.schema';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { formatRepeatCadence, formatRepeatSummary } from './format-repeat-summary';
 
 const NEVER = { type: 'NEVER' } as const;

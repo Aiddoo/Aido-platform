@@ -8,8 +8,8 @@ import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { updateTodoEnvelopeSchema } from '../schemas/todo-envelope.schema';
-import type { Todo } from '../schemas/todo.schema';
+import type { Todo } from '../domains/todo.model';
+import { updateTodoEnvelopeSchema } from '../schemas/todo-response.schema';
 import { toTodo } from './todo.mapper';
 
 export class SubTodoService {

@@ -14,7 +14,7 @@ import type {
   TodoCategoryChange,
   TodoCategoryRemoval,
   TodoCategoryReorder,
-} from '../schemas/todo-category.schema';
+} from '../schemas/todo-category-request.schema';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
 
 export class TodoCategoryService {

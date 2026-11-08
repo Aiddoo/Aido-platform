@@ -17,7 +17,7 @@ import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
 import { TodoPolicy } from '../domains/todo.model';
-import { type Todo } from '../schemas/todo.schema';
+import { type Todo } from '../domains/todo.model';
 import { formatRepeatCadence } from '../utils/format-repeat-summary';
 
 /** `TodoLabel`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */

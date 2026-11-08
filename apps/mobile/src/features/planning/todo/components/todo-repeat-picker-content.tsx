@@ -17,6 +17,7 @@ import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import {
   getTodoRepeatFormIssue,
@@ -25,7 +26,6 @@ import {
   createTodoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
-import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 import { isSameDay } from '../utils/calendar-day-comparison';
 import {
   getTodoRepeatFormFirstOccurrenceKey,

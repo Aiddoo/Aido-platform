@@ -1,7 +1,7 @@
-import type { TodoCategoryWithCount } from '@src/features/planning/category/schemas/todo-category.schema';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
 import { groupBy } from 'es-toolkit';
 
-import type { Todo } from '../schemas/todo.schema';
+import type { Todo } from '../domains/todo.model';
 
 export function groupTodosByCategory(todos: Todo[], categories: TodoCategoryWithCount[]) {
   const grouped = groupBy(todos, (todo) => todo.category.id);

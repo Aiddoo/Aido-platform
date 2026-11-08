@@ -15,9 +15,9 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
+import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
-import type { TodoUpdateScope, TodoEditScope } from '../schemas/todo-repeat.schema';
 import type {
   ChangeTodoCategoryInput,
   ReorderTodoInput,

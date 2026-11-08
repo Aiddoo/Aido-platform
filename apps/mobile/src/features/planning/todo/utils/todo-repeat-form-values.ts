@@ -6,8 +6,8 @@ import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
-import { type TodoRepeat } from '../schemas/todo-repeat.schema';
 import { isAfterDay, isBeforeDay, isSameDay } from './calendar-day-comparison';
 
 export function toTodoRepeatFormValues(

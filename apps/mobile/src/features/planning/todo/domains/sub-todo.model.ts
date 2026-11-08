@@ -1,6 +1,19 @@
 import { TODO_ITEM_LIMITS } from '@aido/api/vocabulary';
+import { z } from 'zod';
 
-import type { SubTodo, SubTodoStats } from '../schemas/sub-todo.schema';
+export const subTodoSchema = z.object({
+  id: z.int(),
+  title: z.string(),
+  completed: z.boolean(),
+  sortOrder: z.int(),
+});
+export type SubTodo = z.infer<typeof subTodoSchema>;
+
+export const subTodoStatsSchema = z.object({
+  total: z.int(),
+  completed: z.int(),
+});
+export type SubTodoStats = z.infer<typeof subTodoStatsSchema>;
 
 type SubTodoParent = { subTodos: readonly SubTodo[]; subTodoStats: SubTodoStats };
 

@@ -17,7 +17,7 @@ import { AppState } from 'react-native';
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { Todo, TodoListResult } from '../schemas/todo.schema';
+import type { Todo, TodoListResult } from '../domains/todo.model';
 import { useToggleTodoMutationOptions } from './todo.mutations';
 
 const TODAY = '2026-10-27';

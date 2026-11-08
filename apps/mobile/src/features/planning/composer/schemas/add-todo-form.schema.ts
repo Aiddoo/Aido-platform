@@ -1,5 +1,5 @@
 import { TODO_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import { todoRepeatSchema } from '@src/features/planning/todo/schemas/todo-repeat.schema';
+import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { instantFieldSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 

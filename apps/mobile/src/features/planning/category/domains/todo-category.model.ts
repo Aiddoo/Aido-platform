@@ -1,9 +1,33 @@
-import type { TodoCategory, TodoCategoryWithCount } from '../schemas/todo-category.schema';
+import { z } from 'zod';
+
+// 임시 행은 음수 id라 id를 양수로 막지 않는다
+export const todoCategorySchema = z.object({
+  id: z.int(),
+  name: z.string(),
+  color: z.string(),
+  sortOrder: z.int(),
+});
+export type TodoCategory = z.infer<typeof todoCategorySchema>;
+
+export const todoCategoryWithCountSchema = todoCategorySchema.extend({
+  todoCount: z.number(),
+});
+export type TodoCategoryWithCount = z.infer<typeof todoCategoryWithCountSchema>;
+
+export const todoCategoriesResultSchema = z.object({
+  categories: z.array(todoCategoryWithCountSchema),
+});
+export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;
+
+const optimisticTodoCategoryWithCountSchema = todoCategoryWithCountSchema.extend({
+  optimistic: z.literal(true).readonly(),
+});
+export type OptimisticTodoCategoryWithCount = z.infer<typeof optimisticTodoCategoryWithCountSchema>;
 
 const MIN_REORDERABLE_COUNT = 2;
 
 /** id가 가리키는 카테고리(시트 route, 칩, 분석이 쓴다). 목록에서 사라졌으면(삭제된 뒤) null */
-function findCategory<T extends Pick<TodoCategory, 'id'>>(
+export function findCategory<T extends Pick<TodoCategory, 'id'>>(
   categories: readonly T[],
   categoryId: number,
 ): T | null {
@@ -11,7 +35,7 @@ function findCategory<T extends Pick<TodoCategory, 'id'>>(
 }
 
 /** 요청한 카테고리가 아직 있으면 그것을, 없으면 첫 카테고리를 처음 선택값으로 쓴다 */
-function getInitialCategoryId(
+export function getInitialCategoryId(
   categories: readonly Pick<TodoCategory, 'id'>[],
   requestedCategoryId: number | null | undefined,
 ): number | null {
@@ -26,7 +50,7 @@ function getInitialCategoryId(
 }
 
 /** 바뀐 값이 없으면 요청을 보내지 않는다 */
-function hasChanges(
+export function hasChanges(
   category: Pick<TodoCategory, 'name' | 'color'>,
   values: Pick<TodoCategory, 'name' | 'color'>,
 ) {
@@ -34,16 +58,16 @@ function hasChanges(
 }
 
 /** 할 일이 남은 카테고리는 바로 지우지 못하고 할 일을 다른 카테고리로 옮겨야 한다 */
-function isTodoMoveRequired(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
+export function isTodoMoveRequired(category: Pick<TodoCategoryWithCount, 'todoCount'>) {
   return category.todoCount > 0;
 }
 
 /** 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다 */
-function isOptimisticCategory(category: Pick<TodoCategory, 'id'>) {
+export function isOptimisticCategory(category: Pick<TodoCategory, 'id'>) {
   return category.id < 0;
 }
 
-function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
+export function canReorderCategories(categories: readonly Pick<TodoCategory, 'id'>[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
 

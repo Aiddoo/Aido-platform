@@ -1,7 +1,7 @@
 import type { TodoRepeat as TodoRepeatDto, TodoRepeatEnd as TodoRepeatEndDto } from '@aido/api';
 import { match } from 'ts-pattern';
 
-import type { TodoRepeat, TodoRepeatEnd } from '../schemas/todo-repeat.schema';
+import type { TodoRepeat, TodoRepeatEnd } from '../domains/todo-repeat.model';
 
 function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
   return match(end)

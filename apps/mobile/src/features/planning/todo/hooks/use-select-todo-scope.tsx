@@ -2,7 +2,7 @@ import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
-import type { TodoEditScope, TodoUpdateScope } from '../schemas/todo-repeat.schema';
+import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
 
 export interface ScopeRequest {
   action: 'edit' | 'delete';

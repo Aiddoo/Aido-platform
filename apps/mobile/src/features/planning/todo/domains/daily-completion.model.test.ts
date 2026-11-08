@@ -1,5 +1,5 @@
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { type DailyCompletionsResult } from '../schemas/todo.schema';
+import { type DailyCompletionsResult } from './daily-completion.model';
 import { DailyCompletionPolicy } from './daily-completion.model';
 
 describe('withTodoDailyCompletion', () => {

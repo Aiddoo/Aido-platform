@@ -5,7 +5,7 @@ import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { type TodoRepeat, type TodoRepeatEnd } from '../schemas/todo-repeat.schema';
+import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
 
 const WEEKDAY_SEPARATOR = '·';
 const SUMMARY_SEPARATOR = ' · ';
