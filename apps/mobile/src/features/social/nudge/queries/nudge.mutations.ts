@@ -29,6 +29,8 @@ export function useReplyToNudgeMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 화면에 머물며 답장 버튼이 응답까지 꺼진다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
       unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
     onSuccess: (data, variables) => {
@@ -55,6 +57,8 @@ export function useSendNudgeThanksMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 감사 버튼이 응답까지 돈다. 답장과 같은 이유로 오프라인에서 멈추지 않는다
+    networkMode: 'always',
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
       unwrap(await todoNudgeService.sendThanks(todoId, input)),
     onSuccess: (recipientCount) => {

@@ -16,6 +16,8 @@ export function useUpdateWeatherLocationMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    // 등록 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결될 때까지 도니 바로 실패해 알린다
+    networkMode: 'always',
     mutationFn: async (coordinates: Coordinates) =>
       unwrap(await weatherService.updateLocation(coordinates)),
     onSuccess: (registered) => {
