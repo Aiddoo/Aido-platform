@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit';
 import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
@@ -75,6 +76,17 @@ export type WidgetSnapshot = z.infer<typeof widgetSnapshotSchema>;
 export type WidgetDaySnapshot = z.infer<typeof widgetDaySnapshotSchema>;
 export type WidgetSnapshotStrings = WidgetDaySnapshot['strings'];
 
-/** 위젯 렌더 시점의 표시 상태 — 스냅샷 상태에 자정 경과(stale)를 더한 판정 결과 */
-export const widgetRenderStateSchema = z.enum(['data', 'empty', 'loggedOut', 'stale']);
-export type WidgetRenderState = z.infer<typeof widgetRenderStateSchema>;
+const legacyWidgetSnapshotV1Schema = widgetDaySnapshotSchema.extend({
+  version: z.literal(1),
+  updatedAtIso: z.string(),
+});
+
+/** 저장소에서 읽을 때만 사용한다. 이미 저장된 v1은 하루짜리 v2로 읽는다. */
+export const widgetSnapshotStorageSchema = z.union([
+  widgetSnapshotSchema,
+  legacyWidgetSnapshotV1Schema.transform((legacy): WidgetSnapshot => ({
+    version: 2,
+    updatedAtIso: legacy.updatedAtIso,
+    days: [omit(legacy, ['version', 'updatedAtIso'])],
+  })),
+]);

@@ -4,8 +4,8 @@ import type { WidgetInfo } from 'react-native-android-widget';
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { ANDROID_WIDGET_DEFINITIONS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
-import type { WidgetProps } from '../schemas/widget-props.schema';
-import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
 
 interface StoredAndroidWidgetRendererDependencies<Rendered> {

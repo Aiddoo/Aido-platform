@@ -1,8 +1,13 @@
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { diffMs, type Instant } from '@src/shared/date/instant';
+import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';
+export const marketingPushPromptStateSchema = z.object({
+  count: z.number(),
+  lastPromptedAt: instantSchema.nullable(),
+});
+export type MarketingPushPromptState = z.infer<typeof marketingPushPromptStateSchema>;
 
 const COOLDOWN_DAYS = 14;
 /** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */

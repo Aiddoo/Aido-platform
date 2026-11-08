@@ -5,9 +5,9 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
 import type { ActivationIdentity, ActivationProgress } from '../domains/activation.model';
 import {
-  type PersistedActivationProgress,
-  persistedActivationProgressSchema,
-} from '../schemas/activation-persisted.schema';
+  type ActivationProgressStorage,
+  activationProgressStorageSchema,
+} from '../schemas/activation-progress-storage.schema';
 
 const KEY_PREFIX = 'aido_activation_v1';
 
@@ -29,7 +29,7 @@ function createActivationProgressKey({ accountId, campaignId }: ActivationIdenti
   return `${KEY_PREFIX}:${accountId}:${campaignId}`;
 }
 
-function toActivationProgress(parsed: PersistedActivationProgress | null): ActivationProgress {
+function toActivationProgress(parsed: ActivationProgressStorage | null): ActivationProgress {
   if (parsed == null) {
     return EMPTY_ACTIVATION_PROGRESS;
   }
@@ -52,7 +52,7 @@ export function createActivationProgressRepository(
     if (cached != null && cached.raw === raw) {
       return cached.progress;
     }
-    const progress = toActivationProgress(parseStoredJson(raw, persistedActivationProgressSchema));
+    const progress = toActivationProgress(parseStoredJson(raw, activationProgressStorageSchema));
     snapshots.set(key, { raw, progress });
     return progress;
   };

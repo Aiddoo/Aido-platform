@@ -2,10 +2,8 @@ import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-stor
 import type { Instant } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
-import {
-  type MarketingPushPromptState,
-  marketingPushPromptStateSchema,
-} from '../schemas/marketing-push-prompt.schema';
+import type { MarketingPushPromptState } from '../domains/marketing-push-prompt.model';
+import { marketingPushPromptStorageSchema } from '../schemas/marketing-push-prompt-storage.schema';
 
 // 출시된 앱이 쓰던 키와 JSON 모양을 그대로 읽는다
 const MARKETING_PUSH_PROMPT_KEY = 'aido_marketing_push_prompt';
@@ -30,7 +28,7 @@ export function createMarketingPushPromptRepository(
     const raw = storage.get(MARKETING_PUSH_PROMPT_KEY);
     if (raw !== cachedRaw) {
       cachedRaw = raw;
-      cachedState = parseStoredJson(raw, marketingPushPromptStateSchema) ?? EMPTY_STATE;
+      cachedState = parseStoredJson(raw, marketingPushPromptStorageSchema) ?? EMPTY_STATE;
     }
     return cachedState;
   };

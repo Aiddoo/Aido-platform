@@ -1,8 +1,9 @@
 import { match } from 'ts-pattern';
 
 import { WIDGET_BRAND_COLOR, WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
-import type { WidgetProps } from '../schemas/widget-props.schema';
-import type { WidgetDaySnapshot, WidgetRenderState } from '../schemas/widget-snapshot.schema';
+import type { WidgetRenderState } from '../domains/widget-snapshot.model';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
+import type { WidgetDaySnapshot } from '../schemas/widget-snapshot-storage.schema';
 import { isHexColor } from '../utils/is-hex-color';
 
 export function toWidgetProps(

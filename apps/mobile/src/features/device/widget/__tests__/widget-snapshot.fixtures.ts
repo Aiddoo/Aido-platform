@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
-import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 
 /** t를 key(params) 형태로 에코해 굽기 로직을 검증할 수 있게 한다 */
 export const echoTranslate: WidgetSnapshotContext['t'] = (key, params) =>

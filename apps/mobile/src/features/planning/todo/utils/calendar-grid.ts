@@ -16,7 +16,7 @@ import {
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { CalendarViewMode } from '../schemas/calendar-view-mode.schema';
+import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
 
 function getWeekOfDate(date: Date, timeZone: string): CalendarWeek {
   return getCalendarWeek(toDateKey(date, timeZone));

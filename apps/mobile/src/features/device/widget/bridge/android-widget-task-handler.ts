@@ -6,8 +6,10 @@ import {
   ANDROID_WIDGET_DEFINITIONS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
 } from '../constants/widget.constants';
-import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
-import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
+import {
+  parseWidgetNavigationUri,
+  WidgetNavigationPolicy,
+} from '../domains/widget-navigation.model';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 
 type WidgetTaskDependencies = {

@@ -5,7 +5,7 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import {
   type WidgetHeadlessFailure,
   widgetHeadlessFailureSchema,
-} from '../schemas/widget-headless-failure.schema';
+} from '../schemas/widget-headless-failure-storage.schema';
 
 const WIDGET_HEADLESS_FAILURE_KEY = 'aido_widget_headless_failure_v1';
 

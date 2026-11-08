@@ -2,7 +2,7 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { toError } from '@src/shared/errors';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
-import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import type { WidgetHeadlessFailureRepository } from './widget-headless-failure.repository';
 import {
   toLoggedOutWidgetSnapshot,

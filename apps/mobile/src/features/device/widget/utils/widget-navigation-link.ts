@@ -1,7 +1,7 @@
 import type { Href } from 'expo-router';
 import { match } from 'ts-pattern';
 
-import { parseWidgetNavigationUri } from '../schemas/widget-navigation.schema';
+import { parseWidgetNavigationUri } from '../domains/widget-navigation.model';
 
 export function findWidgetRoute(uri: string | null): Href | null {
   const destination = parseWidgetNavigationUri(uri);

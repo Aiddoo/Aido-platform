@@ -3,8 +3,10 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
-import { storedWidgetSnapshotSchema } from '../schemas/widget-snapshot-persisted.schema';
-import type { WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import {
+  type WidgetSnapshot,
+  widgetSnapshotStorageSchema,
+} from '../schemas/widget-snapshot-storage.schema';
 
 export interface AndroidWidgetSnapshotRepository {
   findSnapshot(): WidgetSnapshot | null;
@@ -19,7 +21,7 @@ export function createAndroidWidgetSnapshotRepository(
     findSnapshot: () =>
       parseStoredJson(
         storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot),
-        storedWidgetSnapshotSchema,
+        widgetSnapshotStorageSchema,
       ),
     findUserId: () => {
       const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);

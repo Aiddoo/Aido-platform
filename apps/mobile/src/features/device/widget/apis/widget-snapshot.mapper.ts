@@ -13,7 +13,7 @@ import type {
   WidgetDaySnapshot,
   WidgetSnapshot,
   WidgetSnapshotStrings,
-} from '../schemas/widget-snapshot.schema';
+} from '../schemas/widget-snapshot-storage.schema';
 
 /** todo feature에 의존하지 않도록 GET v1/todos/summary 모델과 같은 모양을 구조적 타입으로 둔다 */
 export interface WidgetSummaryInput {

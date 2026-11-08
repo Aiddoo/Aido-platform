@@ -1,6 +1,6 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { LocalFileEntry } from '@src/core/ports/local-file-system';
-import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
@@ -11,10 +11,11 @@ import {
   VOICE_RECORDING_ORPHAN_RETENTION_MS,
 } from '../constants/voice-note.constants';
 import { type PlanReviewDraft, planReviewDraftSchema } from '../schemas/plan-review-form.schema';
-import { speechLocaleSchema } from '../schemas/speech-locale.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import { type PlannedMemo, type VoiceNoteDigestResult, VoicePlanPolicy } from './voice-plan.model';
 import { VoiceTranscriptPolicy } from './voice-transcript.model';
+
+export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
 export const voiceNoteDraftIdSchema = z.string().min(1).brand<'VoiceNoteDraftId'>();
 

@@ -1,8 +1,10 @@
-import type {
-  WidgetDaySnapshot,
-  WidgetRenderState,
-  WidgetSnapshot,
-} from '../schemas/widget-snapshot.schema';
+import { z } from 'zod';
+
+import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
+
+/** 위젯 렌더 시점의 표시 상태 — 스냅샷 상태에 자정 경과(stale)를 더한 판정 결과 */
+export const widgetRenderStateSchema = z.enum(['data', 'empty', 'loggedOut', 'stale']);
+export type WidgetRenderState = z.infer<typeof widgetRenderStateSchema>;
 
 function isLoggedOut(snapshot: WidgetSnapshot): boolean {
   return snapshot.days[0].state === 'loggedOut';

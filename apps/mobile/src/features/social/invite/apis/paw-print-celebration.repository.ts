@@ -1,6 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
-import { celebratedCountSchema } from '../schemas/paw-print-celebration.schema';
+import { celebratedCountSchema } from '../schemas/paw-print-celebration-storage.schema';
 
 const PAW_PRINT_CELEBRATION_KEY_PREFIX = 'aido_invite_paw_print_celebrated_v1';
 

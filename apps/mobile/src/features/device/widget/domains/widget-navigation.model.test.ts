@@ -2,8 +2,8 @@ import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants'
 import {
   parseWidgetNavigationUri,
   type WidgetNavigationCommand,
-} from '../schemas/widget-navigation.schema';
-import { WidgetNavigationPolicy } from './widget-navigation.model';
+  WidgetNavigationPolicy,
+} from './widget-navigation.model';
 
 describe('isFresh', () => {
   it('만료 직전 명령만 허용하고 만료 시점과 미래 명령은 거절한다', () => {

@@ -1,11 +1,11 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
-import { WidgetNavigationPolicy } from '../domains/widget-navigation.model';
 import {
   type WidgetNavigationCommand,
   widgetNavigationCommandSchema,
-} from '../schemas/widget-navigation.schema';
+  WidgetNavigationPolicy,
+} from '../domains/widget-navigation.model';
 
 export const WIDGET_NAVIGATION_COMMAND_KEY = 'aido_widget_pending_navigation_v1';
 

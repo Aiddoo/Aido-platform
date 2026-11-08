@@ -20,7 +20,7 @@ import {
   ANDROID_WIDGET_NAVIGATION_ACTION,
   WIDGET_BRAND_COLOR,
 } from '../constants/widget.constants';
-import type { WidgetProps } from '../schemas/widget-props.schema';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import { isHexColor } from '../utils/is-hex-color';
 
 // SvgWidget needs inline SVG; Metro otherwise transforms ic_paw.svg into a React component.

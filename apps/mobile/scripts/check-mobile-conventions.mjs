@@ -1127,7 +1127,7 @@ function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
 function checkSchemaFolderImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (
-    relativePath.includes('.test.') ||
+    isTestSource(relativePath) ||
     relativePath.includes('/schemas/') ||
     DOMAIN_MODEL_FILE.test(relativePath) ||
     !SCHEMA_FOLDER_FEATURE_PATHS.some((path) => relativePath.startsWith(path))
@@ -1659,17 +1659,42 @@ const ENTITY_FILE_FOLDERS = new Set([
 ]);
 const ENTITY_FILE_NAME =
   /^(.+?)(?:\.schema|\.model|\.mapper|\.service|\.error|-query-keys|-mutation-keys|-cache|\.events|-log-events|-labels|\.constants|\.queries|\.mutations|\.fixtures)\.tsx?$/u;
-const ROLE_SCHEMA_NAME = /-(?:params|form|request|draft|query-key|persisted|response)$/u;
+// schemas/는 폼·route·초안·쿼리 키·기기 저장·서버와 주고받는 모양만 둔다. 모델은 domains/{entity}.model.ts다
+const SCHEMA_FILE_SUFFIXES = [
+  'form',
+  'params',
+  'draft',
+  'query-key',
+  'storage',
+  'request',
+  'response',
+  'payload',
+  'entry',
+];
+const SCHEMA_FILE_NAME = new RegExp(
+  `-(?:${SCHEMA_FILE_SUFFIXES.join('|')})\\.schema(?:\\.test)?\\.ts$`,
+  'u',
+);
+
+function checkSchemaFileNames(repositoryRoot, errors) {
+  for (const file of getSourceFiles(repositoryRoot, 'apps/mobile/src/features')) {
+    const fileName = relative(repositoryRoot, file).replaceAll('\\', '/');
+    if (fileName.includes('/schemas/') && !SCHEMA_FILE_NAME.test(fileName)) {
+      errors.push(
+        `${fileName} schemas/ 파일 이름은 {name}-(${SCHEMA_FILE_SUFFIXES.join('|')}).schema.ts입니다. 클라이언트 모델이면 domains/{entity}.model.ts로 옮기세요.`,
+      );
+    }
+  }
+}
 
 function getEntityNames(featureDirectory) {
-  const schemaDirectory = resolve(featureDirectory, 'schemas');
-  if (!existsSync(schemaDirectory)) {
+  const domainDirectory = resolve(featureDirectory, 'domains');
+  if (!existsSync(domainDirectory)) {
     return [];
   }
-  return readdirSync(schemaDirectory)
-    .filter((name) => name.endsWith('.schema.ts'))
-    .map((name) => name.slice(0, -'.schema.ts'.length))
-    .filter((name) => !ROLE_SCHEMA_NAME.test(name));
+  return readdirSync(domainDirectory)
+    .filter((name) => name.endsWith('.model.ts'))
+    .map((name) => name.slice(0, -'.model.ts'.length));
 }
 
 function checkFeatureFilePrefixes(repositoryRoot, errors) {
@@ -2397,6 +2422,7 @@ export function checkMobileConventions(
   }
 
   checkFeatureFilePrefixes(repositoryRoot, errors);
+  checkSchemaFileNames(repositoryRoot, errors);
 
   applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);
 

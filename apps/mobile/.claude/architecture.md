@@ -42,7 +42,7 @@ src/
 │   ├── events/
 │   └── session/
 ├── features/{area}/{feature}/    # 서버 모듈 이름의 업무 영역 + 단수 kebab-case 기능
-│   ├── schemas/                  # 폼·초안·route·쿼리 키, 서버와 공유하는 응답 모양. {name}-form.schema.ts, {name}-params.schema.ts, {name}-response.schema.ts
+│   ├── schemas/                  # 폼·초안·route·쿼리 키·기기 저장·서버와 주고받는 모양. {name}-{form|params|draft|query-key|storage|request|response|payload|entry}.schema.ts
 │   ├── domains/                  # {entity}.model.ts(모델 스키마·타입 + 순수 함수 + Policy), {feature}.error.ts
 │   ├── apis/                     # {feature}.service.ts, {entity}.mapper.ts, {name}.repository.ts
 │   ├── constants/                # {feature}-query-keys.ts, {feature}.constants.ts
@@ -150,7 +150,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                                                                                                                           |
 | 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                                                                                                                                 |
-| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                                       |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트·`__tests__` 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                           |
+| 스키마 파일 이름     | `features/**/schemas/` 파일이 `-form`·`-params`·`-draft`·`-query-key`·`-storage`·`-request`·`-response`·`-payload`·`-entry`(`.schema.ts`) 밖의 이름. 모델은 `domains/{entity}.model.ts`로 옮긴다                                                                                                       |
 | 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                                                                                                                               |
 | Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                                                                                                                           |
 | 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                                                                                                                           |
@@ -194,12 +195,12 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-08 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                    | 지금 코드                                                                                                                                                                                                                          |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                     |
-| [모델](#모델과-policy)  | `schemas/{entity}.schema.ts`에 남은 모델 스키마 61개(2026-11-08). memo부터 `domains/{entity}.model.ts`로 옮겼고 나머지는 이번 정리에서 옮긴다. 계약에서 `pick`으로 유도한 모델은 앱 모양으로 직접 정의하고 mapper가 DTO를 바꾼다   |
-| [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음 |
-| 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                   |
+| 규칙                    | 지금 코드                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                                                                                |
+| [모델](#모델과-policy)  | 모델 스키마는 모두 `domains/`에 있다(`schemas/`의 역할 접미사 밖 파일 0개). 모델 파일 4개가 `schemas/`의 폼·요청·푸시 모양을 import한다: `notification.model.ts`(`PushNotificationPayload`), `voice-note.model.ts`(`planReviewDraftSchema`), `todo-comment-composer.model.ts`(`TodoCommentComposerMode`·`TodoCommentChainInput`), `todo-change.model.ts`(`TodoUpdateChanges`). 손댈 때 모델 모양으로 정의하고 mapper가 바꾼다 |
+| [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음                                                                                                                                                                                            |
+| 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -778,10 +779,15 @@ features/{area}/{feature}/
 ├── apis/
 │   └── {entity}.mapper.ts       # 응답 DTO → 모델, 폼 값 → 요청
 └── schemas/
-    ├── {name}-form.schema.ts    # 폼 값
-    ├── {name}-draft.schema.ts   # 저장하는 초안 값
-    ├── {name}-params.schema.ts  # route 값
-    └── {name}-response.schema.ts # 서버와 공유하는 응답 모양(계약에서 pick·extend). 모델이 아니다
+    ├── {name}-form.schema.ts      # 폼 값
+    ├── {name}-draft.schema.ts     # 저장하는 초안 값
+    ├── {name}-params.schema.ts    # route 값
+    ├── {name}-query-key.schema.ts # 쿼리 키 값
+    ├── {name}-storage.schema.ts   # 기기 저장 모양(MMKV·SecureStore·위젯 저장소). 모델과 같으면 모델 스키마를 extend
+    ├── {name}-request.schema.ts   # 서버로 보내는 요청 모양
+    ├── {name}-response.schema.ts  # 서버와 공유하는 응답 모양(계약에서 pick·extend). 모델이 아니다
+    ├── {name}-payload.schema.ts   # 다른 프로세스와 주고받는 메시지(푸시 data, 위젯 timeline props)
+    └── {name}-entry.schema.ts     # 앱에 묶은 정적 목록 한 줄(whats-new 릴리스)
 ```
 
 ```typescript
@@ -859,7 +865,7 @@ export function toMemo(dto: MemoDto): Memo {
 | `@aido/api/common`                        | 응답 봉투, 날짜·시각 스키마, SemVer 비교                    | `shared`의 날짜·버전 도구, `shared/infra/http`                                                                                                                                        |
 | `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입                                 | `apis/`(mapper·service)와 `schemas/`(폼·공유 응답), HTTP 어댑터(`shared/infra/http/token-refresher`의 `contracts/auth`). 모델(`domains/`)은 쓰지 않는다. 테스트 fixture는 루트를 쓴다 |
 
-- 모든 `domains/*.model.ts`는 계약을 import하지 않는다(`check:conventions`가 막는다). 아직 `schemas/{entity}.schema.ts`에 있는 모델 스키마는 손댈 때 `domains/{entity}.model.ts`로 옮긴다([아직 옮기지 않은 것](#아직-옮기지-않은-것)).
+- 모든 `domains/*.model.ts`는 계약을 import하지 않는다. 모델 스키마는 `domains/{entity}.model.ts`에만 두고 `schemas/` 파일은 위 접미사로 끝난다(둘 다 `check:conventions`가 막는다). 저장 모양이 모델과 같으면 모델 스키마를 `extend`해 버전·옛 값 처리만 더한다(`store-review-storage.schema.ts`).
 - 공유할 값이 앱에만 있으면 `vocabulary`로 올린다. 숫자를 앱에서 다시 적지 않는다.
 - 폼 스키마가 계약과 같은 값을 통과시키는지 mapper 테스트로 교차 검증한다(`memo.mapper.test.ts`).
 - mapper는 계약 enum·유니온을 `satisfies Record<ContractEnum, …>`나 `exhaustive()`로 빠짐없이 매핑한다. 서버가 값을 더하면 빌드가 깨져 놓치지 않는다.

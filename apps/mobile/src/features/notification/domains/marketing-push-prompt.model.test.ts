@@ -2,8 +2,10 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { toInstant } from '@src/shared/date/instant';
 import dayjs from 'dayjs';
 
-import type { MarketingPushPromptState } from '../schemas/marketing-push-prompt.schema';
-import { MarketingPushPromptPolicy } from './marketing-push-prompt.model';
+import {
+  type MarketingPushPromptState,
+  MarketingPushPromptPolicy,
+} from './marketing-push-prompt.model';
 
 function createPromptState(
   overrides?: Partial<MarketingPushPromptState>,

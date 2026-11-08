@@ -1644,7 +1644,7 @@ test('네임스페이스의 *Skeleton 조각을 거부하고 X.Loading과 TextSk
 test('entity 이름이 feature 이름을 줄인 것이면 feature 수준 파일이 줄인 이름으로 시작하는 것을 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/social/nudge/schemas/todo-nudge.schema.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/domains/todo-nudge.model.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/queries/nudge-cache.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/constants/nudge.events.ts': 'export {};',
     },
@@ -1660,17 +1660,73 @@ test('entity 이름이 feature 이름을 줄인 것이면 feature 수준 파일�
 test('다른 entity, 역할 이름 파일, 컴포넌트와 feature 이름과 같은 entity는 접두사 검사를 통과한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/social/nudge/schemas/todo-nudge.schema.ts': 'export {};',
+      'apps/mobile/src/features/social/nudge/domains/todo-nudge.model.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/schemas/nudge-params.schema.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/domains/nudge-interaction.model.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/queries/todo-nudge-cache.ts': 'export {};',
       'apps/mobile/src/features/social/nudge/components/nudge-limit-banner.tsx': 'export {};',
-      'apps/mobile/src/features/planning/todo/schemas/todo.schema.ts': 'export {};',
-      'apps/mobile/src/features/planning/todo/schemas/sub-todo.schema.ts': 'export {};',
+      'apps/mobile/src/features/planning/todo/domains/todo.model.ts': 'export {};',
+      'apps/mobile/src/features/planning/todo/domains/sub-todo.model.ts': 'export {};',
       'apps/mobile/src/features/planning/todo/queries/todo-cache.ts': 'export {};',
     },
     (errors) => {
       assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('schemas/ 파일은 역할 접미사로 끝나면 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/schemas/memo-form.schema.ts': 'export {};',
+      'apps/mobile/src/features/notes/memo/schemas/memo-form.schema.test.ts': 'export {};',
+      'apps/mobile/src/features/notes/memo/schemas/memo-params.schema.ts': 'export {};',
+      'apps/mobile/src/features/notes/memo/schemas/memo-draft.schema.ts': 'export {};',
+      'apps/mobile/src/features/notes/memo/schemas/memo-plan-response.schema.ts': 'export {};',
+      'apps/mobile/src/features/weather/schemas/weather-report-query-key.schema.ts': 'export {};',
+      'apps/mobile/src/features/device/widget/schemas/widget-snapshot-storage.schema.ts':
+        'export {};',
+      'apps/mobile/src/features/notification/schemas/push-notification-payload.schema.ts':
+        'export {};',
+      'apps/mobile/src/features/social/nudge/schemas/nudge-request.schema.ts': 'export {};',
+      'apps/mobile/src/features/app-config/whats-new/schemas/release-entry.schema.ts': 'export {};',
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('schemas/에 모델·옛 접미사 파일을 두면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/schemas/memo.schema.ts': 'export {};',
+      'apps/mobile/src/features/device/activation/schemas/activation-persisted.schema.ts':
+        'export {};',
+      'apps/mobile/src/features/planning/todo/schemas/calendar-view-mode.schema.ts': 'export {};',
+      'apps/mobile/src/features/notes/memo/schemas/memo-key.ts': 'export {};',
+    },
+    (errors) => {
+      assert.deepEqual(errors.map((error) => error.split(' ')[0]).sort(), [
+        'apps/mobile/src/features/device/activation/schemas/activation-persisted.schema.ts',
+        'apps/mobile/src/features/notes/memo/schemas/memo-key.ts',
+        'apps/mobile/src/features/notes/memo/schemas/memo.schema.ts',
+        'apps/mobile/src/features/planning/todo/schemas/calendar-view-mode.schema.ts',
+      ]);
+      assert.match(errors.join('\n'), /domains\/\{entity\}\.model\.ts/u);
+    },
+  );
+});
+
+test('테스트 fixture의 Zod import는 스키마 폴더 규칙에 걸리지 않는다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notification/__tests__/notification-navigation-cases.ts': `import { z } from 'zod';`,
+      'apps/mobile/src/features/notification/utils/notification-destination.ts': `import { z } from 'zod';`,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /^apps\/mobile\/src\/features\/notification\/utils\//u);
     },
   );
 });

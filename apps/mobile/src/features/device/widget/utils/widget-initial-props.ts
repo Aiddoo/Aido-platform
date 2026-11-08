@@ -3,7 +3,7 @@ import en from '../../../../shared/i18n/locales/en/widget.json';
 import ko from '../../../../shared/i18n/locales/ko/widget.json';
 import type { ResolvedLanguage } from '../../../../shared/preferences/language.preference';
 import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
-import type { WidgetProps } from '../schemas/widget-props.schema';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 
 /** 첫 동기화 전(로그아웃 안내) props. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다. */
 export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps {

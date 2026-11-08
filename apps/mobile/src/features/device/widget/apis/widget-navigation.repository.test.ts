@@ -1,6 +1,6 @@
 import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 
-import type { WidgetNavigationCommand } from '../schemas/widget-navigation.schema';
+import type { WidgetNavigationCommand } from '../domains/widget-navigation.model';
 import {
   createWidgetNavigationRepository,
   WIDGET_NAVIGATION_COMMAND_KEY,

@@ -31,7 +31,7 @@ import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
 import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
-import type { WidgetProps } from '../schemas/widget-props.schema';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
 
 // Widget layouts execute in isolation; helpers and palette must stay inside this function.

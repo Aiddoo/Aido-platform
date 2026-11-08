@@ -2,10 +2,34 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  type NavigationCase,
-  navigationCasesSchema,
-} from '../schemas/notification-navigation-case.schema';
+  notificationActionSchema,
+  notificationNavigationSchema,
+  notificationRoutingSchema,
+  notificationTypeSchema,
+} from '@aido/api';
+import { z } from 'zod';
+
 import type { NotificationDestinationSource } from '../utils/notification-destination';
+
+/** 서버 spec과 함께 읽는 대조표 한 줄. 푸시 data의 source와 기대하는 이동을 짝짓는다. */
+const navigationCaseSchema = z.object({
+  name: z.string(),
+  source: z.object({
+    type: notificationTypeSchema,
+    action: notificationActionSchema.optional(),
+    todoId: z.number().optional(),
+    friendId: z.string().optional(),
+    nudgeId: z.number().optional(),
+    cheerId: z.number().optional(),
+    routing: notificationRoutingSchema.optional(),
+  }),
+  navigation: notificationNavigationSchema.nullable(),
+  knownDifference: z.string().optional(),
+});
+
+type NavigationCase = z.infer<typeof navigationCaseSchema>;
+
+const navigationCasesSchema = z.array(navigationCaseSchema);
 
 const FIXTURE_PATH = join(
   __dirname,

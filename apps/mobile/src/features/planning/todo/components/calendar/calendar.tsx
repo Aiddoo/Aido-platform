@@ -26,7 +26,7 @@ import type { CompletionsByDate } from '../../queries/todo.queries';
 import {
   type CalendarViewMode,
   calendarViewModeSchema,
-} from '../../schemas/calendar-view-mode.schema';
+} from '../../schemas/calendar-view-mode-storage.schema';
 import { isSameMonth } from '../../utils/calendar-day-comparison';
 import {
   diffWeeks,

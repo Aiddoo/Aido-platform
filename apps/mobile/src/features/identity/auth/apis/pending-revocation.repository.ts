@@ -3,7 +3,7 @@ import type { Storage } from '@src/core/ports/storage';
 import {
   type PendingRevocation,
   pendingRevocationSchema,
-} from '../schemas/pending-revocation.schema';
+} from '../schemas/pending-revocation-storage.schema';
 
 // ⚠️ 영속 계약: 출시된 설치의 키체인 항목을 가리킨다. 토큰 키와 분리해 세션 판정에 쓰이지 않는다
 const PENDING_REVOCATION_KEY = 'pendingRevocation';

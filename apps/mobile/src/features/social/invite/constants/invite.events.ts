@@ -1,9 +1,17 @@
 import type { InviteFriendship, RedeemOutcome } from '@aido/api/vocabulary';
 
+import type { InviteShareChannel } from '../apis/invite-share.service';
 import type { InviteLinkSource } from '../domains/invite-redemption.model';
 import type { RedeemFailureReason } from '../domains/invite.error';
-import type { InviteEntrySource } from '../schemas/invite-entry.schema';
-import type { InviteShareChannel } from '../schemas/invite-share.schema';
+
+/** 친구 초대로 들어온 곳. 누른 순간 invite_entry_tapped로 남긴다 */
+export type InviteEntrySource =
+  | 'friends_empty'
+  | 'friend_strip_empty'
+  | 'friend_limit_dialog'
+  | 'mypage_card'
+  | 'activation_checklist'
+  | 'all_done_banner';
 
 declare module '@src/shared/analytics/event-map' {
   /**

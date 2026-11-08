@@ -2,7 +2,7 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { type DeviceTimezone } from '../domains/device-timezone.model';
-import { savedDeviceTimezoneSchema } from '../schemas/device-timezone.schema';
+import { deviceTimezoneStorageSchema } from '../schemas/device-timezone-storage.schema';
 
 const DEVICE_TIMEZONE_KEY = 'aido_device_timezone_v1';
 
@@ -16,7 +16,7 @@ export interface DeviceTimezoneRepository {
 export function createDeviceTimezoneRepository(storage: SyncStorage): DeviceTimezoneRepository {
   return {
     find: (userId) => {
-      const saved = parseStoredJson(storage.get(DEVICE_TIMEZONE_KEY), savedDeviceTimezoneSchema);
+      const saved = parseStoredJson(storage.get(DEVICE_TIMEZONE_KEY), deviceTimezoneStorageSchema);
       return saved?.userId === userId ? saved.deviceTimezone : null;
     },
     save: (userId, deviceTimezone) => {

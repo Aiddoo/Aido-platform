@@ -5,10 +5,8 @@ import { HOUR_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
-import {
-  type PendingRevocation,
-  refreshEnvelopeSchema,
-} from '../schemas/pending-revocation.schema';
+import { refreshEnvelopeSchema } from '../schemas/auth-response.schema';
+import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
 import type { PendingRevocationRepository } from './pending-revocation.repository';
 
 /** 기기에 refresh 토큰이 남는 시간이라 가장 긴 직항 비행(약 19시간)을 덮는 하루로 두고, 지나면 refresh 만료(최대 7일)에 맡긴다 */

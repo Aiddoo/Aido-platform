@@ -1,5 +1,7 @@
-import { WidgetNavigationPolicy } from '@src/features/device/widget/domains/widget-navigation.model';
-import { type WidgetNavigationCommand } from '@src/features/device/widget/schemas/widget-navigation.schema';
+import {
+  type WidgetNavigationCommand,
+  WidgetNavigationPolicy,
+} from '@src/features/device/widget/domains/widget-navigation.model';
 import {
   findWidgetRoute,
   isWidgetRouteShown,

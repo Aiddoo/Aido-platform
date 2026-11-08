@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { widgetRenderStateSchema } from './widget-snapshot.schema';
+import { widgetRenderStateSchema } from '../domains/widget-snapshot.model';
 
 const widgetPropsSchema = z.object({
   state: widgetRenderStateSchema,

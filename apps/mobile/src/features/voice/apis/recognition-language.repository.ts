@@ -1,7 +1,7 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
-import { speechLocaleSchema } from '../schemas/speech-locale.schema';
+import { speechLocaleSchema } from '../domains/voice-note.model';
 
 const KEY_PREFIX = 'aido_recognition_language_v1';
 

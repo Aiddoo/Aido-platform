@@ -4,8 +4,8 @@ import type { WidgetTimelineEntry } from 'expo-widgets';
 
 import { toWidgetProps } from '../apis/widget-props.mapper';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
-import type { WidgetProps } from '../schemas/widget-props.schema';
-import { type WidgetSnapshot } from '../schemas/widget-snapshot.schema';
+import type { WidgetProps } from '../schemas/widget-props-payload.schema';
+import { type WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 
 interface WidgetTimelineContext {
   now: Date;

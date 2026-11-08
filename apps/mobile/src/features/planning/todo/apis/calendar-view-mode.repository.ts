@@ -3,7 +3,7 @@ import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-stor
 import {
   type CalendarViewMode,
   calendarViewModeSchema,
-} from '../schemas/calendar-view-mode.schema';
+} from '../schemas/calendar-view-mode-storage.schema';
 
 const CALENDAR_VIEW_MODE_KEY = 'aido_calendar_view_mode';
 const DEFAULT_VIEW_MODE: CalendarViewMode = 'week';
