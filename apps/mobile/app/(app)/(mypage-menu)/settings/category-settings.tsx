@@ -8,6 +8,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Button,
   H3,
   HStack,
   PlusIcon,
@@ -21,7 +22,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
-import { PressableFeedback, Tabs } from 'heroui-native';
+import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
@@ -57,22 +58,25 @@ export default function TodoCategorySettingsScreen() {
               </Tabs.List>
             </ViewTabs>
 
-            <PressableFeedback
-              accessibilityRole="button"
-              hitSlop={8}
+            <Button
+              size="small"
+              variant="weak"
+              color="primary"
+              display="inline"
+              radius="full"
               onPress={() => push('/todo-categories/new')}
             >
               <HStack align="center" gap={4}>
                 <PlusIcon
-                  width={fontScaledSize(18)}
-                  height={fontScaledSize(18)}
+                  width={fontScaledSize(16)}
+                  height={fontScaledSize(16)}
                   colorClassName="text-main"
                 />
-                <Text size="b3" tone="brand" weight="medium">
+                <Text size="b4" tone="brand" weight="semibold">
                   {t('categorySettings.add')}
                 </Text>
               </HStack>
-            </PressableFeedback>
+            </Button>
           </HStack>
 
           <Spacing size={20} />
