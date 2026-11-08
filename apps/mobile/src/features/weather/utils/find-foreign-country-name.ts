@@ -1,7 +1,4 @@
-/**
- * 기기 지역과 다른 나라에 있을 때만 그 나라 이름을 앱 언어로 돌려준다.
- * 나라를 모르거나 런타임이 Intl.DisplayNames를 지원하지 않으면 null이다.
- */
+/** 기기 지역과 같은 나라, 모르는 나라, Intl.DisplayNames가 없는 런타임이면 null이다 */
 export function findForeignCountryName(
   location: { countryCode: string | null },
   deviceRegion: string | null,

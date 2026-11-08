@@ -7,7 +7,6 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 
-/** 홈 알림 안내를 닫았는지(14일 숨김)를 계정마다 읽고 닫는다 */
 export function usePushPromptSnooze() {
   const pushPromptRepository = usePushPromptRepository();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());

@@ -63,7 +63,6 @@ export class PushDeviceService {
   getPermission = async (): Promise<PushPermission> =>
     toPushPermission(await this.#gateway.getPermission());
 
-  /** 시스템 권한 창을 띄우고, 바뀐 권한을 바로 서버에 알린다 */
   requestPermission = async (): Promise<PushPermission> => {
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
@@ -85,11 +84,7 @@ export class PushDeviceService {
     return permission;
   };
 
-  /**
-   * 이 기기의 권한과 토큰을 서버에 알린다. 이번 세션에 같은 값을 이미 보냈으면 요청하지 않는다.
-   * 서버는 시간대를 요청 헤더에서 읽으므로 기기 시간대가 바뀌어도 다시 보낸다.
-   * 권한과 토큰을 읽는 동안도 진행 중으로 잡아 해제가 기다리게 하고, 그사이 세션이 끝났으면 보내지 않는다.
-   */
+  // 서버는 시간대를 요청 헤더에서 읽어 시간대가 바뀌면 다시 보내고, 읽는 동안도 진행 중으로 잡아 해제가 기다린다
   report = (options: { force?: boolean } = {}): Promise<Result<PushDevice | null, ApiError>> => {
     const reporting = this.#report(options);
     this.#reportsInFlight.add(reporting);
@@ -156,8 +151,7 @@ export class PushDeviceService {
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
     this.#unregisterCount += 1;
-    // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다.
-    // 토큰 발급이 느려도 로그아웃을 붙잡지 않게 기다리는 시간은 요청 제한과 같게 둔다
+    // 보고가 해제보다 늦으면 로그아웃한 기기로 푸시가 가므로 먼저 끝내되, 요청 제한만큼만 기다린다
     await withTimeout(
       () => Promise.allSettled(this.#reportsInFlight),
       config?.timeout ?? REPORT_WAIT_TIMEOUT_MS,

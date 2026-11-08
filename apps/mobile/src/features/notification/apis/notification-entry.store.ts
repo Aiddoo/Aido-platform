@@ -24,7 +24,6 @@ export interface NotificationEntryStore {
   markReady(responseId: string, destination: NotificationDestination): void;
   /** 끝난 응답을 슬롯에서 빼고, 같은 응답이 다시 와도 무시한다 */
   settle(responseId: string): void;
-  /** 세션이 끝나면 슬롯을 비운다 */
   clear(): void;
 }
 

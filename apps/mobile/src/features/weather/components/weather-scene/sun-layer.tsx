@@ -80,10 +80,7 @@ type SunLayerProps = {
   time: SharedValue<number>;
 };
 
-/**
- * 하얗게 타는 작은 원반, 따뜻한 코로나, 하늘 전체로 번지는 빛, 서로 반대로 도는 두 겹 빛살, 렌즈 반사.
- * 하늘의 구름양과 해를 지나는 구름만큼 어두워진다.
- */
+/** 원반·코로나·하늘 빛·두 겹 빛살·렌즈 반사를 그리고, 구름양과 해를 지나는 구름만큼 어두워진다 */
 export function SunLayer({
   sun,
   center,

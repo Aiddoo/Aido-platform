@@ -72,7 +72,6 @@ export interface BriefingViewDeps {
   formatChance: (percent: number) => string;
 }
 
-/** 브리핑 종류를 화면 문구·할 일 행·버튼으로 바꾼다. */
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
   const { hourly, now, timeZone, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({

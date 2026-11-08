@@ -42,10 +42,7 @@ interface WeatherAttributionProps {
   background: AttributionBackground;
 }
 
-/**
- * WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 Apple Weather 표기와 출처 고지 링크를 둔다.
- * 마크는 Apple이 주는 로고 이미지를 변형 없이 쓰고, 하늘 위에서는 흰 글자(dark) 로고를 쓴다.
- */
+/** WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 표기와 출처 링크를 두고 로고는 변형 없이 쓴다 */
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
   const openUrl = useOpenInAppBrowser();

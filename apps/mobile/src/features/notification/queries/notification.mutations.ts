@@ -40,8 +40,7 @@ export function useMarkAllAsReadMutationOptions() {
   const logger = useLogger();
   const queryClient = useQueryClient();
 
-  // 배지는 겉모습이다 — 일부 안드로이드 런처에서 이 네이티브 호출이 거부하는데,
-  // 그것 때문에 읽음 처리가 통째로 실패하면 안 된다.
+  // 일부 Android 런처는 배지 호출을 거부하므로 그 실패로 읽음 처리가 실패하지 않게 한다
   const clearBadgeQuietly = () => {
     notificationBadgeService
       .clearBadge()
@@ -91,8 +90,7 @@ export function useMarkAsReadMutationOptions() {
     onMutate: async (notificationId) => {
       const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
       const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
-      // 읽지 않은 수를 아직 모르면 배지를 0으로 지우지 않고 성공 뒤 서버 값으로 맞춘다.
-      // 일부 Android 런처는 배지 호출을 거부하므로 그 실패로 읽음 처리가 멈추지 않게 한다
+      // 수를 모르면 배지를 0으로 지우지 않는다. 일부 Android 런처는 배지 호출을 거부해 경고만 남긴다
       if (count != null) {
         notificationBadgeService.setBadgeCount(count).catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, {
@@ -121,8 +119,7 @@ export function useMarkAsReadMutationOptions() {
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) }),
         );
-      // 알림을 누르면 목적지로 이동이 이어진다. 읽음 표시는 되돌아가고 다음에 누를 때 다시 보내므로
-      // 이동한 화면을 토스트로 가리지 않는다
+      // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
       haptics.notify('error');
     },
   });
@@ -201,10 +198,7 @@ function shouldRetryPushOpened(failureCount: number, error: unknown) {
   );
 }
 
-/**
- * 눌린 푸시를 기록하고 알림함을 읽음으로 맞춘다. 서버의 opened는 읽음도 함께 처리하므로,
- * 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다. 오프라인이면 연결될 때까지 멈춰 있다.
- */
+/** 서버의 opened는 읽음도 처리하므로 예산 안에 읽음을 확인하지 못한 탭도 여기서 뒤늦게 읽음이 된다 */
 export function useRecordPushOpenedMutationOptions() {
   const notificationBadgeService = useNotificationBadgeService();
   const notificationService = useNotificationService();

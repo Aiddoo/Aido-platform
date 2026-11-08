@@ -177,10 +177,7 @@ type MoonProps = Omit<SkyAreaProps, 'height'> & {
   occlusion: SharedValue<number>;
 };
 
-/**
- * 날짜로 구한 위상만큼 차오른 달. 구운 표면 텍스처를 살짝 기울여 그리고, 10초 주기로 숨 쉬는 은빛 무리를 두른다.
- * 구름이 끼면 흐려지고, 구름이 25%를 넘으면 22° 달무리 고리가 비친다.
- */
+/** 10초 주기로 숨 쉬는 무리를 두르고, 구름이 끼면 흐려지며 25%를 넘으면 22° 달무리가 비친다 */
 NightSkyLayer.Moon = function Moon({
   center,
   phase,

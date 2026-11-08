@@ -42,7 +42,6 @@ function getHrefPathname(href: Href): string | undefined {
   return pathname?.split('?')[0];
 }
 
-/** 화면으로 가는 목적지만 남겨 그 경로를 돌려준다. */
 function getRouteDestinationPathnames(
   destinations: readonly ReturnType<typeof resolveNotificationDestination>[],
 ): (string | undefined)[] {

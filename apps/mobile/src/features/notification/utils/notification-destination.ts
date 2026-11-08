@@ -97,10 +97,7 @@ function toLegacyFieldsDestination(
     : toRouteDestination(routing, { shouldOpenToday, windowSizeClass, viewerId });
 }
 
-/**
- * 서버가 푸시에 실어 보낸 목적지를 앱 경로로 바꾼다. 구 필드로 고른 곳과 같아야 하며,
- * `packages/api/test-fixtures/notification-navigation.cases.json`으로 서버·앱·구 필드를 함께 묶는다.
- */
+/** 구 필드로 고른 곳과 같아야 한다(`packages/api/test-fixtures/notification-navigation.cases.json`) */
 function toNavigationDestination(
   navigation: NotificationNavigation,
   { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
@@ -352,11 +349,7 @@ interface TodoDetailTarget {
   date?: string;
 }
 
-/**
- * 알림에서 할 일 상세를 여는 곳. 목록에서 고를 때와 같은 기준으로
- * 접힌 화면은 상세 화면을 push하고, 펼친 화면은 피드 상세 pane에 고른다.
- * 펼친 화면의 목록 pane은 그 할 일의 주인(친구 피드)과 날짜를 보여 준다.
- */
+/** 목록에서 고를 때처럼 접힌 화면은 상세를 push하고, 펼친 화면은 피드 상세 pane에 고른다 */
 function toTodoDetailRoute(
   windowSizeClass: WindowSizeClass,
   { todoId, comment, friendId, date }: TodoDetailTarget,

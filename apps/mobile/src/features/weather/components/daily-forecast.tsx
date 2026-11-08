@@ -67,10 +67,7 @@ interface RowFormat {
   columnScale: number;
 }
 
-/**
- * 할 일 점은 날짜별 완료 현황(캘린더 표시와 같은 캐시)으로 찍는다. 리포트와 함께 받기 시작하되
- * 할 일 조회가 실패해도 예보는 그대로 보이도록 suspend하지 않고 점만 뺀다.
- */
+/** 할 일 조회가 실패해도 예보는 그대로 보이도록 할 일 점은 suspend하지 않고 점만 뺀다 */
 export function DailyForecast() {
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();

@@ -19,7 +19,6 @@ interface MarketingPushOptInBannerProps {
   className?: string;
 }
 
-/** 광고성 앱 푸시 미동의자에게 feed에서 동의를 다시 권한다. 노출과 상호작용은 아래 훅이 소유한다 */
 export function MarketingPushOptInBanner({ className }: MarketingPushOptInBannerProps) {
   const { t } = useTranslation('notification');
   const { isVisible, open, dismiss } = useMarketingPushOptInPrompt();
@@ -48,10 +47,7 @@ interface MarketingPushOptInPrompt {
   dismiss: () => void;
 }
 
-/**
- * 노출 판단은 MarketingPushPromptPolicy에, 저장은 MarketingPushPromptRepository에 맡긴다.
- * 부수효과는 명시적 액션(open/dismiss)에서만 일어난다.
- */
+// 부수효과는 명시적 액션(open/dismiss)에서만 일어난다
 function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
   const marketingPushPromptRepository = useMarketingPushPromptRepository();
   const { trackEvent } = useTrack();

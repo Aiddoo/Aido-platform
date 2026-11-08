@@ -132,10 +132,7 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   return { from, to, changesAt: hour.startsAt };
 }
 
-/**
- * 시간별 카드 맨 위 한 문장의 재료. 하루 안의 비·눈을 먼저 말하고, 없으면 하늘 변화, 그것도 없으면
- * 하늘과 기온 정점을 말한다. 문장은 화면이 i18n 키로 만든다.
- */
+/** 문장은 화면이 i18n 키로 만들고 여기서는 비·눈 → 하늘 변화 → 하늘과 기온 정점 순으로 재료를 고른다 */
 function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,

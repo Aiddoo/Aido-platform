@@ -1,6 +1,5 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 
-/** 알림 권한 안내가 보인 곳 */
 export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
 
 declare module '@src/shared/analytics/event-map' {

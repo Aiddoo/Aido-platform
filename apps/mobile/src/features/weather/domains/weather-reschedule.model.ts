@@ -40,10 +40,7 @@ interface TodoScheduleInput {
   isAllDay: boolean;
 }
 
-/**
- * 후보 시각은 할 일과 같은 날(기기 시간대)이라 날짜는 그대로 두고 시각만 바꾼다.
- * 할 일 시각은 기기 시간대의 HH:mm으로 저장한다.
- */
+/** 후보 시각은 할 일과 같은 날(기기 시간대)이라 날짜는 두고 시각(기기 시간대 HH:mm)만 바꾼다 */
 function getMovedScheduleInput(
   todo: Pick<TodoScheduleSnapshot, 'startDate' | 'endDate'>,
   startsAt: Instant,
@@ -72,10 +69,7 @@ interface RescheduleTarget<TTodo> {
   startsAt: Instant;
 }
 
-/**
- * 실제로 옮길 할 일과 시각. 시트를 연 사이 지워졌거나 완료된 할 일(다른 기기·알림 동작·날짜가 바뀐 목록)은 옮기지 않는다.
- * 비어 있으면 옮길 것이 없으므로 주 버튼을 끈다.
- */
+/** 시트를 연 사이 지워졌거나 완료된 할 일(다른 기기·알림 동작)은 옮기지 않는다 */
 function getRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
   changes: readonly ScheduleChange[],
   todos: readonly TTodo[],
@@ -128,11 +122,7 @@ function getAffectedTodos(
     .exhaustive();
 }
 
-/**
- * 같은 날(기기 시간대) 안에서 지금 이후의 정시를 옮길 후보로 고른다. 할 일 날짜는 기기 시간대로 저장되므로
- * 위치 시간대가 아니라 기기 시간대로 날짜를 맞춘다.
- * 비는 비 안 오는 시간을 강수 확률이 낮은 순으로, 더위는 덥지 않은 시간을 원래 시각과 가까운 순으로 고른다.
- */
+/** 할 일 날짜는 기기 시간대로 저장되므로 위치 시간대가 아니라 기기 시간대의 같은 날에서 후보를 고른다 */
 function getRescheduleOptions(
   hourly: readonly HourlyForecastEntry[],
   todo: Pick<ForecastTodo, 'scheduledAt'>,

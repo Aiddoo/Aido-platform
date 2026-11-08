@@ -45,10 +45,7 @@ function getReadingRevision(reading: LocationReading | undefined): number {
     : SAVED_LOCATION_REVISION;
 }
 
-/**
- * 등록한 위치가 이미 받은 리포트의 위치와 같은 격자면 직전 읽기의 리비전을 유지해 같은 요청을 두 번 보내지 않는다.
- * 비교할 리포트가 없으면(아직 받는 중이거나 서버에 위치가 없던 경우) 새 리비전으로 다시 받는다.
- */
+/** 리포트와 같은 격자면 리비전을 유지해 같은 요청을 두 번 보내지 않고, 비교할 리포트가 없으면 새 리비전이다 */
 function getNextRevision(
   previous: LocationReading | undefined,
   registered: Coordinates,

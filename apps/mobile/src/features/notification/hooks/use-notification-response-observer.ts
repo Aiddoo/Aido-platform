@@ -33,10 +33,7 @@ import { resolveNotificationDestination } from '../utils/notification-destinatio
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
 
-/**
- * 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모으고,
- * 판단은 NotificationPolicy, 목적지는 resolveNotificationDestination에 맡긴다.
- */
+/** 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모은다 */
 export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();

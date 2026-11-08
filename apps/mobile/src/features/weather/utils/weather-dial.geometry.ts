@@ -92,10 +92,7 @@ const NEEDLE_STROKE_OUTER_RADIUS = 38;
 const NEEDLE_TIP_RADIUS = 46;
 const NEEDLE_HEAD_HALF_ANGLE = 9;
 
-/**
- * 풍향(북=0도)은 바람이 불어오는 쪽이므로 꼬리를 그 방향에, 화살촉을 반대쪽(불어 가는 쪽)에 둔다.
- * 무풍처럼 방향이 없으면 바늘 없이 눈금만 그린다.
- */
+/** 풍향(북=0도)은 불어오는 쪽이라 꼬리를 그 방향에 둔다. 방향이 없으면 바늘 없이 눈금만 그린다 */
 export function toCompassDial(windDirection: number | null): CompassDial {
   const cardinals = CARDINAL_DIRECTIONS.map((direction, index) => ({
     direction,

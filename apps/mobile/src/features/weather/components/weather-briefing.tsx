@@ -76,12 +76,7 @@ function useTranslateBriefingCopy() {
   return translate;
 }
 
-/**
- * 오늘 할 일과 시간별 예보를 겹쳐 비·뇌우·눈·더위와 만나는 할 일, 곧 올 비, 맑은 날, 내일 아침을 알려 준다.
- * 리포트는 히어로가 이미 요청한 같은 캐시를 던지지 않는 useQuery로 구독한다. 리포트 실패는 화면의
- * 리포트 경계 한 곳에서만 보이고 보고되며, 이 블록의 경계는 오늘 할 일 실패만 맡는다.
- * 할 일 시각은 기기 시계라 위치 벽시계가 기기와 다르면(해외 위치) 브리핑을 그리지 않는다.
- */
+/** 리포트 실패는 리포트 경계 한 곳에서만 보이도록 던지지 않는 useQuery로 구독하고, 이 경계는 할 일 실패만 맡는다 */
 export function WeatherBriefing() {
   const { data: report } = useQuery({
     ...useGetWeatherReportQueryOptions(),
@@ -221,10 +216,7 @@ WeatherBriefing.Contents = function Contents({
   );
 };
 
-/**
- * 할 일 시각은 기기 시간대로 저장돼 있어 기기 시간대로 보여 준다. 큰 글씨에서는 칩을 제목 아래로 내린다.
- * 피드의 할 일 줄과 같게, 줄을 누르면 할 일 메뉴(수정·날짜·시간·카테고리)가 열리고 체크박스는 완료를 바꾼다.
- */
+/** 할 일 시각은 기기 시간대로 저장돼 있어 기기 시간대로 보여 준다 */
 WeatherBriefing.Item = function Item({
   row,
   timeFormat,
@@ -238,7 +230,6 @@ WeatherBriefing.Item = function Item({
   const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
-  // 앱 글자 크기가 가장 클 때는 칩을 제목 아래로 내린다
   const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
   const time = formatClockTime(todo.scheduledAt, timeFormat, dateFormat);
@@ -387,9 +378,7 @@ WeatherBriefing.RescheduleButton = function RescheduleButton({
   );
 };
 
-/**
- * 날씨에 맞는 할 일을 제안만 한다. 제목·시각을 채운 할 일 추가 시트를 열고, 저장은 사용자가 고친 뒤 시트가 한다.
- */
+/** 제안만 한다. 저장은 사용자가 고친 뒤 할 일 추가 시트가 한다 */
 WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   action,
 }: {

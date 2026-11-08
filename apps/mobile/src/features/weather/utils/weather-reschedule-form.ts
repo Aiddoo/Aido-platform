@@ -3,10 +3,7 @@ import { toInstant } from '@src/shared/date/instant';
 import type { ScheduleChange } from '../domains/weather-reschedule.model';
 import type { WeatherRescheduleFormValues } from '../schemas/weather-reschedule-form.schema';
 
-/**
- * 폼 필드 이름(`selections.<키>`)에 쓰는 할 일 키.
- * react-hook-form은 숫자 경로를 배열 index로 읽어 selections를 배열로 만들므로 숫자만으로 된 키를 쓰지 않는다.
- */
+/** react-hook-form은 숫자 경로를 배열 index로 읽어 selections를 배열로 만들므로 숫자만으로 된 키를 쓰지 않는다 */
 export function toSelectionKey(todoId: number): string {
   return `todo-${todoId}`;
 }

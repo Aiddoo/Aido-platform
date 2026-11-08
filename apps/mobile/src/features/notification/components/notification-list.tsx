@@ -156,10 +156,7 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
   );
 };
 
-/**
- * 알림 센터에서 알림 하나를 연다. 읽음 처리 → 프리미엄 확인 → 목적지 계산 → 기록 → 이동 순서다.
- * 목록이 한 번 부르고 행에 넘겨 행마다 게이트·mutation을 만들지 않는다
- */
+// 목록이 한 번 부르고 행에 넘겨 행마다 게이트·mutation을 만들지 않는다
 function useOpenNotification() {
   const { t } = useTranslation('notification');
   const navigateToDestination = useNotificationNavigation();

@@ -16,10 +16,7 @@ interface WeatherResultProps {
   children?: ReactNode;
 }
 
-/**
- * 날씨 화면의 안내·오류 상태(시안 V2States 2·6). 카드 없이 하늘 장면 위에 고양이·제목·설명과
- * 꽉 찬 폭의 버튼을 둔다. 마스코트 이미지는 장식이라 보조 기술에서 숨긴다.
- */
+/** 시안 V2States 2·6. 마스코트 이미지는 장식이라 보조 기술에서 숨긴다 */
 export function WeatherResult({
   image,
   title,

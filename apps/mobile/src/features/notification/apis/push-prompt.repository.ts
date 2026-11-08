@@ -14,7 +14,6 @@ function createPushPromptKey(userId: string): string {
   return `${PUSH_PROMPT_KEY_PREFIX}:${userId}`;
 }
 
-/** 알림 권한 안내를 닫은 시각을 계정마다 남긴다 */
 export function createPushPromptRepository(storage: ObservableSyncStorage): PushPromptRepository {
   return {
     findDismissedAt: (userId) => {

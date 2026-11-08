@@ -10,10 +10,7 @@ const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
   '(auth)',
 ]);
 
-/**
- * 눌린 푸시를 첫 화면으로 열지 판단한다. Index가 목적지로 바로 가면 피드가 focus되지 않아
- * 피드 안내와 화면 기록이 생기지 않고, 뒤로 가기는 anchor인 피드다.
- */
+/** Index가 목적지로 바로 가면 피드가 focus되지 않아 피드 안내와 화면 기록이 생기지 않는다 */
 export function useNotificationEntry() {
   const status = useAuthStatus();
   const store = useNotificationEntryStore();

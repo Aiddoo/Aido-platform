@@ -492,10 +492,7 @@ function SunRayShape({ ray, center }: { ray: SunRay; center: number }) {
 
 const MOON_TEXTURE_SIZE = 384;
 
-/**
- * 달 표면: 여러 겹 값 잡음으로 만든 바다, 격자마다 하나씩 흩어 둔 크레이터와 테두리 밝은 면, 가장자리 어둡기.
- * 위상에 맞춰 명암 경계를 흐리게 칠하고, 어두운 면에는 지구 반사광을 남긴다. 위상이 바뀔 때만 다시 굽는다.
- */
+/** 달 표면(값 잡음 바다·크레이터·가장자리 어둡기·지구 반사광). 위상이 바뀔 때만 다시 굽는다 */
 const MOON_SURFACE = Skia.RuntimeEffect.Make(`
 uniform float size;
 uniform float phase;

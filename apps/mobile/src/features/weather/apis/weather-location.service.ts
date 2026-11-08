@@ -46,13 +46,7 @@ export class WeatherLocationService {
     this.#errorReporter = errorReporter;
   }
 
-  /**
-   * 기기 위치를 읽고, 직전에 등록한 위치에서 충분히 움직였을 때만 서버에 다시 등록한다.
-   * 허용한 적 있는데 권한이 정해지지 않은 채로 읽히면 다시 확인하고, 그래도 모르면 직전 위치를 마지막 위치로 유지한다.
-   * 위치를 읽지 못하면 직전 위치를 유지하고, 직전 위치도 없으면 unavailable로 끝내 서버에 저장된 위치를 쓰게 한다.
-   * 등록한 위치가 이미 받은 리포트의 위치와 다른 격자일 때만 리비전을 올려 리포트를 다시 받는다.
-   * 서버가 등록을 거절하면(4xx) err로, 네트워크·서버 장애는 throw로 알린다.
-   */
+  // 직전 위치도 없으면 unavailable로 서버 저장 위치를 쓰게 한다. 등록 거절(4xx)은 err, 네트워크·서버 장애는 throw다
   resolveLocation = async ({
     previous,
     signal,

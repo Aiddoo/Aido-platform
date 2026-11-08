@@ -40,10 +40,7 @@ export class WeatherService {
       '[WeatherService] Invalid updateLocation response',
     );
 
-  /**
-   * 서버가 위치를 잃었다고(WEATHER_1902) 답하면 마지막으로 등록한 위치를 한 번만 다시 등록하고 다시 받는다.
-   * 다시 등록할 위치가 없거나 등록도 실패하면 처음의 1902를 그대로 돌려 위치 안내를 보여 준다.
-   */
+  // 서버가 위치를 잃으면(WEATHER_1902) 한 번만 다시 등록하고, 그것도 안 되면 처음의 1902를 돌려 위치 안내를 띄운다
   getReportWithReregistration = async ({
     lastRegistered,
     signal,

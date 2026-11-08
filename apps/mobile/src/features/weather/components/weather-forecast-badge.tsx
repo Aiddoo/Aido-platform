@@ -24,11 +24,7 @@ function selectBadge(report: WeatherReport) {
   };
 }
 
-/**
- * 피드·메모 헤더의 날씨 진입점. 날씨 화면과 같은 리포트 key를 구독해 화면에 들어가면 캐시를 그대로 쓴다.
- * 헤더라 Suspense·오류 경계 대신 상태별로 그린다. 위치가 없거나 리포트를 받지 못해도 날씨 화면
- * (권한 안내·다시 시도)으로 들어갈 수 있게 진입 배지를 남긴다.
- */
+/** 헤더라 경계 대신 상태별로 그리고, 위치·리포트가 없어도 날씨 화면(권한 안내·다시 시도)으로 갈 배지를 남긴다 */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
   const { data: badge, isPending } = useQuery({
@@ -48,10 +44,7 @@ export function WeatherForecastBadge() {
     .exhaustive();
 }
 
-/**
- * 헤더 왼쪽 자리는 아이콘과 온도만 들어가는 폭이라 로고(1x 38pt)를 줄이지 않고는 넣을 수 없다.
- * 로고를 줄이는 대신 날씨 화면(로고·출처 링크 표기)으로 보내고, 접근성 이름에 공급자를 밝힌다.
- */
+/** 헤더 폭에는 로고(1x 38pt)를 줄이지 않고 넣을 수 없어 날씨 화면으로 보내고 접근성 이름에 공급자를 밝힌다 */
 WeatherForecastBadge.Item = function Item({
   current,
   serviceName,

@@ -42,10 +42,7 @@ import {
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
-/**
- * 모든 칸은 같은 폭으로 리듬을 맞춘다. 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고,
- * 글자 배율에 비례해 늘린다.
- */
+/** 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고, 글자 배율에 비례해 늘린다 */
 const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies Record<
   TimeFormat,
   number

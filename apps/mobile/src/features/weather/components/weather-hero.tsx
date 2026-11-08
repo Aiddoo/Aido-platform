@@ -65,18 +65,12 @@ const LONG_TEMPERATURE_FONT_SIZE = 76;
 const TEMPERATURE_LETTER_SPACING_EM = -0.06;
 /** display 토큰 크기. 줄 높이·자간을 글자 크기에 맞춰 조일 때만 쓴다. */
 const DISPLAY_FONT_SIZE = 96;
-/**
- * 숫자 글리프가 줄 상자 안에서 놓이는 높이가 플랫폼마다 달라(iOS는 위로 붙고 Android는 아래로 내려온다),
- * 지명·날씨 줄과 위아래 간격이 같아 보이도록 em 단위로 옮긴다. 76·96 모두 같은 비율로 맞는다.
- */
+/** 숫자 글리프 높이가 플랫폼마다 달라(iOS는 위, Android는 아래) 위아래 간격이 같아 보이도록 em 단위로 옮긴다 */
 const TEMPERATURE_OFFSET_EM =
   process.env.EXPO_OS === 'ios'
     ? { top: 0.06, bottomTrim: 0.14 }
     : { top: -0.05, bottomTrim: 0.03 };
-/**
- * 영하 기호는 숫자의 0.52배 크기로 숫자 세로 가운데에, °는 0.42배 크기로 숫자 위쪽에 붙인다.
- * 글리프가 줄 상자 안에 놓이는 높이가 플랫폼마다 달라 위치를 em 단위로 맞춘다.
- */
+/** 영하 기호는 숫자의 0.52배로 세로 가운데, °는 0.42배로 위쪽. 글리프 높이가 플랫폼마다 달라 em 단위다 */
 const SIGN = {
   scale: 0.52,
   top: process.env.EXPO_OS === 'ios' ? 0.27 : 0.33,
@@ -185,10 +179,7 @@ export function WeatherHero() {
   );
 }
 
-/**
- * 도시 위의 작은 위치 표시. 기기 위치로 받은 지명일 때만 보이고, 기기 지역과 다른 나라면 나라 이름을,
- * 동네를 알면 동네 이름을 붙인다. 권한을 확인하지 못해 직전 위치를 쓰는 중이면 현재 위치가 아니라 마지막 위치로 적는다.
- */
+/** 기기 위치 지명일 때만 보이고, 권한을 확인하지 못해 직전 위치를 쓰면 현재 위치가 아니라 마지막 위치로 적는다 */
 WeatherHero.LocationLabel = function LocationLabel({
   countryCode,
   district,
@@ -227,10 +218,7 @@ WeatherHero.LocationLabel = function LocationLabel({
   );
 };
 
-/**
- * 숫자 양쪽에 같은 폭의 기호 자리를 두어 숫자는 늘 가운데에 있고, 왼쪽 자리에 영하 기호, 오른쪽 자리에 °를 둔다.
- * 크기는 display 토큰을 쓰고(앱 글자 크기와 무관), 세 자리만 76으로 줄인다.
- */
+/** 크기는 앱 글자 크기와 무관한 display 토큰을 쓰고 세 자리만 76으로 줄인다 */
 WeatherHero.Temperature = function Temperature({ reading }: { reading: TemperatureReading }) {
   const digits = String(reading.magnitude);
   const isLong = digits.length >= LONG_TEMPERATURE_LENGTH;
@@ -343,10 +331,7 @@ WeatherHero.Loading = function Loading() {
   );
 };
 
-/**
- * 리포트는 모든 블록이 같은 요청을 쓰므로 실패도 여기 한 곳에서만 보여 준다.
- * 위치를 아직 확인하는 중에 서버에 위치가 없다고(WEATHER_1902) 하면 등록이 끝날 때까지 기다린다.
- */
+/** 리포트는 모든 블록이 같은 요청을 쓰므로 실패도 여기 한 곳에서만 보여 준다 */
 WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();

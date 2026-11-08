@@ -16,7 +16,7 @@ function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
   return promptState.count < MAX_PROMPT_COUNT;
 }
 
-/** 마지막 닫기 이후 쿨다운이 경과했는가 (닫은 적 없으면 즉시 true) */
+/** 닫은 적 없으면 true다 */
 function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant): boolean {
   if (promptState.lastPromptedAt == null) {
     return true;
@@ -25,7 +25,7 @@ function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant)
   return diffMs(now, promptState.lastPromptedAt) >= COOLDOWN_DAYS * DAY_MS;
 }
 
-/** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
+/** 동의 정보 로딩 전에는 노출하지 않는다 */
 function shouldPrompt(
   consent: Pick<Consent, 'marketingPushAgreedAt'> | undefined,
   promptState: MarketingPushPromptState,

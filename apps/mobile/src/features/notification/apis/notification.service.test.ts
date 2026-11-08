@@ -25,8 +25,6 @@ describe('NotificationService', () => {
     });
   });
 
-  // ── getNotifications ─────────────────────────
-
   describe('getNotifications', () => {
     it('응답을 받으면 알림 목록을 반환한다', async () => {
       // Given
@@ -60,8 +58,6 @@ describe('NotificationService', () => {
     });
   });
 
-  // ── getUnreadCount ───────────────────────────
-
   describe('getUnreadCount', () => {
     it('응답을 받으면 읽지 않은 수를 반환한다', async () => {
       // Given
@@ -91,8 +87,6 @@ describe('NotificationService', () => {
     });
   });
 
-  // ── markAsRead ───────────────────────────────
-
   describe('markAsRead', () => {
     it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {
       // Given
@@ -119,8 +113,6 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
-
-  // ── markAllAsRead ────────────────────────────
 
   describe('markAllAsRead', () => {
     it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {

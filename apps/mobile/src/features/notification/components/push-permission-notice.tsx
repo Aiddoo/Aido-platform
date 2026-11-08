@@ -25,7 +25,6 @@ interface PushPermissionNoticeProps {
   className?: string;
 }
 
-/** 이 기기로 알림이 닿지 않을 때 다음 할 일을 알려 준다. 닫으면 14일 동안 숨긴다 */
 export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const [{ data: permission }, { data: preference }] = useSuspenseQueries({
     queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],

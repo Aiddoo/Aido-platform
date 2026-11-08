@@ -63,11 +63,7 @@ function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
   return { x: at(p0.x, p1.x, p2.x, p3.x), y: at(p0.y, p1.y, p2.y, p3.y) };
 }
 
-/**
- * 해 궤적 위 지금 해의 자리. 낮은 일출~일몰을 두 곡선에 시간 비율로 놓는다.
- * 밤은 반으로 나눠 일몰 뒤 반나절은 오른쪽 끝 곡선, 일출 전 반나절은 왼쪽 끝 곡선에 둔다.
- * 일출·일몰 중 하나라도 없으면(백야·극야 등) 자리를 정할 수 없어 null이다.
- */
+/** 밤은 반으로 나눠 양 끝 곡선에 둔다. 일출·일몰 중 하나라도 없으면(백야·극야) null이다 */
 export function getSunArcPosition(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   now: Instant,

@@ -242,10 +242,7 @@ interface WeatherIconProps extends GlyphIconProps {
   isDaylight: boolean;
 }
 
-/**
- * 고양이 귀가 달린 날씨 아이콘. 상태 이름은 옆의 글자가 읽어 주므로 보조 기술에서 숨긴다.
- * 시안은 앱 안 아이콘을 움직이지 않으므로(움직임은 배경 장면이 맡는다) 정지 아이콘으로 그린다.
- */
+/** 상태 이름은 옆 글자가 읽어 주므로 보조 기술에서 숨기고, 움직임은 배경 장면이 맡아 정지 아이콘이다 */
 export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProps) {
   return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }

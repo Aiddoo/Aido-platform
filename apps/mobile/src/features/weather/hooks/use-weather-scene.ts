@@ -20,10 +20,7 @@ const DEFAULT_SCENE_INPUT: WeatherSceneInput = {
   latitude: 0,
 };
 
-/**
- * 하늘 장면은 리포트가 없거나 실패해도 화면을 막지 않도록 Suspense·오류 경계 밖에서 구독하고,
- * 받기 전에는 기본 장면을 돌려준다. 배경과 헤더 아래 페이드가 같은 장면을 그린다.
- */
+/** 리포트가 없거나 실패해도 화면을 막지 않도록 Suspense·오류 경계 밖에서 구독한다 */
 export function useWeatherScene(): WeatherScene {
   const location = useWeatherLocation();
   const { data: sceneInput } = useQuery({

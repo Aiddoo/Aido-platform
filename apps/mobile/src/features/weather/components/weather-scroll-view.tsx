@@ -60,10 +60,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
   );
 }
 
-/**
- * 권한 안내·오류처럼 한 덩어리만 보여 주는 상태를 헤더 아래 보이는 영역의 세로 가운데에 둔다.
- * iOS는 헤더 높이만큼 내용이 자동으로 내려가므로 그만큼 아래 여백을 더해 가운데를 맞춘다.
- */
+/** iOS는 헤더 높이만큼 내용이 자동으로 내려가므로 그만큼 아래 여백을 더해 가운데를 맞춘다 */
 WeatherScrollView.Status = function Status({ children }: PropsWithChildren) {
   const headerHeight = useHeaderHeight();
 

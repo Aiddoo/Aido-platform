@@ -31,10 +31,7 @@ export interface MoonGeometry {
   rotation: 0 | 180;
 }
 
-/**
- * terminator는 -1(밝은 면 없음)~1(보름) 사이 명암 경계 자리다. 0이면 반달로 경계가 곧다.
- * 바깥 반원과 경계 반타원을 이어 밝은 면을 그린다.
- */
+/** terminator는 -1(밝은 면 없음)~1(보름) 사이 명암 경계 자리이고 0이면 반달이다 */
 function toLitPath(terminator: number, { isWaxing }: { isWaxing: boolean }): string {
   const clamped = clamp(terminator, -1, 1);
   const terminatorRx = round(MOON_RADIUS * Math.abs(clamped), 2);

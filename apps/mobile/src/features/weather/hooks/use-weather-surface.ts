@@ -15,7 +15,6 @@ const LIGHT_NOW_RING_ALPHA = 0.55;
 const DARK_NOW_RING = 'rgba(10,14,24,0.6)';
 
 export type WeatherSurface = {
-  /** 카드 면 색 */
   card: string;
   /** 카드 안쪽 0.5pt 테두리 색 */
   cardEdge: string;
@@ -29,10 +28,7 @@ function selectSky(report: WeatherReport): WeatherSceneSky {
   return toWeatherScene(WeatherReportSelect.scene(report)).sky;
 }
 
-/**
- * 하늘 장면 색조를 따라가는 유리 카드 색. 리포트를 받기 전에는 맑은 낮 색조를 쓴다.
- * 요청은 각 블록의 Suspense 쿼리가 하므로 여기서는 캐시만 구독한다.
- */
+/** 요청은 각 블록의 Suspense 쿼리가 하므로 여기서는 캐시만 구독한다 */
 export function useWeatherSurface(): WeatherSurface {
   const { theme } = useUniwind();
   const isOpaque = useIsReduceTransparencyEnabled();

@@ -19,9 +19,7 @@ export const ALERT_SURFACE_COLORS = {
 } as const;
 export const ALERT_GLYPH_COLORS = { triangle: '#FFC48F', mark: '#3A2210' } as const;
 
-/** 강수 확률 숫자 */
 export const PRECIPITATION_CHANCE_TEXT_CLASS = 'text-[#8FD0FF]';
-/** 할 일이 있는 날 점 */
 export const TODO_DOT_COLOR = '#FF8A65';
 
 export const NEXT_HOUR_CHART_COLORS = { line: '#9AD5FF', area: '#7CC8FF' } as const;
@@ -31,11 +29,8 @@ export const SUN_COLORS = { glow: '#FFE29A', ring: '#FFD54A' } as const;
 export const UV_METER_COLORS = ['#4ADE80', '#FACC15', '#FB923C', '#EF4444', '#A855F7'] as const;
 export const AIR_METER_COLORS = ['#4ADE80', '#FACC15', '#FB923C', '#EF4444'] as const;
 
-/** 특보 카드 앞 경고 아이콘의 둥근 바탕 */
 export const ALERT_GLYPH_BACKGROUND_CLASS = 'bg-[rgba(255,170,90,0.28)]';
 
-/** 밝은 하늘 위 버튼의 글자색 */
 export const LIGHT_BUTTON_TEXT_CLASS = 'text-[#383838]';
 
-/** 히어로 글자 아래 옅은 그림자 */
 export const HERO_TEXT_SHADOW_COLOR = 'rgba(0,0,0,0.08)';

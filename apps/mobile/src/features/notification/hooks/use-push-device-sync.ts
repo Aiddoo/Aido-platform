@@ -10,11 +10,7 @@ import { useReportPushDeviceMutationOptions } from '../queries/notification.muta
 /** 권한 창·제어 센터처럼 짧게 오가는 복귀를 한 번으로 묶는다 */
 const APP_ACTIVE_SYNC_DELAY_MS = 1_000;
 
-/**
- * 로그인한 기기의 알림 권한·토큰과 시간대를 서버와 맞춘다. 권한만 있으면 토큰이 빠진 채로 남지 않게
- * 로그인 확인 직후·앱 복귀·푸시 탭·토큰 변경·언어 변경·시간대 변경 때 보고한다.
- * 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
- */
+/** 권한만 있고 토큰이 빠진 채로 남지 않게 여러 시점에 보고하고, 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다 */
 export function usePushDeviceSync({
   authStatus,
   deviceTimeZone,

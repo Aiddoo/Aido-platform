@@ -168,10 +168,7 @@ export function createStarField(width: number, height: number, seed: number): St
   });
 }
 
-/**
- * 해·달의 가운데. 지명·기온이 놓인 단(heroLeft부터 heroWidth만큼, 넓은 화면에서는 왼쪽 단)의 오른쪽에 두고,
- * 헤더 아래 내용이 시작하는 높이(contentTop)보다 원반 하나만큼 더 내려 둔다.
- */
+/** 지명·기온 단(넓은 화면은 왼쪽 단)의 오른쪽, contentTop보다 원반 하나만큼 아래에 둔다 */
 export function getCelestialCenter(
   screen: { width: number; height: number },
   { contentTop, heroLeft, heroWidth }: { contentTop: number; heroLeft: number; heroWidth: number },
@@ -292,10 +289,7 @@ export type BouncePhase =
   | { phase: 'bouncing'; bounce: number; elapsed: number }
   | { phase: 'resting' };
 
-/**
- * 바닥까지 떨어진 뒤 주어진 초속으로 차례로 튀어 오르는 입자의 지금 단계.
- * 위치를 매 프레임 누적하지 않고 시각만으로 계산해, 멈춘 화면과 다시 움직일 때 어긋나지 않는다.
- */
+/** 위치를 매 프레임 누적하지 않고 시각만으로 계산해 멈췄다 다시 움직여도 어긋나지 않는다 */
 export function getBouncePhase(
   elapsed: number,
   fallDuration: number,

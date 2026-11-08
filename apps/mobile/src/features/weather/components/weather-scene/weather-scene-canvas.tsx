@@ -53,10 +53,7 @@ type SceneEntry = { id: number; scene: WeatherScene };
 
 type SceneSize = { width: number; height: number };
 
-/**
- * 장면이 바뀌면 이전 장면을 지우지 않고 남겨 두었다가 새 장면과 교차해 사라지게 한다.
- * 사라지는 도중 또 바뀌면 사라지던 장면은 그 자리에서 끊긴다. 날씨가 같으면 장면이 같아 드물고, 장면을 쌓을 만큼은 아니다.
- */
+/** 사라지는 도중 또 바뀌면 사라지던 장면은 끊는다. 드문 일이라 장면을 쌓지 않는다 */
 function useSceneCrossFade(scene: WeatherScene) {
   const [current, setCurrent] = useState<SceneEntry>({ id: 0, scene });
   const [outgoing, setOutgoing] = useState<SceneEntry | null>(null);

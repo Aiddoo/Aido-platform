@@ -48,11 +48,7 @@ export interface BriefingTodo {
   subTodoProgress: BriefingSubTodoProgress;
 }
 
-/**
- * 할 일 목록의 값을 브리핑 입력으로 바꾼다. 종일 할 일은 시각이 있어도 시간대를 정하지 않은 것으로 본다.
- * 할 일 시각은 어디서든 그 벽시계라 예보와 맞출 순간은 보고 있는 날짜 + 벽시계 + 기기 시간대로 만든다.
- * 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있으므로 시작일이 아니라 보고 있는 날짜에 둔다.
- */
+/** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
   todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodoStats'>,
   { date, timeZone }: { date: string; timeZone: string },
@@ -69,7 +65,6 @@ function toBriefingTodo(
   };
 }
 
-/** 시각이 정해진 할 일과 그 시각의 시간별 예보 */
 export interface ForecastTodo {
   todoId: number;
   title: string;
@@ -334,11 +329,7 @@ function toTomorrowMorningBriefing(
   };
 }
 
-/**
- * 판단은 완료한 할 일까지 포함해 체크해도 카드가 그대로 남는다. 옮기기 대상은 화면이 미완료만 고른다.
- * 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저 알리고, 없으면 곧 올 비, 맑은 날, 내일 아침 순으로 알려 준다.
- * 위 어디에도 해당하지 않으면 남은 할 일이 비를 피했는지만 알린다.
- */
+/** 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다 */
 function getWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
