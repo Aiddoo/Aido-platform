@@ -1,6 +1,7 @@
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -21,7 +22,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { noop, range } from 'es-toolkit';
+import { groupBy, noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo, useState } from 'react';
@@ -49,7 +50,6 @@ import {
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/format-todo-time';
-import { groupTodosByCategory } from '../../utils/group-todos-by-category';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
 import {
   TODO_ROW_ACCESSIBILITY_ACTION,
@@ -328,8 +328,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
           <NestedReorderableList
             {...subTodoReorderableList}
             dragEnabled={
-              subTodoReorderableList.dragEnabled &&
-              !todo.subTodos.some(SubTodoPolicy.isOptimisticSubTodo)
+              subTodoReorderableList.dragEnabled && SubTodoPolicy.canReorderSubTodos(todo)
             }
             shouldUpdateActiveItem
             scrollEnabled={false}
@@ -357,3 +356,8 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
     </TodoRow>
   );
 };
+
+function groupTodosByCategory(todos: readonly Todo[], categories: TodoCategoryWithCount[]) {
+  const grouped = groupBy(todos, (todo) => todo.category.id);
+  return categories.map((category) => ({ category, todos: grouped[category.id] ?? [] }));
+}

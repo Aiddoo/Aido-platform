@@ -37,8 +37,9 @@ export function CategoryDeleteDialog({
   const portalTarget = usePortalTarget();
 
   const category = TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId);
-  const otherCategories = categoriesResult.categories.filter(
-    (candidate) => candidate.id !== categoryId,
+  const otherCategories = TodoCategoryPolicy.getMoveTargetCategories(
+    categoriesResult.categories,
+    categoryId,
   );
 
   if (!category) {

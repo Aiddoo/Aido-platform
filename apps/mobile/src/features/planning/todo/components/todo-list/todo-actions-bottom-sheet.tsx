@@ -40,10 +40,6 @@ import {
   useUpdateTodoScheduleMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
-import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import { isSameDay } from '../../utils/calendar-day-comparison';
-import { toTodoScheduleValues } from '../../utils/todo-schedule-values';
 import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
 
@@ -117,24 +113,22 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
   const isBusy =
     deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
-  const editValues = toTodoScheduleValues(todo, dateFormatContext.timeZone);
-  const isTodoToday = isSameDay(editValues.startDate, today, dateFormatContext.timeZone);
+  const todayKey = toDateKey(today, dateFormatContext.timeZone);
+  const isTodoToday = todo.startDate === todayKey;
 
   const sheetParams = { todoId: todo.id, date };
 
   const handleScheduleToggle = () => {
-    const { startDate, endDate } = isTodoToday
-      ? calculateTomorrowSchedule(editValues.endDate, today, dateFormatContext.timeZone)
-      : calculateTodaySchedule(editValues.endDate, today, dateFormatContext.timeZone);
+    const { startDate, endDate } = TodoPolicy.getTodayToggleDates(todo, todayKey);
 
     updateScheduleMutation.mutate(
       {
         todoId: todo.id,
         changedField: 'date',
         input: {
-          startDate: toDateKey(startDate, dateFormatContext.timeZone),
-          endDate: endDate == null ? null : toDateKey(endDate, dateFormatContext.timeZone),
-          scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
+          startDate,
+          endDate,
+          scheduledTime: TodoPolicy.getLocalTime(todo, dateFormatContext.timeZone),
           isAllDay: todo.isAllDay,
         },
       },

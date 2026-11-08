@@ -34,6 +34,14 @@ export function findCategory<T extends Pick<TodoCategory, 'id'>>(
   return categories.find((category) => category.id === categoryId) ?? null;
 }
 
+// 지우는 카테고리의 할 일은 남은 다른 카테고리로만 옮길 수 있다
+export function getMoveTargetCategories<T extends Pick<TodoCategory, 'id'>>(
+  categories: readonly T[],
+  deletingCategoryId: number,
+): T[] {
+  return categories.filter((category) => category.id !== deletingCategoryId);
+}
+
 /** 요청한 카테고리가 아직 있으면 그것을, 없으면 첫 카테고리를 처음 선택값으로 쓴다 */
 export function getInitialCategoryId(
   categories: readonly Pick<TodoCategory, 'id'>[],
@@ -76,6 +84,7 @@ export const TodoCategoryPolicy = {
   canReorderCategories,
   isOptimisticCategory,
   findCategory,
+  getMoveTargetCategories,
   getInitialCategoryId,
   hasChanges,
 } as const;

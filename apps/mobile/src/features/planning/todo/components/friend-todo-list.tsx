@@ -19,7 +19,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { groupBy, range } from 'es-toolkit';
 import { type ComponentType, useMemo, useState } from 'react';
 
 import { TodoPolicy } from '../domains/todo.model';
@@ -28,7 +28,6 @@ import { useFeedDateKey, useFeedDate } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { formatTodoTime } from '../utils/format-todo-time';
-import { groupFriendTodosByCategory } from '../utils/group-friend-todos-by-category';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
@@ -187,3 +186,10 @@ FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: Compone
     </HStack>
   );
 };
+
+function groupFriendTodosByCategory(todos: readonly Todo[]) {
+  return Object.values(groupBy(todos, (todo) => todo.category.id)).flatMap((items) => {
+    const first = items[0];
+    return first ? [{ category: first.category, todos: items }] : [];
+  });
+}
