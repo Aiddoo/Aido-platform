@@ -180,6 +180,8 @@ export {
   useHaptics,
   useIncomingLink,
   useLogger,
+  /** @public */
+  useSyncStorage,
 } from '@src/shared/di/shared-di-context';
 
 function useDI(): DIContainer {

@@ -73,3 +73,8 @@ export function useSystemShare() {
 export function useIncomingLink() {
   return useSharedDI().incomingLink;
 }
+
+/** 기기 저장소 포트를 React에서 쓰는 공개 입구. 지금 feature는 repository를 거친다 @public */
+export function useSyncStorage() {
+  return useSharedDI().syncStorage;
+}
