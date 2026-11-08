@@ -1,5 +1,4 @@
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import {
   FreeReportPreview,
@@ -28,22 +27,16 @@ import {
   VStack,
   TintedRefreshControl,
 } from '@src/shared/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 export default function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
-  // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
-  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
-  const view = match(entitlementsQuery.data)
-    .with(P.nullish, () => (entitlementsQuery.isError ? 'error' : 'loading'))
-    .otherwise((entitlements) =>
-      EntitlementPolicy.canUseFeature(entitlements, 'AI_REPORT') ? 'premium' : 'free',
-    );
+  const featureAccess = useFeatureAccess('AI_REPORT');
   const [reportType, setReportType] = useReportType();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateReports(queryClient));
 
@@ -59,7 +52,9 @@ export default function ReportsScreen() {
           <Spacing size={16} />
 
           <VStack gap={12}>
-            {view === 'premium' && <AiConsentNotice title={t('consent.notice.reports')} />}
+            {featureAccess.status === 'premium' && (
+              <AiConsentNotice title={t('consent.notice.reports')} />
+            )}
 
             <ScallopedContainer>
               <Box className="items-center px-5 pt-4">
@@ -69,7 +64,7 @@ export default function ReportsScreen() {
                   contentFit="contain"
                 />
                 <Spacing size={8} />
-                {match(view)
+                {match(featureAccess.status)
                   .with('premium', () => (
                     <>
                       <H4
@@ -111,7 +106,7 @@ export default function ReportsScreen() {
               <Spacing size={16} />
 
               {/* 프리미엄 사용자가 매번 보는 줄이라 권한을 기다리는 동안에도 자리를 잡는다 */}
-              {match(view)
+              {match(featureAccess.status)
                 .with('premium', () => (
                   <Box className="px-4">
                     <QueryErrorBoundary>
@@ -153,7 +148,7 @@ export default function ReportsScreen() {
               <Spacing size={8} />
 
               <Box className="px-4 pb-4">
-                {match(view)
+                {match(featureAccess.status)
                   .with('premium', () => (
                     <QueryErrorBoundary resetKeys={[reportType]}>
                       <Suspense fallback={<ReportList.Loading />}>
@@ -163,9 +158,7 @@ export default function ReportsScreen() {
                   ))
                   .with('free', () => <FreeReportPreview />)
                   .with('loading', () => <ReportList.Loading />)
-                  .with('error', () => (
-                    <QueryErrorFallback reset={() => entitlementsQuery.refetch()} />
-                  ))
+                  .with('error', () => <QueryErrorFallback reset={() => featureAccess.refetch()} />)
                   .exhaustive()}
               </Box>
             </ScallopedContainer>

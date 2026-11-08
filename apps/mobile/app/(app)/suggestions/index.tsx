@@ -1,7 +1,6 @@
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import { invalidateAiSuggestions } from '@src/features/assistant/suggestion/queries/suggestion-cache';
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,21 +12,15 @@ import {
   VStack,
   TintedRefreshControl,
 } from '@src/shared/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
-  // 권한을 기다리느라 화면 전체가 막히지 않게 한다. 영속 캐시가 있으면 첫 렌더부터 값이 있다
-  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
-  const view = match(entitlementsQuery.data)
-    .with(P.nullish, () => (entitlementsQuery.isError ? 'error' : 'loading'))
-    .otherwise((entitlements) =>
-      EntitlementPolicy.canUseFeature(entitlements, 'AI_SUGGESTION') ? 'premium' : 'free',
-    );
+  const featureAccess = useFeatureAccess('AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
   return (
@@ -36,7 +29,7 @@ export default function SuggestionsScreen() {
         className="flex-1"
         contentContainerClassName="grow pb-8"
         refreshControl={
-          view === 'premium' ? (
+          featureAccess.status === 'premium' ? (
             <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           ) : undefined
         }
@@ -45,7 +38,7 @@ export default function SuggestionsScreen() {
           <ReadableContent className="grow px-4">
             <Spacing size={16} />
 
-            {match(view)
+            {match(featureAccess.status)
               .with('premium', () => (
                 <VStack gap={12}>
                   <AiConsentNotice title={t('consent.notice.suggestions')} />
@@ -60,8 +53,8 @@ export default function SuggestionsScreen() {
               .with('free', () => <SuggestionsList.PremiumPreview />)
               .with('error', () => (
                 <SuggestionsList.Error
-                  error={entitlementsQuery.error}
-                  reset={() => entitlementsQuery.refetch()}
+                  error={featureAccess.error}
+                  reset={() => featureAccess.refetch()}
                 />
               ))
               .with('loading', () => <SuggestionsList.Loading />)
