@@ -50,7 +50,6 @@ import {
   calculatePawPrintBoardWidth,
   calculatePawPrintGrid,
   createPawPrintBoard,
-  MIN_CONNECTOR_WIDTH,
   PAW_PRINT_BOARD_SIZE,
   type PawPrintBoard,
   type PawPrintCell,
@@ -272,7 +271,7 @@ InvitePawPrintBoard.Milestone = function Milestone() {
 interface ConnectorProps {
   isFilled: boolean;
   orientation?: 'horizontal' | 'vertical';
-  /** 가로 생선 뼈 길이(pt). 판 격자가 정한다 */
+  /** 가로 생선 뼈 길이(pt). 없으면 남은 폭을 채운다 */
   length?: number;
 }
 
@@ -280,7 +279,7 @@ interface ConnectorProps {
 InvitePawPrintBoard.Connector = function Connector({
   isFilled,
   orientation = 'horizontal',
-  length = MIN_CONNECTOR_WIDTH,
+  length,
 }: ConnectorProps) {
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));
@@ -291,7 +290,7 @@ InvitePawPrintBoard.Connector = function Connector({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       className={isHorizontal ? 'h-3' : 'h-[22px] w-3'}
-      style={isHorizontal ? { width: length } : undefined}
+      style={isHorizontal ? (length == null ? styles.fill : { width: length }) : undefined}
     >
       <Svg width="100%" height="100%">
         <Defs>

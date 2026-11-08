@@ -11,7 +11,7 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { FillCheckIcon } from '../icon/icons';
+import { CheckmarkIcon } from '../icon/icons';
 import { Text } from '../text/text';
 import { STEPS_SPRING_CONFIG, springTo } from './steps-motion';
 
@@ -19,7 +19,7 @@ const GAP = 10;
 const BACK_WIDTH_RATIO = 0.25;
 const CHECK_SLOT_WIDTH = 22;
 const CHECK_SLOT_GAP = 6;
-const CHECK_SIZE = 16;
+const CHECK_SIZE = 18;
 
 interface StepsButtonsProps {
   index: number;
@@ -87,9 +87,9 @@ export function StepsButtons({
           <PressableFeedback
             accessibilityRole="button"
             onPress={handleBack}
-            className={cn(BUTTON_CLASS, 'bg-gray-9/10')}
+            className={cn(BUTTON_CLASS, 'bg-gray-9/5 dark:bg-gray-9/20')}
           >
-            <Text size="b2" weight="bold" shade={10}>
+            <Text size="b3" weight="semibold" shade={9}>
               {backLabel}
             </Text>
           </PressableFeedback>
@@ -103,13 +103,13 @@ export function StepsButtons({
         >
           <View style={styles.label}>
             <Animated.View style={[styles.check, checkStyle]}>
-              <FillCheckIcon
+              <CheckmarkIcon
                 width={CHECK_SIZE}
                 height={CHECK_SIZE}
                 colorClassName="text-white dark:text-gray-9"
               />
             </Animated.View>
-            <Text size="b2" weight="bold" className="text-white dark:text-gray-9">
+            <Text size="b3" weight="semibold" className="text-white dark:text-gray-9">
               {nextLabel}
             </Text>
           </View>
@@ -119,7 +119,8 @@ export function StepsButtons({
   );
 }
 
-const BUTTON_CLASS = 'h-[60px] items-center justify-center rounded-[30px]';
+// 공용 Button의 xlarge·lg와 같은 높이·모서리다
+const BUTTON_CLASS = 'h-14 items-center justify-center rounded-xl';
 
 const styles = StyleSheet.create({
   row: {

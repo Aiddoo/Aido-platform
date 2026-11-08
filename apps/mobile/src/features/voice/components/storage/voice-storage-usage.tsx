@@ -20,6 +20,7 @@ import {
   type QueryErrorFallbackProps,
   Button,
   IconButton,
+  MemoIllustration,
   TrashIcon,
   useConfirmDialog,
 } from '@src/shared/ui';
@@ -74,7 +75,18 @@ export function VoiceStorageUsage() {
           </StyledSafeAreaView>
         }
         ListEmptyComponent={
-          <Result title={t('voiceStorage.empty')} className="py-10" testID="voice-storage-empty" />
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <ReadableContent className="px-4">
+              <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
+                <Result
+                  icon={<MemoIllustration size="block" />}
+                  title={t('voiceStorage.empty')}
+                  description={t('voiceStorage.emptyDescription')}
+                  testID="voice-storage-empty"
+                />
+              </Box>
+            </ReadableContent>
+          </StyledSafeAreaView>
         }
         renderItem={({ item: { note, bytes }, index }) => (
           <StyledSafeAreaView edges={['left', 'right']}>

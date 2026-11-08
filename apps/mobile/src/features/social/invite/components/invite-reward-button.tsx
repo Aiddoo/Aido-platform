@@ -2,7 +2,6 @@ import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-m
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
-  Box,
   HStack,
   QueryErrorActions,
   type QueryErrorFallbackProps,
@@ -21,7 +20,7 @@ import { InvitePolicy } from '../domains/invite.model';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { createPawPrintBoard } from '../utils/invite-paw-print-board.geometry';
-import { inviteRewardDotVariants } from './invite-reward-button.variants';
+import { InvitePawPrintBoard } from './invite-paw-print-board';
 
 type InviteRewardButtonProps = Omit<
   ComponentProps<typeof PressableFeedback>,
@@ -30,6 +29,7 @@ type InviteRewardButtonProps = Omit<
 
 // 마이페이지 카드에는 지금 판의 첫 줄 네 칸만 줄여 보여 준다
 const PREVIEW_COLUMNS = 4;
+const PREVIEW_CELL_SIZE = 44;
 
 /** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 마이페이지가 정한다 */
 export function InviteRewardButton({ className, ...props }: InviteRewardButtonProps) {
@@ -79,18 +79,21 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
           <ArrowRightIcon width={20} height={20} colorClassName="text-gray-5" />
         </HStack>
 
-        <HStack align="center" accessibilityElementsHidden importantForAccessibility="no">
-          {firstRow?.cells.map((cell, position) => (
+        <HStack
+          align="center"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {firstRow?.cells.map((cell) => (
             <Fragment key={cell.index}>
-              {position > 0 && (
-                <Box
-                  className={cn(
-                    'h-0.5 flex-1',
-                    cell.connectorBefore?.isFilled === true ? 'bg-main/40' : 'bg-gray-2',
-                  )}
-                />
+              {cell.connectorBefore != null && (
+                <InvitePawPrintBoard.Connector isFilled={cell.connectorBefore.isFilled} />
               )}
-              <Box className={inviteRewardDotVariants({ state: cell.state })} />
+              <InvitePawPrintBoard.PawPrint
+                cell={cell}
+                size={PREVIEW_CELL_SIZE}
+                newPawPrintOrder={0}
+              />
             </Fragment>
           ))}
         </HStack>
@@ -110,7 +113,7 @@ InviteRewardButton.Loading = function Loading({ className }: { className?: strin
         <TextSkeleton size="b2" className="w-40" />
         <TextSkeleton size="b4" className="w-32" />
       </VStack>
-      <Skeleton className="h-9 rounded-full dark:bg-gray-2" />
+      <Skeleton className="h-11 rounded-full dark:bg-gray-2" />
     </VStack>
   );
 };

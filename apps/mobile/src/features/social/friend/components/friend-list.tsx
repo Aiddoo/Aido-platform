@@ -4,6 +4,7 @@ import { UserList } from '@src/features/identity/user/components/user-list';
 import type { BlockTarget } from '@src/features/social/moderation/domains/user-block.model';
 import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { CAT_HI_CENTER_OFFSET_RATIO } from '@src/shared/constants/mascot';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -320,6 +321,7 @@ FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListPro
             source={catHiImage}
             accessibilityIgnoresInvertColors
             className="size-[120px]"
+            style={{ transform: [{ translateX: CAT_HI_CENTER_OFFSET_RATIO * 120 }] }}
             contentFit="contain"
           />
         }

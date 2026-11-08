@@ -6,7 +6,7 @@ export const pawPrintVariants = tv({
     state: {
       stamped: '-rotate-6 bg-main',
       waiting: 'border-[1.5px] border-dashed border-main bg-main/10',
-      empty: 'border border-gray-2 bg-gray-1',
+      empty: 'border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-1',
       milestone: 'border border-fish bg-fish/10',
     },
     isNext: {
@@ -23,7 +23,7 @@ export const pawPrintIconVariants = tv({
     state: {
       stamped: 'text-white dark:text-gray-1',
       waiting: 'text-main opacity-40',
-      empty: 'text-gray-3',
+      empty: 'text-gray-4 dark:text-gray-3',
       milestone: 'text-fish',
     },
     isNext: {
@@ -37,7 +37,7 @@ export const fishBoneVariants = tv({
   variants: {
     isFilled: {
       true: 'text-main',
-      false: 'text-gray-3',
+      false: 'text-gray-4 dark:text-gray-3',
     },
   },
 });

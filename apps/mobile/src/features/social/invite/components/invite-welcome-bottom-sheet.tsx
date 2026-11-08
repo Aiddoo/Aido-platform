@@ -3,6 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/notification.queries';
+import { CAT_HI_CENTER_OFFSET_RATIO } from '@src/shared/constants/mascot';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -319,6 +320,7 @@ function WelcomeCat() {
         source={catHiImage}
         accessibilityIgnoresInvertColors
         className="size-[140px]"
+        style={{ transform: [{ translateX: CAT_HI_CENTER_OFFSET_RATIO * 140 }] }}
         contentFit="contain"
       />
     </Box>
