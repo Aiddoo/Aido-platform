@@ -69,7 +69,7 @@ describe('toTodo', () => {
   });
 });
 
-describe('toTodo — subTodos/subTodoStats', () => {
+describe('toTodo — subTodos', () => {
   it('subTodos 배열 매핑', () => {
     // Given
     const dto = createTodoDto({
@@ -87,10 +87,9 @@ describe('toTodo — subTodos/subTodoStats', () => {
     expect(result.subTodos).toHaveLength(2);
     expect(result.subTodos[0]?.title).toBe('항목 1');
     expect(result.subTodos[1]?.completed).toBe(true);
-    expect(result.subTodoStats).toEqual({ total: 2, completed: 1 });
   });
 
-  it('빈 subTodos → 빈 배열 + zero stats', () => {
+  it('빈 subTodos → 빈 배열', () => {
     // Given
     const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
 
@@ -99,7 +98,6 @@ describe('toTodo — subTodos/subTodoStats', () => {
 
     // Then
     expect(result.subTodos).toEqual([]);
-    expect(result.subTodoStats).toEqual({ total: 0, completed: 0 });
   });
 });
 

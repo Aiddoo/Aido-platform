@@ -73,7 +73,6 @@ describe('TodoList 낙관적 표시', () => {
       updateCachedTodo(queryClient, { date: DATE, todoId: 1 }, (todo) => ({
         ...todo,
         subTodos: [createSubTodo({ id: -1, title: '첫 항목' })],
-        subTodoStats: { total: 1, completed: 0 },
       }));
     });
 
@@ -87,7 +86,6 @@ describe('TodoList 낙관적 표시', () => {
       createParentTodo({
         startDate: DATE,
         subTodos: [createSubTodo({ id: -1, title: '첫 항목' })],
-        subTodoStats: { total: 1, completed: 0 },
       }),
     );
 
@@ -101,7 +99,6 @@ describe('TodoList 낙관적 표시', () => {
       createParentTodo({
         startDate: DATE,
         subTodos: [createSubTodo({ id: -1, title: '첫 항목' })],
-        subTodoStats: { total: 1, completed: 0 },
       }),
     );
 
@@ -112,7 +109,6 @@ describe('TodoList 낙관적 표시', () => {
           createParentTodo({
             startDate: DATE,
             subTodos: [createSubTodo({ id: 77, title: '첫 항목' })],
-            subTodoStats: { total: 1, completed: 0 },
           }),
         ],
         hasNext: false,
@@ -131,7 +127,6 @@ describe('TodoList 낙관적 표시', () => {
       createParentTodo({
         startDate: DATE,
         subTodos: [createSubTodo({ id: 5, title: '기존 항목' })],
-        subTodoStats: { total: 1, completed: 0 },
       }),
     );
     httpClient.patch.mockReturnValue(pending.response);

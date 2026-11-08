@@ -196,9 +196,7 @@ describe('AddSubTodoBottomSheet', () => {
 
     // Then
     await waitFor(() => {
-      expect(queryClient.getQueryData<TodoListResult>(listKey)?.todos[0]?.subTodoStats.total).toBe(
-        1,
-      );
+      expect(queryClient.getQueryData<TodoListResult>(listKey)?.todos[0]?.subTodos).toHaveLength(1);
     });
     pendingPost.settle();
   });

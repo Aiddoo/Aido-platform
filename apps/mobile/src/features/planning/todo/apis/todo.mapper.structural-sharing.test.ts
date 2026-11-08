@@ -1,6 +1,7 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
 
-import { createTodoDto } from '../__tests__/todo.fixtures';
+import { createTodoDto, createTodoItemResponseDto } from '../__tests__/todo.fixtures';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { TodoPolicy } from '../domains/todo.model';
 import { todoSchema } from '../domains/todo.model';
 import { toTodo } from './todo.mapper';
@@ -22,11 +23,11 @@ describe('Todo 클라이언트 모델과 캐시', () => {
     expect(todoSchema.parse(todo)).toEqual(todo);
   });
 
-  it('서버의 items와 itemStats를 클라이언트 하위 할 일 정책으로 소비한다', () => {
+  it('서버의 items를 항목 목록 하나로 받고 진행 숫자는 그 목록에서 센다', () => {
     // Given
     const dto = createTodoDto({
       recurrenceGroupId: 'recurring-group',
-      items: [],
+      items: [1, 2, 3, 4].map((id) => createTodoItemResponseDto({ id, completed: id === 1 })),
       itemStats: { total: 4, completed: 1 },
     });
 
@@ -35,9 +36,9 @@ describe('Todo 클라이언트 모델과 캐시', () => {
 
     // Then
     expect(TodoPolicy.isRecurringTodo(todo)).toBe(true);
-    expect(TodoPolicy.hasSubTodos(todo)).toBe(true);
-    expect(todo.subTodoStats).toEqual({ total: 4, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(todo)).toEqual({ total: 4, completed: 1 });
     expect(todo).not.toHaveProperty('itemStats');
+    expect(todo).not.toHaveProperty('subTodoStats');
     expect(todo).not.toHaveProperty('items');
   });
 });

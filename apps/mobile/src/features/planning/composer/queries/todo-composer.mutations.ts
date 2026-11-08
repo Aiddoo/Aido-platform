@@ -108,7 +108,6 @@ export function useCreateTodoMutationOptions() {
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
-        subTodoStats: { total: 0, completed: 0 },
         commentCount: 0,
         optimistic: true,
       };

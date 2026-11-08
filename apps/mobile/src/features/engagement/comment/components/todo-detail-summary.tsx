@@ -7,6 +7,7 @@ import {
   TodoProgress,
   TodoRow,
 } from '@src/features/planning/todo/components/todo-row';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
@@ -198,13 +199,14 @@ TodoDetailSummary.SubTodos = function SubTodos() {
   const todayKey = useTodayKey();
   const { todo } = detail;
 
-  if (!TodoPolicy.hasSubTodos(todo)) {
+  if (!SubTodoPolicy.hasSubTodos(todo)) {
     return null;
   }
+  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo);
 
   return (
     <VStack gap={4}>
-      <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+      <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
       <VStack>
         {todo.subTodos.map((subTodo) => (
           <TodoRow

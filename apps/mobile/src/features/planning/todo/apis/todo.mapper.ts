@@ -39,7 +39,6 @@ export function toTodo(dto: TodoDto): Todo {
     // 구 서버 응답과 친구 할 일에는 키가 없다
     repeat: dto.repeat == null ? null : toRepeat(dto.repeat),
     subTodos: dto.items.map(toSubTodo),
-    subTodoStats: { total: dto.itemStats.total, completed: dto.itemStats.completed },
     commentCount: dto.commentCount,
   };
 }

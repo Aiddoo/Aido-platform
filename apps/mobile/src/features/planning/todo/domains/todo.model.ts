@@ -4,7 +4,7 @@ import { addDaysToDateKey, diffDateKeysInDays } from '@src/shared/date/date-key'
 import { instantSchema, toHHmm } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-import { type SubTodo, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
+import { type SubTodo, subTodoSchema } from './sub-todo.model';
 import { todoRepeatSchema } from './todo-repeat.model';
 
 export const todoSchema = z.object({
@@ -25,7 +25,6 @@ export const todoSchema = z.object({
   /** 단일 할 일이나 규칙이 없는 옛 묶음, 친구 할 일은 null */
   repeat: todoRepeatSchema.nullable(),
   subTodos: z.array(subTodoSchema),
-  subTodoStats: subTodoStatsSchema,
 });
 export type Todo = z.infer<typeof todoSchema>;
 
@@ -148,10 +147,6 @@ export function isOptimisticTodo(todo: Pick<Todo, 'id'>): boolean {
   return todo.id < 0;
 }
 
-export function hasSubTodos(todo: Todo): boolean {
-  return todo.subTodoStats.total > 0;
-}
-
 // 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다. 여러 날 할 일은 시작일 목록만 낙관적으로 바뀌어 끝낸 것은 완료로 본다
 export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number): boolean {
   return (
@@ -234,7 +229,6 @@ export const TodoPolicy = {
   getShiftedEndDate,
   getTodayToggleDates,
   isOptimisticTodo,
-  hasSubTodos,
   isLastOpenTodo,
   getLocalTime,
   hasUpcomingTimedTodo,

@@ -1,3 +1,4 @@
+import { createSubTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
@@ -306,7 +307,7 @@ describe('toBriefingTodo', () => {
     id: 1,
     title: '산책',
     completed: false,
-    subTodoStats: { completed: 0, total: 0 },
+    subTodos: [],
   };
 
   it.each([
@@ -375,13 +376,13 @@ describe('toBriefingTodo', () => {
 
     // When
     const withSubTodos = WeatherBriefingPolicy.toBriefingTodo(
-      { ...base, subTodoStats: { completed: 1, total: 3 } },
+      {
+        ...base,
+        subTodos: [1, 2, 3].map((id) => createSubTodo({ id, completed: id === 1 })),
+      },
       SEOUL,
     );
-    const withoutSubTodos = WeatherBriefingPolicy.toBriefingTodo(
-      { ...base, subTodoStats: { completed: 0, total: 0 } },
-      SEOUL,
-    );
+    const withoutSubTodos = WeatherBriefingPolicy.toBriefingTodo({ ...base, subTodos: [] }, SEOUL);
 
     // Then
     expect(withSubTodos.subTodoProgress).toEqual({ completed: 1, total: 3 });

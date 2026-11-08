@@ -22,7 +22,7 @@ import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, range } from 'es-toolkit';
 import { type ComponentType, useMemo, useState } from 'react';
 
-import { TodoPolicy } from '../domains/todo.model';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
 import type { Todo } from '../domains/todo.model';
 import { useFeedDateKey, useFeedDate } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
@@ -94,7 +94,8 @@ FriendTodoList.Item = function Item({
   const selectTodo = useSingleTap(onOpenDetail);
   // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
-  const isExpanded = userExpanded ?? TodoPolicy.hasSubTodos(todo);
+  const isExpanded = userExpanded ?? SubTodoPolicy.hasSubTodos(todo);
+  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
@@ -114,8 +115,8 @@ FriendTodoList.Item = function Item({
         )
       }
       bottom={
-        TodoPolicy.hasSubTodos(todo) && (
-          <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+        SubTodoPolicy.hasSubTodos(todo) && (
+          <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
         )
       }
       right={
@@ -137,7 +138,7 @@ FriendTodoList.Item = function Item({
           <RowAction todo={todo} />
         </HStack>
       }
-      onPress={TodoPolicy.hasSubTodos(todo) ? () => setUserExpanded(!isExpanded) : undefined}
+      onPress={SubTodoPolicy.hasSubTodos(todo) ? () => setUserExpanded(!isExpanded) : undefined}
     >
       {isExpanded && (
         <SubTodoIndent>

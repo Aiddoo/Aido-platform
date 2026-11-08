@@ -32,7 +32,6 @@ function generateParentTodo(): Todo {
     recurrenceGroupId: null,
     repeat: null,
     subTodos: [],
-    subTodoStats: { total: 0, completed: 0 },
     commentCount: 0,
   };
 }

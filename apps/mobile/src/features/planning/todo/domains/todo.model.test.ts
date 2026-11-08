@@ -423,33 +423,6 @@ describe('isRecurringTodo', () => {
   });
 });
 
-describe('hasSubTodos', () => {
-  it.each([
-    { total: 0, expected: false },
-    { total: 1, expected: true },
-  ])('하위 할 일이 $total개면 있는지는 $expected다', ({ total, expected }) => {
-    // Given
-    const todo = createParentTodo({ subTodoStats: { total, completed: 0 } });
-
-    // When
-    const result = TodoPolicy.hasSubTodos(todo);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-
-  it('목록 응답에 하위 할 일이 실리지 않아도 서버 집계로 판단한다', () => {
-    // Given
-    const todo = createParentTodo({ subTodos: [], subTodoStats: { total: 3, completed: 1 } });
-
-    // When
-    const result = TodoPolicy.hasSubTodos(todo);
-
-    // Then
-    expect(result).toBe(true);
-  });
-});
-
 describe('getTodayToggleDates', () => {
   const TODAY = '2026-03-08';
 

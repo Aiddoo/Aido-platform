@@ -11,6 +11,7 @@ import {
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type {
   Todo,
   TodoDetails,
@@ -122,6 +123,8 @@ function useTodoMutations() {
 }
 
 const flush = () => act(async () => {});
+/** 행과 상세의 진행 막대가 읽는 값 */
+const progress = (todo: Todo | undefined) => todo && SubTodoPolicy.getSubTodoStats(todo);
 
 describe('하위 할 일 낙관적 갱신', () => {
   it('여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록에 첫 항목이 바로 들어간다', async () => {
@@ -138,7 +141,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(cachedTodo(LIST_DAY_2)?.subTodoStats).toEqual({ total: 1, completed: 0 });
+    expect(progress(cachedTodo(LIST_DAY_2))).toEqual({ total: 1, completed: 0 });
     response.settle();
     await flush();
   });
@@ -160,10 +163,8 @@ describe('하위 할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)).toMatchObject({
-      completed: false,
-      subTodoStats: { total: 1, completed: 0 },
-    });
+    expect(cachedTodo(LIST_DAY_1)?.completed).toBe(false);
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 0 });
     expect(
       queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
     ).toEqual(expect.objectContaining({ completedTodos: 0, isComplete: false }));
@@ -188,10 +189,8 @@ describe('하위 할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)).toMatchObject({
-      completed: true,
-      subTodoStats: { total: 0, completed: 0 },
-    });
+    expect(cachedTodo(LIST_DAY_1)?.completed).toBe(true);
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 0, completed: 0 });
   });
 
   it('응답이 오면 임시 id를 서버 id로 바꿔 다시 받기 전에도 행을 누를 수 있다', async () => {
@@ -236,7 +235,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 })],
-          subTodoStats: { total: 1, completed: 0 },
         }),
       ]),
     );
@@ -264,7 +262,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     expect(cachedTodo(LIST_DAY_1)?.subTodos).toEqual([
       expect.objectContaining({ id: 5, completed: true }),
     ]);
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 1, completed: 1 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 1 });
     pendingToggle.settle();
     await flush();
   });
@@ -279,7 +277,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 }), createSubTodo({ id: 6 })],
-          subTodoStats: { total: 2, completed: 0 },
         }),
       ]),
     );
@@ -298,7 +295,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     await flush();
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 2, completed: 2 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 2, completed: 2 });
     expect(httpClient.get).not.toHaveBeenCalled();
 
     // When
@@ -319,7 +316,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 })],
-          subTodoStats: { total: 1, completed: 0 },
         }),
         createParentTodo({ id: 2, startDate: DAY_1 }),
       ]),
@@ -361,7 +357,6 @@ describe('하위 할 일 낙관적 갱신', () => {
       startDate: DAY_1,
       endDate: DAY_3,
       subTodos: [createSubTodo({ id: 5 })],
-      subTodoStats: { total: 1, completed: 0 },
     });
     queryClient.setQueryData(LIST_DAY_1, toList([multiDay]));
     queryClient.setQueryData(LIST_DAY_2, toList([multiDay]));
@@ -387,7 +382,6 @@ describe('하위 할 일 낙관적 갱신', () => {
     const todo = createParentTodo({
       startDate: DAY_1,
       subTodos: [createSubTodo({ id: 5 })],
-      subTodoStats: { total: 1, completed: 0 },
     });
     queryClient.setQueryData(LIST_DAY_1, toList([todo]));
     const staleRefetch = createPendingResponse(toList([todo]));
@@ -405,7 +399,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     await flush();
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 1, completed: 1 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 1 });
     pending.settle();
     await flush();
   });
@@ -419,7 +413,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5, title: '이전' }), createSubTodo({ id: 6 })],
-          subTodoStats: { total: 2, completed: 0 },
         }),
       ]),
     );
@@ -457,7 +450,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 })],
-          subTodoStats: { total: 1, completed: 0 },
         }),
       ]),
     );
@@ -470,7 +462,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 0, completed: 0 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 0, completed: 0 });
 
     // When
     failedDelete.settle();
@@ -478,7 +470,7 @@ describe('하위 할 일 낙관적 갱신', () => {
 
     // Then
     expect(cachedTodo(LIST_DAY_1)?.subTodos.map((subTodo) => subTodo.id)).toEqual([5]);
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 1, completed: 0 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 0 });
   });
 
   it('모두 체크해도 부모 할 일 완료는 그대로다(서버 규칙과 같다)', async () => {
@@ -490,7 +482,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 })],
-          subTodoStats: { total: 1, completed: 0 },
         }),
       ]),
     );
@@ -503,7 +494,7 @@ describe('하위 할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 1, completed: 1 });
+    expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 1 });
     expect(cachedTodo(LIST_DAY_1)?.completed).toBe(false);
     pending.settle();
     await flush();
@@ -518,7 +509,6 @@ describe('하위 할 일 낙관적 갱신', () => {
         createParentTodo({
           startDate: DAY_1,
           subTodos: [createSubTodo({ id: 5 }), createSubTodo({ id: 6 })],
-          subTodoStats: { total: 2, completed: 0 },
         }),
       ]),
     );
@@ -646,7 +636,6 @@ describe('할 일 낙관적 갱신', () => {
     const todo = createParentTodo({
       startDate: DAY_1,
       subTodos: [createSubTodo({ id: 5 })],
-      subTodoStats: { total: 1, completed: 0 },
     });
     const detailsKey = TODO_QUERY_KEYS.detail({ todoId: 1 });
     queryClient.setQueryData(LIST_DAY_1, toList([todo]));
@@ -665,7 +654,7 @@ describe('할 일 낙관적 갱신', () => {
     });
 
     // Then
-    expect(queryClient.getQueryData<TodoDetails>(detailsKey)?.todo.subTodoStats).toEqual({
+    expect(progress(queryClient.getQueryData<TodoDetails>(detailsKey)?.todo)).toEqual({
       total: 1,
       completed: 1,
     });

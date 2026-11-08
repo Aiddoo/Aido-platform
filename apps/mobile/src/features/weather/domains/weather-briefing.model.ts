@@ -1,4 +1,5 @@
 import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabulary';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
@@ -50,7 +51,7 @@ export interface BriefingTodo {
 
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
-  todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodoStats'>,
+  todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodos'>,
   { date, timeZone }: { date: string; timeZone: string },
 ): BriefingTodo {
   return {
@@ -61,7 +62,7 @@ function toBriefingTodo(
         ? null
         : fromWallClock(date, todo.localTime, timeZone),
     completed: todo.completed,
-    subTodoProgress: todo.subTodoStats.total > 0 ? todo.subTodoStats : null,
+    subTodoProgress: SubTodoPolicy.hasSubTodos(todo) ? SubTodoPolicy.getSubTodoStats(todo) : null,
   };
 }
 
