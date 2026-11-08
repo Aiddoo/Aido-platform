@@ -17,7 +17,8 @@
     "examples": "\"매일\", \"월수금\", \"다음 주 내내\", \"나만 보게\"도 알아들어요.",
     "remaining": "이번 달 {{amount}}회 남았어요",
     "notCharged": "잘 안 되면 횟수는 차감되지 않아요",
-    "typeStillFree": "직접 입력은 계속 무료예요"
+    "typeStillFree": "직접 입력은 계속 무료예요",
+    "usedUpChipHint": "이번 달 AI 사용량과 프리미엄 안내를 열어요"
   },
   "coach": {
     "quickStart": {

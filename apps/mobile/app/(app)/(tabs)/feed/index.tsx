@@ -54,7 +54,7 @@ import {
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { Suspense, useCallback, useEffect } from 'react';
+import { type ComponentProps, Suspense, useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
@@ -69,6 +69,8 @@ export default function FeedScreen() {
   const isInviteAvailable = useIsInviteAvailable();
   const openMyInvite = useOpenMyInvite();
   const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+  // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
+  const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
 
   useFeedTodoDetailHandoff();
 
@@ -85,6 +87,7 @@ export default function FeedScreen() {
                     onInvite={
                       isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
                     }
+                    isHintDismissed={hasScrolledFeed}
                   />
                 </Suspense>
               </QueryErrorBoundary>
@@ -98,7 +101,7 @@ export default function FeedScreen() {
                   </Suspense>
                 </QueryErrorBoundary>
               ))
-              .with(undefined, () => <MyFeed />)
+              .with(undefined, () => <MyFeed onScrollBeginDrag={() => setHasScrolledFeed(true)} />)
               .exhaustive()}
           </Box>
         }
@@ -149,7 +152,9 @@ export default function FeedScreen() {
   );
 }
 
-function MyFeed() {
+function MyFeed({
+  onScrollBeginDrag,
+}: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'>) {
   const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const status = useAuthStatus();
@@ -170,6 +175,7 @@ function MyFeed() {
     <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
+      onScrollBeginDrag={onScrollBeginDrag}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
     >
       <StyledSafeAreaView edges={['left', 'right']}>

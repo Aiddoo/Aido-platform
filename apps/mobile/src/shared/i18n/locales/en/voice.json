@@ -17,7 +17,8 @@
     "examples": "It understands \"every day,\" \"Mon Wed Fri,\" \"all next week,\" and \"just for me.\"",
     "remaining": "{{amount}} left this month",
     "notCharged": "If it fails, it doesn't count",
-    "typeStillFree": "Typing is still free"
+    "typeStillFree": "Typing is still free",
+    "usedUpChipHint": "Shows this month’s AI usage and Premium"
   },
   "coach": {
     "quickStart": {

@@ -1,10 +1,12 @@
 import '@src/shared/i18n/init';
+import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createLoggerStub,
   createTestDi,
@@ -12,8 +14,9 @@ import {
 } from '@src/shared/__tests__';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
 
 import { QuickVoiceInfo } from './quick-voice-info';
@@ -57,5 +60,47 @@ describe('QuickVoiceInfo', () => {
 
     // Then
     expect(await screen.findByText(/이번 달 \d+회 남았어요/)).toBeTruthy();
+  });
+
+  it('이번 달 AI를 다 쓴 칩을 누르면 막힌 순간과 같은 안내를 연다', async () => {
+    // Given
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00.000Z'));
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(
+      ok(createEntitlementSnapshotDto({ used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free } })),
+    );
+    const analytics = createAnalyticsStub();
+    await render(
+      <GestureHandlerProvider>
+        <FontScaleProvider>
+          <HeroUIProvider
+            config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
+          >
+            <QueryClientProvider client={createTestQueryClient()}>
+              <StaticDIProvider
+                container={createTestDi({ httpClient, analytics, logger: silentLogger })}
+              >
+                <LocalDateProvider>
+                  <OverlayProvider>
+                    <QuickVoiceInfo />
+                  </OverlayProvider>
+                </LocalDateProvider>
+              </StaticDIProvider>
+            </QueryClientProvider>
+          </HeroUIProvider>
+        </FontScaleProvider>
+      </GestureHandlerProvider>,
+    );
+
+    // When
+    await fireEvent.press(await screen.findByText('이번 달 모두 사용'));
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'premium_gate_shown',
+        expect.objectContaining({ feature: 'ai_parse', surface: 'add_todo_sheet' }),
+      ),
+    );
   });
 });

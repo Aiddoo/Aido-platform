@@ -1,5 +1,6 @@
 import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
@@ -89,7 +90,24 @@ export function QuickVoiceInfo() {
           </VStack>
         </HintPopoverContent>
       </Popover>
-      <QuotaChip feature="AI_PARSE" />
+      {quotaType === 'used-up' ? <UsedUpQuotaChip /> : <QuotaChip feature="AI_PARSE" />}
     </HStack>
+  );
+}
+
+/** 다 쓴 칩을 누르면 무엇이 막혔고 언제 초기화되는지 막힌 순간과 같은 안내로 답한다 */
+function UsedUpQuotaChip() {
+  const { t } = useTranslation('voice');
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
+
+  return (
+    <PressableFeedback
+      onPress={() => gate.promptLimit()}
+      accessibilityRole="button"
+      accessibilityHint={t('info.usedUpChipHint')}
+      className="rounded-full"
+    >
+      <QuotaChip feature="AI_PARSE" />
+    </PressableFeedback>
   );
 }
