@@ -159,17 +159,32 @@
 
 `feature` 값은 `ai_parse`·`cheer_limit`·`nudge_limit`·`friend_limit`·`category_limit`·`ai_report`·`ai_suggestion`·`reminder_time`·`app_icon`·`voice_note`다. 빠른 말하기와 메모 AI는 `ai_parse`, 긴 녹음은 `voice_note`로 센다. `surface`(`EntitlementGateSurface`)는 `add_todo_sheet`·`memo_detail`·`category_create`·`friend_request`·`poke_banner`·`todo_nudge`·`suggestions`·`notification_center`·`app_icon_settings`·`reminder_settings`·`voice_note`다. `presentation`(`UpsellPresentation`)은 `sheet`·`toast`다. 같은 기능을 그날 시트에서 [나중에]로 닫았으면 `toast`다.
 
-| 이벤트                     | 파라미터                                                       | 시점과 의미                                              |
-| -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `premium_gate_shown`       | `feature` · `surface` · `presentation`                         | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)     |
-| `premium_gate_cta_tapped`  | `feature` · `surface` · `presentation`                         | 그 시트·토스트에서 프리미엄 보기                         |
-| `premium_upsell_dismissed` | `feature` · `surface`                                          | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다 |
-| `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server`         | 횟수·개수 한도 안내                                      |
-| `limit_reached_cta_tapped` | `feature` · `surface`                                          | 한도 안내에서 프리미엄 보기                              |
-| `paywall_viewed`           | `view`: `status`·`plans`                                       | 요금제를 받아 페이월이 보였을 때                         |
-| `purchase_failed`          | `reason`: `network`·`server`·`store_unavailable`·`store_error` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다    |
-| `subscription_started`     | `product_id`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                         |
-| `subscription_restored`    | –                                                              | 복원                                                     |
+| 이벤트                     | 파라미터                                                                     | 시점과 의미                                                   |
+| -------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `premium_gate_shown`       | `feature` · `surface` · `presentation`                                       | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)          |
+| `premium_gate_cta_tapped`  | `feature` · `surface` · `presentation`                                       | 그 시트·토스트에서 프리미엄 보기                              |
+| `premium_upsell_dismissed` | `feature` · `surface`                                                        | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다      |
+| `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server`                       | 횟수·개수 한도 안내                                           |
+| `limit_reached_cta_tapped` | `feature` · `surface`                                                        | 한도 안내에서 프리미엄 보기                                   |
+| `paywall_viewed`           | `view`: `status`·`plans` · `feature?`                                        | 요금제를 받아 페이월이 보였을 때. 막혀서 들어왔으면 `feature` |
+| `paywall_plan_selected`    | `plan_type`: `annual`·`monthly`                                              | 고른 요금제를 바꿨을 때. 처음 골라 둔 연간은 세지 않는다      |
+| `purchase_failed`          | `reason`: `network`·`server`·`store_unavailable`·`store_error` · `plan_type` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다         |
+| `purchase_cancelled`       | `plan_type`                                                                  | 스토어 결제 창에서 직접 취소                                  |
+| `subscription_started`     | `product_id` · `plan_type`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                              |
+| `subscription_restored`    | –                                                                            | 복원                                                          |
+
+**업셀 퍼널** — 한 번의 사용자 행동에 이벤트는 한 번이다. 시트 버튼을 여러 번 눌러도 답은 처음 하나로 끝나고, 페이월 조회는 요금제를 받은 뒤 한 번이다.
+
+| 단계              | 이벤트                                                            | 파라미터                                                |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| 1. 막힘           | `limit_reached_shown`(횟수·개수 한도만)                           | `feature` · `surface` · `trigger`                       |
+| 2. 안내 노출      | `premium_gate_shown`                                              | `feature` · `surface` · `presentation`(`sheet`·`toast`) |
+| 3a. 프리미엄 보기 | `premium_gate_cta_tapped`(+ 한도면 `limit_reached_cta_tapped`)    | `feature` · `surface` · `presentation`                  |
+| 3b. 나중에        | `premium_upsell_dismissed`                                        | `feature` · `surface`                                   |
+| 4. 페이월         | `paywall_viewed`                                                  | `view` · `feature?`                                     |
+| 5. 요금제 바꿈    | `paywall_plan_selected`                                           | `plan_type`                                             |
+| 6. 결제           | `subscription_started` / `purchase_cancelled` / `purchase_failed` | `plan_type`(+ `product_id` / `reason`)                  |
+| 7. 매출           | RevenueCat `purchase`·`rc_trial_start`                            | RC 정의                                                 |
 
 **알림 / 배지 / 설정 / 생명주기**
 
@@ -313,33 +328,34 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `subscription_status` | 구독 상태     |
 | `premium_source`      | 프리미엄 출처 |
 
-**이벤트 범위 (23 / 50)**
+**이벤트 범위 (24 / 50)**
 
-| 파라미터         | 표시 이름       | 주로 쓰는 이벤트                                                      |
-| ---------------- | --------------- | --------------------------------------------------------------------- |
-| `method`         | 인증 방식       | auth_signup, auth_login                                               |
-| `creation_entry` | 할 일 생성 경로 | todo_created                                                          |
-| `source`         | 유입 출처       | todo_created, feature_hub_*, invite_link_opened 등                    |
-| `is_completed`   | 완료 여부       | todo_completed                                                        |
-| `is_recurring`   | 반복 여부       | todo_created                                                          |
-| `visibility`     | 공개 범위       | todo_created                                                          |
-| `feature`        | 기능            | premium_gate_shown, feature_card_cta, feature_action_success          |
-| `campaign_id`    | 캠페인          | feature_hub_*, activation_completed                                   |
-| `entry`          | 초대 진입점     | invite_entry_tapped                                                   |
-| `channel`        | 공유 채널       | invite_link_shared                                                    |
-| `outcome`        | 초대 결과       | invite_redeemed                                                       |
-| `reason`         | 사유            | invite_redeem_failed, weather_*, session_expired                      |
-| `success`        | 성공 여부       | ai_parse_used                                                         |
-| `action`         | 동작            | ai_suggestion_acted, push_notification_opened                         |
-| `type`           | 알림 유형       | push_notification_opened, notification_center_opened                  |
-| `campaign_key`   | 푸시 캠페인     | push_notification_opened                                              |
-| `variant_id`     | 실험 변형       | push_notification_opened                                              |
-| `purpose`        | 알림 목적       | push_notification_opened                                              |
-| `setting`        | 설정 항목       | settings_changed                                                      |
-| `result`         | 권한 결과       | weather_location_permission_result                                    |
-| `severity`       | 특보 등급       | weather_alert_opened                                                  |
-| `product_id`     | 상품 ID         | subscription_started (RC `purchase`의 상품 파라미터명은 확인 후 추가) |
-| `presentation`   | 안내 모양       | premium_gate_shown, premium_gate_cta_tapped                           |
+| 파라미터         | 표시 이름       | 주로 쓰는 이벤트                                                                 |
+| ---------------- | --------------- | -------------------------------------------------------------------------------- |
+| `method`         | 인증 방식       | auth_signup, auth_login                                                          |
+| `creation_entry` | 할 일 생성 경로 | todo_created                                                                     |
+| `source`         | 유입 출처       | todo_created, feature_hub_*, invite_link_opened 등                               |
+| `is_completed`   | 완료 여부       | todo_completed                                                                   |
+| `is_recurring`   | 반복 여부       | todo_created                                                                     |
+| `visibility`     | 공개 범위       | todo_created                                                                     |
+| `feature`        | 기능            | premium_gate_shown, feature_card_cta, feature_action_success                     |
+| `campaign_id`    | 캠페인          | feature_hub_*, activation_completed                                              |
+| `entry`          | 초대 진입점     | invite_entry_tapped                                                              |
+| `channel`        | 공유 채널       | invite_link_shared                                                               |
+| `outcome`        | 초대 결과       | invite_redeemed                                                                  |
+| `reason`         | 사유            | invite_redeem_failed, weather_*, session_expired                                 |
+| `success`        | 성공 여부       | ai_parse_used                                                                    |
+| `action`         | 동작            | ai_suggestion_acted, push_notification_opened                                    |
+| `type`           | 알림 유형       | push_notification_opened, notification_center_opened                             |
+| `campaign_key`   | 푸시 캠페인     | push_notification_opened                                                         |
+| `variant_id`     | 실험 변형       | push_notification_opened                                                         |
+| `purpose`        | 알림 목적       | push_notification_opened                                                         |
+| `setting`        | 설정 항목       | settings_changed                                                                 |
+| `result`         | 권한 결과       | weather_location_permission_result                                               |
+| `severity`       | 특보 등급       | weather_alert_opened                                                             |
+| `product_id`     | 상품 ID         | subscription_started (RC `purchase`의 상품 파라미터명은 확인 후 추가)            |
+| `presentation`   | 안내 모양       | premium_gate_shown, premium_gate_cta_tapped                                      |
+| `plan_type`      | 요금제 종류     | paywall_plan_selected, subscription_started, purchase_cancelled, purchase_failed |
 
 등록하지 않음: `*_id`(엔터티 id), `field`, `value`, `color`, `week_label`, `query_length_bucket`·`hint`·`trigger`(필요하면 추가).
 

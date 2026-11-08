@@ -10,9 +10,10 @@ import { match } from 'ts-pattern';
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
-import { useSubscriptionView } from '../hooks/use-subscription-view';
+import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import type { StoreUnavailable } from '../utils/offerings-availability';
+import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import {
   toSubscriptionLoadFailure,
   toSubscriptionStoreUnavailableFailure,
@@ -50,18 +51,30 @@ PlanPicker.Plans = function Plans({
   onValueChange,
   ...props
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
-  const [view] = useSubscriptionView();
+  const [{ view, feature }] = useSubscriptionParams();
   const { trackEvent } = useTrack();
+  const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, value);
 
-  // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
+  // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 프리미엄 보기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
   useEffect(() => {
-    trackEvent('paywall_viewed', { view });
-  }, [trackEvent, view]);
+    trackEvent('paywall_viewed', {
+      view,
+      ...(feature != null && { feature: getPremiumGateAnalyticsFeature(feature) }),
+    });
+  }, [trackEvent, view, feature]);
+
+  const handleValueChange = (planId: string) => {
+    const nextPlan = SubscriptionPolicy.findSelectedPlan(offering, planId);
+    if (nextPlan != null && nextPlan.identifier !== selectedPlan?.identifier) {
+      trackEvent('paywall_plan_selected', { plan_type: nextPlan.planType });
+    }
+    onValueChange(planId);
+  };
 
   return (
     <SubscriptionPlanInput
-      value={SubscriptionPolicy.findSelectedPlan(offering, value)?.identifier}
-      onValueChange={onValueChange}
+      value={selectedPlan?.identifier}
+      onValueChange={handleValueChange}
       {...props}
     />
   );
@@ -80,7 +93,7 @@ PlanPicker.Loading = function Loading() {
             <VStack gap={8}>
               <TextSkeleton size="b3" className="w-16" />
               <TextSkeleton size="t2" className="w-28" />
-              <TextSkeleton size="e1" className="w-24" />
+              <TextSkeleton size="b4" className="w-24" />
             </VStack>
           </Card>
         ))}

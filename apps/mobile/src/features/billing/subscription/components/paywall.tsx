@@ -7,103 +7,116 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import {
-  Box,
-  CalendarIcon,
-  DashedDivider,
-  DocsIcon,
-  FeatureMedia,
-  type FeatureMediaProps,
-  H2,
-  HStack,
-  ListFilledIcon,
-  MicIcon,
-  PersonFilledIcon,
-  Spacing,
-  type StyledIcon,
-  Text,
-  VStack,
-} from '@src/shared/ui';
+import { FeatureMedia, type FeatureMediaProps, H2, HStack, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Separator } from 'heroui-native';
+import { Chip, Separator } from 'heroui-native';
+import { Fragment } from 'react';
+import { match } from 'ts-pattern';
 
+import { type EntitlementFeature } from '../domains/entitlement.model';
+import { UpsellPolicy } from '../domains/upsell.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
+import { PremiumFeatureIcon } from './premium-feature-icon';
 
+/** 페이월 머리글. 막힌 기능·요금제·혜택 순서는 화면이 정한다 */
 export function Paywall() {
   const { t } = useTranslation('subscription');
 
   return (
-    <Box className="px-5 pt-5">
-      <VStack gap={4} className="items-center">
-        <H2>{t('paywall.title')}</H2>
+    <VStack gap={4} className="items-center">
+      <H2>{t('paywall.title')}</H2>
 
-        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-          {t('paywall.subtitle')}
-        </Text>
-      </VStack>
-
-      <DashedDivider className="my-6" />
-
-      <Paywall.Benefits />
-
-      <Spacing size={20} />
-
-      <Paywall.AdditionalBenefits />
-
-      <Spacing size={8} />
-
-      <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-        {t('paywall.futureIncluded')}
+      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+        {t('paywall.subtitle')}
       </Text>
-    </Box>
+    </VStack>
   );
 }
 
-Paywall.Benefits = function Benefits() {
+const BLOCKED_LABEL_KEYS = {
+  AI_PARSE: 'paywall.blockedLimit',
+  VOICE_NOTE: 'paywall.blockedLimit',
+  CHEER: 'paywall.blockedLimit',
+  NUDGE: 'paywall.blockedLimit',
+  FRIEND: 'paywall.blockedLimit',
+  TODO_CATEGORY: 'paywall.blockedLimit',
+  AI_REPORT: 'paywall.blockedLocked',
+  AI_SUGGESTION: 'paywall.blockedLocked',
+  CUSTOM_REMINDER_TIME: 'paywall.blockedLocked',
+  APP_ICON: 'paywall.blockedLocked',
+} as const satisfies Record<EntitlementFeature, string>;
+
+/** 막혀서 들어온 기능을 요금제보다 먼저 보여 준다 */
+Paywall.BlockedFeature = function BlockedFeature({ feature }: { feature: EntitlementFeature }) {
   const { t } = useTranslation('subscription');
-  const { locale } = useDateFormatContext();
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = getPlanBenefitAmounts(entitlements);
-  const formatAmount = (value: number) => formatCount(value, locale);
+  const formatBenefit = useFormatBenefit();
+  const { title, description } = formatBenefit(feature);
 
   return (
-    <VStack gap={20}>
-      <BenefitCard
-        title={t('benefits.aiParsing.title')}
-        description={t('benefits.aiParsing.description', {
-          free: formatAmount(free.aiParse),
-          premium: formatAmount(premium.aiParse),
-        })}
-        image={benefitAiParsingImage}
-      />
-      <BenefitCard
-        title={t('benefits.reminder.title')}
-        description={t('benefits.reminder.description')}
-        image={benefitNotificationImage}
-      />
-      <BenefitCard
-        title={t('benefits.nudge.title')}
-        description={t('benefits.nudge.description', { free: formatAmount(free.nudge) })}
-        image={benefitNudgeImage}
-      />
-      <BenefitCard
-        title={t('benefits.appIcon.title')}
-        description={t('benefits.appIcon.description')}
-        image={benefitAppIconImage}
-      />
+    <VStack gap={12} className="rounded-2xl bg-main/10 p-4" testID="paywall-blocked-feature">
+      <Chip size="sm" variant="soft" className="self-start bg-white dark:bg-gray-2">
+        <Text size="e1" weight="semibold" tone="brand">
+          {t(BLOCKED_LABEL_KEYS[feature])}
+        </Text>
+      </Chip>
+
+      <HStack gap={12} className="items-center">
+        <PremiumFeatureIcon feature={feature} size="medium" />
+
+        <VStack gap={2} className="flex-1">
+          <Text size="b3" weight="bold" shade={9} lineBreakStrategyIOS="hangul-word">
+            {title}
+          </Text>
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {description}
+          </Text>
+        </VStack>
+      </HStack>
     </VStack>
   );
 };
 
-Paywall.AdditionalBenefits = function AdditionalBenefits() {
+const IMAGE_BENEFITS = [
+  { feature: 'AI_PARSE', image: benefitAiParsingImage },
+  { feature: 'CUSTOM_REMINDER_TIME', image: benefitNotificationImage },
+  { feature: 'NUDGE', image: benefitNudgeImage },
+  { feature: 'APP_ICON', image: benefitAppIconImage },
+] as const satisfies readonly { feature: EntitlementFeature; image: FeatureMediaProps['source'] }[];
+
+Paywall.Benefits = function Benefits({ feature }: { feature?: EntitlementFeature }) {
+  const formatBenefit = useFormatBenefit();
+
+  return (
+    <VStack gap={20}>
+      {UpsellPolicy.sortBenefits(IMAGE_BENEFITS, feature).map((benefit) => (
+        <BenefitCard
+          key={benefit.feature}
+          {...formatBenefit(benefit.feature)}
+          image={benefit.image}
+        />
+      ))}
+    </VStack>
+  );
+};
+
+const ADDITIONAL_BENEFITS = [
+  { feature: 'VOICE_NOTE' },
+  { feature: 'FRIEND' },
+  { feature: 'TODO_CATEGORY' },
+  { feature: 'AI_SUGGESTION' },
+  { feature: 'AI_REPORT' },
+] as const satisfies readonly { feature: EntitlementFeature }[];
+
+Paywall.AdditionalBenefits = function AdditionalBenefits({
+  feature,
+}: {
+  feature?: EntitlementFeature;
+}) {
   const { t } = useTranslation('subscription');
-  const { locale } = useDateFormatContext();
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = getPlanBenefitAmounts(entitlements);
-  const formatAmount = (value: number) => formatCount(value, locale);
+  const formatBenefit = useFormatBenefit();
 
   return (
     <VStack gap={16}>
@@ -111,47 +124,23 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
         {t('paywall.moreBenefits')}
       </Text>
 
-      <AdditionalBenefit
-        Icon={MicIcon}
-        title={t('benefits.voiceNote.title', {
-          premium: formatAmount(premium.voiceNote),
-          premiumMinutes: formatAmount(premium.voiceNoteMinutes),
-        })}
-        description={t('benefits.voiceNote.description', {
-          free: formatAmount(free.voiceNote),
-          freeMinutes: formatAmount(free.voiceNoteMinutes),
-          premium: formatAmount(premium.voiceNote),
-          premiumMinutes: formatAmount(premium.voiceNoteMinutes),
-        })}
-      />
-      <Separator className="bg-gray-3" />
-      <AdditionalBenefit
-        Icon={PersonFilledIcon}
-        title={t('benefits.friends.title')}
-        description={t('benefits.friends.description', { free: formatAmount(free.friend) })}
-      />
-      <Separator className="bg-gray-3" />
-      <AdditionalBenefit
-        Icon={ListFilledIcon}
-        title={t('benefits.categories.title', { premium: formatAmount(premium.category) })}
-        description={t('benefits.categories.description', {
-          free: formatAmount(free.category),
-          premium: formatAmount(premium.category),
-        })}
-      />
-      <Separator className="bg-gray-3" />
-      <AdditionalBenefit
-        Icon={CalendarIcon}
-        title={t('benefits.aiRepeat.title')}
-        description={t('benefits.aiRepeat.description')}
-      />
-      <Separator className="bg-gray-3" />
-      <AdditionalBenefit
-        Icon={DocsIcon}
-        title={t('benefits.aiReport.title')}
-        description={t('benefits.aiReport.description')}
-      />
+      {UpsellPolicy.sortBenefits(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
+        <Fragment key={benefit.feature}>
+          {index > 0 && <Separator className="bg-gray-3" />}
+          <AdditionalBenefit feature={benefit.feature} {...formatBenefit(benefit.feature)} />
+        </Fragment>
+      ))}
     </VStack>
+  );
+};
+
+Paywall.FutureIncluded = function FutureIncluded() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+      {t('paywall.futureIncluded')}
+    </Text>
   );
 };
 
@@ -205,6 +194,73 @@ Paywall.Terms = function Terms() {
   );
 };
 
+/** 기능 하나의 혜택 제목·설명. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 온다 */
+function useFormatBenefit() {
+  const { t } = useTranslation('subscription');
+  const { locale } = useDateFormatContext();
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  const { free, premium } = getPlanBenefitAmounts(entitlements);
+  const formatAmount = (value: number) => formatCount(value, locale);
+
+  return (feature: EntitlementFeature) =>
+    match(feature)
+      .with('AI_PARSE', () => ({
+        title: t('benefits.aiParsing.title'),
+        description: t('benefits.aiParsing.description', {
+          free: formatAmount(free.aiParse),
+          premium: formatAmount(premium.aiParse),
+        }),
+      }))
+      .with('VOICE_NOTE', () => ({
+        title: t('benefits.voiceNote.title', {
+          premium: formatAmount(premium.voiceNote),
+          premiumMinutes: formatAmount(premium.voiceNoteMinutes),
+        }),
+        description: t('benefits.voiceNote.description', {
+          free: formatAmount(free.voiceNote),
+          freeMinutes: formatAmount(free.voiceNoteMinutes),
+          premium: formatAmount(premium.voiceNote),
+          premiumMinutes: formatAmount(premium.voiceNoteMinutes),
+        }),
+      }))
+      .with('NUDGE', () => ({
+        title: t('benefits.nudge.title'),
+        description: t('benefits.nudge.description', { free: formatAmount(free.nudge) }),
+      }))
+      .with('CHEER', () => ({
+        title: t('benefits.cheer.title'),
+        description: t('benefits.cheer.description', { free: formatAmount(free.cheer) }),
+      }))
+      .with('FRIEND', () => ({
+        title: t('benefits.friends.title'),
+        description: t('benefits.friends.description', { free: formatAmount(free.friend) }),
+      }))
+      .with('TODO_CATEGORY', () => ({
+        title: t('benefits.categories.title', { premium: formatAmount(premium.category) }),
+        description: t('benefits.categories.description', {
+          free: formatAmount(free.category),
+          premium: formatAmount(premium.category),
+        }),
+      }))
+      .with('AI_REPORT', () => ({
+        title: t('benefits.aiReport.title'),
+        description: t('benefits.aiReport.description'),
+      }))
+      .with('AI_SUGGESTION', () => ({
+        title: t('benefits.aiRepeat.title'),
+        description: t('benefits.aiRepeat.description'),
+      }))
+      .with('CUSTOM_REMINDER_TIME', () => ({
+        title: t('benefits.reminder.title'),
+        description: t('benefits.reminder.description'),
+      }))
+      .with('APP_ICON', () => ({
+        title: t('benefits.appIcon.title'),
+        description: t('benefits.appIcon.description'),
+      }))
+      .exhaustive();
+}
+
 interface BenefitCardProps {
   title: string;
   description: string;
@@ -229,17 +285,15 @@ function BenefitCard({ title, description, image }: BenefitCardProps) {
 }
 
 interface AdditionalBenefitProps {
-  Icon: StyledIcon;
+  feature: EntitlementFeature;
   title: string;
   description: string;
 }
 
-function AdditionalBenefit({ Icon, title, description }: AdditionalBenefitProps) {
+function AdditionalBenefit({ feature, title, description }: AdditionalBenefitProps) {
   return (
     <HStack gap={12} className="items-center">
-      <Box className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
-        <Icon width={20} height={20} colorClassName="text-main" />
-      </Box>
+      <PremiumFeatureIcon feature={feature} size="medium" />
 
       <VStack gap={2} className="flex-1">
         <Text size="b3" weight="bold" shade={9} lineBreakStrategyIOS="hangul-word">

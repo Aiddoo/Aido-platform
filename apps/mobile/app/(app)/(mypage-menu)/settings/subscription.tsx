@@ -8,8 +8,8 @@ import { SubscriptionReceipt } from '@src/features/billing/subscription/componen
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
+import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
-import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
@@ -38,7 +38,7 @@ import { match } from 'ts-pattern';
 function SubscriptionScreen() {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const receipt = useSubscriptionReceipt();
-  const [view] = useSubscriptionView();
+  const [{ view }] = useSubscriptionParams();
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
   // 영수증은 서버 값으로만 그려 스토어가 실패해도 이용 중인 사람(관리자 포함)은 영수증을 본다.
@@ -55,8 +55,10 @@ function SubscriptionScreen() {
 }
 
 SubscriptionScreen.Plans = function Plans() {
+  const [{ feature }] = useSubscriptionParams();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
 
+  // 막혀서 들어왔으면 그 기능을 먼저 보이고, 고를 요금제를 혜택 그림보다 위에 둔다
   return (
     <Box className="flex-1" testID="subscription-paywall">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -66,16 +68,35 @@ SubscriptionScreen.Plans = function Plans() {
           <PremiumNotice.GrantEnded className="mb-3" />
 
           <ScallopedContainer>
-            <Paywall />
+            <Box className="p-5">
+              <Paywall />
 
-            <DashedDivider className="my-5 mx-5" />
+              <Spacing size={20} />
 
-            <Box className="px-5 pb-5">
+              {feature != null && (
+                <>
+                  <Paywall.BlockedFeature feature={feature} />
+                  <Spacing size={16} />
+                </>
+              )}
+
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
                   <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
                 </Suspense>
               </QueryErrorBoundary>
+
+              <DashedDivider className="my-6" />
+
+              <Paywall.Benefits feature={feature} />
+
+              <Spacing size={20} />
+
+              <Paywall.AdditionalBenefits feature={feature} />
+
+              <Spacing size={8} />
+
+              <Paywall.FutureIncluded />
             </Box>
           </ScallopedContainer>
 

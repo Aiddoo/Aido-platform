@@ -1,3 +1,4 @@
+import type { PlanType } from '../domains/subscription.model';
 import type { UpsellPresentation } from '../domains/upsell.model';
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import type {
@@ -24,7 +25,7 @@ export type LimitReachedTrigger = 'precheck' | 'server';
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
     /** 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다 */
-    subscription_started: { product_id: string };
+    subscription_started: { product_id: string; plan_type: PlanType };
     subscription_restored: undefined;
     /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast다 */
     premium_gate_shown: {
@@ -43,10 +44,14 @@ declare module '@src/shared/analytics/event-map' {
       feature: PremiumGateAnalyticsFeature;
       surface: EntitlementGateSurface;
     };
-    /** 요금제를 받아 페이월을 보여 줬다. `plans`는 보상 기간 영수증에서 요금제로 넘어온 경우다 */
-    paywall_viewed: { view: SubscriptionView };
+    /** 요금제를 받아 페이월을 보여 줬다. `plans`는 보상 기간 영수증에서 요금제로 넘어온 경우, `feature`는 막혀서 들어온 기능이다 */
+    paywall_viewed: { view: SubscriptionView; feature?: PremiumGateAnalyticsFeature };
+    /** 사용자가 고른 요금제를 바꿨다. 처음 골라 둔 연간은 세지 않는다 */
+    paywall_plan_selected: { plan_type: PlanType };
     /** 문의로 안내한 결제 실패. 직접 취소·승인 대기는 세지 않는다 */
-    purchase_failed: { reason: PurchaseFailedReason };
+    purchase_failed: { reason: PurchaseFailedReason; plan_type: PlanType };
+    /** 스토어 결제 창에서 직접 취소했다 */
+    purchase_cancelled: { plan_type: PlanType };
     /** 횟수·개수 한도에 닿아 안내를 띄웠다(premium_gate_shown과 함께 남는다) */
     limit_reached_shown: {
       feature: PremiumGateAnalyticsFeature;

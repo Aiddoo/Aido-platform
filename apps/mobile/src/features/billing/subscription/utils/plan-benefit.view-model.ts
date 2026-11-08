@@ -23,6 +23,7 @@ export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
       voiceNote: EntitlementPolicy.getFreeLimit(snapshot, 'VOICE_NOTE'),
       voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free / SECONDS_PER_MINUTE,
       nudge: EntitlementPolicy.getFreeLimit(snapshot, 'NUDGE'),
+      cheer: EntitlementPolicy.getFreeLimit(snapshot, 'CHEER'),
       friend: EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND'),
       category: EntitlementPolicy.getFreeLimit(snapshot, 'TODO_CATEGORY'),
     },

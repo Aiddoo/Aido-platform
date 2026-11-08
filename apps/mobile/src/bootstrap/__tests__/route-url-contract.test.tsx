@@ -1,4 +1,4 @@
-import { useSubscriptionView } from '@src/features/billing/subscription/hooks/use-subscription-view';
+import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
@@ -218,15 +218,17 @@ describe('공개 URL 계약', () => {
   });
 
   it.each([
-    ['/subscription?view=plans', 'plans'],
-    ['/subscription', 'status'],
-    ['/subscription?view=unknown', 'status'],
-  ])('구독 보기: %s는 %s로 읽는다', async (url, expected) => {
+    ['/subscription?view=plans', { view: 'plans', feature: undefined }],
+    ['/subscription', { view: 'status', feature: undefined }],
+    ['/subscription?view=unknown', { view: 'status', feature: undefined }],
+    ['/subscription?feature=AI_PARSE', { view: 'status', feature: 'AI_PARSE' }],
+    ['/subscription?feature=UNKNOWN', { view: 'status', feature: undefined }],
+  ])('구독 화면 값: %s는 %o로 읽는다', async (url, expected) => {
     // When
-    const route = await renderRouteHook(() => useSubscriptionView(), { url });
+    const route = await renderRouteHook(() => useSubscriptionParams(), { url });
 
     // Then
-    expect(route.hook()[0]).toBe(expected);
+    expect(route.hook()[0]).toEqual(expected);
   });
 
   it('리포트 종류', async () => {

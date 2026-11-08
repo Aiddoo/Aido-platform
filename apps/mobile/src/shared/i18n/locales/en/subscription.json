@@ -29,6 +29,10 @@
       "title": "Unlimited nudges",
       "description": "{{free}} a day on Free, unlimited with Premium"
     },
+    "cheer": {
+      "title": "Unlimited cheers",
+      "description": "{{free}} a day on Free, unlimited with Premium"
+    },
     "reminder": {
       "title": "Choose your reminder times",
       "description": "Free uses set times. With Premium, get reminders when you want"
@@ -68,7 +72,11 @@
     "futureIncluded": "All future Premium features are included too",
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
     "moreBenefits": "More Premium benefits",
+    "blockedLimit": "Just ran out",
+    "blockedLocked": "Premium feature",
     "subscribeButton": "Subscribe",
+    "startAnnual": "Start annual plan",
+    "startMonthly": "Start monthly plan",
     "renewalNotice": {
       "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
       "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."

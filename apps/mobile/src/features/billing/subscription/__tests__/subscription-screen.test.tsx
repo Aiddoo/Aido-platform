@@ -18,13 +18,36 @@ import {
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
-import { screen } from '@testing-library/react-native';
+import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
 const HOUR_MS = 60 * 60 * 1000;
+
+function createPackage(
+  packageType: 'ANNUAL' | 'MONTHLY',
+  price: number,
+): PurchaseOffering['packages'][number] {
+  return {
+    identifier: packageType.toLowerCase(),
+    packageType,
+    product: {
+      priceString: `₩${price.toLocaleString('en-US')}`,
+      price,
+      currencyCode: 'KRW',
+      title: packageType,
+      description: null,
+    },
+  };
+}
+
+const MONTHLY_AND_ANNUAL: PurchaseOffering = {
+  identifier: 'default',
+  packages: [createPackage('MONTHLY', 3_900), createPackage('ANNUAL', 29_900)],
+};
 
 interface ScreenState {
   tier: AccessTier;
@@ -237,5 +260,93 @@ describe('구독 화면', () => {
 
     // Then
     expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
+  });
+
+  it('막혀서 들어오면 그 기능을 요금제보다 먼저, 연간 요금제를 월간보다 먼저 보여 준다', async () => {
+    // Given
+    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'AI_PARSE' });
+
+    // When
+    const { analytics } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+
+    // Then
+    expect(await screen.findByText('₩29,900')).toBeTruthy();
+    const blockedFeature = screen.getByTestId('paywall-blocked-feature');
+    expect(within(blockedFeature).getByText('AI 할 일 만들기 넉넉하게')).toBeTruthy();
+    expect(
+      screen
+        .getAllByText(/^(AI 할 일 만들기 넉넉하게|연간 구독|월간 구독)$/)
+        .map((element) => element.props.children),
+    ).toEqual(['AI 할 일 만들기 넉넉하게', '연간 구독', '월간 구독', 'AI 할 일 만들기 넉넉하게']);
+    expect(screen.getByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
+    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', {
+      view: 'status',
+      feature: 'ai_parse',
+    });
+  });
+
+  it('모르는 기능으로 들어오면 막힌 기능 없이 페이월을 보여 준다', async () => {
+    // Given
+    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'UNKNOWN' });
+
+    // When
+    const { analytics } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+
+    // Then
+    expect(await screen.findByText('₩29,900')).toBeTruthy();
+    expect(screen.queryByTestId('paywall-blocked-feature')).toBeNull();
+    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', { view: 'status' });
+  });
+
+  it('월간을 고르면 버튼이 월간으로 바뀌고 고른 요금제를 한 번만 센다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { analytics } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    await screen.findByText('₩3,900');
+
+    // When
+    await user.press(screen.getByText('월간 구독'));
+    await user.press(screen.getByText('월간 구독'));
+
+    // Then
+    expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
+    const selectedEvents = analytics.trackEvent.mock.calls.filter(
+      ([eventName]) => eventName === 'paywall_plan_selected',
+    );
+    expect(selectedEvents).toEqual([['paywall_plan_selected', { plan_type: 'monthly' }]]);
+    expect(
+      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'paywall_viewed'),
+    ).toHaveLength(1);
+  });
+
+  it('결제 창에서 취소하면 고른 요금제로 취소를 한 번만 센다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { purchases, analytics } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockRejectedValue(new PurchasesGatewayError('cancelled', null, 'cancelled'));
+
+    // When
+    await user.press(await screen.findByRole('button', { name: '연간으로 시작하기' }));
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('purchase_cancelled', {
+        plan_type: 'annual',
+      }),
+    );
+    const purchaseEvents = analytics.trackEvent.mock.calls
+      .map(([eventName]) => eventName)
+      .filter(
+        (eventName) => eventName.startsWith('purchase') || eventName.startsWith('subscription'),
+      );
+    expect(purchaseEvents).toEqual(['purchase_cancelled']);
   });
 });

@@ -44,6 +44,7 @@ describe('getPlanBenefitAmounts', () => {
         voiceNote: PLAN_CATALOG.VOICE_NOTE.free,
         voiceNoteMinutes: 3,
         nudge: PLAN_CATALOG.NUDGE.free,
+        cheer: PLAN_CATALOG.CHEER.free,
         friend: PLAN_CATALOG.FRIEND.free,
         category: PLAN_CATALOG.TODO_CATEGORY.free,
       });

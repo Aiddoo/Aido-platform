@@ -16,10 +16,13 @@ import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
+import { type SubscriptionPlan } from '../domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toPurchaseFailedReason } from '../utils/subscription-analytics';
 import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';
+
+type PurchaseVariables = Pick<SubscriptionPlan, 'identifier' | 'planType'>;
 
 export function usePurchaseMutationOptions() {
   const haptics = useHaptics();
@@ -37,14 +40,14 @@ export function usePurchaseMutationOptions() {
     // 결제 전 출처를 기억해 둔다. 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없다
     onMutate: () => ({ previousAccess: getCachedMe(queryClient)?.premiumAccess }),
     // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
-    mutationFn: async (identifier: string) => {
+    mutationFn: async ({ identifier }: PurchaseVariables) => {
       const hasStoreEntitlement = unwrap(await subscriptionService.purchase(identifier));
       const isReflected = hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
 
       return { isReflected };
     },
-    onSuccess: ({ isReflected }, identifier, context) => {
-      trackEvent('subscription_started', { product_id: identifier });
+    onSuccess: ({ isReflected }, { identifier, planType }, context) => {
+      trackEvent('subscription_started', { product_id: identifier, plan_type: planType });
       haptics.notify('success');
       if (!isReflected) {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
@@ -57,10 +60,12 @@ export function usePurchaseMutationOptions() {
           : t('subscription:toast.purchaseSuccess'),
       );
     },
-    onError: (error) =>
+    onError: (error, { planType }) =>
       match(toSubscriptionActionFailure('purchase', error))
-        // 사용자가 직접 취소했으면 이미 알고 있다
-        .with({ type: 'cancelled' }, () => undefined)
+        // 사용자가 직접 취소했으면 이미 알고 있어 알리지 않고 퍼널에만 남긴다
+        .with({ type: 'cancelled' }, () => {
+          trackEvent('purchase_cancelled', { plan_type: planType });
+        })
         .with({ type: 'paymentPending' }, () =>
           toast.success(t('subscription:toast.paymentPending')),
         )
@@ -69,7 +74,7 @@ export function usePurchaseMutationOptions() {
           haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
           if (reason != null) {
-            trackEvent('purchase_failed', { reason });
+            trackEvent('purchase_failed', { reason, plan_type: planType });
           }
           errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
             feature: 'subscription',

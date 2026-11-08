@@ -25,8 +25,8 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
 
   return (
     <RadioGroup className="gap-3" {...props}>
-      {monthlyPlan && <PlanOption plan={monthlyPlan} />}
       {annualPlan && <PlanOption plan={annualPlan} discountPercent={annualDiscountPercent} />}
+      {monthlyPlan && <PlanOption plan={monthlyPlan} />}
     </RadioGroup>
   );
 }
@@ -89,7 +89,13 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
               </Text>
             </HStack>
 
-            <Text size="e1" className={cn('text-gray-5', monthlyEquivalent == null && 'opacity-0')}>
+            {/* 가장 큰 가격은 실제 청구액이어야 해서(App Store 3.1.2) 월 환산가는 그 아래 강조로만 둔다 */}
+            <Text
+              size="b4"
+              weight="semibold"
+              tone="brand"
+              className={cn(monthlyEquivalent == null && 'opacity-0')}
+            >
               {monthlyEquivalent != null
                 ? t('plan.monthlyEquivalent', {
                     price: formatPrice(monthlyEquivalent, plan.currencyCode),

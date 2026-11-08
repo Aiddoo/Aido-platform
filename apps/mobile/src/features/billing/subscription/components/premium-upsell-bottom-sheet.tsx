@@ -2,25 +2,13 @@ import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  AiFilledIcon,
-  AppSquareIcon,
   ArrowRightIcon,
-  BellFilledIcon,
-  Box,
   Button,
-  CalendarIcon,
-  DocsIcon,
   H4,
-  HeartFilledIcon,
   HStack,
-  ListFilledIcon,
   Meter,
-  MicIcon,
   ModalBottomSheet,
-  PawIcon,
-  PersonFilledIcon,
   QueryErrorBoundary,
-  type StyledIcon,
   Text,
   TextButton,
   VStack,
@@ -37,6 +25,7 @@ import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getPlanComparison } from '../utils/plan-benefit.view-model';
+import { PremiumFeatureIcon } from './premium-feature-icon';
 
 interface PremiumUpsellAlternativeAction {
   label: string;
@@ -96,7 +85,7 @@ export function PremiumUpsellBottomSheet({
     >
       <VStack gap={20} testID="premium-upsell-sheet">
         <VStack gap={12} align="center">
-          <FeatureIcon feature={feature} />
+          <PremiumFeatureIcon feature={feature} size="large" />
           <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
             {title}
           </H4>
@@ -161,29 +150,6 @@ PremiumUpsellBottomSheet.Loading = function Loading() {
 PremiumUpsellBottomSheet.Error = function ErrorFallback() {
   return null;
 };
-
-const FEATURE_ICONS = {
-  AI_PARSE: AiFilledIcon,
-  VOICE_NOTE: MicIcon,
-  CHEER: HeartFilledIcon,
-  NUDGE: PawIcon,
-  FRIEND: PersonFilledIcon,
-  TODO_CATEGORY: ListFilledIcon,
-  AI_REPORT: DocsIcon,
-  AI_SUGGESTION: CalendarIcon,
-  CUSTOM_REMINDER_TIME: BellFilledIcon,
-  APP_ICON: AppSquareIcon,
-} as const satisfies Record<EntitlementFeature, StyledIcon>;
-
-function FeatureIcon({ feature }: { feature: EntitlementFeature }) {
-  const Icon = FEATURE_ICONS[feature];
-
-  return (
-    <Box className="size-14 items-center justify-center rounded-2xl bg-main/10">
-      <Icon width={28} height={28} colorClassName="text-main" />
-    </Box>
-  );
-}
 
 /** 기간마다 다시 생기는 한도를 다 썼을 때만 막대와 다시 생기는 날을 보여 준다 */
 function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
