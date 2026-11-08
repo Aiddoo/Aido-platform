@@ -2,7 +2,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { PremiumDialog, type PremiumDialogProps, useOverlay } from '@src/shared/ui';
+import { useOverlay } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,8 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
+import { PremiumDialog } from '../components/premium-dialog';
+import type { PremiumDialogProps } from '../components/premium-dialog.types';
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
 import { findLimitedFeature } from '../domains/entitlement.error';
 import { EntitlementPolicy } from '../domains/entitlement.model';

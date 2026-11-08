@@ -1,10 +1,16 @@
-import { getQueryKeyParams } from '@src/shared/utils/get-query-key-params';
 import type { QueryClient } from '@tanstack/react-query';
+import { last } from 'es-toolkit';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import type { LocationReading, RegisteredLocation } from '../schemas/weather-location.schema';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
+
+/** 리포트 쿼리 키의 인자는 객체 하나이고 항상 마지막에 둔다 */
+function getReportKeyParams(queryKey: readonly unknown[]) {
+  const parsed = weatherReportQueryKeySchema.safeParse(last(queryKey));
+  return parsed.success ? parsed.data : null;
+}
 
 /**
  * 위치를 먼저 다시 읽는다. 위치가 바뀌면 리포트 key가 바뀌어 새 리포트만 받고,
@@ -41,7 +47,7 @@ export function removeOutdatedWeatherReports(
   queryClient.removeQueries({
     queryKey: WEATHER_QUERY_KEYS.reports(),
     predicate: (query) => {
-      const params = getQueryKeyParams(query.queryKey, weatherReportQueryKeySchema);
+      const params = getReportKeyParams(query.queryKey);
       return params != null && params.locationRevision < locationRevision;
     },
   });

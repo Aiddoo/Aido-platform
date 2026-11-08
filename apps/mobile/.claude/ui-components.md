@@ -36,7 +36,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 
 ### 한도 안내는 `PremiumDialog` 하나
 
-AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDialog` 하나로 안내한다. 기능별 `LimitReachedDialog`나
+AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDialog` 하나로 안내한다. `PremiumDialog`는 `useEntitlementGate`만 쓰므로 `features/billing/subscription/components/premium-dialog.tsx`에 있다. 기능 화면은 직접 렌더하지 않고 `useEntitlementGate(feature, { surface })`의 `promptIfBlocked`·`promptIfBlockedError`를 쓴다. 기능별 `LimitReachedDialog`나
 인라인 한도 배너를 새로 만들지 않고, 게이트가 기능별 `title`·`description`(리셋 날짜는 `premiumDialog.resetsOn`)과
 필요하면 대체 행동을 넘긴다.
 
@@ -94,7 +94,6 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `ActionButton`                                                                                  | 아이콘 + 라벨 선택 칩 (필터·옵션)                                                                                                          | `src/shared/ui/action-button/action-button.md`                    |
 | `ListRow`                                                                                       | 목록 행 (`left`·`contents`·`right`, `.Texts`·`.Image`, `onPress`면 행 전체가 버튼)                                                         | `src/shared/ui/list-row/list-row.md`                              |
 | `OverlayProvider`, `useOverlay`                                                                 | 루트에 다이얼로그·시트를 띄운다. 값은 `openAsync`로 받는다                                                                                 | `src/shared/ui/overlay/overlay.md`                                |
-| `PremiumDialog`                                                                                 | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움                                                                | `src/shared/ui/premium-dialog/premium-dialog.md`                  |
 | `OfflineBanner`                                                                                 | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                                                                                | `src/shared/ui/offline-banner/offline-banner.md`                  |
 | `QueryErrorBoundary`                                                                            | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                                                                                 | `src/shared/ui/query-error-boundary/query-error-boundary.md`      |
 | `AppToast`                                                                                      | 토스트 본문 (`useAppToast`로 사용)                                                                                                         | `src/shared/ui/toast/toast.md`                                    |
@@ -271,7 +270,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 Uniwind는 CSS 순서가 아니라 규칙의 구체성(variant가 붙으면 높음)과 같을 때 뒤에 온 클래스로 정한다. 그래서 heroui 기본 클래스를 `className`으로 덮을 수 있지만, `disabled:`처럼 variant가 붙은 기본값(`disabled:element-disabled`)은 같은 variant(`disabled:opacity-40`)로만 덮인다.
 
-`PremiumDialog`, `OfflineBanner`는 아직 `shared/ui`에 있다.
+`OfflineBanner`는 아직 `shared/ui`에 있다.
 
 ---
 

@@ -118,7 +118,6 @@ export { BottomSheetInput, Input } from './input';
 export { ListRow, type ListRowProps } from './list-row';
 export { OfflineBanner } from './offline-banner';
 export { type Overlay, OverlayProvider, useOverlay, useOverlayState } from './overlay';
-export { PremiumDialog, type PremiumDialogProps } from './premium-dialog';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {
   INQUIRY_SHEET_EXIT,
