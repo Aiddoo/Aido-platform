@@ -16,12 +16,12 @@ import {
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
+import type { FriendRequest } from '../domains/friend.model';
 import {
   useAcceptRequestMutationOptions,
   useRejectRequestMutationOptions,
 } from '../queries/friend.mutations';
 import { useGetReceivedRequestsInfiniteQueryOptions } from '../queries/friend.queries';
-import type { FriendRequest } from '../schemas/friend.schema';
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');

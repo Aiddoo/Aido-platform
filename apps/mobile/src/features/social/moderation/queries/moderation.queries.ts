@@ -5,7 +5,7 @@ import type { Page } from '@src/shared/types/page.types';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
 import { MODERATION_QUERY_KEYS } from '../constants/moderation-query-keys';
-import type { BlockedUser } from '../schemas/user-block.schema';
+import type { BlockedUser } from '../domains/user-block.model';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;
 

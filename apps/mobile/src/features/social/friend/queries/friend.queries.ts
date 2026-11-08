@@ -6,8 +6,7 @@ import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { FriendPolicy } from '../domains/friend.model';
-import type { FriendUser } from '../schemas/friend.schema';
+import { FriendPolicy, type FriendUser } from '../domains/friend.model';
 import { findFriendById } from '../utils/find-friend-by-id';
 
 const FIRST_PAGE_CURSOR: string | undefined = undefined;

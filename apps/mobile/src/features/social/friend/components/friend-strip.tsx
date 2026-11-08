@@ -35,8 +35,8 @@ import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
+import type { FriendUser } from '../domains/friend.model';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
-import type { FriendUser } from '../schemas/friend.schema';
 import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll';
 
 /** 아바타 40 + 양쪽 선택 링 2 + 링 안쪽 여백 2. 선택 여부와 관계없이 늘 같은 크기다 */

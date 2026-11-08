@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { FriendPolicy } from '../domains/friend.model';
+import { FriendPolicy, type SearchedUser } from '../domains/friend.model';
 import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import {
@@ -28,7 +28,6 @@ import {
   useSendRequestByTagMutationOptions,
 } from '../queries/friend.mutations';
 import { useGetUserSearchInfiniteQueryOptions } from '../queries/friend.queries';
-import type { SearchedUser } from '../schemas/friend.schema';
 
 interface FriendSearchListProps {
   query: string;

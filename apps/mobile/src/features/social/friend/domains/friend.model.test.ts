@@ -1,3 +1,6 @@
+import { userTagParamSchema } from '@aido/api';
+
+import { createSearchedUser } from '../__tests__/friend.fixtures';
 import { FriendPolicy } from './friend.model';
 
 describe('isValidSearchQuery', () => {
@@ -26,9 +29,12 @@ describe('isValidUserTag', () => {
     [' ABCD1234 ', true],
     ['abcd1234', false],
     ['ABC123', false],
+    ['ABCD123', false],
+    ['ABCD12345', false],
+    ['ABCD-123', false],
   ])('태그 "%s"의 유효 여부는 %s이다', (userTag, expected) => {
     // Given
-    const user = { userTag };
+    const user = createSearchedUser({ userTag });
 
     // When
     const result = FriendPolicy.isValidUserTag(user);
@@ -36,6 +42,20 @@ describe('isValidUserTag', () => {
     // Then
     expect(result).toBe(expected);
   });
+
+  it.each(['ABCD1234', 'abcd1234', 'ABCD123', 'ABCD12345', 'ABCD-123', ''])(
+    '태그 "%s"를 서버 경로 검증과 같게 판단한다',
+    (userTag) => {
+      // Given
+      const user = createSearchedUser({ userTag });
+
+      // When
+      const result = FriendPolicy.isValidUserTag(user);
+
+      // Then
+      expect(result).toBe(userTagParamSchema.safeParse({ userTag }).success);
+    },
+  );
 });
 
 describe('getRequestState', () => {
@@ -46,7 +66,10 @@ describe('getRequestState', () => {
     { isFriend: false, requestPending: false, expected: 'none' },
   ] as const)(
     '친구 $isFriend, 요청 대기 $requestPending이면 $expected로 본다',
-    ({ expected, ...user }) => {
+    ({ expected, isFriend, requestPending }) => {
+      // Given
+      const user = createSearchedUser({ isFriend, requestPending });
+
       // When
       const state = FriendPolicy.getRequestState(user);
 
@@ -63,6 +86,14 @@ describe('getFriendLimit', () => {
 
     // Then
     expect(limit).toBe(6);
+  });
+
+  it('서버가 알려 준 한도가 0이어도 그 값을 반환한다', () => {
+    // When
+    const limit = FriendPolicy.getFriendLimit({ serverLimit: 0, knownLimit: 5 });
+
+    // Then
+    expect(limit).toBe(0);
   });
 
   it('오류에 한도가 없으면 내 정보의 한도를 반환한다', () => {

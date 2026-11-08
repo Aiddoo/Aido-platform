@@ -8,9 +8,9 @@ import { Box, Button, FriendIllustration, InfiniteList, Text, TextSkeleton } fro
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
+import type { FriendRequest } from '../domains/friend.model';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useGetSentRequestsInfiniteQueryOptions } from '../queries/friend.queries';
-import type { FriendRequest } from '../schemas/friend.schema';
 
 export function SentRequestList() {
   const { t } = useTranslation('friend');

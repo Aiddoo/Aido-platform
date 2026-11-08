@@ -17,9 +17,13 @@ import {
   type AcceptFriendRequestResponse,
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
-import { toInstant } from '@src/shared/date/instant';
 
-import type { FriendUser } from '../schemas/friend.schema';
+import {
+  type FriendUser,
+  friendUserSchema,
+  type SearchedUser,
+  searchedUserSchema,
+} from '../domains/friend.model';
 
 function generateSendFriendRequestDto(): SendFriendRequestResponse {
   return {
@@ -233,13 +237,25 @@ export function createFriendApiError(
 export const INVALID_DTO = { invalid: 'data' };
 
 export function createFriendUser(id: string, overrides?: Partial<FriendUser>): FriendUser {
-  return {
+  return friendUserSchema.parse({
     id,
     followId: `follow-${id}`,
     userTag: 'ABCD1234',
     name: '친구',
     profileImage: null,
-    friendsSince: toInstant('2026-10-03T00:00:00.000Z'),
+    friendsSince: '2026-10-03T00:00:00.000Z',
     ...overrides,
-  };
+  });
+}
+
+export function createSearchedUser(overrides?: Partial<SearchedUser>): SearchedUser {
+  return searchedUserSchema.parse({
+    id: 'clz7x5p8k0005qz0z8z8z8z8z',
+    userTag: 'ABCD1234',
+    name: '홍길동',
+    profileImage: null,
+    isFriend: false,
+    requestPending: false,
+    ...overrides,
+  });
 }

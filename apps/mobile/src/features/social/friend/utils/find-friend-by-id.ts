@@ -1,6 +1,6 @@
 import type { Page } from '@src/shared/types/page.types';
 
-import type { FriendUser } from '../schemas/friend.schema';
+import type { FriendUser } from '../domains/friend.model';
 
 export function findFriendById(
   pages: ReadonlyArray<Pick<Page<FriendUser>, 'items'>>,

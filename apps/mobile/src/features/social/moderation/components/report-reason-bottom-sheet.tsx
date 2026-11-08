@@ -23,13 +23,12 @@ import type { ComponentProps } from 'react';
 import { type Control, Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { isReportTargetUnavailableError } from '../domains/moderation.error';
+import type { UserReportTarget, UserReportTargetType } from '../domains/user-report.model';
 import { useReportContentMutationOptions } from '../queries/moderation.mutations';
 import {
   type UserReportFormValues,
   userReportFormSchema,
-  type UserReportTarget,
-  type UserReportTargetType,
-} from '../schemas/user-report.schema';
+} from '../schemas/user-report-form.schema';
 
 const TARGET_CAPTION_KEYS = {
   PROFILE: 'report.caption.PROFILE',

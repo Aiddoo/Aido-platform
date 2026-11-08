@@ -1,8 +1,14 @@
 import {
   acceptFriendRequestResponseSchema,
   cancelFriendRequestResponseSchema,
+  friendsListResponseSchema,
+  receivedRequestsResponseSchema,
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
+  reorderFriendResponseSchema,
+  searchUsersResponseSchema,
+  sendFriendRequestResponseSchema,
+  sentRequestsResponseSchema,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
@@ -13,20 +19,23 @@ import type { Page } from '@src/shared/types/page.types';
 import { noop } from 'es-toolkit';
 
 import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
-import { FriendPolicy } from '../domains/friend.model';
 import {
-  friendRequestsPageSchema,
-  friendsPageSchema,
-  type PaginationQuery,
+  FriendPolicy,
   type SearchedUser,
-  type SendRequestResult,
-  type ReorderFriendInput,
-  reorderedFriendSchema,
-  searchedUsersPageSchema,
-  type SearchUsersQuery,
-  sendRequestResultSchema,
-} from '../schemas/friend.schema';
-import { toFriendRequestsPage, toFriendsPage, toSearchedUsersPage } from './friend.mapper';
+  type SendFriendRequestResult,
+} from '../domains/friend.model';
+import type {
+  PaginationQuery,
+  ReorderFriendInput,
+  SearchUsersQuery,
+} from '../schemas/friend-request.schema';
+import {
+  toFriendRequestsPage,
+  toFriendsPage,
+  toFriendUser,
+  toSearchedUsersPage,
+  toSendFriendRequestResult,
+} from './friend.mapper';
 
 type FriendServiceError = ApiError | BusinessError<FriendErrorCode>;
 
@@ -39,7 +48,7 @@ export class FriendService {
 
   sendRequestByTag = async (
     userTag: string,
-  ): Promise<Result<SendRequestResult, FriendServiceError>> => {
+  ): Promise<Result<SendFriendRequestResult, FriendServiceError>> => {
     const tag = userTag.trim();
     if (!tag) {
       return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
@@ -50,8 +59,8 @@ export class FriendService {
 
     return parseApiResponse(
       await this.#httpClient.post(`v1/follows/${encodeURIComponent(tag)}`),
-      sendRequestResultSchema,
-      (dto) => dto,
+      sendFriendRequestResponseSchema,
+      toSendFriendRequestResult,
       '[FriendService] Invalid sendRequest response',
     );
   };
@@ -62,7 +71,7 @@ export class FriendService {
         signal,
         params: { cursor: params?.cursor, limit: params?.limit },
       }),
-      friendRequestsPageSchema,
+      receivedRequestsResponseSchema,
       toFriendRequestsPage,
       '[FriendService] Invalid getReceivedRequests response',
     );
@@ -73,7 +82,7 @@ export class FriendService {
         signal,
         params: { cursor: params?.cursor, limit: params?.limit },
       }),
-      friendRequestsPageSchema,
+      sentRequestsResponseSchema,
       toFriendRequestsPage,
       '[FriendService] Invalid getSentRequests response',
     );
@@ -108,7 +117,7 @@ export class FriendService {
         signal,
         params: { cursor: params?.cursor, limit: params?.limit },
       }),
-      friendsPageSchema,
+      friendsListResponseSchema,
       toFriendsPage,
       '[FriendService] Invalid getFriends response',
     );
@@ -128,7 +137,7 @@ export class FriendService {
         signal,
         params: { q: query, cursor: params.cursor, limit: params.limit },
       }),
-      searchedUsersPageSchema,
+      searchUsersResponseSchema,
       toSearchedUsersPage,
       '[FriendService] Invalid searchUsers response',
     );
@@ -140,8 +149,8 @@ export class FriendService {
         `v1/follows/friends/${encodeURIComponent(followId)}/reorder`,
         input,
       ),
-      reorderedFriendSchema,
-      (dto) => dto.friend,
+      reorderFriendResponseSchema,
+      (dto) => toFriendUser(dto.friend),
       '[FriendService] Invalid reorderFriend response',
     );
 

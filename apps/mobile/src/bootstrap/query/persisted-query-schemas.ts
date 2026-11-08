@@ -10,7 +10,7 @@ import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-quer
 import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
 import { todoListResultSchema } from '@src/features/planning/todo/domains/todo.model';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
-import { friendUserPagesSchema } from '@src/features/social/friend/schemas/friend.schema';
+import { friendUserPagesSchema } from '@src/features/social/friend/domains/friend.model';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
 import { locationReadingSchema } from '@src/features/weather/domains/weather-location.model';
 import { weatherReportSchema } from '@src/features/weather/domains/weather-report.model';

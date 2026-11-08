@@ -1,4 +1,5 @@
 import {
+  blockedUsersResponseSchema,
   blockUserResponseSchema,
   createUserReportResponseSchema,
   unblockUserResponseSchema,
@@ -7,8 +8,7 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
 
-import { blockedUsersPageSchema } from '../schemas/user-block.schema';
-import type { UserReportRequest } from '../schemas/user-report.schema';
+import type { UserReportRequest } from '../schemas/user-report-request.schema';
 import { toBlockedUsersPage } from './user-block.mapper';
 
 /** 사용자 차단·해제·목록과 콘텐츠 신고. 차단 효과(친구 끊기, 서로 가리기)는 서버가 맡는다 */
@@ -41,7 +41,7 @@ export class ModerationService {
         signal,
         params,
       }),
-      blockedUsersPageSchema,
+      blockedUsersResponseSchema,
       toBlockedUsersPage,
       '[ModerationService] Invalid getBlockedUsers response',
     );

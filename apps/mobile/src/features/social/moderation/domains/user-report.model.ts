@@ -1,6 +1,21 @@
-import type { UserReportTarget } from '../schemas/user-report.schema';
+import {
+  type UserReportReason,
+  USER_REPORT_TARGET_TYPES,
+  type UserReportTargetType,
+} from '@aido/api/vocabulary';
+import { z } from 'zod';
 
-function createTodoReportTarget({
+export type { UserReportReason, UserReportTargetType };
+
+// 시트를 연 화면이 대상을 정하고 시트는 사유와 상세만 받는다
+export const userReportTargetSchema = z.object({
+  targetUserId: z.string(),
+  targetType: z.enum(USER_REPORT_TARGET_TYPES),
+  targetId: z.string().optional(),
+});
+export type UserReportTarget = z.infer<typeof userReportTargetSchema>;
+
+export function createTodoReportTarget({
   todoId,
   ownerId,
 }: {
@@ -10,7 +25,7 @@ function createTodoReportTarget({
   return { targetUserId: ownerId, targetType: 'TODO', targetId: String(todoId) };
 }
 
-function createCommentReportTarget({
+export function createCommentReportTarget({
   commentId,
   authorId,
 }: {
@@ -20,11 +35,11 @@ function createCommentReportTarget({
   return { targetUserId: authorId, targetType: 'COMMENT', targetId: commentId };
 }
 
-function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
+export function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
   return { targetUserId: userId, targetType: 'PROFILE' };
 }
 
-function createNudgeMessageReportTarget({
+export function createNudgeMessageReportTarget({
   nudgeId,
   senderId,
 }: {
@@ -34,7 +49,7 @@ function createNudgeMessageReportTarget({
   return { targetUserId: senderId, targetType: 'NUDGE_MESSAGE', targetId: String(nudgeId) };
 }
 
-function createCheerMessageReportTarget({
+export function createCheerMessageReportTarget({
   cheerId,
   senderId,
 }: {
@@ -44,10 +59,16 @@ function createCheerMessageReportTarget({
   return { targetUserId: senderId, targetType: 'CHEER_MESSAGE', targetId: String(cheerId) };
 }
 
+// 할 일은 주인만 고칠 수 있어 수정 권한이 있으면 내 할 일이다. 내 할 일은 신고·차단하지 않는다
+export function canReportTodo(todo: { permissions: { canEdit: boolean } }) {
+  return !todo.permissions.canEdit;
+}
+
 export const UserReportPolicy = {
   createTodoReportTarget,
   createCommentReportTarget,
   createProfileReportTarget,
   createNudgeMessageReportTarget,
   createCheerMessageReportTarget,
+  canReportTodo,
 } as const;

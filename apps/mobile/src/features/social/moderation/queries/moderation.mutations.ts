@@ -8,8 +8,9 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { toUserReportRequest } from '../apis/user-report.mapper';
-import type { BlockTarget } from '../schemas/user-block.schema';
-import type { UserReportFormValues, UserReportTarget } from '../schemas/user-report.schema';
+import type { BlockTarget } from '../domains/user-block.model';
+import type { UserReportTarget } from '../domains/user-report.model';
+import type { UserReportFormValues } from '../schemas/user-report-form.schema';
 import { invalidateAfterBlockChange } from './moderation-cache';
 
 export function useBlockUserMutationOptions() {

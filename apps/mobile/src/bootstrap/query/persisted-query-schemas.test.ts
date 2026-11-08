@@ -18,7 +18,6 @@ import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-quer
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { toFriendsPage } from '@src/features/social/friend/apis/friend.mapper';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
-import { friendsPageSchema } from '@src/features/social/friend/schemas/friend.schema';
 import { createWeatherReport } from '@src/features/weather/__tests__/weather-report.fixtures';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
 import {
@@ -66,7 +65,7 @@ function createValidCache(): CacheEntry[] {
     [
       FRIEND_QUERY_KEYS.friends(),
       {
-        pages: [toFriendsPage(friendsPageSchema.parse(createFriendsListDto()))],
+        pages: [toFriendsPage(createFriendsListDto())],
         pageParams: ['follow-0'],
       },
     ],

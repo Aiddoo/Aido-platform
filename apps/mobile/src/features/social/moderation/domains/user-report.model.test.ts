@@ -76,3 +76,27 @@ describe('메시지 신고 대상', () => {
     });
   });
 });
+
+describe('canReportTodo', () => {
+  it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
+    // Given
+    const todo = { permissions: { canEdit: false } };
+
+    // When
+    const result = UserReportPolicy.canReportTodo(todo);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
+    // Given
+    const todo = { permissions: { canEdit: true } };
+
+    // When
+    const result = UserReportPolicy.canReportTodo(todo);
+
+    // Then
+    expect(result).toBe(false);
+  });
+});

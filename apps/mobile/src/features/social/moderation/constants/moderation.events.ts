@@ -1,4 +1,4 @@
-import type { UserReportReason, UserReportTargetType } from '../schemas/user-report.schema';
+import type { UserReportReason, UserReportTargetType } from '../domains/user-report.model';
 
 declare module '@src/shared/analytics/event-map' {
   /** 차단·신고. 상대 사용자 id·신고 상세는 넣지 않는다 */

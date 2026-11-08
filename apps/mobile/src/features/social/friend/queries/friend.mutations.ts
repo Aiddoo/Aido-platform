@@ -18,9 +18,8 @@ import { mutationOptions, useQueryClient, type InfiniteData } from '@tanstack/re
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { findFriendLimit } from '../domains/friend.error';
-import { FriendPolicy } from '../domains/friend.model';
-import type { FriendUser } from '../schemas/friend.schema';
-import type { ReorderFriendInput } from '../schemas/friend.schema';
+import { FriendPolicy, type FriendUser } from '../domains/friend.model';
+import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import { invalidateFriends, patchSearchedUser } from './friend-cache';
 
 export function useAcceptRequestMutationOptions() {
@@ -223,9 +222,7 @@ export function useSendRequestByTagMutationOptions({
       patchSearchedUser(
         queryClient,
         (user) => user.userTag === userTag,
-        result.autoAccepted
-          ? { isFriend: true, isFollowing: true, isFollower: true, requestPending: false }
-          : { requestPending: true },
+        result.autoAccepted ? { isFriend: true, requestPending: false } : { requestPending: true },
       );
       trackEvent('friend_request_sent');
       const accountId = getCachedMe(queryClient)?.id;

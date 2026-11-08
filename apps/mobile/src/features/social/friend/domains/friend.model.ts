@@ -1,6 +1,54 @@
 import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary';
+import { instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-import { isUserTagFormat, type SearchedUser } from '../schemas/friend.schema';
+// 서버 경로 검증(userTagParamSchema)과 같은 규칙이다
+export const userTagSchema = z
+  .string()
+  .length(8)
+  .regex(/^[A-Z0-9]+$/u);
+
+const friendProfileSchema = z.object({
+  id: z.string(),
+  userTag: z.string(),
+  name: z.string().nullable(),
+  profileImage: z.string().nullable(),
+});
+
+export const friendUserSchema = friendProfileSchema.extend({
+  followId: z.string(),
+  friendsSince: instantSchema,
+});
+export type FriendUser = z.infer<typeof friendUserSchema>;
+
+export const friendRequestSchema = friendProfileSchema.extend({
+  requestedAt: instantSchema,
+});
+export type FriendRequest = z.infer<typeof friendRequestSchema>;
+
+export const searchedUserSchema = friendProfileSchema.extend({
+  isFriend: z.boolean(),
+  requestPending: z.boolean(),
+});
+export type SearchedUser = z.infer<typeof searchedUserSchema>;
+
+export const sendFriendRequestResultSchema = z.object({
+  autoAccepted: z.boolean(),
+});
+export type SendFriendRequestResult = z.infer<typeof sendFriendRequestResultSchema>;
+
+// 영속 캐시 복원 값을 검증할 때 쓴다
+export const friendUserPagesSchema = z.object({
+  pages: z.array(
+    z.object({
+      items: z.array(friendUserSchema),
+      totalCount: z.number(),
+      hasMore: z.boolean(),
+      nextCursor: z.string().nullable().optional(),
+    }),
+  ),
+  pageParams: z.array(z.unknown()),
+});
 
 type RequestState = 'friend' | 'pending' | 'none';
 
@@ -11,16 +59,17 @@ interface FriendLimitInput {
   knownLimit: number | null;
 }
 
-function isValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
-  return isUserTagFormat(user.userTag.trim());
+export function isValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
+  return userTagSchema.safeParse(user.userTag.trim()).success;
 }
 
-function isValidSearchQuery(input: { query: string }) {
+export function isValidSearchQuery(input: { query: string }) {
   return input.query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
-/** 검색 결과의 사용자와 나 사이 요청 상태. 이미 친구면 요청 대기보다 먼저다 */
-function getRequestState(user: Pick<SearchedUser, 'isFriend' | 'requestPending'>): RequestState {
+export function getRequestState(
+  user: Pick<SearchedUser, 'isFriend' | 'requestPending'>,
+): RequestState {
   if (user.isFriend) {
     return 'friend';
   }
@@ -31,11 +80,8 @@ function getRequestState(user: Pick<SearchedUser, 'isFriend' | 'requestPending'>
   return 'none';
 }
 
-/**
- * 친구 한도에 닿았을 때 안내할 인원. 초대로 늘어난 자리는 서버가 오류로 알려 준다.
- * 없으면 내 정보의 친구 한도, 그것도 없으면 카탈로그의 무료 한도다
- */
-function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
+// 초대로 늘어난 자리는 서버 오류가 알려 주고, 없으면 내 정보, 그것도 없으면 카탈로그의 무료 한도다
+export function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
   return serverLimit ?? knownLimit ?? PREMIUM_FEATURES.FRIEND.free;
 }
 
