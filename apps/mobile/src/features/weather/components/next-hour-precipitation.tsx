@@ -1,5 +1,6 @@
+import type { WeatherPrecipitationType } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
+import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
@@ -22,12 +23,16 @@ import Svg, { Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 're
 import { match } from 'ts-pattern';
 
 import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors';
-import { PRECIPITATION_LEVEL_LABEL_KEYS } from '../constants/weather-labels';
+import {
+  PRECIPITATION_LEVEL_LABEL_KEYS,
+  PRECIPITATION_SUBJECT_LABEL_KEYS,
+} from '../constants/weather-labels';
 import {
   type HourlyPrecipitationOutlook,
+  type PrecipitationPrecision,
+  type PrecipitationWindow,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
-import { useFormatPrecipitationMessage } from '../hooks/use-format-precipitation-message';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
@@ -71,7 +76,7 @@ export function NextHourPrecipitation() {
     return <NextHourPrecipitation.Empty />;
   }
   if (data.nextHour == null) {
-    const outlook = WeatherReportPolicy.getHourlyPrecipitationOutlook(data.hourly, now);
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(data.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
@@ -197,8 +202,13 @@ NextHourPrecipitation.Chart = function Chart({
   const lineProgress = useSharedValue(isReducedMotion ? 1 : 0);
   const areaOpacity = useSharedValue(isReducedMotion ? 1 : 0);
   const { width, height, baseline } = NEXT_HOUR_CHART_SIZE;
+  const hasChart = chart != null;
 
+  // 그래프가 처음 나타날 때만 그린다. 재조회로 선만 바뀌면 지웠다 다시 그리지 않고 그대로 바꾼다
   useEffect(() => {
+    if (!hasChart) {
+      return;
+    }
     if (isReducedMotion) {
       lineProgress.value = 1;
       areaOpacity.value = 1;
@@ -212,7 +222,7 @@ NextHourPrecipitation.Chart = function Chart({
       cancelAnimation(lineProgress);
       cancelAnimation(areaOpacity);
     };
-  }, [chart?.line, isReducedMotion, lineProgress, areaOpacity]);
+  }, [hasChart, isReducedMotion, lineProgress, areaOpacity]);
 
   const lineProps = useAnimatedProps(() => ({
     strokeDashoffset: length * (1 - lineProgress.value),
@@ -296,3 +306,74 @@ NextHourPrecipitation.Chart = function Chart({
 NextHourPrecipitation.Empty = function Empty() {
   return null;
 };
+
+interface PrecipitationMessage {
+  headline: string;
+  detail: string | null;
+}
+
+/**
+ * 강수 구간을 "17분 뒤 비가 시작돼요 / 7시쯤 그쳐요"처럼 위치 시간대의 문장으로 바꾼다.
+ * 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 말한다.
+ * 위치 벽시계가 기기와 다르면 시각에 '현지'를 붙인다.
+ */
+function useFormatPrecipitationMessage({
+  timeZone,
+  timeFormat,
+  now,
+}: {
+  timeZone: string;
+  timeFormat: TimeFormat;
+  now: Instant;
+}) {
+  const { t } = useTranslation('weather');
+  const dateFormat = useLocationDateFormat(timeZone);
+  const localTime = useFormatLocalTime(timeZone, now);
+
+  const formatMoment = (date: Instant, precision: PrecipitationPrecision) =>
+    localTime(
+      match(precision)
+        .with('minute', () => formatClockTime(date, timeFormat, dateFormat))
+        .with('hour', () => formatInstantHour(date, timeFormat, dateFormat))
+        .exhaustive(),
+    );
+
+  /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
+  const toSubject = (type: WeatherPrecipitationType | null) =>
+    t(PRECIPITATION_SUBJECT_LABEL_KEYS[type ?? 'MIXED']);
+
+  const formatEnd = (wet: Exclude<PrecipitationWindow, { kind: 'dry' }>) => {
+    if (wet.endsAt == null) {
+      return t('nextHour.continues');
+    }
+    const time = formatMoment(wet.endsAt, wet.endPrecision);
+    return wet.isEndingOnLaterDay
+      ? t('nextHour.endsAroundTomorrow', { time })
+      : t('nextHour.endsAround', { time });
+  };
+
+  return (window: PrecipitationWindow): PrecipitationMessage =>
+    match(window)
+      .with({ kind: 'dry' }, () => ({ headline: t('nextHour.dry'), detail: null }))
+      .with({ kind: 'ongoing' }, (wet) => ({
+        headline: t('nextHour.ongoing', {
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .with({ kind: 'upcoming', precision: 'minute' }, (wet) => ({
+        headline: t('nextHour.startsInMinutes', {
+          minutes: WeatherReportPolicy.getMinutesUntil(wet.startsAt, now),
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .with({ kind: 'upcoming', precision: 'hour' }, (wet) => ({
+        headline: t('nextHour.startsAround', {
+          time: formatMoment(wet.startsAt, 'hour'),
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .exhaustive();
+}

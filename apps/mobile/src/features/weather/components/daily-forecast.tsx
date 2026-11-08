@@ -48,9 +48,8 @@ import { WeatherIcon } from './weather-icon';
 
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
-/** 할 일 점을 찍을 날 수. 예보 일수와 같다. */
-const TODO_DAYS = 10;
-const LOADING_ROW_COUNT = 5;
+/** 예보 일수. 할 일 점을 찍을 날 수와 로딩 행 수도 같다 */
+const FORECAST_DAYS = 10;
 const ICON_SIZE = 26;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
 const EXPAND_ENTERING = FadeInDown.duration(600)
@@ -74,7 +73,7 @@ export function DailyForecast() {
   const todayKey = useTodayKey();
   const completionsQuery = useGetDailyCompletionsQueryOptions({
     startDate: todayKey,
-    endDate: addDaysToDateKey(todayKey, TODO_DAYS - 1),
+    endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
   });
   usePrefetchQuery(completionsQuery);
   const [{ data }, { data: preference }] = useSuspenseQueries({
@@ -376,7 +375,7 @@ DailyForecast.Loading = function Loading() {
   return (
     <WeatherCard>
       <TextSkeleton size="b4" className="w-24 opacity-40" />
-      {range(LOADING_ROW_COUNT).map((index) => (
+      {range(FORECAST_DAYS).map((index) => (
         <HStack key={index} align="center" gap={10} className="min-h-14">
           <TextSkeleton size="b1" className="w-14 opacity-40" />
           <TextSkeleton size="b1" className="flex-1 opacity-40" />

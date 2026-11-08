@@ -68,9 +68,10 @@ CategoryList.Reorder = function Reorder() {
     <ReorderableList
       {...reorderableList}
       shouldUpdateActiveItem
-      ListHeaderComponent={
+      // 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다
+      ListFooterComponent={
         TodoCategoryPolicy.canReorderCategories(reorderableList.data) ? (
-          <Box className="pb-2">
+          <Box className="pt-2">
             <ReorderCoachmark kind="category" />
           </Box>
         ) : undefined
