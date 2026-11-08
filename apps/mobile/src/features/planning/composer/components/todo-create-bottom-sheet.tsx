@@ -268,48 +268,8 @@ function TodoCreateForm({
       backgroundDecoration={
         voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
       }
-      isContentPanEnabled={isFormStep}
+      enableContentPanningGesture={isFormStep}
       onDismissRequest={handleVoiceDismissRequest}
-      footer={
-        isFormStep ? (
-          <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>
-            {/* 키보드 위 남는 높이가 좁으면(접은 Duo) 내용이 스크롤되며 고정 영역에 가리므로 칩 줄은 키보드 위 고정 영역에 둔다 */}
-            <TodoComposerChips form={form} />
-
-            <Separator thickness={1} className="bg-gray-2" />
-
-            <HStack gap={8} align="center" justify="end">
-              <QuickVoiceInfo />
-              <CoachmarkPopover
-                kind="voice-quick-start"
-                title={tVoice('coach.quickStart.title')}
-                description={tVoice('coach.quickStart.description')}
-                placement="left"
-                align="center"
-                isEnabled={!isTitleFocused}
-                isPassThrough
-                isDismissed={hasTouchedForm}
-                isForced={isVoiceHintForced}
-                onDismiss={() => setIsVoiceHintForced(false)}
-              >
-                <QuickVoiceButton
-                  onPress={() => {
-                    setIsVoiceHintForced(false);
-
-                    return voice.start();
-                  }}
-                  testID="todo-quick-voice-button"
-                />
-              </CoachmarkPopover>
-              <TodoComposerSubmitButton
-                isDisabled={isSubmitDisabled}
-                isSubmitting={isSubmitting}
-                onPress={() => submitTodo()}
-              />
-            </HStack>
-          </VStack>
-        ) : undefined
-      }
     >
       {match(voice.state)
         .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
@@ -396,6 +356,40 @@ function TodoCreateForm({
                 )
               }
             />
+
+            <TodoComposerChips form={form} />
+
+            <Separator thickness={1} className="bg-gray-2" />
+
+            <HStack gap={8} align="center" justify="end">
+              <QuickVoiceInfo />
+              <CoachmarkPopover
+                kind="voice-quick-start"
+                title={tVoice('coach.quickStart.title')}
+                description={tVoice('coach.quickStart.description')}
+                placement="left"
+                align="center"
+                isEnabled={!isTitleFocused}
+                isPassThrough
+                isDismissed={hasTouchedForm}
+                isForced={isVoiceHintForced}
+                onDismiss={() => setIsVoiceHintForced(false)}
+              >
+                <QuickVoiceButton
+                  onPress={() => {
+                    setIsVoiceHintForced(false);
+
+                    return voice.start();
+                  }}
+                  testID="todo-quick-voice-button"
+                />
+              </CoachmarkPopover>
+              <TodoComposerSubmitButton
+                isDisabled={isSubmitDisabled}
+                isSubmitting={isSubmitting}
+                onPress={() => submitTodo()}
+              />
+            </HStack>
           </VStack>
         ))}
     </KeyboardBottomSheet>

@@ -90,26 +90,7 @@ export function MemoConvertBottomSheet({
   };
 
   return (
-    <KeyboardBottomSheet
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      footer={
-        <VStack gap={12}>
-          {/* 키보드 위 남는 높이가 좁으면(접은 Duo) 내용이 스크롤되며 고정 영역에 가리므로 칩 줄은 키보드 위 고정 영역에 둔다 */}
-          <TodoComposerChips form={form} />
-
-          <Separator thickness={1} className="bg-gray-2" />
-
-          <HStack align="center" justify="end">
-            <TodoComposerSubmitButton
-              isDisabled={isSubmitDisabled}
-              isSubmitting={isSubmitting}
-              onPress={() => handleSubmit()}
-            />
-          </HStack>
-        </VStack>
-      }
-    >
+    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={12} testID="memo-convert-sheet">
         <Controller
           control={form.control}
@@ -129,6 +110,18 @@ export function MemoConvertBottomSheet({
             />
           )}
         />
+
+        <TodoComposerChips form={form} />
+
+        <Separator thickness={1} className="bg-gray-2" />
+
+        <HStack align="center" justify="end">
+          <TodoComposerSubmitButton
+            isDisabled={isSubmitDisabled}
+            isSubmitting={isSubmitting}
+            onPress={() => handleSubmit()}
+          />
+        </HStack>
       </VStack>
     </KeyboardBottomSheet>
   );

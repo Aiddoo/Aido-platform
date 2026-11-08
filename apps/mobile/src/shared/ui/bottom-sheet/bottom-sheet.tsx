@@ -1,6 +1,4 @@
 import {
-  BottomSheetFooter,
-  type BottomSheetFooterProps,
   BottomSheetScrollView,
   useBottomSheetInternal,
   useBottomSheetTimingConfigs,
@@ -76,7 +74,7 @@ export function BottomSheet({
   // HeroUI는 스와이프 도중과 뒤로 가기에서 닫으라고 알린다. 부모에는 애니메이션이 끝난 뒤 알린다
   const [isDismissing, setIsDismissing] = useState(false);
   const [hasOpenRequest, setHasOpenRequest] = useState(isOpen);
-  const [footerHeight, setFooterHeight] = useState(0);
+  const [footerContentHeight, setFooterContentHeight] = useState(0);
   const portalTarget = usePortalTarget();
   const insets = useSafeAreaInsets();
   const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
@@ -104,16 +102,12 @@ export function BottomSheet({
     onOpenChange?.(false);
   };
 
+  // gorhom BottomSheetFooter는 매 프레임 화면에 보이는 바닥에 붙어 시트가 올라오는 동안 내용을 덮으므로, 시트 바닥에 붙여 함께 움직인다
   const renderFooter = useCallback(
-    (props: BottomSheetFooterProps) => (
-      <BottomSheetFooter {...props}>
-        <View
-          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
-          style={[styles.footer, backgroundStyle]}
-        >
-          <SheetFooterSlot />
-        </View>
-      </BottomSheetFooter>
+    () => (
+      <View style={[styles.footer, backgroundStyle]}>
+        <SheetFooterSlot onHeightChange={setFooterContentHeight} />
+      </View>
     ),
     [backgroundStyle],
   );
@@ -170,7 +164,10 @@ export function BottomSheet({
                 style={{ maxHeight: bodyMaxHeight }}
                 contentContainerStyle={[
                   SHARED_SHEET_STYLES.content,
-                  footer != null && { paddingBottom: footerHeight },
+                  footer != null && {
+                    paddingBottom:
+                      SHEET_FOOTER_PADDING_TOP + footerContentHeight + SHEET_CONTENT_PADDING,
+                  },
                 ]}
                 showsVerticalScrollIndicator={false}
                 bounces={false}
@@ -258,6 +255,10 @@ const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'black' },
   fixedBody: { flexShrink: 1 },
   footer: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
     paddingTop: SHEET_FOOTER_PADDING_TOP,
     paddingHorizontal: SHEET_CONTENT_PADDING,
     paddingBottom: SHEET_CONTENT_PADDING,

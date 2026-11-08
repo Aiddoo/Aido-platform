@@ -21,13 +21,14 @@
 
 공식 방식을 그대로 쓰지 않는 곳과 이유:
 
-| 위치                                                                     | 이유                                                                                                                                                                                                                          |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 포커스 입력 스크롤은 `use-scroll-focused-input-into-view`                | keyboard-controller 문서의 `BottomSheetKeyboardAwareScrollView`는 스크롤 뷰가 제자리라고 보고 키보드 시작 때의 입력 위치로 스크롤 양을 정한다. gorhom `interactive`는 시트를 키보드만큼 함께 올리므로 그 양만큼 더 스크롤된다 |
-| `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 키보드 때문에 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다                                                                                                           |
-| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                                                                                                              |
-| 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다                                                                                             |
-| `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다                                                                                |
+| 위치                                                                     | 이유                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 포커스 입력 스크롤은 `use-scroll-focused-input-into-view`                | keyboard-controller 문서의 `BottomSheetKeyboardAwareScrollView`는 스크롤 뷰가 제자리라고 보고 키보드 시작 때의 입력 위치로 스크롤 양을 정한다. gorhom `interactive`는 시트를 키보드만큼 함께 올리므로 그 양만큼 더 스크롤된다                                                |
+| `KeyboardBottomSheet`의 내용은 gorhom 직접 사용                          | `BottomSheet.Content`가 내용을 `BottomSheetView`로 감싸, 그 `onLayout`과 안쪽 `BottomSheetScrollView`가 같은 동적 높이를 번갈아 쓰고 키보드로 시트가 줄어도 안쪽 스크롤 높이가 줄지 않는다. HeroUI 문서도 스크롤 내용은 `enableDynamicSizing={false}`·고정 높이로만 안내한다 |
+| `KeyboardBottomSheet`의 `useAndroidSheetBackHandler`                     | `onDismissRequest`를 끼워 넣어야 하는데 HeroUI의 뒤로 가기 처리는 가로챌 수 없다                                                                                                                                                                                             |
+| 입력은 `BottomSheetTextInput` (`useBottomSheetAwareHandlers` 아님)       | gorhom 소스가 JS에서 `.set(updater)`를 쓰면 키보드 이벤트를 놓칠 수 있다고 경고하는데 공식 훅이 그 방식이고, 언마운트 정리도 없다                                                                                                                                            |
+| `footer`는 gorhom `BottomSheetFooter`를 쓰지 않음                        | gorhom footer는 매 프레임 화면에 보이는 바닥(키보드 위)에 붙어, 시트가 올라오는 동안 내용을 덮었다가 다 올라오면 비킨다. 시트 바닥에 붙여 함께 움직이고, `KeyboardBottomSheet`는 키보드에 가리는 만큼만 올린다                                                               |
+| `BottomSheet`가 `useBottomSheetInternal`의 `animatedDetentsState`를 읽음 | route처럼 열린 채 마운트하면 gorhom이 높이 측정 전의 열기를 버리는데, 측정 끝을 알리는 공개 이벤트가 없다. HeroUI 시트 내용도 같은 값을 읽는다                                                                                                                               |
 
 ## 사용법
 
@@ -64,19 +65,19 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 </KeyboardBottomSheet>;
 ```
 
-내용이 안쪽 스크롤을 직접 두면(빠른 말하기 자막) `isContentPanEnabled={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 손잡이로만
+내용이 안쪽 스크롤을 직접 두면(빠른 말하기 자막) `enableContentPanningGesture={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 손잡이로만
 움직이게 한다. 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다. 시트 테두리에 맞물리는 장식은 `backgroundDecoration`으로
 시트 면 뒤에 깐다. 내용 제스처를 꺼도 시트 면을 탭하면 뒤 backdrop까지 내려가지 않는다(시트 면이 터치를 받는다).
 
 바깥 탭과 Android 뒤로 가기에서 닫기 전에 할 일이 있으면(빠른 말하기의 듣기 취소·계획 버리기 확인) `onDismissRequest`를 넘긴다. 없으면 닫는다.
 손잡이·내용 끌어내리기는 gorhom이 닫으므로 이 경로를 타지 않는다. 핸들러는 ref로 읽어 렌더마다 바뀌어도 backdrop이 다시 마운트되지 않는다.
 
-작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
-(키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
-
-키보드 위에 남는 높이는 기기마다 다르다(접은 Duo는 레일 occlusion 아래부터라 약 200pt). 그래서 주 동작 버튼과 입력을 돕는 칩 줄은
-`children`이 아니라 `footer`에 둔다. `children`에 두면 내용이 넘칠 때 키보드 뒤로 밀린다(1.15.0 카테고리 만들기·할 일 칩 줄).
-키보드가 떠 있어도 내용을 위로 끌면 시트 안에서 스크롤되고, 시트를 끌어내리면 gorhom이 키보드를 내린다.
+내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 둔다. gorhom 동적 크기는 스크롤 내용만 재므로 흐름에 있는 것은 첫 프레임부터
+최종 높이에 들어간다(할 일 만들기·고치기, 메모 변환). 키보드 위에 남는 높이는 기기마다 다르다(접은 Duo는 레일 occlusion 아래부터라
+약 200pt). 입력과 버튼 사이 내용 때문에 주 동작 버튼이 키보드에 가리는 시트만 버튼을 `footer`에 둔다(카테고리 만들기·고치기,
+콕 찌르기, 계획 할 일 고치기, 신고). `footer`는 시트 바닥에 붙어 시트와 함께 올라오고, 시트가 위쪽 한계에 닿아 키보드에 가리는
+만큼만 올라가 키보드 위에 멈춘다. 첫 높이는 그리기 전에 동기로 재어(New Architecture `useLayoutEffect` + `measure`) 내용 아래
+여백과 시트 높이에 처음부터 들어간다. 키보드가 떠 있어도 내용을 위로 끌면 시트 안에서 스크롤되고, 시트를 끌어내리면 gorhom이 키보드를 내린다.
 
 입력에 포커스해 키보드가 올라오면 시트가 포커스된 입력 칸 전체(라벨·테두리·오류 문구)를 `footer`·키보드 위로
 스크롤한다. `Input`·`TextArea`가 포커스될 때 칸 전체 뷰를 `FocusedFieldContext`로 알리고, 알리지 않는 입력은 안쪽 TextInput에
@@ -189,16 +190,16 @@ const sheet = useSheetRoute('/feed');
 
 ### KeyboardBottomSheet
 
-| Prop                   | 타입                        | 기본값 | 설명                                                      |
-| ---------------------- | --------------------------- | ------ | --------------------------------------------------------- |
-| `isOpen`               | `boolean`                   | -      | 시트 열림 상태                                            |
-| `onOpenChange`         | `(isOpen: boolean) => void` | -      | 닫힘이 끝나면 `false`로 호출                              |
-| `onCloseStart`         | `() => void`                | -      | 닫기 시작 시 콜백 (선택)                                  |
-| `children`             | `ReactNode`                 | -      | 시트 내용                                                 |
-| `footer`               | `ReactNode`                 | -      | 시트 아래(키보드 위) 고정 영역 (선택)                     |
-| `backgroundDecoration` | `ReactNode`                 | -      | 시트 면 뒤에 까는 장식 (선택)                             |
-| `isContentPanEnabled`  | `boolean`                   | `true` | 내용을 끌어 시트를 움직일지 (선택)                        |
-| `onDismissRequest`     | `() => void`                | -      | 바깥 탭·Android 뒤로 가기에서 할 일. 없으면 닫는다 (선택) |
+| Prop                          | 타입                        | 기본값 | 설명                                                      |
+| ----------------------------- | --------------------------- | ------ | --------------------------------------------------------- |
+| `isOpen`                      | `boolean`                   | -      | 시트 열림 상태                                            |
+| `onOpenChange`                | `(isOpen: boolean) => void` | -      | 닫힘이 끝나면 `false`로 호출                              |
+| `onCloseStart`                | `() => void`                | -      | 닫기 시작 시 콜백 (선택)                                  |
+| `children`                    | `ReactNode`                 | -      | 시트 내용                                                 |
+| `footer`                      | `ReactNode`                 | -      | 시트 아래(키보드 위) 고정 영역 (선택)                     |
+| `backgroundDecoration`        | `ReactNode`                 | -      | 시트 면 뒤에 까는 장식 (선택)                             |
+| `enableContentPanningGesture` | `boolean`                   | `true` | 내용을 끌어 시트를 움직일지 (gorhom 이름, 선택)           |
+| `onDismissRequest`            | `() => void`                | -      | 바깥 탭·Android 뒤로 가기에서 할 일. 없으면 닫는다 (선택) |
 
 ### ModalBottomSheet
 
@@ -220,7 +221,7 @@ bottom-sheet/
 ├── keyboard-bottom-sheet.tsx          # HeroUI Root·Portal + gorhom 내용의 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # overlay로 띄우는 바텀시트 (시트 위 시트)
 ├── portal-target.ts                   # HeroUI *.Portal에 넘길 호스트
-├── sheet-footer-slot.tsx              # footer가 바뀌어도 다시 마운트되지 않게 하는 슬롯
+├── sheet-footer-slot.tsx              # footer가 바뀌어도 다시 마운트되지 않고, 첫 높이를 그리기 전에 재는 슬롯
 ├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
 ├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·`ScrollShadow` 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙

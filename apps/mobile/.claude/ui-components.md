@@ -228,8 +228,8 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 - **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
 - **Context:** Portal은 Context를 잇지 못한다. 시트 안에서 읽는 Context는 시트 안에 둔다. 폼은 Context 없이 `form`·`control`을 props로 넘기고, `footer`에서 읽을 때도 그렇다.
-- **스크롤:** 내용은 시트 안에서 스크롤되므로 세로 스크롤 컨테이너를 또 두지 않는다(가로 스크롤은 무방). 작은 화면·큰 글자에서도 보여야 할 주 동작 버튼은 `footer`에 둔다.
-- **안쪽 스크롤이 필요한 내용:** `isContentPanEnabled={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다.
+- **스크롤:** 내용은 시트 안에서 스크롤되므로 세로 스크롤 컨테이너를 또 두지 않는다(가로 스크롤은 무방). 내용은 흐름에 두고, 작은 화면·큰 글자·키보드에 가려도 보여야 할 주 동작 버튼만 `footer`에 둔다.
+- **안쪽 스크롤이 필요한 내용:** `enableContentPanningGesture={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다.
 - **닫기 전 할 일:** `KeyboardBottomSheet`의 바깥 탭·Android 뒤로 가기에서 할 일이 있으면 `onDismissRequest`를 넘긴다. 손잡이·내용 끌어내리기는 이 경로를 타지 않는다.
 - **시트 위 시트:** `ModalBottomSheet`는 열릴 때 키보드를 스스로 내리므로 호출부에서 `Keyboard.dismiss()`를 부르지 않는다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서 키보드와 아래 시트가 함께 올라오게 한다.
 - **머리글 고정:** "확인"이 머리글에 있는 시트는 `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다.
@@ -243,11 +243,11 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 곳                                     | 스크롤                                                         | 주 동작 버튼                                   |
 | -------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
 | 화면 폼                                | `FormStepLayout`·`FormScrollView`(칸 전체 스크롤)              | `KeyboardAdaptiveButton`(`KeyboardStickyView`) |
-| 시트                                   | `KeyboardBottomSheet`(gorhom `keyboardBehavior="interactive"`) | `footer`                                       |
+| 시트                                   | `KeyboardBottomSheet`(gorhom `keyboardBehavior="interactive"`) | 내용 흐름, 키보드에 가리면 `footer`            |
 | 전체 화면 편집기·목록(메모, 친구 찾기) | `KeyboardAvoidingView behavior="padding"`                      | 화면 머리글 버튼                               |
 
 - 화면 폼은 버튼을 `footer`로 넘긴다. 칸 전체(라벨·오류 문구·글자 수)를 버튼 위로 올리며, `KeyboardAwareScrollView`는 커서 줄만 올려 쓰지 않는다([FormStepLayout](../src/shared/ui/form-step-layout/form-step-layout.md#키보드)). 다음 칸은 `returnKeyType="next"`로 넘어간다.
-- 시트의 주 버튼과 입력을 돕는 칩 줄은 `footer`에 둔다. 키보드 위 높이가 좁은 기기(접은 Duo·SE·가로)에서는 내용이 스크롤되고 `footer`는 키보드 위에 남는다.
+- 시트 내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 둔다. gorhom 동적 크기는 내용만 재므로 첫 프레임부터 최종 높이로 올라온다. 접은 Duo·SE에서 입력과 사이 내용 때문에 키보드에 가리는 주 버튼만 `footer`에 두며, `footer`는 시트와 함께 올라와 키보드 위에 멈춘다.
 - 댓글처럼 목록 아래에 붙는 작성 바만 `KeyboardStickyView`를 직접 쓴다.
 
 ## 아직 옮기지 않은 것
