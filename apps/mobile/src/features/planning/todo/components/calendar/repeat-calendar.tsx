@@ -7,10 +7,7 @@ import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 import { match } from 'ts-pattern';
 
-import {
-  PICKER_DATE_CELL_HEIGHT,
-  PICKER_MONTH_HEIGHT,
-} from '../../constants/todo-calendar.constants';
+import { PICKER_DATE_CELL_HEIGHT, PICKER_MONTH_HEIGHT } from '../../constants/todo.constants';
 import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   DAY_TYPE_TONE,

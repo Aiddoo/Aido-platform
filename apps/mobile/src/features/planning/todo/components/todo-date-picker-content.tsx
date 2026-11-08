@@ -10,7 +10,7 @@ import { Box, HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shar
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
-import { PICKER_DATE_CELL_HEIGHT, PICKER_MONTH_HEIGHT } from '../constants/todo-calendar.constants';
+import { PICKER_DATE_CELL_HEIGHT, PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import { DAY_TYPE_TONE, getDatePickerDayType, isTodayHighlighted } from '../utils/calendar-day';
 import { isSameDay, isSameMonth } from '../utils/calendar-day-comparison';
