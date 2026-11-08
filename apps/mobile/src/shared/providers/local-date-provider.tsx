@@ -58,17 +58,24 @@ export function LocalDateProvider({
   const currentLocalDateStateRef = useRef(localDateState);
   const { currentTimeZone } = localDateState;
 
+  const addBreadcrumbSafely = useCallback(
+    (breadcrumb: Parameters<typeof errorReporter.addBreadcrumb>[0]) => {
+      try {
+        errorReporter.addBreadcrumb(breadcrumb);
+      } catch {
+        // 관측 어댑터 실패는 날짜·시간대 전환을 방해하면 안 된다.
+      }
+    },
+    [errorReporter],
+  );
+
   const recordLocalDateChange = useCallback(
     (previousDate: string, nextDate: string, trigger: LocalDateChangeTrigger) => {
-      try {
-        errorReporter.addBreadcrumb({
-          category: 'lifecycle',
-          message: 'local day changed',
-          data: { previousDate, nextDate, trigger },
-        });
-      } catch {
-        // 관측 어댑터 실패는 날짜 전환을 방해하면 안 된다.
-      }
+      addBreadcrumbSafely({
+        category: 'lifecycle',
+        message: 'local day changed',
+        data: { previousDate, nextDate, trigger },
+      });
 
       try {
         track(analytics, 'local_day_changed', { trigger });
@@ -83,7 +90,7 @@ export function LocalDateProvider({
         }
       }
     },
-    [analytics, errorReporter],
+    [addBreadcrumbSafely, analytics, errorReporter],
   );
 
   const reconcileCurrentLocalDate = useCallback(
@@ -103,23 +110,19 @@ export function LocalDateProvider({
           trigger,
         );
       } else {
-        try {
-          errorReporter.addBreadcrumb({
-            category: 'lifecycle',
-            message: 'local time zone changed',
-            data: {
-              previousTimeZone: previousState.currentTimeZone,
-              nextTimeZone: nextLocalDateState.currentTimeZone,
-              utcOffsetMinutes: nextLocalDateState.currentUtcOffsetMinutes,
-              trigger,
-            },
-          });
-        } catch {
-          // 관측 어댑터 실패는 시간대 전환을 방해하면 안 된다.
-        }
+        addBreadcrumbSafely({
+          category: 'lifecycle',
+          message: 'local time zone changed',
+          data: {
+            previousTimeZone: previousState.currentTimeZone,
+            nextTimeZone: nextLocalDateState.currentTimeZone,
+            utcOffsetMinutes: nextLocalDateState.currentUtcOffsetMinutes,
+            trigger,
+          },
+        });
       }
     },
-    [errorReporter, recordLocalDateChange],
+    [addBreadcrumbSafely, recordLocalDateChange],
   );
 
   useEffect(() => {
