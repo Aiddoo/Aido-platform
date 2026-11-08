@@ -2,6 +2,7 @@ import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { type QueryState, queryOptions } from '@tanstack/react-query';
@@ -193,7 +194,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQuery
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoSummary(date, signal)),
-    staleTime: 60_000,
+    staleTime: MINUTE_MS,
     refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
     // AuthBootProvider(전 화면 상위)에서 도는 백그라운드 쿼리 — 실패가 절대 ErrorBoundary로
     // 전파되면 안 된다(콜드 스타트 fallback 재발 방지). 실패 시 위젯만 갱신되지 않는다.

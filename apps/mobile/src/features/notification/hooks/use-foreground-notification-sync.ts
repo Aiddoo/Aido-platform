@@ -1,5 +1,6 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
@@ -12,7 +13,7 @@ import {
   pushNotificationPayloadSchema,
 } from '../schemas/notification.schema';
 
-const FOREGROUND_SYNC_DELAY_MS = 1000;
+const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 
 interface UseForegroundNotificationSyncOptions {
   isAuthenticated: boolean;

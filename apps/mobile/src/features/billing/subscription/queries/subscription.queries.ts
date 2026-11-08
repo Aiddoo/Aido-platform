@@ -1,4 +1,5 @@
 import { useSubscriptionService } from '@src/bootstrap/providers/di-context';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { queryOptions } from '@tanstack/react-query';
 
 import { SUBSCRIPTION_QUERY_KEYS } from '../constants/subscription-query-keys';
@@ -7,7 +8,7 @@ import {
   toOfferingsAvailability,
 } from '../utils/offerings-availability';
 
-const OFFERINGS_STALE_TIME = 10 * 60 * 1000;
+const OFFERINGS_STALE_TIME = 10 * MINUTE_MS;
 
 export function useGetOfferingsQueryOptions() {
   const subscriptionService = useSubscriptionService();

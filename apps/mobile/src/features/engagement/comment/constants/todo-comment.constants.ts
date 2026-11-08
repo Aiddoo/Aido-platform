@@ -1,4 +1,5 @@
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 
 export const TODO_COMMENT_PAGE_SIZE = {
   THREADS: TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE,
@@ -8,7 +9,7 @@ export const TODO_COMMENT_PAGE_SIZE = {
 export const TODO_COMMENT_QUERY_TIMING = {
   latestStaleTime: 30_000,
   popularStaleTime: 10_000,
-  gcTime: 30 * 60_000,
+  gcTime: 30 * MINUTE_MS,
 } as const;
 
 export const TODO_COMMENT_HIGHLIGHT_DURATION_MS = 1_600;

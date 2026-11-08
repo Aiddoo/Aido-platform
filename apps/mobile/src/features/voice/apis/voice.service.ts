@@ -4,6 +4,7 @@ import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
@@ -36,7 +37,7 @@ import {
  * 끊지 않고 환불된 오류(`charged:false`)를 받는다.
  */
 const QUICK_PLAN_TIMEOUT_MS = 30_000;
-const DIGEST_TIMEOUT_MS = 60_000;
+const DIGEST_TIMEOUT_MS = MINUTE_MS;
 
 export class VoiceService {
   readonly #httpClient: HttpClient;

@@ -1,5 +1,6 @@
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { AuthStatus } from '@src/core/session/auth-status';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { match } from 'ts-pattern';
 
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
@@ -10,7 +11,7 @@ import type {
 } from '../schemas/notification.schema';
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
-const PENDING_RESPONSE_LIFETIME_MS = 10 * 60_000;
+const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
   'WEEKLY_REPORT',

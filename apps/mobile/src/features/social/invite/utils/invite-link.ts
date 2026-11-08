@@ -1,4 +1,5 @@
 import { INVITE_LINK_BASE_URL } from '@aido/api/vocabulary';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 
 import { InviteCodePolicy } from '../domains/invite-code.model';
 import type { InviteLinkSource } from '../schemas/invite-redemption.schema';
@@ -56,7 +57,7 @@ function matchInviteLink(path: string, options: InviteSystemPathOptions): Invite
 }
 
 // 같은 URL이 짧은 사이에 다시 들어오면(초기 URL과 링크 이벤트가 겹칠 때) 같은 열림으로 본다
-const SAME_OPEN_WINDOW_MS = 1000;
+const SAME_OPEN_WINDOW_MS = SECOND_MS;
 
 /**
  * 링크가 열린 시각을 정한다. 같은 URL이 잠깐 사이에 다시 들어오면 앞의 시각을 돌려줘

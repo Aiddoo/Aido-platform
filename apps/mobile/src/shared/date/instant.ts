@@ -1,9 +1,8 @@
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import dayjs from 'dayjs';
 import { z } from 'zod';
 
 import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
-
-const MS_PER_MINUTE = 60_000;
 
 const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -80,7 +79,7 @@ function getZoneOffsetMs(epochMs: number, timeZone: string): number {
     read('hour'),
     read('minute'),
   );
-  return wallClockAsUtc - (epochMs - (epochMs % MS_PER_MINUTE));
+  return wallClockAsUtc - (epochMs - (epochMs % MINUTE_MS));
 }
 
 /**
