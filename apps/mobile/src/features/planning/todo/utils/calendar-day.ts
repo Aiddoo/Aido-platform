@@ -38,22 +38,43 @@ export function getDatePickerDayType({
   return 'default';
 }
 
-export function getMonthViewDayType({
-  date,
+interface MonthViewDayInput {
+  dateKey: string;
+  selectedDateKey: string;
+  todayKey: string;
+}
+
+/** 피드 달력 칸의 선택·글자색·오늘 강조. 날짜 키만 비교해 칸마다 Intl로 날짜를 다시 읽지 않는다 */
+export function getMonthViewDayState({ dateKey, selectedDateKey, todayKey }: MonthViewDayInput) {
+  const isSelected = dateKey === selectedDateKey;
+  const isToday = dateKey === todayKey;
+
+  return {
+    isSelected,
+    dayType: getMonthViewDayType({ dayOfWeek: getDayOfWeek(dateKey), isSelected, isToday }),
+    highlightToday: !isSelected && isToday,
+  };
+}
+
+function getMonthViewDayType({
+  dayOfWeek,
   isSelected,
-  today,
-  timeZone,
-}: CalendarDayInput): CalendarDayType {
+  isToday,
+}: {
+  dayOfWeek: number;
+  isSelected: boolean;
+  isToday: boolean;
+}): CalendarDayType {
   if (isSelected) {
     return 'selected';
   }
-  if (getDayOfWeek(toDateKey(date, timeZone)) === SUNDAY) {
+  if (dayOfWeek === SUNDAY) {
     return 'sunday';
   }
-  if (getDayOfWeek(toDateKey(date, timeZone)) === SATURDAY) {
+  if (dayOfWeek === SATURDAY) {
     return 'saturday';
   }
-  if (isSameDay(date, today, timeZone)) {
+  if (isToday) {
     return 'today';
   }
   return 'default';

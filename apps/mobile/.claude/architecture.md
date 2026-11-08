@@ -340,6 +340,8 @@ hook과 유틸도 같은 기준이다. 한 파일만 쓰면 그 파일 아래 �
 
 **화면 id는 route hook에서 읽는다.** `todoId`, `friendId`, search param을 Props로 내리지 않는다. 검증된 튜플 훅(`const [memoId] = useMemoId()`)이나 `useRouteParams`에서 직접 읽는다. 예외는 목록 행의 id다.
 
+반복되는 목록 아이템(달력 칸 등)은 부모가 route 훅을 한 번 읽어 파생 값(`isSelected` 등)과 같은 핸들러를 props로 받는다. 아이템마다 route 훅을 부르지 않는다(마운트·리렌더 비용).
+
 ```tsx
 // features/notes/memo/components/memo-editor.tsx
 function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {

@@ -1,13 +1,7 @@
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  FlatList,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  useWindowDimensions,
-} from 'react-native';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
+import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
 import { getCalendarPageAtOffset } from '../../utils/calendar-pager.geometry';
 
@@ -21,15 +15,13 @@ const PAGES = range(CALENDAR_TOTAL_PAGES);
 
 interface CalendarPagerProps {
   value: number;
+  /** 달력이 잰 쪽 너비. 주·월을 바꿀 때마다 새로 재지 않도록 바깥에서 받는다 */
+  pageWidth: number;
   onChange: (page: number) => void;
   children: (page: number) => ReactNode;
 }
 
-export function CalendarPager({ value, onChange, children }: CalendarPagerProps) {
-  // 측정 전 첫 프레임은 창 너비로 그려 달력 높이가 0에서 튀어나오지 않게 한다.
-  const { width: windowWidth } = useWindowDimensions();
-  const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
-  const pageWidth = measuredPageWidth ?? windowWidth;
+export function CalendarPager({ value, pageWidth, onChange, children }: CalendarPagerProps) {
   const flatListRef = useRef<FlatList<number>>(null);
   const currentPageRef = useRef(CALENDAR_CENTER_PAGE);
 
@@ -49,10 +41,6 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
     },
     [onChange],
   );
-
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    setMeasuredPageWidth(event.nativeEvent.layout.width);
-  }, []);
 
   useEffect(() => {
     if (value === currentPageRef.current) {
@@ -87,33 +75,32 @@ export function CalendarPager({ value, onChange, children }: CalendarPagerProps)
     [pageWidth],
   );
 
+  // 너비마다 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 두면 네이티브가 +260주로 잘라 몇 년 뒤가 선택된다
   return (
-    <Box onLayout={handleLayout}>
-      {/* 너비마다 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 두면 네이티브가 +260주로 잘라 몇 년 뒤가 선택된다 */}
-      <FlatList
-        key={pageWidth}
-        ref={flatListRef}
-        horizontal
-        pagingEnabled
-        data={PAGES}
-        keyExtractor={(page) => String(page)}
-        renderItem={renderItem}
-        getItemLayout={getItemLayout}
-        // oxlint-disable-next-line react/refs -- 위 contentOffset과 같은 이유로 새 목록의 시작 쪽만 정한다
-        initialScrollIndex={currentPageRef.current}
-        contentOffset={initialContentOffset}
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollToIndexFailed={(info) => {
-          flatListRef.current?.scrollToOffset({
-            offset: info.averageItemLength * info.index,
-            animated: false,
-          });
-        }}
-        windowSize={5}
-        initialNumToRender={3}
-        maxToRenderPerBatch={3}
-      />
-    </Box>
+    <FlatList
+      key={pageWidth}
+      ref={flatListRef}
+      horizontal
+      pagingEnabled
+      data={PAGES}
+      keyExtractor={(page) => String(page)}
+      renderItem={renderItem}
+      getItemLayout={getItemLayout}
+      // oxlint-disable-next-line react/refs -- 위 contentOffset과 같은 이유로 새 목록의 시작 쪽만 정한다
+      initialScrollIndex={currentPageRef.current}
+      contentOffset={initialContentOffset}
+      showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={handleScrollEnd}
+      onScrollToIndexFailed={(info) => {
+        flatListRef.current?.scrollToOffset({
+          offset: info.averageItemLength * info.index,
+          animated: false,
+        });
+      }}
+      windowSize={5}
+      // 보기를 바꾼 첫 프레임에는 보이는 쪽만 그리고, 양옆 쪽은 다음 배치에서 채운다
+      initialNumToRender={1}
+      maxToRenderPerBatch={2}
+    />
   );
 }

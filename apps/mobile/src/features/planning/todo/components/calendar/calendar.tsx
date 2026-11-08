@@ -1,6 +1,11 @@
+import { ANIMATION } from '@src/shared/constants/animation';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
-import { getDayOfWeek } from '@src/shared/date/date-key';
+import {
+  type DateFormatContext,
+  formatDateKeyLabel,
+  formatDateLabel,
+} from '@src/shared/date/date-format';
+import { getDayOfWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
 import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
 import {
@@ -9,17 +14,29 @@ import {
   diffLocalMonths,
   startOfLocalMonth,
   moveToLocalMonth,
+  toLocalDay,
 } from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
+import { Box, getPrimaryPaneWidth, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import { PressableFeedback, Tabs } from 'heroui-native';
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useReservedRegions } from 'react-native-reserved-regions';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
-import type { DailyCompletionSummary } from '../../domains/daily-completion.model';
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
@@ -27,7 +44,7 @@ import {
   type CalendarViewMode,
   calendarViewModeSchema,
 } from '../../schemas/calendar-view-mode-storage.schema';
-import { isSameMonth } from '../../utils/calendar-day-comparison';
+import { getMonthViewDayState } from '../../utils/calendar-day';
 import {
   diffWeeks,
   getMonthWeeks,
@@ -43,7 +60,11 @@ import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const MONTH_WEEKS = 6;
-const MAX_CATEGORY_INDICATOR_COUNT = 3;
+const PAGER_HEIGHT_TIMING = {
+  duration: ANIMATION.duration.normal,
+  easing: Easing.out(Easing.cubic),
+  reduceMotion: ReduceMotion.System,
+};
 
 interface CalendarProps {
   completions?: CompletionsByDate;
@@ -56,6 +77,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   const today = useToday();
   const [viewMode] = useCalendarViewMode();
   const { timeZone } = useDateFormatContext();
+  const [pageWidth, handlePagerLayout] = useCalendarPageWidth();
 
   const pagerHeight = match(viewMode)
     .with('week', () => CALENDAR_DATE_CELL_HEIGHT)
@@ -92,15 +114,59 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
       <CalendarWeekdayHeader />
 
-      <Box style={{ height: pagerHeight }}>
-        {match(viewMode)
-          .with('week', () => <CalendarWeekPager completions={completions} />)
-          .with('month', () => <CalendarMonthPager completions={completions} />)
-          .exhaustive()}
-      </Box>
+      <CalendarHeightTransition height={pagerHeight}>
+        {/* 높이가 바뀌는 바깥이 아니라 내용에서 재어 애니메이션 동안 layout 이벤트가 이어지지 않는다 */}
+        <Box onLayout={handlePagerLayout}>
+          {match(viewMode)
+            .with('week', () => (
+              <CalendarWeekPager pageWidth={pageWidth} completions={completions} />
+            ))
+            .with('month', () => (
+              <CalendarMonthPager pageWidth={pageWidth} completions={completions} />
+            ))
+            .exhaustive()}
+        </Box>
+      </CalendarHeightTransition>
       {status != null && <Box px={16}>{status}</Box>}
     </VStack>
   );
+}
+
+/** 주·월을 바꿔도 다시 재지 않도록 달력이 쪽 너비를 잰다. 재기 전에는 목록 pane 폭으로 어림해 첫 프레임부터 7칸이 맞는다 */
+function useCalendarPageWidth() {
+  const windowSizeClass = useWindowSizeClass();
+  const { width: windowWidth } = useWindowDimensions();
+  const fold = findVerticalFold(useReservedRegions());
+  const insets = useSafeAreaInsets();
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+  const paneWidth =
+    windowSizeClass === 'compact'
+      ? windowWidth
+      : getPrimaryPaneWidth({ windowSizeClass, foldFrame: fold?.frame });
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    setMeasuredWidth(event.nativeEvent.layout.width);
+  };
+
+  return [measuredWidth ?? paneWidth - insets.left - insets.right, handleLayout] as const;
+}
+
+interface CalendarHeightTransitionProps {
+  height: number;
+  children: ReactNode;
+}
+
+/** 주↔월 높이를 UI 스레드에서 이어 바꿔 아래 피드가 한 프레임에 밀리지 않게 한다. 동작 줄이기면 바로 바뀐다 */
+function CalendarHeightTransition({ height, children }: CalendarHeightTransitionProps) {
+  const animatedHeight = useSharedValue(height);
+
+  useEffect(() => {
+    animatedHeight.set(withTiming(height, PAGER_HEIGHT_TIMING));
+  }, [height, animatedHeight]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ height: animatedHeight.get() }));
+
+  return <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]}>{children}</Animated.View>;
 }
 
 function CalendarViewModeTabs() {
@@ -161,10 +227,11 @@ function CalendarHeaderText() {
 }
 
 interface CalendarWeekPagerProps {
+  pageWidth: number;
   completions: CompletionsByDate;
 }
 
-function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
+function CalendarWeekPager({ pageWidth, completions }: CalendarWeekPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
   // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
@@ -191,17 +258,20 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   };
 
   return (
-    <CalendarPager value={pageOfWeek(selectedDate)} onChange={handleChange}>
-      {(page) => <WeekRow week={weekAtPage(page)} completions={completions} />}
+    <CalendarPager value={pageOfWeek(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+      {(page) => (
+        <WeekRow weekKey={toDateKey(weekAtPage(page), timeZone)} completions={completions} />
+      )}
     </CalendarPager>
   );
 }
 
 interface CalendarMonthPagerProps {
+  pageWidth: number;
   completions: CompletionsByDate;
 }
 
-function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
+function CalendarMonthPager({ pageWidth, completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { timeZone } = useDateFormatContext();
   // 처음 연 날의 주(월)를 가운데 쪽으로 고정한다. 이후 날짜를 골라도 바뀌지 않는다
@@ -227,59 +297,110 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   };
 
   return (
-    <CalendarPager value={pageOfMonth(selectedDate)} onChange={handleChange}>
-      {(page) => <MonthGrid month={monthAtPage(page)} completions={completions} />}
+    <CalendarPager value={pageOfMonth(selectedDate)} pageWidth={pageWidth} onChange={handleChange}>
+      {(page) => (
+        <MonthGrid monthKey={toDateKey(monthAtPage(page), timeZone)} completions={completions} />
+      )}
     </CalendarPager>
   );
 }
 
 interface WeekRowProps {
-  week: Date;
+  /** 날짜 키로 받아, 목록이 쪽을 다시 그려도 같은 주면 칸의 Date가 그대로라 memo가 맞는다 */
+  weekKey: string;
   completions: CompletionsByDate;
 }
 
-function WeekRow({ week, completions }: WeekRowProps) {
-  const { timeZone } = useDateFormatContext();
-  const dates = getWeekDates(getWeekStart(week, timeZone), timeZone);
+function WeekRow({ weekKey, completions }: WeekRowProps) {
+  const [selectedDate, setSelectedDate] = useFeedDate();
+  const todayKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const { timeZone } = dateFormatContext;
+  // 컴파일러는 이 결과를 아래 JSX와 한 캐시로 묶어 날짜를 고를 때마다 칸 Date를 새로 만든다. 칸 memo가 맞게 따로 둔다
+  const days = useMemo(
+    () =>
+      getWeekDates(
+        getWeekStart(toLocalDay(weekKey), dateFormatContext.timeZone),
+        dateFormatContext.timeZone,
+      ).map((date) => toCalendarDay(date, dateFormatContext)),
+    [weekKey, dateFormatContext],
+  );
+  const selectedDateKey = toDateKey(selectedDate, timeZone);
 
   return (
     <HStack px={8}>
-      {dates.map((date) => (
-        <CalendarDateCell key={date.toISOString()} date={date}>
-          <CompletionIndicator completion={completions[toDateKey(date, timeZone)]} />
-        </CalendarDateCell>
+      {days.map(({ date, dateKey, label }) => (
+        <CalendarDateCell
+          key={dateKey}
+          date={date}
+          label={label}
+          {...getMonthViewDayState({ dateKey, selectedDateKey, todayKey })}
+          isOutsideMonth={false}
+          completion={completions[dateKey]}
+          onSelect={setSelectedDate}
+        />
       ))}
     </HStack>
   );
 }
 
 interface MonthGridProps {
-  month: Date;
+  /** 날짜 키로 받는 이유는 `WeekRowProps.weekKey`와 같다 */
+  monthKey: string;
   completions: CompletionsByDate;
 }
 
-function MonthGrid({ month, completions }: MonthGridProps) {
-  const { timeZone } = useDateFormatContext();
-  const weeks = fillMonthGrid(getMonthWeeks(month, timeZone), timeZone);
+function MonthGrid({ monthKey, completions }: MonthGridProps) {
+  const [selectedDate, setSelectedDate] = useFeedDate();
+  const todayKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const { timeZone } = dateFormatContext;
+  // 따로 두는 이유는 WeekRow의 days와 같다
+  const weeks = useMemo(
+    () =>
+      fillMonthGrid(
+        getMonthWeeks(toLocalDay(monthKey), dateFormatContext.timeZone),
+        dateFormatContext.timeZone,
+      ).map((week) => week.map((date) => toCalendarDay(date, dateFormatContext))),
+    [monthKey, dateFormatContext],
+  );
+  const selectedDateKey = toDateKey(selectedDate, timeZone);
 
   return (
     <VStack>
       {weeks.map((week, weekIndex) => (
         // 주 순서는 고정되어 index가 안정적인 key다.
         <HStack key={weekIndex} px={8}>
-          {week.map((date) => (
+          {week.map(({ date, dateKey, label }) => (
             <CalendarDateCell
-              key={date.toISOString()}
+              key={dateKey}
               date={date}
-              className={isSameMonth(date, month, timeZone) ? undefined : 'opacity-20'}
-            >
-              <CompletionIndicator completion={completions[toDateKey(date, timeZone)]} />
-            </CalendarDateCell>
+              label={label}
+              {...getMonthViewDayState({ dateKey, selectedDateKey, todayKey })}
+              isOutsideMonth={!isSameMonthDateKey(dateKey, monthKey)}
+              completion={completions[dateKey]}
+              onSelect={setSelectedDate}
+            />
           ))}
         </HStack>
       ))}
     </VStack>
   );
+}
+
+interface CalendarDay {
+  date: Date;
+  dateKey: string;
+  label: string;
+}
+
+/** 날짜 키와 읽어 줄 글자는 쪽을 그릴 때 한 번 만들고, 선택이 바뀌어도 다시 만들지 않는다 */
+function toCalendarDay(date: Date, dateFormatContext: DateFormatContext): CalendarDay {
+  return {
+    date,
+    dateKey: toDateKey(date, dateFormatContext.timeZone),
+    label: formatDateLabel(date, 'fullDate', dateFormatContext),
+  };
 }
 
 function fillMonthGrid(weeks: Date[][], timeZone: string): Date[][] {
@@ -294,49 +415,6 @@ function fillMonthGrid(weeks: Date[][], timeZone: string): Date[][] {
   }
 
   return filled;
-}
-
-interface CompletionIndicatorProps {
-  completion?: DailyCompletionSummary;
-}
-
-function CompletionIndicator({ completion }: CompletionIndicatorProps) {
-  if (!completion) {
-    return null;
-  }
-  if (completion.isComplete) {
-    return <FishIcon width={16} height={12} colorClassName="text-fish" />;
-  }
-  if (completion.totalTodos > 0) {
-    return <CategoryIndicator colors={completion.categoryColors ?? []} />;
-  }
-
-  return null;
-}
-
-interface CategoryIndicatorProps {
-  colors: string[];
-}
-
-function CategoryIndicator({ colors }: CategoryIndicatorProps) {
-  const [firstColor] = colors;
-
-  if (colors.length <= 1) {
-    return (
-      <Box
-        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
-        style={firstColor ? { backgroundColor: firstColor } : undefined}
-      />
-    );
-  }
-
-  return (
-    <HStack className="h-1.5 w-4 overflow-hidden rounded-2xl">
-      {colors.slice(0, MAX_CATEGORY_INDICATOR_COUNT).map((color) => (
-        <Box key={color} style={{ backgroundColor: color }} className="flex-1" />
-      ))}
-    </HStack>
-  );
 }
 
 Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
