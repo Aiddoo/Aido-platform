@@ -18,7 +18,7 @@ export {
   useSheetRoute,
 } from './bottom-sheet';
 export { Box } from './box';
-export { Button, KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET, KeyboardAdaptiveButton } from './button';
+export { Button, KeyboardAdaptiveButton } from './button';
 export { ConfirmDialog, useConfirmDialog } from './confirm-dialog';
 export { DashedDivider } from './dashed-divider';
 export { FeatureMedia, type FeatureMediaProps } from './feature-media';
