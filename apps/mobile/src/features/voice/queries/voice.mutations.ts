@@ -4,21 +4,23 @@ import {
   useVoiceService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
 import {
   findErrorFeatureQuota,
   isFreeOfChargeError,
 } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
-import type { EntitlementFeature } from '@src/features/billing/subscription/schemas/entitlement.schema';
-import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import {
+  getCachedActivationContext,
+  invalidateActivationProgress,
+} from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -88,7 +90,11 @@ export function useApplyActionPlanMutationOptions({
     onSuccess: ({ todoCount, hasMemo }, { source, sourceMemoId, skippedCount }) => {
       onSaved?.({ todoCount });
       haptics.notify('success');
-      recordTodoCreatedForActivation({ queryClient, service: activationService });
+      activationService.recordTodoCreated({
+        ...getCachedActivationContext(queryClient),
+        now: getNowInstant(),
+      });
+      invalidateActivationProgress(queryClient);
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();
@@ -157,10 +163,9 @@ export function useCreateQuickPlanMutationOptions({
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const handleFailure = usePlanFailureHandler('AI_PARSE', {
-    surface: 'add_todo_sheet',
-    onSubscribe,
-  });
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
     ...planInProgressRetryOptions,
@@ -180,7 +185,32 @@ export function useCreateQuickPlanMutationOptions({
       if (signal?.aborted === true) {
         return;
       }
-      handleFailure(error, input.source === 'voice' ? 'quick-voice' : 'quick-text');
+      // 동의 안내는 AI를 요청한 화면이 띄우고, 동의하면 같은 요청을 다시 보낸다
+      if (isAiDataSharingConsentRequiredError(error)) {
+        markAiDataSharingConsentRequired(queryClient);
+        return;
+      }
+
+      const cause = getVoicePlanFailureCause(error);
+      trackEvent('voice_plan_failed', {
+        source: toAnalyticsSource(input.source === 'voice' ? 'quick-voice' : 'quick-text'),
+        cause,
+      });
+      haptics.notify('error');
+      if (gate.promptIfBlockedError(error, { onSubscribe })) {
+        return;
+      }
+
+      const featureQuota = findErrorFeatureQuota(error);
+      if (featureQuota != null) {
+        setFeatureQuota(queryClient, featureQuota);
+      }
+      // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
+      toast.error(t(`voicePlan:failure.${cause}.title`), {
+        description: isFreeOfChargeError(error)
+          ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
+          : t(`voicePlan:failure.${cause}.description`),
+      });
     },
   });
 }
@@ -194,10 +224,8 @@ export function useCreateVoiceNoteDigestMutationOptions() {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
-  const handleFailure = usePlanFailureHandler('VOICE_NOTE', {
-    surface: 'voice_note',
-    showsFailureInline: true,
-  });
+  const haptics = useHaptics();
+  const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
 
   return mutationOptions({
     ...planInProgressRetryOptions,
@@ -226,59 +254,24 @@ export function useCreateVoiceNoteDigestMutationOptions() {
       if (signal?.aborted === true) {
         return;
       }
-      handleFailure(error, 'voice-note');
+      // 동의 안내는 AI를 요청한 화면이 띄우고, 동의하면 같은 요청을 다시 보낸다
+      if (isAiDataSharingConsentRequiredError(error)) {
+        markAiDataSharingConsentRequired(queryClient);
+        return;
+      }
+
+      const cause = getVoicePlanFailureCause(error);
+      trackEvent('voice_plan_failed', { source: toAnalyticsSource('voice-note'), cause });
+      haptics.notify('error');
+      if (gate.promptIfBlockedError(error)) {
+        return;
+      }
+
+      const featureQuota = findErrorFeatureQuota(error);
+      if (featureQuota != null) {
+        setFeatureQuota(queryClient, featureQuota);
+      }
+      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
     },
   });
-}
-
-function usePlanFailureHandler(
-  feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>,
-  {
-    surface,
-    onSubscribe,
-    showsFailureInline = false,
-  }: {
-    surface: EntitlementGateSurface;
-    onSubscribe?: () => void;
-    /** 화면이 실패를 직접 보여 주면 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다 */
-    showsFailureInline?: boolean;
-  },
-) {
-  const haptics = useHaptics();
-  const queryClient = useQueryClient();
-  const { trackEvent } = useTrack();
-  const toast = useAppToast();
-  const gate = useEntitlementGate(feature, { surface });
-
-  return (error: unknown, source: VoicePlanSource) => {
-    // 동의 안내는 AI를 요청한 화면이 띄우고, 동의하면 같은 요청을 다시 보낸다
-    if (isAiDataSharingConsentRequiredError(error)) {
-      markAiDataSharingConsentRequired(queryClient);
-      return;
-    }
-
-    const cause = getVoicePlanFailureCause(error);
-    trackEvent('voice_plan_failed', { source: toAnalyticsSource(source), cause });
-    haptics.notify('error');
-
-    if (gate.promptIfBlockedError(error, { onSubscribe })) {
-      return;
-    }
-
-    const featureQuota = findErrorFeatureQuota(error);
-    if (featureQuota != null) {
-      setFeatureQuota(queryClient, featureQuota);
-    }
-
-    if (showsFailureInline) {
-      return;
-    }
-
-    // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
-    toast.error(t(`voicePlan:failure.${cause}.title`), {
-      description: isFreeOfChargeError(error)
-        ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
-        : t(`voicePlan:failure.${cause}.description`),
-    });
-  };
 }

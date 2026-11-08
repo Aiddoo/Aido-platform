@@ -1,10 +1,14 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { recordTodoCompletionForActivation } from '../queries/activation-cache';
+import {
+  getCachedActivationContext,
+  invalidateActivationProgress,
+} from '../queries/activation-cache';
 
 /** 할 일 완료를 활성화 진행에 기록한다. 로그인한 화면 묶음에 한 번 둔다 */
 export function useRecordTodoCompletion() {
@@ -15,13 +19,14 @@ export function useRecordTodoCompletion() {
   useEffect(
     () =>
       subscribeTodoCompletionChanged(({ isCompleted }) => {
-        const activationEvent = recordTodoCompletionForActivation({
-          queryClient,
-          service: activationService,
+        const activation = activationService.recordTodoCompletion({
+          ...getCachedActivationContext(queryClient),
           isCompleted,
+          now: getNowInstant(),
         });
-        if (activationEvent) {
-          trackEvent('activation_completed', activationEvent);
+        invalidateActivationProgress(queryClient);
+        if (activation.event) {
+          trackEvent('activation_completed', activation.event);
         }
       }),
     [activationService, queryClient, trackEvent],

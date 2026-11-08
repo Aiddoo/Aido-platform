@@ -6,9 +6,13 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import {
+  getCachedActivationContext,
+  invalidateActivationProgress,
+} from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { ApiError, getUserFacingMessage, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -35,22 +39,32 @@ export function useActOnSuggestionMutationOptions() {
   const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
 
   return mutationOptions({
+    // 수락 시트와 거절 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
+    networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionParams) =>
       unwrap(await suggestionService.actOnSuggestion(suggestionId, input)),
-    onSuccess: (_result, { input }) => {
+    onSuccess: async (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
-      invalidateAiSuggestions(queryClient);
-
-      if (input.action === 'accept') {
-        recordTodoCreatedForActivation({ queryClient, service: activationService });
-        invalidateTodos(queryClient);
-      }
-
       toast.success(
         input.action === 'accept'
           ? t('ai:suggestions.toasts.accepted')
           : t('ai:suggestions.toasts.rejected'),
       );
+
+      if (input.action === 'accept') {
+        activationService.recordTodoCreated({
+          ...getCachedActivationContext(queryClient),
+          now: getNowInstant(),
+        });
+        invalidateActivationProgress(queryClient);
+        invalidateTodos(queryClient);
+        // 수락하면 시트를 닫고 피드로 떠나므로 다시 받기를 기다리지 않는다
+        invalidateAiSuggestions(queryClient);
+        return;
+      }
+
+      // 거절은 화면에 머무는 목록 행이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+      await invalidateAiSuggestions(queryClient);
     },
     onError: (error) => {
       if (gate.promptIfBlockedError(error)) {

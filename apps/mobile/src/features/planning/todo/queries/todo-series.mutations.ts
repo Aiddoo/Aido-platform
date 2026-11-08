@@ -20,7 +20,6 @@ export function useStopTodoSeriesMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 반복 끝내기가 끝나지 않는다. 바로 실패해 안내한다
@@ -33,7 +32,18 @@ export function useStopTodoSeriesMutationOptions() {
       trackEvent('todo_series_stopped');
     },
     onError: (error) => {
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 
@@ -43,27 +53,4 @@ export function useStopTodoSeriesMutationOptions() {
       });
     },
   });
-}
-
-/** 반복 할 일 오류(TODO_0841~0846)를 다음 행동과 함께 알린다. 처리했으면 true. 입력값은 건드리지 않는다 */
-export function useNotifyIfSeriesFailure() {
-  const haptics = useHaptics();
-  const queryClient = useQueryClient();
-  const toast = useAppToast();
-
-  return (error: unknown): boolean => {
-    const failure = getTodoSeriesFailure(error);
-    if (failure == null) {
-      return false;
-    }
-    haptics.notify('error');
-    if (shouldRefreshTodos(failure)) {
-      invalidateTodos(queryClient);
-    }
-    toast.error(
-      t(`todo:toast.series.${failure}.title`, { limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER }),
-      { description: t(`todo:toast.series.${failure}.description`) },
-    );
-    return true;
-  };
 }

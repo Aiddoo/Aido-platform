@@ -1,3 +1,4 @@
+import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import {
   useActivationService,
   useHaptics,
@@ -5,7 +6,10 @@ import {
   useSubTodoService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import {
+  getCachedActivationContext,
+  invalidateActivationProgress,
+} from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -13,6 +17,10 @@ import { invalidateTodoCategories } from '@src/features/planning/category/querie
 import type { TodoCategoriesResult } from '@src/features/planning/category/schemas/todo-category.schema';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import {
+  getTodoSeriesFailure,
+  shouldRefreshTodos,
+} from '@src/features/planning/todo/domains/todo-series.error';
 import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
@@ -31,7 +39,6 @@ import {
   cancelTodoQueries,
   settleTodoListWrite,
 } from '@src/features/planning/todo/queries/todo-cache';
-import { useNotifyIfSeriesFailure } from '@src/features/planning/todo/queries/todo-series.mutations';
 import type {
   RepeatingTodoDraft,
   TodoSeriesEditOptions,
@@ -42,6 +49,7 @@ import type {
 } from '@src/features/planning/todo/schemas/todo-request.schema';
 import type { OptimisticTodo } from '@src/features/planning/todo/schemas/todo.schema';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -114,7 +122,11 @@ export function useCreateTodoMutationOptions() {
       if (optimisticId != null) {
         confirmTodoInList(queryClient, { date: startDate, optimisticId }, saved);
       }
-      recordTodoCreatedForActivation({ queryClient, service: activationService });
+      activationService.recordTodoCreated({
+        ...getCachedActivationContext(queryClient),
+        now: getNowInstant(),
+      });
+      invalidateActivationProgress(queryClient);
       invalidateTodoCategories(queryClient);
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
@@ -228,7 +240,6 @@ export function useCreateRecurringTodoMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -238,7 +249,11 @@ export function useCreateRecurringTodoMutationOptions() {
       return unwrap(result);
     },
     onSuccess: (_, { input }) => {
-      recordTodoCreatedForActivation({ queryClient, service: activationService });
+      activationService.recordTodoCreated({
+        ...getCachedActivationContext(queryClient),
+        now: getNowInstant(),
+      });
+      invalidateActivationProgress(queryClient);
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
@@ -257,7 +272,18 @@ export function useCreateRecurringTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 
@@ -342,7 +368,6 @@ export function useUpdateTodoMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -365,7 +390,18 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 

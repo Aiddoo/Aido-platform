@@ -8,7 +8,10 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { recordTodoCreatedForActivation } from '@src/features/device/activation/queries/activation-cache';
+import {
+  getCachedActivationContext,
+  invalidateActivationProgress,
+} from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -26,7 +29,7 @@ import {
   toAnalyticsSource,
 } from '@src/features/voice/utils/voice-analytics';
 import { useTrack } from '@src/shared/analytics';
-import { toEpochMs } from '@src/shared/date/instant';
+import { toEpochMs, getNowInstant } from '@src/shared/date/instant';
 import type { DraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
@@ -214,7 +217,11 @@ export function useConvertMemoToTodosMutationOptions() {
       timeZone: string;
     }) => unwrap(await memoService.convertToTodos(memoId, values, timeZone)),
     onSuccess: (_result, { memoId }) => {
-      recordTodoCreatedForActivation({ queryClient, service: activationService });
+      activationService.recordTodoCreated({
+        ...getCachedActivationContext(queryClient),
+        now: getNowInstant(),
+      });
+      invalidateActivationProgress(queryClient);
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },

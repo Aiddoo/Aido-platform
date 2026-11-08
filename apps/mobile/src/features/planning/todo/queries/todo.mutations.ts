@@ -1,3 +1,4 @@
+import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
@@ -14,6 +15,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
+import { getTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import type { TodoUpdateScope, TodoEditScope } from '../schemas/todo-repeat.schema';
 import type {
@@ -36,7 +38,6 @@ import {
   invalidateWidgetSummary,
   settleTodoListWrite,
 } from './todo-cache';
-import { useNotifyIfSeriesFailure } from './todo-series.mutations';
 
 interface ToggleTodoMutationParams {
   todoId: number;
@@ -52,8 +53,11 @@ export function useToggleTodoMutationOptions() {
   const queryClient = useQueryClient();
   const todayKey = useTodayKey();
   const { recordActiveDay, requestReviewAt } = useStoreReviewMoment();
+  const toast = useAppToast();
 
   return mutationOptions({
+    // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
       const result = await todoService.toggleTodoComplete(todoId, body);
@@ -83,14 +87,15 @@ export function useToggleTodoMutationOptions() {
         requestReviewAt('all_todos_done');
       }
     },
-    onError: (_error, { todoId, body, date }) => {
-      haptics.notify('error');
+    onError: (error, { todoId, body, date }) => {
       // 완료 여부만 되돌려 같은 할 일의 서브투두 변경은 지키게 한다
       updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
         ...todo,
         completed: !body.completed,
       }));
       syncDailyCompletionWithList(queryClient, { date });
+      haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: (_data, _error, { date }) => {
       if (date < todayKey) {
@@ -113,7 +118,6 @@ export function useChangeTodoCategoryMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -132,7 +136,18 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 
@@ -157,7 +172,6 @@ export function useDeleteTodoMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
@@ -189,7 +203,18 @@ export function useDeleteTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 
@@ -216,8 +241,11 @@ export function useReorderTodoMutationOptions() {
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const toast = useAppToast();
 
   return mutationOptions({
+    // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
+    networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ id, input }: ReorderTodoParams) => {
       const result = await todoService.reorderTodo(id, input);
@@ -231,8 +259,9 @@ export function useReorderTodoMutationOptions() {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_reorder' });
       }
     },
-    onError: () => {
+    onError: (error) => {
       haptics.notify('error');
+      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
     onSettled: () => {
       settleTodoListWrite(queryClient);
@@ -253,7 +282,6 @@ export function useUpdateTodoScheduleMutationOptions() {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const haptics = useHaptics();
-  const notifyIfSeriesFailure = useNotifyIfSeriesFailure();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -273,7 +301,18 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      if (notifyIfSeriesFailure(error)) {
+      const seriesFailure = getTodoSeriesFailure(error);
+      if (seriesFailure != null) {
+        haptics.notify('error');
+        if (shouldRefreshTodos(seriesFailure)) {
+          invalidateTodos(queryClient);
+        }
+        toast.error(
+          t(`todo:toast.series.${seriesFailure}.title`, {
+            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+          }),
+          { description: t(`todo:toast.series.${seriesFailure}.description`) },
+        );
         return;
       }
 
