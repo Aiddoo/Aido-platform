@@ -40,10 +40,7 @@ export function useVoiceNoteCaptions({
 
   return {
     /** 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 `interimText`로 따로 그린다 */
-    sentences: VoiceNoteCaptionPolicy.getCaptionSentences(
-      { ...captions, provisional: captions.provisional.slice(0, -1) },
-      0,
-    ),
+    sentences: VoiceNoteCaptionPolicy.getSettledSentences(captions),
     interimText: VoiceNoteCaptionPolicy.getCaptionInterimText(captions),
     /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
     hasText: VoiceNoteCaptionPolicy.hasCaptionText(captions),

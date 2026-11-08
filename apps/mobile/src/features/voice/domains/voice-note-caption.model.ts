@@ -238,6 +238,16 @@ function getCaptionSentences(captions: VoiceNoteCaptions, nowMs: number): VoiceN
   });
 }
 
+/** 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다 */
+function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
+  const settling = captions.provisional.at(-1);
+
+  return getCaptionSentences(
+    { ...captions, provisional: captions.provisional.slice(0, -1) },
+    settling?.startMs ?? 0,
+  );
+}
+
 /** 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다 */
 function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
   const sentences = getCaptionSentences(captions, 0);
@@ -300,6 +310,7 @@ export const VoiceNoteCaptionPolicy = {
   applyCaptionResult,
   withBookmark,
   getCaptionSentences,
+  getSettledSentences,
   getCaptionInterimText,
   getMarkedSentenceCount,
   hasCaptionText,

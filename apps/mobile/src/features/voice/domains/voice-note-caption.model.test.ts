@@ -242,6 +242,31 @@ describe('commitProvisional', () => {
   });
 });
 
+describe('getSettledSentences', () => {
+  it('아직 바뀔 수 있는 마지막 문장은 빼고 앞 문장은 다음 문장이 시작할 때 끝난다', () => {
+    // Given
+    const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      VoiceNoteCaptionPolicy.createVoiceNoteCaptions(),
+      interim('첫 문장. 둘째 문장'),
+      clock(1_000),
+    );
+    const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      heard,
+      interim('첫 문장. 둘째 문장. 셋째'),
+      clock(4_000),
+    );
+
+    // When
+    const sentences = VoiceNoteCaptionPolicy.getSettledSentences(next);
+
+    // Then
+    expect(sentences.map(({ text, endMs }) => ({ text, endMs }))).toEqual([
+      { text: '첫 문장.', endMs: 1_000 },
+      { text: '둘째 문장.', endMs: 4_000 },
+    ]);
+  });
+});
+
 describe('withBookmark', () => {
   it('깃발은 그 시각에 말하던 문장에 붙고, 말이 없던 때면 직전 문장에 붙는다', () => {
     // Given
