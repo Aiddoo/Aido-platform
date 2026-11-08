@@ -54,7 +54,7 @@ export function AppToast({
           <Text size="b2" weight="medium" className="text-white dark:text-gray-9">
             {label}
           </Text>
-          {description && (
+          {description != null && description.length > 0 && (
             <Text size="b3" className="text-gray-3 dark:text-gray-7">
               {description}
             </Text>

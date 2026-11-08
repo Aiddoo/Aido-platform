@@ -75,7 +75,7 @@ export function TextArea({
 
   return (
     <Box className={cn('gap-2', variant === 'bare' && 'flex-1')}>
-      {label && (
+      {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={textAreaLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>

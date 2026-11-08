@@ -70,7 +70,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
             </Box>
           </>
         )}
-        {report.aiSummary && (
+        {report.aiSummary.length > 0 && (
           <>
             <DashedDivider />
             <Box className="py-4">

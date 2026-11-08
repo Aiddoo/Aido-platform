@@ -28,7 +28,7 @@ export function Result({ icon, title, description, button, className, testID }: 
         {title}
       </Text>
 
-      {description && (
+      {description != null && description.length > 0 && (
         <>
           <Spacing size={4} />
           <Text

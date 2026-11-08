@@ -42,7 +42,7 @@ export function Input({
 
   return (
     <Box className="gap-1">
-      {label && (
+      {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>
