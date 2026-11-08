@@ -1,6 +1,12 @@
-import { createTodoSchema, todoRepeatSchema, updateTodoSchema } from '@aido/api';
+import {
+  createTodoSchema,
+  todoRepeatSchema,
+  todoSeriesResponseSchema,
+  updateTodoSchema,
+} from '@aido/api';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
+import { todoSeriesSchema } from '../domains/todo-series.model';
 import type { RepeatingTodoDraft } from '../schemas/todo-series-request.schema';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 import {
@@ -176,5 +182,37 @@ describe('toTodoSeries', () => {
       repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
       startDate: '2026-11-02',
     });
+  });
+});
+
+describe('계약 응답과 반복 묶음 모델', () => {
+  it('계약을 통과한 반복 묶음을 매핑하면 모델 스키마를 통과한다', () => {
+    // Given
+    const dto = todoSeriesResponseSchema.parse({
+      id: 'series-2',
+      title: '격주 회의',
+      categoryId: 1,
+      visibility: 'PRIVATE',
+      scheduledTime: '10:00',
+      timezone: 'Asia/Seoul',
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 2,
+        weekdays: ['MON', 'THU'],
+        end: { type: 'COUNT', count: 10 },
+      },
+      startDate: '2026-11-02',
+      nextOccurrenceDate: '2026-11-05',
+      isActive: true,
+      checklist: [],
+      createdAt: '2026-11-02T00:00:00.000Z',
+      updatedAt: '2026-11-02T00:00:00.000Z',
+    });
+
+    // When
+    const result = toTodoSeries(dto);
+
+    // Then
+    expect(todoSeriesSchema.parse(result)).toEqual(result);
   });
 });

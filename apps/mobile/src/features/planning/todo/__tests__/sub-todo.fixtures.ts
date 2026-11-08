@@ -1,5 +1,5 @@
-import type { SubTodo } from '../domains/sub-todo.model';
-import type { Todo } from '../domains/todo.model';
+import { type SubTodo, subTodoSchema } from '../domains/sub-todo.model';
+import { type Todo, todoSchema } from '../domains/todo.model';
 
 function generateSubTodo(): SubTodo {
   return {
@@ -11,10 +11,10 @@ function generateSubTodo(): SubTodo {
 }
 
 export function createSubTodo(overrides?: Partial<SubTodo>): SubTodo {
-  return {
+  return subTodoSchema.parse({
     ...generateSubTodo(),
     ...overrides,
-  };
+  });
 }
 
 function generateParentTodo(): Todo {
@@ -38,8 +38,8 @@ function generateParentTodo(): Todo {
 }
 
 export function createParentTodo(overrides?: Partial<Todo>): Todo {
-  return {
+  return todoSchema.parse({
     ...generateParentTodo(),
     ...overrides,
-  };
+  });
 }

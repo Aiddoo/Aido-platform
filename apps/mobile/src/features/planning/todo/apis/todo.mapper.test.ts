@@ -1,4 +1,9 @@
-import { dailyCompletionsRangeResponseSchema, todoListResponseSchema } from '@aido/api';
+import {
+  dailyCompletionsRangeResponseSchema,
+  todoDetailsResponseSchema,
+  todoListResponseSchema,
+  todoSummaryResponseSchema,
+} from '@aido/api';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import {
@@ -8,8 +13,14 @@ import {
   createTodoListResponseDto,
 } from '../__tests__/todo.fixtures';
 import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
-import { todoListResultSchema } from '../domains/todo.model';
-import { toDailyCompletionsResult, toTodo, toTodoListResult } from './todo.mapper';
+import { todoDetailsSchema, todoListResultSchema, todoSummarySchema } from '../domains/todo.model';
+import {
+  toDailyCompletionsResult,
+  toTodo,
+  toTodoDetails,
+  toTodoListResult,
+  toTodoSummary,
+} from './todo.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
@@ -186,5 +197,40 @@ describe('계약 응답과 앱 스키마', () => {
 
     // Then
     expect(dailyCompletionsResultSchema.parse(result)).toEqual(result);
+  });
+
+  it('계약을 통과한 오늘 요약을 매핑하면 요약 모델 스키마를 통과한다', () => {
+    // Given
+    const dto = todoSummaryResponseSchema.parse({
+      date: '2026-03-08',
+      totalTodos: 2,
+      completedTodos: 1,
+      completionRate: 50,
+      isComplete: false,
+      currentStreak: 3,
+      topTodos: [{ id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' }],
+    });
+
+    // When
+    const result = toTodoSummary(dto);
+
+    // Then
+    expect(todoSummarySchema.parse(result)).toEqual(result);
+  });
+
+  it('계약을 통과한 할 일 상세를 매핑하면 상세 모델 스키마를 통과한다', () => {
+    // Given
+    const dto = todoDetailsResponseSchema.parse({
+      todo: createTodoDto({ scheduledLocalTime: '18:00' }),
+      owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: null, profileImage: null },
+      permissions: { canEdit: false, canComment: true, canNudge: true },
+      metrics: { viewCount: 4, commentCount: 0 },
+    });
+
+    // When
+    const result = toTodoDetails(dto);
+
+    // Then
+    expect(todoDetailsSchema.parse(result)).toEqual(result);
   });
 });

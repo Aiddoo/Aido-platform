@@ -1,3 +1,4 @@
+import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
 import { TodoCategoryPolicy } from './todo-category.model';
 
 const CATEGORIES = [{ id: 3 }, { id: 7 }];
@@ -114,5 +115,45 @@ describe('isOptimisticCategory', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('getMoveTargetCategories', () => {
+  it('지우는 카테고리만 빼고 나머지를 순서대로 남긴다', () => {
+    // Given
+    const work = createTodoCategoryWithCount({ id: 1, name: '업무' });
+    const study = createTodoCategoryWithCount({ id: 2, name: '스터디' });
+    const health = createTodoCategoryWithCount({ id: 3, name: '운동' });
+
+    // When
+    const targets = TodoCategoryPolicy.getMoveTargetCategories([work, study, health], 2);
+
+    // Then
+    expect(targets).toEqual([work, health]);
+  });
+
+  it('카테고리가 하나뿐이면 옮길 곳이 없다', () => {
+    // Given
+    const only = createTodoCategoryWithCount({ id: 1 });
+
+    // When
+    const targets = TodoCategoryPolicy.getMoveTargetCategories([only], 1);
+
+    // Then
+    expect(targets).toEqual([]);
+  });
+
+  it('목록에 없는 카테고리를 지우면 모두 옮길 곳이다', () => {
+    // Given
+    const categories = [
+      createTodoCategoryWithCount({ id: 1 }),
+      createTodoCategoryWithCount({ id: 2 }),
+    ];
+
+    // When
+    const targets = TodoCategoryPolicy.getMoveTargetCategories(categories, 99);
+
+    // Then
+    expect(targets).toEqual(categories);
   });
 });

@@ -449,3 +449,85 @@ describe('hasSubTodos', () => {
     expect(result).toBe(true);
   });
 });
+
+describe('getTodayToggleDates', () => {
+  const TODAY = '2026-03-08';
+
+  it('오늘 시작한 할 일은 내일로 옮긴다', () => {
+    // Given
+    const todo = createParentTodo({ startDate: TODAY, endDate: null });
+
+    // When
+    const result = TodoPolicy.getTodayToggleDates(todo, TODAY);
+
+    // Then
+    // 2026-03-08 + 1일 = 2026-03-09
+    expect(result).toEqual({ startDate: '2026-03-09', endDate: null });
+  });
+
+  it('다른 날 할 일은 오늘로 옮긴다', () => {
+    // Given
+    const yesterday = createParentTodo({ startDate: '2026-03-07', endDate: null });
+    const tomorrow = createParentTodo({ startDate: '2026-03-09', endDate: null });
+
+    // When
+    const fromYesterday = TodoPolicy.getTodayToggleDates(yesterday, TODAY);
+    const fromTomorrow = TodoPolicy.getTodayToggleDates(tomorrow, TODAY);
+
+    // Then
+    expect(fromYesterday).toEqual({ startDate: TODAY, endDate: null });
+    expect(fromTomorrow).toEqual({ startDate: TODAY, endDate: null });
+  });
+
+  it('끝 날짜가 새 시작일보다 하루 앞서면 지운다', () => {
+    // Given
+    const todo = createParentTodo({ startDate: '2026-03-05', endDate: '2026-03-07' });
+
+    // When
+    const result = TodoPolicy.getTodayToggleDates(todo, TODAY);
+
+    // Then
+    // 끝 2026-03-07 < 새 시작 2026-03-08
+    expect(result).toEqual({ startDate: TODAY, endDate: null });
+  });
+
+  it('끝 날짜가 새 시작일과 같거나 뒤면 남긴다', () => {
+    // Given
+    const endsToday = createParentTodo({ startDate: '2026-03-05', endDate: TODAY });
+    const endsTomorrow = createParentTodo({ startDate: '2026-03-05', endDate: '2026-03-09' });
+
+    // When
+    const sameDay = TodoPolicy.getTodayToggleDates(endsToday, TODAY);
+    const dayAfter = TodoPolicy.getTodayToggleDates(endsTomorrow, TODAY);
+
+    // Then
+    expect(sameDay).toEqual({ startDate: TODAY, endDate: TODAY });
+    expect(dayAfter).toEqual({ startDate: TODAY, endDate: '2026-03-09' });
+  });
+
+  it('오늘 끝나는 여러 날 할 일을 내일로 옮기면 지난 끝 날짜를 지운다', () => {
+    // Given
+    const endsToday = createParentTodo({ startDate: TODAY, endDate: TODAY });
+    const endsLater = createParentTodo({ startDate: TODAY, endDate: '2026-03-10' });
+
+    // When
+    const shortened = TodoPolicy.getTodayToggleDates(endsToday, TODAY);
+    const kept = TodoPolicy.getTodayToggleDates(endsLater, TODAY);
+
+    // Then
+    // 끝 2026-03-08 < 새 시작 2026-03-09, 끝 2026-03-10 >= 2026-03-09
+    expect(shortened).toEqual({ startDate: '2026-03-09', endDate: null });
+    expect(kept).toEqual({ startDate: '2026-03-09', endDate: '2026-03-10' });
+  });
+
+  it('달의 마지막 날에 오늘 할 일을 옮기면 다음 달 1일이다', () => {
+    // Given
+    const todo = createParentTodo({ startDate: '2026-03-31', endDate: null });
+
+    // When
+    const result = TodoPolicy.getTodayToggleDates(todo, '2026-03-31');
+
+    // Then
+    expect(result).toEqual({ startDate: '2026-04-01', endDate: null });
+  });
+});

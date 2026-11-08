@@ -1,6 +1,24 @@
 import type { TodoCategory, TodoCategoryListResponse, TodoCategoryWithCount } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
+import {
+  type TodoCategoryWithCount as TodoCategoryWithCountModel,
+  todoCategoryWithCountSchema,
+} from '../domains/todo-category.model';
+
+export function createTodoCategoryWithCount(
+  overrides?: Partial<TodoCategoryWithCountModel>,
+): TodoCategoryWithCountModel {
+  return todoCategoryWithCountSchema.parse({
+    id: 1,
+    name: '기본',
+    color: '#3B82F6',
+    sortOrder: 0,
+    todoCount: 0,
+    ...overrides,
+  });
+}
+
 function generateTodoCategoryDto(): TodoCategory {
   return {
     id: 1,
