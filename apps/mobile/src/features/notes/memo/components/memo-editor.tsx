@@ -23,7 +23,6 @@ import {
   CheckmarkIcon,
   ConfirmDialog,
   DocsIcon,
-  Flex,
   HStack,
   IconButton,
   type IconButtonProps,
@@ -425,13 +424,13 @@ MemoEditor.Empty = function Empty() {
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
-      <Flex flex={1} justify="center" align="center">
+      <HStack flex={1} justify="center" align="center">
         <Result
           icon={<DocsIcon width={72} height={72} />}
           title={t('detail.emptyTitle')}
           description={t('detail.selectPrompt')}
         />
-      </Flex>
+      </HStack>
     </StyledSafeAreaView>
   );
 };

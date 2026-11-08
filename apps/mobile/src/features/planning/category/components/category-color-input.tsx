@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Flex } from '@src/shared/ui';
+import { HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -44,17 +44,17 @@ export function CategoryColorInput({
           })}
         >
           {({ isSelected }) => (
-            <Flex
+            <HStack
               align="center"
               justify="center"
               className={cn('size-8 rounded-full', isSelected && 'border-2')}
               style={isSelected ? { borderColor: color } : undefined}
             >
-              <Flex
+              <HStack
                 className={cn('rounded-full', isSelected ? 'size-6' : 'size-7')}
                 style={{ backgroundColor: color }}
               />
-            </Flex>
+            </HStack>
           )}
         </RadioGroup.Item>
       ))}

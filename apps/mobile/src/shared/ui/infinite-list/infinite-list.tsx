@@ -4,7 +4,6 @@ import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { Ref } from 'react';
 
-import { Flex } from '../flex';
 import { HStack } from '../h-stack';
 import { RefreshIcon } from '../icon';
 import { Text } from '../text';
@@ -81,15 +80,15 @@ export function InfiniteListFooter({
 
   if (isFetchingNextPage) {
     return (
-      <Flex py={16} align="center">
+      <HStack py={16} align="center">
         <Spinner size="sm" />
-      </Flex>
+      </HStack>
     );
   }
 
   if (isFetchNextPageError) {
     return (
-      <Flex py={8} align="center">
+      <HStack py={8} align="center">
         <PressableFeedback
           accessibilityRole="button"
           accessibilityLabel={t('infiniteList.loadMoreFailedLabel')}
@@ -103,7 +102,7 @@ export function InfiniteListFooter({
             </Text>
           </HStack>
         </PressableFeedback>
-      </Flex>
+      </HStack>
     );
   }
 

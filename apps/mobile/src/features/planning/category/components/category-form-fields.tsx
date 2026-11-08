@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { BottomSheetInput, Flex, VStack } from '@src/shared/ui';
+import { BottomSheetInput, HStack, VStack } from '@src/shared/ui';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { Controller, type Control } from 'react-hook-form';
@@ -57,11 +57,11 @@ CategoryFormFields.Loading = function Loading() {
   return (
     <VStack gap={20}>
       <Skeleton className="h-20 w-full rounded-xl" />
-      <Flex direction="row" wrap="wrap" align="center" justify="center" className="gap-2.5">
+      <HStack wrap="wrap" align="center" justify="center" className="gap-2.5">
         {range(CATEGORY_COLORS.length).map((index) => (
           <Skeleton key={index} className="size-8 rounded-full" />
         ))}
-      </Flex>
+      </HStack>
     </VStack>
   );
 };

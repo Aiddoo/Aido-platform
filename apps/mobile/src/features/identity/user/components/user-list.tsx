@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Flex,
+  HStack,
   ListRow,
   type ListRowProps,
   QueryErrorActions,
@@ -79,9 +79,9 @@ function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 
 function Empty(props: ComponentProps<typeof Result>) {
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result {...props} />
-    </Flex>
+    </HStack>
   );
 }
 

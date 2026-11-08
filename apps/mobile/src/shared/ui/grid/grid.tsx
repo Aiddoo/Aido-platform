@@ -1,6 +1,6 @@
 import { Children, createContext, isValidElement, use } from 'react';
 
-import { Flex } from '../flex/flex';
+import { HStack } from '../h-stack/h-stack';
 import { getGridStartColumns } from './grid-layout';
 import type { GridProps } from './grid.types';
 
@@ -38,8 +38,7 @@ export function Grid({
 
   return (
     <GridContext.Provider value={columns}>
-      <Flex
-        direction="row"
+      <HStack
         wrap="wrap"
         style={[resolvedRowGap != null && { rowGap: resolvedRowGap }, style]}
         {...props}
@@ -52,7 +51,7 @@ export function Grid({
             {cell}
           </GridCellContext.Provider>
         ))}
-      </Flex>
+      </HStack>
     </GridContext.Provider>
   );
 }

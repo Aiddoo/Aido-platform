@@ -8,7 +8,7 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  Flex,
+  HStack,
   HeartFilledIcon,
   InfiniteList,
   QueryErrorActions,
@@ -191,9 +191,9 @@ TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallba
       showsVerticalScrollIndicator={false}
     >
       <TodoDetailHeader />
-      <Flex flex={1} justify="center" align="center" py={32}>
+      <HStack flex={1} justify="center" align="center" py={32}>
         <Result title={t('list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
-      </Flex>
+      </HStack>
     </TodoCommentKeyboardScrollView>
   );
 };

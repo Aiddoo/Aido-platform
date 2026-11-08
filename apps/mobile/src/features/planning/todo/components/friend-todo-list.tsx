@@ -10,7 +10,6 @@ import {
   Box,
   ChatBubbleIcon,
   DocsIcon,
-  Flex,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
@@ -162,9 +161,9 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result title={t('todo:list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
-    </Flex>
+    </HStack>
   );
 };
 
@@ -174,13 +173,13 @@ FriendTodoList.Empty = function Empty({ action: EmptyAction }: { action: Compone
   const isToday = selectedDateKey === useTodayKey();
 
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title={t('friendTodo.emptyTitle')}
         description={isToday ? t('friendTodo.emptyDescription') : undefined}
         button={isToday ? <EmptyAction /> : undefined}
       />
-    </Flex>
+    </HStack>
   );
 };

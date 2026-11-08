@@ -3,7 +3,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  Flex,
+  HStack,
   H2,
   PauseIcon,
   PawIcon,
@@ -159,7 +159,7 @@ interface InviteResultProps extends Pick<ComponentProps<typeof Result>, 'testID'
 /** 초대 카드의 빈·실패 상태. 화면 가운데에 둔다 */
 function InviteResult({ icon, title, description, button, testID }: InviteResultProps) {
   return (
-    <Flex flex={1} justify="center" align="center" className="min-h-[420px]">
+    <HStack flex={1} justify="center" align="center" className="min-h-[420px]">
       <Result
         icon={
           icon == null ? undefined : (
@@ -173,6 +173,6 @@ function InviteResult({ icon, title, description, button, testID }: InviteResult
         button={button}
         testID={testID}
       />
-    </Flex>
+    </HStack>
   );
 }

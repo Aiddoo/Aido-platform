@@ -9,7 +9,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   DocsIcon,
-  Flex,
   HStack,
   PinFilledIcon,
   QueryErrorActions,
@@ -187,7 +186,7 @@ MemoList.Empty = function Empty() {
   const startVoiceNote = useStartVoiceNote();
 
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result
         icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
         title={t('list.emptyTitle')}
@@ -198,7 +197,7 @@ MemoList.Empty = function Empty() {
           </Result.Button>
         }
       />
-    </Flex>
+    </HStack>
   );
 };
 
@@ -206,9 +205,9 @@ MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
 
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result title={t('memo:list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
-    </Flex>
+    </HStack>
   );
 };
 

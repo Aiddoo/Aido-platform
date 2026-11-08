@@ -8,7 +8,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
-  Flex,
+  HStack,
   ListRow,
   SheetHeaderLayout,
   Spacing,
@@ -153,11 +153,11 @@ export function TodoTimePickerContent({
 
         <Spacing size={8} />
 
-        <Flex px={4} justify="center" align="center">
+        <HStack px={4} justify="center" align="center">
           <Text size="b3" shade={5}>
             {t(localIsAllDay ? 'picker.reminderInfoAllDay' : 'picker.reminderInfo')}
           </Text>
-        </Flex>
+        </HStack>
       </VStack>
     </SheetHeaderLayout>
   );

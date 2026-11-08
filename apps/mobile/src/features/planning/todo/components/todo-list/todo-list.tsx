@@ -11,7 +11,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   ChatBubbleIcon,
-  Flex,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
@@ -115,9 +114,9 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <Flex flex={1} justify="center" align="center">
+    <HStack flex={1} justify="center" align="center">
       <Result title={t('list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
-    </Flex>
+    </HStack>
   );
 };
 
