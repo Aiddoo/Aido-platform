@@ -66,7 +66,6 @@ interface ReportsPanelProps {
   list: ReactNode;
 }
 
-/** 권한 상태마다 머리글·상태 배너·목록만 다르고 그림과 주간·월간 탭, 자리는 같다 */
 function ReportsPanel({ heading, banner, list }: ReportsPanelProps) {
   return (
     <ScallopedContainer>

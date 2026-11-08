@@ -16,9 +16,7 @@ function loadTypeScript() {
   for (const packageJson of ['apps/mobile/package.json', 'apps/api/package.json']) {
     try {
       return createRequire(resolve(REPOSITORY_ROOT, packageJson))('typescript');
-    } catch {
-      // 이 패키지의 의존성이 설치되지 않은 범위다. 다음 패키지에서 찾는다.
-    }
+    } catch {}
   }
   throw new Error(
     'typescript를 찾을 수 없습니다. pnpm install로 모바일 또는 서버 의존성을 설치하세요.',
@@ -95,9 +93,7 @@ const QUERY_HOOK_NAMES = new Set([
 // 1.15부터 손댄 모델은 자기 Zod 스키마를 갖고, 요청·응답 계약(@aido/api 루트·contracts)은 apis의 service·mapper만 안다.
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
-/** 클라이언트 도메인 모델 스키마 이름. domains/{entity}.model.ts가 모델 스키마·타입·순수 함수·Policy를 함께 둔다 */
 const MODEL_SCHEMA_NAME = /^[a-z][A-Za-z]*Schema$/u;
-/** 클라이언트 도메인 모델 파일 */
 const DOMAIN_MODEL_FILE = /\/domains\/[^/]+\.model\.ts$/u;
 
 const CLIENT_OWNED_MODEL_PATHS = [
@@ -230,7 +226,6 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/social/invite/queries/',
   'apps/mobile/src/features/social/invite/utils/',
 ];
-/** Zod 스키마를 feature의 schemas/ 폴더로 모은 feature */
 const SCHEMA_FOLDER_FEATURE_PATHS = [
   'apps/mobile/src/features/notes/memo/',
   'apps/mobile/src/features/voice/',
@@ -1189,10 +1184,7 @@ function getEnclosingStatement(node) {
   return current;
 }
 
-/**
- * 허용 표시는 비교가 있는 문장 바로 위 주석부터 비교가 있는 줄 사이에 둔다.
- * 문장 하나 안의 여러 PATCH 필드는 그 위 표시 하나로 설명할 수 있다.
- */
+/** 허용 표시는 비교가 있는 문장 바로 위 주석부터 비교가 있는 줄 사이에 둔다. 한 문장 안의 여러 PATCH 필드는 그 위 표시 하나로 설명한다 */
 function hasStrictNullishAllowComment(sourceFile, lines, node, comparisonLine) {
   const statement = getEnclosingStatement(node);
   let firstLine = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile)).line;
@@ -1266,7 +1258,6 @@ function isZodObjectCall(node) {
 }
 
 /** URL 값은 `useRouteParams`와 `schemas/`의 스키마로 읽고 쓴다. 플랫폼 값과 이미지도 한 가지로 쓴다 */
-/** 파일 안에서 `name = X.safeParse(…)`로 만든 변수인가 */
 function isSafeParseResult(sourceFile, name) {
   let isFound = false;
   function visit(node) {
@@ -1459,11 +1450,9 @@ function isRangeInWrongOrder(sourceFile, first, second) {
   if (isBoundOnRight(first) === isBoundOnRight(second)) {
     return false;
   }
-  // `x >= a && x <= b`, `x <= b && x >= a`: 같은 값을 왼쪽에 두고 양쪽 경계를 잰다
   if (first.left.getText(sourceFile) === second.left.getText(sourceFile)) {
     return !ts.isNumericLiteral(first.left);
   }
-  // `b >= x && a <= x`: 같은 값을 오른쪽에 두고 양쪽 경계를 잰다
   return (
     first.right.getText(sourceFile) === second.right.getText(sourceFile) &&
     !ts.isNumericLiteral(first.right)

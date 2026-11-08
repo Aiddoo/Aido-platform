@@ -12,7 +12,6 @@ import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
 
-/** 할 일 상세와 댓글·답글 한 화면. 알림·링크는 `?comment=`로 그 댓글 위치를 연다 */
 export default function TodoDetailScreen() {
   const params = todoParamsSchema.safeParse(useLocalSearchParams());
   const [{ sort, comment }] = useTodoCommentParams();

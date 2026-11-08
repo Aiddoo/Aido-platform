@@ -43,11 +43,7 @@ const CARD_GAP = 12;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_STYLE = { maxWidth: 560 };
 
-/**
- * 위치를 확인하는 동안에도 서버에 저장된 위치로 리포트를 바로 받는다.
- * 모든 카드가 한 요청을 공유하므로 오류는 경계 하나에서 한 번만 보이고, 로딩은 카드마다 따로 풀린다.
- * 좁은 창은 한 단, 넓은 창(iPad·Duo 펼침)은 지금 날씨와 예보·상세를 두 단으로 나누고 각 단을 따로 스크롤한다.
- */
+/** 위치 확인 중에도 서버 저장 위치로 리포트를 바로 받는다. 모든 카드가 한 요청을 공유해 오류는 경계 하나에서 한 번만 보이고 로딩은 카드마다 따로 풀린다. 넓은 창은 두 단으로 나눠 각각 스크롤한다 */
 export default function WeatherScreen() {
   const location = useWeatherLocation();
   useWeatherScreenTracking(location.status);
@@ -120,7 +116,6 @@ export default function WeatherScreen() {
   );
 }
 
-/** 좁은 창은 지금 날씨 아래에, 넓은 창은 오른쪽 단에 같은 카드 묶음을 둔다. */
 function ForecastCards() {
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
@@ -143,7 +138,6 @@ function ForecastCards() {
   );
 }
 
-/** 리포트 오류·위치 안내는 권한 안내와 같은 자리(가로 여백, 세로 가운데)에 둔다. */
 WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <WeatherScrollView.Status>

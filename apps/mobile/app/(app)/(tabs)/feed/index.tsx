@@ -341,7 +341,6 @@ FriendFeedTodos.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   );
 };
 
-/** 더는 친구가 아닌 사람의 피드는 같은 화면의 내 피드로 돌린다. */
 function MyFeedRedirect() {
   const [_friendId, selectFriend] = useFeedFriendId();
 

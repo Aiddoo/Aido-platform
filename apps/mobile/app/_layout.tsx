@@ -50,10 +50,7 @@ function restartApp() {
   );
 }
 
-/**
- * Provider 안에서 던져진 오류의 마지막 경계. Provider·내비게이터가 없을 수 있어
- * RN 기본 컴포넌트와 디자인 토큰만 쓰고, 문의는 화면 이동 대신 메일로 연다.
- */
+/** Provider·내비게이터가 없을 수 있어 RN 기본 컴포넌트와 디자인 토큰만 쓰고, 문의는 화면 이동 대신 메일로 연다 */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
