@@ -31,10 +31,10 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     },
 
     onMutate: async ({ agreed }) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
+      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
 
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (consent) =>
         consent == null
           ? consent
           : {
@@ -52,14 +52,14 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 
     onSuccess: (result, { agreed }) => {
       trackEvent('ai_data_sharing_consent_changed', { agreed });
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (consent) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (consent) =>
         consent == null ? consent : { ...consent, ...result },
       );
     },
 
     onError: (error, _input, context) => {
       if (context?.previousData != null) {
-        queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
+        queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), context.previousData);
       }
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('ai:consent.saveFailed') });
@@ -79,22 +79,22 @@ export function useUpdateMarketingConsentMutationOptions() {
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentService.updateMarketingConsent(input)),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingAgreedAt: input.agreed ? getNowInstant() : null },
       );
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingAgreedAt: data.marketingAgreedAt },
       );
     },
 
     onError: (error, _input, context) => {
       if (context?.previousData != null) {
-        queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
+        queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), context.previousData);
       }
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
@@ -113,9 +113,9 @@ export function useUpdateMarketingPushConsentMutationOptions() {
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentService.updateMarketingPushConsent(input)),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.consent() });
-      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent());
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+      const previousData = queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail());
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
         old
           ? {
               ...old,
@@ -126,13 +126,13 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.consent(), (old) =>
+      queryClient.setQueryData<Consent>(CONSENT_QUERY_KEYS.detail(), (old) =>
         old == null ? old : { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt },
       );
     },
     onError: (error, _input, context) => {
       if (context?.previousData != null) {
-        queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), context.previousData);
+        queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), context.previousData);
       }
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });

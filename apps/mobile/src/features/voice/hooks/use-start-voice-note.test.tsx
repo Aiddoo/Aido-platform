@@ -67,7 +67,7 @@ async function renderStart({
   );
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
-  queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
+  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent(consent));
   if (voiceNoteUsed != null) {
     queryClient.setQueryData(
       ENTITLEMENT_QUERY_KEYS.snapshot(),

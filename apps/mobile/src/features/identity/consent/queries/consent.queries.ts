@@ -8,7 +8,7 @@ export function useGetConsentQueryOptions() {
   const consentService = useConsentService();
 
   return queryOptions({
-    queryKey: CONSENT_QUERY_KEYS.consent(),
+    queryKey: CONSENT_QUERY_KEYS.detail(),
     queryFn: async ({ signal }) => unwrap(await consentService.getConsent(signal)),
   });
 }

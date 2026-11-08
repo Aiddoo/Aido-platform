@@ -31,7 +31,7 @@ async function renderBoard({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: USER_ID });
-  queryClient.setQueryData(INVITE_QUERY_KEYS.invite(), createInvite({ qualifiedCount }));
+  queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite({ qualifiedCount }));
 
   await renderUi(
     <Suspense fallback={null}>

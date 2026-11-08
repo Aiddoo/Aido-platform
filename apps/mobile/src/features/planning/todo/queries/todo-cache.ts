@@ -24,7 +24,7 @@ export function cancelTodoQueries(
 ) {
   return Promise.all([
     queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }) }),
-    todoId != null && queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
+    todoId != null && queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }) }),
   ]);
 }
 
@@ -79,7 +79,7 @@ export function updateCachedTodo(
       old && { ...old, todos: old.todos.map((todo) => (todo.id === todoId ? update(todo) : todo)) },
   );
   queryClient.setQueryData<TodoDetails>(
-    TODO_QUERY_KEYS.details({ todoId }),
+    TODO_QUERY_KEYS.detail({ todoId }),
     (old) => old && { ...old, todo: update(old.todo) },
   );
 }
@@ -164,7 +164,7 @@ export function invalidateTodos(queryClient: QueryClient) {
 }
 
 export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {
-  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }) });
 }
 
 /**
@@ -178,7 +178,7 @@ export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: 
   }
   queryClient.setQueriesData<DailyCompletionsResult>(
     { queryKey: TODO_QUERY_KEYS.completionRanges() },
-    (old) => old && DailyCompletionPolicy.withDailyCompletionFromTodos(old, date, list.todos),
+    (old) => old && DailyCompletionPolicy.withTodoDailyCompletion(old, date, list.todos),
   );
 }
 

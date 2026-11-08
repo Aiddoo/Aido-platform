@@ -39,7 +39,7 @@ async function renderSteps() {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   queryClient.setQueryData(
-    CONSENT_QUERY_KEYS.consent(),
+    CONSENT_QUERY_KEYS.detail(),
     createConsent({
       aiDataSharingDecision: 'AGREED',
       aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,

@@ -136,7 +136,7 @@ export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
   const todoService = useTodoService();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.details({ todoId }),
+    queryKey: TODO_QUERY_KEYS.detail({ todoId }),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoDetails(todoId, signal)),
   });
 }
@@ -153,7 +153,7 @@ export function useGetTodoExistenceQueryOptions() {
 const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
 const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 
-interface TodoSummaryQueryParams {
+interface TodoSummaryQueryInput {
   date: string;
   userId?: string | null;
 }
@@ -187,7 +187,7 @@ export function getTodoSummaryRefetchInterval(
  * 자정 직후 기기와 서버의 날짜가 잠시 어긋나면(시계 차이로 거부되거나 다른 날짜를 돌려줌)
  * foreground를 기다리지 않고 5s→10s→20s→40s로 4번만 다시 묻는다.
  */
-export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryParams) {
+export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQueryInput) {
   const todoService = useTodoService();
 
   return queryOptions({

@@ -18,7 +18,7 @@ export function SavedActivityReport() {
 }
 
 SavedActivityReport.Contents = function Contents({ id }: { id: number }) {
-  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ id }));
+  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ reportId: id }));
   const { trackEvent } = useTrack();
 
   useEffect(() => {

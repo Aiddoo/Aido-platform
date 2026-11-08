@@ -636,7 +636,7 @@ describe('할 일 낙관적 갱신', () => {
       subTodos: [createSubTodo({ id: 5 })],
       subTodoStats: { total: 1, completed: 0 },
     });
-    const detailsKey = TODO_QUERY_KEYS.details({ todoId: 1 });
+    const detailsKey = TODO_QUERY_KEYS.detail({ todoId: 1 });
     queryClient.setQueryData(LIST_DAY_1, toList([todo]));
     queryClient.setQueryData<TodoDetails>(detailsKey, {
       todo,

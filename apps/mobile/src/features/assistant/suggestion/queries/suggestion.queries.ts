@@ -8,7 +8,7 @@ export function useGetSuggestionsQueryOptions() {
   const suggestionService = useSuggestionService();
 
   return queryOptions({
-    queryKey: SUGGESTION_QUERY_KEYS.all,
+    queryKey: SUGGESTION_QUERY_KEYS.list(),
     queryFn: async ({ signal }) => unwrap(await suggestionService.getSuggestions(signal)),
     meta: { refreshOnPremiumChange: true },
   });

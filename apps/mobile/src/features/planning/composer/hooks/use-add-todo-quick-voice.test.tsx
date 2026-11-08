@@ -138,7 +138,7 @@ async function renderQuickVoice({
   }
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
   if (consent != null) {
-    queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consent));
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent(consent));
   }
   if (aiParseUsed != null) {
     queryClient.setQueryData(
@@ -339,7 +339,7 @@ describe('useAddTodoQuickVoice', () => {
       // Given
       const { speechRecognizer, analytics, queryClient, closeSheet } = await renderQuickVoice();
       queryClient.setQueryData(
-        CONSENT_QUERY_KEYS.consent(),
+        CONSENT_QUERY_KEYS.detail(),
         createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
       );
       await fireEvent.press(screen.getByTestId('begin'));
@@ -530,7 +530,7 @@ describe('useAddTodoQuickVoice', () => {
     // Given
     const { speechRecognizer, queryClient } = await renderQuickVoice();
     queryClient.setQueryData(
-      CONSENT_QUERY_KEYS.consent(),
+      CONSENT_QUERY_KEYS.detail(),
       createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
     );
     await fireEvent.press(screen.getByTestId('begin'));

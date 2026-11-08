@@ -15,7 +15,7 @@ import {
 async function renderMarketing(httpClient = createHttpClientStub()) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(
-    CONSENT_QUERY_KEYS.consent(),
+    CONSENT_QUERY_KEYS.detail(),
     createConsent({ marketingAgreedAt: null, marketingPushAgreedAt: null }),
   );
   let marketing: ReturnType<typeof useMarketing> | undefined;
@@ -34,7 +34,7 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
   await renderUi(<Capture />, { queryClient, di: { httpClient } });
 
   return {
-    cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.consent()),
+    cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),
     updateMarketing: () => marketing?.mutateAsync({ agreed: true }),
     updateMarketingPush: () => marketingPush?.mutateAsync({ agreed: true }),
   };

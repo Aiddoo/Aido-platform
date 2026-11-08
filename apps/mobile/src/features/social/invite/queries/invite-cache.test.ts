@@ -32,7 +32,7 @@ describe('invite-cache', () => {
       replaceMyInvite(queryClient, myInvite);
 
       // Then
-      expect(queryClient.getQueryData(INVITE_QUERY_KEYS.invite())).toEqual(myInvite);
+      expect(queryClient.getQueryData(INVITE_QUERY_KEYS.me())).toEqual(myInvite);
       expect(queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }))).toBe(
         undefined,
       );
@@ -71,7 +71,7 @@ describe('invite-cache', () => {
 
       // Then
       expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
-        INVITE_QUERY_KEYS.invite(),
+        INVITE_QUERY_KEYS.me(),
         INVITE_QUERY_KEYS.inviteeLists(),
         FRIEND_QUERY_KEYS.all,
         USER_QUERY_KEYS.me(),

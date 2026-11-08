@@ -33,7 +33,7 @@ function ConsentGateProbe() {
       <Button
         onPress={() => {
           [1, 2].forEach(async () => {
-            await gate.ensureAgreed();
+            await gate.requestAgreementIfNeeded();
             setSettledCount((count) => count + 1);
           });
         }}
@@ -41,11 +41,15 @@ function ConsentGateProbe() {
         두 번 시작
       </Button>
       <Text>{`끝난 요청 ${settledCount}개`}</Text>
-      <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreed()))}>
+      <Button
+        onPress={async () => setResult(JSON.stringify(await gate.requestAgreementIfNeeded()))}
+      >
         시작
       </Button>
       <Button
-        onPress={async () => setResult(JSON.stringify(await gate.ensureAgreedBeforeListening()))}
+        onPress={async () =>
+          setResult(JSON.stringify(await gate.requestAgreementBeforeListening()))
+        }
       >
         듣기 전 확인
       </Button>
@@ -63,7 +67,7 @@ async function renderGate(
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   if (consentOverrides != null) {
-    queryClient.setQueryData(CONSENT_QUERY_KEYS.consent(), createConsent(consentOverrides));
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent(consentOverrides));
   }
   if (me != null) {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), me);
