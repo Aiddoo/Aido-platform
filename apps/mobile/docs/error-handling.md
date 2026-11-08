@@ -60,7 +60,6 @@ class ApiError extends Error implements CodedError {
     public readonly details?: Record<string, unknown>,
   );
   hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C };
-  isDomain(prefix: string): boolean;
 }
 ```
 

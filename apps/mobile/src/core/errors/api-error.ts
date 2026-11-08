@@ -19,11 +19,6 @@ export class ApiError extends Error implements CodedError {
   hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C } {
     return this.code === code;
   }
-
-  /** 도메인 prefix 체크 (VERIFY_, FOLLOW_ 등) */
-  isDomain(prefix: string): boolean {
-    return this.code.startsWith(prefix);
-  }
 }
 
 export function isApiError(error: unknown): error is ApiError {
