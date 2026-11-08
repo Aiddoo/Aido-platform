@@ -341,7 +341,7 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const sky: OpenSky = { ...visibleSky, isDry };
   const isNight = !input.isDaylight;
   const sun = resolveSun(sky, profile.sun);
-  const moon = isNight && input.moonPhase != null && isSkyVisible(sky, MOON_MAX_CLOUDS);
+  const hasMoon = isNight && input.moonPhase != null && isSkyVisible(sky, MOON_MAX_CLOUDS);
 
   return {
     sky: input.isDaylight ? profile.sky.day : profile.sky.night,
@@ -356,8 +356,8 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
     atmosphere: profile.atmosphere,
     hasLightning: profile.hasLightning,
     sun,
-    lensFlare: profile.lensFlare && sun !== 'hidden',
-    moon,
+    hasLensFlare: profile.hasLensFlare && sun !== 'hidden',
+    hasMoon,
     moonPhase: input.moonPhase == null ? 0 : MOON_PHASE_CYCLE[input.moonPhase],
     isSouthernHemisphere: input.latitude < 0,
     hasStars: isNight && isSkyVisible(sky, STARS_MAX_CLOUDS),

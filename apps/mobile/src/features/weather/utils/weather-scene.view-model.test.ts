@@ -407,7 +407,7 @@ describe('달의 위상', () => {
     const scene = toWeatherScene(input);
 
     // Then
-    expect(scene.moon).toBe(false);
+    expect(scene.hasMoon).toBe(false);
   });
 
   test('보름달은 다 밝고 삭은 보이지 않는다', () => {

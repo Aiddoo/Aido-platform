@@ -195,7 +195,7 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
     ]),
     // 해·달 카드와 같은 서버 위상을 쓴다. 받은 시각의 오늘(그 위치 시간대)이다
     moonPhase:
-      WeatherReportPolicy.getTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
+      WeatherReportPolicy.findTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
     latitude: report.location.latitude,
   };
 }

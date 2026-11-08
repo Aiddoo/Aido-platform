@@ -139,7 +139,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
     onError: (error, { target }) => {
       if (isTodoCommentUnavailableError(error)) {
         if (target != null) {
-          removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
+          removeTodoCommentFromCaches(queryClient, { todoId, comment: target });
         }
         toast.warning(t('todoComment:toasts.alreadyDeleted'));
         return;
@@ -185,7 +185,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       }
       if (isTodoCommentUnavailableError(error)) {
         if (target != null) {
-          removeTodoCommentFromCaches({ queryClient, todoId, comment: target });
+          removeTodoCommentFromCaches(queryClient, { todoId, comment: target });
         }
         toast.warning(t('todoComment:toasts.alreadyDeleted'));
         return;
@@ -235,7 +235,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
       }
       if (isTodoCommentUnavailableError(error)) {
         if (comment != null) {
-          removeTodoCommentFromCaches({ queryClient, todoId, comment: comment });
+          removeTodoCommentFromCaches(queryClient, { todoId, comment: comment });
         }
         toast.warning(t('todoComment:toasts.alreadyDeleted'));
         return;
@@ -296,7 +296,7 @@ export function useSetTodoCommentLikeMutationOptions({
       }
       if (isTodoCommentUnavailableError(error)) {
         if (context?.target != null) {
-          removeTodoCommentFromCaches({ queryClient, todoId, comment: context?.target });
+          removeTodoCommentFromCaches(queryClient, { todoId, comment: context?.target });
         }
         toast.warning(t('todoComment:toasts.alreadyDeleted'));
         return;

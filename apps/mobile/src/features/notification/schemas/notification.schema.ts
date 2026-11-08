@@ -14,7 +14,7 @@ import { z } from 'zod';
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
-export type NotificationCategory = z.infer<typeof notificationCategorySchema>;
+type NotificationCategory = z.infer<typeof notificationCategorySchema>;
 
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
