@@ -149,7 +149,7 @@ function SpeechTooltip() {
         </PressableFeedback>
       </Popover.Trigger>
       <HintPopoverContent
-        icon={MicIcon}
+        Icon={MicIcon}
         title={t('subTodo.voiceTitle')}
         description={t('subTodo.voiceHint')}
       />

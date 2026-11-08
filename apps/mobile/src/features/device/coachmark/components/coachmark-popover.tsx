@@ -15,7 +15,7 @@ interface CoachmarkPopoverProps
     Omit<ComponentProps<typeof Popover>, 'isOpen' | 'onOpenChange' | 'children'>,
     Pick<
       HintPopoverContentProps,
-      'icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough' | 'offset'
+      'Icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough' | 'offset'
     > {
   kind: CoachmarkKind;
   title?: string;
@@ -51,7 +51,7 @@ export function CoachmarkPopover({
   isTargetDisabled = false,
   dismissKey,
   isDismissed = false,
-  icon = MicIcon,
+  Icon = MicIcon,
   placement,
   align,
   avoidCollisions,
@@ -123,7 +123,7 @@ export function CoachmarkPopover({
         {children}
       </Popover.Trigger>
       <HintPopoverContent
-        icon={icon}
+        Icon={Icon}
         title={title}
         description={description}
         placement={placement}

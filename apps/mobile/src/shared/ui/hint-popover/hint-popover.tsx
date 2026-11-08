@@ -30,7 +30,7 @@ export interface HintPopoverContentProps extends Omit<
   PopoverContentProps,
   'presentation' | 'children' | 'title'
 > {
-  icon?: StyledIcon;
+  Icon?: StyledIcon;
   title?: string;
   description?: string;
   isPassThrough?: boolean;
@@ -93,7 +93,7 @@ export function getHintWidth({
 }
 
 export function HintPopoverContent({
-  icon: Icon,
+  Icon,
   title,
   description,
   isPassThrough = false,

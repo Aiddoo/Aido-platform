@@ -226,7 +226,7 @@ function DateChip({
 
   return (
     <ActionButton
-      icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
+      icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
       label={
         endDateKey == null || endDateKey === startDateKey
           ? singleDayLabel
@@ -282,7 +282,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
     <ActionButton
       icon={
         <ActionButton.Icon
-          as={ClockIcon}
+          Icon={ClockIcon}
           colorClassName={displayedTime == null ? 'text-gray-5' : 'text-main'}
         />
       }
@@ -313,7 +313,7 @@ function RepeatChip({
     <ActionButton
       icon={
         <ActionButton.Icon
-          as={RepeatIcon}
+          Icon={RepeatIcon}
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
       }
@@ -338,9 +338,9 @@ function VisibilityChip({ form }: { form: ComposerForm }) {
           <ActionButton
             icon={
               isPrivate ? (
-                <ActionButton.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
+                <ActionButton.Icon Icon={EyeOffIcon} colorClassName="text-gray-6" />
               ) : (
-                <ActionButton.Icon as={EyeIcon} colorClassName="text-gray-5" />
+                <ActionButton.Icon Icon={EyeIcon} colorClassName="text-gray-5" />
               )
             }
             label={isPrivate ? t('chip.private') : t('chip.public')}

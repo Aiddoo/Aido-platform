@@ -173,7 +173,7 @@ function DateChip({ form }: PlanTodoChipProps) {
 
   return (
     <ActionButton
-      icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
+      icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
       label={
         endDate == null ? singleDayLabel : formatDateKeyRange(startDate, endDate, dateFormatContext)
       }
@@ -227,7 +227,7 @@ function TimeChip({ form }: PlanTodoChipProps) {
     <ActionButton
       icon={
         <ActionButton.Icon
-          as={ClockIcon}
+          Icon={ClockIcon}
           colorClassName={scheduledTime == null ? 'text-gray-5' : 'text-main'}
         />
       }
@@ -280,7 +280,7 @@ function RepeatChip({ form }: PlanTodoChipProps) {
     <ActionButton
       icon={
         <ActionButton.Icon
-          as={RepeatIcon}
+          Icon={RepeatIcon}
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
       }
@@ -300,9 +300,9 @@ function VisibilityChip({ form }: PlanTodoChipProps) {
     <ActionButton
       icon={
         isPrivate ? (
-          <ActionButton.Icon as={EyeOffIcon} colorClassName="text-gray-6" />
+          <ActionButton.Icon Icon={EyeOffIcon} colorClassName="text-gray-6" />
         ) : (
-          <ActionButton.Icon as={EyeIcon} colorClassName="text-gray-5" />
+          <ActionButton.Icon Icon={EyeIcon} colorClassName="text-gray-5" />
         )
       }
       label={isPrivate ? t('chip.private') : t('chip.public')}

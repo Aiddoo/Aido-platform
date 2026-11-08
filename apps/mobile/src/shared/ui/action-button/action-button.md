@@ -8,7 +8,7 @@
 import { ActionButton, CalendarIcon } from '@src/shared/ui';
 
 <ActionButton
-  icon={<ActionButton.Icon as={CalendarIcon} colorClassName="text-main" />}
+  icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
   label="오늘"
   isActive
   onPress={() => {}}

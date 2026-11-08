@@ -48,7 +48,7 @@ export function QuickVoiceInfo() {
             </HStack>
           </PressableFeedback>
         </Popover.Trigger>
-        <HintPopoverContent icon={AiIcon} title={t('info.title')}>
+        <HintPopoverContent Icon={AiIcon} title={t('info.title')}>
           <QuickVoiceInfo.Contents
             remaining={
               snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')

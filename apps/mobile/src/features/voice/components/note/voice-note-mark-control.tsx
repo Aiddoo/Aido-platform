@@ -85,7 +85,7 @@ export function VoiceNoteMarkControl({
           </Popover.Trigger>
           {/* 라벨 바로 위는 버튼 자리라 버튼 위로 올린다. 처음 안내와 같은 자리다 */}
           <HintPopoverContent
-            icon={FlagIcon}
+            Icon={FlagIcon}
             title={title}
             description={description}
             align="center"
@@ -98,7 +98,7 @@ export function VoiceNoteMarkControl({
         kind="voice-note-mark"
         title={title}
         description={description}
-        icon={FlagIcon}
+        Icon={FlagIcon}
         align="center"
         isEnabled={isListening}
         isPassThrough

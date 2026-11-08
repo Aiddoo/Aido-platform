@@ -15,7 +15,7 @@ import { Popover, PressableFeedback } from 'heroui-native';
       {children}
     </PressableFeedback>
   </Popover.Trigger>
-  <HintPopoverContent icon={MicIcon} title={title} description={description} />
+  <HintPopoverContent Icon={MicIcon} title={title} description={description} />
 </Popover>;
 ```
 
@@ -23,7 +23,7 @@ import { Popover, PressableFeedback } from 'heroui-native';
 
 | Prop          | 타입                    | 설명                                                                                |
 | ------------- | ----------------------- | ----------------------------------------------------------------------------------- |
-| icon          | `typeof MicIcon`        | 제목 앞 아이콘. `text-main`으로 그린다                                              |
+| Icon          | `StyledIcon`            | 제목 앞 아이콘. `text-main`으로 그린다                                              |
 | title         | `string`                | 제목. 없으면 설명과 X가 한 줄에 놓인다                                              |
 | description   | `string`                | 설명                                                                                |
 | isPassThrough | `boolean`               | 바깥을 막지 않아 대상과 화면을 그대로 누른다. 이때 바깥 탭으로는 닫히지 않는다      |

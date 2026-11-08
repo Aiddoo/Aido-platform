@@ -23,7 +23,7 @@ export function RepeatHorizonHint() {
       kind="repeat-horizon"
       title={t('repeat.horizonInfo.title')}
       description={t('repeat.horizonInfo.description')}
-      icon={RepeatIcon}
+      Icon={RepeatIcon}
       placement="bottom"
       align="start"
       avoidCollisions

@@ -52,10 +52,10 @@ ActionButton.Loading = function Loading({ className }: { className?: string }) {
 };
 
 ActionButton.Icon = function Icon({
-  as: IconComponent,
+  Icon: IconComponent,
   colorClassName,
 }: {
-  as: StyledIcon;
+  Icon: StyledIcon;
   colorClassName: string;
 }) {
   const fontScaledSize = useFontScaledSize();
