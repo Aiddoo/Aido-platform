@@ -219,10 +219,12 @@ export function useVoiceCaptureSession({
   const watchRecognizerStall = (nextLevel: number) => {
     const now = Date.now();
     updateLink({ type: 'volume-sampled', level: nextLevel, at: now });
-    const { isStopRequested, stallWatch } = linkRef.current;
     if (
-      !isStopRequested &&
-      VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(stateRef.current, stallWatch, now)
+      VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
+        linkRef.current,
+        stateRef.current,
+        now,
+      )
     ) {
       restartStalledRecognizer(now);
     }

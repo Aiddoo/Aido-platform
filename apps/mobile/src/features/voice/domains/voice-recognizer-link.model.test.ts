@@ -38,17 +38,32 @@ describe('shouldRestartStalledRecognizer', () => {
     },
   ])('$why → $expected', ({ at, overrides, expected }) => {
     // Given
-    const stallWatch = watch(overrides);
+    const link = { isStopRequested: false, stallWatch: watch(overrides) };
 
     // When
     const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
+      link,
       listening,
-      stallWatch,
       NOW + at,
     );
 
     // Then
     expect(result).toBe(expected);
+  });
+
+  it('앱이 이미 stop을 부른 구간은 멈춘 것처럼 보여도 다시 열지 않는다', () => {
+    // Given
+    const link = { isStopRequested: true, stallWatch: watch() };
+
+    // When
+    const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
+      link,
+      listening,
+      NOW + 60_000,
+    );
+
+    // Then
+    expect(result).toBe(false);
   });
 
   it.each(['preparing', 'paused', 'finalizing'] as const)(
@@ -61,8 +76,8 @@ describe('shouldRestartStalledRecognizer', () => {
 
       // When
       const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
+        { isStopRequested: false, stallWatch: watch() },
         state,
-        watch(),
         NOW + 60_000,
       );
 

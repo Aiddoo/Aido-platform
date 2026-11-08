@@ -27,12 +27,20 @@ function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
   return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
 }
 
+/**
+ * 파형은 움직이는데 글자가 오지 않아 구간을 닫고 다시 열 때인가.
+ * 앱이 이미 stop을 부른 구간은 곧 `end`가 오므로 다시 열지 않는다.
+ */
 function shouldRestartStalledRecognizer(
-  state: VoiceCaptureState,
-  watch: VoiceStallWatch,
+  {
+    isStopRequested,
+    stallWatch: watch,
+  }: Pick<VoiceRecognizerLink, 'isStopRequested' | 'stallWatch'>,
+  state: Pick<VoiceCaptureState, 'status'>,
   now: number,
 ): boolean {
   return (
+    !isStopRequested &&
     state.status === 'listening' &&
     watch.isVoiceAudible &&
     watch.voicedMs >= VOICE_STALL_RESTART.voicedMs &&
