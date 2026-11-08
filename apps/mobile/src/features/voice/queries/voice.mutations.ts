@@ -10,10 +10,7 @@ import {
 } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
-import {
-  getCachedActivationContext,
-  invalidateActivationProgress,
-} from '@src/features/device/activation/queries/activation-cache';
+import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -94,7 +91,6 @@ export function useApplyActionPlanMutationOptions({
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateActivationProgress(queryClient);
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();

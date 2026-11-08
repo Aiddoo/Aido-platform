@@ -19,7 +19,6 @@ import { toInstant } from '@src/shared/date/instant';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createActivationProgressRepository } from '../apis/activation-progress.repository';
-import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
 import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 
 const CAMPAIGN_ID = 'feature-discovery-2026-08';
@@ -68,11 +67,10 @@ function setup({
         authSessionStore: createAuthSessionStore({ status: 'authenticated' }),
       },
     });
-  const activate = async () => {
+  const activate = () => {
     const identity = { accountId: user.userId, campaignId: CAMPAIGN_ID };
     activationRepository.markTodoCreated(identity, toInstant('2026-08-01T12:00:00.000Z'));
     activationRepository.claimActivated(identity, toInstant('2026-08-02T00:00:00.000Z'));
-    await queryClient.invalidateQueries({ queryKey: ACTIVATION_QUERY_KEYS.progress(identity) });
   };
   return { gateway, render, activate };
 }

@@ -20,7 +20,7 @@ import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import {
   createErrorReporterStub,
   createLoggerStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
   createMemoryTokenStore,
   createHttpClientStub,
   createAnalyticsStub,
@@ -836,7 +836,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     todoHttp.get.mockRejectedValue(new Error('이 테스트는 조회를 보지 않는다'));
     const analytics = createAnalyticsStub();
     const activationService = new ActivationService(
-      createActivationProgressRepository(createMemorySyncStorage()),
+      createActivationProgressRepository(createMemoryObservableSyncStorage()),
     );
     const recordTodoCreated = jest.spyOn(activationService, 'recordTodoCreated');
     const session = createAuthSession({

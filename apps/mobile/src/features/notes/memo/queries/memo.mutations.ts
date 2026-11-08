@@ -8,10 +8,7 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import {
-  getCachedActivationContext,
-  invalidateActivationProgress,
-} from '@src/features/device/activation/queries/activation-cache';
+import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -221,7 +218,6 @@ export function useConvertMemoToTodosMutationOptions() {
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateActivationProgress(queryClient);
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },

@@ -7,7 +7,7 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { useWeatherLocation } from './use-weather-location';
@@ -28,7 +28,10 @@ export function useWeatherIntroduction({
   const logger = useLogger();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather']);
-  const [hasSeen, setHasSeen] = useState(() => introductionRepository.hasSeenIntroduction());
+  const hasSeen = useSyncExternalStore(
+    introductionRepository.subscribe,
+    introductionRepository.hasSeenIntroduction,
+  );
   const [isRequesting, setIsRequesting] = useState(false);
   const hasClaimedRef = useRef(false);
   const shouldIntroduce = location.status === 'needsPermission' && !hasSeen;
@@ -94,7 +97,6 @@ export function useWeatherIntroduction({
             return undefined;
           }
           introductionRepository.markIntroductionSeen();
-          setHasSeen(true);
           if (!accepted) {
             return undefined;
           }

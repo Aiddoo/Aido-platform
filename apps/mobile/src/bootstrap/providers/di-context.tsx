@@ -20,6 +20,7 @@ import type { SuggestionService } from '@src/features/assistant/suggestion/apis/
 import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
 import type { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
@@ -45,6 +46,7 @@ import type { NotificationService } from '@src/features/notification/apis/notifi
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import type { PushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import type { CalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -107,6 +109,7 @@ export interface DIContainer extends SharedDependencies {
   authService: AuthService;
   preferenceService: PreferenceService;
   activationService: ActivationService;
+  activationProgressRepository: ActivationProgressRepository;
   appVersionService: AppVersionService;
   appIconService: AppIconService;
   friendService: FriendService;
@@ -122,6 +125,7 @@ export interface DIContainer extends SharedDependencies {
   moderationService: ModerationService;
   subTodoService: SubTodoService;
   todoService: TodoService;
+  calendarViewModeRepository: CalendarViewModeRepository;
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
@@ -176,7 +180,6 @@ export {
   useHaptics,
   useIncomingLink,
   useLogger,
-  useSyncStorage,
 } from '@src/shared/di/shared-di-context';
 
 function useDI(): DIContainer {
@@ -262,6 +265,9 @@ export function usePreferenceService() {
 export function useActivationService() {
   return useDI().activationService;
 }
+export function useActivationProgressRepository() {
+  return useDI().activationProgressRepository;
+}
 export function useAppVersionService() {
   return useDI().appVersionService;
 }
@@ -321,6 +327,9 @@ export function usePushDeviceService() {
 }
 export function useDeviceTimezoneService() {
   return useDI().deviceTimezoneService;
+}
+export function useCalendarViewModeRepository() {
+  return useDI().calendarViewModeRepository;
 }
 export function usePushPromptRepository() {
   return useDI().pushPromptRepository;

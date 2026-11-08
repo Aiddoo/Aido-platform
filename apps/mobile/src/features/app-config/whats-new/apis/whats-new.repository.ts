@@ -1,4 +1,5 @@
-import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { type Instant, instantSchema } from '@src/shared/date/instant';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
@@ -6,12 +7,17 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';
 const REENTRY_KEY_PREFIX = 'aido_feature_discovery_reentry_v1';
 
-export interface WhatsNewIdentity {
+interface WhatsNewIdentity {
   userId: string;
   campaignId: string;
 }
 
 export interface WhatsNewRepository {
+  /** 자동으로 연 적 있는지. claimSeen과 같이 값이 있기만 하면 본 것이다 */
+  hasSeen(identity: WhatsNewIdentity): boolean;
+  /** 피드 카드를 다시 보일 기준 시각. 닫았거나 손상됐으면 null */
+  findReentryOpenedAt(identity: WhatsNewIdentity): Instant | null;
+  subscribe(identity: WhatsNewIdentity, listener: () => void): () => void;
   claimSeen(identity: WhatsNewIdentity, at: Instant): boolean;
   dismissReentry(identity: WhatsNewIdentity): void;
   /** 번들에서 빠진 캠페인의 키와 기간이 지난 재진입 키를 지운다 */
@@ -20,16 +26,16 @@ export interface WhatsNewRepository {
   removeAccount(userId: string): void;
 }
 
-export function createWhatsNewSeenKey({ userId, campaignId }: WhatsNewIdentity): string {
+function createWhatsNewSeenKey({ userId, campaignId }: WhatsNewIdentity): string {
   return `${SEEN_KEY_PREFIX}:${userId}:${campaignId}`;
 }
 
-export function createWhatsNewReentryKey({ userId, campaignId }: WhatsNewIdentity): string {
+function createWhatsNewReentryKey({ userId, campaignId }: WhatsNewIdentity): string {
   return `${REENTRY_KEY_PREFIX}:${userId}:${campaignId}`;
 }
 
 /** 손상된 시각은 없는 것으로 읽어 카드를 보이지 않는다 */
-export function parseReentryOpenedAt(saved: string | undefined): Instant | null {
+function parseSavedInstant(saved: string | undefined): Instant | null {
   const parsed = instantSchema.safeParse(saved);
 
   return parsed.success ? parsed.data : null;
@@ -37,9 +43,21 @@ export function parseReentryOpenedAt(saved: string | undefined): Instant | null 
 
 /** 저장 키는 계정·캠페인별이다. 1.14 이하가 쓴 값을 그대로 읽어 이미 본 사람에게 다시 뜨지 않는다 */
 export function createWhatsNewRepository(
-  storage: SyncStorage & Pick<EnumerableSyncStorage, 'keys'>,
+  storage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>,
 ): WhatsNewRepository {
   return {
+    hasSeen: (identity) => storage.get(createWhatsNewSeenKey(identity)) != null,
+    findReentryOpenedAt: (identity) =>
+      parseSavedInstant(storage.get(createWhatsNewReentryKey(identity))),
+    subscribe: (identity, listener) => {
+      const unsubscribeSeen = storage.subscribe(createWhatsNewSeenKey(identity), listener);
+      const unsubscribeReentry = storage.subscribe(createWhatsNewReentryKey(identity), listener);
+      return () => {
+        unsubscribeSeen();
+        unsubscribeReentry();
+      };
+    },
+
     /**
      * MMKV의 동기 get/set을 한 JS 런루프에서 연속 수행해 같은 계정·캠페인을 한 번만 claim한다.
      * 본 상태를 먼저 기록하므로 화면이 열리기 전에 재진입 호출도 차단된다.
@@ -78,7 +96,7 @@ export function createWhatsNewRepository(
           }
           return (
             key.startsWith(`${REENTRY_KEY_PREFIX}:`) &&
-            !WhatsNewPolicy.shouldShowReentry(parseReentryOpenedAt(storage.get(key)), now)
+            !WhatsNewPolicy.shouldShowReentry(parseSavedInstant(storage.get(key)), now)
           );
         })
         .forEach((key) => storage.remove(key));

@@ -1,3 +1,4 @@
+import { useActivationProgressRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -5,11 +6,11 @@ import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/que
 import { getNowInstant } from '@src/shared/date/instant';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { noop } from 'es-toolkit';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 import { EMPTY_ACTIVATION_PROGRESS } from '../constants/activation.constants';
 import { ActivationPolicy } from '../domains/activation.model';
-import { useGetActivationProgressQueryOptions } from '../queries/activation.queries';
 
 export function useActivationProgress() {
   const status = useAuthStatus();
@@ -19,30 +20,36 @@ export function useActivationProgress() {
     enabled: isAuthenticated,
   });
   const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const identity = ActivationPolicy.getActivationIdentity(configQuery.data, userQuery.data);
-
-  const progressOptions = useGetActivationProgressQueryOptions({
-    config: configQuery.data,
-    user: userQuery.data,
-  });
-  const progressQuery = useQuery({
-    ...progressOptions,
-    enabled: isAuthenticated && progressOptions.enabled,
-  });
+  const repository = useActivationProgressRepository();
+  const identity = isAuthenticated
+    ? ActivationPolicy.getActivationIdentity(configQuery.data, userQuery.data)
+    : null;
+  const accountId = identity?.accountId;
+  const campaignId = identity?.campaignId;
+  // 진행은 기기 저장소가 원본이다. 할 일 저장이 기록하면 구독으로 바로 따라간다
+  const progress = useSyncExternalStore(
+    useCallback(
+      (onChange: () => void) =>
+        accountId == null || campaignId == null
+          ? noop
+          : repository.subscribe({ accountId, campaignId }, onChange),
+      [accountId, campaignId, repository],
+    ),
+    () =>
+      accountId == null || campaignId == null
+        ? EMPTY_ACTIVATION_PROGRESS
+        : repository.get({ accountId, campaignId }),
+  );
 
   // 공개 롤아웃 설정을 받지 못해도 캠페인 이전 계정의 기존 푸시 흐름은 막지 않는다.
   // 앱에 담긴 캠페인 날짜로 그 사용자를 가르고, 신규 가입자 코호트의 안내는 계속 미룬다.
   const isContextReady = configQuery.isFetched && userQuery.isSuccess;
-  const isReady =
-    isAuthenticated && isContextReady && (identity == null || progressQuery.isSuccess);
+  const isReady = isAuthenticated && isContextReady;
 
   return {
     config: isAuthenticated ? configQuery.data : undefined,
     user: isAuthenticated ? userQuery.data : undefined,
-    progress:
-      isAuthenticated && identity
-        ? (progressQuery.data ?? EMPTY_ACTIVATION_PROGRESS)
-        : EMPTY_ACTIVATION_PROGRESS,
+    progress,
     isReady,
     isAuthenticated,
     hasUserError: isAuthenticated && userQuery.isError,

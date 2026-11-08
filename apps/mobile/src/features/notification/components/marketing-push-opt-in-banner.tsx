@@ -7,7 +7,7 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { InlineAlert, useOverlay } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
@@ -63,19 +63,19 @@ function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const [promptState] = useState(() => marketingPushPromptRepository.get());
-  const [isDismissed, setIsDismissed] = useState(false);
+  const promptState = useSyncExternalStore(
+    marketingPushPromptRepository.subscribe,
+    marketingPushPromptRepository.get,
+  );
   const now = useMinuteNow();
 
   // 기기 권한이나 앱 푸시 설정이 꺼져 있으면 알림 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
-    !isDismissed &&
     PushPermissionPolicy.getNextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
     MarketingPushPromptPolicy.shouldPrompt(consent, promptState, now);
 
   const dismiss = () => {
-    marketingPushPromptRepository.record(getNowInstant());
-    setIsDismissed(true);
+    marketingPushPromptRepository.dismiss(getNowInstant());
     trackEvent('marketing_push_prompt_dismissed', { source: 'feed_banner' });
   };
 

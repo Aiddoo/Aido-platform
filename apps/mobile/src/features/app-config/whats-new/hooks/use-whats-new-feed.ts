@@ -1,24 +1,15 @@
-import {
-  useApplicationMetadata,
-  useSyncStorage,
-  useWhatsNewRepository,
-} from '@src/bootstrap/providers/di-context';
+import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 
-import {
-  parseReentryOpenedAt,
-  createWhatsNewReentryKey,
-  createWhatsNewSeenKey,
-} from '../apis/whats-new.repository';
 import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 
@@ -66,12 +57,15 @@ export function useWhatsNewFeed({
         : null,
     [accountId, release],
   );
-  const storedIdentity = identity ?? { userId: '', campaignId: '' };
-  const syncStorage = useSyncStorage();
-  const [seenAt] = useSyncStorageString(syncStorage, createWhatsNewSeenKey(storedIdentity));
-  const [reentryOpenedAt] = useSyncStorageString(
-    syncStorage,
-    createWhatsNewReentryKey(storedIdentity),
+  const subscribe = useCallback(
+    (onChange: () => void) => (identity == null ? noop : repository.subscribe(identity, onChange)),
+    [identity, repository],
+  );
+  const hasSeen = useSyncExternalStore(subscribe, () =>
+    identity == null ? false : repository.hasSeen(identity),
+  );
+  const reentryOpenedAt = useSyncExternalStore(subscribe, () =>
+    identity == null ? null : repository.findReentryOpenedAt(identity),
   );
   const shouldAutoOpen =
     isAuthenticated &&
@@ -81,7 +75,7 @@ export function useWhatsNewFeed({
       config,
       user,
       appVersion,
-      hasSeen: seenAt != null,
+      hasSeen,
     });
 
   useEffect(() => {
@@ -99,8 +93,7 @@ export function useWhatsNewFeed({
   }, [shouldAutoOpen, identity, isStable, push, release, repository]);
 
   const isReentryVisible =
-    identity != null &&
-    WhatsNewPolicy.shouldShowReentry(parseReentryOpenedAt(reentryOpenedAt), now);
+    identity != null && WhatsNewPolicy.shouldShowReentry(reentryOpenedAt, now);
 
   const openFromReentry = () => {
     if (release != null) {

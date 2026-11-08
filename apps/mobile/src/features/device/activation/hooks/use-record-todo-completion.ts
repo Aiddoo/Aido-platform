@@ -5,10 +5,7 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import {
-  getCachedActivationContext,
-  invalidateActivationProgress,
-} from '../queries/activation-cache';
+import { getCachedActivationContext } from '../queries/activation-cache';
 
 /** 할 일 완료를 활성화 진행에 기록한다. 로그인한 화면 묶음에 한 번 둔다 */
 export function useRecordTodoCompletion() {
@@ -24,7 +21,6 @@ export function useRecordTodoCompletion() {
           isCompleted,
           now: getNowInstant(),
         });
-        invalidateActivationProgress(queryClient);
         if (activation.event) {
           trackEvent('activation_completed', activation.event);
         }

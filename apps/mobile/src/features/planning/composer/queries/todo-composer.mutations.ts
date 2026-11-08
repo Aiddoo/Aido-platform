@@ -6,10 +6,7 @@ import {
   useSubTodoService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import {
-  getCachedActivationContext,
-  invalidateActivationProgress,
-} from '@src/features/device/activation/queries/activation-cache';
+import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -126,7 +123,6 @@ export function useCreateTodoMutationOptions() {
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateActivationProgress(queryClient);
       invalidateTodoCategories(queryClient);
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
@@ -253,7 +249,6 @@ export function useCreateRecurringTodoMutationOptions() {
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateActivationProgress(queryClient);
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {

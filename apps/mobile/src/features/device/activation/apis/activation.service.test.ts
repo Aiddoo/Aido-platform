@@ -1,5 +1,5 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/schemas/feature-campaign.schema';
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
@@ -14,7 +14,9 @@ const config: FeatureCampaignConfig = {
 };
 
 function createService(): ActivationService {
-  return new ActivationService(createActivationProgressRepository(createMemorySyncStorage()));
+  return new ActivationService(
+    createActivationProgressRepository(createMemoryObservableSyncStorage()),
+  );
 }
 
 describe('ActivationService', () => {

@@ -55,6 +55,7 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -282,6 +283,7 @@ export function createTestDi({
     authService,
     preferenceService: new PreferenceService(httpClient),
     activationService: new ActivationService(createActivationProgressRepository(syncStorage)),
+    activationProgressRepository: createActivationProgressRepository(syncStorage),
     appVersionService: new AppVersionService(jsonFetcher),
     appIconService: new AppIconService(appIconGateway),
     friendService: new FriendService(httpClient),
@@ -322,6 +324,7 @@ export function createTestDi({
     pushDeviceService,
     deviceTimezoneService,
     pushPromptRepository: createPushPromptRepository(syncStorage),
+    calendarViewModeRepository: createCalendarViewModeRepository(syncStorage),
     marketingPushPromptRepository: createMarketingPushPromptRepository(syncStorage),
     todoNudgeService: new TodoNudgeService(httpClient),
     coachmarkService: new CoachmarkService(coachmarkRepository),

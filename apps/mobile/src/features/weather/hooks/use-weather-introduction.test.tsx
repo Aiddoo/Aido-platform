@@ -1,7 +1,7 @@
 import type { LocationGateway, LocationPermission } from '@src/core/ports/location-gateway';
 import {
   createLocationGatewayStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
   renderUi,
 } from '@src/shared/__tests__';
 import { OverlayProvider } from '@src/shared/ui';
@@ -37,7 +37,9 @@ function FeedScreen({ path, isStable }: { path: string; isStable: boolean }) {
 
 async function setup(gatewayOverrides: Partial<jest.Mocked<LocationGateway>> = {}) {
   const gateway = Object.assign(createLocationGatewayStub(), gatewayOverrides);
-  const introductionRepository = createWeatherIntroductionRepository(createMemorySyncStorage());
+  const introductionRepository = createWeatherIntroductionRepository(
+    createMemoryObservableSyncStorage(),
+  );
   const rendered = await renderUi(<FeedScreen path="/feed" isStable />, {
     di: {
       deviceLocation: gateway,

@@ -11,7 +11,7 @@ export interface RecognitionLanguageRepository {
   subscribe(listener: () => void): () => void;
 }
 
-export function recognitionLanguageStorageKey(accountId: string) {
+function recognitionLanguageStorageKey(accountId: string) {
   return `${KEY_PREFIX}:${encodeURIComponent(accountId)}`;
 }
 

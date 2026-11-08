@@ -9,7 +9,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
-  createMemorySyncStorage,
+  createMemoryObservableSyncStorage,
   createSpeechRecognizerStub,
   createTestQueryClient,
   renderUi,
@@ -18,7 +18,7 @@ import { createFeatureAttributionStore } from '@src/shared/analytics/feature-att
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { createWhatsNewRepository, createWhatsNewSeenKey } from '../apis/whats-new.repository';
+import { createWhatsNewRepository } from '../apis/whats-new.repository';
 import { RELEASE_1_15_0 } from '../constants/releases';
 import { Release1150Steps } from './release-1-15-0-steps';
 
@@ -34,7 +34,7 @@ async function renderSteps() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const analytics = createAnalyticsStub();
-  const storage = createMemorySyncStorage();
+  const storage = createMemoryObservableSyncStorage();
   const repository = createWhatsNewRepository(storage);
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
@@ -56,8 +56,10 @@ async function renderSteps() {
       logger,
       errorReporter: createErrorReporterStub(),
       whatsNewRepository: repository,
-      featureAttribution: createFeatureAttributionStore(createMemorySyncStorage()),
-      recognitionLanguageRepository: createRecognitionLanguageRepository(createMemorySyncStorage()),
+      featureAttribution: createFeatureAttributionStore(createMemoryObservableSyncStorage()),
+      recognitionLanguageRepository: createRecognitionLanguageRepository(
+        createMemoryObservableSyncStorage(),
+      ),
       speechRecognizer: createSpeechRecognizerStub(),
     },
   });
@@ -87,10 +89,11 @@ describe('Release1150Steps', () => {
       source: 'auto',
     });
     expect(
-      storage.get(
-        createWhatsNewSeenKey({ userId: ACCOUNT_ID, campaignId: RELEASE_1_15_0.campaignId }),
-      ),
-    ).toBeDefined();
+      createWhatsNewRepository(storage).hasSeen({
+        userId: ACCOUNT_ID,
+        campaignId: RELEASE_1_15_0.campaignId,
+      }),
+    ).toBe(true);
   });
 
   it('말로 할 일 CTA는 흐름을 닫고 마이크 안내와 함께 할 일 추가 시트를 연다', async () => {

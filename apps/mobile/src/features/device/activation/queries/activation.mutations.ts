@@ -13,7 +13,7 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { getCachedActivationContext, invalidateActivationProgress } from './activation-cache';
+import { getCachedActivationContext } from './activation-cache';
 
 /**
  * 앱 푸시 설정을 바꾸고, 켰을 때는 이어서 OS 권한을 묻는다.
@@ -40,7 +40,6 @@ export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateActivationProgress(queryClient);
       if (unlocked?.didOpenAskMoment === true) {
         return;
       }

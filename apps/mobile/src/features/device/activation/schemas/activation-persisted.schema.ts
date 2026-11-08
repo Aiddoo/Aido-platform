@@ -6,3 +6,4 @@ export const persistedActivationProgressSchema = z.object({
   activatedAt: z.iso.datetime().nullable(),
   pushRegistrationUnlockedAt: z.iso.datetime().nullable().default(null),
 });
+export type PersistedActivationProgress = z.infer<typeof persistedActivationProgressSchema>;

@@ -73,7 +73,3 @@ export function useSystemShare() {
 export function useIncomingLink() {
   return useSharedDI().incomingLink;
 }
-
-export function useSyncStorage() {
-  return useSharedDI().syncStorage;
-}

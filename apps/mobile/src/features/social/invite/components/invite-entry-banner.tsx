@@ -1,16 +1,15 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useAllDoneBannerRepository, useSyncStorage } from '@src/bootstrap/providers/di-context';
+import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { User } from '@src/features/identity/user/schemas/user.schema';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentProps } from 'react';
+import { noop } from 'es-toolkit';
+import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
 
-import { createAllDoneBannerStorageKey } from '../apis/all-done-banner.repository';
 import { useIsInviteAvailable } from '../hooks/use-is-invite-available';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 
@@ -38,10 +37,13 @@ export function InviteEntryBanner({
     enabled: userId != null,
   });
   // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
-  const syncStorage = useSyncStorage();
-  const [dismissedOn] = useSyncStorageString(
-    syncStorage,
-    createAllDoneBannerStorageKey(userId ?? ''),
+  const dismissedOn = useSyncExternalStore(
+    useCallback(
+      (onChange: () => void) =>
+        userId == null ? noop : allDoneBannerRepository.subscribe(userId, onChange),
+      [allDoneBannerRepository, userId],
+    ),
+    () => (userId == null ? null : allDoneBannerRepository.findDismissedOn(userId)),
   );
 
   if (

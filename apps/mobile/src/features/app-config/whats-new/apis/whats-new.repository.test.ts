@@ -1,12 +1,8 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { noop } from 'es-toolkit';
 
-import {
-  createWhatsNewRepository,
-  parseReentryOpenedAt,
-  createWhatsNewReentryKey,
-  createWhatsNewSeenKey,
-} from './whats-new.repository';
+import { createWhatsNewRepository } from './whats-new.repository';
 
 const identity = { userId: 'user-1', campaignId: 'feature-discovery-2026-08' };
 const claimedAt = toInstant('2026-08-02T00:00:00.000Z');
@@ -20,13 +16,13 @@ function createFailingStorage() {
   storage.set.mockImplementation(fail);
   storage.remove.mockImplementation(fail);
 
-  return storage;
+  return { ...storage, subscribe: () => noop };
 }
 
 describe('whats-new 본 기록', () => {
   it('계정과 캠페인별 키를 한 번만 claim한다', () => {
     // Given
-    const repository = createWhatsNewRepository(createMemorySyncStorage());
+    const repository = createWhatsNewRepository(createMemoryObservableSyncStorage());
 
     // When
     const first = repository.claimSeen(identity, claimedAt);
@@ -41,7 +37,7 @@ describe('whats-new 본 기록', () => {
 
   it('저장 키는 1.14 이하와 같아 이미 본 사람은 claim되지 않는다', () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryObservableSyncStorage();
     storage.set('aido_feature_discovery_seen_v1:user-1:feature-discovery-2026-08', claimedAt);
     const repository = createWhatsNewRepository(storage);
 
@@ -49,13 +45,8 @@ describe('whats-new 본 기록', () => {
     const result = repository.claimSeen(identity, claimedAt);
 
     // Then
-    expect(createWhatsNewSeenKey(identity)).toBe(
-      'aido_feature_discovery_seen_v1:user-1:feature-discovery-2026-08',
-    );
-    expect(createWhatsNewReentryKey(identity)).toBe(
-      'aido_feature_discovery_reentry_v1:user-1:feature-discovery-2026-08',
-    );
     expect(result).toBe(false);
+    expect(repository.hasSeen(identity)).toBe(true);
   });
 
   it('저장소를 쓰지 못하면 claim하지 않아 자동으로 열지 않는다', () => {
@@ -72,10 +63,20 @@ describe('whats-new 본 기록', () => {
 
 describe('whats-new 재진입 시각', () => {
   it('손상된 시각은 없는 것으로 읽고 이전 버전이 쓴 시각은 그대로 읽는다', () => {
+    // Given
+    const storage = createMemoryObservableSyncStorage();
+    const repository = createWhatsNewRepository(storage);
+    const otherUser = { ...identity, userId: 'user-2' };
+    storage.set('aido_feature_discovery_reentry_v1:user-1:feature-discovery-2026-08', 'not-a-date');
+    storage.set(
+      'aido_feature_discovery_reentry_v1:user-3:feature-discovery-2026-08',
+      '2026-08-02T00:00:00.000Z',
+    );
+
     // When
-    const corrupted = parseReentryOpenedAt('not-a-date');
-    const missing = parseReentryOpenedAt(undefined);
-    const saved = parseReentryOpenedAt('2026-08-02T00:00:00.000Z');
+    const corrupted = repository.findReentryOpenedAt(identity);
+    const missing = repository.findReentryOpenedAt(otherUser);
+    const saved = repository.findReentryOpenedAt({ ...identity, userId: 'user-3' });
 
     // Then
     expect(corrupted).toBeNull();
@@ -85,7 +86,7 @@ describe('whats-new 재진입 시각', () => {
 
   it('닫으면 재진입 키만 지워 다시 claim해도 돌아오지 않는다', () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryObservableSyncStorage();
     const repository = createWhatsNewRepository(storage);
     repository.claimSeen(identity, claimedAt);
 
@@ -95,12 +96,14 @@ describe('whats-new 재진입 시각', () => {
 
     // Then
     expect(reclaimed).toBe(false);
-    expect(storage.get(createWhatsNewReentryKey(identity))).toBeUndefined();
+    expect(
+      storage.get('aido_feature_discovery_reentry_v1:user-1:feature-discovery-2026-08'),
+    ).toBeUndefined();
   });
 
   it('한 계정·캠페인에서 닫아도 다른 계정과 새 캠페인의 기록은 남는다', () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryObservableSyncStorage();
     const repository = createWhatsNewRepository(storage);
     const otherUser = { ...identity, userId: 'user-2' };
     const nextCampaign = { ...identity, campaignId: 'feature-discovery-2026-11' };
@@ -112,8 +115,8 @@ describe('whats-new 재진입 시각', () => {
     repository.dismissReentry(identity);
 
     // Then
-    expect(storage.get(createWhatsNewReentryKey(otherUser))).toBe(claimedAt);
-    expect(storage.get(createWhatsNewReentryKey(nextCampaign))).toBe(claimedAt);
+    expect(repository.findReentryOpenedAt(otherUser)).toBe(claimedAt);
+    expect(repository.findReentryOpenedAt(nextCampaign)).toBe(claimedAt);
   });
 
   it('저장소에서 지우지 못해도 멈추지 않는다', () => {
@@ -136,7 +139,7 @@ describe('whats-new 키 정리', () => {
 
   it('번들에 없는 캠페인 키와 14일 지난 재진입 키만 지운다', () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryObservableSyncStorage();
     storage.set(`${SEEN}:user-1:${CURRENT}`, claimedAt);
     storage.set(`${REENTRY}:user-1:${CURRENT}`, claimedAt);
     storage.set(`${REENTRY}:user-2:${CURRENT}`, '2026-08-20T00:00:00.000Z');
@@ -162,7 +165,7 @@ describe('whats-new 키 정리', () => {
 
   it('탈퇴한 계정의 키만 지운다', () => {
     // Given
-    const storage = createMemorySyncStorage();
+    const storage = createMemoryObservableSyncStorage();
     const repository = createWhatsNewRepository(storage);
     repository.claimSeen({ userId: 'user-1', campaignId: CURRENT }, claimedAt);
     repository.claimSeen({ userId: 'user-10', campaignId: CURRENT }, claimedAt);

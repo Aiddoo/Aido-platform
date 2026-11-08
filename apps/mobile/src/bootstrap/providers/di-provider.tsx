@@ -43,6 +43,7 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -224,9 +225,8 @@ export function DIProvider({
       logger,
     });
     const preferenceService = new PreferenceService(authHttpClient);
-    const activationService = new ActivationService(
-      createActivationProgressRepository(deviceSyncStorage),
-    );
+    const activationProgressRepository = createActivationProgressRepository(deviceSyncStorage);
+    const activationService = new ActivationService(activationProgressRepository);
 
     const friendService = new FriendService(authHttpClient);
 
@@ -395,6 +395,7 @@ export function DIProvider({
       authService,
       preferenceService,
       activationService,
+      activationProgressRepository,
       appVersionService,
       appIconService: new AppIconService(expoAppIconGateway),
       friendService,
@@ -417,6 +418,7 @@ export function DIProvider({
       pushDeviceService,
       deviceTimezoneService,
       pushPromptRepository,
+      calendarViewModeRepository: createCalendarViewModeRepository(deviceSyncStorage),
       marketingPushPromptRepository,
       todoNudgeService,
       coachmarkService,

@@ -6,10 +6,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import {
-  getCachedActivationContext,
-  invalidateActivationProgress,
-} from '@src/features/device/activation/queries/activation-cache';
+import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
@@ -56,7 +53,6 @@ export function useActOnSuggestionMutationOptions() {
           ...getCachedActivationContext(queryClient),
           now: getNowInstant(),
         });
-        invalidateActivationProgress(queryClient);
         invalidateTodos(queryClient);
         // 수락하면 시트를 닫고 피드로 떠나므로 다시 받기를 기다리지 않는다
         invalidateAiSuggestions(queryClient);
