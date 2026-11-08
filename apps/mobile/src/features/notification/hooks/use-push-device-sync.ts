@@ -1,10 +1,9 @@
-import { usePushNotification } from '@src/bootstrap/providers/di-context';
+import { useAppLifecycle, usePushNotification } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { i18n } from '@src/shared/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { debounce, noop } from 'es-toolkit';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
 
 import { useReportPushDeviceMutationOptions } from '../queries/notification.mutations';
 
@@ -28,6 +27,7 @@ export function usePushDeviceSync({
   onReported?: () => void;
 }) {
   const pushNotification = usePushNotification();
+  const appLifecycle = useAppLifecycle();
   const { mutateAsync: reportPushDevice } = useMutation(useReportPushDeviceMutationOptions());
   const isAuthenticated = authStatus === 'authenticated';
 
@@ -64,7 +64,7 @@ export function usePushDeviceSync({
 
     // 다른 계정이 쓰던 기기일 수 있어 로그인 확인 직후에는 같은 값이어도 보낸다
     sync({ force: true });
-    const appStateSubscription = AppState.addEventListener('change', (state) => {
+    const removeAppStateListener = appLifecycle.subscribe((state) => {
       if (state === 'active') {
         syncOnActive();
       }
@@ -76,11 +76,18 @@ export function usePushDeviceSync({
 
     return () => {
       isSubscribed = false;
-      appStateSubscription.remove();
+      removeAppStateListener();
       syncOnActive.cancel();
       removeTokenListener();
       removeResponseListener();
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [deviceTimeZone, isAuthenticated, onReported, pushNotification, reportPushDevice]);
+  }, [
+    appLifecycle,
+    deviceTimeZone,
+    isAuthenticated,
+    onReported,
+    pushNotification,
+    reportPushDevice,
+  ]);
 }

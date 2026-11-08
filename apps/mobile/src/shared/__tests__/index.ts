@@ -1,6 +1,10 @@
 export { createAnalyticsStub } from './create-analytics-stub';
 export { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
 export {
+  type AppLifecycleGatewayStub,
+  createAppLifecycleGatewayStub,
+} from './create-app-lifecycle-gateway-stub';
+export {
   createAppStoreListingGatewayStub,
   createAppStoreReviewGatewayStub,
 } from './create-app-store-gateway-stub';

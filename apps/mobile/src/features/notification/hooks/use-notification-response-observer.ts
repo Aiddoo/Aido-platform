@@ -1,4 +1,5 @@
 import {
+  useAppLifecycle,
   useLogger,
   useNotificationEntryStore,
   useNotificationService,
@@ -20,7 +21,6 @@ import {
   useRef,
   useSyncExternalStore,
 } from 'react';
-import { AppState } from 'react-native';
 
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -107,6 +107,7 @@ function useMarketingOptOut(
 ) {
   const status = useAuthStatus();
   const notificationService = useNotificationService();
+  const appLifecycle = useAppLifecycle();
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const inFlightIdRef = useRef<string | null>(null);
@@ -147,13 +148,12 @@ function useMarketingOptOut(
       return;
     }
     send(response);
-    const subscription = AppState.addEventListener('change', (state) => {
+    return appLifecycle.subscribe((state) => {
       if (state === 'active') {
         send(response);
       }
     });
-    return () => subscription.remove();
-  }, [response]);
+  }, [appLifecycle, response]);
 }
 
 /** 인증과 복원이 끝난 탭의 소유를 확인하고 목적지를 정한다 */

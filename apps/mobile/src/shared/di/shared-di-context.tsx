@@ -1,4 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
+import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
@@ -22,6 +23,7 @@ export interface SharedDependencies {
   externalLink: ExternalLinkGateway;
   incomingLink: IncomingLinkGateway;
   systemShare: SystemShareGateway;
+  appLifecycle: AppLifecycleGateway;
   /** 앱과 위젯이 함께 읽는 기기 저장소. 키별 구독과 키 목록을 준다 */
   syncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>;
 }
@@ -68,6 +70,10 @@ export function useExternalLink() {
 
 export function useSystemShare() {
   return useSharedDI().systemShare;
+}
+
+export function useAppLifecycle() {
+  return useSharedDI().appLifecycle;
 }
 
 export function useIncomingLink() {

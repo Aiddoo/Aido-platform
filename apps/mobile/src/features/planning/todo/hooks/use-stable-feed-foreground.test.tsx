@@ -1,9 +1,13 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createIncomingLinkGatewayStub, createTestDi } from '@src/shared/__tests__';
+import {
+  type AppLifecycleGatewayStub,
+  createAppLifecycleGatewayStub,
+  createIncomingLinkGatewayStub,
+  createTestDi,
+} from '@src/shared/__tests__';
 import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
-import { AppState } from 'react-native';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
 import { useStableFeedForeground } from './use-stable-feed-foreground';
@@ -11,6 +15,7 @@ import { useStableFeedForeground } from './use-stable-feed-foreground';
 let mockHasActiveOverlay = false;
 let mockIsKeyboardVisible = false;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
+let appLifecycle: AppLifecycleGatewayStub;
 let deepLinkListener: (() => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
 
@@ -28,7 +33,7 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
 
 function OverlayStateWrapper({ children }: PropsWithChildren) {
   return (
-    <StaticDIProvider container={createTestDi({ incomingLink })}>
+    <StaticDIProvider container={createTestDi({ incomingLink, appLifecycle })}>
       <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
         {children}
       </OverlayStateContext.Provider>
@@ -46,11 +51,7 @@ describe('useStableFeedForeground', () => {
     mockIsKeyboardVisible = false;
     deepLinkListener = undefined;
     idleCallbacks = [];
-    Object.defineProperty(AppState, 'currentState', {
-      configurable: true,
-      value: 'active',
-    });
-    jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
+    appLifecycle = createAppLifecycleGatewayStub();
     mockUseKeyboardState.mockImplementation((selector) => {
       const state = createKeyboardState(mockIsKeyboardVisible);
       return selector == null ? state : selector(state);

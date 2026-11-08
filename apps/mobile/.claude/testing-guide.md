@@ -121,41 +121,42 @@ Mapper의 DTO는 계약 스키마로 검증해 만든다(`memo.mapper.test.ts`�
 
 포트 하나에 도구 하나다. 모든 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드의 인자와 반환 타입은 `mockMethod<Port['method']>(구현)`으로 포트에서 가져와 포트가 바뀌면 기본값도 컴파일되지 않는다(`jest.fn()`은 무엇이든 받는다). 이름은 `create{Port}Stub`(`jest.fn`으로 호출을 기록하는 빈 구현), `create{Port}Fake`(동작을 흉내 냄), `createMemory{X}`(메모리에 저장하는 구현)다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 
-| 포트                                   | 도구                                                                                               |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `Logger`                               | `createLoggerStub()`                                                                               |
-| `Analytics`                            | `createAnalyticsStub()`                                                                            |
-| `ErrorReporter`                        | `createErrorReporterStub()`                                                                        |
-| `HapticsGateway`                       | `createHapticsGatewayStub()`                                                                       |
-| `IdGenerator`                          | `createIdGeneratorStub()` (호출마다 다른 id)                                                       |
-| `HttpClient`                           | `createHttpClientStub()`                                                                           |
-| `Storage`                              | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)                                    |
-| `SyncStorage`, `EnumerableSyncStorage` | `createMemorySyncStorage()` (`keys`·`clear`까지 있는 `jest.Mocked`)                                |
-| `ObservableSyncStorage`                | `createMemoryObservableSyncStorage()`                                                              |
-| `TokenStore`                           | `createMemoryTokenStore(tokens)`                                                                   |
-| `DeviceIdStore`                        | `createMemoryDeviceIdStore(initial)`                                                               |
-| `LocalFileSystem`                      | `createLocalFileSystemFake()`                                                                      |
-| 말로 메모 초안·녹음 저장소             | `createVoiceNoteStorageFake(files, { storage, logger })` (`service`, `drafts`, `recordings`, `di`) |
-| `ExternalLinkGateway`                  | `createExternalLinkGatewayStub()`                                                                  |
-| `IncomingLinkGateway`                  | `createIncomingLinkGatewayStub()`                                                                  |
-| `ClipboardGateway`                     | `createClipboardGatewayStub()`                                                                     |
-| `SystemShareGateway`                   | `createSystemShareGatewayStub()`                                                                   |
-| `SocialShareGateway`                   | `createSocialShareGatewayStub()`                                                                   |
-| `LocationGateway`                      | `createLocationGatewayStub()`                                                                      |
-| `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()`                                                                 |
-| `AppStoreReviewGateway`                | `createAppStoreReviewGatewayStub()`                                                                |
-| `AppStoreListingGateway`               | `createAppStoreListingGatewayStub()`                                                               |
-| `AppIconGateway`                       | `createAppIconGatewayStub()`                                                                       |
-| `InstallReferrerGateway`               | `createInstallReferrerGatewayStub()`                                                               |
-| `InstallationIdGateway`                | `createInstallationIdGatewayStub()`                                                                |
-| `VendorIdGateway`                      | `createVendorIdGatewayStub()`                                                                      |
-| `JsonFetcher`                          | `createJsonFetcherStub()`                                                                          |
-| `NativeApplicationMetadataGateway`     | `createNativeApplicationMetadataGatewayStub(installation)`                                         |
-| `PurchasesGateway`                     | `createPurchasesGatewayStub()`                                                                     |
-| `PushNotificationGateway`              | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림)                        |
-| `SocialAuthGateway`                    | `createSocialAuthGatewayStub()`                                                                    |
-| `SpeechRecognizer`                     | `createSpeechRecognizerStub()`                                                                     |
-| `TokenRefresher`                       | `createTokenRefresherStub()`                                                                       |
+| 포트                                   | 도구                                                                                                           |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `Logger`                               | `createLoggerStub()`                                                                                           |
+| `Analytics`                            | `createAnalyticsStub()`                                                                                        |
+| `ErrorReporter`                        | `createErrorReporterStub()`                                                                                    |
+| `HapticsGateway`                       | `createHapticsGatewayStub()`                                                                                   |
+| `IdGenerator`                          | `createIdGeneratorStub()` (호출마다 다른 id)                                                                   |
+| `HttpClient`                           | `createHttpClientStub()`                                                                                       |
+| `Storage`                              | `createMemoryStorage()` (`jest.Mocked`, 메모리에 JSON으로 왕복)                                                |
+| `SyncStorage`, `EnumerableSyncStorage` | `createMemorySyncStorage()` (`keys`·`clear`까지 있는 `jest.Mocked`)                                            |
+| `ObservableSyncStorage`                | `createMemoryObservableSyncStorage()`                                                                          |
+| `TokenStore`                           | `createMemoryTokenStore(tokens)`                                                                               |
+| `DeviceIdStore`                        | `createMemoryDeviceIdStore(initial)`                                                                           |
+| `LocalFileSystem`                      | `createLocalFileSystemFake()`                                                                                  |
+| 말로 메모 초안·녹음 저장소             | `createVoiceNoteStorageFake(files, { storage, logger })` (`service`, `drafts`, `recordings`, `di`)             |
+| `ExternalLinkGateway`                  | `createExternalLinkGatewayStub()`                                                                              |
+| `IncomingLinkGateway`                  | `createIncomingLinkGatewayStub()`                                                                              |
+| `ClipboardGateway`                     | `createClipboardGatewayStub()`                                                                                 |
+| `SystemShareGateway`                   | `createSystemShareGatewayStub()`                                                                               |
+| `SocialShareGateway`                   | `createSocialShareGatewayStub()`                                                                               |
+| `LocationGateway`                      | `createLocationGatewayStub()`                                                                                  |
+| `NetworkStatusGateway`                 | `createNetworkStatusGatewayStub()`                                                                             |
+| `AppLifecycleGateway`                  | `createAppLifecycleGatewayStub(initial)` (`emit(state)`로 전환을 흘림, 앱 상태를 `AppState` spy로 잡지 않는다) |
+| `AppStoreReviewGateway`                | `createAppStoreReviewGatewayStub()`                                                                            |
+| `AppStoreListingGateway`               | `createAppStoreListingGatewayStub()`                                                                           |
+| `AppIconGateway`                       | `createAppIconGatewayStub()`                                                                                   |
+| `InstallReferrerGateway`               | `createInstallReferrerGatewayStub()`                                                                           |
+| `InstallationIdGateway`                | `createInstallationIdGatewayStub()`                                                                            |
+| `VendorIdGateway`                      | `createVendorIdGatewayStub()`                                                                                  |
+| `JsonFetcher`                          | `createJsonFetcherStub()`                                                                                      |
+| `NativeApplicationMetadataGateway`     | `createNativeApplicationMetadataGatewayStub(installation)`                                                     |
+| `PurchasesGateway`                     | `createPurchasesGatewayStub()`                                                                                 |
+| `PushNotificationGateway`              | `createPushNotificationGatewayStub(overrides)` (수신·응답을 `emit*`로 흘림)                                    |
+| `SocialAuthGateway`                    | `createSocialAuthGatewayStub()`                                                                                |
+| `SpeechRecognizer`                     | `createSpeechRecognizerStub()`                                                                                 |
+| `TokenRefresher`                       | `createTokenRefresherStub()`                                                                                   |
 
 **stub 기본값 규칙.** 기본은 정상 기기와 빈 데이터다(알림을 허용했고, 클립보드는 비었고, 요금제와 구독은 없고, 사용자는 로그인 창을 닫는다). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표·장소)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 같은 포트의 모든 도구가 이 규칙을 따른다. 어긋난 기본값이 필요하면 테스트가 반환된 `jest.fn`을 바꾼다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 

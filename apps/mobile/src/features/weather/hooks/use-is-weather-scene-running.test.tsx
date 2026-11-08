@@ -1,36 +1,38 @@
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { createAppLifecycleGatewayStub, createTestDi } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
-import { AccessibilityInfo, AppState, type AppStateStatus } from 'react-native';
+import type { PropsWithChildren } from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import { useIsWeatherSceneRunning } from './use-is-weather-scene-running';
 
 let mockIsReducedMotion = false;
 
 describe('날씨 장면 시계', () => {
-  let appStateListener: ((state: AppStateStatus) => void) | undefined;
-  const removeSubscription = jest.fn();
+  let appLifecycle = createAppLifecycleGatewayStub();
 
-  const setAppState = (state: AppStateStatus) => {
-    Object.defineProperty(AppState, 'currentState', { configurable: true, value: state });
-    appStateListener?.(state);
-  };
+  function wrapper({ children }: PropsWithChildren) {
+    return (
+      <StaticDIProvider container={createTestDi({ appLifecycle })}>{children}</StaticDIProvider>
+    );
+  }
+
+  function renderSceneHook() {
+    return renderHook(() => useIsWeatherSceneRunning(), { wrapper });
+  }
 
   beforeEach(() => {
     mockIsReducedMotion = false;
-    appStateListener = undefined;
-    Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+    appLifecycle = createAppLifecycleGatewayStub();
     jest
       .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
       .mockImplementation(async () => mockIsReducedMotion);
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListener = listener;
-      return { remove: removeSubscription };
-    });
   });
 
   it('보이는 화면이 앞에 있으면 장면을 움직인다', async () => {
     // Given
-    const { result } = await renderHook(() => useIsWeatherSceneRunning());
+    const { result } = await renderSceneHook();
 
     // When
     const isAnimating = result.current;
@@ -41,12 +43,12 @@ describe('날씨 장면 시계', () => {
 
   it('앱이 백그라운드로 가면 멈추고 돌아오면 다시 움직인다', async () => {
     // Given
-    const { result } = await renderHook(() => useIsWeatherSceneRunning());
+    const { result } = await renderSceneHook();
 
     // When
-    await act(async () => setAppState('background'));
+    await act(async () => appLifecycle.emit('background'));
     const whileBackground = result.current;
-    await act(async () => setAppState('active'));
+    await act(async () => appLifecycle.emit('active'));
 
     // Then
     expect(whileBackground).toBe(false);
@@ -58,7 +60,7 @@ describe('날씨 장면 시계', () => {
     jest.mocked(useIsFocused).mockReturnValue(false);
 
     // When
-    const { result } = await renderHook(() => useIsWeatherSceneRunning());
+    const { result } = await renderSceneHook();
 
     // Then
     expect(result.current).toBe(false);
@@ -69,7 +71,7 @@ describe('날씨 장면 시계', () => {
     mockIsReducedMotion = true;
 
     // When
-    const { result } = await renderHook(() => useIsWeatherSceneRunning());
+    const { result } = await renderSceneHook();
 
     // Then
     expect(result.current).toBe(false);
@@ -77,12 +79,12 @@ describe('날씨 장면 시계', () => {
 
   it('화면이 사라지면 앱 상태 구독을 해제한다', async () => {
     // Given
-    const { unmount } = await renderHook(() => useIsWeatherSceneRunning());
+    const { unmount } = await renderSceneHook();
 
     // When
     await unmount();
 
     // Then
-    expect(removeSubscription).toHaveBeenCalled();
+    expect(appLifecycle.getListenerCount()).toBe(0);
   });
 });

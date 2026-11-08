@@ -1,7 +1,7 @@
 import { useSessionRevocationService } from '@src/bootstrap/providers/di-context';
+import { useAppForegroundEffect } from '@src/shared/hooks/use-app-foreground-effect';
 import { onlineManager } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
 
 /**
  * 오프라인 로그아웃이 남긴 세션 해제를 시작할 때, 연결이 돌아올 때, 포그라운드로 돌아올 때 시도한다.
@@ -18,16 +18,12 @@ export function usePendingRevocationFlush(): void {
     };
 
     flushIfOnline();
-    const unsubscribeOnline = onlineManager.subscribe(flushIfOnline);
-    const appStateSubscription = AppState.addEventListener('change', (appState) => {
-      if (appState === 'active') {
-        flushIfOnline();
-      }
-    });
-
-    return () => {
-      unsubscribeOnline();
-      appStateSubscription.remove();
-    };
+    return onlineManager.subscribe(flushIfOnline);
   }, [sessionRevocationService]);
+
+  useAppForegroundEffect(() => {
+    if (onlineManager.isOnline()) {
+      sessionRevocationService.flush();
+    }
+  });
 }

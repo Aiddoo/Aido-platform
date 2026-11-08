@@ -1,8 +1,8 @@
-import { useIncomingLink } from '@src/bootstrap/providers/di-context';
+import { useAppLifecycle, useIncomingLink } from '@src/bootstrap/providers/di-context';
+import { useIsAppActive } from '@src/shared/hooks/use-is-app-active';
 import { useOverlayState } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
 import { isStableFeedForeground } from '../utils/is-stable-feed-foreground';
@@ -18,9 +18,8 @@ export function useStableFeedForeground({
   const incomingLink = useIncomingLink();
   const { hasActiveOverlay } = useOverlayState();
   const isFocused = useIsFocused();
-  const [appState, setAppState] = useState<AppStateStatus | null>(
-    AppState.currentState === 'active' ? 'active' : null,
-  );
+  const appLifecycle = useAppLifecycle();
+  const isAppActive = useIsAppActive();
   const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const [hasPendingDeepLink, setHasPendingDeepLink] = useState(true);
   const deepLinkReleaseTaskRef = useRef<number | null>(null);
@@ -36,17 +35,12 @@ export function useStableFeedForeground({
   }, []);
 
   useEffect(() => {
-    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
-      setAppState(nextState);
+    return appLifecycle.subscribe((nextState) => {
       if (nextState !== 'active') {
         setHasPendingDeepLink(false);
       }
     });
-
-    return () => {
-      appStateSubscription.remove();
-    };
-  }, []);
+  }, [appLifecycle]);
 
   useEffect(() => {
     const lifecycle = new AbortController();
@@ -84,7 +78,7 @@ export function useStableFeedForeground({
   return isStableFeedForeground({
     isAuthenticated,
     isFocused,
-    isAppActive: appState === 'active',
+    isAppActive,
     isKeyboardVisible,
     hasActiveOverlay,
     hasPendingDeepLink,

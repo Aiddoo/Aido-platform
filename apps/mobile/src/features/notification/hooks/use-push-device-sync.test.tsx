@@ -2,6 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import {
+  createAppLifecycleGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createPushNotificationGatewayStub,
@@ -11,7 +12,6 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
 
 import {
   createNotificationApiError,
@@ -31,12 +31,7 @@ describe('usePushDeviceSync', () => {
   });
 
   async function setup(authStatus: AuthStatus = 'authenticated') {
-    const removeAppStateListener = jest.fn();
-    let appStateListener: ((state: AppStateStatus) => void) | undefined;
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListener = listener;
-      return { remove: removeAppStateListener };
-    });
+    const appLifecycle = createAppLifecycleGatewayStub();
 
     const removeTokenListener = jest.fn();
     let tokenListener: (() => void) | undefined;
@@ -67,6 +62,7 @@ describe('usePushDeviceSync', () => {
     const container = createTestDi({
       pushDeviceService,
       pushNotification: gateway,
+      appLifecycle,
       logger: createLoggerStub(),
     });
     const queryClient = createTestQueryClient();
@@ -90,9 +86,9 @@ describe('usePushDeviceSync', () => {
       timeZone,
       onReported,
       emitPushTap: () => responseListener?.(),
-      removeAppStateListener,
+      appLifecycle,
       removeTokenListener,
-      emitAppState: (state: AppStateStatus) => appStateListener?.(state),
+      emitAppState: appLifecycle.emit,
       emitTokenChange: () => tokenListener?.(),
     };
   }
@@ -267,8 +263,7 @@ describe('usePushDeviceSync', () => {
 
   it('언마운트하면 모든 구독을 해제하고 기다리던 보고도 보내지 않는다', async () => {
     // Given
-    const { gateway, unmount, emitAppState, removeAppStateListener, removeTokenListener } =
-      await setup();
+    const { gateway, unmount, emitAppState, appLifecycle, removeTokenListener } = await setup();
     gateway.getPermission.mockClear();
     emitAppState('active');
 
@@ -277,7 +272,7 @@ describe('usePushDeviceSync', () => {
     await act(() => jest.advanceTimersByTimeAsync(1_000));
 
     // Then
-    expect(removeAppStateListener).toHaveBeenCalledTimes(1);
+    expect(appLifecycle.getListenerCount()).toBe(0);
     expect(removeTokenListener).toHaveBeenCalledTimes(1);
     expect(gateway.getPermission).not.toHaveBeenCalled();
   });

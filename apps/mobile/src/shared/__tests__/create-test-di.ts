@@ -83,6 +83,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { createAnalyticsStub } from './create-analytics-stub';
 import { createAppIconGatewayStub } from './create-app-icon-gateway-stub';
+import { createAppLifecycleGatewayStub } from './create-app-lifecycle-gateway-stub';
 import {
   createAppStoreListingGatewayStub,
   createAppStoreReviewGatewayStub,
@@ -355,6 +356,7 @@ export function createTestDi({
     incomingLink: createIncomingLinkGatewayStub(),
     syncStorage,
     networkStatus: createNetworkStatusGatewayStub(),
+    appLifecycle: createAppLifecycleGatewayStub(),
     widgetSyncService: new WidgetSyncService(
       widgetBridge,
       errorReporter,

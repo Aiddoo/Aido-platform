@@ -1,11 +1,15 @@
-import { useLogger, useStoreReviewService } from '@src/bootstrap/providers/di-context';
+import {
+  useAppLifecycle,
+  useLogger,
+  useStoreReviewService,
+} from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { AppState, Keyboard } from 'react-native';
+import { Keyboard } from 'react-native';
 
 import { STORE_REVIEW_LOG_EVENT } from '../constants/store-review-log-events';
 import type { StoreReviewMoment } from '../schemas/store-review.schema';
@@ -21,6 +25,7 @@ export function useStoreReviewMoment() {
   const queryClient = useQueryClient();
   const navigation = useNavigation();
   const logger = useLogger();
+  const appLifecycle = useAppLifecycle();
   const storeReviewService = useStoreReviewService();
   const todayKey = useTodayKey();
   const pendingRequestRef = useRef<AbortController | null>(null);
@@ -64,7 +69,7 @@ export function useStoreReviewMoment() {
           waitForSettledScreen({
             delayMs,
             signal: controller.signal,
-            appState: AppState,
+            appLifecycle,
             isScreenReady: () => navigation.isFocused() && !Keyboard.isVisible(),
           }),
         );
@@ -80,7 +85,7 @@ export function useStoreReviewMoment() {
         }
       }
     },
-    [logger, navigation, queryClient, storeReviewService],
+    [appLifecycle, logger, navigation, queryClient, storeReviewService],
   );
 
   return { recordActiveDay, requestReviewAt };

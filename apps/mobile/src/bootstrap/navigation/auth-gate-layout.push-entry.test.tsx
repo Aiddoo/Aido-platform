@@ -7,6 +7,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
 import {
+  createAppLifecycleGatewayStub,
   createExternalLinkGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
@@ -26,7 +27,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { type PropsWithChildren, useCallback } from 'react';
-import { AppState, type AppStateStatus, Linking, Pressable, Text } from 'react-native';
+import { Linking, Pressable, Text } from 'react-native';
 
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
@@ -123,8 +124,10 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
 
   const queryClient = createTestQueryClient();
   const externalLink = createExternalLinkGatewayStub();
+  const appLifecycle = createAppLifecycleGatewayStub();
   const container = createTestDi({
     externalLink,
+    appLifecycle,
     httpClient,
     pushNotification: gateway,
     widgetNavigationRepository: {
@@ -180,6 +183,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     focusLog,
     hideLog,
     externalLink,
+    appLifecycle,
     analytics: container.analytics,
   };
 }
@@ -562,12 +566,7 @@ describe('푸시 탭 진입', () => {
 
   it('수신 거부 버튼: 실패하면 다음 탭에 밀리지 않고 포그라운드로 돌아올 때 다시 보낸다', async () => {
     // Given
-    const appStateListeners: Array<(state: AppStateStatus) => void> = [];
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListeners.push(listener);
-      return { remove: noop };
-    });
-    const { route, gateway, httpClient } = await setup({ status: 'authenticated' });
+    const { route, gateway, httpClient, appLifecycle } = await setup({ status: 'authenticated' });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     httpClient.post.mockRejectedValueOnce(new NetworkError());
     httpClient.post.mockResolvedValue(ok({ optedOut: true }));
@@ -583,9 +582,7 @@ describe('푸시 탭 진입', () => {
     );
     await act(async () => gateway.emitResponse(SECOND_TODO_RESPONSE));
     await waitFor(() => expect(route.getPathname()).toBe('/todo/43'));
-    await act(async () => {
-      appStateListeners.forEach((listener) => listener('active'));
-    });
+    await act(async () => appLifecycle.emit('active'));
 
     // Then
     await waitFor(() =>

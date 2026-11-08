@@ -72,6 +72,7 @@ import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
+import { reactNativeAppLifecycleGateway } from '@src/shared/infra/app-lifecycle/react-native-app-lifecycle-gateway';
 import { expoAppStoreListingGateway } from '@src/shared/infra/app-store/expo-app-store-listing-gateway';
 import { expoAppStoreReviewGateway } from '@src/shared/infra/app-store/expo-app-store-review-gateway';
 import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer-gateway';
@@ -445,6 +446,7 @@ export function DIProvider({
       incomingLink: expoIncomingLinkGateway,
       syncStorage: deviceSyncStorage,
       networkStatus: createExpoNetworkStatusGateway(logger),
+      appLifecycle: reactNativeAppLifecycleGateway,
       widgetSyncService,
       widgetNavigationRepository,
       logOutDeviceService: new LogOutDeviceService({

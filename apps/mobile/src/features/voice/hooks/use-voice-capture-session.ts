@@ -1,4 +1,8 @@
-import { useHaptics, useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
+import {
+  useAppLifecycle,
+  useHaptics,
+  useSpeechRecognizer,
+} from '@src/bootstrap/providers/di-context';
 import type {
   SpeechErrorCode,
   SpeechLocale,
@@ -7,7 +11,6 @@ import type {
 } from '@src/core/ports/speech-recognizer';
 import { noop } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { AppState } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -81,6 +84,7 @@ export function useVoiceCaptureSession({
   onFailed,
 }: UseVoiceCaptureSessionOptions) {
   const speechRecognizer = useSpeechRecognizer();
+  const appLifecycle = useAppLifecycle();
   const haptics = useHaptics();
   const telemetry = useVoiceCaptureTelemetry({ entry, mode });
 
@@ -257,7 +261,7 @@ export function useVoiceCaptureSession({
         dispatch({ type: 'start', at: now });
         updateLink({ type: 'started', at: now });
         // 준비 중에는 멈출 수 없어 백그라운드 전환이 무시된다. 뒤늦은 시작 신호로 몰래 듣지 않는다
-        if (AppState.currentState === 'background') {
+        if (appLifecycle.getCurrentState() === 'background') {
           pause('app-background');
         }
       })
@@ -306,7 +310,7 @@ export function useVoiceCaptureSession({
 
   useEffect(() => {
     isUnmountedRef.current = false;
-    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+    const removeAppStateListener = appLifecycle.subscribe((nextState) => {
       if (nextState === 'background') {
         pauseForBackground();
       }
@@ -314,13 +318,13 @@ export function useVoiceCaptureSession({
 
     return () => {
       isUnmountedRef.current = true;
-      appStateSubscription.remove();
+      removeAppStateListener();
       clearTimersOnUnmount();
       if (VoiceCapturePolicy.isActive(stateRef.current)) {
         speechRecognizer.abort();
       }
     };
-  }, [speechRecognizer]);
+  }, [appLifecycle, speechRecognizer]);
 
   useTimeoutWhile({
     isActive: state.status === 'listening',

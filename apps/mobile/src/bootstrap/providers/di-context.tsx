@@ -173,6 +173,7 @@ export function StaticDIProvider({ container, children }: StaticDIProviderProps)
 
 export {
   useAnalytics,
+  useAppLifecycle,
   useDraftService,
   useErrorReporter,
   useExternalLink,

@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
 import {
   createAnalyticsStub,
+  createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createLoggerStub,
   createSpeechRecognizerStub,
@@ -9,7 +10,7 @@ import {
 import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
-import { AppState, type AppStateStatus, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
@@ -80,6 +81,7 @@ async function renderSession({
   onLimitReached?: () => void;
 } = {}) {
   const speechRecognizer = createSpeechRecognizerStub();
+  const appLifecycle = createAppLifecycleGatewayStub();
   const analytics = createAnalyticsStub();
   const errorReporter = createErrorReporterStub();
   const onCaptured = jest.fn().mockResolvedValue(null);
@@ -90,9 +92,9 @@ async function renderSession({
       maxSeconds={maxSeconds}
       onLimitReached={onLimitReached}
     />,
-    { di: { speechRecognizer, analytics, logger, errorReporter } },
+    { di: { speechRecognizer, appLifecycle, analytics, logger, errorReporter } },
   );
-  return { speechRecognizer, analytics, errorReporter, onCaptured, unmount };
+  return { speechRecognizer, appLifecycle, analytics, errorReporter, onCaptured, unmount };
 }
 
 function createDeferred<T>() {
@@ -106,21 +108,6 @@ function createDeferred<T>() {
     promise,
     resolve: (value: T) => resolve(value),
     reject: (reason: unknown) => reject(reason),
-  };
-}
-
-/** 앱 상태 구독을 잡아 테스트가 포그라운드·백그라운드 전환을 보낸다 */
-function captureAppState() {
-  const listeners = new Set<(state: AppStateStatus) => void>();
-  jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-    listeners.add(listener);
-    return { remove: () => listeners.delete(listener) };
-  });
-  return (next: AppStateStatus) => {
-    Object.defineProperty(AppState, 'currentState', { configurable: true, value: next });
-    for (const listener of listeners) {
-      listener(next);
-    }
   };
 }
 
@@ -766,20 +753,11 @@ describe('useVoiceCaptureSession', () => {
   });
 
   describe('앱이 백그라운드로 갈 때', () => {
-    const originalCurrentState = Object.getOwnPropertyDescriptor(AppState, 'currentState');
-
-    afterEach(() => {
-      if (originalCurrentState != null) {
-        Object.defineProperty(AppState, 'currentState', originalCurrentState);
-      }
-    });
-
     it('시작 준비 중에 내려갔다면 시작 신호가 와도 듣지 않고 멈춘 채 기다린다', async () => {
       // Given
-      const sendAppState = captureAppState();
-      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const { speechRecognizer, appLifecycle } = await renderSession({ mode: 'note' });
       await fireEvent.press(screen.getByTestId('begin'));
-      await act(async () => sendAppState('background'));
+      await act(async () => appLifecycle.emit('background'));
       expect(screen.getByTestId('status')).toHaveTextContent('preparing');
 
       // When
@@ -791,7 +769,7 @@ describe('useVoiceCaptureSession', () => {
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await act(async () => sendAppState('active'));
+      await act(async () => appLifecycle.emit('active'));
       await fireEvent.press(screen.getByTestId('resume'));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
 
@@ -802,11 +780,10 @@ describe('useVoiceCaptureSession', () => {
 
     it('시작 신호 전에 돌아왔다면 그대로 듣는다', async () => {
       // Given
-      const sendAppState = captureAppState();
-      const { speechRecognizer } = await renderSession({ mode: 'note' });
+      const { speechRecognizer, appLifecycle } = await renderSession({ mode: 'note' });
       await fireEvent.press(screen.getByTestId('begin'));
-      await act(async () => sendAppState('background'));
-      await act(async () => sendAppState('active'));
+      await act(async () => appLifecycle.emit('background'));
+      await act(async () => appLifecycle.emit('active'));
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -818,14 +795,15 @@ describe('useVoiceCaptureSession', () => {
 
     it('듣던 구간을 멈추고 돌아와 이어 들으면 같은 옵션으로 다시 연다', async () => {
       // Given
-      const sendAppState = captureAppState();
-      const { speechRecognizer, analytics, errorReporter } = await renderSession({ mode: 'note' });
+      const { speechRecognizer, appLifecycle, analytics, errorReporter } = await renderSession({
+        mode: 'note',
+      });
       await fireEvent.press(screen.getByTestId('begin'));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       const firstOptions = speechRecognizer.start.mock.calls[0]?.[0];
 
       // When
-      await act(async () => sendAppState('background'));
+      await act(async () => appLifecycle.emit('background'));
 
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('paused');
@@ -838,7 +816,7 @@ describe('useVoiceCaptureSession', () => {
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await act(async () => sendAppState('active'));
+      await act(async () => appLifecycle.emit('active'));
       await fireEvent.press(screen.getByTestId('resume'));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
 
