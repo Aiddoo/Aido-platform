@@ -161,12 +161,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                             |
 | 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                           |
 | 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                     |
-| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`                                                                                                                                          |
+| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`)                                                      |
 | 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                  |
 | 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                            |
 | 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                   |
 | mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                |
 | 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                    |
+| 기기 저장 읽기       | feature와 `app/`의 `useSyncStorageString`. 값의 repository가 읽기·쓰기·`subscribe`를 갖고 `useSyncExternalStore`로 구독한다. `shared/providers`와 테스트는 예외                               |
 | worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                   |
 | RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                  |
 | `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                      |
@@ -554,15 +555,15 @@ MemoList.Loading = function Loading() {
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복사하지 않는다. 계산할 수 있는 값은 상태로 두지 않는다.
 
-| 상태                                                  | 도구                                                                                                     | 판단 기준·예                                                        |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                                      | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다         |
-| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                                           | 비동기·재조회가 필요하면 Query                                      |
-| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useView`(탭·보기), `useRouteParams`(여러 값) 튜플(읽기와 같은 화면 안 변경) | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다 |
-| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `ObservableSyncStorage` + `useSyncStorageString`                                                         | 앱을 다시 켜도 남아야 하면 저장소(`apis/*.repository.ts`)           |
-| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                                                 | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다        |
-| 폼 값                                                 | react-hook-form + `zodResolver`                                                                          | 폼 안에서만. 전역 상태에 복사하지 않는다                            |
-| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                                                  | 나머지 전부                                                         |
+| 상태                                                  | 도구                                                                                                              | 판단 기준·예                                                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 서버 데이터                                           | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery`                                               | 서버가 진실이면 Query. 앱이 다시 계산하거나 복사하지 않는다                    |
+| 기기 비동기 값(권한, 앱 아이콘)                       | TanStack Query                                                                                                    | 비동기·재조회가 필요하면 Query                                                 |
+| URL에 남을 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | `{name}-params.schema.ts` + `useView`(탭·보기), `useRouteParams`(여러 값) 튜플(읽기와 같은 화면 안 변경)          | 딥링크·뒤로 가기로 복원돼야 하면 URL. `useState` 사본을 두지 않는다            |
+| 기기에 남는 값(언어, 글꼴, 안내 본 여부)              | `apis/*.repository.ts`의 읽기·쓰기·`subscribe` + `useSyncExternalStore`(shared Provider는 `useSyncStorageString`) | 앱을 다시 켜도 남아야 하면 저장소. 키·파서는 repository 밖으로 내보내지 않는다 |
+| 작성 중 초안                                          | `shared/draft`(암호화 MMKV, 사용자 범위)                                                                          | 긴 본문을 URL에 넣지 않는다. 초안을 Query 캐시에 넣지 않는다                   |
+| 폼 값                                                 | react-hook-form + `zodResolver`                                                                                   | 폼 안에서만. 전역 상태에 복사하지 않는다                                       |
+| 잠깐 쓰는 UI 값(열림, 측정값, 입력 단계)              | `useState`·`useReducer`                                                                                           | 나머지 전부                                                                    |
 
 라이브러리가 주는 상태를 다시 만들지 않는다. 이 라이브러리 훅을 한 번 더 감싸는 훅도 만들지 않는다.
 
@@ -576,6 +577,7 @@ MemoList.Loading = function Loading() {
 | 값 구독             | `useWatch`, `form.subscribe`                                                 | 렌더 경로 `getValues()`           |
 
 - 한 컴포넌트에서 서로 독립인 `useSuspenseQuery`를 연달아 부르면 워터폴이다. `useSuspenseQueries`(`MemoEditor`)나 블록별 경계로 나눈다. 앞 결과가 다음 조회의 입력일 때만 순차로 둔다.
+- 기기 저장 값의 repository는 `find*`·`get`·`has*`(읽기), 쓰기, `subscribe`를 한 파일에 둔다(`push-prompt.repository`). 읽기는 저장값이 그대로면 같은 값을 돌려준다. 객체를 읽으면 저장 문자열로 스냅샷을 기억한다(`marketing-push-prompt.repository`, `activation-progress.repository`). 같은 값을 Query 캐시나 `useState`에 복사하지 않는다. 파일 크기처럼 구독할 수 없는 값만 화면에 들어올 때 읽는다(`settings/voice-storage`).
 - 당겨서 새로고침은 `useRefresh`로 사용자가 당긴 동안만 표시한다(`MemoListScrollView`). `isRefetching`은 배경 재조회까지 켜져 동작이 달라진다.
 
 예외:

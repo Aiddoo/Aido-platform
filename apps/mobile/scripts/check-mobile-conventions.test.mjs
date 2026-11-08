@@ -586,6 +586,30 @@ test('캐시 helper의 이벤트 발행·오류 보고·Service import를 거부
   );
 });
 
+test('feature와 화면이 기기 저장소를 직접 읽으면 거부하고 shared Provider는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/planning/todo/hooks/use-calendar-view-mode.ts': `
+        import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
+      `,
+      'apps/mobile/app/(app)/settings.tsx': `
+        import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
+      `,
+      'apps/mobile/src/shared/providers/theme-provider.tsx': `
+        import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
+      `,
+      'apps/mobile/src/features/planning/todo/hooks/use-calendar-view-mode.test.ts': `
+        import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /use-calendar-view-mode\.ts.*useSyncStorageString로/u);
+      assert.match(errors.join('\n'), /settings\.tsx.*useSyncStorageString로/u);
+    },
+  );
+});
+
 test('shared/infra와 테스트의 SDK import는 통과한다', () => {
   withFixture(
     {
@@ -871,6 +895,28 @@ test('Facade의 별칭, 인라인 함수, 모델의 this를 거부하고 같은 
   );
 });
 
+test('모델 파일이 Facade 밖으로 함수나 상수를 내보내면 거부하고 Facade와 타입은 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        export function isPinned(memo) { return memo.isPinned; }
+        function getTitle(memo) { return memo.title; }
+        export type MemoTitle = string;
+        export const MEMO_PREVIEW_LINES = 2;
+        export const MemoPolicy = { isPinned, getTitle } as const;
+      `,
+      'apps/mobile/src/features/notes/memo/domains/memo.error.ts': `
+        export function isMemoError(error) { return error != null; }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /isPinned: 모델 함수는 Policy Facade로만/u);
+      assert.match(errors.join('\n'), /MEMO_PREVIEW_LINES: 모델 파일은 Policy와 타입만/u);
+    },
+  );
+});
+
 test('모듈 수준 화살표를 거부하고 function 선언과 지역 화살표는 통과한다', () => {
   withFixture(
     {
@@ -1038,7 +1084,8 @@ test('화면의 역할 비교를 거부하고 모델은 통과한다', () => {
         export function isAdmin(me) { return me.role === USER_ROLE.ADMIN; }
       `,
       'apps/mobile/src/features/identity/user/domains/user.model.ts': `
-        export function isAdmin(user) { return user.role === USER_ROLE.ADMIN; }
+        function isAdmin(user) { return user.role === USER_ROLE.ADMIN; }
+        export const UserPolicy = { isAdmin };
       `,
     },
     (errors) => {
@@ -1073,8 +1120,9 @@ test('xxxOf 함수 이름을 거부한다', () => {
   withFixture(
     {
       'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
-        export function titleOf(memo) { return memo.title; }
-        export function getTitle(memo) { return memo.title; }
+        function titleOf(memo) { return memo.title; }
+        function getTitle(memo) { return memo.title; }
+        export const MemoPolicy = { titleOf, getTitle };
       `,
     },
     (errors) => {
@@ -1338,7 +1386,7 @@ test('부정과 허용을 묻는 판별 이름을 거부한다', () => {
         const isEligible = true;
         const isPlanAllowed = true;
         interface Options { isUserEligible: boolean; hasNoAccess(): boolean }
-        export const flags = { isNotReady: () => false, isAllowed: true };
+        const flags = { isNotReady: () => false, isAllowed: true };
       `,
     },
     (errors) => {
@@ -1362,14 +1410,14 @@ test('라이브러리와 서버 계약 이름, OS 상태 isNotDetermined, 비슷
     {
       'apps/mobile/src/features/weather/domains/ok.model.ts': `
         import { isNotNil } from 'es-toolkit';
-        export function isNotDetermined() { return false; }
+        function isNotDetermined() { return false; }
         const canUseFeature = true;
         const isNotice = true;
         const hasNotes = true;
         const hasNothing = false;
         const { isNotModified, isAllowed } = response;
         export const OkPolicy = { isNotDetermined, canUseFeature, isNotice, hasNotes, hasNothing };
-        export const values = [isNotNil, response.isEligible, isNotModified, isAllowed];
+        const values = [isNotNil, response.isEligible, isNotModified, isAllowed];
       `,
     },
     (errors) => {

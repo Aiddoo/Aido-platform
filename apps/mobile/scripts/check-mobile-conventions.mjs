@@ -376,9 +376,13 @@ function getSdkModule(moduleName) {
 const FEATURE_SOURCE_ROOT = 'apps/mobile/src/features/';
 
 // feature는 useTrack만 쓴다. 타입 이벤트 맵과 계정 정리 순서가 한 입구를 지나게 한다.
+// 기기 저장 값은 그 값의 repository가 읽기·쓰기·구독을 모두 가진다. 키와 파서가 화면으로 새지 않게 한다.
+const DEVICE_STORAGE_HOOKS = new Set(['useSyncStorageString']);
+
 function checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
-  if (!relativePath.startsWith(FEATURE_SOURCE_ROOT) || isTestSource(relativePath)) {
+  const isScreen = relativePath.startsWith('apps/mobile/app/');
+  if (!(relativePath.startsWith(FEATURE_SOURCE_ROOT) || isScreen) || isTestSource(relativePath)) {
     return;
   }
   for (const statement of sourceFile.statements) {
@@ -390,7 +394,13 @@ function checkFeatureAnalyticsPort(sourceFile, repositoryRoot, errors) {
       continue;
     }
     for (const element of namedBindings.elements) {
-      if ((element.propertyName ?? element.name).text === 'useAnalytics') {
+      const importedName = (element.propertyName ?? element.name).text;
+      if (DEVICE_STORAGE_HOOKS.has(importedName)) {
+        errors.push(
+          `${getLocation(sourceFile, element, repositoryRoot)} ${importedName}로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요.`,
+        );
+      }
+      if (!isScreen && importedName === 'useAnalytics') {
         errors.push(
           `${getLocation(sourceFile, element, repositoryRoot)} feature는 useAnalytics를 직접 쓰지 않습니다. useTrack을 쓰세요.`,
         );
@@ -1707,6 +1717,10 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
     relativePath.startsWith('apps/mobile/src/features/') ||
     relativePath.startsWith('apps/mobile/app/');
   const isDomain = relativePath.includes('/domains/');
+  const isFeatureModel =
+    relativePath.startsWith('apps/mobile/src/features/') &&
+    isDomain &&
+    relativePath.endsWith('.model.ts');
   const isDeclaration = relativePath.endsWith('.d.ts');
 
   if (!isTest && !isDeclaration) {
@@ -1753,6 +1767,33 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       POLICY_NAME.test(node.name.text)
     ) {
       checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryRoot);
+    }
+    if (
+      isFeatureModel &&
+      ts.isFunctionDeclaration(node) &&
+      node.name !== undefined &&
+      node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      findings.push({
+        rule: 'policy-facade',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} ${node.name.text}: 모델 함수는 Policy Facade로만 내보냅니다. export를 지우고 Facade에 같은 이름으로 넣으세요.`,
+      });
+    }
+    if (
+      isFeatureModel &&
+      ts.isVariableStatement(node) &&
+      node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      for (const declaration of node.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && !POLICY_NAME.test(declaration.name.text)) {
+          findings.push({
+            rule: 'policy-facade',
+            key: relativePath,
+            message: `${getLocation(sourceFile, declaration, repositoryRoot)} ${declaration.name.text}: 모델 파일은 Policy와 타입만 내보냅니다. 상수는 constants/{feature}.constants.ts로 옮기세요.`,
+          });
+        }
+      }
     }
     if (node.kind === ts.SyntaxKind.ThisKeyword && isDomain && !isInsideClass(node)) {
       findings.push({
