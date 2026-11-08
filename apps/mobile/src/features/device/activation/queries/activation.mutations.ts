@@ -15,10 +15,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { getCachedActivationContext } from './activation-cache';
 
-/**
- * 앱 푸시 설정을 바꾸고, 켰을 때는 이어서 OS 권한을 묻는다.
- * 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다.
- */
+// 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
 export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
   const updatePreferenceOptions = useUpdatePreferenceMutationOptions();
   const pushDeviceService = usePushDeviceService();

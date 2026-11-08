@@ -5,7 +5,6 @@ import { router } from 'expo-router';
 
 import { useHasUnseenRelease } from '../hooks/use-has-unseen-release';
 
-/** 마이 메뉴에서 출시 목록을 언제나 연다. 최신 출시를 안 봤으면 점을 단다 */
 export function WhatsNewMenuItem() {
   const { t } = useTranslation('whatsNew');
   const push = useSingleTap(router.push);

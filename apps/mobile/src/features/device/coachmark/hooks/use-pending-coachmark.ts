@@ -8,7 +8,6 @@ interface PendingCoachmarkInput extends Omit<CoachmarkInput, 'accountId'> {
   accountId: string | null;
 }
 
-/** 쓰거나 닫아야 끝나는 안내가 아직 남았는지와, 끝내는 함수 */
 export function usePendingCoachmark({ accountId, kind }: PendingCoachmarkInput) {
   const service = useCoachmarkService();
   const isPending = useSyncExternalStore(

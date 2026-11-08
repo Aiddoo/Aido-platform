@@ -27,10 +27,7 @@ interface RequestReviewInput {
   moment: StoreReviewMoment;
 }
 
-/**
- * 할 일을 끝낸 순간처럼 긍정적인 때에 OS 리뷰 창만 요청한다. 앱 자체 확인 창은 두지 않는다
- * (App Store 5.6.1·Google Play 인앱 리뷰 지침). 창을 실제로 띄울지는 OS가 정한다.
- */
+// App Store 5.6.1·Google Play 인앱 리뷰 지침상 앱 자체 확인 창 없이 OS 리뷰 창만 요청하고, 띄울지는 OS가 정한다
 export class StoreReviewService {
   readonly #repository: StoreReviewRepository;
   readonly #gateway: AppStoreReviewGateway;

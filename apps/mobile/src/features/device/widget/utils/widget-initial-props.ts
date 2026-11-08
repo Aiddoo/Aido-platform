@@ -1,5 +1,4 @@
-// iOS 위젯 번들은 expo-widgets의 별도 Metro 설정(projectRoot가 expo-widgets)으로 빌드되어 앱의 `@src` 별칭이 풀리지 않는다.
-// 이 파일과 widgets.ios.tsx가 부르는 모듈은 상대 경로만 쓴다.
+// iOS 위젯 번들은 expo-widgets의 별도 Metro 설정으로 빌드되어 `@src` 별칭이 풀리지 않아 이 파일과 widgets.ios.tsx가 부르는 모듈은 상대 경로만 쓴다
 import en from '../../../../shared/i18n/locales/en/widget.json';
 import ko from '../../../../shared/i18n/locales/ko/widget.json';
 import type { ResolvedLanguage } from '../../../../shared/preferences/language.preference';
@@ -31,11 +30,7 @@ export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps 
   };
 }
 
-/**
- * 위젯 등록 initialProps. 빌드 시점에 layout registry로 고정되므로 첫 동기화 전 문구는 영어를 키로 넘기고
- * 위젯 번들의 Localizable.strings가 한국어 기기에서만 한국어로 바꾼다. SwiftUI Text는 환경 locale의
- * lproj를 찾고 없으면 키를 그대로 보여 주므로, 영어 키여야 ko·en 외 언어도 영어로 표시된다.
- */
+// 빌드 때 고정되는 문구라 영어 키로 넘긴다. SwiftUI Text는 lproj가 없으면 키를 보이므로 ko 외 언어도 영어로 보인다
 export function createRegisteredWidgetProps(): WidgetProps {
   return { ...createInitialWidgetProps('en'), localizeStateCopy: true };
 }

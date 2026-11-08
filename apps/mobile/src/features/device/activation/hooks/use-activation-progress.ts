@@ -41,8 +41,7 @@ export function useActivationProgress() {
         : repository.get({ accountId, campaignId }),
   );
 
-  // 공개 롤아웃 설정을 받지 못해도 캠페인 이전 계정의 기존 푸시 흐름은 막지 않는다.
-  // 앱에 담긴 캠페인 날짜로 그 사용자를 가르고, 신규 가입자 코호트의 안내는 계속 미룬다.
+  // 롤아웃 설정을 못 받아도 캠페인 이전 계정의 푸시 흐름은 막지 않고, 앱의 캠페인 날짜로 신규 가입자만 미룬다
   const isContextReady = configQuery.isFetched && userQuery.isSuccess;
   const isReady = isAuthenticated && isContextReady;
 
@@ -77,8 +76,7 @@ export function useActivationChecklist() {
     throwOnError: false,
   });
   const steps = ActivationPolicy.getChecklistSteps(activation.progress, todoExistenceQuery.data);
-  // 서버 기록을 읽기 전에는 띄우지 않아, 이미 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 한다.
-  // 읽기에 실패하면 이 기기 기록만으로 판단한다
+  // 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 서버 기록을 읽은 뒤 띄우고, 실패하면 기기 기록만 본다
   const hasSettledTodoExistence = todoExistenceQuery.isSuccess || todoExistenceQuery.isError;
 
   return {

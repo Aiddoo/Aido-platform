@@ -25,10 +25,7 @@ function isSameCommand(first: WidgetNavigationCommand, second: WidgetNavigationC
   );
 }
 
-/**
- * 저장된 명령을 지금 열어도 되는지. 만료를 먼저 본다(계정을 몰라도 지운다).
- * 계정을 아직 모르면 기다리고, 다른 계정의 명령이면 지운다.
- */
+/** 만료를 먼저 보고(계정을 몰라도 지운다), 계정을 모르면 기다리고, 다른 계정의 명령이면 지운다 */
 type WidgetCommandState = 'stale' | 'ownerUnknown' | 'foreign' | 'valid';
 
 function getCommandState(

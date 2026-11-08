@@ -15,10 +15,7 @@ import type {
   WidgetSnapshotStrings,
 } from '../schemas/widget-snapshot.schema';
 
-/**
- * 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일).
- * todo feature에 직접 의존하지 않도록 구조적 타입으로 선언한다.
- */
+/** todo feature에 의존하지 않도록 GET v1/todos/summary 모델과 같은 모양을 구조적 타입으로 둔다 */
 export interface WidgetSummaryInput {
   date: string;
   totalTodos: number;
@@ -78,8 +75,7 @@ function bakeStrings(
     streakLabel: t('widget:progress.streak', { count: summary.currentStreak }),
     compactStreakLabel: t('widget:progress.compactStreak', { count: summary.currentStreak }),
     allDoneLabel: t('widget:progress.allDone'),
-    // 표시 행 수는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
-    // 어순/번역은 카탈로그가 소유하고, 위젯은 {count}만 실제 초과분으로 치환한다.
+    // 표시 행 수는 렌더 시점에 위젯 크기로 정해지므로 카운트는 굽지 않고 위젯이 {count}만 치환한다
     moreLabelTemplate: t('widget:list.more', { overflow: '{count}' }),
     emptyTitle: t('widget:state.emptyTitle'),
     emptyCta: t('widget:state.emptyCta'),
@@ -98,7 +94,6 @@ export interface WidgetDaySummaries {
   tomorrow?: WidgetSummaryInput;
 }
 
-/** 오늘·내일 요약 → 위젯 스냅샷 (순수함수 — I/O 없음) */
 export function toWidgetSnapshot(
   { today, tomorrow }: WidgetDaySummaries,
   context: WidgetSnapshotContext,
@@ -174,7 +169,6 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
   return { days, title, rangeLabel };
 }
 
-/** 비로그인 상태 스냅샷 (로그아웃/세션 종료 시 기록) */
 export function toLoggedOutWidgetSnapshot(
   localDate: string,
   context: WidgetSnapshotContext,

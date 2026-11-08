@@ -12,7 +12,6 @@ import { AppVersionPolicy } from '../domains/app-version.model';
 import { useOpenStoreListingMutationOptions } from '../queries/app-version.mutations';
 import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 
-/** 설치된 버전을 보여 주고, 누르면 스토어 업데이트가 필요한지 확인한다. */
 export function AppVersionCheck() {
   const { t } = useTranslation('appVersion');
   const applicationMetadata = useApplicationMetadata();

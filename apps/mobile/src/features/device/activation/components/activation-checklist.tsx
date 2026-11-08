@@ -223,10 +223,7 @@ interface ActivationStepIndicatorProps {
   isCompleted: boolean;
 }
 
-/**
- * 두 상태의 크기·테두리를 같게 두어 단계를 끝내도 행이 움직이지 않는다.
- * white 토큰은 다크 모드에서 어두워지므로 체크는 Avatar 선택 배지와 같은 색을 쓴다
- */
+// white 토큰은 다크 모드에서 어두워져 체크는 Avatar 선택 배지 색을 쓰고, 두 상태 크기·테두리를 같게 둬 행이 움직이지 않는다
 function ActivationStepIndicator({ isCompleted }: ActivationStepIndicatorProps) {
   const fontScaledSize = useFontScaledSize();
   const size = fontScaledSize(24);

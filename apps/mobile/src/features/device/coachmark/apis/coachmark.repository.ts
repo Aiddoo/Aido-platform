@@ -7,9 +7,7 @@ import type { CoachmarkInput } from '../domains/coachmark.model';
 export interface CoachmarkRepository {
   hasSeen(input: CoachmarkInput): boolean;
   markSeen(input: CoachmarkInput): void;
-  /** 은퇴한 안내의 키를 지운다 */
   removeRetiredKeys(): void;
-  /** 탈퇴한 계정의 키를 지운다 */
   removeAccount(accountId: string): void;
 }
 

@@ -4,10 +4,7 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { createCoachmarkRepository } from '../apis/coachmark.repository';
 import { type CoachmarkInput, coachmarkKindSchema } from '../domains/coachmark.model';
 
-/**
- * 안내를 이미 본 것으로 채운 저장소. `createTestDi({ syncStorage })`에 넘기면 운영처럼
- * 같은 저장소를 읽고, `repository.hasSeen`으로 화면이 안내를 끝냈는지 확인한다.
- */
+/** `createTestDi({ syncStorage })`에 넘기면 운영처럼 같은 저장소를 읽어 `repository.hasSeen`으로 끝냈는지 본다 */
 export function createCoachmarkStorage(seen: readonly CoachmarkInput[] = []) {
   const syncStorage = createMemoryObservableSyncStorage();
   const repository = createCoachmarkRepository(syncStorage, getNowInstant);

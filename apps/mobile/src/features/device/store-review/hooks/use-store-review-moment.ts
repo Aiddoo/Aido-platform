@@ -15,12 +15,7 @@ import { STORE_REVIEW_LOG_EVENT } from '../constants/store-review-log-events';
 import type { StoreReviewMoment } from '../domains/store-review.model';
 import { waitForSettledScreen } from '../utils/wait-for-settled-screen';
 
-/**
- * 긍정적인 순간에 OS 리뷰 창을 요청한다. 순간을 만든 화면 안에서 쓰며,
- * 기다리는 동안 그 화면이 내려가거나 시트·키보드가 올라오거나 앱이 백그라운드로 가면 요청하지 않는다.
- *
- * 새 순간은 `StoreReviewMoment`에 추가한 뒤 축하가 보이는 곳에서 `requestReviewAt('…')` 한 줄로 연결한다.
- */
+// 기다리는 동안 순간을 만든 화면이 내려가거나 시트·키보드가 올라오거나 앱이 백그라운드로 가면 요청하지 않는다
 export function useStoreReviewMoment() {
   const queryClient = useQueryClient();
   const navigation = useNavigation();

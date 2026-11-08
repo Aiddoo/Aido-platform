@@ -106,10 +106,7 @@ WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onCl
   );
 };
 
-/**
- * 받은 자리 안에서 비율을 지키는 가장 큰 크기로 그린다. 세로 공간은 글꼴과 기기마다 달라
- * 폭을 세로에서 거꾸로 구한다. 폴드를 펴거나 접을 때만 다시 잰다.
- */
+// 세로 공간이 글꼴·기기마다 달라 폭을 세로에서 거꾸로 구하고, 폴드를 펴거나 접을 때만 다시 잰다
 WhatsNewStep.Media = function Media({
   sources,
   alt,

@@ -22,7 +22,6 @@ export interface WhatsNewRepository {
   dismissReentry(identity: WhatsNewIdentity): void;
   /** 번들에서 빠진 캠페인의 키와 기간이 지난 재진입 키를 지운다 */
   removeRetiredKeys(input: { campaignIds: readonly string[]; now: Instant }): void;
-  /** 탈퇴한 계정의 키를 지운다 */
   removeAccount(userId: string): void;
 }
 
@@ -58,10 +57,7 @@ export function createWhatsNewRepository(
       };
     },
 
-    /**
-     * MMKV의 동기 get/set을 한 JS 런루프에서 연속 수행해 같은 계정·캠페인을 한 번만 claim한다.
-     * 본 상태를 먼저 기록하므로 화면이 열리기 전에 재진입 호출도 차단된다.
-     */
+    // MMKV 동기 get/set을 한 런루프에서 이어 해 같은 계정·캠페인은 화면이 열리기 전에도 한 번만 claim된다
     claimSeen: (identity, at) => {
       try {
         if (storage.get(createWhatsNewSeenKey(identity)) != null) {

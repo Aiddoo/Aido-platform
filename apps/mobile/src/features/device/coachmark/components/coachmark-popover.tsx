@@ -25,22 +25,13 @@ interface CoachmarkPopoverProps
   onDismiss?: () => void;
   /** 대상이 지금 눌리지 않을 때. `Popover.Trigger`가 대상의 비활성을 덮어써 여기로 받는다 */
   isTargetDisabled?: boolean;
-  /**
-   * 이 값이 바뀌면 말풍선을 닫는다. 가리키던 자리가 움직이는 경우에 쓴다.
-   * 읽을 틈 없이 지나갔으면 본 것으로 남기지 않고, 멈춘 뒤 새 자리에서 다시 연다.
-   */
+  /** 바뀌면 닫는다(대상이 움직일 때). 읽을 틈 없이 지나갔으면 본 것으로 남기지 않고 멈춘 뒤 다시 연다 */
   dismissKey?: string;
   isDismissed?: boolean;
   children: ReactNode;
 }
 
-/**
- * 처음 한 번 자동으로 열리는 말풍선. 행동 버튼은 없고, 닫거나 대상을 누르면 끝난다.
- * 기본은 바깥 탭이 말풍선만 닫는다. 첫 탭이 대상에 닿아야 하면 `isPassThrough`를 쓴다.
- * 탭은 앱 시작 때 함께 그려지고 말풍선은 맨 위 레이어에 뜨므로, 대상의 화면이 포커스를 얻고 자리를 잘 수 있을 때만 연다.
- * 그 전에는 소비하지도 않는다. 포커스를 읽으므로 route 안에만 둔다(루트 overlay에는 포커스 문맥이 없다).
- * 내 정보를 아직 못 읽었으면 열지 않는다. 읽은 뒤 대상이 다시 마운트되면 누르던 탭이 사라지므로 트리는 그대로 둔다.
- */
+// 탭은 앱 시작 때 함께 그려지므로 대상 화면이 포커스를 얻고 자리를 잴 수 있을 때만 연다(포커스 문맥이 있는 route 안에만 둔다)
 export function CoachmarkPopover({
   kind,
   title,
@@ -118,6 +109,7 @@ export function CoachmarkPopover({
     }
   }, [isDismissed]);
 
+  // 내 정보를 읽은 뒤 대상이 다시 마운트되면 누르던 탭이 사라지므로 accountId와 무관하게 트리는 그대로 둔다
   return (
     <Popover {...popoverProps} isOpen={isOpen} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild isDisabled={isTargetDisabled}>

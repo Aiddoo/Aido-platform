@@ -20,7 +20,7 @@ export const widgetDaySnapshotSchema = z.object({
         id: z.number().int(),
         title: z.string(),
         completed: z.boolean(),
-        /** 카테고리 색상 (HEX) — 위젯 체크박스 컬러, 앱 홈과 동일한 시각 언어 */
+        /** HEX. 위젯 체크박스를 앱 홈과 같은 색으로 그린다 */
         categoryColor: z.string(),
       }),
     )
@@ -61,10 +61,7 @@ export const widgetDaySnapshotSchema = z.object({
   }),
 });
 
-/**
- * v2: 오늘과 (받을 수 있으면) 내일 요약을 함께 저장한다. 자정이 지나면 렌더러가 내일 day를
- * 오늘로 고르므로 앱을 열기 전에도 새 날짜를 표시한다. 저장 key는 v1과 같다.
- */
+/** 내일 day를 함께 저장해 자정이 지나면 앱을 열기 전에도 새 날짜를 보인다. 저장 key는 v1과 같다 */
 export const widgetSnapshotSchema = z.object({
   version: z.literal(2),
   updatedAtIso: z.string(),
