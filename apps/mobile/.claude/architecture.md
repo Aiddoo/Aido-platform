@@ -489,7 +489,7 @@ MemoList.Loading = function Loading() {
 | 5    | 외부 저장소 + `useSyncExternalStore`            | 앱 전역 설정, 기기 저장 값. Provider가 필요 없고 해제는 React가 맡는다                             | `minute-clock-store.ts`, `accessibility-setting-store.ts`        |
 | 6    | 폼은 props                                      | `FormProvider`는 쓰지 않는다. 칩처럼 `setValue`, `setFocus`까지 쓰면 `form`, 읽기만 하면 `control` | `TodoComposerChips form={form}`, 메모는 `control`                |
 
-**유지하는 Context:** `di-context`, `shared-di-context`(`shared`가 쓰는 포트만 나눈 DI), `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`), 키보드 위 칸 맞춤(`focused-field`: 입력이 칸 전체 뷰를 시트·화면 폼 스크롤에 알린다, `keyboard-footer-height`: 키보드 버튼이 제 높이를 화면 폼에 알린다. 둘 다 바뀌지 않는 알림 함수라 소비자가 다시 그려지지 않는다).
+**유지하는 Context:** `di-context`, `shared-di-context`(`shared`가 쓰는 포트만 나눈 DI), `overlay-provider`, `overlay-state-context`, `grid`, 시트 내부(`portal-target`, `sheet-footer-slot`, `sheet-header-layout`, `keyboard-bottom-sheet`), 댓글 폼(`todo-comment-form-context`), 키보드 위 칸 맞춤(입력과 버튼은 기능 폼 여러 층 아래에 있어 props로 내릴 수 없다. `focused-field`: 입력이 칸 전체 뷰를 시트·화면 폼 스크롤에 알린다, `keyboard-footer-height`: 키보드 버튼이 제 높이를 화면 폼에 알린다. 둘은 바뀌지 않는 알림 함수라 소비자가 다시 그려지지 않는다. `field-max-height`: 키보드 시트가 자라는 `TextArea`에 칸 상한 함수를 준다. 키보드가 오르내릴 때만 바뀌고 그때 칸이 다시 잰다).
 
 **UI 내부 Context의 예, 댓글 폼:** 작성 바, 댓글 행, 뒤로 가기가 한 입력값을 읽고 바꾸고, 세션이 폼을 소유한다. 폼은 props로 내리면 작성 바와 행 사이의 여러 층을 거쳐야 하고, 이 Context는 `UseFormReturn` 하나만 나눠 주며 서버 값이나 앱 상태를 담지 않는다. 폼의 값 변화는 `useWatch`가 구독하므로 Context 값(폼 객체)은 바뀌지 않아 소비자가 다시 그려지지 않는다.
 
