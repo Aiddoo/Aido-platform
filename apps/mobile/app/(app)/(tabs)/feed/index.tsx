@@ -314,7 +314,7 @@ FriendFeedTodos.Loading = function Loading() {
   );
 };
 
-FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
+FriendFeedTodos.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"

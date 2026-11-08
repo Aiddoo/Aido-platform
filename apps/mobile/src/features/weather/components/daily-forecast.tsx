@@ -254,7 +254,7 @@ DailyForecast.Item = memo(function Item({
 });
 
 /** 예보 기간 전체의 최저~최고 위에 하루의 범위를 기온 색 그라데이션으로 겹쳐 그린다. */
-DailyForecast.TemperatureBar = function TemperatureBarTrack({
+DailyForecast.TemperatureBar = function TemperatureBar({
   day,
   bar,
   nowPosition,

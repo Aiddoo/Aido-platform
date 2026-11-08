@@ -49,7 +49,7 @@ const LINE_EASING = Easing.bezier(0.3, 0.7, 0.2, 1);
 const AREA_EASING = Easing.out(Easing.ease);
 const LABEL_FONT = 'WantedSans-Medium';
 const AREA_GRADIENT_ID = 'next-hour-area';
-const FALLBACK_ICON_SIZE = 30;
+const HOURLY_OUTLOOK_ICON_SIZE = 30;
 const TITLE_ICON_SIZE = 13;
 const GUIDE_LABEL_FONT_SIZE = 10;
 
@@ -80,7 +80,7 @@ export function NextHourPrecipitation() {
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
-      <NextHourPrecipitation.HourlyFallback
+      <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
         timeZone={data.location.timezone}
         timeFormat={preference.timeFormat}
@@ -122,7 +122,7 @@ export function NextHourPrecipitation() {
 }
 
 /** 분 단위 예보가 없는 지역(국내 등)은 그래프 대신 6시간 안에 비가 오는 첫 시간을 한 줄로 알린다. */
-NextHourPrecipitation.HourlyFallback = function HourlyFallback({
+NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   outlook,
   timeZone,
   timeFormat,
@@ -136,7 +136,7 @@ NextHourPrecipitation.HourlyFallback = function HourlyFallback({
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);
   const localTime = useFormatLocalTime(timeZone, now);
-  const iconSize = Math.round(FALLBACK_ICON_SIZE * useFontScaleRatio());
+  const iconSize = Math.round(HOURLY_OUTLOOK_ICON_SIZE * useFontScaleRatio());
   const { hour, isOngoing } = outlook;
   const isSnow = WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
   const chance = hour.precipitationChance;

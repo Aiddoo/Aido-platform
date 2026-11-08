@@ -182,7 +182,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
   );
 }
 
-ProviderRow.Loading = function ProviderRowLoading() {
+ProviderRow.Loading = function Loading() {
   return (
     <HStack align="center" gap={12} className="px-4 py-4">
       <Skeleton className="size-10 rounded-full dark:bg-gray-2" />
