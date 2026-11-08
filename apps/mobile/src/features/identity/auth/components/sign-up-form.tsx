@@ -33,8 +33,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
       email: '',
       termsAgreed: false,
       privacyAgreed: false,
-      marketingAgreed: false,
-      marketingPushAgreed: false,
+      isMarketingAgreed: false,
       password: '',
       passwordConfirm: '',
       name: '',
@@ -50,14 +49,21 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const submitValidRegister = () =>
     new Promise<boolean>((resolve) => {
       form.handleSubmit(
-        async ({ termsAgreed, privacyAgreed, ...input }) => {
+        async ({ termsAgreed, privacyAgreed, isMarketingAgreed, ...input }) => {
+          // 스키마가 이미 막았다. 요청 타입이 true만 받아 여기서 좁힌다
           if (!termsAgreed || !privacyAgreed) {
             resolve(false);
             return;
           }
 
           try {
-            await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
+            await register.mutateAsync({
+              ...input,
+              termsAgreed,
+              privacyAgreed,
+              marketingAgreed: isMarketingAgreed,
+              marketingPushAgreed: isMarketingAgreed,
+            });
             stepper.history.replace('verification', { email: input.email });
             resolve(true);
           } catch (error) {

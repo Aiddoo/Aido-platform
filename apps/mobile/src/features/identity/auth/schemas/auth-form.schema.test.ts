@@ -6,10 +6,9 @@ const validSignUp = {
   password: 'Password123',
   passwordConfirm: 'Password123',
   name: '아이두',
-  termsAgreed: false,
-  privacyAgreed: false,
-  marketingAgreed: false,
-  marketingPushAgreed: false,
+  termsAgreed: true,
+  privacyAgreed: true,
+  isMarketingAgreed: false,
 };
 
 const validForgotPassword = {
@@ -23,13 +22,21 @@ const issuePaths = (result: { success: boolean; error?: { issues: { path: Proper
   result.error?.issues.map((issue) => issue.path.join('.')) ?? [];
 
 describe('signUpFormSchema', () => {
-  it('약관 동의 전(false)에도 입력 단계를 통과하고 이메일은 서버 규칙대로 정규화한다', () => {
+  it('필수 약관에 동의하면 선택 없이도 통과하고 이메일은 서버 규칙대로 정규화한다', () => {
     // When
     const result = signUpFormSchema.safeParse(validSignUp);
 
     // Then
     expect(result.success).toBe(true);
     expect(result.data?.email).toBe('user@example.com');
+  });
+
+  it('필수 약관 둘 중 하나라도 끄면 termsAgreed 오류로 막는다', () => {
+    // When
+    const result = signUpFormSchema.safeParse({ ...validSignUp, privacyAgreed: false });
+
+    // Then
+    expect(issuePaths(result)).toEqual(['termsAgreed']);
   });
 
   it('서버 계약에서는 선택인 닉네임을 회원가입 폼에서는 필수로 요구한다', () => {

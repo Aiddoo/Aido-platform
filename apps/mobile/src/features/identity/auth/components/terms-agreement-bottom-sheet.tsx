@@ -6,10 +6,11 @@ import {
   ArrowRightIcon,
   BottomSheet,
   Button,
+  H4,
   HStack,
+  IconButton,
   Text,
   VStack,
-  IconButton,
 } from '@src/shared/ui';
 import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -17,32 +18,36 @@ import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-ho
 
 import type { SignUpFormValues } from '../schemas/sign-up-form.schema';
 
-interface TermsBottomSheetProps {
+interface TermsAgreementBottomSheetProps extends Omit<
+  ComponentProps<typeof BottomSheet>,
+  'children' | 'onOpenChange'
+> {
   form: UseFormReturn<SignUpFormValues>;
-  isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   /** 폼과 mutation은 화면이 소유한다. 입력이 올바르지 않아 보내지 않았으면 false다 */
   onSubmit: () => Promise<boolean>;
 }
 
-export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: TermsBottomSheetProps) {
-  const { t } = useTranslation(['auth', 'common']);
-  const { isSubmitting } = useFormState({ control: form.control });
+/** 필수(이용약관·개인정보)와 선택(혜택·소식)을 묶음으로 나눈다. 모두 동의는 둘 다 켜고, 선택은 따로 끌 수 있다 */
+export function TermsAgreementBottomSheet({
+  form,
+  onOpenChange,
+  onSubmit,
+  ...sheetProps
+}: TermsAgreementBottomSheetProps) {
+  const { t } = useTranslation('auth');
+  const { isSubmitting, isValid } = useFormState({ control: form.control });
   const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
-
-  const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
+  const [termsAgreed, privacyAgreed, isMarketingAgreed] = useWatch({
     control: form.control,
-    name: ['termsAgreed', 'privacyAgreed', 'marketingAgreed', 'marketingPushAgreed'],
+    name: ['termsAgreed', 'privacyAgreed', 'isMarketingAgreed'],
   });
-  const isAllAgreed = termsAgreed && privacyAgreed && marketingAgreed && marketingPushAgreed;
-  const isRequiredAgreed = termsAgreed && privacyAgreed;
 
   const setAllAgreed = (isSelected: boolean) => {
-    form.setValue('termsAgreed', isSelected, { shouldDirty: true });
-    form.setValue('privacyAgreed', isSelected, { shouldDirty: true });
-    form.setValue('marketingAgreed', isSelected, { shouldDirty: true });
-    form.setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
+    form.setValue('termsAgreed', isSelected, { shouldDirty: true, shouldValidate: true });
+    form.setValue('privacyAgreed', isSelected, { shouldDirty: true, shouldValidate: true });
+    form.setValue('isMarketingAgreed', isSelected, { shouldDirty: true, shouldValidate: true });
   };
 
   const handleConfirm = async () => {
@@ -53,10 +58,15 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={32}>
+    <BottomSheet {...sheetProps} onOpenChange={onOpenChange}>
+      <VStack gap={24}>
+        <H4>{t('terms.title')}</H4>
+
         <VStack gap={16}>
-          <ControlField isSelected={isAllAgreed} onSelectedChange={setAllAgreed}>
+          <ControlField
+            isSelected={termsAgreed && privacyAgreed && isMarketingAgreed}
+            onSelectedChange={setAllAgreed}
+          >
             <ControlField.Indicator>
               <Checkbox className="shadow-none border border-main size-5 rounded-md" />
             </ControlField.Indicator>
@@ -69,15 +79,13 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
 
           <Separator />
 
-          {/* 필수 동의를 먼저, 선택 동의를 아래에 둔다 */}
           <VStack gap={20}>
             <Controller
               control={form.control}
               name="termsAgreed"
               render={({ field: { value, onChange } }) => (
-                <TermsBottomSheet.AgreementItem
+                <TermsAgreementBottomSheet.Item
                   label={t('terms.termsOfService')}
-                  isRequired
                   isSelected={value}
                   onSelectedChange={onChange}
                   onPressLink={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
@@ -88,47 +96,37 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
               control={form.control}
               name="privacyAgreed"
               render={({ field: { value, onChange } }) => (
-                <TermsBottomSheet.AgreementItem
+                <TermsAgreementBottomSheet.Item
                   label={t('terms.privacyPolicy')}
-                  isRequired
                   isSelected={value}
                   onSelectedChange={onChange}
                   onPressLink={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
                 />
               )}
             />
+          </VStack>
+
+          <VStack gap={4}>
             <Controller
               control={form.control}
-              name="marketingAgreed"
+              name="isMarketingAgreed"
               render={({ field: { value, onChange } }) => (
-                <TermsBottomSheet.AgreementItem
+                <TermsAgreementBottomSheet.Item
                   label={t('terms.marketing')}
                   isSelected={value}
                   onSelectedChange={onChange}
                 />
               )}
             />
-            <Controller
-              control={form.control}
-              name="marketingPushAgreed"
-              render={({ field: { value, onChange } }) => (
-                <TermsBottomSheet.AgreementItem
-                  label={t('terms.marketingPush')}
-                  isSelected={value}
-                  onSelectedChange={onChange}
-                />
-              )}
-            />
+            <Text size="e1" shade={6} className="pl-7">
+              {t('terms.marketingHint')}
+            </Text>
           </VStack>
         </VStack>
 
-        <Button
-          color="dark"
-          onPress={handleConfirm}
-          isLoading={isSubmitting}
-          isDisabled={!isRequiredAgreed}
-        >
-          {t('common:actions.confirm')}
+        {/* 다른 칸은 앞 단계에서 이미 통과해 남은 판단은 필수 약관 두 개다 */}
+        <Button onPress={handleConfirm} isLoading={isSubmitting} isDisabled={!isValid}>
+          {t('terms.submit')}
         </Button>
       </VStack>
     </BottomSheet>
@@ -137,19 +135,14 @@ export function TermsBottomSheet({ form, isOpen, onOpenChange, onSubmit }: Terms
 
 interface TermsAgreementItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   label: string;
-  isRequired?: boolean;
   onPressLink?: () => void;
 }
 
-TermsBottomSheet.AgreementItem = function AgreementItem({
+TermsAgreementBottomSheet.Item = function Item({
   label,
-  isRequired = false,
   onPressLink,
   ...props
 }: TermsAgreementItemProps) {
-  const { t } = useTranslation('auth');
-  const requiredLabel = isRequired ? t('terms.required') : t('terms.optional');
-
   return (
     <ControlField {...props}>
       <ControlField.Indicator>
@@ -157,12 +150,7 @@ TermsBottomSheet.AgreementItem = function AgreementItem({
       </ControlField.Indicator>
       <HStack flex={1} justify="between" align="center">
         <Label>
-          <HStack gap={4} align="center">
-            <Text size="b4">{label}</Text>
-            <Text size="b4" shade={6}>
-              ({requiredLabel})
-            </Text>
-          </HStack>
+          <Text size="b4">{label}</Text>
         </Label>
         {onPressLink && (
           <IconButton

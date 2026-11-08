@@ -12,7 +12,7 @@ import { type SignUpFormValues, signUpFormSchema } from '../schemas/sign-up-form
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
-import { TermsBottomSheet } from './terms-bottom-sheet';
+import { TermsAgreementBottomSheet } from './terms-agreement-bottom-sheet';
 
 type PasswordStep = 'password' | 'passwordConfirm';
 
@@ -150,7 +150,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
         </FormStepLayout>
       </Box>
 
-      <TermsBottomSheet
+      <TermsAgreementBottomSheet
         form={form}
         isOpen={isTermsOpen}
         onOpenChange={setIsTermsOpen}
