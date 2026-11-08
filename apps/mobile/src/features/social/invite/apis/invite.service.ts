@@ -10,9 +10,8 @@ import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-ga
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { Instant } from '@src/shared/date/instant';
-import { BusinessError } from '@src/shared/errors/business-error';
+import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import { getErrorMessage } from '@src/shared/errors/to-error';
 import type { Page } from '@src/shared/types/page.types';
 import { identity } from 'es-toolkit';
 

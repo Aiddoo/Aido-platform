@@ -1,4 +1,4 @@
-import { BusinessError } from '@src/shared/errors/business-error';
+import { BusinessError } from '@src/shared/errors';
 
 export const SUBSCRIPTION_ERROR_CODE = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */

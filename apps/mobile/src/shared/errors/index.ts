@@ -1,5 +1,7 @@
 export { ApiError, isApiError } from '@src/core/errors/api-error';
 
+export { BusinessError } from './business-error';
+
 export { classifyBoundaryError } from './classify-boundary-error';
 
 export {

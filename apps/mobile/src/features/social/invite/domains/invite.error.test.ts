@@ -1,5 +1,5 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { BusinessError } from '@src/shared/errors/business-error';
+import { BusinessError } from '@src/shared/errors';
 import { ServerError } from '@src/shared/errors/infra-error';
 
 import { INVITE_ERROR_CODE, isTerminalRedeemFailure, toRedeemFailureReason } from './invite.error';
