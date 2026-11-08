@@ -271,7 +271,8 @@ describe('하위 할 일 낙관적 갱신', () => {
 
   it('연달아 체크하면 앞 응답으로 다시 받지 않아 뒤 체크가 되돌아가지 않고 마지막에 한 번 맞춘다', async () => {
     // Given
-    const { httpClient, queryClient, mutations, isInvalidated } = await renderMutations();
+    const { httpClient, queryClient, mutations, isInvalidated, cachedTodo } =
+      await renderMutations();
     queryClient.setQueryData(
       LIST_DAY_1,
       toList([
@@ -297,7 +298,8 @@ describe('하위 할 일 낙관적 갱신', () => {
     await flush();
 
     // Then
-    expect(isInvalidated(LIST_DAY_1)).toBe(false);
+    expect(cachedTodo(LIST_DAY_1)?.subTodoStats).toEqual({ total: 2, completed: 2 });
+    expect(httpClient.get).not.toHaveBeenCalled();
 
     // When
     second.settle();
@@ -309,7 +311,8 @@ describe('하위 할 일 낙관적 갱신', () => {
 
   it('할 일 체크가 진행 중이면 하위 항목 응답으로 목록을 다시 받지 않고, 체크가 끝날 때 달력까지 맞춘다', async () => {
     // Given
-    const { httpClient, queryClient, mutations, isInvalidated } = await renderMutations();
+    const { httpClient, queryClient, mutations, isInvalidated, cachedTodo } =
+      await renderMutations();
     queryClient.setQueryData(
       LIST_DAY_1,
       toList([
@@ -339,7 +342,8 @@ describe('하위 할 일 낙관적 갱신', () => {
     await flush();
 
     // Then
-    expect(isInvalidated(LIST_DAY_1)).toBe(false);
+    expect(cachedTodo(LIST_DAY_1, 2)?.completed).toBe(true);
+    expect(httpClient.get).not.toHaveBeenCalled();
 
     // When
     todoToggle.settle();

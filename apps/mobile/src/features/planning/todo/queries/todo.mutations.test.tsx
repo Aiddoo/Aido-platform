@@ -230,18 +230,36 @@ describe('useToggleTodoMutationOptions settle', () => {
     await act(async () => first.settle());
   });
 
-  it('마지막 체크가 끝나면 목록과 완료 기록을 다시 부른다', async () => {
+  it('하루짜리 체크가 확정되면 목록·달력은 다시 받지 않고 서버만 아는 위젯 요약만 맞춘다', async () => {
     // Given
     const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
-    givenList(TODAY, [createParentTodo({ id: 42, completed: false })]);
+    givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
     httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
     // When
     await toggle(42, true, TODAY);
 
     // Then
+    expect(invalidatedKeys()).toContainEqual(TODO_QUERY_KEYS.widgetSummary());
+    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.listByDate({ date: TODAY }));
+    expect(invalidatedKeys()).not.toContainEqual(TODO_QUERY_KEYS.completionRanges());
+  });
+
+  it('체크가 실패하면 그 목록과 달력을 서버 값으로 다시 맞춘다', async () => {
+    // Given
+    const { httpClient, givenList, toggle, invalidatedKeys } = await renderToggle();
+    givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+    httpClient.patch.mockResolvedValue(err(createTodoApiError()));
+
+    // When
+    await toggle(42, true, TODAY);
+
+    // Then
     expect(invalidatedKeys()).toEqual(
-      expect.arrayContaining([TODO_QUERY_KEYS.lists(), TODO_QUERY_KEYS.completions()]),
+      expect.arrayContaining([
+        TODO_QUERY_KEYS.listByDate({ date: TODAY }),
+        TODO_QUERY_KEYS.completionRanges(),
+      ]),
     );
   });
 

@@ -10,8 +10,10 @@ import { getCachedActivationContext } from '@src/features/device/activation/quer
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
-import type { TodoCategoriesResult } from '@src/features/planning/category/domains/todo-category.model';
-import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
+import {
+  changeCachedCategoryTodoCount,
+  invalidateTodoCategories,
+} from '@src/features/planning/category/queries/todo-category-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
@@ -26,16 +28,17 @@ import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
-  cancelTodoCompletionQueries,
-  confirmTodoInList,
-  removeTodoFromList,
-  settleTodoCompletionWrite,
-  syncDailyCompletionWithList,
-  snapshotTodo,
-  updateCachedTodo,
+  beginTodoWrite,
+  getSnapshotDateSpan,
+  getTodoDateSpan,
   invalidateTodos,
-  cancelTodoQueries,
-  settleTodoListWrite,
+  removeTodoFromList,
+  settleTodoWrite,
+  snapshotTodo,
+  syncDailyCompletionWithList,
+  updateCachedTodo,
+  updateCachedTodoExistence,
+  withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
 import type {
   CreateTodoInput,
@@ -75,20 +78,20 @@ export function useCreateTodoMutationOptions() {
     },
     onMutate: async ({ input }) => {
       const startDate = input.startDate;
+      const span = getTodoDateSpan({ startDate, endDate: input.endDate ?? null });
+      const ticket = await beginTodoWrite(queryClient, {
+        date: startDate,
+        affectsCompletion: true,
+      });
 
-      await cancelTodoCompletionQueries(queryClient, { date: startDate });
-
-      const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-      );
       const category = TodoCategoryPolicy.findCategory(
-        categoriesData?.categories ?? [],
+        queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
         input.categoryId,
       );
 
       // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
       if (!category) {
-        return { startDate, optimisticId: undefined };
+        return { startDate, span, ticket, optimisticId: undefined };
       }
 
       const optimisticTodo: OptimisticTodo = {
@@ -113,17 +116,21 @@ export function useCreateTodoMutationOptions() {
       appendTodoToList(queryClient, { date: startDate }, optimisticTodo);
       syncDailyCompletionWithList(queryClient, { date: startDate });
 
-      return { startDate, optimisticId: optimisticTodo.id };
+      return { startDate, span, ticket, optimisticId: optimisticTodo.id };
     },
     onSuccess: (saved, { input }, { startDate, optimisticId }) => {
-      if (optimisticId != null) {
-        confirmTodoInList(queryClient, { date: startDate, optimisticId }, saved);
+      // 응답이 만든 할 일 전체라 목록·존재 여부·카테고리 개수를 응답으로 고치고 다시 받지 않는다
+      if (optimisticId == null) {
+        invalidateTodoCategories(queryClient);
+      } else {
+        updateCachedTodo(queryClient, { date: startDate, todoId: optimisticId }, () => saved);
+        changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
+      updateCachedTodoExistence(queryClient, withTodoCreated);
       activationService.recordTodoCreated({
         ...getCachedActivationContext(queryClient),
         now: getNowInstant(),
       });
-      invalidateTodoCategories(queryClient);
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source: 'manual',
@@ -155,8 +162,14 @@ export function useCreateTodoMutationOptions() {
         fallback: t('todo:toast.addFailedRetry'),
       });
     },
-    onSettled: () => {
-      settleTodoCompletionWrite(queryClient);
+    onSettled: (_saved, error, { input }, context) => {
+      settleTodoWrite(queryClient, {
+        date: input.startDate,
+        span: context?.span ?? getTodoDateSpan({ startDate: input.startDate, endDate: null }),
+        affectsCompletion: true,
+        failed: error != null || context?.optimisticId == null,
+        ticket: context?.ticket,
+      });
     },
   });
 }
@@ -184,9 +197,14 @@ export function useAddSubTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, date }) => {
-      await cancelTodoCompletionQueries(queryClient, { date, todoId });
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: true,
+      });
       const optimisticId = createOptimisticId();
-      const wasCompleted = snapshotTodo(queryClient, { date, todoId })?.todo.completed ?? false;
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const wasCompleted = snapshot?.todo.completed ?? false;
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoAdded(todo, {
           id: optimisticId,
@@ -197,7 +215,12 @@ export function useAddSubTodoMutationOptions() {
       );
       syncDailyCompletionWithList(queryClient, { date });
 
-      return { optimisticId, wasCompleted };
+      return {
+        optimisticId,
+        wasCompleted,
+        ticket,
+        span: getSnapshotDateSpan(snapshot, date),
+      };
     },
     onSuccess: (saved, { todoId, date }, { optimisticId }) => {
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
@@ -219,8 +242,15 @@ export function useAddSubTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date });
       }
     },
-    onSettled: () => {
-      settleTodoCompletionWrite(queryClient);
+    onSettled: (_saved, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: true,
+        failed: error != null,
+        ticket: context?.ticket,
+      });
     },
   });
 }
@@ -320,15 +350,22 @@ export function useUpdateSubTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, title, date }) => {
-      await cancelTodoQueries(queryClient, { date, todoId });
-      const previous = snapshotTodo(queryClient, { date, todoId })?.todo.subTodos.find(
-        (subTodo) => subTodo.id === subTodoId,
-      );
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: false,
+      });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const previous = snapshot?.todo.subTodos.find((subTodo) => subTodo.id === subTodoId);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
       );
 
-      return { previousTitle: previous?.title };
+      return {
+        previousTitle: previous?.title,
+        ticket,
+        span: getSnapshotDateSpan(snapshot, date),
+      };
     },
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
@@ -345,8 +382,15 @@ export function useUpdateSubTodoMutationOptions() {
         );
       }
     },
-    onSettled: () => {
-      settleTodoListWrite(queryClient);
+    onSettled: (_data, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: false,
+        failed: error != null,
+        ticket: context?.ticket,
+      });
     },
   });
 }

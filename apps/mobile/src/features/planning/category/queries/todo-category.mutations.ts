@@ -17,10 +17,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type {
-  OptimisticTodoCategoryWithCount,
-  TodoCategoriesResult,
-} from '../domains/todo-category.model';
+import type { OptimisticTodoCategoryWithCount } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,
@@ -43,11 +40,9 @@ export function useCreateTodoCategoryMutationOptions() {
     mutationFn: async (input: TodoCategoryFormValues) =>
       unwrap(await todoCategoryService.createCategory(input)),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
 
-      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-      );
+      const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
 
       const lastSortOrder = previousData?.categories.at(-1)?.sortOrder ?? 0;
 
@@ -60,17 +55,14 @@ export function useCreateTodoCategoryMutationOptions() {
         optimistic: true,
       };
 
-      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return { ...old, categories: [...old.categories, optimisticCategory] };
-      });
+      queryClient.setQueryData(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+        (old) => old && TodoCategoryPolicy.withCategoryAdded(old, optimisticCategory),
+      );
 
       return { previousData };
     },
     onSuccess: (_data, variables) => {
-      invalidateTodos(queryClient);
       // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryAdded'));
@@ -91,6 +83,8 @@ export function useCreateTodoCategoryMutationOptions() {
         fallback: t('todo:toast.addFailedRetry'),
       });
     },
+    // 임시 id를 서버 id로 바꾼다. 새 카테고리에는 아직 할 일이 없어 할 일 조회는 그대로다
+    onSettled: () => invalidateTodoCategories(queryClient),
   });
 }
 
@@ -111,28 +105,19 @@ export function useUpdateTodoCategoryMutationOptions() {
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
       unwrap(await todoCategoryService.updateCategory(id, input)),
     onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
 
-      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
+      const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+
+      queryClient.setQueryData(
         TODO_CATEGORY_QUERY_KEYS.list(),
+        (old) => old && TodoCategoryPolicy.withCategoryChanged(old, id, input),
       );
-
-      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          categories: old.categories.map((category) =>
-            category.id === id ? { ...category, ...input } : category,
-          ),
-        };
-      });
 
       return { previousData };
     },
     onSuccess: (_data, variables, context) => {
-      invalidateTodoCategories(queryClient);
+      // 할 일 행과 달력 점이 카테고리 이름·색을 함께 보여 준다
       invalidateFeedTodos(queryClient);
       toast.success(t('todo:toast.categoryUpdated'));
       const previous = TodoCategoryPolicy.findCategory(
@@ -153,6 +138,7 @@ export function useUpdateTodoCategoryMutationOptions() {
         fallback: t('todo:toast.updateFailedRetry'),
       });
     },
+    onSettled: () => invalidateTodoCategories(queryClient),
   });
 }
 
@@ -174,26 +160,20 @@ export function useDeleteTodoCategoryMutationOptions() {
     mutationFn: async ({ id, query }: DeleteTodoCategoryVariables) =>
       unwrap(await todoCategoryService.deleteCategory(id, query)),
     onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
 
-      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
+      const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+
+      queryClient.setQueryData(
         TODO_CATEGORY_QUERY_KEYS.list(),
+        (old) => old && TodoCategoryPolicy.withCategoryRemoved(old, id),
       );
-
-      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          categories: old.categories.filter((category) => category.id !== id),
-        };
-      });
 
       return { previousData };
     },
     onSuccess: () => {
       trackEvent('category_deleted');
+      // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜가 바뀌었는지 모른다
       invalidateTodos(queryClient);
       // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다
       invalidateEntitlements(queryClient);
@@ -209,6 +189,7 @@ export function useDeleteTodoCategoryMutationOptions() {
         fallback: t('todo:toast.deleteFailedRetry'),
       });
     },
+    onSettled: () => invalidateTodoCategories(queryClient),
   });
 }
 
@@ -230,7 +211,6 @@ export function useReorderTodoCategoryMutationOptions() {
     mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>
       unwrap(await todoCategoryService.reorderCategory(id, input)),
     onSuccess: () => {
-      invalidateTodoCategories(queryClient);
       invalidateWidgetSummary(queryClient);
       trackEvent('category_reordered', { source: 'settings' });
       const accountId = getCachedMe(queryClient)?.id;
@@ -239,9 +219,10 @@ export function useReorderTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      invalidateTodoCategories(queryClient);
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
+    // 성공하면 서버 순서를, 실패하면 끌기 전 순서를 받아 화면이 붙잡은 순서를 놓는다
+    onSettled: () => invalidateTodoCategories(queryClient),
   });
 }

@@ -47,7 +47,8 @@ describe('withTodoDailyCompletion', () => {
       completedTodos: 2,
       isComplete: false,
       completionRate: 67,
-      categoryColors: ['#FF0000', '#0000FF'],
+      // 서버 응답과 같은 순서가 되도록 정렬한다
+      categoryColors: ['#0000FF', '#FF0000'],
     });
     expect(result.totalCompleteDays).toBe(1);
   });
@@ -196,5 +197,21 @@ describe('withMultiDayTodoSpans', () => {
 
     // Then
     expect(result).toBe(given);
+  });
+});
+
+describe('toCategoryColors', () => {
+  it('서버가 어떤 순서로 모아도 같은 색 목록이 되어 다시 받아도 구조적 공유로 같은 값이다', () => {
+    // Given
+    const fromServer = ['#FF0000', '#0000FF', '#FF0000'];
+    const fromList = ['#0000FF', '#FF0000'];
+
+    // When
+    const serverColors = DailyCompletionPolicy.toCategoryColors(fromServer);
+    const listColors = DailyCompletionPolicy.toCategoryColors(fromList);
+
+    // Then
+    expect(serverColors).toEqual(['#0000FF', '#FF0000']);
+    expect(serverColors).toEqual(listColors);
   });
 });

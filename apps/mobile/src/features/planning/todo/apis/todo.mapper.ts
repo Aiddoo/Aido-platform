@@ -51,7 +51,7 @@ function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompleti
     completedTodos: dto.completedTodos,
     isComplete: dto.isComplete,
     completionRate: dto.completionRate,
-    categoryColors: dto.categoryColors,
+    categoryColors: DailyCompletionPolicy.toCategoryColors(dto.categoryColors),
   };
 }
 

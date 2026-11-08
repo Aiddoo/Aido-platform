@@ -30,6 +30,11 @@ const multiDayTodoSpanSchema = z.object({
 });
 export type MultiDayTodoSpan = z.infer<typeof multiDayTodoSpanSchema>;
 
+/** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 정렬해 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
+export function toCategoryColors(colors: readonly string[]): string[] {
+  return uniq(colors).sort();
+}
+
 function createDailyCompletionSummary(
   summary: Pick<
     DailyCompletionSummary,
@@ -78,7 +83,10 @@ export function withMultiDayTodoSpans(
           date,
           totalTodos: (summary?.totalTodos ?? 0) + 1,
           completedTodos: (summary?.completedTodos ?? 0) + (span.completed ? 1 : 0),
-          categoryColors: uniq([...(summary?.categoryColors ?? []), span.categoryColor]),
+          categoryColors: toCategoryColors([
+            ...(summary?.categoryColors ?? []),
+            span.categoryColor,
+          ]),
         }),
       );
     }
@@ -108,13 +116,14 @@ export function withTodoDailyCompletion(
             date,
             totalTodos: dayTodos.length,
             completedTodos: dayTodos.filter((todo) => todo.completed).length,
-            categoryColors: uniq(dayTodos.map((todo) => todo.category.color)),
+            categoryColors: toCategoryColors(dayTodos.map((todo) => todo.category.color)),
           }),
         ],
   );
 }
 
 export const DailyCompletionPolicy = {
+  toCategoryColors,
   withTodoDailyCompletion,
   withMultiDayTodoSpans,
 } as const;

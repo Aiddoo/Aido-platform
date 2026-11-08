@@ -5,7 +5,10 @@ import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-chan
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
-import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
+import {
+  changeCachedCategoryTodoCount,
+  invalidateTodoCategories,
+} from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { getUserFacingMessage } from '@src/shared/errors';
@@ -15,6 +18,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { findTodoSeriesFailure, shouldRefreshTodos } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
@@ -25,18 +29,21 @@ import type {
   UpdateTodoScheduleInput,
 } from '../schemas/todo-request.schema';
 import {
-  cancelTodoCompletionQueries,
+  beginTodoWrite,
   getCachedTodosByDate,
-  settleTodoCompletionWrite,
-  syncDailyCompletionWithList,
-  updateCachedTodo,
+  getSnapshotDateSpan,
+  getUpcomingRepeatFilters,
+  invalidateTodoDependentQueries,
   invalidateTodos,
   removeTodoFromList,
   restoreTodo,
+  settleTodoReorder,
+  settleTodoWrite,
   snapshotTodo,
-  invalidateTodoDependentQueries,
-  invalidateWidgetSummary,
-  settleTodoListWrite,
+  syncDailyCompletionWithList,
+  updateCachedTodo,
+  updateCachedTodoExistence,
+  withTodoCompleted,
 } from './todo-cache';
 
 interface ToggleTodoVariables {
@@ -64,12 +71,22 @@ export function useToggleTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, body, date }) => {
-      await cancelTodoCompletionQueries(queryClient, { date, todoId });
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: true,
+      });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
       updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
         ...todo,
         completed: body.completed,
       }));
       syncDailyCompletionWithList(queryClient, { date });
+
+      return {
+        ticket,
+        span: getSnapshotDateSpan(snapshot, date),
+      };
     },
     onSuccess: (_data, variables) => {
       trackEvent('todo_completed', {
@@ -80,6 +97,7 @@ export function useToggleTodoMutationOptions() {
       if (!variables.body.completed) {
         return;
       }
+      updateCachedTodoExistence(queryClient, withTodoCompleted);
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
       const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
@@ -97,12 +115,21 @@ export function useToggleTodoMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
-    onSettled: (_data, _error, { date }) => {
+    onSettled: (_data, error, { todoId, body, date }, context) => {
       if (date < todayKey) {
         invalidateWeeklyAchievements(queryClient, { year: getIsoWeekYear(date) });
       }
       invalidateTodoDependentQueries(queryClient);
-      settleTodoCompletionWrite(queryClient);
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: true,
+        failed: error != null,
+        ticket: context?.ticket,
+        // 완료를 풀면 완료한 할 일이 하나도 남지 않았는지 서버만 안다
+        extra: body.completed ? [] : [{ queryKey: TODO_QUERY_KEYS.existence() }],
+      });
     },
   });
 }
@@ -182,20 +209,31 @@ export function useDeleteTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, date }) => {
-      await cancelTodoCompletionQueries(queryClient, { date, todoId });
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: true,
+      });
       const snapshot = snapshotTodo(queryClient, { date, todoId });
       removeTodoFromList(queryClient, { date, todoId });
       syncDailyCompletionWithList(queryClient, { date });
 
-      return { snapshot };
+      return { snapshot, ticket };
     },
-    onSuccess: (_, { todoId, scope }) => {
+    onSuccess: (_, { todoId, scope }, context) => {
       toast.success(t('todo:toast.todoDeleted'));
       trackEvent('todo_deleted', { todo_id: todoId });
       if (scope != null) {
         trackEvent('todo_series_deleted', { scope });
         invalidateTodos(queryClient);
+        return;
       }
+      const categoryId = context.snapshot?.todo.category.id;
+      if (categoryId == null) {
+        invalidateTodoCategories(queryClient);
+        return;
+      }
+      changeCachedCategoryTodoCount(queryClient, { categoryId, delta: -1 });
     },
     onError: (error, _variables, context) => {
       if (context?.snapshot) {
@@ -223,10 +261,23 @@ export function useDeleteTodoMutationOptions() {
         fallback: t('todo:toast.deleteFailedRetry'),
       });
     },
-    onSettled: () => {
-      invalidateTodoCategories(queryClient);
+    onSettled: (_data, error, { todoId, date }, context) => {
+      const snapshot = context?.snapshot;
       invalidateTodoDependentQueries(queryClient);
-      settleTodoCompletionWrite(queryClient);
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: getSnapshotDateSpan(snapshot ?? null, date),
+        affectsCompletion: true,
+        failed: error != null,
+        ticket: context?.ticket,
+        extra: [
+          // 마지막 할 일을 지웠는지는 서버만 안다
+          { queryKey: TODO_QUERY_KEYS.existence() },
+          { queryKey: TODO_QUERY_KEYS.page({ todoId }) },
+          ...getUpcomingRepeatFilters(snapshot?.todo),
+        ],
+      });
     },
   });
 }
@@ -252,7 +303,6 @@ export function useReorderTodoMutationOptions() {
       return unwrap(result);
     },
     onSuccess: () => {
-      invalidateWidgetSummary(queryClient);
       trackEvent('todo_reordered', { source: 'feed' });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
@@ -263,8 +313,8 @@ export function useReorderTodoMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
-    onSettled: () => {
-      settleTodoListWrite(queryClient);
+    onSettled: (_data, _error, { id }) => {
+      settleTodoReorder(queryClient, { todoId: id });
     },
   });
 }

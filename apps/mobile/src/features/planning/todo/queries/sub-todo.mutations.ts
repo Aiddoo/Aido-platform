@@ -9,10 +9,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
-  cancelTodoQueries,
-  settleTodoListWrite,
-  updateCachedTodo,
+  beginTodoWrite,
+  getSnapshotDateSpan,
+  settleTodoWrite,
   snapshotTodo,
+  updateCachedTodo,
 } from './todo-cache';
 
 interface ToggleSubTodoVariables {
@@ -41,10 +42,17 @@ export function useToggleSubTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, isCompleted, date }) => {
-      await cancelTodoQueries(queryClient, { date, todoId });
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: false,
+      });
+      const span = getSnapshotDateSpan(snapshotTodo(queryClient, { date, todoId }), date);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoCompleted(todo, subTodoId, isCompleted),
       );
+
+      return { ticket, span };
     },
     onSuccess: (_data, { todoId, subTodoId, isCompleted }) => {
       trackEvent('todo_item_completed', {
@@ -60,8 +68,15 @@ export function useToggleSubTodoMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.subTodoUpdateFailed') });
     },
-    onSettled: () => {
-      settleTodoListWrite(queryClient);
+    onSettled: (_data, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: false,
+        failed: error != null,
+        ticket: context?.ticket,
+      });
     },
   });
 }
@@ -89,14 +104,24 @@ export function useDeleteSubTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, date }) => {
-      await cancelTodoQueries(queryClient, { date, todoId });
-      const subTodos = snapshotTodo(queryClient, { date, todoId })?.todo.subTodos ?? [];
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: false,
+      });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const subTodos = snapshot?.todo.subTodos ?? [];
       const index = subTodos.findIndex((subTodo) => subTodo.id === subTodoId);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoRemoved(todo, subTodoId),
       );
 
-      return { removed: subTodos[index], index };
+      return {
+        removed: subTodos[index],
+        index,
+        ticket,
+        span: getSnapshotDateSpan(snapshot, date),
+      };
     },
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_deleted', { todo_id: todoId, item_id: subTodoId });
@@ -113,8 +138,15 @@ export function useDeleteSubTodoMutationOptions() {
         );
       }
     },
-    onSettled: () => {
-      settleTodoListWrite(queryClient);
+    onSettled: (_data, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: false,
+        failed: error != null,
+        ticket: context?.ticket,
+      });
     },
   });
 }
@@ -142,15 +174,18 @@ export function useReorderSubTodosMutationOptions() {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoIds, date }) => {
-      await cancelTodoQueries(queryClient, { date, todoId });
-      const previousIds = snapshotTodo(queryClient, { date, todoId })?.todo.subTodos.map(
-        (subTodo) => subTodo.id,
-      );
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        affectsCompletion: false,
+      });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      const previousIds = snapshot?.todo.subTodos.map((subTodo) => subTodo.id);
       updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodosOrdered(todo, subTodoIds),
       );
 
-      return { previousIds };
+      return { previousIds, ticket, span: getSnapshotDateSpan(snapshot, date) };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
@@ -165,8 +200,15 @@ export function useReorderSubTodosMutationOptions() {
       haptics.notify('error');
       toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.changeFailedRetry') });
     },
-    onSettled: () => {
-      settleTodoListWrite(queryClient);
+    onSettled: (_data, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        affectsCompletion: false,
+        failed: error != null,
+        ticket: context?.ticket,
+      });
     },
   });
 }
