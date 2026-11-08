@@ -60,6 +60,44 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
           </Suspense>
         </QueryErrorBoundary>
 
+        <SettingsListGroup label={t('mypage.sections.settings')}>
+          <MyPageMenuItem
+            Icon={BellIcon}
+            label={t('mypage.items.notifications')}
+            pathname="/settings/notifications"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={ListIcon}
+            label={t('mypage.items.categories')}
+            pathname="/settings/category-settings"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={MoonIcon}
+            label={t('mypage.items.theme')}
+            pathname="/settings/theme"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={TextSizeIcon}
+            label={t('mypage.items.fontSize')}
+            pathname="/settings/font-size"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={GlobeIcon}
+            label={t('settings:titles.language')}
+            pathname="/settings/language"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={MicIcon}
+            label={t('settings:titles.voiceStorage')}
+            pathname="/settings/voice-storage"
+          />
+        </SettingsListGroup>
+
         {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
         {isInviteAvailable && (
           <QueryErrorBoundary fallback={InviteRewardButton.Error}>
@@ -102,44 +140,6 @@ export function MyPageMenuPane({ isSplit }: { isSplit: boolean }) {
             Icon={AppSquareIcon}
             label={t('mypage.items.appIcon')}
             pathname="/settings/app-icon"
-          />
-        </SettingsListGroup>
-
-        <SettingsListGroup label={t('mypage.sections.settings')}>
-          <MyPageMenuItem
-            Icon={BellIcon}
-            label={t('mypage.items.notifications')}
-            pathname="/settings/notifications"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={ListIcon}
-            label={t('mypage.items.categories')}
-            pathname="/settings/category-settings"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={MoonIcon}
-            label={t('mypage.items.theme')}
-            pathname="/settings/theme"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={TextSizeIcon}
-            label={t('mypage.items.fontSize')}
-            pathname="/settings/font-size"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={GlobeIcon}
-            label={t('settings:titles.language')}
-            pathname="/settings/language"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={MicIcon}
-            label={t('settings:titles.voiceStorage')}
-            pathname="/settings/voice-storage"
           />
         </SettingsListGroup>
 
