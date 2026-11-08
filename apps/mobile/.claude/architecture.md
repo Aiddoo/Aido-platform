@@ -967,7 +967,6 @@ export const MEMO_QUERY_KEYS = {
   all: ['memo'] as const,
   list: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
   details: () => [...MEMO_QUERY_KEYS.all, 'detail'] as const,
-  // 뮤테이션이 직접 읽고 쓰는 키는 데이터 타입을 붙인다
   detail: ({ memoId }: { memoId: number }) =>
     queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.details(), { memoId }] }).queryKey,
   resourceLimit: () => [...MEMO_QUERY_KEYS.all, 'resource-limit'] as const,
@@ -1005,7 +1004,7 @@ export function useCreateMemoMutationOptions() {
 
 - **훅:** 서비스가 DI에 있으므로 옵션은 `useGetXQueryOptions` 훅이다. 컴포넌트는 `useSuspenseQuery(useGetXQueryOptions(…))`처럼 사용처에서 바로 부른다. 옵션을 감싸는 훅을 더 만들지 않는다. `getXQueryOptions` 함수는 훅 밖(`queryClient.fetchQuery`, 프리페치)에서 쓸 때만 `({ xService }, params)` 인자로 export한다. 옮긴 feature에는 아직 그런 예가 없다.
 - **인라인 금지:** query key·queryFn·캐시 정책을 컴포넌트에 인라인으로 만들지 않는다. 키를 하드코딩하지 않는다.
-- **키:** `{FEATURE}_QUERY_KEYS`이고 인자는 이름 있는 객체 하나다. 캐시를 직접 읽고 쓰는 단건 키는 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다(TanStack TypeScript 문서의 DataTag). 접두사로 여럿을 고르는 `getQueriesData`·`setQueriesData`만 제네릭을 쓴다. 범위는 복수(`lists`, `details`), 단건은 단수(`detail`)다. 인자 없는 목록은 `list()` 하나면 된다. 키 이름에 피처 접두사를 반복하지 않는다. 영속 대상 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
+- **키:** `{FEATURE}_QUERY_KEYS`이고 인자는 이름 있는 객체 하나다. 캐시를 직접 읽고 쓰는 단건 키는 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다(TanStack TypeScript 문서의 DataTag). 접두사로 여럿을 고르는 `getQueriesData`·`setQueriesData`만 제네릭을 쓴다. 범위는 복수(`lists`, `details`), 단건은 단수(`detail`)다. 인자 없는 목록은 `list()` 하나면 된다. 키 이름에 피처 접두사를 반복하지 않는다. 영속 대상 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다. 이 이유를 키 파일마다 주석으로 다시 적지 않는다.
 - **signal:** 서버 GET은 `signal`을 넘긴다.
 - **select:** 함수 참조가 바뀌면 다시 실행되므로 모듈 수준 `function`(`selectMemos`)이나 `useCallback`으로 둔다. 필요한 값만 구독할 때 쓴다. 오류를 던지는 데 쓰지 않고 서버 스키마를 변환하지 않는다(캐시에 DTO가 남으면 낙관적 업데이트가 서버 모양을 알아야 한다).
 - **필터:** 클라이언트 필터는 key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.

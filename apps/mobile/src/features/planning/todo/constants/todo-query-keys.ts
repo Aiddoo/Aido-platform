@@ -8,7 +8,6 @@ import type {
   TodoSummary,
 } from '../domains/todo.model';
 
-// 캐시를 직접 읽고 쓰는 키는 queryOptions로 데이터 타입을 붙여 getQueryData·setQueryData가 제네릭 없이 타입을 안다
 export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
 
