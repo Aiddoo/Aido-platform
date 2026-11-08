@@ -13,6 +13,10 @@ export function subscribeNotificationsChanged(listener: () => void): () => void 
 
 export function emitNotificationsChanged(): void {
   for (const listener of [...listeners]) {
-    listener();
+    try {
+      listener();
+    } catch {
+      // 한 리스너의 실패가 다른 리스너 알림을 막으면 안 됨
+    }
   }
 }
