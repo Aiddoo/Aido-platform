@@ -221,6 +221,7 @@ const sheet = useSheetRoute('/feed');
 bottom-sheet/
 ├── bottom-sheet.tsx                   # HeroUI 기반 기본 바텀시트
 ├── keyboard-bottom-sheet.tsx          # HeroUI Root·Portal + gorhom 내용의 키보드 연동 바텀시트
+├── keyboard-bottom-sheet.geometry.ts  # 키보드 시트 최대 높이, 키보드에 가린 높이, 키보드 위 내용 높이(순수)
 ├── modal-bottom-sheet.tsx             # overlay로 띄우는 바텀시트 (시트 위 시트)
 ├── portal-target.ts                   # HeroUI *.Portal에 넘길 호스트
 ├── sheet-footer-slot.tsx              # footer가 바뀌어도 다시 마운트되지 않고, 첫 높이를 그리기 전에 재는 슬롯
@@ -235,7 +236,7 @@ bottom-sheet/
 ├── get-sheet-horizontal-margins.ts    # 주어진 영역 기준 최대 폭·가운데 정렬 여백
 ├── get-sheet-layout.ts                # reserved region·safe area로 좌우 여백, 위쪽 한계, 최대 높이 계산
 ├── use-sheet-layout.ts                # 위 계산에 창 크기·safe area·reserved region을 넣는 훅
-├── constants.ts                       # 공유 스타일, 상수
+├── bottom-sheet.constants.ts          # 공유 스타일, 상수
 ├── index.ts                           # barrel export
 └── bottom-sheet.md                    # 이 문서
 ```
@@ -259,7 +260,7 @@ React Native `BackHandler`의 구독은 cleanup에서 제거한다.
 
 `KeyboardBottomSheet`의 내용 크기·키보드 변경은 하나의 예약 resize frame으로 모은다.
 시트가 닫히거나 unmount되면 frame을 취소하고, forceClose 재시도 timer도 정리한다.
-키보드 시트의 index·최소 높이·상단 여백은 `constants.ts`를 재사용한다.
+키보드 시트의 index·최소 높이·상단 여백은 `bottom-sheet.constants.ts`를 재사용한다.
 
 전역 `OverlayProvider`의 선택적 `resetKey`에는 bootstrap에서 `usePathname()`을 전달한다.
 푸시·딥링크 등으로 실제 화면 경로가 바뀌면 이전 오버레이가 새 화면 위에 남지 않는다.

@@ -51,7 +51,11 @@ import {
   SHEET_OVERLAY_OPACITY,
   SHEET_RADIUS,
 } from './bottom-sheet.constants';
-import { getSheetMaxHeight } from './get-sheet-layout';
+import {
+  getBodyHeightAboveKeyboard,
+  getKeyboardHiddenHeight,
+  getKeyboardSheetMaxHeight,
+} from './keyboard-bottom-sheet.geometry';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
@@ -107,12 +111,15 @@ export function KeyboardBottomSheet({
   const contentHeight = useSharedValue(0);
   const keyboardHeight = useSharedValue(0);
   // 시트가 위쪽 한계에 닿으면 바닥이 키보드에 가린다(gorhom은 내용 영역을 줄이지 않는다). 다 올라간 위치로 정해 프레임마다 다시 붙지 않는다
-  const keyboardHiddenHeight = useDerivedValue(() => {
-    const sheetHeight = Math.min(contentHeight.get() + HANDLE_HEIGHT, maxDynamicContentSize);
-    const hiddenHeight = sheetHeight + keyboardHeight.get() - (windowHeight - topInset);
-
-    return keyboardHeight.get() > 0 && hiddenHeight >= 0 ? hiddenHeight : null;
-  });
+  const keyboardHiddenHeight = useDerivedValue(() =>
+    getKeyboardHiddenHeight({
+      contentHeight: contentHeight.get(),
+      keyboardHeight: keyboardHeight.get(),
+      maxSheetHeight: maxDynamicContentSize,
+      windowHeight,
+      topInset,
+    }),
+  );
   // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
   const scrollAnimatedStyle = useAnimatedStyle(() => ({
     marginBottom: withTiming(keyboardHiddenHeight.get() ?? 0, {
@@ -140,15 +147,18 @@ export function KeyboardBottomSheet({
   // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비운다. 키보드가 오르내릴 때 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
+  const footerSpace = footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP;
   const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
   const bodyContentRef = useRef<ComponentRef<typeof View>>(null);
   const visibleBodyHeight =
     !isOpen || keyboardTop == null
       ? null
-      : Math.min(maxDynamicContentSize, keyboardTop - topInset) -
-        HANDLE_HEIGHT -
-        CONTENT_PADDING_TOP -
-        (footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP);
+      : getBodyHeightAboveKeyboard({
+          keyboardTop,
+          topInset,
+          maxSheetHeight: maxDynamicContentSize,
+          reservedHeight: CONTENT_PADDING_TOP + footerSpace,
+        });
   // 칸을 뺀 나머지 내용이 키보드 위에 남도록 칸 상한을 준다. 내용 높이는 칸과 같은 배치에서 동기로 잰다
   const getMaxFieldHeight = useCallback(
     (fieldHeight: number) => {
@@ -424,11 +434,7 @@ export function KeyboardBottomSheet({
                   onContentSizeChange={handleContentSizeChange}
                   contentContainerStyle={[
                     styles.content,
-                    {
-                      paddingBottom:
-                        bottomPadding +
-                        (footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP),
-                    },
+                    { paddingBottom: bottomPadding + footerSpace },
                   ]}
                   keyboardShouldPersistTaps="always"
                   scrollIndicatorInsets={{ bottom: footer == null ? 0 : footerChromeHeight }}
@@ -467,10 +473,6 @@ export function useKeyboardSheetBodyMaxHeight(): number {
     CONTENT_PADDING_TOP -
     getContentBottomPadding(insets.bottom)
   );
-}
-
-function getKeyboardSheetMaxHeight(windowHeight: number, topInset: number) {
-  return getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
 }
 
 function getContentBottomPadding(bottomInset: number) {
