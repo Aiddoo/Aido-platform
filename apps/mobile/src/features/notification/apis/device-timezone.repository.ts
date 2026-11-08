@@ -1,7 +1,8 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
-import { type DeviceTimezone, savedDeviceTimezoneSchema } from '../schemas/device-timezone.schema';
+import { type DeviceTimezone } from '../domains/device-timezone.model';
+import { savedDeviceTimezoneSchema } from '../schemas/device-timezone.schema';
 
 const DEVICE_TIMEZONE_KEY = 'aido_device_timezone_v1';
 

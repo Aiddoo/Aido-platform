@@ -5,8 +5,8 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import type { NotificationListResult } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
-import type { NotificationListResult } from '../schemas/notification.schema';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 

@@ -15,7 +15,7 @@ import { useEffect, useEffectEvent } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
-import type { DeviceTimezoneChange } from '../schemas/device-timezone.schema';
+import type { DeviceTimezoneChange } from '../domains/device-timezone.model';
 import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
 
 const UPCOMING_TODO_WINDOW_DAYS = 31;

@@ -8,10 +8,8 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import {
-  type NotificationType,
-  pushNotificationPayloadSchema,
-} from '../schemas/notification.schema';
+import { type NotificationType } from '../domains/notification.model';
+import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 
 const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 

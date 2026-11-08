@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { notificationCategorySchema } from './notification.schema';
+import { notificationCategorySchema } from '../domains/notification.model';
 
 const notificationListQueryKeySchema = z.object({
   category: notificationCategorySchema.optional(),

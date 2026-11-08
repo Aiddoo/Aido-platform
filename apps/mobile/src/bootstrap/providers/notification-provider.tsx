@@ -1,6 +1,7 @@
 import { subscribeNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import type { NotificationType } from '@src/features/notification/domains/notification.model';
 import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
@@ -8,7 +9,6 @@ import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-dev
 import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
-import type { NotificationType } from '@src/features/notification/schemas/notification.schema';
 import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

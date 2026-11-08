@@ -9,7 +9,7 @@ import {
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 
-import type { PushPermission } from '../schemas/push-permission.schema';
+import type { PushPermission } from '../domains/push-permission.model';
 
 function generateNotificationListResponseDto(): NotificationListResponse {
   return {

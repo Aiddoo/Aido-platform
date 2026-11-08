@@ -9,7 +9,7 @@ import {
   type Notification,
   type NotificationListResult,
   type NotificationRouting,
-} from '../schemas/notification.schema';
+} from '../domains/notification.model';
 
 export function toNotification(server: ServerNotification): Notification {
   const routing = toNotificationRouting(server.metadata);

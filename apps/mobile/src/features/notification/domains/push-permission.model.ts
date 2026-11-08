@@ -1,10 +1,23 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { diffMs, type Instant } from '@src/shared/date/instant';
+import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import { PUSH_PERMISSION_STEP, PUSH_PROMPT_SNOOZE_DAYS } from '../constants/notification.constants';
-import type { PushPermission } from '../schemas/push-permission.schema';
+
+export const pushPermissionSchema = z.object({
+  status: z.enum(PUSH_PERMISSION_STATUS),
+  canAskAgain: z.boolean(),
+});
+export type PushPermission = z.infer<typeof pushPermissionSchema>;
+
+export const pushDeviceSchema = z.object({
+  permission: pushPermissionSchema,
+  hasActiveToken: z.boolean(),
+  reportedAt: instantSchema,
+});
+export type PushDevice = z.infer<typeof pushDeviceSchema>;
 
 type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
 

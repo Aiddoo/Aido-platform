@@ -12,7 +12,8 @@ import { identity, withTimeout } from 'es-toolkit';
 import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { isForeignNotificationError } from '../domains/notification.error';
 import { NotificationPolicy } from '../domains/notification.model';
-import type { GetNotificationsQuery, NotificationOwnership } from '../schemas/notification.schema';
+import type { NotificationOwnership } from '../domains/notification.model';
+import type { GetNotificationsQuery } from '../schemas/get-notifications-request.schema';
 import { toNotificationListResult } from './notification.mapper';
 
 interface NotificationServicePorts {

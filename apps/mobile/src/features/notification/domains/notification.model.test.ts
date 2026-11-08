@@ -1,6 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import type { Notification } from '../schemas/notification.schema';
+import type { Notification } from './notification.model';
 import { NotificationPolicy } from './notification.model';
 
 const baseNotification: Notification = {

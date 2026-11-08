@@ -1,5 +1,5 @@
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
-import type { PendingNotificationResponse } from '../schemas/notification.schema';
+import type { PendingNotificationResponse } from '../domains/notification.model';
 import type { NotificationDestination } from '../utils/notification-destination';
 
 interface NotificationEntryState {

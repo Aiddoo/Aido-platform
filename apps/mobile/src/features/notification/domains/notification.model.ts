@@ -1,17 +1,83 @@
-import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
+import {
+  NOTIFICATION_ACTION_TYPE,
+  NOTIFICATION_ACTIVITY_KIND,
+  NOTIFICATION_CATEGORY,
+  NOTIFICATION_TYPE,
+} from '@aido/api/vocabulary';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import {
   MARKETING_OPT_OUT_ACTION,
   NOTIFICATION_TYPE_TRAITS,
 } from '../constants/notification.constants';
-import type {
-  Notification,
-  PendingNotificationResponse,
-  PushNotificationPayload,
-} from '../schemas/notification.schema';
+import type { PushNotificationPayload } from '../schemas/push-notification-payload.schema';
+
+export const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
+export type NotificationType = z.infer<typeof notificationTypeSchema>;
+
+export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
+
+export const notificationContextSchema = z.object({
+  todoId: z.number().optional(),
+  friendId: z.string().optional(),
+  nudgeId: z.number().optional(),
+  cheerId: z.number().optional(),
+});
+export type NotificationContext = z.infer<typeof notificationContextSchema>;
+
+export const notificationRoutingSchema = z.object({
+  commentId: z.string().optional(),
+  threadRootId: z.string().optional(),
+  activityKind: z.enum(NOTIFICATION_ACTIVITY_KIND).optional(),
+  senderId: z.string().optional(),
+  senderName: z.string().optional(),
+  todoOwnerId: z.string().optional(),
+  todoDate: z.string().optional(),
+});
+export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
+
+export const notificationActionSchema = z.object({
+  type: z.enum(NOTIFICATION_ACTION_TYPE),
+  url: z.string().optional(),
+});
+export type NotificationAction = z.infer<typeof notificationActionSchema>;
+
+export const notificationSchema = z.object({
+  id: z.number(),
+  userId: z.string(),
+  type: notificationTypeSchema,
+  title: z.string(),
+  body: z.string(),
+  isRead: z.boolean(),
+  routing: notificationRoutingSchema.optional(),
+  context: notificationContextSchema.optional(),
+  action: notificationActionSchema.optional(),
+  createdAt: instantSchema,
+  readAt: instantSchema.nullable(),
+});
+export type Notification = z.infer<typeof notificationSchema>;
+
+export const notificationListResultSchema = z.object({
+  notifications: z.array(notificationSchema),
+  hasMore: z.boolean(),
+  nextCursor: z.number().nullable(),
+});
+export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
+
+/** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
+export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
+
+/** 슬롯에 보관하는 눌린 응답 */
+export interface PendingNotificationResponse {
+  id: string;
+  actionIdentifier: string;
+  data: PushNotificationPayload;
+  receivedAt: number;
+}
 
 /** 인증을 기다리는 응답을 보관하는 수명 */
 const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;

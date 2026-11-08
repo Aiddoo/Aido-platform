@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { createNotificationEntryStore } from '../apis/notification-entry.store';
-import type { PendingNotificationResponse } from '../schemas/notification.schema';
+import type { PendingNotificationResponse } from '../domains/notification.model';
 import { useHasPendingNotificationEntry } from './use-notification-entry';
 
 const RESPONSE: PendingNotificationResponse = {

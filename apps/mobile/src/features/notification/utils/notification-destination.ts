@@ -12,12 +12,14 @@ import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
 import {
   type NotificationAction,
   type NotificationContext,
-  type NotificationDestinationRouting,
-  notificationDestinationRoutingSchema,
-  type NotificationNavigation,
   type NotificationRouting,
   type NotificationType,
-} from '../schemas/notification.schema';
+} from '../domains/notification.model';
+import {
+  type NotificationDestinationRouting,
+  notificationDestinationRoutingSchema,
+} from '../schemas/notification-destination-routing.schema';
+import { type NotificationNavigation } from '../schemas/push-notification-payload.schema';
 
 export type NotificationDestination =
   | { kind: 'none' }

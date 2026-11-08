@@ -11,7 +11,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationType } from '../schemas/notification.schema';
+import type { NotificationType } from '../domains/notification.model';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
 const UNREAD_COUNT = 5;

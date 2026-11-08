@@ -11,7 +11,7 @@ import { isEqual, noop, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import type { PushDevice, PushPermission } from '../schemas/push-permission.schema';
+import type { PushDevice, PushPermission } from '../domains/push-permission.model';
 import type { DeviceIdService } from './device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
 

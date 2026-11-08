@@ -22,7 +22,7 @@ import {
   createPushPermissionResponse,
 } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { PushPermission } from '../schemas/push-permission.schema';
+import type { PushPermission } from '../domains/push-permission.model';
 import { PushPermissionNotice } from './push-permission-notice';
 
 async function renderCard(

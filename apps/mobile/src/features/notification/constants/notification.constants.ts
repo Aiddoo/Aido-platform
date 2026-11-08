@@ -1,4 +1,4 @@
-import type { NotificationType } from '../schemas/notification.schema';
+import type { NotificationType } from '../domains/notification.model';
 
 /** 진입 대기로 스플래시를 잡아 두는 상한. 판정이 어떻게 끝나든 스플래시에 갇히지 않게 한다 */
 export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3000;

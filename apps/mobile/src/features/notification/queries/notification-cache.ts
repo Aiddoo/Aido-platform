@@ -2,8 +2,8 @@ import { getNowInstant } from '@src/shared/date/instant';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationListResult } from '../schemas/notification.schema';
-import type { PushPermission } from '../schemas/push-permission.schema';
+import type { NotificationListResult } from '../domains/notification.model';
+import type { PushPermission } from '../domains/push-permission.model';
 
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 

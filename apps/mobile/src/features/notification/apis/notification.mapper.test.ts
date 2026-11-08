@@ -1,7 +1,7 @@
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
-import { pushNotificationPayloadSchema } from '../schemas/notification.schema';
+import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { toNotification, toNotificationListResult } from './notification.mapper';
 

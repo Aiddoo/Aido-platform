@@ -4,7 +4,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
-import type { NotificationListResult } from '../schemas/notification.schema';
+import type { NotificationListResult } from '../domains/notification.model';
 import {
   optimisticallyMarkNotificationsRead,
   restoreNotificationCache,

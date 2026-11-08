@@ -26,11 +26,9 @@ import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
+import { type PendingNotificationResponse } from '../domains/notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
-import {
-  type PendingNotificationResponse,
-  pushNotificationPayloadSchema,
-} from '../schemas/notification.schema';
+import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';

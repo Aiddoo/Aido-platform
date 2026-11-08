@@ -1,4 +1,4 @@
-import type { DeviceTimezone } from '../schemas/device-timezone.schema';
+import type { DeviceTimezone } from './device-timezone.model';
 import { DeviceTimezonePolicy } from './device-timezone.model';
 
 const SEOUL: DeviceTimezone = { timeZone: 'Asia/Seoul', offsetMinutes: 540 };

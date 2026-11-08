@@ -1,6 +1,6 @@
 import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { NOTIFICATION_TYPE_TRAITS } from '@src/features/notification/constants/notification.constants';
-import type { NotificationType } from '@src/features/notification/schemas/notification.schema';
+import type { NotificationType } from '@src/features/notification/domains/notification.model';
 import { invalidateFriends } from '@src/features/social/friend/queries/friend-cache';
 import { invalidateOnInviteNotification } from '@src/features/social/invite/queries/invite-cache';
 import { invalidateNudgeInteractions } from '@src/features/social/nudge/queries/todo-nudge-cache';
