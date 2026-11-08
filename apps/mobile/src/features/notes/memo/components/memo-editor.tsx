@@ -66,6 +66,7 @@ import { useResolveClassNames } from 'uniwind';
 import { MEMO_MUTATION_KEYS } from '../constants/memo-mutation-keys';
 import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
+import { MemoPolicy } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import {
   useDeleteMemoMutationOptions,
@@ -82,6 +83,9 @@ import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO_MORE_MENU_WIDTH = 220;
 
+/** 저장한 뒤 이어 갈 일. finish는 저장 버튼, leave는 뒤로 가기, stay는 메뉴(AI 정리·할 일로 바꾸기)다 */
+type MemoSaveNextStep = 'finish' | 'leave' | 'stay';
+
 interface MemoEditorToolbarProps {
   control: Control<MemoFormValues>;
   isEditing: boolean;
@@ -91,7 +95,8 @@ interface MemoEditorToolbarProps {
   onSaveChanges: () => Promise<Memo | null>;
   onBack: () => void;
   onConverted: () => void;
-  onDelete: () => void;
+  /** 삭제 확인에서 지운 뒤 */
+  onDeleted: () => void;
 }
 
 interface MemoEditorProps {
@@ -100,167 +105,51 @@ interface MemoEditorProps {
 }
 
 export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
-  const reportUnexpectedError = useReportUnexpectedError('memo');
-  const { t } = useTranslation('memo');
-  const toast = useAppToast();
   const navigate = useSingleTap(router.navigate);
-  const [memoId] = useMemoId();
-  const [{ data: memo }, { data: me }] = useSuspenseQueries({
-    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  const { form, canSave, isEditing, startEditing, saveChanges, discardDraft } = useMemoEditing({
+    onLeave,
   });
-  const savedValues = { content: memo.content };
-  const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoDraftKey({ userId: me.id, memoId }),
-    {
-      sourceUpdatedAt: toEpochMs(memo.updatedAt),
-      onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
-    },
-  );
-  const form = useForm({
-    resolver: zodResolver(memoFormSchema),
-    defaultValues: restoredDraft ?? savedValues,
-  });
-  const { isDirty, isValid } = useFormState({ control: form.control });
-  const canSave = isDirty && isValid;
-  const discardDraft = useFormDraftAutosave(form.subscribe, {
-    initialValues: savedValues,
-    saveDraft,
-    clearDraft,
-  });
-  const [isEditing, setIsEditing] = useState(restoredDraft != null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const updateMemo = useMutation(useUpdateMemoMutationOptions());
-
-  // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
-  useLayoutEffect(() => {
-    if (restoredDraft != null) {
-      form.reset({ content: memo.content }, { keepValues: true });
-    }
-  }, [memo.content, form, restoredDraft]);
-
-  // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
-  const updateChangedContent = async (content: string) => {
-    const trimmedContent = content.trim();
-    if (trimmedContent === memo.content) {
-      return memo;
-    }
-    return updateMemo.mutateAsync({ memoId, values: { content: trimmedContent } });
-  };
-
-  const isSavingChangesRef = useRef(false);
-
-  const saveAndFinishEditing = form.handleSubmit(async ({ content }) => {
-    try {
-      const savedMemo = await updateChangedContent(content);
-      form.reset({ content: savedMemo.content });
-      discardDraft();
-      setIsEditing(false);
-      Keyboard.dismiss();
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
-  });
-
-  const saveAndLeave = form.handleSubmit(async ({ content }) => {
-    try {
-      await updateChangedContent(content);
-      discardDraft();
-    } catch (error) {
-      reportUnexpectedError(error);
-      // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
-      if (!isConnectivityError(error)) {
-        return;
-      }
-    }
-    onLeave();
-  });
-
-  const saveChanges = async () => {
-    if (!canSave) {
-      return memo;
-    }
-    // 저장마다 수정 시각이 바뀌어 먼저 시작한 AI 정리의 결과가 낡은 것이 된다. 두 번째 요청은 시작하지 않는다
-    if (isSavingChangesRef.current) {
-      return null;
-    }
-    isSavingChangesRef.current = true;
-    try {
-      const content = form.getValues('content');
-      const savedMemo = await updateChangedContent(content);
-      // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
-      if (form.getValues('content') === content) {
-        form.reset({ content: savedMemo.content });
-        discardDraft();
-      }
-
-      return savedMemo;
-    } catch (error) {
-      reportUnexpectedError(error);
-
-      return null;
-    } finally {
-      isSavingChangesRef.current = false;
-    }
-  };
-
-  const handleBack = () => {
-    if (canSave) {
-      saveAndLeave();
-
-      return;
-    }
-    onLeave();
-  };
 
   return (
-    <>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
-        <Toolbar
-          control={form.control}
-          isEditing={isEditing}
-          canSave={canSave}
-          onSave={() => saveAndFinishEditing()}
-          onSaveChanges={saveChanges}
-          onBack={handleBack}
-          onConverted={() => {
-            onLeave();
-            navigate('/feed');
-          }}
-          onDelete={() => setIsDeleteDialogOpen(true)}
-        />
-
-        <VStack className="flex-1 bg-white">
-          <MemoAiParsingBadge />
-
-          <Box className="flex-1 px-4 py-3">
-            <Controller
-              control={form.control}
-              name="content"
-              render={({ field: { value, onChange, ref } }) => (
-                <TextArea
-                  ref={ref}
-                  variant="bare"
-                  preserveErrorSpace={false}
-                  value={value}
-                  onChange={onChange}
-                  onFocus={() => setIsEditing(true)}
-                />
-              )}
-            />
-          </Box>
-        </VStack>
-      </KeyboardAvoidingView>
-
-      <MemoDeleteDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
+      <Toolbar
+        control={form.control}
+        isEditing={isEditing}
+        canSave={canSave}
+        onSave={() => saveChanges({ andThen: 'finish' })}
+        onSaveChanges={() => saveChanges({ andThen: 'stay' })}
+        onBack={() => saveChanges({ andThen: 'leave' })}
+        onConverted={() => {
+          onLeave();
+          navigate('/feed');
+        }}
         onDeleted={() => {
           discardDraft();
-          setIsDeleteDialogOpen(false);
           onLeave();
         }}
       />
-    </>
+
+      <VStack className="flex-1 bg-white">
+        <MemoAiParsingBadge />
+
+        <Box className="flex-1 px-4 py-3">
+          <Controller
+            control={form.control}
+            name="content"
+            render={({ field: { value, onChange, ref } }) => (
+              <TextArea
+                ref={ref}
+                variant="bare"
+                preserveErrorSpace={false}
+                value={value}
+                onChange={onChange}
+                onFocus={startEditing}
+              />
+            )}
+          />
+        </Box>
+      </VStack>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -272,10 +161,11 @@ MemoEditor.StackToolbar = function StackToolbar({
   onSaveChanges,
   onBack,
   onConverted,
-  onDelete,
+  onDeleted,
 }: MemoEditorToolbarProps) {
   const { t } = useTranslation(['memo', 'common']);
   const { isSubmitting, isValid } = useFormState({ control });
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const pin = useMemoPinAction();
   const aiParse = useMemoAiParse(onSaveChanges);
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
@@ -332,11 +222,24 @@ MemoEditor.StackToolbar = function StackToolbar({
           >
             {t('memo:detail.convertToTodo')}
           </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction icon={MEMO_TOOLBAR_ICON.delete} destructive onPress={onDelete}>
+          <Stack.Toolbar.MenuAction
+            icon={MEMO_TOOLBAR_ICON.delete}
+            destructive
+            onPress={() => setIsDeleteDialogOpen(true)}
+          >
             {t('common:actions.delete')}
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
+
+      <MemoDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={() => {
+          setIsDeleteDialogOpen(false);
+          onDeleted();
+        }}
+      />
     </>
   );
 };
@@ -348,7 +251,7 @@ MemoEditor.PaneToolbar = function PaneToolbar({
   onSave,
   onSaveChanges,
   onConverted,
-  onDelete,
+  onDeleted,
 }: MemoEditorToolbarProps) {
   const { isSubmitting, isValid } = useFormState({ control });
   const pin = useMemoPinAction();
@@ -364,7 +267,11 @@ MemoEditor.PaneToolbar = function PaneToolbar({
             onPress={onSave}
           />
         )}
-        <MemoMoreMenu onSaveChanges={onSaveChanges} onConverted={onConverted} onDelete={onDelete} />
+        <MemoMoreMenu
+          onSaveChanges={onSaveChanges}
+          onConverted={onConverted}
+          onDeleted={onDeleted}
+        />
       </HStack>
 
       <Separator />
@@ -548,59 +455,71 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
 function MemoMoreMenu({
   onSaveChanges,
   onConverted,
-  onDelete,
-}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDelete'>) {
+  onDeleted,
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const aiParse = useMemoAiParse(onSaveChanges);
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
-    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Menu.Trigger asChild>
-        <IconButton
-          testID="memo-more"
-          accessibilityLabel={t('memo:detail.more')}
-          accessibilityState={{ expanded: isOpen }}
-          hitSlop={4}
-          className="min-h-9 min-w-9"
-          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
-        />
-      </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={MEMO_MORE_MENU_WIDTH}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
-        >
-          <MenuActionItem
-            testID="memo-ai-review"
-            Icon={AiFilledIcon}
-            title={t('memo:detail.aiParse')}
-            description={aiQuota}
-            isDisabled={aiParse.isDisabled}
-            onPress={aiParse.start}
+    <>
+      <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+        <Menu.Trigger asChild>
+          <IconButton
+            testID="memo-more"
+            accessibilityLabel={t('memo:detail.more')}
+            accessibilityState={{ expanded: isOpen }}
+            hitSlop={4}
+            className="min-h-9 min-w-9"
+            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
           />
-          <MenuActionItem
-            testID="memo-convert-to-todo"
-            Icon={CheckmarkIcon}
-            title={t('memo:detail.convertToTodo')}
-            isDisabled={convertSheet.isDisabled}
-            onPress={convertSheet.open}
-          />
-          <MenuActionItem
-            Icon={TrashIcon}
-            title={t('common:actions.delete')}
-            variant="danger"
-            onPress={onDelete}
-          />
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu>
+        </Menu.Trigger>
+        <Menu.Portal disableFullWindowOverlay={false}>
+          <Menu.Overlay />
+          <Menu.Content
+            presentation="popover"
+            placement="bottom"
+            align="end"
+            width={MEMO_MORE_MENU_WIDTH}
+            className="rounded-2xl border border-gray-2 bg-gray-1"
+          >
+            <MenuActionItem
+              testID="memo-ai-review"
+              Icon={AiFilledIcon}
+              title={t('memo:detail.aiParse')}
+              description={aiQuota}
+              isDisabled={aiParse.isDisabled}
+              onPress={aiParse.start}
+            />
+            <MenuActionItem
+              testID="memo-convert-to-todo"
+              Icon={CheckmarkIcon}
+              title={t('memo:detail.convertToTodo')}
+              isDisabled={convertSheet.isDisabled}
+              onPress={convertSheet.open}
+            />
+            <MenuActionItem
+              Icon={TrashIcon}
+              title={t('common:actions.delete')}
+              variant="danger"
+              onPress={() => setIsDeleteDialogOpen(true)}
+            />
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu>
+
+      <MemoDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={() => {
+          setIsDeleteDialogOpen(false);
+          onDeleted();
+        }}
+      />
+    </>
   );
 }
 
@@ -655,6 +574,133 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
       }
     />
   );
+}
+
+/** 입력값·초안·편집 상태와 저장을 맡는다. 저장은 saveChanges 하나이고 andThen이 저장 뒤의 일을 고른다 */
+function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
+  const reportUnexpectedError = useReportUnexpectedError('memo');
+  const { t } = useTranslation('memo');
+  const toast = useAppToast();
+  const [memoId] = useMemoId();
+  const [{ data: memo }, { data: me }] = useSuspenseQueries({
+    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  });
+  const savedValues = { content: memo.content };
+  const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
+    createMemoDraftKey({ userId: me.id, memoId }),
+    {
+      sourceUpdatedAt: toEpochMs(memo.updatedAt),
+      onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
+    },
+  );
+  const form = useForm({
+    resolver: zodResolver(memoFormSchema),
+    defaultValues: restoredDraft ?? savedValues,
+  });
+  const { isDirty, isValid } = useFormState({ control: form.control });
+  const canSave = isDirty && isValid;
+  const discardDraft = useFormDraftAutosave(form.subscribe, {
+    initialValues: savedValues,
+    saveDraft,
+    clearDraft,
+  });
+  const [isEditing, setIsEditing] = useState(restoredDraft != null);
+  const updateMemo = useMutation(useUpdateMemoMutationOptions());
+  const isSavingChangesRef = useRef(false);
+
+  // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
+  useLayoutEffect(() => {
+    if (restoredDraft != null) {
+      form.reset({ content: memo.content }, { keepValues: true });
+    }
+  }, [memo.content, form, restoredDraft]);
+
+  // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
+  const saveContent = async (content: string) => {
+    if (!MemoPolicy.hasContentChanged(memo, content)) {
+      return memo;
+    }
+    return updateMemo.mutateAsync({ memoId, values: { content: content.trim() } });
+  };
+
+  // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다. 유효하지 않으면 null
+  const submitContent = (content: string) =>
+    new Promise<Memo | null>((resolve, reject) => {
+      form
+        .handleSubmit(
+          async () => resolve(await saveContent(content)),
+          () => resolve(null),
+        )()
+        .catch(reject);
+    });
+
+  /** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
+  const saveChanges = async ({ andThen }: { andThen: MemoSaveNextStep }): Promise<Memo | null> => {
+    // 뒤로 가기와 메뉴는 저장할 글자가 없으면 그대로 이어 간다. 저장 버튼은 공백만 고친 글자도 받아 편집을 끝낸다
+    if (!canSave && andThen !== 'finish') {
+      if (andThen === 'leave') {
+        onLeave();
+      }
+      return memo;
+    }
+    // 저장마다 수정 시각이 바뀌어 먼저 시작한 AI 정리의 결과가 낡은 것이 된다. 메뉴의 두 번째 저장은 시작하지 않는다
+    if (andThen === 'stay') {
+      if (isSavingChangesRef.current) {
+        return null;
+      }
+      isSavingChangesRef.current = true;
+    }
+    const content = form.getValues('content');
+    try {
+      const savedMemo =
+        andThen === 'stay' ? await saveContent(content) : await submitContent(content);
+      if (savedMemo == null) {
+        return null;
+      }
+      match(andThen)
+        .with('finish', () => {
+          form.reset({ content: savedMemo.content });
+          discardDraft();
+          setIsEditing(false);
+          Keyboard.dismiss();
+        })
+        .with('leave', () => {
+          discardDraft();
+          onLeave();
+        })
+        .with('stay', () => {
+          // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
+          if (form.getValues('content') === content) {
+            form.reset({ content: savedMemo.content });
+            discardDraft();
+          }
+        })
+        .exhaustive();
+
+      return savedMemo;
+    } catch (error) {
+      reportUnexpectedError(error);
+      // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
+      if (andThen === 'leave' && isConnectivityError(error)) {
+        onLeave();
+      }
+
+      return null;
+    } finally {
+      if (andThen === 'stay') {
+        isSavingChangesRef.current = false;
+      }
+    }
+  };
+
+  return {
+    form,
+    canSave,
+    isEditing,
+    startEditing: () => setIsEditing(true),
+    saveChanges,
+    discardDraft,
+  };
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
