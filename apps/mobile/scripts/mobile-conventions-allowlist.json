@@ -10,10 +10,6 @@
   "feature-bidirectional": {
     "reason": "끊지 못한 쌍. 항목마다 이유를 적고 새 쌍은 막는다",
     "entries": {
-      "identity/auth <-> identity/user": {
-        "count": 1,
-        "reason": "같은 영역. auth→user는 탈퇴 뒤 정리에 쓸 내 정보 캐시 읽기, user→auth는 계정 버튼의 로그아웃·탈퇴 mutation"
-      },
       "planning/category <-> planning/todo": {
         "count": 1,
         "reason": "todo→category는 할 일 화면이 카테고리 조회, 부품, 스키마, 캐시를 쓴다. category→todo는 카테고리 변경 뒤 todo-cache 갱신 한 줄이라 끊는다면 이 줄이다"

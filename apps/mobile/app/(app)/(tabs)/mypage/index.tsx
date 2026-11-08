@@ -2,7 +2,7 @@ import { AppVersionCheck } from '@src/features/app-config/app-version/components
 import { WhatsNewMenuItem } from '@src/features/app-config/whats-new/components/whats-new-menu-item';
 import { AccessTierChip } from '@src/features/billing/subscription/components/access-tier-chip';
 import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
-import { AccountActionButtons } from '@src/features/identity/user/components/account-action-buttons';
+import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
 import { MyPageMenu } from '@src/features/identity/user/components/my-page-menu';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
