@@ -1,4 +1,4 @@
-import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
@@ -42,14 +42,23 @@ export async function readWithoutBlocking<T>(
   });
 }
 
+interface UseAiDataSharingConsentGateOptions {
+  /**
+   * 동의 재안내를 계정당 한 번만 보이도록 자리를 잡고, 잡았으면 true를 돌려준다.
+   * 위층 기능(기기 안내)이 필요하므로 쓰는 쪽이 넘긴다. 없으면 재안내를 띄우지 않는다.
+   */
+  claimRenewalPrompt?: (accountId: string) => boolean;
+}
+
 /**
  * AI에 내용을 보내기 전에 AI 데이터 제공 동의를 확인한다.
  * 시트는 이 훅을 쓴 컴포넌트의 overlay에 뜨므로, 답을 기다리는 동안 마운트돼 있는 곳에서 쓴다.
  */
-export function useAiDataSharingConsentGate() {
+export function useAiDataSharingConsentGate({
+  claimRenewalPrompt,
+}: UseAiDataSharingConsentGateOptions = {}) {
   const overlay = useOverlay();
   const queryClient = useQueryClient();
-  const coachmarkService = useCoachmarkService();
   const logger = useLogger();
   const consentQueryOptions = useGetConsentQueryOptions();
   const meQueryOptions = useGetMeQueryOptions();
@@ -107,7 +116,7 @@ export function useAiDataSharingConsentGate() {
     if (accountId == null || !ConsentPolicy.shouldShowAiConsentRenewal(consent)) {
       return false;
     }
-    if (!coachmarkService.claim({ accountId, kind: 'ai-consent-renewal' })) {
+    if (claimRenewalPrompt?.(accountId) !== true) {
       return false;
     }
     await requestAgreement({ isRenewal: true });

@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
+import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
@@ -24,7 +25,8 @@ import {
 const RENEWAL_NOTICE = '지금 답하지 않아도 전처럼 쓸 수 있어요.';
 
 function ConsentGateProbe() {
-  const gate = useAiDataSharingConsentGate();
+  const claimRenewalPrompt = useClaimAiConsentRenewal();
+  const gate = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const [result, setResult] = useState('');
   const [settledCount, setSettledCount] = useState(0);
 

@@ -1,4 +1,5 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
@@ -16,7 +17,8 @@ interface StartVoiceNoteOptions {
 
 export function useStartVoiceNote() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
-  const aiConsent = useAiDataSharingConsentGate();
+  const claimRenewalPrompt = useClaimAiConsentRenewal();
+  const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const [locale] = useRecognitionLanguage();
   const push = useSingleTap(router.push);

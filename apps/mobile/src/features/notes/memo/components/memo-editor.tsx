@@ -3,6 +3,7 @@ import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -683,7 +684,8 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
   const parseMemo = useMutation(useParseMemoMutationOptions({ memoId }));
   const isParsing = useIsMutating({ mutationKey: MEMO_MUTATION_KEYS.parse({ memoId }) }) > 0;
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
-  const aiConsent = useAiDataSharingConsentGate();
+  const claimRenewalPrompt = useClaimAiConsentRenewal();
+  const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const isStartingRef = useRef(false);
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],

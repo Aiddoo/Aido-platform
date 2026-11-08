@@ -5,6 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -44,7 +45,8 @@ interface UseAddTodoQuickVoiceOptions {
 
 export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
-  const aiConsent = useAiDataSharingConsentGate();
+  const claimRenewalPrompt = useClaimAiConsentRenewal();
+  const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const getSpeechContext = useReadSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
