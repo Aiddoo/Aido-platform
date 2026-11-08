@@ -95,7 +95,6 @@ export function formatDateLabel(
     .otherwise(() => getFormatter(context, DATE_OPTIONS[kind]).format(date));
 }
 
-/** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */
 export function formatDateKeyLabel(
   dateKey: string,
   kind: DateLabel,
@@ -104,7 +103,6 @@ export function formatDateKeyLabel(
   return formatDateLabel(toUtcMidnight(dateKey), kind, toUtcContext(context));
 }
 
-/** YYYY-MM-DD 기간을 표시한다. 같은 해면 월·일만, 해가 다르면 연도까지 (ko: "10월 19일 ~ 10월 25일"). */
 export function formatDateKeyRange(
   startDateKey: string,
   endDateKey: string,
@@ -128,7 +126,6 @@ export function formatDateKeyCompactRange(
   return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
 }
 
-/** 로케일 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM", 24시간제: "18:30"). */
 export function formatClockTime(
   value: Date | Instant,
   timeFormat: TimeFormat,
@@ -145,7 +142,6 @@ export function formatClockTime(
   }).format(date);
 }
 
-/** 시간대와 무관한 시각을 로케일 순서로 표시한다 (ko: "오후 2:30", en: "2:30 PM"). */
 export function formatTimeOfDay(
   time: TimeOfDay,
   timeFormat: TimeFormat,
@@ -154,7 +150,6 @@ export function formatTimeOfDay(
   return formatClockTime(toUtcDateAtTime(time), timeFormat, toUtcContext(context));
 }
 
-/** 정시를 로케일 순서로 표시한다 (ko: "오후 3시"/"15시", en: "3 PM"/"15"). */
 export function formatHourLabel(
   hour: number,
   timeFormat: TimeFormat,
@@ -221,7 +216,6 @@ export function formatRelativeTimeWith(
   return formatDateLabel(date, isSameYear ? 'monthDay' : 'numericDate', context);
 }
 
-/** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시한다 */
 export function formatHHmmTime(
   time: string,
   timeFormat: TimeFormat,

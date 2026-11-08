@@ -4,11 +4,7 @@ type AccessibilitySettingSource = {
   onReadError: (error: unknown) => void;
 };
 
-/**
- * 시스템 접근성 설정 하나를 useSyncExternalStore로 구독하는 저장소.
- * 구독하는 컴포넌트가 여럿이어도 시스템 리스너와 첫 값 읽기는 한 번만 하고, 마지막 구독이 끝나면 리스너를 푼다.
- * 첫 값을 읽는 동안 바뀜 이벤트가 먼저 오면 늦게 도착한 읽기 결과로 덮어쓰지 않는다.
- */
+/** 구독이 여럿이어도 시스템 리스너와 첫 값 읽기는 한 번만 하고, 첫 값을 읽는 동안 바뀜 이벤트가 먼저 오면 늦게 도착한 읽기 결과로 덮어쓰지 않는다 */
 export function createAccessibilitySettingStore({
   read,
   listen,

@@ -1,13 +1,7 @@
 import { clamp } from 'es-toolkit';
 
-/**
- * Grid 칸 배치 계산.
- *
- * RN(Yoga)에는 `calc(50% - 5px)`가 없어 `width: 50%` 칸에 columnGap을 더하면 한 줄을 넘쳐 다음 줄로 내려간다.
- * 그래서 칸 폭은 퍼센트 그대로 두고, 열 간격은 시작 열에 따라 나눈 좌우 padding으로 만든다.
- * 열 k(0부터)에서 colSpan s칸을 차지하면 paddingLeft = g·k/c, paddingRight = g·(c−k−s)/c 이고,
- * 안쪽 폭은 (s·W − g·(c−s))/c 로 s칸 + (s−1)개 간격과 같다. 이웃한 칸 사이 간격은 늘 g다.
- */
+// RN(Yoga)에는 `calc(50% - 5px)`가 없어 `width: 50%` 칸에 columnGap을 더하면 한 줄을 넘친다. 칸 폭은 퍼센트 그대로 두고 열 간격은 시작 열에 따라 나눈 좌우 padding으로 만든다
+// 열 k에서 colSpan s칸이면 paddingLeft = g·k/c, paddingRight = g·(c−k−s)/c 이고 이웃한 칸 사이 간격은 늘 g다
 
 export interface GridItemLayout {
   width: `${number}%`;

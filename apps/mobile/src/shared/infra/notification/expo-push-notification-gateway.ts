@@ -50,7 +50,7 @@ function toPushNotificationResponse(
   };
 }
 
-/** 앱이 켜져 있어도 알림을 보이게 한다. 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다 */
+/** 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다 */
 export function registerForegroundNotificationPresentation() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -62,10 +62,7 @@ export function registerForegroundNotificationPresentation() {
   });
 }
 
-/**
- * Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 채널이 없는 플랫폼에서도 부르면
- * 아무 일도 없다. 채널을 못 만들어도 권한 상태는 읽고 보고하므로 실패는 기록만 하고 넘어간다.
- */
+/** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 못 만들어도 권한 상태는 읽으므로 실패는 기록만 한다 */
 async function ensureChannel(logger: Logger): Promise<void> {
   try {
     await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
@@ -99,8 +96,7 @@ export function createExpoPushNotificationGateway(logger: Logger): PushNotificat
       return token.data;
     },
     subscribeToken: (listener) => {
-      // getExpoPushTokenAsync도 같은 이벤트를 다시 보내므로 값이 바뀔 때만 알린다.
-      // 그러지 않으면 보고 → 토큰 발급 → 이벤트 → 보고가 끝없이 이어진다.
+      // getExpoPushTokenAsync도 같은 이벤트를 다시 보내므로 값이 바뀔 때만 알린다(보고 → 발급 → 이벤트 무한 루프 방지)
       let lastDeviceToken: unknown;
       const subscription = Notifications.addPushTokenListener(({ data }) => {
         if (data === lastDeviceToken) {

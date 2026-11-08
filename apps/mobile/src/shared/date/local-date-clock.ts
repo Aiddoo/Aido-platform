@@ -67,12 +67,7 @@ function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
   return wallClockMs - Math.floor(instantMs / 1000) * 1000;
 }
 
-/**
- * 지정 시간대에서 다음 날짜가 시작되는 실제 시각.
- *
- * 자정이 없거나(00:00→01:00) 두 번 오는(00:00→23:00) DST 날짜도 있어서
- * 오프셋 후보 두 개 중 다음 날짜 key에 실제로 속하는 가장 이른 시각을 고른다.
- */
+/** 자정이 없거나 두 번 오는 DST 날짜가 있어 다음 날짜 key에 속하는 가장 이른 후보를 고른다 */
 export function getNextLocalMidnight(now: Date, timeZone: string): Date {
   const nextDateKey = addDaysToDateKey(toDateKey(now, timeZone), 1);
   const wallMidnightMs = Date.parse(`${nextDateKey}T00:00:00Z`);

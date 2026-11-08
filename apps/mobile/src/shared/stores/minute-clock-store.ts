@@ -11,10 +11,6 @@ export function toMinuteStart(ms: number): number {
   return Math.floor(ms / MINUTE_MS) * MINUTE_MS;
 }
 
-/**
- * 분 단위 현재 시각을 useSyncExternalStore로 구독하는 저장소.
- * 구독이 있고 앱이 앞에 있을 때만 다음 분 경계에 타이머 하나를 예약하고, 앱이 돌아오면 바로 알린다.
- */
 export function createMinuteClockStore({ now, listenForeground }: MinuteClockSource) {
   const listeners = new Set<() => void>();
   let timer: ReturnType<typeof setTimeout> | null = null;

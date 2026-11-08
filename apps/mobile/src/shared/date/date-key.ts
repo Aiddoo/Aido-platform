@@ -9,7 +9,7 @@ dayjs.extend(isoWeek);
 const DATE_KEY_FORMAT = 'YYYY-MM-DD';
 const MONDAY = 1;
 
-/** YYYY-MM-DD를 UTC 자정으로 읽는다. 시간대와 DST가 끼지 않아 달력 계산이 하루 단위로 정확하다. */
+/** UTC 자정으로 읽어 시간대와 DST가 끼지 않는다 */
 function parseDateKey(dateKey: string) {
   return dayjs.utc(dateKey);
 }
@@ -19,12 +19,11 @@ function formatDateKey(date: dayjs.Dayjs): string {
   return date.isValid() ? date.format(DATE_KEY_FORMAT) : '';
 }
 
-/** YYYY-MM-DD에 달력 일수를 더한다 (윤년·월말·연말 포함, 시간대 무관). */
 export function addDaysToDateKey(dateKey: string, days: number): string {
   return formatDateKey(parseDateKey(dateKey).add(days, 'day'));
 }
 
-/** YYYY-MM-DD에 달 수를 더한다. 말일을 넘기면 그 달의 마지막 날로 맞춘다 (1월 31일 + 1달 = 2월 28일). */
+/** 말일을 넘기면 그 달의 마지막 날로 맞춘다 */
 export function addMonthsToDateKey(dateKey: string, months: number): string {
   return formatDateKey(parseDateKey(dateKey).add(months, 'month'));
 }
@@ -84,10 +83,7 @@ export interface CalendarWeek {
   weekOfMonth: number;
 }
 
-/**
- * 앱 달력 주(일요일 시작). YYYY-MM-DD 그대로 계산해 기기 시간대·DST·표시 언어와 무관하다.
- * 주차는 그 주가 시작한 달 기준이다 (2027-01-01 → 2026-12-27 시작, 12월 4주차).
- */
+/** 주차는 그 주가 시작한 달 기준이다 (2027-01-01 → 2026-12-27 시작, 12월 4주차) */
 export function getCalendarWeek(dateKey: string): CalendarWeek {
   const startDateKey = addDaysToDateKey(dateKey, -getDayOfWeek(dateKey));
   return {

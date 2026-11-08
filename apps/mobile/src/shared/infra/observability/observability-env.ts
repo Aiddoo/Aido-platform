@@ -8,10 +8,7 @@ import {
   markFirebaseTrafficAsInternal,
 } from '../analytics';
 
-/**
- * 환경별 관측 구현 선택의 단일 소스 — 프로덕션 = Firebase/Sentry, 그 외 = console.
- * DIProvider(앱 트리)와 위젯 headless 컨텍스트가 같은 규칙을 공유해 드리프트를 막는다. 오류 보고기는 firebase를 끌어오지 않도록 `error-reporter`에 따로 둔다.
- */
+/** 프로덕션 = Firebase/Sentry, 그 외 = console. 앱 트리와 위젯 headless가 같은 규칙을 공유하며, 오류 보고기는 firebase를 끌어오지 않도록 `error-reporter`에 따로 둔다 */
 export function createEnvironmentAnalytics(logger: Logger): Analytics {
   if (ENV.IS_PRODUCTION) {
     return createFirebaseAnalytics(logger);

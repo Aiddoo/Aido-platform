@@ -1,7 +1,6 @@
 import type { QueryMeta } from '@tanstack/react-query';
 
-// 반드시 type이다. QueryMeta는 `TQueryMeta extends Record<string, unknown>`일 때만 등록한 타입을 쓰는데
-// 인덱스 시그니처 없는 interface는 이 조건을 통과하지 못해 Record로 돌아간다(아래 AppQueryMetaGuard가 잡는다)
+// 반드시 type이다. 인덱스 시그니처 없는 interface는 QueryMeta의 등록 조건을 통과하지 못해 Record로 돌아간다
 export type AppQueryMeta = {
   /** 기기에 저장해 오프라인으로 앱을 다시 열어도 마지막 데이터를 보여 준다 */
   persist?: boolean;
@@ -20,5 +19,5 @@ declare module '@tanstack/react-query' {
 }
 
 type AssertClosedQueryMeta<Key extends keyof AppQueryMeta> = Key;
-/** QueryMeta가 조용히 Record<string, unknown>으로 돌아가 오타가 통과하게 되면 여기서 컴파일 오류가 난다 */
+/** QueryMeta가 Record<string, unknown>으로 돌아가면 컴파일 오류가 난다 */
 export type AppQueryMetaGuard = AssertClosedQueryMeta<keyof QueryMeta>;

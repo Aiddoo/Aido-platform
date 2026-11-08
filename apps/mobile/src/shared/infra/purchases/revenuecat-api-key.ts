@@ -34,7 +34,6 @@ const revenueCatExtraSchema = z.object({
   revenueCatTestApiKey: z.string().optional(),
 });
 
-/** 이 빌드가 쓸 RevenueCat 키. 키는 `app.config.ts`가 `extra`에 실어 주고 이 어댑터만 읽는다 */
 export function getRevenueCatApiKey(): string | undefined {
   const extra = revenueCatExtraSchema.parse(Constants.expoConfig?.extra);
 

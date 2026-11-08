@@ -25,16 +25,11 @@ export function getDateWithTime(date: Date, time: string | undefined, fallbackTi
   return withTime(date, getHour(safe), getMinute(safe));
 }
 
-/** 시간+분 정수를 오늘 날짜의 Date 객체로 변환 (DatePicker용) */
 export function getTodayAt(hour: number, minute: number): Date {
   return withTime(new Date(), hour, minute);
 }
 
-/**
- * 네이티브 DateTimePicker의 locale prop 값.
- * 24시간제는 en_GB(오전/오후 없는 스피너)로 강제하고,
- * 12시간제는 앱 표시 언어를 따른다.
- */
+/** 24시간제는 en_GB로 강제해 오전/오후 없는 스피너를 쓴다 */
 export function getPickerLocale(
   resolvedLanguage: 'ko' | 'en',
   timeFormat: TimeFormat = 'TWELVE_HOUR',

@@ -8,12 +8,7 @@ interface SheetRouteScreenProps {
   children: ReactNode;
 }
 
-/**
- * 시트 route 화면의 바탕. iOS transparentModal은 루트 위에 따로 표시되므로 제스처 루트와
- * Overlay·PortalHost를 이 화면 안에 다시 두어, 시트와 그 위의 피커·다이얼로그가 이 모달 안에 그려지게 한다.
- * 시트에서 시트로 replace하면 새 모달이 크기를 받기 전에 그려질 수 있어, 모달 크기가 정해진 뒤
- * 시트를 그린다. 모달은 창 전체를 덮으므로 reserved region은 앱 루트 provider의 측정값을 그대로 쓴다.
- */
+/** iOS transparentModal은 루트 위에 따로 표시되므로 제스처 루트와 Overlay·PortalHost를 이 화면 안에 다시 둔다. 시트에서 시트로 replace하면 새 모달이 크기를 받기 전에 그려질 수 있어 크기가 정해진 뒤 시트를 그린다 */
 export function SheetRouteScreen({ children }: SheetRouteScreenProps) {
   const [hasLayout, setHasLayout] = useState(false);
 

@@ -80,11 +80,7 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
   }
 }
 
-/**
- * 키는 SecureStore에 최초 1회 만들어 보관하고, 같은 키로 초안·조회 캐시 MMKV(AES-256) 인스턴스를 연다.
- * SecureStore 조회가 비동기라 앱 부트스트랩(스플래시 유지 구간)에서 미리 호출해야
- * 초안 화면과 조회 캐시 복원이 첫 렌더에 동기로 읽을 수 있다. 실패해도 앱은 정상 동작하도록 저장만 끈다.
- */
+/** SecureStore 조회가 비동기라 스플래시 구간에서 미리 호출해야 초안·캐시 복원이 첫 렌더에 동기로 읽힌다. 실패해도 저장만 끈다 */
 export async function openEncryptedStorage(
   secureStorage: Storage,
 ): Promise<EncryptedStorageBootstrap> {

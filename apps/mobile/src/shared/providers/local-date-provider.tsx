@@ -37,14 +37,7 @@ interface LocalDateProviderProps extends PropsWithChildren {
   useDeviceCalendar?: () => SystemCalendar;
 }
 
-/**
- * 앱 전체 로컬 날짜의 단일 소유자.
- *
- * 활성 상태에서는 기기 시간대 기준 자정 타이머 하나만 유지하고, background에서는 해제한다.
- * 복귀 시 현재 날짜를 먼저 재확인하므로 JS가 정지된 동안 자정이 지나도 즉시 회복한다.
- * 실행 중 시간대·달력 설정이 바뀌면(iOS significant time change 포함) 기기 달력이 새 객체로
- * 바뀌고, 날짜를 재평가한 뒤 새 시간대의 자정으로 타이머를 다시 예약한다.
- */
+/** 자정 타이머는 활성 상태에서만 유지하고, 복귀 시 날짜를 먼저 재확인해 JS가 정지된 동안 지난 자정도 즉시 회복한다. 시간대·달력이 바뀌면(iOS significant time change 포함) 날짜를 재평가하고 타이머를 다시 예약한다 */
 export function LocalDateProvider({
   children,
   useDeviceCalendar = useSystemCalendar,

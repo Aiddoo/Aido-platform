@@ -19,11 +19,11 @@ const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
   hourCycle: 'h23',
 };
 
-/** 어느 시간대에서든 같은 하나의 순간. 오프셋이 달라도 되는 ISO 8601 문자열이라 구조 공유가 된다 */
+/** 오프셋이 달라도 되는 ISO 8601 문자열이라 구조 공유가 된다 */
 export const instantSchema = z.iso.datetime({ offset: true }).brand<'Instant'>();
 export type Instant = z.infer<typeof instantSchema>;
 
-/** 폼 값처럼 입력과 출력의 타입이 같아야 하는 곳의 순간 스키마. brand는 입력 타입에 남지 않아 따로 둔다 */
+/** brand는 입력 타입에 남지 않아 폼용 스키마를 따로 둔다 */
 export const instantFieldSchema = z.custom<Instant>(
   (value) => instantSchema.safeParse(value).success,
 );
@@ -43,12 +43,11 @@ export function fromDate(date: Date): Instant {
   return toInstant(date.toISOString());
 }
 
-/** 지금 이 순간. 렌더 중에는 쓰지 않고 이벤트·저장 시점에 부른다 */
+/** 렌더 중에는 쓰지 않고 이벤트·저장 시점에 부른다 */
 export function getNowInstant(): Instant {
   return fromEpochMs(Date.now());
 }
 
-/** 에포크 밀리초에서 순간을 만든다 */
 export function fromEpochMs(ms: number): Instant {
   return toInstant(new Date(ms).toISOString());
 }
@@ -63,7 +62,7 @@ export function diffMs(instant: Instant, other: Instant): number {
   return toEpochMs(instant) - toEpochMs(other);
 }
 
-/** 순간이 지금이거나 그 전인지. 끝나는 시각 자체를 지난 것으로 본다 */
+/** 끝나는 시각 자체를 지난 것으로 본다 */
 export function hasInstantPassed(instant: Instant, now: Instant): boolean {
   return toEpochMs(instant) <= toEpochMs(now);
 }
@@ -98,18 +97,13 @@ function getZoneOffsetMs(epochMs: number, timeZone: string): number {
   return wallClockAsUtc - (epochMs - (epochMs % MINUTE_MS));
 }
 
-/**
- * 그 시간대의 날짜(YYYY-MM-DD)와 벽시계(HH:mm)가 가리키는 순간.
- * dayjs.tz는 iOS Hermes에서 분이 어긋난 순간을 돌려줘(오전 9:00 → 9:17) 다른 함수와 같은 Intl 파트로 오프셋을 구한다.
- * 서머타임 경계는 오프셋을 한 번 더 구해 맞춘다
- */
+/** dayjs.tz는 iOS Hermes에서 분이 어긋나(오전 9:00 → 9:17) Intl 파트로 오프셋을 구하고, 서머타임 경계는 한 번 더 구해 맞춘다 */
 export function fromWallClock(dateKey: string, hhmm: string, timeZone: string): Instant {
   const wallClockAsUtc = Date.parse(`${dateKey}T${hhmm.slice(0, 5)}:00Z`);
   const firstGuess = wallClockAsUtc - getZoneOffsetMs(wallClockAsUtc, timeZone);
   return fromEpochMs(wallClockAsUtc - getZoneOffsetMs(firstGuess, timeZone));
 }
 
-/** 순간이 그 시간대에서 놓인 달력 날짜(YYYY-MM-DD) */
 export function toDateKey(value: Date | Instant, timeZone: string): string {
   const date = toDate(value);
   if (!isValidDate(date)) {
@@ -137,7 +131,6 @@ export function getZonedHour(value: Date | Instant, timeZone: string): number {
   );
 }
 
-/** 순간이 그 시간대에서 놓인 벽시계(HH:mm) */
 export function toHHmm(value: Date | Instant, timeZone: string): string {
   const date = toDate(value);
   if (!isValidDate(date)) {

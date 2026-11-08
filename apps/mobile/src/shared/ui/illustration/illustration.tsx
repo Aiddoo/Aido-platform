@@ -23,10 +23,7 @@ export interface IllustrationProps {
   size?: IllustrationSize;
 }
 
-/**
- * 빈·오류 상태 그림. 몸통은 밝은 회색(#EFEFEF)으로 테마와 상관없이 같고,
- * 덮개·배지·안쪽 줄은 currentColor라 브랜드 색 `main`을 따른다.
- */
+/** 몸통은 테마와 상관없이 밝은 회색(#EFEFEF)이고 덮개·배지·안쪽 줄은 currentColor라 브랜드 색을 따른다 */
 function createIllustration(Svg: ComponentType<SvgProps>) {
   const StyledSvg = createStyledIcon(Svg);
 

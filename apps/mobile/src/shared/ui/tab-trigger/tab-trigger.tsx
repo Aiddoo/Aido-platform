@@ -26,7 +26,6 @@ export function LineTabTrigger({ children, numberOfLines, ...props }: TextTabTri
   );
 }
 
-/** 알약 탭(`Tabs variant="primary"`)의 글자 탭 */
 export function SegmentTabTrigger({
   children,
   numberOfLines,

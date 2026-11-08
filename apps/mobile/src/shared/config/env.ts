@@ -43,10 +43,6 @@ function resolveKakaoScheme(kakaoNativeAppKey: string | undefined) {
   return kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
 }
 
-/**
- * Expo Metro 번들러의 hostUri에서 개발 머신 IP를 자동으로 추출
- * 예: "192.168.1.100:8081" → "192.168.1.100"
- */
 function getAutoDetectedDevMachineIp(): string | undefined {
   if (!__DEV__) {
     return undefined;
@@ -131,6 +127,6 @@ export const ENV = {
   KAKAO_SCHEME: resolveKakaoScheme(extra.kakaoNativeAppKey),
 
   SENTRY_DSN: extra.sentryDsn,
-  // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).
+  // 프로덕션은 항상 활성, 그 외는 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성
   SENTRY_ENABLED: extra.isProduction || extra.sentryDebug === true,
 } as const;

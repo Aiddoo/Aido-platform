@@ -1,4 +1,3 @@
-/** Sentry 태그 키. `ErrorReporterContext` 필드명과 같은 이름으로 변환된다. */
 export const SENTRY_TAGS = {
   FEATURE: 'feature',
   ERROR_CODE: 'errorCode',

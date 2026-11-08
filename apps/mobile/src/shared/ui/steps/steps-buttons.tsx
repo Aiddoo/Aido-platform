@@ -30,10 +30,7 @@ interface StepsButtonsProps {
   onNext: () => void;
 }
 
-/**
- * 첫 단계는 다음 버튼이 전체 폭이고, 둘째 단계부터 뒤로 버튼이 폭의 25%로 나타난다.
- * 버튼은 단계가 바뀌어도 그대로 남아, 막지 않으면 연타가 다음 단계까지 건너뛴다.
- */
+/** 버튼은 단계가 바뀌어도 그대로 남아, 막지 않으면 연타가 다음 단계까지 건너뛴다 */
 export function StepsButtons({
   index,
   isLast,

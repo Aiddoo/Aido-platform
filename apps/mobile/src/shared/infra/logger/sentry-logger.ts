@@ -26,15 +26,7 @@ export function logEventFeature(message: string): ErrorReportFeature | undefined
   return ERROR_REPORT_FEATURES.find((known) => known === featureTag);
 }
 
-/**
- * Sentry 기반 Logger 어댑터.
- *
- * 일반 로그를 Sentry breadcrumb로 남겨 이후 이벤트/크래시 리포트에 타임라인으로 첨부한다.
- * `error`는 breadcrumb에 더해, Error 객체가 있으면 non-fatal 이벤트로 수집한다. 벤더 코드는 이 파일에만 격리된다.
- *
- * 카테고리가 있는 도메인 breadcrumb(http·navigation 등)는 로거가 아니라
- * `ErrorReporter.addBreadcrumb`(typed `BreadcrumbCategory`)로 남긴다 — 여기선 category를 다루지 않는다.
- */
+/** 카테고리가 있는 도메인 breadcrumb은 로거가 아니라 `ErrorReporter.addBreadcrumb`로 남긴다 */
 export function createSentryLogger(): Logger {
   const breadcrumb = (level: LogLevel, message: string, context?: LogContext): void => {
     const crumb: Sentry.Breadcrumb = {
@@ -59,7 +51,6 @@ export function createSentryLogger(): Logger {
       breadcrumb('error', message, context);
       if (error) {
         const feature = logEventFeature(message);
-        // 커스텀 메시지·컨텍스트를 extra로 첨부 → Sentry 이슈 상세에서 바로 확인 가능.
         captureError(error, {
           tags: {
             [SENTRY_TAGS.SOURCE]: 'logger',

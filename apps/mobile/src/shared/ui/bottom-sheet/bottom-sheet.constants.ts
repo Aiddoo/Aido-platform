@@ -1,9 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-/**
- * gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다.
- * Android 기본값(250ms)과 맞춘다.
- */
+/** gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 680ms 뒤에 와 route 시트의 투명 모달이 탭을 막았다. Android 기본값(250ms)과 맞춘다 */
 export const SHEET_ANIMATION_DURATION = 250;
 
 export const SHEET_INDEX = {

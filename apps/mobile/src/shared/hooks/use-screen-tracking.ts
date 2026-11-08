@@ -3,10 +3,7 @@ import { toScreenName } from '@src/shared/utils/to-screen-name';
 import { usePathname, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-/**
- * 경로가 바뀔 때마다 화면 조회를 남긴다. 이름은 라우트 템플릿(`/todo/[todoId]`)이라 id·초대 코드가 남지 않고,
- * 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)으로 옮겨도 경로가 바뀌었으므로 한 번 더 센다.
- */
+/** 이름은 라우트 템플릿이라 id·초대 코드가 남지 않는다 */
 export function useScreenTracking(): void {
   const pathname = usePathname();
   const screenName = toScreenName(useSegments());
@@ -23,7 +20,6 @@ export function useScreenTracking(): void {
     prevPathname.current = pathname;
     prevScreen.current = screenName;
 
-    // 제품 지표(Analytics) + Sentry 내비게이션 breadcrumb(에러 발생 시 화면 이동 경로 확인용)
     analytics.trackScreenView(screenName);
     errorReporter.addBreadcrumb({
       category: 'navigation',

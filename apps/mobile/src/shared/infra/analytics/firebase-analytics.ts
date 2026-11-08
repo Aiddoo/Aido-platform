@@ -42,13 +42,7 @@ function invokeAsync(
   }
 }
 
-/**
- * Firebase Analytics 어댑터.
- *
- * `Analytics` 포트는 fire-and-forget `: void` 계약이다. RNFirebase v26의 modular
- * `logEvent`는 내부 native Promise를 반환하지 않으므로, 이벤트만 instance method로
- * 호출해 동기 검증 예외와 native Promise rejection을 모두 포트 안에서 격리한다.
- */
+/** RNFirebase v26 modular `logEvent`는 native Promise를 반환하지 않아 instance method로 호출해 동기 예외와 rejection을 포트 안에서 격리한다 */
 export function createFirebaseAnalytics(logger: Logger): Analytics {
   const firebaseAnalytics = getAnalytics();
 
@@ -108,12 +102,7 @@ export function createFirebaseAnalytics(logger: Logger): Analytics {
   };
 }
 
-/**
- * 개발·프리뷰 빌드는 JS 이벤트를 콘솔로만 남기지만, 네이티브 SDK는 같은 GA 속성으로
- * 자동 수집 이벤트(`session_start`·`user_engagement`·`in_app_purchase` 등)를 보낸다.
- * 이후 모든 이벤트에 `traffic_type=internal`을 붙여 GA "내부 트래픽" 필터로 제외한다.
- * JS가 뜨기 전 첫 실행의 `first_open`에는 붙지 않는다.
- */
+/** 네이티브 SDK는 개발·프리뷰에서도 자동 수집 이벤트를 GA로 보내므로 traffic_type=internal로 걸러낸다 (JS 전 첫 실행의 first_open은 제외) */
 export function markFirebaseTrafficAsInternal(logger: Logger): void {
   invokeAsync(logger, FIREBASE_ANALYTICS_LOG_EVENT.SET_DEFAULT_EVENT_PARAMETERS_FAILED, () =>
     setDefaultEventParameters(getAnalytics(), INTERNAL_TRAFFIC_EVENT_PARAMETERS),

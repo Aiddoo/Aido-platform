@@ -21,7 +21,7 @@ export interface SheetRouteNavigator {
   replace: (href: Href) => void;
 }
 
-/** 시트가 닫힌 뒤 route를 떠난다. 딥링크로 바로 열려 돌아갈 화면이 없으면 fallback으로 바꾼다. */
+/** 딥링크로 바로 열려 돌아갈 화면이 없으면 fallback으로 바꾼다 */
 export function exitSheetRoute(
   navigator: SheetRouteNavigator,
   exit: SheetRouteExit,

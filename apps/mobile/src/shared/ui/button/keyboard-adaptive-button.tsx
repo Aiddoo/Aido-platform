@@ -11,11 +11,7 @@ const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
 const STICKY_OFFSET = 0;
 
-/**
- * 포커스한 입력이 키보드 위에 붙은 버튼에 가리지 않게 스크롤 영역에 넘길 값.
- * 키보드 컨트롤러는 칸 전체가 아니라 안쪽 글자 줄(TextInput)을 재므로, 버튼(`xlarge` 56)에 더해
- * 글자 줄 아래 칸 여백(17)과 오류 문구 줄(22), 간격(5)까지 띄운다.
- */
+/** 키보드 컨트롤러는 칸 전체가 아니라 안쪽 TextInput을 재므로, 버튼(`xlarge` 56)에 글자 줄 아래 칸 여백(17)과 오류 문구 줄(22), 간격(5)을 더한다 */
 export const KEYBOARD_ADAPTIVE_BUTTON_BOTTOM_OFFSET = 100;
 
 /** 모양(둥근 모서리·여백)은 키보드에 맞춰 이 부품이 정하므로 `className`·`style`은 받지 않는다 */

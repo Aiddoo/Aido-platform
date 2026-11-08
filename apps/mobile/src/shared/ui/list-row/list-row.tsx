@@ -54,13 +54,13 @@ const listRowSlotVariants = tv({
 
 type ListRowVariantProps = VariantProps<typeof listRowVariants>;
 
-/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+/** @public */
 export type ListRowVerticalPadding = NonNullable<ListRowVariantProps['verticalPadding']>;
-/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+/** @public */
 export type ListRowHorizontalPadding = NonNullable<ListRowVariantProps['horizontalPadding']>;
-/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+/** @public */
 export type ListRowBorder = NonNullable<ListRowVariantProps['border']>;
-/** 외부 재사용을 위해 열어 둔 공용 타입 @public */
+/** @public */
 export type ListRowAlignment = NonNullable<VariantProps<typeof listRowSlotVariants>['alignment']>;
 
 export interface ListRowProps extends Omit<ViewProps, 'children'>, ListRowVariantProps {

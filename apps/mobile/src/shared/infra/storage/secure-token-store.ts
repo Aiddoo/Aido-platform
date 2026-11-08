@@ -3,24 +3,13 @@ import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
 import { z } from 'zod';
 
-/**
- * SecureStore(키체인) 기반 TokenStore.
- *
- * 앱에서 `STORAGE_KEYS`의 토큰 키를 참조하는 유일한 모듈이다.
- */
 export function createSecureTokenStore(storage: Storage): TokenStore {
   return {
     getAccessToken: () => storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
 
     getRefreshToken: () => storage.get(STORAGE_KEYS.REFRESH_TOKEN, z.string()),
 
-    /**
-     * 리프레시 토큰을 먼저 쓴다.
-     *
-     * 두 키 쓰기는 원자적이지 않다. 부분 실패가 나더라도 세션의 근거(리프레시 토큰)가
-     * 남는 쪽으로 기울인다 — 액세스 토큰만 남으면 15분 뒤 세션이 죽지만,
-     * 리프레시 토큰만 남으면 다음 401에서 조용히 회복한다.
-     */
+    /** 두 키 쓰기는 원자적이지 않아 리프레시 토큰을 먼저 쓴다. 리프레시만 남으면 다음 401에서 회복하지만 액세스만 남으면 15분 뒤 세션이 죽는다 */
     async save({ accessToken, refreshToken }: AuthTokenPair): Promise<void> {
       await storage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       await storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken);

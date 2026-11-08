@@ -8,14 +8,7 @@ import { HTTPError, type KyInstance, type Options } from 'ky';
 
 import { readJsonBody, toApiError, toTransportError } from './ky-error';
 
-/**
- * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
- * - 4xx 에러: Result.err(ApiError) 반환
- * - 5xx: throw ServerError (React Query가 자동 재시도)
- * - 네트워크/타임아웃: throw NetworkError/TimeoutError (동일하게 재시도)
- *
- * afterResponse 훅(`api-failure-breadcrumb`)은 관측(breadcrumb)만 하고 절대 throw하지 않는다.
- */
+/** HTTP 결과 → 도메인 에러 분류의 유일한 소유자다. afterResponse 훅은 관측만 하고 throw하지 않는다 */
 export class KyHttpClient implements HttpClient {
   readonly #client: KyInstance;
 

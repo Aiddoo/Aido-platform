@@ -72,11 +72,7 @@ async function getInstalledOnDeviceLocales() {
   }
 }
 
-/**
- * 이 언어를 기기 안에서 인식할 수 있는지. iOS SDK의 `supportsOnDeviceRecognition`은 기기 기본 언어만 보고
- * `installedLocales`는 지원 언어 전체라 다른 언어는 알 수 없다. 그 언어를 기기 인식으로 시작하면 SDK가 조용히
- * 네트워크로 넘어가 권한 오류(1700)가 나므로, 확인되지 않은 언어는 네트워크 인식으로 본다.
- */
+/** iOS SDK의 `supportsOnDeviceRecognition`은 기기 기본 언어만 보고 `installedLocales`는 지원 전체라 다른 언어는 알 수 없다. 기기 인식으로 시작하면 SDK가 조용히 네트워크로 넘어가 권한 오류(1700)가 나므로 확인되지 않은 언어는 네트워크 인식으로 본다 */
 async function canRecognizeOnDevice(locale: SpeechLocale) {
   if (!ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()) {
     return false;

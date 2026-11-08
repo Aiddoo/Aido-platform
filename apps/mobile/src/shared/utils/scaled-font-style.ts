@@ -1,19 +1,6 @@
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 
-/**
- * FontScale별로 b2 토큰이 리매핑되는 실제 px 값.
- *
- * | FontScale | b2 → 토큰 | fontSize | lineHeight |
- * |-----------|-----------|----------|------------|
- * | xsmall    | b2 → b4   | 13px     | 19px       |
- * | small     | b2 → b3   | 15px     | 20px       |
- * | medium    | b2        | 16px     | 23px       |
- * | large     | b2 → b1   | 17px     | 24px       |
- * | xlarge    | b2 → t3   | 20px     | 28px       |
- *
- * @see font-scale-provider.tsx SCALE_MAP — 리매핑 테이블
- * @see global.css @theme — 디자인 토큰 원본 정의
- */
+/** b2 토큰이 FontScale별로 리매핑되는 실제 px 값 (font-scale-provider.tsx SCALE_MAP, global.css @theme 기준) */
 export const SCALED_FONT_STYLES: Record<FontScale, { fontSize: number; lineHeight: number }> = {
   xsmall: { fontSize: 13, lineHeight: 19 },
   small: { fontSize: 15, lineHeight: 20 },

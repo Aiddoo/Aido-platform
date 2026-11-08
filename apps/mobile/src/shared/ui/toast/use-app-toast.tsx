@@ -29,25 +29,6 @@ function getToastErrorMessage(
   return getUserFacingMessage(input) ?? fallback;
 }
 
-/**
- * 앱 전역 Toast 훅
- *
- * @example
- * const { toast, success, warning, error, hide } = useAppToast();
- *
- * toast('메시지');
- * toast('제목', { description: '설명', variant: 'success' });
- * success('성공!');
- * warning('주의!');
- * error('실패했어요');
- * error(new Error('에러'), { fallback: '기본 메시지' });
- *
- * // 커스텀 액션
- * toast('오류', {
- *   variant: 'danger',
- *   action: { label: '재시도', onPress: () => retry() },
- * });
- */
 export function useAppToast() {
   const { toast: heroUIToast } = useToast();
 

@@ -63,24 +63,15 @@ interface KeyboardBottomSheetProps {
   footer?: ReactNode;
   backgroundDecoration?: ReactNode;
   isContentPanEnabled?: boolean;
-  /** 바깥 탭과 Android 뒤로 가기에서 할 일. 없으면 시트를 닫는다. 손잡이·내용 끌어내리기는 gorhom이 닫아 여기로 오지 않는다 */
+  /** 손잡이·내용 끌어내리기는 gorhom이 닫아 여기로 오지 않는다 */
   onDismissRequest?: () => void;
 }
 
-/** 열려 있는 시트 수. 키보드 컨트롤러는 전역이라 마지막으로 닫히는 시트만 다시 켠다 */
+/** 키보드 컨트롤러는 전역이라 마지막으로 닫히는 시트만 다시 켠다 */
 let openSheetCount = 0;
 
-/**
- * 키보드 연동 BottomSheet. 바깥은 HeroUI Root·Portal이고 주변 Context는 시트 안에 둔다.
- *
- * 내용은 gorhom을 직접 쓴다. `BottomSheet.Content`는 내용을 `BottomSheetView`로 한 번 더 감싸, 키보드 때문에
- * 시트가 줄어도 안쪽 스크롤 높이가 줄지 않아 작은 화면에서 입력칸과 버튼에 손이 닿지 않는다.
- *
- * 내용은 스크롤된다. 내용이 짧으면 시트가 그 높이에 맞춰 줄어들지만(enableDynamicSizing),
- * 키보드가 올라온 채로 내용이 길어지면 시트만으로는 아래쪽에 손이 닿지 않기 때문이다.
- * keyboardShouldPersistTaps가 'always'인 것도 같은 이유다 — 없으면 키보드가 떠 있을 때
- * 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 한다.
- */
+// `BottomSheet.Content`는 내용을 `BottomSheetView`로 한 번 더 감싸 키보드로 시트가 줄어도 안쪽 스크롤 높이가 줄지 않으므로 gorhom을 직접 쓴다
+// keyboardShouldPersistTaps가 'always'인 것은 키보드가 떠 있을 때 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 하기 때문이다
 export function KeyboardBottomSheet({
   isOpen,
   onOpenChange,
@@ -109,8 +100,7 @@ export function KeyboardBottomSheet({
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getKeyboardSheetMaxHeight(windowHeight, topInset);
   const bottomPadding = getContentBottomPadding(insets.bottom);
-  // 키보드 위로 시트가 끝까지 올라가 내용이 잘리는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄여 입력 칸이 들어갈
-  // 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
+  // 키보드 위로 시트가 끝까지 올라가는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄이며, 시트 전체를 다시 그리지 않도록 shared value로 둔다
   const isKeyboardShown = useSharedValue(false);
   const footerPaddingStyle = useAnimatedStyle(() => ({
     paddingBottom:
@@ -118,8 +108,7 @@ export function KeyboardBottomSheet({
         ? FOOTER_KEYBOARD_GAP
         : bottomPadding,
   }));
-  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다.
-  // 키보드가 오르내릴 때 내용 높이가 바뀌어 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다.
+  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비운다. 키보드가 오르내릴 때 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
   const { scrollViewRef, handleScrollBeginDrag } = useScrollFocusedInputIntoView({
@@ -432,14 +421,8 @@ function getContentBottomPadding(bottomInset: number) {
 
 const SheetDecorationContext = createContext<ReactNode>(null);
 
-/**
- * gorhom 기본 배경과 같은 면 뒤에 장식을 깐다. 장식이 바뀔 때 배경 컴포넌트가 바뀌어 다시 마운트되지 않도록
- * 컴포넌트는 고정하고 장식만 Context로 넘긴다.
- *
- * gorhom이 넘기는 pointerEvents="none"은 일부러 쓰지 않는다. Android Gesture Handler는 제스처도 배경색도 없는 뷰를 지나쳐
- * 아래 형제 뷰의 제스처까지 내려간다. 내용 제스처를 끈 단계(듣기·정리·고르기)에서 시트 면을 탭하면 뒤 backdrop의 탭이
- * 함께 불려 시트가 닫혔다(QA: 듣기 X). 이 면이 터치를 받아 backdrop까지 내려가지 않게 한다.
- */
+// 컴포넌트를 고정하고 장식만 Context로 넘겨 다시 마운트를 막는다
+// gorhom의 pointerEvents="none"을 쓰지 않는다: Android Gesture Handler가 제스처도 배경색도 없는 뷰를 지나쳐 아래 backdrop의 탭까지 불려 시트가 닫혔다(QA: 듣기 X)
 function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
   const { t } = useTranslation('common');
   const decoration = use(SheetDecorationContext);

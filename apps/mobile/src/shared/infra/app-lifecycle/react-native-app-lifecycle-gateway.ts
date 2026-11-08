@@ -8,10 +8,7 @@ function toLifecycleState(status: string | null | undefined): AppLifecycleState 
     : 'unknown';
 }
 
-/**
- * 네이티브 `AppState` 리스너는 첫 구독자가 생길 때 하나만 걸고 모든 구독자에게 나눠 준다.
- * 마지막 구독자가 떠나면 네이티브 구독도 푼다.
- */
+/** 첫 구독자가 생길 때 네이티브 리스너 하나를 걸어 나눠 주고 마지막 구독자가 떠나면 푼다 */
 function createReactNativeAppLifecycleGateway(): AppLifecycleGateway {
   const channel = createEventChannel<AppLifecycleState>('app-lifecycle');
   let listenerCount = 0;

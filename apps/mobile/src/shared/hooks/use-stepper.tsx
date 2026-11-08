@@ -119,11 +119,7 @@ function renderStep<Contexts extends StepperContexts, Name extends StepName<Cont
   return renderers[entry.step]({ step: entry.step, context: entry.context, history });
 }
 
-/**
- * Render의 정체성은 훅이 만들어질 때 한 번 정해져서, 부모가 다시 그려져도 단계 안의 입력 포커스와
- * 상태가 유지된다. 단계가 바뀔 때만 key로 초기화한다. 렌더러는 함수로 직접 부르므로 그 안에서
- * 훅을 쓰지 않고 컴포넌트를 돌려준다. 단계마다 훅 순서가 달라지면 안 된다.
- */
+/** Render의 정체성은 훅 생성 때 한 번 정해져 부모가 다시 그려져도 입력 포커스·상태가 유지된다. 렌더러 안에서 훅을 쓰지 않는다 */
 function createRender<Contexts extends StepperContexts>(
   store: StepperStore<Contexts>,
   history: StepperHistory<Contexts>,
@@ -140,10 +136,7 @@ function createRender<Contexts extends StepperContexts>(
   };
 }
 
-/**
- * 단계 이동을 화면 안의 기록 스택으로만 다룬다. 라우터와 이어지지 않아 URL로 복원되지 않고,
- * 화면이 사라지면 기록도 함께 사라진다. Android 뒤로 가기는 앞 단계가 있으면 한 단계 되돌린다.
- */
+/** 라우터와 이어지지 않아 URL로 복원되지 않는다. Android 뒤로 가기는 앞 단계가 있으면 한 단계 되돌린다 */
 export function useStepper<Contexts extends StepperContexts>({
   id,
   initial,

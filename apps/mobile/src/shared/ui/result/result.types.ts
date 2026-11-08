@@ -6,9 +6,7 @@ import type { ButtonProps } from '../button/button.types';
 export interface ResultProps {
   icon?: ReactNode;
   title: string;
-  /** 설명 (줄바꿈 지원) */
   description?: string;
-  /** 버튼 (Result.Button 사용) */
   button?: ReactNode;
   className?: string;
   testID?: ViewProps['testID'];

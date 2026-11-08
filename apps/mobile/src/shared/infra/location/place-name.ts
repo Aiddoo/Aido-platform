@@ -16,13 +16,7 @@ function fold(value: string): string {
   return deburr(value).toLowerCase();
 }
 
-/**
- * 역지오코딩 결과를 도시와 동네로 나눈다.
- *
- * Android Geocoder는 locality가 비는 지역이 많아(서울·상파울루) 상위 행정구역으로 도시를 채우고,
- * subLocality에서 발음 구별 기호를 빼기도 해(Sé → Se) 같은 지명인 featureName이 있으면 그 표기를 쓴다.
- * 도시를 모르면 동네를 도시 자리에 두고, 도시와 같은 이름의 동네는 버린다.
- */
+/** Android Geocoder는 locality가 빈 지역이 많고(서울·상파울루) subLocality의 발음 기호를 빼기도 해(Sé → Se) 상위 행정구역·featureName으로 채운다 */
 export function toPlaceName(place: PlaceNameSource): PlaceName | null {
   const city = clean(place.city) ?? clean(place.subregion) ?? clean(place.region);
   const rawDistrict = clean(place.district);

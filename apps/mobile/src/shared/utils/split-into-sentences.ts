@@ -1,7 +1,4 @@
-/**
- * 문장부호에서 나누고, 부호가 없는 긴 말(문장부호를 못 넣는 인식기)은 `maxLength` 안의 마지막 띄어쓰기에서 끊는다.
- * 띄어쓰기도 없으면 `maxLength`에서 자른다. 빈 조각은 버린다.
- */
+/** 부호가 없는 긴 말(문장부호를 못 넣는 인식기)은 `maxLength` 안의 마지막 띄어쓰기에서 끊고, 띄어쓰기도 없으면 `maxLength`에서 자른다 */
 export function splitIntoSentences(text: string, maxLength: number): string[] {
   const parts = text
     .split(/(?<=[.!?。！？])\s+/)

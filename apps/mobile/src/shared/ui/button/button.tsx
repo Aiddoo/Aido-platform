@@ -30,12 +30,7 @@ const TEXT_COLOR_MAP = {
   },
 } as const;
 
-/**
- * heroui `Button` 위에 앱의 높이 4종·색·`isLoading`을 얹는다.
- * 크기·색·모서리는 `className`이 heroui 기본 클래스를 덮고(Uniwind는 같은 우선순위면 뒤에 온 클래스가 이긴다),
- * 눌림은 기존과 같은 옅은 회색 하이라이트를 그대로 쓴다. 비활성은 회색 면 + 글자 흐림으로 보이므로
- * heroui의 비활성 투명도(`disabled:element-disabled`)는 `disabled:opacity-100`으로 끈다.
- */
+/** Uniwind는 같은 우선순위면 뒤에 온 클래스가 이겨 `className`이 heroui 기본 클래스를 덮는다. 비활성은 회색 면 + 글자 흐림이라 heroui의 비활성 투명도는 `disabled:opacity-100`으로 끈다 */
 export function Button({
   children,
   size = 'xlarge',

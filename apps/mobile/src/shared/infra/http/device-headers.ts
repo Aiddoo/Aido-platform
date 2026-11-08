@@ -8,10 +8,7 @@ function getDeviceType(os: typeof process.env.EXPO_OS) {
   return os === 'ios' ? 'IOS' : 'ANDROID';
 }
 
-/**
- * 가입 알림 등 서버가 기기를 식별하는 데 쓰는 요청 헤더. 기기 식별자는 보내지 않는다.
- * 헤더 값은 ASCII만 허용되므로 모델명이 그렇지 않으면 생략하고, 서버 표시 한도로 자른다.
- */
+/** 헤더 값은 ASCII만 허용되므로 모델명이 그렇지 않으면 생략하고 서버 표시 한도로 자른다. 기기 식별자는 보내지 않는다 */
 export function getDeviceHeaders(os = process.env.EXPO_OS): Record<string, string> {
   const modelName = Device.modelName?.trim().slice(0, MAX_MODEL_NAME_LENGTH).trim();
   const osVersion = Device.osVersion?.trim();

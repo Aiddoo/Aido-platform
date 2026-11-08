@@ -5,10 +5,7 @@ import { exitSheetRoute, type SheetRouteExit } from './sheet-route';
 
 const BACK: SheetRouteExit = { type: 'back' };
 
-/**
- * route로 띄운 시트의 열림 상태. `close`는 시트 닫기 애니메이션을 시작하고,
- * 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를 한 번만 떠난다.
- */
+/** 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를 한 번만 떠난다 */
 export function useSheetRoute(fallbackHref: Href) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);

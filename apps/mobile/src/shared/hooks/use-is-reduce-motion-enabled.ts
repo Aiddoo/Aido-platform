@@ -20,10 +20,7 @@ const reduceMotion = createAccessibilitySettingStore({
   },
 });
 
-/**
- * 동작 줄이기 설정. Reanimated의 useReducedMotion은 앱 시작 때 값만 주므로,
- * 첫 그림은 그 값으로 그리고 앱을 켠 채 설정을 바꾸면 다시 그린다.
- */
+/** Reanimated의 useReducedMotion은 앱 시작 때 값만 줘서 설정 변경을 따로 구독한다 */
 export function useIsReduceMotionEnabled(): boolean {
   const isReducedAtLaunch = useReducedMotion();
   return (

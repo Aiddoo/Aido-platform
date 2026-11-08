@@ -6,19 +6,8 @@ import type { z } from 'zod';
 
 import { SECURE_STORE_OPTIONS } from './secure-store-options';
 
-/**
- * iOS `errSecInteractionNotAllowed`의 메시지.
- *
- * expo-secure-store의 `KeyChainException`은 OSStatus를 **메시지로만** 노출한다
- * (`code`는 클래스명에서 파생되므로 잠금과 영구 오류를 구분하지 못한다).
- * 벤더의 에러 형태를 아는 것은 이 인프라 경계의 책임이다 — 도메인이 문자열을 알아선 안 된다.
- *
- * Android에는 잠금 개념이 없다(`requireAuthentication` 미사용). `DecryptException` 등은
- * 영구 오류이므로 잠김으로 승격하지 않는다.
- *
- * `instanceof Error`를 관문으로 두지 않는다 — 네이티브 브릿지가 `{ message }` 형태의
- * 평범한 객체를 던지면 판별에 실패해 **잠긴 키체인이 곧 로그아웃**이 된다.
- */
+// expo-secure-store는 OSStatus를 메시지로만 노출해 `code`로는 잠금과 영구 오류를 구분할 수 없다. `instanceof Error`를 관문으로 두면 `{ message }` 객체를 놓쳐 잠긴 키체인이 로그아웃이 된다
+// Android에는 잠금 개념이 없어 `DecryptException` 등은 영구 오류로 둔다
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
 function hasLockedKeychainMessage(error: unknown): boolean {

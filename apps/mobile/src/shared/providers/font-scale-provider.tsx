@@ -104,8 +104,7 @@ export function FontScaleProvider({
   return <FontScaleContext value={value}>{children}</FontScaleContext>;
 }
 
-// Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함
-// (useTheme과 다르게 — useTheme은 Text 내부에서 호출되지 않음)
+// Text 내부에서 호출되므로 Provider 없이도 안전해야 한다
 const DEFAULT_CONTEXT: FontScaleContextValue = {
   fontScale: 'medium',
   setFontScale: noop,

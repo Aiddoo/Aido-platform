@@ -15,13 +15,11 @@ export function getDeviceLanguage(): string | null {
   return getLocales()[0]?.languageCode ?? null;
 }
 
-/** 지역 설정이 실행 중에 바뀌면 다시 렌더하고 새 객체를 돌려준다 */
 export function useSystemLocale(): SystemLocale {
   const [locale] = useLocales();
   return locale;
 }
 
-/** 시간대·달력 설정이 실행 중에 바뀌면 다시 렌더하고 새 객체를 돌려준다 */
 export function useSystemCalendar(): SystemCalendar {
   const [calendar] = useCalendars();
   return calendar;

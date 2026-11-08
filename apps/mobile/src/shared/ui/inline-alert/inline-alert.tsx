@@ -32,10 +32,7 @@ export interface InlineAlertProps extends Omit<ComponentProps<typeof Alert>, 'ch
   closeLabel?: string;
 }
 
-/**
- * 흐름 안에서 할 일이나 상태를 알리는 배너. 첫 안내처럼 특정 버튼을 가리키는 말풍선은
- * `CoachmarkPopover`가 맡고, 그 밖의 인라인 안내는 모두 이 부품으로 한다.
- */
+/** 특정 버튼을 가리키는 말풍선은 `CoachmarkPopover`가 맡고 그 밖의 인라인 안내는 이 부품으로 한다 */
 export function InlineAlert({
   status = 'default',
   title,

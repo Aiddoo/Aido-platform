@@ -61,7 +61,7 @@ interface AnimatedIndicatorIconProps {
   isSelected: boolean;
 }
 
-// 이전 withTiming의 Easing.out(Easing.quad)와 기본 Easing.inOut(Easing.quad) 곡선이다
+// Easing.out(quad)와 기본 Easing.inOut(quad)의 곡선과 같은 cubic-bezier다
 const SCALE_EASING = cubicBezier(0.5, 1, 0.89, 1);
 const OPACITY_EASING = cubicBezier(0.455, 0.03, 0.515, 0.955);
 const UNSELECTED_ICON_SCALE = 1.8;

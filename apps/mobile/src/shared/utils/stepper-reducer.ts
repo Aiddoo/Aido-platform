@@ -37,7 +37,7 @@ export function getCurrentEntry<Contexts extends StepperContexts>(
   return entry;
 }
 
-/** 지금과 같은 단계·context를 다시 넣는 호출은 무시한다. 렌더러의 같은 핸들러가 연달아 불릴 때 기록이 늘지 않게 한다 */
+/** 렌더러의 같은 핸들러가 연달아 불려도 기록이 늘지 않게 같은 단계·context 호출은 무시한다 */
 function push<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
   entry: StepEntry<Contexts>,

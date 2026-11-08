@@ -15,13 +15,7 @@ import type { AdaptivePaneProps } from './adaptive-pane.types';
 import { getPaneInitialInsets, type PaneSlot } from './get-pane-initial-insets';
 import { getPrimaryPaneWidth } from './get-primary-pane-width';
 
-/**
- * pane마다 SafeAreaProvider를 두어 그 안의 SafeAreaView와 useSafeAreaInsets가 창이 아닌
- * pane이 실제로 겹치는 safe area(iPhone Duo 세로 레일 등)만 보게 한다.
- *
- * 접기/펼치기에서 pane이 다시 마운트되면 스크롤 위치·입력·내비게이터 상태를 잃으므로
- * 두 pane을 size class와 무관하게 같은 트리 슬롯에 두고 보이는 슬롯만 바꾼다.
- */
+/** pane마다 SafeAreaProvider를 두어 창이 아닌 pane이 실제로 겹치는 safe area만 보게 한다. 다시 마운트하면 스크롤·입력·내비게이터 상태를 잃으므로 두 pane을 같은 트리 슬롯에 두고 보이는 슬롯만 바꾼다 */
 export function AdaptivePane(props: AdaptivePaneProps) {
   return (
     <ReservedRegionsProvider style={{ flex: 1 }}>
@@ -30,10 +24,7 @@ export function AdaptivePane(props: AdaptivePaneProps) {
   );
 }
 
-/**
- * 창 폭이나 접힘선 위치가 바뀌면 달라지는 값. pane 안의 자리가 움직였는지 알 때 쓴다.
- * 접힘선은 pane의 좌표로 재므로 `AdaptivePane` 안에서 부른다.
- */
+/** 접힘선은 pane의 좌표로 재므로 `AdaptivePane` 안에서 부른다 */
 export function useAdaptivePaneLayoutKey(): string {
   const { width } = useWindowDimensions();
   const fold = findVerticalFold(useReservedRegions());

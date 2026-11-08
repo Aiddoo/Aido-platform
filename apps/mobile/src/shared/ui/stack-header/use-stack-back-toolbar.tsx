@@ -14,12 +14,7 @@ interface UseStackBackToolbarOptions {
   accessibilityLabel?: string;
 }
 
-/**
- * 중첩 Stack의 첫 화면은 이전 화면이 부모 Stack에 있어 네이티브 뒤로가기가 그려지지 않는다.
- * 같은 자리에 네이티브 툴바 버튼을 두어 iPhone Duo 레일에도 들어가게 한다.
- * 레이아웃의 `Stack.Screen` 자식으로 넣는다. `Stack.Screen`은 직접 자식인 `Stack.Toolbar`만 읽어
- * 컴포넌트로 감싸면 툴바가 사라지므로 요소를 돌려주는 훅으로 둔다.
- */
+/** 중첩 Stack의 첫 화면은 이전 화면이 부모 Stack에 있어 네이티브 뒤로가기가 그려지지 않는다. `Stack.Screen`은 직접 자식인 `Stack.Toolbar`만 읽어 컴포넌트로 감싸면 툴바가 사라지므로 요소를 돌려주는 훅으로 둔다 */
 export function useStackBackToolbar({
   fallbackHref,
   buttonContainerColor,

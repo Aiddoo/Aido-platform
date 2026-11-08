@@ -15,11 +15,7 @@ import { match } from 'ts-pattern';
 
 import { QueryErrorFallback } from './query-error-fallback';
 
-/**
- * 경계가 fallback에 넘겨주는 값.
- * 던져진 것이 Error라는 보장이 없어(문자열·객체 무엇이든 throw될 수 있다) error는 unknown이다 —
- * 좁히려면 shared/errors의 판별 함수를 거친다.
- */
+/** 던져진 것이 Error라는 보장이 없어 error는 unknown이다. 좁히려면 shared/errors의 판별 함수를 거친다 */
 export interface QueryErrorFallbackProps {
   error: unknown;
   reset: () => void;
@@ -32,11 +28,7 @@ interface QueryErrorBoundaryProps {
   resetKeys?: unknown[];
 }
 
-/**
- * fallback을 컴포넌트 경계 안에서 그린다.
- * 함수를 그대로 호출하면 React가 훅 디스패처를 걸어 주지 않아
- * fallback이 useTranslation 같은 훅을 쓰는 순간 "Invalid hook call"로 터진다.
- */
+/** 함수를 그대로 호출하면 React가 훅 디스패처를 걸어 주지 않아 fallback이 훅을 쓰는 순간 "Invalid hook call"로 터진다 */
 function Fallback({
   render,
   ...props

@@ -10,7 +10,7 @@ interface ModalBottomSheetProps extends Omit<ComponentProps<typeof BottomSheet>,
   onExit: () => void;
 }
 
-/** 다른 시트 위에 overlay로 띄우는 시트. 키보드는 아래 시트의 것이라 열릴 때 내린다 */
+/** 키보드는 아래 시트의 것이라 열릴 때 내린다 */
 export function ModalBottomSheet({
   isOpen,
   onOpenChange,

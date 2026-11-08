@@ -7,10 +7,7 @@ import { mapValues, omitBy } from 'es-toolkit';
 
 import { SENTRY_TAGS } from './sentry-tags';
 
-/**
- * Severity → Sentry `SeverityLevel` 매핑.
- * `Record<Severity, ...>`라 Severity 확장 시 컴파일 타임에 누락을 강제한다.
- */
+/** `Record<Severity, ...>`라 Severity가 늘면 누락이 컴파일 오류가 난다 */
 const severityToSentryLevel: Record<Severity, Sentry.SeverityLevel> = {
   debug: 'debug',
   info: 'info',
@@ -21,7 +18,6 @@ const severityToSentryLevel: Record<Severity, Sentry.SeverityLevel> = {
 
 type ErrorReporterTagField = Exclude<keyof ErrorReporterContext, 'severity'>;
 
-/** ErrorReporterContext에서 severity를 제외한 나머지를 Sentry tags로 변환(undefined 제거, 문자열화). */
 function toTags(context: ErrorReporterContext = {}): Record<string, string> {
   const tags = {
     [SENTRY_TAGS.FEATURE]: context.feature,
@@ -37,12 +33,6 @@ function toTags(context: ErrorReporterContext = {}): Record<string, string> {
   );
 }
 
-/**
- * Sentry 기반 ErrorReporter 어댑터.
- *
- * 벤더(Sentry) 전용 코드는 이 파일에만 격리된다. 콜사이트는 `ErrorReporter` 포트만 의존하므로
- * 다른 벤더로 교체 시 이 어댑터만 갈아끼우면 된다.
- */
 export function createSentryErrorReporter(): ErrorReporter {
   return {
     captureException(error: Error, context?: ErrorReporterContext): void {

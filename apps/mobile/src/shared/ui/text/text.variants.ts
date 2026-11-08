@@ -16,10 +16,7 @@ export const TEXT_SIZE_CLASSES = {
   e2: 'text-e2',
 } satisfies Record<TextSize, string>;
 
-/**
- * 글자 크기만 정하는 입력칸 유틸리티. 줄 간격을 건드리지 않아 보통 크기의 입력칸 모양이 그대로다.
- * `global.css`에서 `text-*`보다 뒤에 있어 함께 쓰면 글자 크기는 이쪽을 따른다.
- */
+/** 줄 간격을 건드리지 않아 보통 크기의 입력칸 모양이 그대로다. `global.css`에서 `text-*`보다 뒤에 있어 함께 쓰면 글자 크기는 이쪽을 따른다 */
 export const INPUT_FONT_SIZE_CLASSES = {
   display: 'text-input-display',
   h1: 'text-input-h1',

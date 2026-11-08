@@ -15,12 +15,7 @@ export interface ScrollLayout {
   input: VerticalRect;
 }
 
-/**
- * 키보드가 다 올라온 뒤의 시트 스크롤 영역 배치를 미리 구한다.
- * gorhom(keyboardBehavior="interactive")은 시트를 키보드 위로 올리고, 위쪽 한계(topInset+손잡이)에 닿으면
- * 스크롤 영역 높이를 줄인다. 어느 쪽이든 영역 아래 끝은 키보드 위에 붙는다.
- * 키보드가 올라오기 시작할 때 이 배치로 스크롤해야 키보드·시트와 한 동작으로 움직인다.
- */
+/** gorhom(interactive)은 시트를 키보드 위로 올리다 위쪽 한계에 닿으면 스크롤 영역을 줄이므로, 어느 쪽이든 영역 아래 끝은 키보드 위에 붙는다. 키보드가 올라오기 시작할 때 이 배치로 스크롤해야 한 동작으로 움직인다 */
 export function getLayoutAboveKeyboard(
   { viewport, content, input }: ScrollLayout,
   keyboardTop: number,
@@ -44,11 +39,7 @@ export interface FocusedInputScrollInput extends ScrollLayout {
   marginBelow: number;
 }
 
-/**
- * 포커스된 입력이 viewport에서 가려지지 않게 하는 스크롤 위치. 이미 보이거나 이 스크롤 내용 밖의 입력이면 null.
- * 위아래 여백까지 다 들어가지 않으면 입력 칸 전체가 footer 위에 오는 쪽(아래)을 우선하고,
- * 입력 자체도 들어가지 않을 만큼 좁으면 커서가 있는 입력 위쪽을 맞춘다.
- */
+/** 이미 보이거나 스크롤 내용 밖이면 null. 다 안 들어가면 입력 칸 전체가 footer 위에 오는 아래쪽을 우선하고, 입력 자체가 안 들어가면 커서가 있는 위쪽을 맞춘다 */
 export function getFocusedInputScrollOffset(layout: FocusedInputScrollInput): number | null {
   const { viewport, content, input } = layout;
   if (input.top < content.top || input.top + input.height > content.top + content.height) {

@@ -3,11 +3,7 @@ import { isNil, mapValues, omitBy, pickBy } from 'es-toolkit';
 
 const MAX_TEXT_LENGTH = 500;
 
-/**
- * Sentry로 나가는 context에 실을 수 있는 키(허용 목록). 목록에 없는 키는 값과 함께 지운다.
- * 메모 본문·음성 글자·할 일 제목처럼 사용자가 쓴 글은 어떤 키로 들어와도 나가지 않는다.
- * 키를 더할 때는 값이 구조화된 식별자·코드·상태인지 확인한다.
- */
+/** 목록에 없는 키는 지운다. 키를 더할 때는 값이 구조화된 식별자·코드·상태인지 확인한다 */
 const ALLOWED_CONTEXT_KEYS: ReadonlySet<string> = new Set([
   'action',
   'canAskAgain',
@@ -82,7 +78,7 @@ function scrubValue(key: string, value: unknown): unknown {
   return undefined;
 }
 
-/** 허용된 키의 원시값만 남긴다. 객체·배열 값은 사용자 글이 섞일 수 있어 지운다 */
+/** 객체·배열 값은 사용자 글이 섞일 수 있어 지운다 */
 export function scrubContext(
   context: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {

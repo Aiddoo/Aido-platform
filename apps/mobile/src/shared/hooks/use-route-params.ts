@@ -17,10 +17,7 @@ function encodeRouteParams<TSchema extends z.ZodObject>(
   );
 }
 
-/**
- * URL 값을 nuqs의 `useQueryStates`처럼 `[values, setValues]`로 읽고 쓴다. 읽기와 쓰기가 같은 스키마를 지난다.
- * `schema`는 모듈 상수로 넘긴다. 쓰는 필드의 URL 형식은 문자열이고 `.transform` 대신 `z.codec`이어야 한다.
- */
+/** 쓰는 필드의 URL 형식은 문자열이고 `.transform` 대신 `z.codec`이어야 한다 */
 export function useRouteParams<TSchema extends z.ZodObject>(schema: TSchema) {
   const params = schema.parse(useLocalSearchParams());
   const setParams = useCallback(

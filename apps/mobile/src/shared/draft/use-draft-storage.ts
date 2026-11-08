@@ -9,12 +9,7 @@ interface UseDraftStorageOptions {
   onOutdatedDiscard?: () => void;
 }
 
-/**
- * 컴포넌트 밖(사용자 범위 로컬 저장소)에 둔 초안을 읽고 쓴다.
- * 폼 값의 원천은 react-hook-form이므로 React 상태를 두지 않는다. 저장해도 다시 렌더하지 않는다.
- * `restoredDraft`는 첫 렌더에서 동기적으로 한 번 읽은 값이라 빈 값으로 그린 뒤 채우는 깜박임이 없다.
- * 키는 마운트 시점에 고정된다. 대상이 바뀌면 사용처가 `key`로 다시 마운트한다.
- */
+/** restoredDraft는 첫 렌더에서 동기로 읽어 깜박임이 없고, 키는 마운트 시점에 고정되므로 대상이 바뀌면 `key`로 다시 마운트한다 */
 export function useDraftStorage<TValue>(
   draftKey: DraftKey<TValue>,
   { sourceUpdatedAt, onOutdatedDiscard }: UseDraftStorageOptions = {},

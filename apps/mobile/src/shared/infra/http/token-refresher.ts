@@ -24,16 +24,8 @@ interface TokenRefresherDeps {
   logger: Pick<Logger, 'warn'>;
 }
 
-/**
- * 액세스 토큰 갱신기.
- *
- * **책임은 갱신뿐이다.** 이 파일에 토큰 삭제도, 이벤트 발행도 없다 —
- * 세션 종료는 `SessionManager`의 책임이며, 갱신기는 판정 결과를 타입으로 보고할 뿐이다.
- * (갱신기가 세션을 끝낼 수 있으면 "토큰 삭제는 두 경로뿐"이라는 불변식이 무너진다.)
- *
- * resolve = 확정 판정(refreshed/invalid/superseded), reject = 일시 인프라 장애(재시도 대상).
- * 같은 세대의 동시 대기자들은 single-flight로 동일한 결과(성공이든 실패든)를 공유한다.
- */
+// 책임은 갱신뿐이다. 갱신기가 세션을 끝낼 수 있으면 "토큰 삭제는 두 경로뿐"이라는 불변식이 무너진다
+// resolve는 확정 판정, reject는 재시도 대상 인프라 장애다
 export function createTokenRefresher({
   tokenStore,
   requestRefresh,

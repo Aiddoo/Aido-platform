@@ -58,7 +58,6 @@ interface QueryErrorActionsProps {
   testID?: string;
 }
 
-/** 오류 규칙의 두 갈래: 다시 시도(주 버튼)와 문의하기(보조 텍스트 버튼) */
 export function QueryErrorActions({
   onRetry,
   onInquiry = openBugReportInquiry,

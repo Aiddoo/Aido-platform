@@ -9,12 +9,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { getReorderInstruction, type ReorderInstruction } from '../utils/get-reorder-instruction';
 
-/**
- * 행이 끌기를 여는 길게 누르기(Pressable 기본 500ms)보다 조금 늦게 끌기 제스처를 켠다.
- * 바로 켜면 Android에서 행 위에서 시작한 스와이프를 끌기가 가져가 바깥 스크롤과 당겨서 새로고침이 멈춘다.
- * 라이브러리 문서의 Refresh Control 항목이 권하는 값이다. 문서가 권하는 `panGesture`는 이 라이브러리 타입이
- * gesture-handler 2의 `PanGesture`라 3의 `Gesture.Pan()`과 맞지 않아, 같은 일을 하는 `panActivateAfterLongPress`를 쓴다
- */
+/** 바로 켜면 Android에서 행 위 스와이프를 끌기가 가져가 스크롤이 멈춘다. `panGesture`는 gesture-handler 2 타입이라 3과 맞지 않아 `panActivateAfterLongPress`를 쓴다 */
 const DRAG_ACTIVATION_DELAY_MS = 520;
 
 interface ReorderedList<TItem, TId> {
@@ -36,11 +31,7 @@ interface ReorderHold<TItem> {
   isDragging: boolean;
 }
 
-/**
- * 서버 순서를 받아 `ReorderableList`/`NestedReorderableList`에 그대로 펼칠 props를 만든다.
- * 평소에는 받은 목록을 그대로 그린다. 끄는 동안과 놓은 뒤 서버 값이 새로 올 때까지만 화면 순서를 붙잡는다.
- * 끌기 시작과 자리 바뀜의 햅틱도 여기서 낸다. 콜백이 worklet이라 호출부로 나누면 `scheduleOnRN`까지 옮겨야 한다.
- */
+/** 콜백이 worklet이라 햅틱을 호출부로 나누면 `scheduleOnRN`까지 옮겨야 해 여기서 낸다 */
 export function useReorderableList<TItem, TId>({
   items,
   updatedAt,

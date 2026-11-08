@@ -13,10 +13,7 @@ import { Text } from '../text/text';
 
 const ICON_SIZE = 16;
 
-/**
- * 오프라인일 때 화면 맨 위에 한 줄로 알린다. 루트에 한 번만 두고, 아래 내용은 별도
- * SafeAreaProvider로 감싸 상태 표시줄 inset을 배너가 대신 차지하게 한다.
- */
+/** 루트에 한 번만 두고, 아래 내용은 별도 SafeAreaProvider로 감싸 상태 표시줄 inset을 배너가 대신 차지하게 한다 */
 export function OfflineBanner() {
   const isOnline = useIsOnline();
   const { t } = useTranslation('common');

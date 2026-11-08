@@ -17,10 +17,7 @@ interface QueryErrorFallbackProps extends Pick<BoundaryFallbackProps, 'reset'> {
   className?: string;
 }
 
-/**
- * 예상하지 못한 조회 오류 화면. 오류 그림, 무엇이 안 됐는지, 다음에 할 일(다시 시도·문의하기)을
- * 모든 화면에서 같은 모양으로 보여 준다. 404처럼 예상한 상태는 기능 fallback이 "없음" 안내를 따로 그린다.
- */
+/** 404처럼 예상한 상태는 기능 fallback이 "없음" 안내를 따로 그린다 */
 export function QueryErrorFallback({
   reset,
   title,

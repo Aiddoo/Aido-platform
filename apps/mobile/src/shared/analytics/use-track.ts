@@ -7,7 +7,6 @@ import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from '.
 import type { FeatureKey } from './feature-key';
 import { track } from './track';
 
-/** feature가 Analytics를 쓰는 유일한 입구. 타입 이벤트 전송, 기능 귀속 성공 추적, 계정을 떠날 때의 정리만 연다. */
 export function useTrack() {
   const analytics = useAnalytics();
   const featureAttribution = useFeatureAttribution();

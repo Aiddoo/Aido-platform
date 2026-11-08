@@ -12,10 +12,7 @@ import { HTTPError, isNetworkError, TimeoutError as KyTimeoutError } from 'ky';
 import { errorEnvelopeSchema } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
 
-/**
- * RN의 전역 fetch(expo/fetch)는 연결 실패를 TypeError가 아니라 `fetch failed: …` 일반 Error로 던지고 클래스를
- * 내보내지 않아 ky도 알아보지 못한다. 사용자가 끊은 요청은 ky가 먼저 abort 사유로 던지므로 여기 오지 않는다.
- */
+/** RN 전역 fetch(expo/fetch)는 연결 실패를 `fetch failed: …` 일반 Error로 던지고 클래스를 내보내지 않아 ky도 알아보지 못한다 */
 const EXPO_FETCH_FAILURE_PREFIX = 'fetch failed: ';
 
 function isExpoFetchFailure(error: unknown) {
@@ -34,10 +31,7 @@ function isSyntaxError(error: unknown): error is { message: string } {
   );
 }
 
-/**
- * 성공 응답의 본문을 JSON으로 읽는다. 접속 인증 Wi-Fi의 HTML처럼 JSON이 아니면 `SyntaxError` 대신
- * 봉투 검증 실패와 같은 `ParseError`로 바꿔 같은 실패를 한 가지로 다룬다.
- */
+/** 접속 인증 Wi-Fi의 HTML처럼 JSON이 아닌 본문은 봉투 검증 실패와 같은 `ParseError`로 바꾼다 */
 export async function readJsonBody(read: () => Promise<unknown>): Promise<unknown> {
   try {
     return await read();
@@ -61,7 +55,6 @@ export function resolveMessage(code: string, serverMessage: string): string {
   return serverMessage || t('errors:fallback');
 }
 
-/** 4xx 응답을 서버 오류 코드와 사용자 문구가 담긴 ApiError로 바꾼다 */
 export function toApiError(error: HTTPError): ApiError {
   const { response } = error;
   // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다(`response.json()` 재호출 불가)
@@ -91,8 +84,7 @@ export function toTransportError(error: unknown): TimeoutError | ServerError | N
     return new ServerError(error.response.status, error.request.headers.get(REQUEST_ID_HEADER));
   }
 
-  // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싼다(원인은 `.cause`).
-  // 방어적으로 raw TypeError도 함께 처리한다.
+  // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싸지만(`.cause`) raw TypeError도 방어적으로 처리한다
   if (isNetworkError(error) || error instanceof TypeError || isExpoFetchFailure(error)) {
     return new NetworkError();
   }

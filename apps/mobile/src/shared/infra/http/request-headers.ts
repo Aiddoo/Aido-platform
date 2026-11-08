@@ -5,7 +5,7 @@ import type { BeforeRequestState } from 'ky';
 
 import { getDeviceHeaders } from './device-headers';
 
-/** 서버 로그·Sentry와 앱 breadcrumb를 한 요청으로 잇는 ID. 서버가 같은 값을 응답 헤더로 돌려준다. */
+/** 서버 로그·Sentry와 앱 breadcrumb를 한 요청으로 잇는다 */
 export const REQUEST_ID_HEADER = 'X-Request-Id';
 
 export interface AppHeaderSource {
@@ -25,7 +25,7 @@ export function createAppHeaders({
   };
 }
 
-/** 요청마다 정하는 헤더. 언어·시간대는 실행 중 바뀔 수 있고 요청 ID는 요청마다 새로 만든다. */
+/** 언어·시간대는 실행 중 바뀔 수 있고 요청 ID는 요청마다 새로 만든다 */
 export function setPerRequestHeaders(headers: Headers): void {
   headers.set(REQUEST_ID_HEADER, Crypto.randomUUID());
   headers.set('X-Timezone', getDeviceTimezone());
@@ -34,10 +34,7 @@ export function setPerRequestHeaders(headers: Headers): void {
   }
 }
 
-/**
- * ky v2의 beforeRequest는 최초 1회만 실행된다(재시도 시 재실행 안 함). 401 갱신 뒤 재시도는
- * 원 요청의 헤더를 복사하므로 같은 요청 ID로 서버에 다시 도착한다.
- */
+/** ky v2의 beforeRequest는 최초 1회만 실행되고, 401 갱신 뒤 재시도는 원 요청 헤더를 복사하므로 같은 요청 ID로 도착한다 */
 export function applyPerRequestHeaders({ request }: BeforeRequestState): void {
   setPerRequestHeaders(request.headers);
 }

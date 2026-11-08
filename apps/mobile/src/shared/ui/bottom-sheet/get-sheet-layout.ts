@@ -21,10 +21,7 @@ export interface SheetLayoutInput {
 
 const NO_SAFE_AREA: SheetHorizontalMargins = { left: 0, right: 0 };
 
-/**
- * 시트의 좌우 여백과 위쪽 한계. 시트는 Portal로 전체 창에 그려져 탭 레일을 덮으므로 좌우 대칭으로 채우고,
- * 반쯤 접힌 접힘선은 넘지 않으며, 상태 표시 같은 occlusion 아래에서 시작한다.
- */
+/** 시트는 Portal로 전체 창에 그려져 탭 레일을 덮으므로 좌우 대칭으로 채우고, 반쯤 접힌 접힘선은 넘지 않으며 occlusion 아래에서 시작한다 */
 export function getSheetLayout({
   windowWidth,
   safeAreaTop,

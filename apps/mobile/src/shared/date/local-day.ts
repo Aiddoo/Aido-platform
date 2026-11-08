@@ -8,10 +8,7 @@ import {
 } from './date-key';
 import { toDateKey } from './instant';
 
-/**
- * 달력 칸이 들고 다니는 Date. 그 날짜의 기기(process) 시간대 자정이다.
- * 날짜 계산은 key로 하고 Date는 마지막에 만든다. 그래야 자정·시간대·서머타임에 날이 밀리지 않는다.
- */
+/** 날짜 계산은 key로 하고 Date는 마지막에 만들어야 자정·시간대·서머타임에 날이 밀리지 않는다 */
 export function toLocalDay(dateKey: string): Date {
   return dayjs(dateKey).toDate();
 }
@@ -37,7 +34,6 @@ export function moveToLocalMonth(date: Date, monthSource: Date, timeZone: string
   return addLocalMonths(date, diffLocalMonths(monthSource, date, timeZone), timeZone);
 }
 
-/** 두 날짜의 달 차이 (first - second) */
 export function diffLocalMonths(first: Date, second: Date, timeZone: string): number {
   return diffDateKeysInMonths(toDateKey(second, timeZone), toDateKey(first, timeZone));
 }
