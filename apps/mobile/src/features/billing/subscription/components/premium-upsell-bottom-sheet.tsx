@@ -99,7 +99,7 @@ export function PremiumUpsellBottomSheet({
         {description == null && (
           <QueryErrorBoundary fallback={PremiumUpsellBottomSheet.Error}>
             <Suspense fallback={<PremiumUpsellBottomSheet.Loading />}>
-              <PremiumUpsellBottomSheet.Contents feature={feature} />
+              <PremiumUpsellBottomSheet.FeatureDetail feature={feature} />
             </Suspense>
           </QueryErrorBoundary>
         )}
@@ -115,7 +115,8 @@ const LOCKED_DESCRIPTION_KEYS = {
   APP_ICON: 'gate.appIconDescription',
 } as const satisfies Record<Exclude<EntitlementFeature, PlanLimitFeatureKey>, string>;
 
-PremiumUpsellBottomSheet.Contents = function Contents({
+/** 잠긴 기능은 무엇을 여는지, 한도 기능은 사용량과 "무료 → 프리미엄" 숫자를 보여 준다 */
+PremiumUpsellBottomSheet.FeatureDetail = function FeatureDetail({
   feature,
 }: {
   feature: EntitlementFeature;
