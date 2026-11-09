@@ -15,3 +15,7 @@ export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
         },
   );
 }
+
+export function invalidateConsent(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+}

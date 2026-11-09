@@ -8,9 +8,9 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
+import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { type Instant } from '@src/shared/date/instant';
@@ -154,7 +154,7 @@ function useMarketingOptOut(
     } else {
       showConsentResult('marketingPush', result);
     }
-    queryClient.invalidateQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+    invalidateConsent(queryClient);
   });
 
   useEffect(() => {
