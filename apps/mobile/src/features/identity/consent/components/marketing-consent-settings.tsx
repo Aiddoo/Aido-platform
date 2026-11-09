@@ -1,6 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 
 import {
   useUpdateMarketingConsentMutationOptions,
@@ -8,14 +9,16 @@ import {
 } from '../queries/consent.mutations';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
-export function MarketingConsentSettings() {
+type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
+
+export function MarketingConsentSettings(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
 
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Toggle
         label={t('settings.marketingLabel')}
         description={t('settings.marketingDescription')}
@@ -35,9 +38,9 @@ export function MarketingConsentSettings() {
   );
 }
 
-MarketingConsentSettings.Loading = function Loading() {
+MarketingConsentSettings.Loading = function Loading(props: SettingsSectionProps) {
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Toggle.Loading hasDescription />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle.Loading hasDescription />

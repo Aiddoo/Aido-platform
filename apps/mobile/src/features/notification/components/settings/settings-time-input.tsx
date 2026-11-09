@@ -10,19 +10,15 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
-  ArrowRightIcon,
   BottomSheet,
   Box,
   HStack,
+  SettingsListGroup,
   Text,
-  TextSkeleton,
   useOverlay,
   VStack,
-  WordWrapText,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 
 import { isClockTimeInRange } from '../../utils/clock-time';
@@ -102,71 +98,22 @@ function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePicker
   );
 }
 
-interface SettingsTimeRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
-  label: string;
-  description: string;
-  hour: number;
-  minute: number;
-  timeFormat: TimeFormat;
-  accessory?: ReactNode;
-}
-
-function SettingsTimeRow({
-  label,
-  description,
-  hour,
-  minute,
-  timeFormat,
-  isDisabled,
-  accessory,
-  className,
-  ...pressableProps
-}: SettingsTimeRowProps) {
-  const dateFormatContext = useDateFormatContext();
-
-  return (
-    <PressableFeedback
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      isDisabled={isDisabled}
-      className={cn('rounded-lg', className)}
-      {...pressableProps}
-    >
-      <PressableFeedback.Highlight className="rounded-lg" />
-      <HStack justify="between" align="center" className={cn(isDisabled && 'opacity-40')} gap={20}>
-        <VStack className="flex-1">
-          <HStack gap={8} align="center">
-            <Text size="b2" shade={8}>
-              {label}
-            </Text>
-            {accessory}
-            <Text size="b2" className="text-main break-keep">
-              {formatTimeOfDay({ hour, minute }, timeFormat, dateFormatContext)}
-            </Text>
-          </HStack>
-          <WordWrapText size="b3" shade={6}>
-            {description}
-          </WordWrapText>
-        </VStack>
-        <ArrowRightIcon colorClassName="text-gray-6" />
-      </HStack>
-    </PressableFeedback>
-  );
-}
-
 export interface ClockTime {
   hour: number;
   minute: number;
 }
 
 interface SettingsTimeInputProps extends Omit<
-  ComponentProps<typeof SettingsTimeRow>,
-  'hour' | 'minute' | 'onPress'
+  ComponentProps<typeof SettingsListGroup.Item>,
+  'value' | 'right' | 'onPress'
 > {
   value: ClockTime;
   onChange: (value: ClockTime) => void;
   minimumTime: ClockTime;
   maximumTime: ClockTime;
+  timeFormat: TimeFormat;
+  /** 시각 앞에 붙는 표시. 프리미엄 기능이면 왕관을 둔다 */
+  accessory?: ReactNode;
   /** false를 돌려주면 피커를 열지 않는다. 프리미엄 안내처럼 열기 전 확인이 필요할 때 쓴다. */
   onBeforeOpen?: () => boolean;
 }
@@ -178,8 +125,8 @@ export function SettingsTimeInput({
   maximumTime,
   onBeforeOpen,
   timeFormat,
-  isDisabled,
-  ...rowProps
+  accessory,
+  ...itemProps
 }: SettingsTimeInputProps) {
   const { t } = useTranslation('notification');
   const { resolvedLanguage } = useLanguage();
@@ -207,9 +154,6 @@ export function SettingsTimeInput({
   };
 
   const handlePress = useSingleTap(() => {
-    if (isDisabled) {
-      return;
-    }
     if (onBeforeOpen != null && !onBeforeOpen()) {
       return;
     }
@@ -235,7 +179,7 @@ export function SettingsTimeInput({
           }}
         >
           <TimePickerSheetContent
-            title={rowProps.label}
+            title={itemProps.label}
             initialValue={getTodayAt(value.hour, value.minute)}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
@@ -252,13 +196,17 @@ export function SettingsTimeInput({
   });
 
   return (
-    <VStack>
-      <SettingsTimeRow
-        {...rowProps}
-        hour={value.hour}
-        minute={value.minute}
-        timeFormat={timeFormat}
-        isDisabled={isDisabled}
+    <>
+      <SettingsListGroup.Item
+        {...itemProps}
+        value={
+          <HStack align="center" gap={4}>
+            {accessory}
+            <Text size="b3" shade={7}>
+              {formatTimeOfDay(value, timeFormat, dateFormatContext)}
+            </Text>
+          </HStack>
+        }
         onPress={handlePress}
       />
       {isAndroidPickerOpen && (
@@ -271,18 +219,6 @@ export function SettingsTimeInput({
           onDismiss={() => setIsAndroidPickerOpen(false)}
         />
       )}
-    </VStack>
+    </>
   );
 }
-
-SettingsTimeInput.Loading = function Loading() {
-  return (
-    <HStack justify="between" align="center" gap={20}>
-      <VStack flex={1}>
-        <TextSkeleton size="b2" className="w-28" />
-        <TextSkeleton size="b3" className="w-44" />
-      </VStack>
-      <ArrowRightIcon colorClassName="text-gray-3" />
-    </HStack>
-  );
-};

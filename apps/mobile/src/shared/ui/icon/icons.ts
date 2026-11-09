@@ -30,10 +30,12 @@ import KeyDuoIconSvg from '@assets/icons/ic_duo_key.svg';
 import LanguageDuoIconSvg from '@assets/icons/ic_duo_language.svg';
 import LinkDuoIconSvg from '@assets/icons/ic_duo_link.svg';
 import NameDuoIconSvg from '@assets/icons/ic_duo_name.svg';
+import ReminderDuoIconSvg from '@assets/icons/ic_duo_reminder.svg';
 import ReportDuoIconSvg from '@assets/icons/ic_duo_report.svg';
 import TermsDuoIconSvg from '@assets/icons/ic_duo_terms.svg';
 import ThemeDuoIconSvg from '@assets/icons/ic_duo_theme.svg';
 import VoiceDuoIconSvg from '@assets/icons/ic_duo_voice.svg';
+import WeatherDuoIconSvg from '@assets/icons/ic_duo_weather.svg';
 import WhatsNewDuoIconSvg from '@assets/icons/ic_duo_whats_new.svg';
 import EyeIconSvg from '@assets/icons/ic_eye.svg';
 import EyeOffIconSvg from '@assets/icons/ic_eye_off.svg';
@@ -146,6 +148,8 @@ export const AppSquareIcon = createStyledIcon(AppSquareIconSvg);
 
 /** 마이 탭·설정 행의 듀오톤 아이콘. 옅은 면과 둥근 선이 currentColor 하나로 그려진다 */
 export const BellDuoIcon = createStyledIcon(BellDuoIconSvg);
+export const ReminderDuoIcon = createStyledIcon(ReminderDuoIconSvg);
+export const WeatherDuoIcon = createStyledIcon(WeatherDuoIconSvg);
 export const CategoryDuoIcon = createStyledIcon(CategoryDuoIconSvg);
 export const ThemeDuoIcon = createStyledIcon(ThemeDuoIconSvg);
 export const FontSizeDuoIcon = createStyledIcon(FontSizeDuoIconSvg);

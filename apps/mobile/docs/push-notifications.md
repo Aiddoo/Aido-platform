@@ -58,7 +58,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 - 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()}` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 [나중에]가 남으면 조건이 풀려 화면이 빠진다. Android 뒤로 가기는 [나중에]다.
 - [나중에]와 안내 닫기는 `PushPermissionPromptRepository`가 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
-- 설정 > 알림 > 푸시 맨 위 `PushPermissionStatusRow`는 기기 알림이 꺼져 있으면 꺼짐 카드와 행동(시스템 창 또는 설정 열기)을 보여 주고, 아래 토글을 흐리게 둔다.
+- 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
 - 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.
 - 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다.

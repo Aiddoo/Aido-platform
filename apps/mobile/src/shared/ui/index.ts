@@ -29,6 +29,8 @@ export { HINT_OFFSET, HintPopoverContent, type HintPopoverContentProps } from '.
 export { IconRadioItem } from './icon-radio-item';
 export {
   BellDuoIcon,
+  ReminderDuoIcon,
+  WeatherDuoIcon,
   CategoryDuoIcon,
   ThemeDuoIcon,
   FontSizeDuoIcon,

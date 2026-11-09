@@ -81,7 +81,12 @@
     "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",
     "reminderEveningLabel": "Evening reminder",
     "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
-    "timeOutOfRange": "Choose a time between {{start}} and {{end}}"
+    "timeOutOfRange": "Choose a time between {{start}} and {{end}}",
+    "sections": {
+      "app": "App notifications",
+      "marketing": "Offers and events",
+      "times": "Notification times"
+    }
   },
   "permission": {
     "card": {

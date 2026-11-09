@@ -3,13 +3,16 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 
 import { PushPermissionPolicy } from '../../domains/push-permission.model';
 import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../../queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
 
+type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
+
 /** 기기 알림이 꺼져 있으면 설정은 바꿀 수 있지만 알림이 닿지 않는다는 뜻으로 흐리게 둔다 */
-export function PushDeliverySettings() {
+export function PushDeliverySettings(props: SettingsSectionProps) {
   const { t } = useTranslation(['notification', 'auth']);
   const [{ data: preference }, { data: permission }] = useSuspenseQueries({
     queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
@@ -19,6 +22,7 @@ export function PushDeliverySettings() {
 
   return (
     <SettingsListGroup
+      {...props}
       className={PushPermissionPolicy.isPushDeliverable(permission) ? undefined : 'opacity-50'}
     >
       <SettingsListGroup.Toggle
@@ -46,9 +50,9 @@ export function PushDeliverySettings() {
   );
 }
 
-PushDeliverySettings.Loading = function Loading() {
+PushDeliverySettings.Loading = function Loading(props: SettingsSectionProps) {
   return (
-    <SettingsListGroup>
+    <SettingsListGroup {...props}>
       <SettingsListGroup.Toggle.Loading hasDescription />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle.Loading hasDescription />

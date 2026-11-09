@@ -1,5 +1,4 @@
 import { ReminderTimeInput } from '@src/features/notification/components/settings/reminder-time-input';
-import { SettingsTimeInput } from '@src/features/notification/components/settings/settings-time-input';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
@@ -11,24 +10,18 @@ export default function ReminderSettingsScreen() {
     <SettingsScreenLayout>
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<ReminderSettingsScreen.Loading />}>
-          <SettingsListGroup>
-            <SettingsListGroup.Content>
-              <ReminderTimeInput
-                label={t('settings.reminderMorningLabel')}
-                description={t('settings.reminderMorningDescription')}
-                period="morning"
-              />
-            </SettingsListGroup.Content>
-
+          <SettingsListGroup label={t('settings.sections.times')}>
+            <ReminderTimeInput
+              label={t('settings.reminderMorningLabel')}
+              description={t('settings.reminderMorningDescription')}
+              period="morning"
+            />
             <SettingsListGroup.Separator />
-
-            <SettingsListGroup.Content>
-              <ReminderTimeInput
-                label={t('settings.reminderEveningLabel')}
-                description={t('settings.reminderEveningDescription')}
-                period="evening"
-              />
-            </SettingsListGroup.Content>
+            <ReminderTimeInput
+              label={t('settings.reminderEveningLabel')}
+              description={t('settings.reminderEveningDescription')}
+              period="evening"
+            />
           </SettingsListGroup>
         </Suspense>
       </QueryErrorBoundary>
@@ -37,17 +30,13 @@ export default function ReminderSettingsScreen() {
 }
 
 ReminderSettingsScreen.Loading = function Loading() {
+  const { t } = useTranslation('notification');
+
   return (
-    <SettingsListGroup>
-      <SettingsListGroup.Content>
-        <SettingsTimeInput.Loading />
-      </SettingsListGroup.Content>
-
+    <SettingsListGroup label={t('settings.sections.times')}>
+      <SettingsListGroup.Item.Loading descriptionLines={1} hasValue />
       <SettingsListGroup.Separator />
-
-      <SettingsListGroup.Content>
-        <SettingsTimeInput.Loading />
-      </SettingsListGroup.Content>
+      <SettingsListGroup.Item.Loading descriptionLines={1} hasValue />
     </SettingsListGroup>
   );
 };

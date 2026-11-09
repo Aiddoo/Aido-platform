@@ -4,21 +4,26 @@ import { formatTimeOfDay } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { SettingsListGroup, Text } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import {
+  BellDuoIcon,
+  ReminderDuoIcon,
+  SettingsListGroup,
+  Text,
+  TextSkeleton,
+  WeatherDuoIcon,
+} from '@src/shared/ui';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
-import { PushPermissionPolicy } from '../../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
+import { toPushSummary } from '../../utils/push-permission.view-model';
 
-function SummaryText({ isEnabled, children }: { isEnabled: boolean; children: string }) {
-  return (
-    <Text size="b2" className={isEnabled ? 'text-main' : 'text-gray-5'}>
-      {children}
-    </Text>
-  );
-}
+const PUSH_SUMMARY_LABEL_KEYS = {
+  on: 'settings.on',
+  off: 'settings.off',
+  deviceOff: 'settings.deviceOff',
+} as const satisfies Record<ReturnType<typeof toPushSummary>, string>;
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
@@ -26,59 +31,84 @@ type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'chil
 export function NotificationSettingsLinks(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const push = useSingleTap(router.push);
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const { data: permission } = useSuspenseQuery(useGetPushPermissionQueryOptions());
-  const dateFormatContext = useDateFormatContext();
-  const isPushEnabled = preference.pushEnabled;
-  // 서버 설정은 그대로 두고, 기기 알림이 꺼져 닿지 않는다는 것만 회색과 문구로 보인다
-  const isDeviceOff = isPushEnabled && !PushPermissionPolicy.isPushDeliverable(permission);
-  const canReceivePush = PushPermissionPolicy.canReceivePush(permission, {
-    pushEnabled: isPushEnabled,
+  const [{ data: preference }, { data: permission }] = useSuspenseQueries({
+    queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
   });
-  const isWeatherEnabled = PreferencePolicy.isWeatherEnabled(preference);
+  const dateFormatContext = useDateFormatContext();
+  const reminderTimes = [
+    { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
+    { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },
+  ]
+    .map((time) => formatTimeOfDay(time, preference.timeFormat, dateFormatContext))
+    .join(' / ');
 
   return (
     <SettingsListGroup {...props}>
       <SettingsListGroup.Item
+        icon={<SettingsListGroup.Icon Icon={BellDuoIcon} />}
         label={t('settings.pushLabel')}
         value={
-          <SummaryText isEnabled={canReceivePush}>
-            {isDeviceOff
-              ? t('settings.deviceOff')
-              : isPushEnabled
-                ? t('settings.on')
-                : t('settings.off')}
+          <SummaryText>
+            {t(PUSH_SUMMARY_LABEL_KEYS[toPushSummary(permission, preference)])}
           </SummaryText>
         }
         onPress={() => push('/settings/notifications/push')}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Item
-        label={t('settings.weatherLabel')}
-        value={
-          <SummaryText isEnabled={canReceivePush && isWeatherEnabled}>
-            {isWeatherEnabled ? t('settings.on') : t('settings.off')}
-          </SummaryText>
-        }
-        onPress={() => push('/settings/notifications/weather')}
-        isDisabled={!isPushEnabled}
+        icon={<SettingsListGroup.Icon Icon={ReminderDuoIcon} />}
+        label={t('settings.reminderLabel')}
+        value={<SummaryText>{reminderTimes}</SummaryText>}
+        onPress={() => push('/settings/notifications/reminder')}
+        isDisabled={!preference.pushEnabled}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Item
-        label={t('settings.reminderLabel')}
+        icon={<SettingsListGroup.Icon Icon={WeatherDuoIcon} />}
+        label={t('settings.weatherLabel')}
         value={
-          <SummaryText isEnabled={canReceivePush}>
-            {[
-              { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
-              { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },
-            ]
-              .map((time) => formatTimeOfDay(time, preference.timeFormat, dateFormatContext))
-              .join(' / ')}
+          <SummaryText>
+            {PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
           </SummaryText>
         }
-        onPress={() => push('/settings/notifications/reminder')}
-        isDisabled={!isPushEnabled}
+        onPress={() => push('/settings/notifications/weather')}
+        isDisabled={!preference.pushEnabled}
       />
     </SettingsListGroup>
   );
 }
+
+function SummaryText({ children }: { children: string }) {
+  return (
+    <Text size="b3" shade={7}>
+      {children}
+    </Text>
+  );
+}
+
+/** 아이콘과 이름은 받기 전에도 같은 자리에 그려 값만 채워진다 */
+NotificationSettingsLinks.Loading = function Loading(props: SettingsSectionProps) {
+  const { t } = useTranslation('notification');
+
+  return (
+    <SettingsListGroup {...props}>
+      <SettingsListGroup.Item
+        icon={<SettingsListGroup.Icon Icon={BellDuoIcon} />}
+        label={t('settings.pushLabel')}
+        value={<TextSkeleton size="b3" className="w-12" />}
+      />
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Item
+        icon={<SettingsListGroup.Icon Icon={ReminderDuoIcon} />}
+        label={t('settings.reminderLabel')}
+        value={<TextSkeleton size="b3" className="w-24" />}
+      />
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Item
+        icon={<SettingsListGroup.Icon Icon={WeatherDuoIcon} />}
+        label={t('settings.weatherLabel')}
+        value={<TextSkeleton size="b3" className="w-12" />}
+      />
+    </SettingsListGroup>
+  );
+};

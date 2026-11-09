@@ -81,7 +81,12 @@
     "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",
     "reminderEveningLabel": "오후 리마인드",
     "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
-    "timeOutOfRange": "{{start}}부터 {{end}} 사이의 시각만 고를 수 있어요"
+    "timeOutOfRange": "{{start}}부터 {{end}} 사이의 시각만 고를 수 있어요",
+    "sections": {
+      "app": "앱 알림",
+      "marketing": "혜택·이벤트 소식",
+      "times": "알림 시간"
+    }
   },
   "permission": {
     "card": {

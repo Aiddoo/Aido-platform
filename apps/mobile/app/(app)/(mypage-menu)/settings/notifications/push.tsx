@@ -1,32 +1,33 @@
 import { MarketingConsentSettings } from '@src/features/identity/consent/components/marketing-consent-settings';
-import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
 import { PushDeliverySettings } from '@src/features/notification/components/settings/push-delivery-settings';
+import { PushPermissionSettings } from '@src/features/notification/components/settings/push-permission-settings';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function PushSettingsScreen() {
+  const { t } = useTranslation('notification');
+
   return (
     <SettingsScreenLayout>
-      <SettingsListGroup>
-        <SettingsListGroup.Content>
-          <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-            <Suspense fallback={<PushPermissionStatusRow.Loading />}>
-              <PushPermissionStatusRow />
-            </Suspense>
-          </QueryErrorBoundary>
-        </SettingsListGroup.Content>
-      </SettingsListGroup>
+      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+        <Suspense fallback={<PushPermissionSettings.Loading />}>
+          <PushPermissionSettings />
+        </Suspense>
+      </QueryErrorBoundary>
 
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-        <Suspense fallback={<PushDeliverySettings.Loading />}>
-          <PushDeliverySettings />
+        <Suspense fallback={<PushDeliverySettings.Loading label={t('settings.sections.app')} />}>
+          <PushDeliverySettings label={t('settings.sections.app')} />
         </Suspense>
       </QueryErrorBoundary>
 
       {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
-        <Suspense fallback={<MarketingConsentSettings.Loading />}>
-          <MarketingConsentSettings />
+        <Suspense
+          fallback={<MarketingConsentSettings.Loading label={t('settings.sections.marketing')} />}
+        >
+          <MarketingConsentSettings label={t('settings.sections.marketing')} />
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>

@@ -11,9 +11,9 @@ export default function NotificationSettingsScreen() {
     <SettingsScreenLayout>
       <QueryErrorBoundary fallback={SettingsListGroup.Error}>
         <Suspense fallback={<NotificationSettingsScreen.Loading />}>
-          <TimeFormatSetting label={t('sections.timeDisplay')} />
-
           <NotificationSettingsLinks label={t('sections.notifications')} />
+
+          <TimeFormatSetting label={t('sections.timeDisplay')} />
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>
@@ -25,16 +25,10 @@ NotificationSettingsScreen.Loading = function Loading() {
 
   return (
     <>
+      <NotificationSettingsLinks.Loading label={t('sections.notifications')} />
+
       <SettingsListGroup label={t('sections.timeDisplay')}>
         <SettingsListGroup.Toggle.Loading />
-      </SettingsListGroup>
-
-      <SettingsListGroup label={t('sections.notifications')}>
-        <SettingsListGroup.Item.Loading hasValue />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Item.Loading hasValue />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Item.Loading hasValue />
       </SettingsListGroup>
     </>
   );

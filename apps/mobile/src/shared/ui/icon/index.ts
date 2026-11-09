@@ -1,6 +1,8 @@
 export type { StyledIcon } from './create-styled-icon';
 export {
   BellDuoIcon,
+  ReminderDuoIcon,
+  WeatherDuoIcon,
   CategoryDuoIcon,
   ThemeDuoIcon,
   FontSizeDuoIcon,

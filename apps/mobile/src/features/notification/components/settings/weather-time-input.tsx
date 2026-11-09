@@ -1,5 +1,7 @@
-import { PreferencePolicy } from '@src/features/identity/preference/domains/preference.model';
-import { type Preference } from '@src/features/identity/preference/domains/preference.model';
+import {
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -33,22 +35,21 @@ const WEATHER_TIME = {
   },
 } as const;
 
-interface WeatherTimeInputProps extends Pick<
+interface WeatherTimeInputProps extends Omit<
   ComponentProps<typeof SettingsTimeInput>,
-  'label' | 'description'
+  'value' | 'onChange' | 'minimumTime' | 'maximumTime' | 'timeFormat' | 'isDisabled'
 > {
   period: keyof typeof WEATHER_TIME;
 }
 
-export function WeatherTimeInput({ label, description, period }: WeatherTimeInputProps) {
+export function WeatherTimeInput({ period, ...props }: WeatherTimeInputProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
   const time = WEATHER_TIME[period];
 
   return (
     <SettingsTimeInput
-      label={label}
-      description={description}
+      {...props}
       value={time.read(preference)}
       onChange={(value) => updatePreference.mutate(time.toInput(value))}
       {...time.range}
