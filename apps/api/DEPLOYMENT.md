@@ -230,6 +230,8 @@ WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
 | REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID              | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다(`docs/billing.md`). v2 비밀 키, 권한은 읽기 둘뿐               |
 | FEATURE_DISCOVERY_*                                               | 새 기능 소개. 규칙은 아래                                                                                         |
 
+`REVENUECAT_SECRET_API_KEY`(v1)는 1.15.0부터 쓰지 않는다. 스키마가 모르는 변수는 버리므로 배포 뒤 운영 env에서 지워도 된다.
+
 새 기능 소개 값은 릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
 
 - `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(`feature-discovery.registry.ts`의 `FEATURE_DISCOVERY_CAMPAIGN_ID`, 1.15.0은 `feature-discovery-2026-12`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.

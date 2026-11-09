@@ -76,3 +76,22 @@ describe("envSchema — DB 연결 풀", () => {
     expect(config.DATABASE_POOL_CONNECTION_TIMEOUT_MS).toBeUndefined();
   });
 });
+
+describe("envSchema — 쓰지 않게 된 변수", () => {
+  it("스키마가 모르는 옛 변수(REVENUECAT_SECRET_API_KEY)가 운영 env에 남아 있어도 기동을 막지 않고 버린다", () => {
+    // Given
+    const environment = {
+      DATABASE_URL: "postgresql://localhost:5432/aido",
+      JWT_SECRET: "a".repeat(32),
+      JWT_REFRESH_SECRET: "b".repeat(32),
+      TOKEN_ENCRYPTION_KEY: "c".repeat(32),
+      NODE_ENV: "development",
+      REVENUECAT_SECRET_API_KEY: "sk_legacy_v1",
+    };
+    // When
+    const result = envSchema.safeParse(environment);
+    // Then
+    expect(result.success).toBe(true);
+    expect(result.success && "REVENUECAT_SECRET_API_KEY" in result.data).toBe(false);
+  });
+});

@@ -104,7 +104,6 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
         .mock(TypedConfigService)
         .final({
           revenuecat: {
-            secretApiKey: undefined,
             webhookSecret: undefined,
             projectId,
             apiV2SecretKey: undefined,

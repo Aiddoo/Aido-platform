@@ -68,7 +68,6 @@ function createReader(revenuecat: { apiV2SecretKey?: string; projectId?: string 
     new HttpClient({ retry: false, throwOnHttpError: false }),
     {
       revenuecat: {
-        secretApiKey: undefined,
         webhookSecret: undefined,
         apiV2SecretKey: revenuecat.apiV2SecretKey,
         projectId: revenuecat.projectId,

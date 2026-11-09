@@ -5,7 +5,6 @@ import { z } from "zod";
  * 향후 확장용 - 현재는 선택적
  */
 export const externalSchema = z.object({
-  REVENUECAT_SECRET_API_KEY: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */
   REVENUECAT_PROJECT_ID: z.string().min(1).optional(),
