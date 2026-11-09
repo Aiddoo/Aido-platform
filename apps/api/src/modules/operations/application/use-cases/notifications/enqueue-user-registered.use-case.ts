@@ -5,7 +5,7 @@ import type { UserRegisteredEventPayload } from "../../types/notifications/user-
 /**
  * 회원가입 관리자 알림 등록 유스케이스.
  *
- * 회원가입 이벤트를 관리자 채널 Discord 알림 SEND 잡으로 큐에 등록한다.
+ * 회원가입 이벤트를 관리자 채널 알림 SEND 잡으로 큐에 등록한다.
  */
 interface EnqueueUserRegisteredDependencies {
   readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;

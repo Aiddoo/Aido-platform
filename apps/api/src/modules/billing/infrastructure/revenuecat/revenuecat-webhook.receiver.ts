@@ -15,8 +15,6 @@ export interface RevenueCatWebhookInput {
   readonly body: unknown;
 }
 
-// 계약과 다른 원문은 다시 보내도 같으므로 받은 것으로 닫고 사람이 보게 한다
-
 @Injectable()
 export class RevenueCatWebhookReceiver {
   readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
@@ -42,6 +40,7 @@ export class RevenueCatWebhookReceiver {
       });
       return { received: true };
     }
+    // 계약과 다른 원문은 다시 보내도 같으므로 받은 것으로 닫고 사람이 보게 한다
     if (translation.status === "invalid") {
       this.#logger.warn({
         event: BillingLogEvent.WEBHOOK_INVALID,

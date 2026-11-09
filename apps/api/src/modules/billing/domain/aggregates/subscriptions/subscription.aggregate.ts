@@ -28,7 +28,7 @@ export interface SubscriptionProps {
   gracePeriodEndsAt: Date | null;
   cancelledAt: Date | null;
   lastProcessedEventId: string | null;
-  /** PRODUCT_CHANGE가 예약한 다음 갱신의 상품. 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
+  /** PRODUCT_CHANGE_SCHEDULED가 남긴 다음 갱신의 상품. 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
   nextProductId: string | null;
   /** 지금 기간의 스토어 기간 유형. null은 이 값을 저장하기 전에 만든 행(NORMAL)이다. */
   periodType: StorePeriodType | null;
@@ -280,8 +280,8 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
 
   /**
    * 상품 변경 예약을 기록한다. 상품 변경은 정보성 안내라 지금 기간의 상품·만료·상태는 실제 결제 이벤트
-   * (Apple RENEWAL·Play INITIAL_PURCHASE)가 맞추므로, 이 이벤트의 product_id가 바꾸기 전·후 어느 값이든
-   * 결과가 같도록 바꾼 대상(new_product_id)만 남긴다. 갱신 뒤 늦게 온 지난 기간의 안내는 false다.
+   * (App Store는 RENEWED, Play는 새 체인의 STARTED)가 맞추므로, 이 이벤트의 상품이 바꾸기 전·후 어느 값이든
+   * 결과가 같도록 바꾼 대상(newProductId)만 남긴다. 갱신 뒤 늦게 온 지난 기간의 안내는 false다.
    */
   reserveProductChange(input: {
     newProductId?: string;

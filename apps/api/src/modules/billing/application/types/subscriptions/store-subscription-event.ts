@@ -89,7 +89,7 @@ export interface SubscriptionExtendedEvent extends StoreChainEventBase {
   readonly kind: "EXTENDED";
 }
 
-/** 처리하지 않는 공급자 이벤트. 사용자 확인과 로그만 남긴다. */
+/** 처리하지 않는 공급자 이벤트. 사용자를 찾지 않고 로그만 남긴다. */
 export interface SubscriptionIgnoredEvent extends StoreChainEventBase {
   readonly kind: "IGNORED";
 }

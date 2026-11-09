@@ -10,7 +10,7 @@ import type { StoreSubscriptionId } from "../../../domain/value-objects/subscrip
 
 export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
 
-/** RevenueCat appUserId 매핑에 필요한 사용자 읽기 프로젝션 */
+/** 스토어 이벤트의 앱 사용자 ID(User.id 또는 별칭)로 찾은 사용자 읽기 프로젝션 */
 export interface SubscriptionUser {
   id: string;
   email: string;
@@ -20,7 +20,7 @@ export interface SubscriptionUser {
   profile: { name: string | null } | null;
 }
 
-/** 구독 생성 데이터 (INITIAL_PURCHASE용) */
+/** 체인 행 생성 데이터(구매 STARTED, 행 없는 체인의 RENEWED) */
 export interface CreateSubscriptionData {
   userId: string;
   storeSubscriptionId: StoreSubscriptionId;
@@ -31,7 +31,7 @@ export interface CreateSubscriptionData {
   lastProcessedEventId?: string | null;
   /** 구매 웹훅의 결제 환경. 웹훅이 보내지 않으면 null(알 수 없음)이다. */
   environment?: SubscriptionEnvironment | null;
-  /** 구매 웹훅의 period_type. 모르면 null(NORMAL)이다. */
+  /** 이벤트가 알려 준 지금 기간의 유형. 모르면 null(NORMAL)이다. */
   periodType?: StorePeriodType | null;
 }
 
@@ -62,7 +62,7 @@ export interface FindLapsedPremiumUsersParams {
 /**
  * 구독 저장소 포트.
  *
- * RevenueCat 웹훅으로 수신한 구독 이벤트를 DB에 반영한다. 트랜잭션은 CLS로 전파된다.
+ * 스토어 구독 이벤트와 상태 대조를 구독 행·User projection에 반영한다. 트랜잭션은 CLS로 전파된다.
  */
 export interface SubscriptionRepositoryPort {
   findByStoreSubscriptionId(storeSubscriptionId: StoreSubscriptionId): Promise<Subscription | null>;

@@ -136,7 +136,7 @@ export interface StoreEventChainState {
 }
 
 /**
- * TRANSFER·다른 사용자의 체인 이벤트로 옮겨 간 행은 소유자가 바뀌어 읽히지 않으므로 남은 행을 그대로 믿는다.
+ * TRANSFERRED·다른 사용자의 체인 이벤트로 옮겨 간 행은 소유자가 바뀌어 읽히지 않으므로 남은 행을 그대로 믿는다.
  * 이번 이벤트의 체인은 행 대신 이벤트가 정한 상태로 본다(일반 취소는 만료 시각까지·환불은 즉시 종료).
  */
 export function applyStoreEventChain(
@@ -147,7 +147,7 @@ export function applyStoreEventChain(
     if (subscription.storeSubscriptionId !== eventChain?.storeSubscriptionId) {
       return [subscription];
     }
-    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLATION·PRODUCT_CHANGE·SUBSCRIPTION_EXTENDED)은 행의 만료 시각 유지
+    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLED·PRODUCT_CHANGE_SCHEDULED·EXTENDED)은 행의 만료 시각 유지
     if (eventChain.expiresAt === null) {
       return [];
     }

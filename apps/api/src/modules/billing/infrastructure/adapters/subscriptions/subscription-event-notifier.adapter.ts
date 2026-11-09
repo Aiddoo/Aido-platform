@@ -20,9 +20,8 @@ import type { SubscriptionEventPayload } from "../../../application/types/subscr
 /**
  * 구독 이벤트 알림 어댑터.
  *
- * 관리자 알림은 admin-notification 큐로, 결제 이슈 푸시는 notification 큐로
- * fire-and-forget 위임한다. 트랜잭션 커밋 후 use-case가 호출한다.
- * 웹훅 처리 실패는 운영 경보로 올린다.
+ * 관리자 알림은 커밋 뒤 admin-notification 큐로 기다리지 않고 넘긴다. 결제 문제 푸시는 활성 UoW 안에서
+ * notification 큐에 기록해 처리 원장과 함께 커밋한다. 웹훅 처리 실패는 운영 경보로 올린다.
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {

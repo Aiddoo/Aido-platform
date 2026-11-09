@@ -5,7 +5,7 @@ import type { SubscriptionAlertInput } from "../../types/notifications/subscript
 /**
  * 구독 이벤트 관리자 알림 등록 유스케이스.
  *
- * RevenueCat 구독 이벤트를 결제 채널 Discord 알림 SEND 잡으로 큐에 등록한다.
+ * 스토어 구독 이벤트를 결제 채널 관리자 알림 SEND 잡으로 큐에 등록한다.
  * 이벤트 ID가 있으면 같은 이벤트의 알림 잡을 한 번만 등록한다.
  */
 interface EnqueueSubscriptionEventDependencies {
