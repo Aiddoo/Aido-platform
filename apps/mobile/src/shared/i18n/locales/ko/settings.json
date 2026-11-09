@@ -45,8 +45,6 @@
     "agreedAt": "동의일: {{date}}",
     "version": "버전: {{version}}",
     "notAgreed": "미동의",
-    "marketing": "마케팅 수신 동의",
-    "marketingPush": "광고성 앱 푸시 수신 동의",
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
       "description": "입력하거나 말한 내용을 Anthropic·Google·OpenAI로 보내 처리해요. 음성은 Apple·Google 음성 인식이 글자로 바꿀 수 있고, 녹음 파일은 아이두 서버로 보내지 않아요.",

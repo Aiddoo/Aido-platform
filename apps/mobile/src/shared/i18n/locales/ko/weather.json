@@ -1,6 +1,5 @@
 {
   "titles": {
-    "index": "날씨",
     "settings": "날씨 알림 설정"
   },
   "condition": {
@@ -270,7 +269,6 @@
   "locationPrompt": {
     "title": "위치 권한을 허용하면\n날씨를 볼 수 있어요",
     "subtitle": "지금 있는 곳 날씨와\n비 피할 시간을 알려드려요",
-    "register": "위치 등록하기",
     "permissionDenied": "설정에서 위치 권한을\n켜주세요",
     "continue": "계속",
     "permissionDeniedDescription": "권한을 켜고 돌아오면\n바로 날씨를 보여드려요",

@@ -240,8 +240,7 @@
     "unavailableDescription": "It may have been deleted, or your friendship may have changed",
     "open": "Comments",
     "pageTitle": "To-do details",
-    "unknownOwner": "User",
-    "metrics": "{{views}} views · {{comments}} comments"
+    "unknownOwner": "User"
   },
   "interaction": {
     "detailTitle": "A little encouragement",

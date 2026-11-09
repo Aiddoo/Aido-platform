@@ -112,10 +112,7 @@
     },
     "status": {
       "label": "기기 알림 권한",
-      "granted": "허용됨",
-      "provisional": "조용히 받는 중",
-      "denied": "꺼짐 · 기기 설정에서 켤 수 있어요",
-      "notDetermined": "아직 선택하지 않았어요"
+      "granted": "허용됨"
     },
     "toasts": {
       "requestFailed": "알림 권한을 묻지 못했어요. 기기 설정에서 켜 주세요",

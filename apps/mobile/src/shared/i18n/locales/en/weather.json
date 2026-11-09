@@ -1,6 +1,5 @@
 {
   "titles": {
-    "index": "Weather",
     "settings": "Weather notification settings"
   },
   "condition": {
@@ -274,7 +273,6 @@
   "locationPrompt": {
     "title": "Allow location access to see the weather",
     "subtitle": "See your local weather and when to dodge the rain",
-    "register": "Register location",
     "permissionDenied": "Turn on location access in Settings",
     "continue": "Continue",
     "permissionDeniedDescription": "Come back after turning it on and we'll show the weather right away",

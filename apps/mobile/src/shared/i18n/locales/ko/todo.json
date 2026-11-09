@@ -234,8 +234,7 @@
     "unavailableDescription": "할 일이 삭제됐거나 친구 관계가 바뀌었을 수 있어요",
     "open": "댓글",
     "pageTitle": "할 일 상세",
-    "unknownOwner": "사용자",
-    "metrics": "조회 {{views}} · 댓글 {{comments}}"
+    "unknownOwner": "사용자"
   },
   "interaction": {
     "detailTitle": "친구의 응원",
