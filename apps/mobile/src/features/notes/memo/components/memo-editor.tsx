@@ -375,7 +375,7 @@ function MemoContentSkeleton() {
   );
 }
 
-/** 메뉴는 누르면 닫혀 진행이 안 보인다. 본문이 밀리지 않게 위에 띄워 알린다 */
+/** 메뉴는 누르면 닫혀 진행이 안 보인다. 본문 위 줄에 알린다. 본문 위에 띄우면 첫 줄을 가린다 */
 function MemoAiParsingBadge() {
   const { t } = useTranslation('memo');
   const [memoId] = useMemoId();
@@ -388,7 +388,7 @@ function MemoAiParsingBadge() {
   return (
     <Animated.View
       entering={FadeIn.duration(ANIMATION.duration.normal)}
-      className="absolute top-3 z-10 self-center"
+      className="self-center pt-3"
       pointerEvents="none"
     >
       <HStack gap={8} align="center" className="rounded-full bg-gray-2 px-3 py-2">
