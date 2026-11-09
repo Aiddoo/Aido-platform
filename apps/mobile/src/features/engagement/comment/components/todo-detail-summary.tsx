@@ -39,7 +39,7 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
@@ -137,8 +137,9 @@ TodoDetailSummary.Task = function Task() {
 TodoDetailSummary.Schedule = function Schedule() {
   const { t } = useTranslation('todo');
   const [todoId] = useTodoId();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const [{ data: detail }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetPreferenceQueryOptions()],
+  });
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const { todo } = detail;
