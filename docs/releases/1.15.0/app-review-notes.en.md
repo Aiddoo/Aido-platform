@@ -4,7 +4,7 @@
 
 Before pasting:
 
-- The App Store Notes field allows 4,000 characters. The text below is 3,914 characters with the demo account left blank, so the email and password can use up to 86 characters together. Count again after filling them in.
+- The App Store Notes field allows 4,000 characters. The text below is 3,959 characters with the demo account left blank, so the email and password can use up to 41 characters together. Count again after filling them in.
 - The demo account must be on the free plan (no subscription or invite reward), have only the 2 default categories, and be more than 1 day old. A newer account sees the notifications screen right after sign-in instead of the system alert described in the notes.
 - The 2-week free trial is an introductory offer on the yearly subscription in App Store Connect and a free-trial offer on the yearly base plan in Play Console. If it isn't set there, the app shows only the regular prices, and the trial lines in the notes don't apply.
 - `{price}` and `{date}` stand for the store price and the trial end date that the app fills in.
@@ -38,7 +38,7 @@ Limits and the Premium sheet
 - The sheet shows usage ("10 of 10 used"), the reset date, and Free → Premium numbers. After "Not now", that feature shows a toast with "See Premium" for the day. At the friend limit, the main button is "Invite a friend to add 1 more".
 
 Third-party AI consent (Guideline 5.1.2(i))
-- Before any AI request, a sheet shows what is sent (what you type or say, to-dos, date and time zone; never name, email, friends, or audio), who processes it (Anthropic, Google, OpenAI for text; Apple or Google speech recognition for voice), and that it's for AI features only, never ads. Not now sends nothing, and the server rejects AI requests without consent. Withdraw: Me tab > Terms & policies > AI data sharing.
+- Before any AI request, a sheet shows what is sent (what you type or say, to-dos, date and time zone; never name, email, friends, or audio), who processes it (Anthropic, Google, OpenAI (US) for text; Apple or Google speech recognition for voice), and that it's for AI features only, never AI training or ads (deleted within 30 days). Not now sends nothing, and the server rejects AI requests without consent. Withdraw: Me tab > Terms & policies > AI data sharing.
 
 Permissions and notifications
 - Mic: only after tapping a mic or "Make a voice note". No background audio. Audio files aren't sent to our servers. Only text is, and we don't store transcripts.

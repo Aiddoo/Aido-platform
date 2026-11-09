@@ -17,4 +17,15 @@ describe('getLegalUrl', () => {
       expect(url).toBe(expected);
     },
   );
+
+  it.each([
+    { language: 'ko', expected: 'https://aido.kr/ko/privacy#overseas-transfer' },
+    { language: 'en', expected: 'https://aido.kr/en/privacy#overseas-transfer' },
+  ] as const)('$language 국외 이전 조항은 $expected 로 바로 연결한다', ({ language, expected }) => {
+    // When
+    const url = getLegalUrl('privacy', language, 'overseas-transfer');
+
+    // Then
+    expect(url).toBe(expected);
+  });
 });

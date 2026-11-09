@@ -124,11 +124,11 @@
       },
       "processor": {
         "title": "Who processes it",
-        "description": "Anthropic, Google, and OpenAI for text. Apple or Google speech recognition for voice."
+        "description": "Anthropic, Google, and OpenAI (US) for text. Apple or Google speech recognition for voice."
       },
       "usage": {
         "title": "How it's used",
-        "description": "Only for AI features. Never for ads."
+        "description": "Only for AI features. Never for AI training or ads, and providers delete it within 30 days."
       }
     },
     "privacyLink": "View Privacy Policy",

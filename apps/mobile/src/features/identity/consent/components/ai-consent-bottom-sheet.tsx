@@ -137,7 +137,7 @@ export function AiConsentBottomSheet({
           accessibilityRole="link"
           style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
           className="self-center justify-center"
-          onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
+          onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage, 'overseas-transfer'))}
         >
           {t('consent.privacyLink')}
         </TextButton>
