@@ -29,8 +29,9 @@ async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
   const logger = createLoggerStub();
   const authSessionStore = createAuthSessionStoreStub(status);
+  const httpClient = createHttpClientStub();
   const container = createTestDi({
-    httpClient: createHttpClientStub(),
+    httpClient,
     pushNotification: gateway,
     logger,
     authSessionStore,
@@ -56,6 +57,7 @@ async function setup({ status }: { status: AuthStatus }) {
   );
   return {
     gateway,
+    httpClient,
     logger,
     store: container.notificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
@@ -143,6 +145,22 @@ describe('useNotificationResponseObserver', () => {
       timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
     });
     expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('Index가 이동하지 못해 피드로 보내도 서버 기록이 있는 알림은 열람을 남긴다', async () => {
+    // Given
+    const { gateway, httpClient, store } = await setup({ status: 'authenticated' });
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({ ...RESPONSE, data: { ...RESPONSE.data, notificationId: 75 } }),
+    );
+
+    // Then
+    await waitFor(() => expect(store.getState().ready).toBeNull(), {
+      timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
+    });
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/75/opened'));
   });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {

@@ -274,9 +274,13 @@ function useOpenReadyEntry(
     }
   });
 
-  const abandon = useEffectEvent((responseId: string) => {
-    logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId });
-    finishResponse(responseId);
+  // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
+  const abandon = useEffectEvent(({ response }: ReadyNotificationEntry) => {
+    logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
+    if (NotificationPolicy.hasServerRecord(response.data)) {
+      recordOpened(response.data.notificationId);
+    }
+    finishResponse(response.id);
   });
 
   useEffect(() => {
@@ -289,7 +293,7 @@ function useOpenReadyEntry(
     }
     openedByIndexIdRef.current = entry.response.id;
     // Index가 이동하지 못하면 슬롯을 비워 피드로 보낸다
-    const timer = setTimeout(() => abandon(entry.response.id), NOTIFICATION_ENTRY_HOLD_MAX_MS);
+    const timer = setTimeout(() => abandon(entry), NOTIFICATION_ENTRY_HOLD_MAX_MS);
     return () => clearTimeout(timer);
   }, [entry, isEnteringApp]);
 }

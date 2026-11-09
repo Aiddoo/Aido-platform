@@ -24,6 +24,8 @@ interface ReportedPushDevice {
   device: PushDevice;
 }
 
+type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone'>;
+
 interface PushDeviceServicePorts {
   gateway: PushNotificationGateway;
   deviceIdService: Pick<DeviceIdService, 'get'>;
@@ -41,6 +43,10 @@ export class PushDeviceService {
   readonly #getTimeZone: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   #lastReported: ReportedPushDevice | null = null;
+  #pendingSend: {
+    report: PushDeviceReport;
+    result: Promise<Result<PushDevice | null, ApiError>>;
+  } | null = null;
   readonly #reportsInFlight = new Set<Promise<unknown>>();
   #unregisterCount = 0;
 
@@ -108,18 +114,18 @@ export class PushDeviceService {
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
 
+    const report: PushDeviceReport = { deviceId, input, timeZone };
+
     const lastReported = this.#lastReported;
-    const isSameReport =
+    if (
+      !force &&
       lastReported != null &&
-      isEqual(
-        { deviceId, input, timeZone },
-        {
-          deviceId: lastReported.deviceId,
-          input: lastReported.input,
-          timeZone: lastReported.timeZone,
-        },
-      );
-    if (!force && lastReported != null && isSameReport) {
+      isEqual(report, {
+        deviceId: lastReported.deviceId,
+        input: lastReported.input,
+        timeZone: lastReported.timeZone,
+      })
+    ) {
       return ok(lastReported.device);
     }
 
@@ -128,6 +134,25 @@ export class PushDeviceService {
       return ok(null);
     }
 
+    // 권한 허용 직후 요청 화면과 포그라운드 동기화가 같은 값을 동시에 보내므로, 같은 값이 가는 중이면 그 결과를 쓴다
+    const pending = this.#pendingSend;
+    if (!force && pending != null && isEqual(pending.report, report)) {
+      return pending.result;
+    }
+
+    const result = this.#send(report, { permission, hasToken: token != null });
+    this.#pendingSend = { report, result };
+    return result.finally(() => {
+      if (this.#pendingSend?.result === result) {
+        this.#pendingSend = null;
+      }
+    });
+  };
+
+  #send = async (
+    { deviceId, input, timeZone }: PushDeviceReport,
+    { permission, hasToken }: { permission: PushPermission; hasToken: boolean },
+  ): Promise<Result<PushDevice | null, ApiError>> => {
     const result = parseApiResponse(
       await this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input),
       pushDeviceResponseSchema,
@@ -142,7 +167,7 @@ export class PushDeviceService {
     this.#lastReported = { deviceId, input, timeZone, device };
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORTED, {
       ...permission,
-      hasToken: token != null,
+      hasToken,
       hasActiveToken: device.hasActiveToken,
     });
     return ok(device);

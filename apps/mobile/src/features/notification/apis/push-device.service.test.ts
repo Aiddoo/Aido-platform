@@ -192,6 +192,18 @@ describe('PushDeviceService.report', () => {
     );
   });
 
+  it('권한 허용 직후처럼 같은 값을 동시에 보고하면 요청은 한 번만 보낸다', async () => {
+    // Given
+    const { service, httpClient } = setup();
+
+    // When
+    const [first, second] = await Promise.all([service.report(), service.report()]);
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
+  });
+
   it('언어가 바뀌는 등 강제로 보내면 같은 값이어도 다시 요청한다', async () => {
     // Given
     const { service, httpClient } = setup();
