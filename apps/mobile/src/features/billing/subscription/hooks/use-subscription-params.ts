@@ -1,4 +1,5 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useCallback } from 'react';
 
 import { subscriptionParamsSchema } from '../schemas/subscription-params.schema';
 
@@ -7,4 +8,15 @@ export function useSubscriptionParams() {
   const [params] = useRouteParams(subscriptionParamsSchema);
 
   return [params] as const;
+}
+
+/** 페이월에서 고른 요금제. 고르지 않았으면 undefined이고 기본 요금제는 SubscriptionPolicy.findSelectedPlan이 정한다 */
+export function useSelectedPlanId() {
+  const [{ plan: selectedPlanId }, setParams] = useRouteParams(subscriptionParamsSchema);
+  const setSelectedPlanId = useCallback(
+    (planId: string) => setParams({ plan: planId }),
+    [setParams],
+  );
+
+  return [selectedPlanId, setSelectedPlanId] as const;
 }

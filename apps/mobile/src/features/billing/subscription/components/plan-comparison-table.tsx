@@ -15,25 +15,17 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Popover, PressableFeedback } from 'heroui-native';
-import { Fragment, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import {
-  PLAN_COMPARISON_GROUPS,
-  type PlanComparisonGroup,
-} from '../constants/subscription.constants';
+import type { EntitlementFeature } from '../domains/entitlement.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { type PlanValue, toPlanFeatureComparison } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 
-type ComparisonFeature = (typeof PLAN_COMPARISON_GROUPS)[number]['features'][number];
-
-const GROUP_LABEL_KEYS = {
-  ai: 'planComparison.groups.ai',
-  limits: 'planComparison.groups.limits',
-  reminderAndLooks: 'planComparison.groups.reminderAndLooks',
-} as const satisfies Record<PlanComparisonGroup, string>;
+/** 응원(CHEER)은 같은 한도인 콕 찌르기 줄이 함께 보여 준다 */
+type ComparisonFeature = Exclude<EntitlementFeature, 'CHEER'>;
 
 const ROW_TEXT_KEYS = {
   AI_PARSE: {
@@ -71,7 +63,6 @@ const ROW_TEXT_KEYS = {
 /** 무료와 프리미엄 비교표. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 오고, 이름을 누르면 설명이 떠서 줄이 밀리지 않는다 */
 export function PlanComparisonTable() {
   const { t } = useTranslation('subscription');
-  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
 
   return (
     <VStack className="overflow-hidden rounded-2xl border border-gray-3 bg-white dark:bg-gray-2">
@@ -87,34 +78,44 @@ export function PlanComparisonTable() {
         </Text>
       </HStack>
 
-      {PLAN_COMPARISON_GROUPS.map(({ group, features }) => (
-        <Fragment key={group}>
-          <Box className="min-h-9 justify-center border-t border-gray-3 px-3">
-            <Text size="e1" weight="semibold" shade={7}>
-              {t(GROUP_LABEL_KEYS[group])}
-            </Text>
-          </Box>
-          {features.map((feature) => (
-            <Row
-              key={feature}
-              feature={feature}
-              {...toPlanFeatureComparison(entitlements, feature)}
-            />
-          ))}
-        </Fragment>
-      ))}
+      <Group label={t('planComparison.groups.ai')}>
+        <Row feature="AI_PARSE" />
+        <Row feature="AI_REPORT" />
+        <Row feature="AI_SUGGESTION" />
+        <Row feature="VOICE_NOTE" />
+      </Group>
+
+      <Group label={t('planComparison.groups.limits')}>
+        <Row feature="FRIEND" />
+        <Row feature="NUDGE" />
+        <Row feature="TODO_CATEGORY" />
+      </Group>
+
+      <Group label={t('planComparison.groups.reminderAndLooks')}>
+        <Row feature="CUSTOM_REMINDER_TIME" />
+        <Row feature="APP_ICON" />
+      </Group>
     </VStack>
   );
 }
 
-interface RowProps {
-  feature: ComparisonFeature;
-  free: PlanValue;
-  premium: PlanValue;
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <>
+      <Box className="min-h-9 justify-center border-t border-gray-3 px-3">
+        <Text size="e1" weight="semibold" shade={7}>
+          {label}
+        </Text>
+      </Box>
+      {children}
+    </>
+  );
 }
 
-function Row({ feature, free, premium }: RowProps) {
+function Row({ feature }: { feature: ComparisonFeature }) {
   const { t } = useTranslation('subscription');
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  const { free, premium } = toPlanFeatureComparison(entitlements, feature);
 
   return (
     <HStack align="center" className="min-h-11 border-t border-gray-3 px-3 py-2">

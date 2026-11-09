@@ -10,7 +10,7 @@ import { match } from 'ts-pattern';
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
-import { useSubscriptionParams } from '../hooks/use-subscription-params';
+import { useSelectedPlanId, useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import type { StoreUnavailable } from '../utils/offerings-availability';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
@@ -23,13 +23,11 @@ import { SubscriptionResult } from './subscription-result';
 
 const PLAN_ROW_COUNT = 2;
 
-interface PlanPickerProps extends Omit<
+/** 고른 요금제는 URL(`useSelectedPlanId`)에서 읽고 바꾼다 */
+type PlanPickerProps = Omit<
   ComponentProps<typeof SubscriptionPlanInput>,
   'value' | 'onValueChange'
-> {
-  value: string | undefined;
-  onValueChange: (planId: string) => void;
-}
+>;
 
 /** 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 요금제 자리에서 안내한다 */
 export function PlanPicker(props: PlanPickerProps) {
@@ -47,13 +45,12 @@ export function PlanPicker(props: PlanPickerProps) {
 
 PlanPicker.Plans = function Plans({
   offering,
-  value,
-  onValueChange,
   ...props
 }: PlanPickerProps & { offering: SubscriptionOffering }) {
   const [{ view, feature }] = useSubscriptionParams();
+  const [selectedPlanId, setSelectedPlanId] = useSelectedPlanId();
   const { trackEvent } = useTrack();
-  const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, value);
+  const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, selectedPlanId);
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 프리미엄 보기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
   useEffect(() => {
@@ -71,7 +68,7 @@ PlanPicker.Plans = function Plans({
         is_trial: SubscriptionPolicy.hasFreeTrial(nextPlan),
       });
     }
-    onValueChange(planId);
+    setSelectedPlanId(planId);
   };
 
   return (

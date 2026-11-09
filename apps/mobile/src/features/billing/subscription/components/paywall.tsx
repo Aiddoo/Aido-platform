@@ -4,13 +4,18 @@ import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { HStack, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
+import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
+import { BENEFIT_SLIDES } from '../constants/subscription.constants';
 import { type EntitlementFeature } from '../domains/entitlement.model';
+import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
+import { hasBenefitSlide } from '../utils/benefit-slides.view-model';
 import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
 import { PremiumFeatureIcon } from './premium-feature-icon';
@@ -28,14 +33,31 @@ const BLOCKED_LABEL_KEYS = {
   APP_ICON: 'paywall.blockedLocked',
 } as const satisfies Record<EntitlementFeature, string>;
 
-/** 혜택 장에 없는 기능에서 막혀 들어왔을 때 그 기능을 요금제보다 먼저 보여 준다 */
-function BlockedFeature({ feature }: { feature: EntitlementFeature }) {
+/** 혜택 장에 없는 기능에서 막혀 들어왔을 때 그 기능을 요금제보다 먼저 보여 준다. 혜택 장에 있으면 넘기기가 그 장부터 보여 준다 */
+function BlockedFeature({ className }: Pick<ComponentProps<typeof VStack>, 'className'>) {
+  const [{ feature }] = useSubscriptionParams();
+
+  if (feature == null || hasBenefitSlide(BENEFIT_SLIDES, feature)) {
+    return null;
+  }
+
+  return <BlockedFeatureCard feature={feature} className={className} />;
+}
+
+function BlockedFeatureCard({
+  feature,
+  className,
+}: { feature: EntitlementFeature } & Pick<ComponentProps<typeof VStack>, 'className'>) {
   const { t } = useTranslation('subscription');
   const formatBenefit = useFormatBenefit();
   const { title, description } = formatBenefit(feature);
 
   return (
-    <VStack gap={12} className="rounded-2xl bg-main/10 p-4" testID="paywall-blocked-feature">
+    <VStack
+      gap={12}
+      className={cn('rounded-2xl bg-main/10 p-4', className)}
+      testID="paywall-blocked-feature"
+    >
       <Chip size="sm" variant="soft" className="self-start bg-white dark:bg-gray-2">
         <Text size="e1" weight="semibold" tone="brand">
           {t(BLOCKED_LABEL_KEYS[feature])}

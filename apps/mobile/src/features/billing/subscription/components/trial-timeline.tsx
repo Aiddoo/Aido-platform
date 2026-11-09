@@ -14,11 +14,11 @@ import { match } from 'ts-pattern';
 
 import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import { SubscriptionPolicy } from '../domains/subscription.model';
+import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { toTrialScheduleSteps, type TrialStampState } from '../utils/trial-schedule.view-model';
 
 interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
-  planId: string | undefined;
   /** 알림 도장이 있을 때 일정 아래에 둘 알림 켜기. 알림일은 일정이 정하므로 받아서 그린다 */
   reminder?: ComponentType<{ reminderDateKey: string }>;
 }
@@ -27,13 +27,9 @@ interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'childr
  * 체험을 줄 수 있는 요금제를 골랐을 때 결제까지의 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지).
  * 날짜는 결제 전 예상이고, 결제 뒤 실제 날짜는 서버가 준 영수증이 보여 준다
  */
-export function TrialTimeline({
-  planId,
-  reminder: Reminder,
-  className,
-  ...props
-}: TrialTimelineProps) {
+export function TrialTimeline({ reminder: Reminder, className, ...props }: TrialTimelineProps) {
   const { t } = useTranslation('subscription');
+  const [planId] = useSelectedPlanId();
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const { currentLocalDateKey } = useLocalDate();
   const dateFormatContext = useDateFormatContext();

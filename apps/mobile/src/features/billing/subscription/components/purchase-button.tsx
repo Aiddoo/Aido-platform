@@ -13,18 +13,19 @@ import {
 } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
+import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 
 interface PurchaseButtonProps {
-  planId: string | undefined;
   /** 스토어 결제가 끝났다. 서버 반영을 기다리지 않고 방금 산 요금제로 다음 화면을 그린다 */
   onPurchased: (purchase: { plan: SubscriptionPlan; hadRewardOnly: boolean }) => void;
 }
 
-export function PurchaseButton({ planId, onPurchased }: PurchaseButtonProps) {
+export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   const { t } = useTranslation('subscription');
+  const [planId] = useSelectedPlanId();
   const purchase = useMutation(usePurchaseMutationOptions());
   const isOnline = useIsOnline();
   const { currentLocalDateKey } = useLocalDate();

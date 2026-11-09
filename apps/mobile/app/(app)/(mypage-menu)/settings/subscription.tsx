@@ -11,7 +11,6 @@ import { SubscriptionReceipt } from '@src/features/billing/subscription/componen
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
 import { SubscriptionWelcome } from '@src/features/billing/subscription/components/subscription-welcome';
 import { TrialTimeline } from '@src/features/billing/subscription/components/trial-timeline';
-import { BENEFIT_SLIDES } from '@src/features/billing/subscription/constants/subscription.constants';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import type { SubscriptionPlan } from '@src/features/billing/subscription/domains/subscription.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
@@ -20,7 +19,6 @@ import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
-import { hasBenefitSlide } from '@src/features/billing/subscription/utils/benefit-slides.view-model';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
@@ -48,7 +46,7 @@ import {
 } from '@src/shared/ui';
 import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -109,8 +107,6 @@ SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) 
 
 SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
   const { t } = useTranslation('subscription');
-  const [{ feature }] = useSubscriptionParams();
-  const [chosenPlanId, setChosenPlanId] = useState<string>();
   // 혜택·요금제·비교표가 형제 경계라 서로를 기다리지 않게 한 번에 시작한다
   usePrefetchQuery(useGetEntitlementsQueryOptions());
   usePrefetchQuery(useGetOfferingsQueryOptions());
@@ -135,13 +131,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
               <Spacing size={20} />
 
-              {/* 혜택 장에 있는 기능은 그 장부터 넘기기가 보여 주고, 없는 기능만 카드로 먼저 보인다 */}
-              {feature != null && !hasBenefitSlide(BENEFIT_SLIDES, feature) && (
-                <>
-                  <Paywall.BlockedFeature feature={feature} />
-                  <Spacing size={16} />
-                </>
-              )}
+              <Paywall.BlockedFeature className="mb-4" />
 
               <QueryErrorBoundary fallback={BenefitCarousel.Error}>
                 <Suspense fallback={<BenefitCarousel.Loading />}>
@@ -154,9 +144,9 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
                   <VStack gap={16}>
-                    <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
-                    <AmountDueToday planId={chosenPlanId} className="px-1" />
-                    <TrialTimeline planId={chosenPlanId} reminder={TrialReminderToggle} />
+                    <PlanPicker />
+                    <AmountDueToday className="px-1" />
+                    <TrialTimeline reminder={TrialReminderToggle} />
                   </VStack>
                 </Suspense>
               </QueryErrorBoundary>
@@ -193,7 +183,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <PurchaseButton planId={chosenPlanId} onPurchased={onPurchased} />
+        <PurchaseButton onPurchased={onPurchased} />
       </StyledSafeAreaView>
     </Box>
   );

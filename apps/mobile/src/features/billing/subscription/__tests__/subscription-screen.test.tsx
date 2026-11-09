@@ -15,6 +15,7 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createPurchasesGatewayStub,
+  createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
   renderUi,
@@ -23,7 +24,6 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
 
 import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
@@ -130,7 +130,9 @@ function createTrialState({ daysLeft, willRenew }: { daysLeft: number; willRenew
 async function renderSubscriptionScreen(
   state: ScreenState | null,
   getOffering: () => Promise<PurchaseOffering | null> = () => new Promise(() => {}),
+  routeParams: Record<string, string> = {},
 ) {
+  createRouteParamsFake(routeParams);
   const purchases = createPurchasesGatewayStub();
   purchases.getOffering.mockImplementation(getOffering);
   const analytics = createAnalyticsStub();
@@ -337,11 +339,13 @@ describe('구독 화면', () => {
     '%s에서 막혀 들어오면 그 혜택 장부터 보여 주고 따로 기능 카드를 두지 않는다',
     async (_case, feature, analyticsFeature, index) => {
       // Given
-      jest.mocked(useLocalSearchParams).mockReturnValue({ feature });
+      const routeParams = { feature };
 
       // When
-      const { analytics } = await renderSubscriptionScreen(FREE, () =>
-        Promise.resolve(MONTHLY_AND_ANNUAL),
+      const { analytics } = await renderSubscriptionScreen(
+        FREE,
+        () => Promise.resolve(MONTHLY_AND_ANNUAL),
+        routeParams,
       );
 
       // Then
@@ -357,11 +361,13 @@ describe('구독 화면', () => {
 
   it('혜택 장에 없는 친구 한도에서 막혀 들어오면 기능 카드를 먼저 두고 첫 혜택 장부터 보여 준다', async () => {
     // Given
-    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'FRIEND' });
+    const routeParams = { feature: 'FRIEND' };
 
     // When
-    const { analytics } = await renderSubscriptionScreen(FREE, () =>
-      Promise.resolve(MONTHLY_AND_ANNUAL),
+    const { analytics } = await renderSubscriptionScreen(
+      FREE,
+      () => Promise.resolve(MONTHLY_AND_ANNUAL),
+      routeParams,
     );
 
     // Then
@@ -381,11 +387,13 @@ describe('구독 화면', () => {
 
   it('모르는 기능으로 들어오면 막힌 기능 없이 첫 혜택 장부터 보여 준다', async () => {
     // Given
-    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'UNKNOWN' });
+    const routeParams = { feature: 'UNKNOWN' };
 
     // When
-    const { analytics } = await renderSubscriptionScreen(FREE, () =>
-      Promise.resolve(MONTHLY_AND_ANNUAL),
+    const { analytics } = await renderSubscriptionScreen(
+      FREE,
+      () => Promise.resolve(MONTHLY_AND_ANNUAL),
+      routeParams,
     );
 
     // Then
@@ -418,6 +426,19 @@ describe('구독 화면', () => {
     expect(
       analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'paywall_viewed'),
     ).toHaveLength(1);
+  });
+
+  it('링크가 월간 요금제를 미리 골랐으면 월간이 골라진 채로 열린다', async () => {
+    // Given
+    const routeParams = { plan: 'monthly' };
+
+    // When
+    await renderSubscriptionScreen(FREE, () => Promise.resolve(MONTHLY_AND_ANNUAL), routeParams);
+
+    // Then
+    expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
+    const amountDueToday = screen.getByTestId('subscription-amount-due-today');
+    expect(within(amountDueToday).getByText('₩3,900')).toBeTruthy();
   });
 
   it('결제 창에서 취소하면 고른 요금제로 취소를 한 번만 센다', async () => {
