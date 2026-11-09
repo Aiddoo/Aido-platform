@@ -1,28 +1,31 @@
-import {
-  USER_LIST_CONTENT_STYLE,
-  UserList,
-} from '@src/features/identity/user/components/user-list';
+import { UserList } from '@src/features/identity/user/components/user-list';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   Button,
   FriendIllustration,
   InfiniteList,
-  Text,
+  ListRow,
+  SettingsListGroup,
   TextSkeleton,
   useConfirmDialog,
+  VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
+import { Fragment } from 'react';
 
 import type { BlockedUser } from '../domains/user-block.model';
 import { useUnblockUserMutationOptions } from '../queries/moderation.mutations';
 import { useGetBlockedUsersInfiniteQueryOptions } from '../queries/moderation.queries';
 
 const UNBLOCK_BUTTON_HIT_SLOP = 6;
+const LOADING_ROW_COUNT = 6;
+/** `SettingsScreenLayout`과 같은 위아래 여백. 가상 목록이라 내용에 둔다 */
+const BLOCKED_USER_LIST_CONTENT_STYLE = { flexGrow: 1, paddingTop: 20, paddingBottom: 16 };
 
 /** 내가 차단한 사용자. 최근에 차단한 순서로 서버가 준 그대로 보여 준다 */
 export function BlockedUserList() {
@@ -35,17 +38,16 @@ export function BlockedUserList() {
     <InfiniteList
       data={data.blockedUsers}
       keyExtractor={(blockedUser) => blockedUser.id}
-      renderItem={({ item }) => <BlockedUserList.Item blockedUser={item} />}
-      contentContainerStyle={USER_LIST_CONTENT_STYLE}
-      ListHeaderComponent={
-        data.blockedUsers.length > 0 ? (
-          <Box py={12}>
-            <Text size="b4" shade={7}>
-              {t('blockedUsers.totalCount', { count: data.totalCount })}
-            </Text>
-          </Box>
-        ) : null
-      }
+      renderItem={({ item, index }) => (
+        <SettingsListGroup.Segment
+          label={t('blockedUsers.totalCount', { count: data.totalCount })}
+          isFirst={index === 0}
+          isLast={index === data.blockedUsers.length - 1}
+        >
+          <BlockedUserList.Item blockedUser={item} />
+        </SettingsListGroup.Segment>
+      )}
+      contentContainerStyle={BLOCKED_USER_LIST_CONTENT_STYLE}
       ListEmptyComponent={<BlockedUserList.Empty />}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
@@ -70,6 +72,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
         date: formatDateLabel(blockedUser.blockedAt, 'monthDay', dateFormatContext),
       })}
       profileImage={blockedUser.profileImage}
+      horizontalPadding="medium"
       right={
         <BlockedUserList.UnblockButton
           key={blockedUser.id}
@@ -125,16 +128,22 @@ BlockedUserList.UnblockButton = function UnblockButton({
 
 BlockedUserList.Loading = function Loading() {
   return (
-    <UserList.Loading
-      rows={6}
-      hasSubtitle
-      right={<Skeleton className="h-8 w-[72px] rounded-full" />}
-      ListHeaderComponent={
-        <Box py={12}>
-          <TextSkeleton size="b4" className="w-16" />
-        </Box>
-      }
-    />
+    <VStack className="pt-5">
+      <SettingsListGroup>
+        <TextSkeleton size="b2" className="mx-4 mb-1 mt-4 w-16" />
+        {range(LOADING_ROW_COUNT).map((index) => (
+          <Fragment key={index}>
+            {index > 0 && <SettingsListGroup.Separator />}
+            <ListRow
+              left={<Skeleton className="size-10 rounded-full" />}
+              contents={<ListRow.Texts.Loading type="2RowTypeA" />}
+              right={<Skeleton className="h-8 w-[72px] rounded-full" />}
+              horizontalPadding="medium"
+            />
+          </Fragment>
+        ))}
+      </SettingsListGroup>
+    </VStack>
   );
 };
 
@@ -144,8 +153,8 @@ BlockedUserList.Empty = function Empty() {
   const { t } = useTranslation('moderation');
 
   return (
-    <UserList.Empty
-      icon={<FriendIllustration />}
+    <SettingsListGroup.Empty
+      icon={<FriendIllustration size="block" />}
       title={t('blockedUsers.emptyTitle')}
       description={t('blockedUsers.emptyDescription')}
       testID="blocked-users-empty"

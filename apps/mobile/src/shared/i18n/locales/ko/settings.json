@@ -61,14 +61,16 @@
     }
   },
   "categorySettings": {
-    "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",
+    "listLabel": "내 카테고리",
     "editTab": "카테고리 편집",
     "reorderTab": "순서 바꾸기",
-    "add": "카테고리 추가"
+    "add": "카테고리 추가",
+    "todoCount": "할 일 {{count}}개"
   },
   "voiceStorage": {
     "totalLabel": "기기에 저장된 녹음",
     "description": "녹음 파일은 아이두 서버로 보내지 않아요. 말로 남긴 메모는 30일이 지나면 녹음과 함께 자동으로 삭제돼요.",
+    "listLabel": "메모별 녹음",
     "empty": "저장된 녹음이 없어요",
     "emptyDescription": "말로 남긴 메모의 녹음이 여기에 쌓이고, 용량을 보고 지울 수 있어요",
     "removeOneTitle": "이 녹음을 삭제할까요?",

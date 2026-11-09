@@ -41,6 +41,31 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 </SettingsListGroup>
 ```
 
+### 가상 목록
+
+`FlashList`처럼 행을 따로 그리는 목록은 행마다 `.Segment`로 감싸 카드 한 장처럼 이어 붙여요. 첫 조각이 위 모서리와 `label`을, 마지막 조각이 아래 모서리를 맡고 사이에는 구분선이 들어가요. 비었을 때는 `.Empty`(점선 카드)를 `ListEmptyComponent`로 넘겨요.
+
+```tsx
+<FlashList
+  data={notes}
+  renderItem={({ item, index }) => (
+    <SettingsListGroup.Segment
+      label={t('voiceStorage.listLabel')}
+      isFirst={index === 0}
+      isLast={index === notes.length - 1}
+    >
+      <Row note={item} />
+    </SettingsListGroup.Segment>
+  )}
+  ListEmptyComponent={
+    <SettingsListGroup.Empty
+      icon={<MemoIllustration size="block" />}
+      title={t('voiceStorage.empty')}
+    />
+  }
+/>
+```
+
 ### 로딩
 
 `.Item.Loading`·`.Toggle.Loading`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 `fallback={SettingsListGroup.Error}`로 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
@@ -121,6 +146,16 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 | ------ | ----------- | ------- | ----------------------- |
 | `icon` | `ReactNode` | -       | 앞 아이콘 자리 스켈레톤 |
 
+### SettingsListGroup.Segment
+
+`Box` props와 같아요. 가상 목록의 행 하나를 카드 조각으로 그려요.
+
+| Prop      | Type      | Default | Description                     |
+| --------- | --------- | ------- | ------------------------------- |
+| `isFirst` | `boolean` | -       | 위 모서리를 둥글게, 제목을 그림 |
+| `isLast`  | `boolean` | -       | 아래 모서리를 둥글게            |
+| `label`   | `string`  | -       | 첫 조각에만 그리는 카드 제목    |
+
 ### SettingsListGroup.Empty
 
 `Result` props와 같아요(`icon`, `title`, `description`, `testID`). 빈 목록을 점선 카드 안에 그려요.
@@ -146,6 +181,6 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 ```
 settings-list-group/
 ├── index.ts
-├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, .Radio, .Empty, 스켈레톤, SettingsScreenLayout
+├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, .Radio, .Segment, .Empty, 스켈레톤, SettingsScreenLayout
 └── settings-list-group.md
 ```

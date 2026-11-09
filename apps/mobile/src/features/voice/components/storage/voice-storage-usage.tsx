@@ -7,10 +7,8 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   HStack,
   ReadableContent,
-  Result,
   SettingsListGroup,
   SettingsScreenLayout,
   StyledSafeAreaView,
@@ -24,7 +22,6 @@ import {
   TrashIcon,
   useConfirmDialog,
 } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { formatFileSize } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -53,11 +50,8 @@ export function VoiceStorageUsage() {
         ListHeaderComponent={
           <StyledSafeAreaView edges={['left', 'right']}>
             <ReadableContent className="px-4 pb-3 pt-5">
-              <SettingsListGroup>
+              <SettingsListGroup label={t('voiceStorage.totalLabel')}>
                 <SettingsListGroup.Content gap={4}>
-                  <Text size="b4" shade={6}>
-                    {t('voiceStorage.totalLabel')}
-                  </Text>
                   <Text
                     size="t2"
                     weight="bold"
@@ -77,34 +71,34 @@ export function VoiceStorageUsage() {
         ListEmptyComponent={
           <StyledSafeAreaView edges={['left', 'right']}>
             <ReadableContent className="px-4">
-              <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
-                <Result
-                  icon={<MemoIllustration size="block" />}
-                  title={t('voiceStorage.empty')}
-                  description={t('voiceStorage.emptyDescription')}
-                  testID="voice-storage-empty"
-                />
-              </Box>
+              <SettingsListGroup.Empty
+                icon={<MemoIllustration size="block" />}
+                title={t('voiceStorage.empty')}
+                description={t('voiceStorage.emptyDescription')}
+                testID="voice-storage-empty"
+              />
             </ReadableContent>
           </StyledSafeAreaView>
         }
         renderItem={({ item: { note, bytes }, index }) => (
           <StyledSafeAreaView edges={['left', 'right']}>
             <ReadableContent className="px-4">
-              <Box
-                className={cn(
-                  'bg-gray-1',
-                  index === 0 && 'rounded-t-2xl',
-                  index === usage.notes.length - 1 && 'rounded-b-2xl',
-                )}
+              <SettingsListGroup.Segment
+                label={t('voiceStorage.listLabel')}
+                isFirst={index === 0}
+                isLast={index === usage.notes.length - 1}
               >
-                {index > 0 && <SettingsListGroup.Separator />}
-                <HStack gap={12} align="center" px={16} py={12} testID="voice-storage-row">
+                <HStack
+                  gap={12}
+                  align="center"
+                  className="min-h-12 px-4 py-3"
+                  testID="voice-storage-row"
+                >
                   <VStack flex={1} gap={2}>
-                    <Text size="b3" weight="medium" numberOfLines={1}>
+                    <Text size="b2" shade={8} numberOfLines={1}>
                       {VoiceNotePolicy.findDigestTitle(note) ?? tVoiceNote('result.defaultTitle')}
                     </Text>
-                    <Text size="e1" shade={6} numberOfLines={1} className="tabular-nums">
+                    <Text size="b4" shade={6} numberOfLines={1} className="tabular-nums">
                       {tVoiceNote('result.meta', {
                         date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
                         duration: formatMediaTime(note.durationMs),
@@ -116,7 +110,7 @@ export function VoiceStorageUsage() {
                   </Text>
                   <RemoveRecordingButton draftId={note.draftId} onRemoved={refreshUsage} />
                 </HStack>
-              </Box>
+              </SettingsListGroup.Segment>
             </ReadableContent>
           </StyledSafeAreaView>
         )}
@@ -135,11 +129,12 @@ export function VoiceStorageUsage() {
 }
 
 VoiceStorageUsage.Loading = function Loading() {
+  const { t } = useTranslation('settings');
+
   return (
     <SettingsScreenLayout scrollEnabled={false}>
-      <SettingsListGroup>
+      <SettingsListGroup label={t('voiceStorage.totalLabel')}>
         <SettingsListGroup.Content gap={4}>
-          <TextSkeleton size="b4" className="w-24" />
           <TextSkeleton size="t2" className="w-32" />
           <TextSkeleton size="b4" className="w-full" />
         </SettingsListGroup.Content>

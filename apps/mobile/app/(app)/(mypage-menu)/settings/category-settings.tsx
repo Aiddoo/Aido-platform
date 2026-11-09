@@ -10,17 +10,15 @@ import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
-  H3,
   HStack,
   PlusIcon,
   QueryErrorBoundary,
   ReadableContent,
   SegmentTabTrigger,
-  Spacing,
+  SettingsListGroup,
   StyledSafeAreaView,
   Text,
   ViewTabs,
-  VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
@@ -42,55 +40,50 @@ export default function TodoCategorySettingsScreen() {
     push('/todo-categories/new');
   };
 
+  // 목록이 스스로 스크롤해 `SettingsScreenLayout`(ScrollView) 대신 같은 여백의 고정 틀을 쓴다
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
-      <ReadableContent flex={1} className="px-4">
-        <VStack flex={1}>
-          <Spacing size={16} />
-          <H3>{t('categorySettings.header')}</H3>
-          <Spacing size={24} />
+      <ReadableContent flex={1} gap={12} className="px-4 pb-4 pt-5">
+        <HStack justify="between" align="center">
+          <ViewTabs
+            schema={categorySettingsViewSchema}
+            value={view}
+            onValueChange={setView}
+            variant="primary"
+          >
+            <Tabs.List>
+              <Tabs.Indicator />
+              <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.edit}>
+                {t('categorySettings.editTab')}
+              </SegmentTabTrigger>
+              <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.reorder}>
+                {t('categorySettings.reorderTab')}
+              </SegmentTabTrigger>
+            </Tabs.List>
+          </ViewTabs>
 
-          <HStack justify="between" align="center">
-            <ViewTabs
-              schema={categorySettingsViewSchema}
-              value={view}
-              onValueChange={setView}
-              variant="primary"
-            >
-              <Tabs.List>
-                <Tabs.Indicator />
-                <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.edit}>
-                  {t('categorySettings.editTab')}
-                </SegmentTabTrigger>
-                <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.reorder}>
-                  {t('categorySettings.reorderTab')}
-                </SegmentTabTrigger>
-              </Tabs.List>
-            </ViewTabs>
+          <Button
+            size="small"
+            variant="weak"
+            color="primary"
+            display="inline"
+            radius="full"
+            onPress={handleAddPress}
+          >
+            <HStack align="center" gap={4}>
+              <PlusIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-main"
+              />
+              <Text size="b4" tone="brand" weight="semibold">
+                {t('categorySettings.add')}
+              </Text>
+            </HStack>
+          </Button>
+        </HStack>
 
-            <Button
-              size="small"
-              variant="weak"
-              color="primary"
-              display="inline"
-              radius="full"
-              onPress={handleAddPress}
-            >
-              <HStack align="center" gap={4}>
-                <PlusIcon
-                  width={fontScaledSize(16)}
-                  height={fontScaledSize(16)}
-                  colorClassName="text-main"
-                />
-                <Text size="b4" tone="brand" weight="semibold">
-                  {t('categorySettings.add')}
-                </Text>
-              </HStack>
-            </Button>
-          </HStack>
-
-          <Spacing size={20} />
-
+        <SettingsListGroup label={t('categorySettings.listLabel')} className="flex-1">
           <QueryErrorBoundary>
             <Suspense fallback={<CategoryList.Loading />}>
               {match(view)
@@ -99,7 +92,7 @@ export default function TodoCategorySettingsScreen() {
                 .exhaustive()}
             </Suspense>
           </QueryErrorBoundary>
-        </VStack>
+        </SettingsListGroup>
       </ReadableContent>
     </StyledSafeAreaView>
   );

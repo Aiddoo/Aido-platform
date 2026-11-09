@@ -10,6 +10,7 @@ import {
   HStack,
   ListRow,
   MenuIcon,
+  SettingsListGroup,
   Text,
   TextSkeleton,
   useOverlay,
@@ -20,10 +21,9 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
-import { useResolveClassNames } from 'uniwind';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategoryWithCount } from '../domains/todo-category.model';
@@ -31,8 +31,8 @@ import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { CategoryDeleteDialog } from './category-delete-dialog';
 
+/** 카드 안에 그리는 행만 둔다. 카드와 제목은 화면이 감싼다 */
 export function CategoryList() {
-  const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
@@ -40,14 +40,13 @@ export function CategoryList() {
       data={data.categories}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <CategoryList.EditItem category={item} />}
-      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
+      ItemSeparatorComponent={SettingsListGroup.Separator}
     />
   );
 }
 
-/** 길게 눌러 옮긴다 */
+/** 길게 눌러 옮긴다. 끌어 올린 행이 구분선을 끌고 다니지 않게 구분선 없이 그린다 */
 CategoryList.Reorder = function Reorder() {
-  const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const reorderCategory = useMutation(useReorderTodoCategoryMutationOptions());
   const reorderableList = useReorderableList({
@@ -70,14 +69,13 @@ CategoryList.Reorder = function Reorder() {
       // 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다
       ListFooterComponent={
         TodoCategoryPolicy.canReorderCategories(reorderableList.data) ? (
-          <Box className="pt-2">
+          <Box className="px-2 pt-2">
             <ReorderCoachmark kind="category" />
           </Box>
         ) : undefined
       }
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <CategoryList.ReorderItem category={item} />}
-      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
     />
   );
 };
@@ -88,13 +86,20 @@ interface CategoryRowProps {
 }
 
 function CategoryRow({ category, right }: CategoryRowProps) {
+  const { t } = useTranslation('settings');
+
   return (
     <ListRow
       left={<Box className="size-2 rounded-full" style={{ backgroundColor: category.color }} />}
       contents={
-        <Text size="b3" weight="medium">
-          {category.name}
-        </Text>
+        <VStack gap={2}>
+          <Text size="b2" shade={8} numberOfLines={1}>
+            {category.name}
+          </Text>
+          <Text size="b4" shade={6}>
+            {t('categorySettings.todoCount', { count: category.todoCount })}
+          </Text>
+        </VStack>
       }
       right={
         <Animated.View entering={FadeIn.duration(250)} className="h-9 justify-center">
@@ -197,21 +202,28 @@ CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemPr
 
 CategoryList.Loading = function Loading() {
   return (
-    <VStack className="bg-gray-1 rounded-2xl p-2">
+    <>
       {range(2).map((index) => (
-        <ListRow
-          key={index}
-          left={<Skeleton className="size-2 rounded-full dark:bg-gray-2" />}
-          contents={<TextSkeleton size="b3" className="w-20" />}
-          right={
-            <Box className="h-9 justify-center">
-              <Skeleton className="h-8 w-12 rounded-xl dark:bg-gray-2" />
-            </Box>
-          }
-          horizontalPadding="medium"
-          verticalPadding="medium"
-        />
+        <Fragment key={index}>
+          {index > 0 && <SettingsListGroup.Separator />}
+          <ListRow
+            left={<Skeleton className="size-2 rounded-full dark:bg-gray-2" />}
+            contents={
+              <VStack gap={2}>
+                <TextSkeleton size="b2" className="w-20" />
+                <TextSkeleton size="b4" className="w-12" />
+              </VStack>
+            }
+            right={
+              <Box className="h-9 justify-center">
+                <Skeleton className="h-8 w-12 rounded-xl dark:bg-gray-2" />
+              </Box>
+            }
+            horizontalPadding="medium"
+            verticalPadding="medium"
+          />
+        </Fragment>
       ))}
-    </VStack>
+    </>
   );
 };

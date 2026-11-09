@@ -249,10 +249,39 @@ SettingsListGroupRadio.Loading = function Loading({ icon }: { icon?: ReactNode }
   );
 };
 
+interface SettingsListGroupSegmentProps extends ComponentProps<typeof Box> {
+  isFirst: boolean;
+  isLast: boolean;
+  /** 첫 조각에만 그리는 카드 제목 */
+  label?: string;
+}
+
+/** 가상 목록의 행 하나를 카드 조각으로 그린다. 행마다 그려도 이어 붙이면 `SettingsListGroup` 한 장처럼 보인다 */
+function SettingsListGroupSegment({
+  isFirst,
+  isLast,
+  label,
+  className,
+  children,
+  ...props
+}: SettingsListGroupSegmentProps) {
+  return (
+    <Box
+      className={cn('bg-gray-1', isFirst && 'rounded-t-2xl', isLast && 'rounded-b-2xl', className)}
+      {...props}
+    >
+      {isFirst && label != null && <SettingsListGroupLabel label={label} />}
+      {!isFirst && <SettingsListGroup.Separator />}
+      {children}
+    </Box>
+  );
+}
+
 SettingsListGroup.Item = SettingsListGroupItem;
 SettingsListGroup.Icon = SettingsListGroupIcon;
 SettingsListGroup.Toggle = SettingsListGroupToggle;
 SettingsListGroup.Radio = SettingsListGroupRadio;
+SettingsListGroup.Segment = SettingsListGroupSegment;
 
 SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;

@@ -61,14 +61,17 @@
     }
   },
   "categorySettings": {
-    "header": "Edit your categories\nor change their order",
+    "listLabel": "My categories",
     "editTab": "Edit categories",
     "reorderTab": "Reorder",
-    "add": "Add category"
+    "add": "Add category",
+    "todoCount_one": "{{count}} to-do",
+    "todoCount_other": "{{count}} to-dos"
   },
   "voiceStorage": {
     "totalLabel": "Recordings on this device",
     "description": "Audio files aren't sent to Aido's servers. Voice notes and their audio are deleted automatically after 30 days.",
+    "listLabel": "Recordings by note",
     "empty": "No saved recordings",
     "emptyDescription": "Recordings from your voice notes appear here, so you can check their size and delete them.",
     "removeOneTitle": "Delete this recording?",
