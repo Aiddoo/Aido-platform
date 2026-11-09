@@ -4,6 +4,8 @@
 
 heroui `Button`(`feedbackVariant="scale"`) 위에 앱의 높이 4종, 색, `isLoading`을 얹은 얇은 확장이다. role `button`과 `accessibilityState.disabled`는 heroui가 넣는다. 크기·색·모서리는 `className`이 heroui 기본 클래스를 덮는다(Uniwind는 같은 우선순위면 뒤에 온 클래스가 이긴다). 눌림은 기존과 같은 옅은 회색 하이라이트이고, 비활성은 회색 면 + 글자 흐림이라 heroui의 비활성 투명도는 `disabled:opacity-100`으로 끈다.
 
+문자열 글자는 폭이 정해진 버튼(`block`·`full`)에서 버튼 폭을 모두 쓰고 가운데 맞춘다(`flex-1`). 글자 폭에 꼭 맞춘 칸은 Android가 큰 글꼴에서 마지막 글자를 다음 줄로 넘기고, 버튼의 고정 높이가 그 줄을 가려 글자가 잘려 보인다. `inline`은 버튼 폭이 곧 글자 폭이라 그대로다.
+
 ## 사용법
 
 ```tsx
