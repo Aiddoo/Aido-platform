@@ -190,16 +190,16 @@ describe('root 인증 route 전환', () => {
   });
 
   it('위젯의 초기 할 일 링크를 세션 복원과 인증 영역 마운트 뒤 복원한다', async () => {
-    // Given: 인증 복원 중 초기 위젯 링크가 들어온다
+    // Given
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido-dev://todo/8');
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/8');
     const { route, errorReporter } = await renderAuthRoutes('loading', '/todo/8');
     expect(route.getPathname()).toBe('/loading');
 
-    // When: 저장된 세션 복원을 마친다
+    // When
     await fireEvent.press(screen.getByTestId('boot-authenticated'));
 
-    // Then: 피드로 유실되지 않고 대상 상세에 한 번 도착한다
+    // Then
     expect(await screen.findByTestId('todo-detail')).toBeTruthy();
     expect(route.getPathname()).toBe('/todo/8');
     expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({

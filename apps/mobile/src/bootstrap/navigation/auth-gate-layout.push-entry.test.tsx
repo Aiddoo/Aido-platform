@@ -634,7 +634,7 @@ describe('푸시 탭 진입', () => {
       }),
     );
 
-    // Then: 한 번만 처리하고 안내도 한 번만 띄운다
+    // Then
     expect(await screen.findAllByText('광고성 앱 푸시를 더 보내지 않을게요')).not.toHaveLength(0);
     expect(
       httpClient.post.mock.calls.filter(

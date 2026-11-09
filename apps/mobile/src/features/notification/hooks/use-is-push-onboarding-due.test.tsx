@@ -68,7 +68,7 @@ describe('useIsPushOnboardingDue — 앱 화면 묶음 guard', () => {
     expect(result.current).toBe(true);
     const rendersBeforeTicks = getRenderCount();
 
-    // When: 창이 끝나기 전 2분이 흐른다
+    // When
     await act(async () => {
       await jest.advanceTimersByTimeAsync(2 * MINUTE_MS);
     });
@@ -77,7 +77,7 @@ describe('useIsPushOnboardingDue — 앱 화면 묶음 guard', () => {
     expect(result.current).toBe(true);
     expect(getRenderCount()).toBe(rendersBeforeTicks);
 
-    // When: 창이 끝나는 순간을 지난다
+    // When
     await act(async () => {
       await jest.advanceTimersByTimeAsync(MINUTE_MS);
     });
