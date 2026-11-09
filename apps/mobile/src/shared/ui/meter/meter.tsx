@@ -6,22 +6,18 @@ import type { VariantProps } from 'tailwind-variants';
 import { Box } from '../box';
 
 const meter = tv({
-  slots: { track: 'overflow-hidden rounded-full', indicator: 'h-full rounded-full' },
+  slots: { track: 'overflow-hidden rounded-full', indicator: 'h-full rounded-full bg-main' },
   variants: {
     size: {
       small: { track: 'h-1' },
       medium: { track: 'h-2' },
-    },
-    color: {
-      primary: { indicator: 'bg-main' },
-      neutral: { indicator: 'bg-gray-5' },
     },
     tone: {
       surface: { track: 'bg-gray-2' },
       onSky: { track: 'bg-on-sky/20' },
     },
   },
-  defaultVariants: { size: 'small', color: 'primary', tone: 'surface' },
+  defaultVariants: { size: 'small', tone: 'surface' },
 });
 
 type MeterProps = Omit<ComponentProps<typeof Box>, 'children'> &
@@ -31,9 +27,9 @@ type MeterProps = Omit<ComponentProps<typeof Box>, 'children'> &
   };
 
 /** 넘친 값은 가득, 최댓값이 0이면 빈 막대다. 폭은 부모가 정한다 */
-export function Meter({ value, max, size, color, tone, className, ...props }: MeterProps) {
+export function Meter({ value, max, size, tone, className, ...props }: MeterProps) {
   const ratio = max > 0 ? clamp(value / max, 0, 1) : 0;
-  const styles = meter({ size, color, tone });
+  const styles = meter({ size, tone });
 
   return (
     <Box

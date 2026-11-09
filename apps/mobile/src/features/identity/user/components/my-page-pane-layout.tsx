@@ -1,19 +1,14 @@
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { Box, SafeAreaScrollView } from '@src/shared/ui';
 import type { ReactNode } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMyPagePaneLayout } from '../hooks/use-my-page-pane-layout';
 
 export function MyPagePaneLayout({ children }: { children: ReactNode }) {
   const { scrollRef, handleScrollEnd, handleSizeChange, handleScrollBeginDrag } =
     useMyPagePaneLayout();
-  const isCompact = useWindowSizeClass() === 'compact';
-  const { top } = useSafeAreaInsets();
-
-  // 넓은 화면 칸은 전체 폭 헤더 바로 아래에서 시작한다. 좁은 화면 첫 화면은 헤더 아래로 위 inset만큼 띄운 지금 모양을 지킨다
+  // 불투명 네이티브 헤더 아래에서 시작하므로 위 inset을 다시 주지 않는다(메모 탭과 같은 시작 위치)
   return (
-    <Box flex={1} className="bg-white" style={{ paddingTop: isCompact ? top : 0 }}>
+    <Box flex={1} className="bg-white">
       <SafeAreaScrollView
         ref={scrollRef}
         className="flex-1"

@@ -9,8 +9,10 @@
 import { Meter } from '@src/shared/ui';
 
 <Meter value={used} max={limit} className="w-10" />
-<Meter value={used} max={limit} size="medium" color={isUsedUp ? 'primary' : 'neutral'} />
+<Meter value={used} max={limit} size="medium" />
 ```
+
+채운 부분은 늘 브랜드 색(`bg-main`)이다.
 
 ## Props
 
@@ -19,7 +21,6 @@ import { Meter } from '@src/shared/ui';
 | value     | `number`                     | -           | 쓴 양. `max`를 넘으면 가득 찬 막대다                     |
 | max       | `number`                     | -           | 최댓값. 0이면 빈 막대다                                  |
 | size      | `'small' \| 'medium'`        | `'small'`   | 막대 두께(4·8)                                           |
-| color     | `'primary' \| 'neutral'`     | `'primary'` | 채운 부분 색. 다 쓴 것만 강조할 때 나머지는 `neutral`    |
 | tone      | `'surface' \| 'onSky'`       | `'surface'` | 바탕. 날씨 하늘처럼 늘 어두운 면 위에서는 `onSky`        |
 | className | `string`                     | -           | 폭·여백 등 배치만 정한다. 폭을 주지 않으면 부모를 채운다 |
 | ...props  | `ComponentProps<typeof Box>` | -           | `children`을 뺀 Box props                                |

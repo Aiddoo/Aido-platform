@@ -88,7 +88,6 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
         value={used}
         max={limit}
         size="medium"
-        color={isUsedUp ? 'primary' : 'neutral'}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       />

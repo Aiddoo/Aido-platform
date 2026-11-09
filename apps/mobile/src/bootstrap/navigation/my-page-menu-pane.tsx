@@ -56,7 +56,7 @@ export function MyPageMenuPane() {
       <MyPagePaneLayout>
         {/* 넓은 화면은 헤더를 전체 폭으로 두어 제목이 헤더에 있다 */}
         {isCompact && <H3>{t('mypage.header')}</H3>}
-        <Spacing size={20} />
+        <Spacing size={16} />
 
         <VStack gap={12}>
           <QueryErrorBoundary fallback={ProfileRow.Error}>
