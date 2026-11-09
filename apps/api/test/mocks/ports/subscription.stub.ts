@@ -38,16 +38,25 @@ import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/p
 import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+/** 저장소 대역의 사용자. appUserAlias는 스토어가 User.id 대신 쓰는 별칭(DB 칸 User.revenueCatUserId)이다. */
+export interface StubSubscriptionUser extends SubscriptionUser {
+  readonly appUserAlias?: string | null;
+}
+
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
-  readonly users = new Map<string, SubscriptionUser>();
+  readonly users = new Map<string, StubSubscriptionUser>();
   readonly subscriptions = new Map<string, SubscriptionProps>();
   readonly lapsedPremiumUserIds: string[] = [];
 
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const user = [...this.users.values()].find(
-      (candidate) => candidate.id === appUserId || candidate.revenueCatUserId === appUserId,
+      (candidate) => candidate.id === appUserId || candidate.appUserAlias === appUserId,
     );
-    return user ? this.#copyUser(user) : null;
+    if (user == null) {
+      return null;
+    }
+    const { appUserAlias: _alias, ...found } = this.#copyUser(user);
+    return found;
   }
 
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
@@ -157,7 +166,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     );
   }
 
-  #copyUser(user: SubscriptionUser): SubscriptionUser {
+  #copyUser(user: StubSubscriptionUser): StubSubscriptionUser {
     return {
       ...user,
       subscriptionExpiresAt:

@@ -282,7 +282,6 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
       email: "receiver@example.com",
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
-      revenueCatUserId: null,
       profile: null,
     });
 
@@ -306,7 +305,6 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
       email: "receiver@example.com",
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
-      revenueCatUserId: null,
       profile: null,
     });
     const event: StoreSubscriptionEvent = {

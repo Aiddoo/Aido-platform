@@ -16,7 +16,6 @@ export interface SubscriptionUser {
   email: string;
   subscriptionStatus: SubscriptionStatus;
   subscriptionExpiresAt: Date | null;
-  revenueCatUserId: string | null;
   profile: { name: string | null } | null;
 }
 

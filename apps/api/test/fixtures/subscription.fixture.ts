@@ -77,7 +77,7 @@ export function createSubscriptionFixture(
         : input.userSubscription.subscriptionExpiresAt === null
           ? null
           : new Date(input.userSubscription.subscriptionExpiresAt),
-    revenueCatUserId: user.revenueCatUserId,
+    appUserAlias: user.revenueCatUserId,
     profile: input.profile === undefined ? { name: "구독 사용자" } : input.profile,
   });
   if (input.existing) {

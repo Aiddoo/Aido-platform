@@ -84,7 +84,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
         email: true,
         subscriptionStatus: true,
         subscriptionExpiresAt: true,
-        revenueCatUserId: true,
       },
       where: { OR: [{ revenueCatUserId: appUserId }, { id: appUserId }] },
       with: { profile: { columns: { name: true } } },
