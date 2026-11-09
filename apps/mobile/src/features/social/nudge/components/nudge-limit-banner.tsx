@@ -29,7 +29,8 @@ export function NudgeLimitBanner() {
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
   // 다시 생기는 때는 서버 한도 스냅샷이 원본이다. 아직 없으면 제목만 보인다
   const { data: entitlements } = useQuery(useGetEntitlementsQueryOptions());
-  const refill = useFormatRefillSentence()(entitlements, 'NUDGE');
+  const formatRefillSentence = useFormatRefillSentence();
+  const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (
     <>

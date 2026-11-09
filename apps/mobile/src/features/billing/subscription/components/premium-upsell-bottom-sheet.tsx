@@ -169,7 +169,13 @@ function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
 
   return (
     <VStack gap={8}>
-      <Meter value={used} max={limit} size="medium" />
+      <Meter
+        value={used}
+        max={limit}
+        size="medium"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
       <HStack gap={8} justify="between" align="center">
         <Text size="e1" shade={6} className="tabular-nums">
           {t('upsell.usage', {

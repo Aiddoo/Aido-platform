@@ -1,7 +1,6 @@
 import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
-import { toDateFormatLocale } from '@src/shared/date/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
 import { AiFilledIcon, HStack, Meter, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
@@ -44,7 +43,7 @@ interface QuotaRowProps {
 /** 막대는 쓴 만큼 찬다. 다 쓴 항목만 주황으로 칠하고 다시 생기는 날을 붙인다 */
 function QuotaRow({ feature, label, hint }: QuotaRowProps) {
   const { t } = useTranslation('subscription');
-  const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
+  const { locale } = useDateFormatContext();
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const { type } = useQuotaStatus(feature);
   const formatRefillSentence = useFormatRefillSentence();
