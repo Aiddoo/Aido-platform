@@ -35,7 +35,7 @@ import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Menu, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { type ComponentRef, type ReactNode, type RefObject, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { type View } from 'react-native';
 import {
   GestureDetector,
   useExclusiveGestures,
@@ -96,7 +96,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
   const displayState = TodoCommentPolicy.getDisplayState(comment);
 
   return (
-    <View ref={rowRef} collapsable={false}>
+    <Box ref={rowRef} collapsable={false}>
       <HStack gap={12} align="start" className="min-w-0">
         <TodoCommentAuthorAvatar
           author={comment.author}
@@ -133,7 +133,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
             .exhaustive()}
         </VStack>
       </HStack>
-    </View>
+    </Box>
   );
 }
 
@@ -245,7 +245,7 @@ function CommentText({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View
+      <Box
         collapsable={false}
         accessible
         accessibilityHint={t('actions.doubleTapToLike')}
@@ -256,7 +256,7 @@ function CommentText({
           {comment.content}
         </Text>
         <TodoCommentHeartBurst burst={burst} />
-      </View>
+      </Box>
     </GestureDetector>
   );
 }

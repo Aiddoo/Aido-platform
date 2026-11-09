@@ -1,9 +1,10 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
+import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   cancelAnimation,
   Easing,
@@ -115,7 +116,7 @@ export function WeatherSceneCanvas({
 
   // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (
-    <View
+    <Box
       style={StyleSheet.absoluteFill}
       onLayout={handleLayout}
       pointerEvents="none"
@@ -155,7 +156,7 @@ export function WeatherSceneCanvas({
         />
         <ScrimLayer isDaylight={current.scene.isDaylight} width={width} height={height} />
       </Canvas>
-    </View>
+    </Box>
   );
 }
 

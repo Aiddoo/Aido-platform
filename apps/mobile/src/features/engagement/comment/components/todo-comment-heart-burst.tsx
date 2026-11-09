@@ -1,6 +1,6 @@
-import { HeartFilledIcon } from '@src/shared/ui';
+import { Box, HeartFilledIcon } from '@src/shared/ui';
 import { range } from 'es-toolkit';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -175,7 +175,7 @@ export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstV
   }));
 
   return (
-    <View
+    <Box
       pointerEvents="none"
       style={StyleSheet.absoluteFill}
       accessibilityElementsHidden
@@ -183,7 +183,7 @@ export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstV
     >
       <Animated.View style={[styles.origin, originStyle]}>
         <Animated.View style={[styles.ring, ringStyle]}>
-          <View style={styles.ringStroke} className="border-error" />
+          <Box style={styles.ringStroke} className="border-error" />
         </Animated.View>
         {range(DOT_COUNT).map((index) => (
           <BurstDot
@@ -201,7 +201,7 @@ export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstV
           />
         </Animated.View>
       </Animated.View>
-    </View>
+    </Box>
   );
 }
 

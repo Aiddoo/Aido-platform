@@ -1,6 +1,6 @@
 import { Box } from '@src/shared/ui';
 import { type ComponentRef, type PropsWithChildren, useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, type View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -67,7 +67,7 @@ export function TodoCommentRailRow({
   }, [isHighlighted, showAboveComposer]);
 
   return (
-    <View
+    <Box
       ref={rowRef}
       collapsable={false}
       style={[
@@ -79,7 +79,7 @@ export function TodoCommentRailRow({
       {isHighlighted && <RowHighlight />}
       <Rails kind={kind} />
       {children}
-    </View>
+    </Box>
   );
 }
 
