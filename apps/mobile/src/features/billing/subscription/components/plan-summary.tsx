@@ -53,8 +53,8 @@ PlanSummary.Premium = function Premium() {
   const { t } = useTranslation('subscription');
   const { navigate } = useMyPageMenuNavigation();
   const dateFormatContext = useDateFormatContext();
-  const { headline, period, note } = toPlanSummary(useSubscriptionReceipt());
-  const formatDate = (date: Instant) => formatDateLabel(date, 'monthDay', dateFormatContext);
+  const { headline, dateLabel, period, note } = toPlanSummary(useSubscriptionReceipt());
+  const formatDate = (date: Instant) => formatDateLabel(date, dateLabel, dateFormatContext);
 
   return (
     <PressableFeedback
@@ -82,6 +82,7 @@ PlanSummary.Premium = function Premium() {
             {period != null && (
               <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
                 {match(period)
+                  .with({ type: 'renewalPending' }, () => t('receipt.rows.renewalPending'))
                   .with({ type: 'nextBilling' }, ({ date }) =>
                     t('planSummary.nextBilling', { date: formatDate(date) }),
                   )

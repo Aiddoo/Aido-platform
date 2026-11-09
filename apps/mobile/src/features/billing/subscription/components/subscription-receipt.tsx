@@ -30,7 +30,10 @@ import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
-import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
+import {
+  type SubscriptionReceiptRow,
+  toReceiptDateLabel,
+} from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
 export function SubscriptionReceipt() {
@@ -44,8 +47,7 @@ export function SubscriptionReceipt() {
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   const trialPlanType =
     rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PremiumPlanType);
-  // 스토어 구독(체험 포함)의 결제일은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
-  const receiptDateLabel = variant === 'paid' || variant === 'trial' ? 'fullDate' : 'monthDay';
+  const receiptDateLabel = toReceiptDateLabel(variant);
   const formatReceiptDate = (date: Instant) =>
     formatDateLabel(date, receiptDateLabel, dateFormatContext);
 

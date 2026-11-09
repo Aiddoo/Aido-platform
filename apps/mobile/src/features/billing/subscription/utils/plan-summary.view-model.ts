@@ -2,9 +2,10 @@ import type { PremiumPlanType } from '@src/features/identity/user/domains/premiu
 import type { Instant } from '@src/shared/date/instant';
 import { match, P } from 'ts-pattern';
 
-import type {
-  SubscriptionReceiptRow,
-  SubscriptionReceiptViewModel,
+import {
+  type SubscriptionReceiptRow,
+  type SubscriptionReceiptViewModel,
+  toReceiptDateLabel,
 } from './subscription-receipt.view-model';
 
 type PlanSummaryHeadline =
@@ -14,6 +15,7 @@ type PlanSummaryHeadline =
   | { type: 'admin' };
 
 type PlanSummaryPeriod =
+  | { type: 'renewalPending' }
   | { type: 'nextBilling'; date: Instant }
   | { type: 'firstBilling'; date: Instant }
   | { type: 'endsOn'; date: Instant };
@@ -24,6 +26,7 @@ type PlanSummaryNote =
 
 interface PlanSummary {
   headline: PlanSummaryHeadline;
+  dateLabel: ReturnType<typeof toReceiptDateLabel>;
   period: PlanSummaryPeriod | null;
   note: PlanSummaryNote | null;
 }
@@ -39,6 +42,7 @@ function findPeriod(rows: readonly SubscriptionReceiptRow[]): PlanSummaryPeriod 
   for (const row of rows) {
     const period = match(row)
       .returnType<PlanSummaryPeriod | null>()
+      .with({ type: 'renewalPending' }, () => ({ type: 'renewalPending' }))
       .with({ type: 'nextBillingDate' }, ({ date }) => ({ type: 'nextBilling', date }))
       .with({ type: 'firstBillingDate' }, ({ date }) => ({ type: 'firstBilling', date }))
       .with({ type: 'subscriptionEndsOn' }, ({ date }) => ({ type: 'endsOn', date }))
@@ -61,6 +65,7 @@ export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummar
       .with('reward', () => ({ type: 'reward' }))
       .with('admin', () => ({ type: 'admin' }))
       .exhaustive(),
+    dateLabel: toReceiptDateLabel(receipt.variant),
     period: findPeriod(receipt.rows),
     note: match(receipt.footnote)
       .returnType<PlanSummaryNote | null>()
