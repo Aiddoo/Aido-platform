@@ -90,10 +90,11 @@ function SettingsListGroupItem({
           </Text>
         )}
       </ListGroup.ItemContent>
-      <ListGroup.ItemSuffix>
+      {/* 좁아지면 값이 먼저 줄어 이름이 단어 중간에서 꺾이지 않는다. 값은 칸의 절반까지만 쓴다 */}
+      <ListGroup.ItemSuffix className="max-w-1/2 shrink">
         {right ?? (
-          <HStack align="center" gap={4}>
-            {value}
+          <HStack align="center" gap={4} className="shrink">
+            <Box className="shrink">{value}</Box>
             <ArrowRightIcon colorClassName="text-gray-6" />
           </HStack>
         )}
