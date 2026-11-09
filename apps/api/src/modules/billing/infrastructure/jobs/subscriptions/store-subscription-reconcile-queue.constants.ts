@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 export const STORE_SUBSCRIPTION_RECONCILE_QUEUE = "store-subscription-reconcile.v1";
 export const STORE_SUBSCRIPTION_RECONCILE_JOB_NAME = "reconcile-store-subscriptions";
@@ -32,12 +33,9 @@ export const STORE_SUBSCRIPTION_RECONCILE_WORKER_POLICY = {
 } as const;
 
 export function storeSubscriptionReconcileIdempotencyKey(userId: string, at: Date): string {
-  return `store-subscription-reconcile_${userId}_${reconcileWindowStart(at)}`;
+  return `store-subscription-reconcile_${userId}_${reconcileWindowStart(at).getTime()}`;
 }
 
-export function reconcileWindowStart(at: Date): number {
-  return (
-    Math.floor(at.getTime() / STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS) *
-    STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS
-  );
+export function reconcileWindowStart(at: Date): Date {
+  return subtractMilliseconds(at.getTime() % STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS, at);
 }

@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
 import type { StoreSubscriptionReconcileSchedulerPort } from "../../../application/ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
@@ -43,7 +44,10 @@ export class StoreSubscriptionReconcileScheduler
       {
         ...STORE_SUBSCRIPTION_RECONCILE_JOB_POLICY,
         idempotencyKey: storeSubscriptionReconcileIdempotencyKey(userId, at),
-        startAfter: new Date(reconcileWindowStart(at) + STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS),
+        startAfter: addMilliseconds(
+          STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS,
+          reconcileWindowStart(at),
+        ),
       },
     );
   }
