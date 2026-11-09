@@ -280,7 +280,6 @@
     "unavailableTitle": "Couldn't find your location",
     "unavailableDescription": "Check that Location Services is on",
     "lastLocationNotice": "Couldn't confirm location access. Showing weather for your last known location",
-    "allow": "Allow",
     "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location"
   },
   "screen": {

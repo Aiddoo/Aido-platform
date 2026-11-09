@@ -4,7 +4,7 @@
 
 Before pasting:
 
-- The App Store Notes field allows 4,000 characters. The text below is 3,905 characters with the demo account left blank, so the email and password can use up to 95 characters together. Count again after filling them in.
+- The App Store Notes field allows 4,000 characters. The text below is 3,900 characters with the demo account left blank, so the email and password can use up to 100 characters together. Count again after filling them in.
 - The demo account must be on the free plan (no subscription or invite reward), have only the 2 default categories, and be more than 1 day old. A newer account sees the notifications screen right after sign-in instead of the system alert described in the notes.
 - The 1-month free trial is an introductory offer on the yearly subscription in App Store Connect and a free-trial offer on the yearly base plan in Play Console. If it isn't set there, the app shows only the regular prices, and the trial lines in the notes don't apply.
 - `{price}` and `{date}` stand for the store price and the trial end date that the app fills in.
@@ -42,7 +42,7 @@ Third-party AI consent (Guideline 5.1.2(i))
 
 Permissions and notifications
 - Mic: only after tapping a mic or "Make a voice note". No background audio. Audio files aren't sent to our servers. Only text is, and we don't store transcripts.
-- Notifications: one screen right after sign-up ("Get notified" / "Not now"), then the system alert. The demo account gets it on first setting a to-do time. If denied, the app works and a timed to-do shows "Notifications are off, so we can't remind you · Open settings".
+- Notifications: asked right after sign-up, after tapping "Continue" on a notifications screen. The demo account gets it on first setting a to-do time. If denied, the app works and a timed to-do shows "Notifications are off, so we can't remind you · Open settings".
 - Location: While Using only, after tapping the weather badge and "Continue".
 - Promotional push is opt-in only, titled "(Ad)" ("(광고)" in Korean) with opt-out steps and a "Turn off promotional notifications" action. Changes show the server's date; opted-in users are reminded every 2 years.
 
@@ -64,7 +64,7 @@ Demo account (free plan)
 Sensitive permissions
 - RECORD_AUDIO: only after someone taps the mic in the add to-do sheet, "Make a voice note" on the Memos tab, or the voice typing button in the subtask sheet. Denying it leaves typing and every other feature working. Speak to add and Voice notes stop listening when the app goes to the background or another screen opens. No foreground service records audio.
 - ACCESS_FINE_LOCATION and ACCESS_COARSE_LOCATION: foreground only, for the weather screen and weather notifications. The app asks only after someone taps the weather badge and "Continue". There is no background location permission. The app requests balanced accuracy.
-- POST_NOTIFICATIONS: reminders and friend activity. Right after sign-up, one screen ("Get notified" / "Not now") comes before the system dialog. Older accounts see the dialog when they first set a to-do time. Denying keeps the app fully usable.
+- POST_NOTIFICATIONS: reminders and friend activity. Right after sign-up, the system dialog appears after tapping "Continue" on a notifications screen. Older accounts see the dialog when they first set a to-do time. Denying keeps the app fully usable.
 
 Removed in 1.15.0 because Aido does not use them: USE_BIOMETRIC, USE_FINGERPRINT, SYSTEM_ALERT_WINDOW, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE.
 

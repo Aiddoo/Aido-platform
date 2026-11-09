@@ -90,6 +90,7 @@
     }
   },
   "permission": {
+    "continue": "계속",
     "card": {
       "deniedTitle": "알림이 꺼져 있어요",
       "requestDescription": "다시 허용하면 리마인드 알림을 받을 수 있어요",
@@ -99,9 +100,7 @@
     },
     "onboarding": {
       "title": "할 일 시간에 맞춰 알려드릴게요",
-      "description": "리마인드와 친구 응원을 놓치지 않아요",
-      "allow": "알림 받기",
-      "later": "나중에"
+      "description": "리마인드와 친구 응원을 놓치지 않아요"
     },
     "deviceOff": {
       "title": "기기 알림이 꺼져 있어요",

@@ -114,7 +114,7 @@ describe('getAskMoment', () => {
       NO_ANSWER,
       'ONBOARDING_SCREEN',
     ],
-    ['나중에를 눌렀으면 다시 띄우지 않는다', NOT_ASKED, SIGNED_UP_AT, { deferredAt: NOW }, null],
+    ['알림 화면을 닫았으면 다시 띄우지 않는다', NOT_ASKED, SIGNED_UP_AT, { deferredAt: NOW }, null],
     [
       '이미 허용했으면 묻지 않는다',
       createPushPermission({ status: 'GRANTED' }),

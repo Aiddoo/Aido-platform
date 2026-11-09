@@ -11,7 +11,7 @@ const DEFERRED_KEY_PREFIX = 'aido_push_permission_prompt_deferred_v1';
 export interface PushPermissionPromptRepository {
   /** 저장값이 그대로면 같은 객체를 돌려준다(`useSyncExternalStore`의 스냅샷) */
   find(userId: string): PushPermissionPrompt;
-  /** 가입 직후 알림 화면에서 [나중에]를 눌렀다 */
+  /** 가입 직후 알림 화면을 닫았다 */
   defer(userId: string, deferredAt: Instant): void;
   dismissNotice(userId: string, dismissedAt: Instant): void;
   subscribe(userId: string, listener: () => void): () => void;

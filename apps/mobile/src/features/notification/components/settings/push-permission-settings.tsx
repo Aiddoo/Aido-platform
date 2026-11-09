@@ -49,7 +49,7 @@ export function PushPermissionSettings() {
                 className="text-main"
                 testID="push-permission-status"
               >
-                {t('permission.onboarding.allow')}
+                {t('permission.continue')}
               </Text>
             }
             onPress={() =>

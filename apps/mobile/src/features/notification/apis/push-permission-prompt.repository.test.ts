@@ -6,7 +6,7 @@ import { createPushPermissionPromptRepository } from './push-permission-prompt.r
 const AT = toInstant('2026-11-04T09:00:00.000Z');
 
 describe('createPushPermissionPromptRepository', () => {
-  it('나중에와 안내 닫기를 계정마다 따로 남기고 안내 닫기 키는 출시된 앱과 같다', () => {
+  it('알림 화면 닫기와 안내 닫기를 계정마다 따로 남기고 안내 닫기 키는 출시된 앱과 같다', () => {
     // Given
     const storage = createMemoryObservableSyncStorage();
     const repository = createPushPermissionPromptRepository(storage);

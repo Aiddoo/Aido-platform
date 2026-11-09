@@ -14,6 +14,7 @@ import {
   stubWindowDimensions,
   TestUiProvider,
 } from '@src/shared/__tests__';
+import { Stack as TestStack } from '@src/shared/__tests__/mocks/expo-router';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -32,6 +33,9 @@ import { useOpenPushOnboarding } from './use-open-push-onboarding';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
+
+// 네이티브 헤더는 Jest에서 그려지지 않는다. 라우터는 그대로 두고 헤더 버튼만 jest.setup의 누를 수 있는 버튼으로 바꾼다
+Object.assign(Stack, { Toolbar: TestStack.Toolbar });
 
 // 앱 화면 묶음 레이아웃이 선언하는 화면이다. 없으면 레이아웃이 화면마다 경고를 남긴다
 const APP_STACK_SCREENS = [
@@ -106,9 +110,9 @@ async function renderAppRoutes({
 }) {
   const queryClient = createTestQueryClient();
   const httpClient = createHttpClientStub();
-  httpClient.get.mockImplementation(async () =>
-    ok(createCurrentUserDto({ createdAt: new Date().toISOString() })),
-  );
+  // 다시 조회해도 가입 시각이 같아야 한다. 조회마다 새로 만들면 가입이 화면의 지금보다 뒤가 되어 답하지 않아도 화면이 닫힌다
+  const me = createCurrentUserDto({ createdAt: new Date().toISOString() });
+  httpClient.get.mockImplementation(async () => ok(me));
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockResolvedValue(permission);
   pushNotification.requestPermission.mockResolvedValue(requestedPermission);
@@ -156,6 +160,14 @@ async function renderAppRoutes({
   return { route, queryClient };
 }
 
+async function pressContinue() {
+  await fireEvent.press(screen.getByText('계속'));
+}
+
+async function pressClose() {
+  await fireEvent.press(screen.getByLabelText('닫기'));
+}
+
 function getUnhandledNavigationErrors(consoleError: jest.SpyInstance) {
   return consoleError.mock.calls
     .map(([message]) => String(message))
@@ -187,12 +199,12 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
     });
 
     it.each([
-      ['[알림 받기] 뒤 OS에서 허용', '알림 받기', 'granted'],
-      ['[알림 받기] 뒤 OS에서 거부', '알림 받기', 'denied'],
-      ['[나중에]', '나중에', 'undetermined'],
+      ['[계속] 뒤 OS에서 허용', pressContinue, 'granted'],
+      ['[계속] 뒤 OS에서 거부', pressContinue, 'denied'],
+      ['헤더 닫기', pressClose, 'undetermined'],
     ] as const)(
       '새 가입자가 피드 위에 열린 알림 화면에서 %s하면, 마이 탭이 아니라 원래 있던 피드로 돌아온다',
-      async (_case, buttonLabel, requestedStatus) => {
+      async (_case, answer, requestedStatus) => {
         // Given
         const consoleError = jest.spyOn(console, 'error');
         const { route } = await renderAppRoutes({
@@ -205,10 +217,10 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
         await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
 
         // When
-        await fireEvent.press(screen.getByText(buttonLabel));
+        await answer();
 
         // Then
-        await waitFor(() => expect(screen.queryByText('나중에')).toBeNull());
+        await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
         expect(route.getPathname()).toBe('/feed');
         expect(screen.getByTestId('feed')).toBeTruthy();
         expect(feedMounted).toHaveBeenCalledTimes(1);
@@ -225,7 +237,7 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
 
     // When
-    await fireEvent.press(screen.getByText('나중에'));
+    await pressClose();
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/memo'));
@@ -258,7 +270,7 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
       // Then
       await waitFor(() => expect(route.getPathname()).toBe('/feed'));
       expect(screen.getByTestId('feed')).toBeTruthy();
-      expect(screen.queryByText('나중에')).toBeNull();
+      expect(screen.queryByText('계속')).toBeNull();
       expect(router.canGoBack()).toBe(false);
       expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
     },
@@ -274,6 +286,6 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     expect(screen.getByTestId('feed')).toBeTruthy();
-    expect(screen.queryByText('나중에')).toBeNull();
+    expect(screen.queryByText('계속')).toBeNull();
   });
 });

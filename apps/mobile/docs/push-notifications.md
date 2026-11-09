@@ -16,7 +16,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | `domains/push-permission.model.ts`            | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)          |
 | `apis/push-permission.mapper.ts`              | OS 값 → 모델, 모델·토큰 → 보고 입력                                   |
 | `apis/push-device.service.ts`                 | 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제                            |
-| `apis/push-permission-prompt.repository.ts`   | 알림 화면의 [나중에]와 피드 안내를 닫은 시각을 계정마다 MMKV에 저장   |
+| `apis/push-permission-prompt.repository.ts`   | 알림 화면과 피드 안내를 닫은 시각을 계정마다 MMKV에 저장              |
 | `hooks/use-push-device-sync.ts`               | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출) |
 | `hooks/use-notification-response-observer.ts` | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                    |
 | `hooks/use-notification-entry.ts`             | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`) |
@@ -50,15 +50,17 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 시스템 권한 창은 iOS에서 한 번만 뜬다. 그래서 묻는 순간을 `PushPermissionPolicy.getAskMoment(permission, context)` 한 곳이 정한다. 허용(`GRANTED`·`PROVISIONAL`)이면 어디서도 묻지 않는다.
 
-| 곳(`surface`)          | 조건                                                   | 결과(`PUSH_ASK_MOMENT`)                                                                   |
-| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| 가입 직후 `onboarding` | 아직 묻지 않음 + 가입 1일 안 + [나중에]를 누르지 않음  | `ONBOARDING_SCREEN`: `/onboarding/notifications` 한 장. [알림 받기] → 시스템 창, [나중에] |
-| 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"       |
-| 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기)  |
+| 곳(`surface`)          | 조건                                                   | 결과(`PUSH_ASK_MOMENT`)                                                                  |
+| ---------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| 가입 직후 `onboarding` | 아직 묻지 않음 + 가입 1일 안 + 화면을 닫지 않음        | `ONBOARDING_SCREEN`: `/onboarding/notifications` 한 장. [계속] → 시스템 창, 헤더 닫기    |
+| 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"      |
+| 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기) |
 
-- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()} redirectTo=".."` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 [나중에]가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다. Android 뒤로 가기는 [나중에]다.
+- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()} redirectTo=".."` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
+  - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
+  - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
   - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
-- [나중에]와 안내 닫기는 `PushPermissionPromptRepository`가 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
+- 알림 화면 닫기와 피드 안내 닫기는 `PushPermissionPromptRepository`가 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
 - 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
 - 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.

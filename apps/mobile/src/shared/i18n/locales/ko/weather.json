@@ -276,7 +276,6 @@
     "unavailableTitle": "위치를 찾지 못했어요",
     "unavailableDescription": "위치 서비스가 켜져 있는지\n확인해주세요",
     "lastLocationNotice": "위치 권한을 확인하지 못해 마지막 위치의 날씨를 보여드려요",
-    "allow": "허용하기",
     "savedLocationNotice": "현재 위치를 찾지 못해 저장된 위치의 날씨를 보여드려요"
   },
   "screen": {

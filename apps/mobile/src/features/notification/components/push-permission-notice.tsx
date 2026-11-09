@@ -124,7 +124,7 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
             })
           }
         >
-          {t('permission.onboarding.allow')}
+          {t('permission.continue')}
         </Button>
       }
       onClose={onDismiss}

@@ -109,7 +109,13 @@ function AppLayout() {
       <Stack.Protected guard={isPushOnboardingDue} redirectTo="..">
         <Stack.Screen
           name="onboarding/notifications"
-          options={{ animation: 'fade', gestureEnabled: false }}
+          options={{
+            ...headerOptions,
+            title: '',
+            headerBackVisible: false,
+            animation: 'fade',
+            gestureEnabled: false,
+          }}
         />
       </Stack.Protected>
     </Stack>

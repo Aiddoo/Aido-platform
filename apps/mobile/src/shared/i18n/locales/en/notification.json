@@ -90,6 +90,7 @@
     }
   },
   "permission": {
+    "continue": "Continue",
     "card": {
       "deniedTitle": "Notifications are off",
       "requestDescription": "Allow them again to get reminders",
@@ -99,9 +100,7 @@
     },
     "onboarding": {
       "title": "We'll remind you right on time",
-      "description": "Never miss a reminder or a cheer from friends",
-      "allow": "Get notified",
-      "later": "Not now"
+      "description": "Never miss a reminder or a cheer from friends"
     },
     "deviceOff": {
       "title": "Device notifications are off",

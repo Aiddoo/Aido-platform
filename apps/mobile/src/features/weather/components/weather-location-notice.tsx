@@ -26,7 +26,7 @@ export function WeatherLocationNotice() {
           {t('weather:locationPrompt.lastLocationNotice')}
         </Text>
         <TextButton size="small" onPress={request}>
-          {t('weather:locationPrompt.allow')}
+          {t('weather:locationPrompt.continue')}
         </TextButton>
       </HStack>
     ))

@@ -31,7 +31,7 @@ const pushDeviceSchema = z.object({
 });
 export type PushDevice = z.infer<typeof pushDeviceSchema>;
 
-/** 계정마다 기기에 남긴 답. 알림 화면의 [나중에]와 피드 꺼짐 안내를 닫은 시각이다 */
+/** 계정마다 기기에 남긴 답. 알림 화면과 피드 꺼짐 안내를 닫은 시각이다 */
 const pushPermissionPromptSchema = z.object({
   deferredAt: instantSchema.nullable(),
   noticeDismissedAt: instantSchema.nullable(),
