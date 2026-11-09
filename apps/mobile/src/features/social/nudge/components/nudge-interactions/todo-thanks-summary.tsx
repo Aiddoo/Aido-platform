@@ -19,8 +19,8 @@ export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
   return (
     <QueryErrorBoundary
       resetKeys={[todo.id]}
-      fallback={(props) => (
-        <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
+      fallback={(fallbackProps) => (
+        <ThanksSummaryRow.Error {...fallbackProps} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
       )}
     >
       {/* 보낼 대상이 있는지 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다(ThanksSummaryRow 머리 주석) */}

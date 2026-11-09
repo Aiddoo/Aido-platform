@@ -288,7 +288,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - 넘기기용 래퍼(`Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
 - JSX 상수(`const waveform = …`)로 화면 구조를 숨기지 않는다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다.
-- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `X.Loading`이 있으면 `X.Error`도 짝으로 두고 남의 `.Error`(`SettingsListGroup.Error`)를 경계에 직접 빌리지 않는다. 모양이 같으면 `X.Error = SettingsListGroup.Error`로 잇는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
+- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. 시트 안 경계만 닫기 핸들러를 넣어야 해서 `fallback={(fallbackProps) => <X.Error {...fallbackProps} onInquiry={…} />}` 한 모양으로 감싼다([QueryErrorBoundary](../src/shared/ui/query-error-boundary/query-error-boundary.md#기능-fallback의-다시-시도--문의하기)). 인라인 `Result`를 두지 않고 `X.Error` 조각으로 뺀다. `X.Loading`이 있으면 `X.Error`도 짝으로 두고 남의 `.Error`(`SettingsListGroup.Error`)를 경계에 직접 빌리지 않는다. 모양이 같으면 `X.Error = SettingsListGroup.Error`로 잇는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
 - 경계를 나눌 때는 한 오류가 한 곳에서만 보이는지, 로딩 모양이 지금과 같은지 먼저 확인한다. 같은 쿼리를 두 경계에서 읽으면 404가 두 번 보이므로 나누지 않는다.
 - 바깥 여백은 스크린의 `Spacing`이다. `mb`·`mt` 같은 여백 prop을 블록에 넘기지 않는다.
 - 스스로 숨는 블록은 간격도 함께 사라져야 한다. 조건을 스크린에서 알 수 있으면 `{isAvailable && (…)}` 안에 간격과 블록을 함께 둔다. 조회해야 알 수 있는 카드만 스크린이 `className`으로 넘긴다(`<PushPermissionNotice className="mx-4 mb-3" />`).

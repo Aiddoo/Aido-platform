@@ -62,8 +62,8 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
         </HStack>
         <QueryErrorBoundary
           resetKeys={[todoId]}
-          fallback={(errorProps) => (
-            <NudgeThanksBottomSheet.Error {...errorProps} onClose={handleClose} />
+          fallback={(fallbackProps) => (
+            <NudgeThanksBottomSheet.Error {...fallbackProps} onClose={handleClose} />
           )}
         >
           <Suspense fallback={<NudgeThanksBottomSheet.Loading />}>

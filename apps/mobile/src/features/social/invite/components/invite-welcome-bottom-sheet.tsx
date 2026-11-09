@@ -18,6 +18,7 @@ import {
   INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   Result,
   Spacing,
   Text,
@@ -55,7 +56,6 @@ type InviteWelcomeBottomSheetProps = Omit<
 
 /** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
-  const { t } = useTranslation('common');
   const [{ friendId }] = useRouteParams(inviteWelcomeParamsSchema);
   const sheet = useSheetRoute('/feed');
   const { data: redemption } = useQuery(
@@ -99,15 +99,10 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       {...props}
     >
       <QueryErrorBoundary
-        fallback={({ reset }) => (
-          <Result
-            title={t('errorBoundary.title')}
-            button={
-              <QueryErrorActions
-                onRetry={reset}
-                onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-              />
-            }
+        fallback={(fallbackProps) => (
+          <InviteWelcomeBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
           />
         )}
       >
@@ -119,6 +114,20 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
     </BottomSheet>
   );
 }
+
+InviteWelcomeBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+  const { t } = useTranslation('common');
+
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
+    />
+  );
+};
 
 interface WelcomeContentsProps {
   redemption: RedemptionResult;
