@@ -1,32 +1,29 @@
+import Add from '@expo/material-symbols/add.xml';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { CategoryList } from '@src/features/planning/category/components/category-list';
 import {
   CATEGORY_SETTINGS_VIEW,
   categorySettingsViewSchema,
 } from '@src/features/planning/category/schemas/category-settings-params.schema';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Button,
-  HStack,
-  PlusIcon,
   QueryErrorBoundary,
   ReadableContent,
   SegmentTabTrigger,
   SettingsListGroup,
   StyledSafeAreaView,
-  Text,
   ViewTabs,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
+const ADD_ICON = process.env.EXPO_OS === 'ios' ? 'plus' : Add;
+
 export default function TodoCategorySettingsScreen() {
-  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
   const push = useSingleTap(router.push);
   const [view, setView] = useView('view', categorySettingsViewSchema);
@@ -43,45 +40,34 @@ export default function TodoCategorySettingsScreen() {
   // 목록이 스스로 스크롤해 `SettingsScreenLayout`(ScrollView) 대신 같은 여백의 고정 틀을 쓴다
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
-      <ReadableContent flex={1} gap={12} className="px-4 pb-4 pt-5">
-        <HStack justify="between" align="center">
-          <ViewTabs
-            schema={categorySettingsViewSchema}
-            value={view}
-            onValueChange={setView}
-            variant="primary"
-          >
-            <Tabs.List>
-              <Tabs.Indicator />
-              <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.edit}>
-                {t('categorySettings.editTab')}
-              </SegmentTabTrigger>
-              <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.reorder}>
-                {t('categorySettings.reorderTab')}
-              </SegmentTabTrigger>
-            </Tabs.List>
-          </ViewTabs>
+      {/* 큰 글꼴에서도 탭과 겹치지 않게 추가는 헤더 오른쪽 주요 동작으로 둔다 */}
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon={ADD_ICON}
+          accessibilityLabel={t('categorySettings.add')}
+          onPress={handleAddPress}
+        >
+          {t('categorySettings.add')}
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
 
-          <Button
-            size="small"
-            variant="weak"
-            color="primary"
-            display="inline"
-            radius="full"
-            onPress={handleAddPress}
-          >
-            <HStack align="center" gap={4}>
-              <PlusIcon
-                width={fontScaledSize(16)}
-                height={fontScaledSize(16)}
-                colorClassName="text-main"
-              />
-              <Text size="b4" tone="brand" weight="semibold">
-                {t('categorySettings.add')}
-              </Text>
-            </HStack>
-          </Button>
-        </HStack>
+      <ReadableContent flex={1} gap={12} className="px-4 pb-4 pt-5">
+        <ViewTabs
+          schema={categorySettingsViewSchema}
+          value={view}
+          onValueChange={setView}
+          variant="primary"
+        >
+          <Tabs.List>
+            <Tabs.Indicator />
+            <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.edit}>
+              {t('categorySettings.editTab')}
+            </SegmentTabTrigger>
+            <SegmentTabTrigger value={CATEGORY_SETTINGS_VIEW.reorder}>
+              {t('categorySettings.reorderTab')}
+            </SegmentTabTrigger>
+          </Tabs.List>
+        </ViewTabs>
 
         <SettingsListGroup label={t('categorySettings.listLabel')} className="flex-1">
           <QueryErrorBoundary>

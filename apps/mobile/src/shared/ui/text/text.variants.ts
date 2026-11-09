@@ -39,7 +39,7 @@ export const textVariants = tv({
       neutral: 'text-foreground',
       brand: 'text-main',
       danger: 'text-error',
-      warning: 'text-warning',
+      warning: 'text-warning-text',
       success: 'text-success',
       info: 'text-info',
       white: 'text-white',

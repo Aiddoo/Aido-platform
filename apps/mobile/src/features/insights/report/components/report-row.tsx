@@ -36,7 +36,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
               {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
               {isSample && (
                 <Chip size="sm" variant="soft" color="warning" pointerEvents="none">
-                  <Text size="e1" weight="medium" className="text-warning">
+                  <Text size="e1" weight="medium" tone="warning">
                     {t('report.sampleBadge')}
                   </Text>
                 </Chip>

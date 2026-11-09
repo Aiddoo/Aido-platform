@@ -53,7 +53,12 @@ export function InlineAlert({
     <Alert.Content>
       {title != null && (
         <Alert.Title>
-          <Text size="b3" weight="medium" tone={getTextTone(status)}>
+          <Text
+            size="b3"
+            weight="medium"
+            tone={getTextTone(status)}
+            lineBreakStrategyIOS="hangul-word"
+          >
             {title}
           </Text>
         </Alert.Title>
