@@ -127,10 +127,17 @@ describe("AI E2E", () => {
     testUserId = user.userId;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe("POST /ai/parse-todo", () => {
     describe("성공 케이스", () => {
       it("인증된 사용자가 자연어를 성공적으로 파싱", async () => {
         // Given
+        // 서버는 지난 날짜를 다음 시기로 옮기므로 가짜 응답 날짜보다 앞선 시각으로 고정한다
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2025-01-25T03:00:00Z"));
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
           date: onDate(2025, 1, 26),
@@ -231,6 +238,8 @@ describe("AI E2E", () => {
 
       it("종일 일정을 올바르게 파싱", async () => {
         // Given
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2025-01-25T03:00:00Z"));
         fakeAiGenerator.setResponse({
           title: "출장",
           date: onDate(2025, 1, 27),
