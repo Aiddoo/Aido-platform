@@ -2,8 +2,8 @@ import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/use-record-todo-completion';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
-import { useIsPushOnboardingDue } from '@src/features/notification/hooks/use-is-push-onboarding-due';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
+import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -48,7 +48,7 @@ function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['notification', 'todo', 'ai']);
-  const isPushOnboardingDue = useIsPushOnboardingDue();
+  const isPushOnboardingDue = usePushOnboardingGuard();
   useRecordTodoCompletion();
   useOfferMarketingPushAfterCompletion();
 

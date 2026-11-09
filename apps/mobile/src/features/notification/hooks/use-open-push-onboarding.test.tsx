@@ -8,6 +8,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
@@ -17,10 +18,10 @@ import {
 import { Stack as TestStack } from '@src/shared/__tests__/mocks/expo-router';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { type PropsWithChildren, useEffect } from 'react';
+import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { Text } from 'react-native';
 
 import { unstable_settings as myPageTabSettings } from '../../../../app/(app)/(tabs)/(mypage)/_layout';
@@ -101,12 +102,14 @@ function TabStackLayout() {
 
 async function renderAppRoutes({
   permission,
-  requestedPermission = permission,
+  requestedPermission,
   initialUrl = '/feed',
+  feedScreen = FeedScreen,
 }: {
-  permission: PushPermissionResponse;
+  permission: PushPermissionResponse | Promise<PushPermissionResponse>;
   requestedPermission?: PushPermissionResponse;
   initialUrl?: string;
+  feedScreen?: typeof FeedScreen;
 }) {
   const queryClient = createTestQueryClient();
   const httpClient = createHttpClientStub();
@@ -114,8 +117,10 @@ async function renderAppRoutes({
   const me = createCurrentUserDto({ createdAt: new Date().toISOString() });
   httpClient.get.mockImplementation(async () => ok(me));
   const pushNotification = createPushNotificationGatewayStub();
-  pushNotification.getPermission.mockResolvedValue(permission);
-  pushNotification.requestPermission.mockResolvedValue(requestedPermission);
+  pushNotification.getPermission.mockImplementation(() => Promise.resolve(permission));
+  pushNotification.requestPermission.mockImplementation(() =>
+    Promise.resolve(requestedPermission ?? permission),
+  );
   const container = createTestDi({
     queryClient,
     httpClient,
@@ -143,7 +148,7 @@ async function renderAppRoutes({
       '(app)/_layout': AppLayoutRoute,
       '(app)/(tabs)/_layout': TabsLayoutRoute,
       '(app)/(tabs)/feed/_layout': TabStackLayout,
-      '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/(tabs)/feed/index': feedScreen,
       '(app)/(tabs)/memo/_layout': TabStackLayout,
       '(app)/(tabs)/memo/index': MemoScreen,
       // 메뉴 칸은 이 테스트의 관심이 아니라 글자로 대신한다. 넓은 화면의 칸 나누기는 그대로 탄다
@@ -158,6 +163,31 @@ async function renderAppRoutes({
     { initialUrl, wrapper: AppFixture },
   );
   return { route, queryClient };
+}
+
+/** 다시 연 앱은 저장한 할 일을 받은 뒤에야 피드 본문이 그려진다. 권한 조회가 끝난 바로 다음에 본문이 처음 그려지게 한다 */
+function createFeedAfterPermissionScreen(permissionResponse: Promise<unknown>) {
+  async function getTodosAfterPermission() {
+    await permissionResponse;
+    for (const _hop of Array.from({ length: 5 })) {
+      await Promise.resolve();
+    }
+    return 'todos';
+  }
+
+  function FeedBody() {
+    useSuspenseQuery({ queryKey: ['feed-body'], queryFn: getTodosAfterPermission });
+    useOpenPushOnboarding({ isStable: true });
+    return <Text testID="feed">Feed</Text>;
+  }
+
+  return function FeedAfterPermissionScreen() {
+    return (
+      <Suspense fallback={null}>
+        <FeedBody />
+      </Suspense>
+    );
+  };
 }
 
 async function pressContinue() {
@@ -287,5 +317,21 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     expect(screen.getByTestId('feed')).toBeTruthy();
     expect(screen.queryByText('계속')).toBeNull();
+  });
+
+  it('다시 연 앱에서 권한을 읽자마자 피드 본문이 그려져도 알림 화면이 열린 채 남는다', async () => {
+    // Given
+    const permissionResponse = createPendingResponse(UNDETERMINED);
+    const { route } = await renderAppRoutes({
+      permission: permissionResponse.response,
+      feedScreen: createFeedAfterPermissionScreen(permissionResponse.response),
+    });
+
+    // When
+    await act(async () => permissionResponse.settle());
+
+    // Then
+    await waitFor(() => expect(screen.getByText('계속')).toBeTruthy());
+    expect(route.getPathname()).toBe('/onboarding/notifications');
   });
 });

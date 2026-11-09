@@ -56,7 +56,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"      |
 | 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기) |
 
-- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()} redirectTo=".."` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
+- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고, 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 열린 채 그려진 뒤에만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
   - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
   - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
   - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
