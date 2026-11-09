@@ -6,9 +6,11 @@ import {
 } from "#api/shared/application/ports/operational-alert.port";
 
 import { AdminEventNotifier } from "./application/notifiers/notifications/admin-event.notifier.js";
+import { ADMIN_NOTICE_USER_READER } from "./application/ports/notifications/admin-notice-user.reader.port.js";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/notifications/admin-notification-queue.port.js";
 import { ADMIN_NOTIFIER } from "./application/ports/notifications/admin-notifier.port.js";
 import { SIGNUP_STATS_READER } from "./application/ports/notifications/signup-stats.reader.port.js";
+import { AdminNoticeUserResolver } from "./application/services/notifications/admin-notice-user.resolver.js";
 import { DispatchDailySignupSummary } from "./application/use-cases/notifications/dispatch-daily-signup-summary.use-case.js";
 import { EnqueueSubscriptionEvent } from "./application/use-cases/notifications/enqueue-subscription-event.use-case.js";
 import { EnqueueUserRegistered } from "./application/use-cases/notifications/enqueue-user-registered.use-case.js";
@@ -46,18 +48,29 @@ export const dispatchDailySignupSummaryProvider: FactoryProvider<DispatchDailySi
     }),
 };
 
+export const adminNoticeUserResolverProvider: FactoryProvider<AdminNoticeUserResolver> = {
+  provide: AdminNoticeUserResolver,
+  inject: [ADMIN_NOTICE_USER_READER],
+  useFactory: (reader: ConstructorParameters<typeof AdminNoticeUserResolver>[0]["reader"]) =>
+    new AdminNoticeUserResolver({ reader, logger: new Logger(AdminNoticeUserResolver.name) }),
+};
+
 export const enqueueSubscriptionEventProvider: FactoryProvider<EnqueueSubscriptionEvent> = {
   provide: EnqueueSubscriptionEvent,
-  inject: [ADMIN_NOTIFICATION_QUEUE_PORT],
-  useFactory: (queue: ConstructorParameters<typeof EnqueueSubscriptionEvent>[0]["queue"]) =>
-    new EnqueueSubscriptionEvent({ queue }),
+  inject: [ADMIN_NOTIFICATION_QUEUE_PORT, AdminNoticeUserResolver],
+  useFactory: (
+    queue: ConstructorParameters<typeof EnqueueSubscriptionEvent>[0]["queue"],
+    users: ConstructorParameters<typeof EnqueueSubscriptionEvent>[0]["users"],
+  ) => new EnqueueSubscriptionEvent({ queue, users }),
 };
 
 export const enqueueUserRegisteredProvider: FactoryProvider<EnqueueUserRegistered> = {
   provide: EnqueueUserRegistered,
-  inject: [ADMIN_NOTIFICATION_QUEUE_PORT],
-  useFactory: (queue: ConstructorParameters<typeof EnqueueUserRegistered>[0]["queue"]) =>
-    new EnqueueUserRegistered({ queue }),
+  inject: [ADMIN_NOTIFICATION_QUEUE_PORT, AdminNoticeUserResolver],
+  useFactory: (
+    queue: ConstructorParameters<typeof EnqueueUserRegistered>[0]["queue"],
+    users: ConstructorParameters<typeof EnqueueUserRegistered>[0]["users"],
+  ) => new EnqueueUserRegistered({ queue, users }),
 };
 
 export const sendAdminNotificationProvider: FactoryProvider<SendAdminNotification> = {

@@ -2,10 +2,23 @@
  * Admin Notification 큐 상수 및 잡 데이터 타입 정의
  */
 
+import {
+  PREMIUM_SOURCE,
+  STORE_PERIOD_TYPES,
+  SUBSCRIPTION_ENVIRONMENTS,
+  SUBSCRIPTION_PLAN_TYPES,
+} from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
+import {
+  type AdminNotice,
+  NOTICE_END_REASON,
+  NOTICE_STORE,
+  SIGNUP_METHOD,
+  SUBSCRIPTION_NOTICE_EVENT,
+} from "../../../application/read-models/notifications/admin-notice.read-model.js";
 import {
   ADMIN_NOTIFICATION_SEVERITIES,
   type AdminNotification,
@@ -50,8 +63,10 @@ export const DAILY_SIGNUP_SUMMARY_SCHEDULE = {
 /** send-notification 잡 데이터 */
 export interface AdminNotificationSendData {
   channel: "admin" | "payment";
-  notification: AdminNotification;
+  notice: AdminNotice;
 }
+
+const NotificationChannelSchema = z.enum(["admin", "payment"]);
 
 const AdminNotificationSchema = z.object({
   title: z.string(),
@@ -96,6 +111,93 @@ const LegacyAdminNotificationSchema = z
     })),
   }));
 
+/** 표시에만 쓰는 값은 모르는 값이 와도 잡을 버리지 않고 비운 채 보낸다. */
+function optionalDisplay<T extends z.ZodType>(schema: T) {
+  return schema.optional().catch(undefined);
+}
+
+const AdminNoticeUserSchema = z.object({
+  userId: z.string(),
+  email: z.string(),
+  nickname: optionalDisplay(z.string()),
+  userTag: optionalDisplay(z.string()),
+  joinedAt: optionalDisplay(z.string()),
+  signupMethod: optionalDisplay(z.enum(SIGNUP_METHOD)),
+});
+
+const SubscriptionNoticeSchema = z.object({
+  event: z.enum(SUBSCRIPTION_NOTICE_EVENT),
+  environment: optionalDisplay(z.enum(SUBSCRIPTION_ENVIRONMENTS)),
+  store: optionalDisplay(z.enum(NOTICE_STORE)),
+  productId: optionalDisplay(z.string()),
+  planType: optionalDisplay(z.enum(SUBSCRIPTION_PLAN_TYPES)),
+  newProductId: optionalDisplay(z.string()),
+  newPlanType: optionalDisplay(z.enum(SUBSCRIPTION_PLAN_TYPES)),
+  periodKind: optionalDisplay(z.enum(STORE_PERIOD_TYPES)),
+  price: z.object({
+    amount: optionalDisplay(z.number()),
+    currency: optionalDisplay(z.string()),
+    usd: optionalDisplay(z.number()),
+  }),
+  purchasedAt: optionalDisplay(z.string()),
+  expiresAt: optionalDisplay(z.string()),
+  gracePeriodEndsAt: optionalDisplay(z.string()),
+  endReason: optionalDisplay(z.enum(NOTICE_END_REASON)),
+  countryCode: optionalDisplay(z.string()),
+  isFirstPurchase: optionalDisplay(z.boolean()),
+  premium: optionalDisplay(
+    z.object({
+      source: z.enum(PREMIUM_SOURCE).nullable(),
+      periodEndsAt: z.string().optional(),
+      bankedDays: z.number(),
+      isTrial: z.boolean(),
+    }),
+  ),
+  transfer: optionalDisplay(z.object({ from: z.array(z.string()), to: z.array(z.string()) })),
+  storeSubscriptionId: optionalDisplay(z.string()),
+  appVersion: optionalDisplay(z.string()),
+  deviceModel: optionalDisplay(z.string()),
+  customerUrl: optionalDisplay(z.string()),
+});
+
+const SignupNoticeSchema = z.object({
+  devicePlatform: optionalDisplay(z.enum(["IOS", "ANDROID", "WEB"])),
+  deviceModel: optionalDisplay(z.string()),
+  osVersion: optionalDisplay(z.string()),
+  appVersion: optionalDisplay(z.string()),
+  appBuild: optionalDisplay(z.string()),
+  locale: optionalDisplay(z.string()),
+  timezone: optionalDisplay(z.string()),
+});
+
+const AdminNoticeSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("message"), message: AdminNotificationSchema }),
+  z.object({
+    type: z.literal("user_registered"),
+    user: AdminNoticeUserSchema,
+    signup: SignupNoticeSchema,
+  }),
+  z.object({
+    type: z.literal("subscription_event"),
+    user: AdminNoticeUserSchema,
+    subscription: SubscriptionNoticeSchema,
+  }),
+]);
+
+/**
+ * 조립된 메시지를 싣던 이전 잡(`notification`). 배포 순간 큐에 남은 잡(보관 24시간)을 그 모양 그대로
+ * 일반 메시지로 보낸다. 다음 릴리스에서 지운다.
+ */
+const LegacySendDataSchema = z
+  .object({
+    channel: NotificationChannelSchema,
+    notification: z.union([AdminNotificationSchema, LegacyAdminNotificationSchema]),
+  })
+  .transform(({ channel, notification }): AdminNotificationSendData => ({
+    channel,
+    notice: { type: "message", message: notification },
+  }));
+
 export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal(AdminNotificationJobName.DISPATCH_SUMMARY),
@@ -103,9 +205,9 @@ export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
   }),
   z.object({
     name: z.literal(AdminNotificationJobName.SEND),
-    data: z.object({
-      channel: z.enum(["admin", "payment"]),
-      notification: z.union([AdminNotificationSchema, LegacyAdminNotificationSchema]),
-    }),
+    data: z.union([
+      z.object({ channel: NotificationChannelSchema, notice: AdminNoticeSchema }),
+      LegacySendDataSchema,
+    ]),
   }),
 ]);

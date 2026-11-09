@@ -29,25 +29,107 @@ describe("관리자 알림 큐 계약", () => {
     expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone).toBe("Asia/Seoul");
   });
 
-  it("채널과 관리자 알림 payload를 런타임에도 검증한다", () => {
-    expect(
-      AdminNotificationRuntimeJobSchema.safeParse({
-        name: AdminNotificationJobName.SEND,
-        data: {
-          channel: "payment",
-          notification: { title: "결제", body: "완료", severity: "success" },
+  it("새 형식의 구독 알림 잡을 그대로 받는다", () => {
+    // Given
+    const job = {
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "payment",
+        notice: {
+          type: "subscription_event",
+          user: { userId: "user-1", email: "user@example.com", userTag: "MATT2025" },
+          subscription: {
+            event: "billing_issue",
+            environment: "PRODUCTION",
+            store: "PLAY_STORE",
+            price: { amount: 3_900, currency: "KRW", usd: 2.99 },
+            endReason: "BILLING_ERROR",
+            premium: { source: "STORE", bankedDays: 7, isTrial: false },
+          },
         },
-      }).success,
-    ).toBe(true);
-    expect(
-      AdminNotificationRuntimeJobSchema.safeParse({
-        name: AdminNotificationJobName.SEND,
-        data: { channel: "unknown", notification: {} },
-      }).success,
-    ).toBe(false);
+      },
+    };
+
+    // When
+    const parsed = AdminNotificationRuntimeJobSchema.parse(job);
+
+    // Then
+    expect(parsed).toEqual(job);
   });
 
-  it("배포 중 큐에 남은 이전 형식 알림은 info 알림으로 바꿔 받아들인다", () => {
+  it("표시용 값이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다", () => {
+    // Given
+    const job = {
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "payment",
+        notice: {
+          type: "subscription_event",
+          user: { userId: "user-1", email: "user@example.com", signupMethod: "LINE" },
+          subscription: { event: "renewed", store: "NEW_STORE", price: {} },
+        },
+      },
+    };
+
+    // When
+    const parsed = AdminNotificationRuntimeJobSchema.safeParse(job);
+
+    // Then
+    expect(parsed.success && parsed.data.name === AdminNotificationJobName.SEND).toBe(true);
+    expect(parsed.data?.data).toEqual({
+      channel: "payment",
+      notice: {
+        type: "subscription_event",
+        user: { userId: "user-1", email: "user@example.com" },
+        subscription: { event: "renewed", price: {} },
+      },
+    });
+  });
+
+  it("모르는 채널·알림 종류·이벤트는 받지 않는다", () => {
+    for (const data of [
+      { channel: "unknown", notice: { type: "message", message: {} } },
+      { channel: "admin", notice: { type: "unknown" } },
+      {
+        channel: "payment",
+        notice: {
+          type: "subscription_event",
+          user: { userId: "user-1", email: "user@example.com" },
+          subscription: { event: "unknown_event", price: {} },
+        },
+      },
+    ]) {
+      expect(
+        AdminNotificationRuntimeJobSchema.safeParse({ name: AdminNotificationJobName.SEND, data })
+          .success,
+      ).toBe(false);
+    }
+  });
+
+  it("배포 직전 큐에 남은 1.15 조립 메시지 잡(notification)은 그 모양 그대로 일반 메시지로 보낸다", () => {
+    // Given
+    const notification = {
+      title: "[샌드박스] 🎉 새로운 구독 구매",
+      body: "**매튜** 님의 구독 이벤트 (STARTED)",
+      severity: "info",
+      fields: [{ label: "금액", value: { kind: "text", text: "₩3,900" }, inline: true }],
+      link: "https://app.revenuecat.com/projects/p/customers/u",
+    };
+
+    // When
+    const parsed = AdminNotificationRuntimeJobSchema.parse({
+      name: AdminNotificationJobName.SEND,
+      data: { channel: "payment", notification },
+    });
+
+    // Then
+    expect(parsed).toEqual({
+      name: AdminNotificationJobName.SEND,
+      data: { channel: "payment", notice: { type: "message", message: notification } },
+    });
+  });
+
+  it("배포 중 큐에 남은 1.14 형식 알림은 info 일반 메시지로 바꿔 받아들인다", () => {
     // Given
     const legacy = {
       name: AdminNotificationJobName.SEND,
@@ -70,13 +152,16 @@ describe("관리자 알림 큐 계약", () => {
       name: AdminNotificationJobName.SEND,
       data: {
         channel: "admin",
-        notification: {
-          title: "가입",
-          body: "새 회원",
-          severity: "info",
-          fields: [
-            { label: "이메일", value: { kind: "text", text: "user@example.com" }, inline: true },
-          ],
+        notice: {
+          type: "message",
+          message: {
+            title: "가입",
+            body: "새 회원",
+            severity: "info",
+            fields: [
+              { label: "이메일", value: { kind: "text", text: "user@example.com" }, inline: true },
+            ],
+          },
         },
       },
     });

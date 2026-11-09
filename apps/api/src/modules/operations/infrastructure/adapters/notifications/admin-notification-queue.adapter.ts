@@ -11,7 +11,7 @@ import type {
   EnqueueSendOptions,
   NotificationChannel,
 } from "../../../application/ports/notifications/admin-notification-queue.port.js";
-import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import type { AdminNotice } from "../../../application/read-models/notifications/admin-notice.read-model.js";
 import {
   ADMIN_NOTIFICATION_JOB_POLICY,
   ADMIN_NOTIFICATION_QUEUE,
@@ -22,7 +22,7 @@ import {
 /**
  * JobRuntime 관리자 알림 큐 어댑터.
  *
- * 조립된 관리자 알림을 SEND 잡으로 등록한다.
+ * 관리자 알림을 SEND 잡으로 등록한다. 채널 표시는 발송할 때 어댑터가 그린다.
  */
 @Injectable()
 export class AdminNotificationQueueAdapter implements AdminNotificationQueuePort {
@@ -30,7 +30,7 @@ export class AdminNotificationQueueAdapter implements AdminNotificationQueuePort
 
   async enqueueSend(
     channel: NotificationChannel,
-    notification: AdminNotification,
+    notice: AdminNotice,
     options?: EnqueueSendOptions,
   ): Promise<void> {
     const jobOptions: EnqueueJobOptions =
@@ -41,7 +41,7 @@ export class AdminNotificationQueueAdapter implements AdminNotificationQueuePort
       ADMIN_NOTIFICATION_QUEUE,
       {
         name: AdminNotificationJobName.SEND,
-        data: { channel, notification } satisfies AdminNotificationSendData,
+        data: { channel, notice } satisfies AdminNotificationSendData,
       },
       jobOptions,
     );

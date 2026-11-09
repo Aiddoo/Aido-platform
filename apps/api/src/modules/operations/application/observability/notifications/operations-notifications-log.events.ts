@@ -5,6 +5,7 @@ export const OperationsNotificationsLogEvent = {
   SEND_REJECTED: "operations.notifications.send.rejected",
   SIGNUP_ENQUEUE_FAILED: "operations.notifications.signup.enqueue-failed",
   SUBSCRIPTION_ENQUEUE_FAILED: "operations.notifications.subscription.enqueue-failed",
+  USER_LOOKUP_FAILED: "operations.notifications.user-lookup.failed",
   SUMMARY_STARTED: "operations.notifications.summary.started",
   SUMMARY_ENQUEUED: "operations.notifications.summary.enqueued",
   SUMMARY_FAILED: "operations.notifications.summary.failed",

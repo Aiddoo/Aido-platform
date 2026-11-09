@@ -6,16 +6,19 @@ import { DatabaseModule } from "#api/platform/database/index";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import { AdminEventNotifier } from "./application/notifiers/notifications/admin-event.notifier.js";
+import { ADMIN_NOTICE_USER_READER } from "./application/ports/notifications/admin-notice-user.reader.port.js";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/notifications/admin-notification-queue.port.js";
 import { ADMIN_NOTIFIER } from "./application/ports/notifications/admin-notifier.port.js";
 import { SIGNUP_STATS_READER } from "./application/ports/notifications/signup-stats.reader.port.js";
 import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/notifications/admin-notification-queue.adapter.js";
 import { createAdminNotifier } from "./infrastructure/adapters/notifications/admin-notifier.factory.js";
+import { DrizzleAdminNoticeUserReader } from "./infrastructure/adapters/notifications/drizzle-admin-notice-user.reader.js";
 import { DrizzleSignupStatsReader } from "./infrastructure/adapters/notifications/drizzle-signup-stats.reader.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/notifications/admin-notification-queue.processor.js";
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/notifications/daily-signup-summary.scheduler.js";
 import {
   adminEventNotifierProvider,
+  adminNoticeUserResolverProvider,
   dispatchDailySignupSummaryProvider,
   enqueueSubscriptionEventProvider,
   enqueueUserRegisteredProvider,
@@ -29,6 +32,7 @@ import {
   ],
   providers: [
     adminEventNotifierProvider,
+    adminNoticeUserResolverProvider,
     enqueueUserRegisteredProvider,
     enqueueSubscriptionEventProvider,
     sendAdminNotificationProvider,
@@ -42,6 +46,10 @@ import {
     {
       provide: SIGNUP_STATS_READER,
       useClass: DrizzleSignupStatsReader,
+    },
+    {
+      provide: ADMIN_NOTICE_USER_READER,
+      useClass: DrizzleAdminNoticeUserReader,
     },
     {
       provide: ADMIN_NOTIFIER,

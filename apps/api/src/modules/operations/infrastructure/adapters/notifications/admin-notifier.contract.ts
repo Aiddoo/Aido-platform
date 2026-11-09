@@ -2,7 +2,7 @@ import type {
   AdminNotifierPort,
   AdminNotifyOutcome,
 } from "../../../application/ports/notifications/admin-notifier.port.js";
-import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import type { AdminNotice } from "../../../application/read-models/notifications/admin-notice.read-model.js";
 
 export const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
   "sent",
@@ -14,15 +14,36 @@ export const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
 ] as const;
 export type AdminNotifierContractScenario = (typeof ADMIN_NOTIFIER_CONTRACT_SCENARIOS)[number];
 
-export const CONTRACT_NOTIFICATION: AdminNotification = {
-  title: "contract-private-title",
-  body: "contract-private-body",
-  severity: "warning",
-  fields: [
-    { label: "텍스트", value: { kind: "text", text: "contract-private-field" }, inline: true },
-    { label: "시각", value: { kind: "datetime", iso: "2026-11-05T00:00:00.000Z" } },
-  ],
-  link: "https://example.com/contract-private-link",
+export const CONTRACT_NOTICE: AdminNotice = {
+  type: "message",
+  message: {
+    title: "contract-private-title",
+    body: "contract-private-body",
+    severity: "warning",
+    fields: [
+      { label: "텍스트", value: { kind: "text", text: "contract-private-field" }, inline: true },
+      { label: "시각", value: { kind: "datetime", iso: "2026-11-05T00:00:00.000Z" } },
+    ],
+    link: "https://example.com/contract-private-link",
+  },
+};
+
+/** 사용자 블록이 있는 구독 알림도 같은 계약을 지킨다. */
+export const CONTRACT_SUBSCRIPTION_NOTICE: AdminNotice = {
+  type: "subscription_event",
+  user: {
+    userId: "contract-private-user",
+    email: "contract-private@example.com",
+    nickname: "contract-private-name",
+    userTag: "CONTRACT",
+  },
+  subscription: {
+    event: "billing_issue",
+    environment: "PRODUCTION",
+    productId: "contract-private-product",
+    price: { usd: 1 },
+    customerUrl: "https://example.com/contract-private-customer",
+  },
 };
 
 const EXPECTED: Record<AdminNotifierContractScenario, AdminNotifyOutcome> = {
@@ -58,7 +79,7 @@ export function describeAdminNotifierContract(harness: AdminNotifierContractHarn
         const notifier = harness.arrange(scenario);
 
         // When
-        const outcome = await notifier.send("admin", CONTRACT_NOTIFICATION);
+        const outcome = await notifier.send("admin", CONTRACT_NOTICE);
 
         // Then
         expect(outcome).toEqual(EXPECTED[scenario]);
@@ -72,7 +93,7 @@ export function describeAdminNotifierContract(harness: AdminNotifierContractHarn
         const notifier = harness.arrange(scenario);
 
         // When
-        const outcome = await notifier.send("payment", CONTRACT_NOTIFICATION);
+        const outcome = await notifier.send("payment", CONTRACT_SUBSCRIPTION_NOTICE);
 
         // Then
         expect(JSON.stringify(outcome)).not.toContain("contract-private");

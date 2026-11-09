@@ -1,19 +1,21 @@
-import { PREMIUM_SOURCE, type StorePeriodType } from "@aido/api/vocabulary";
+import type { StorePeriodType } from "@aido/api/vocabulary";
 
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { PremiumAccess } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 import {
   type StoreLifecycleEvent,
   SubscriptionLifecyclePolicy,
 } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
+import { SubscriptionPlanPolicy } from "../../../domain/policies/subscriptions/subscription-plan.policy.js";
 import type { SubscriptionUser } from "../../ports/subscriptions/subscription.repository.port.js";
 import type {
   StoreSubscriptionChainEvent,
+  StoreSubscriptionPrice,
   SubscriptionTransferredEvent,
 } from "../../types/subscriptions/store-subscription-event.js";
 import type {
-  PremiumGrantImpact,
+  PremiumSnapshot,
   SubscriptionEventPayload,
 } from "../../types/subscriptions/subscription-event.payload.js";
 
@@ -34,12 +36,38 @@ export function periodTypeAfter(event: StoreSubscriptionChainEvent): StorePeriod
   return SubscriptionLifecyclePolicy.periodTypeAfter(lifecycleEventOf(event));
 }
 
+function priceFields(
+  price: StoreSubscriptionPrice,
+): Pick<SubscriptionEventPayload, "priceUsd" | "priceInPurchasedCurrency" | "purchasedCurrency"> {
+  return {
+    ...(price.usd != null && { priceUsd: price.usd }),
+    ...(price.amountInPurchasedCurrency != null && {
+      priceInPurchasedCurrency: price.amountInPurchasedCurrency,
+    }),
+    ...(price.purchasedCurrency != null && { purchasedCurrency: price.purchasedCurrency }),
+  };
+}
+
+function planFields(
+  productId: string | undefined,
+  key: "planType" | "newPlanType",
+): Pick<SubscriptionEventPayload, "planType" | "newPlanType"> {
+  const planType = productId == null ? null : SubscriptionPlanPolicy.planTypeOf(productId);
+  return planType == null ? {} : { [key]: planType };
+}
+
+/**
+ * 웹훅 이벤트가 준 값을 이벤트 종류와 상관없이 같은 이름으로 싣는다. 처리 단계가 확정한 값(만료 시각 등)은
+ * 호출한 곳이 덮어쓴다.
+ */
 export function baseEventPayload(
   user: SubscriptionUser,
   event: NotifiableChainEvent,
   storeSubscriptionId?: string,
 ): SubscriptionEventPayload {
   const lifecycle = SubscriptionLifecyclePolicy.classify(lifecycleEventOf(event));
+  const purchasedAt =
+    event.kind === "STARTED" || event.kind === "RENEWED" ? event.startedAt : undefined;
   return {
     userId: user.id,
     email: user.email,
@@ -47,6 +75,7 @@ export function baseEventPayload(
     kind: event.kind,
     ...(event.kind === "STARTED" && { isOneTime: event.isOneTime }),
     productId: event.productId,
+    ...planFields(event.productId, "planType"),
     store: event.store,
     ...(event.environment != null && { environment: event.environment }),
     appUserId: event.appUserId,
@@ -55,6 +84,18 @@ export function baseEventPayload(
     ...(event.periodKind != null && { periodKind: event.periodKind }),
     ...(event.details.appVersion != null && { appVersion: event.details.appVersion }),
     ...(event.details.deviceModel != null && { deviceModel: event.details.deviceModel }),
+    ...priceFields(event.price),
+    ...(purchasedAt != null && { purchasedAt: toISOString(purchasedAt) }),
+    ...(event.periodEndsAt != null && { expiresAt: toISOString(event.periodEndsAt) }),
+    ...(event.kind === "BILLING_ISSUE" &&
+      event.gracePeriodEndsAt != null && {
+        gracePeriodEndsAt: toISOString(event.gracePeriodEndsAt),
+      }),
+    ...(event.kind === "PRODUCT_CHANGE_SCHEDULED" &&
+      event.newProductId != null && {
+        newProductId: event.newProductId,
+        ...planFields(event.newProductId, "newPlanType"),
+      }),
     ...((event.kind === "CANCELLED" || event.kind === "REFUNDED" || event.kind === "EXPIRED") &&
       event.reason != null && { endReason: event.reason }),
     ...(storeSubscriptionId != null && { storeSubscriptionId }),
@@ -80,17 +121,17 @@ export function transferEventPayload(
     ...(event.environment != null && { environment: event.environment }),
     appUserId,
     ...(event.providerEventId != null && { eventId: event.providerEventId }),
+    ...(event.details.countryCode != null && { countryCode: event.details.countryCode }),
+    transfer: { from: [...event.transferredFrom], to: [...event.receivers] },
   };
 }
 
-/** 쌓아 둔 보상이 있거나 보상 기간이 이어질 때만 알림에 싣는다. */
-export function premiumGrantImpactOf(access: PremiumAccess): PremiumGrantImpact | undefined {
-  const resumed = access.source === PREMIUM_SOURCE.GRANT;
-  if (access.bankedDays === 0 && !resumed) {
-    return undefined;
-  }
+/** 이벤트를 반영한 뒤의 프리미엄 출처·보상 일수 */
+export function premiumSnapshotOf(access: PremiumAccess): PremiumSnapshot {
   return {
+    source: access.source,
+    periodEndsAt: toISOStringOrNull(access.periodEndsAt),
     bankedDays: access.bankedDays,
-    grantPeriodEndsAt: resumed ? toISOStringOrNull(access.periodEndsAt) : null,
+    isTrial: access.isTrial,
   };
 }

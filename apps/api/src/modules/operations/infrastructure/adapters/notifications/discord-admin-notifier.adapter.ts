@@ -11,7 +11,7 @@ import type {
   AdminNotifierPort,
   AdminNotifyOutcome,
 } from "../../../application/ports/notifications/admin-notifier.port.js";
-import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import type { AdminNotice } from "../../../application/read-models/notifications/admin-notice.read-model.js";
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import { renderDiscordEmbed } from "./discord-embed.renderer.js";
 import { DISCORD_WEBHOOK_POLICY } from "./discord-outbound.policy.js";
@@ -39,10 +39,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
     this.#policy = policies.get(DISCORD_WEBHOOK_POLICY);
   }
 
-  async send(
-    channel: NotificationChannel,
-    notification: AdminNotification,
-  ): Promise<AdminNotifyOutcome> {
+  async send(channel: NotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
     const webhookUrl = this.webhookUrls[channel];
     if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({
@@ -64,7 +61,7 @@ export class DiscordAdminNotifierAdapter implements AdminNotifierPort {
           signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [renderDiscordEmbed(notification, toISOString(now()))],
+            embeds: [renderDiscordEmbed(notice, toISOString(now()))],
           }),
         }),
       );

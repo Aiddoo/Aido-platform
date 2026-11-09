@@ -2,24 +2,28 @@ import { RecordingOperationalAlert } from "#test/mocks/recording-operational-ale
 
 import type { NotificationChannel } from "../../ports/notifications/admin-notification-queue.port.js";
 import type { AdminNotifyOutcome } from "../../ports/notifications/admin-notifier.port.js";
-import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
+import type { AdminNotice } from "../../read-models/notifications/admin-notice.read-model.js";
 import {
   AdminNotificationRetryableError,
   SendAdminNotification,
 } from "./send-admin-notification.use-case.js";
 
-const notification: AdminNotification = {
-  title: "synthetic-private-admin-title",
-  body: "synthetic-private-admin-body",
-  severity: "info",
+const notification: AdminNotice = {
+  type: "subscription_event",
+  user: {
+    userId: "user-1",
+    email: "synthetic-private-admin@example.com",
+    nickname: "synthetic-private-admin-name",
+  },
+  subscription: { event: "purchased", price: { usd: 1 } },
 };
 
 class StubNotifier {
-  readonly sent: { channel: NotificationChannel; notification: AdminNotification }[] = [];
+  readonly sent: { channel: NotificationChannel; notification: AdminNotice }[] = [];
 
   constructor(private readonly outcome: AdminNotifyOutcome) {}
 
-  async send(channel: NotificationChannel, sentNotification: AdminNotification) {
+  async send(channel: NotificationChannel, sentNotification: AdminNotice) {
     this.sent.push({ channel, notification: sentNotification });
     return this.outcome;
   }
@@ -63,8 +67,8 @@ describe("SendAdminNotification", () => {
       expect(notifier.sent).toEqual([{ channel, notification }]);
       expect(alert.alerts).toEqual([]);
       const logged = JSON.stringify(logger.entries);
-      expect(logged).not.toContain(notification.title);
-      expect(logged).not.toContain(notification.body);
+      expect(logged).not.toContain("synthetic-private");
+      expect(logged).toContain("subscription_event");
     },
   );
 

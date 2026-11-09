@@ -45,7 +45,7 @@ import type { SubscriptionEventPayload } from "../../types/subscriptions/subscri
 import {
   baseEventPayload,
   periodTypeAfter,
-  premiumGrantImpactOf,
+  premiumSnapshotOf,
   transferEventPayload,
 } from "./subscription-event-payload.mapper.js";
 
@@ -86,12 +86,11 @@ function chainStateOf(
   };
 }
 
-function withPremiumGrantImpact(
+function withPremium(
   payload: SubscriptionEventPayload,
   access: PremiumAccess,
 ): SubscriptionEventPayload {
-  const premiumGrantImpact = premiumGrantImpactOf(access);
-  return premiumGrantImpact == null ? payload : { ...payload, premiumGrantImpact };
+  return { ...payload, premium: premiumSnapshotOf(access) };
 }
 
 /**
@@ -257,10 +256,14 @@ export class ApplyStoreSubscriptionEvent {
         }
         const at = now();
         // 옮겨 받은 스토어 행과 보상 기간을 함께 보고 다시 계산해 보상 기간이 구독을 덮지 않게 한다
-        for (const user of [receiver, ...previousOwners]) {
-          await this.#dependencies.premiumAccessProjector.project({ userId: user.id, now: at });
+        const { access } = await this.#dependencies.premiumAccessProjector.project({
+          userId: receiver.id,
+          now: at,
+        });
+        for (const owner of previousOwners) {
+          await this.#dependencies.premiumAccessProjector.project({ userId: owner.id, now: at });
         }
-        return transferEventPayload(receiver, event, lockKey);
+        return withPremium(transferEventPayload(receiver, event, lockKey), access);
       });
 
       if (result == null) {
@@ -434,7 +437,7 @@ export class ApplyStoreSubscriptionEvent {
       ...chainStateOf(subscription),
       ...(transition.chainExpiresAt != null && { expiresAt: transition.chainExpiresAt }),
     });
-    return withPremiumGrantImpact(transition.payload, access);
+    return withPremium(transition.payload, access);
   }
 
   /**
@@ -467,7 +470,7 @@ export class ApplyStoreSubscriptionEvent {
       { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: subscription.expiresAt },
       chainStateOf(subscription),
     );
-    return withPremiumGrantImpact(payload, access);
+    return withPremium(payload, access);
   }
 
   /**
@@ -501,13 +504,10 @@ export class ApplyStoreSubscriptionEvent {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expiresAt,
     });
-    return withPremiumGrantImpact(
+    return withPremium(
       {
         ...baseEventPayload(user, event, storeSubscriptionId.value),
         expiresAt: toISOString(expiresAt),
-        priceUsd: event.price.usd,
-        priceInPurchasedCurrency: event.price.amountInPurchasedCurrency,
-        purchasedCurrency: event.price.purchasedCurrency,
       },
       access,
     );
@@ -567,13 +567,10 @@ export class ApplyStoreSubscriptionEvent {
       subscriptionExpiresAt: expiresAt,
     });
     return {
-      ...withPremiumGrantImpact(baseEventPayload(user, event, storeSubscriptionId.value), access),
+      ...withPremium(baseEventPayload(user, event, storeSubscriptionId.value), access),
       isFirstPurchase,
       purchasedAt: toISOString(startedAt),
       expiresAt: toISOString(expiresAt),
-      priceUsd: event.price.usd,
-      priceInPurchasedCurrency: event.price.amountInPurchasedCurrency,
-      purchasedCurrency: event.price.purchasedCurrency,
     };
   }
 
@@ -591,10 +588,6 @@ export class ApplyStoreSubscriptionEvent {
       subscriptionStatus: "ACTIVE",
       ...(expiresAt != null && { subscriptionExpiresAt: expiresAt }),
     };
-    const payloadWithExpiry = (): SubscriptionEventPayload => ({
-      ...payload,
-      expiresAt: expiresAt == null ? undefined : toISOString(expiresAt),
-    });
     return match(event)
       .returnType<SubscriptionTransition | null>()
       .with({ kind: "RENEWED" }, (renewed) => {
@@ -611,13 +604,7 @@ export class ApplyStoreSubscriptionEvent {
         }
         return {
           userState: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
-          payload: {
-            ...payload,
-            expiresAt: toISOString(renewalExpiresAt),
-            priceUsd: renewed.price.usd,
-            priceInPurchasedCurrency: renewed.price.amountInPurchasedCurrency,
-            purchasedCurrency: renewed.price.purchasedCurrency,
-          },
+          payload: { ...payload, expiresAt: toISOString(renewalExpiresAt) },
         };
       })
       .with({ kind: "CANCELLED" }, { kind: "REFUNDED" }, (cancelled) => {
@@ -641,14 +628,13 @@ export class ApplyStoreSubscriptionEvent {
                 subscriptionStatus: resolveCancellationUserStatus(cancellationExpiresAt),
                 subscriptionExpiresAt: cancellationExpiresAt,
               },
-          payload: payloadWithExpiry(),
+          // 해지는 이벤트에 만료 시각이 없어도 행이 아는 이용 종료 시각을 알린다
+          payload: { ...payload, expiresAt: toISOString(cancellationExpiresAt) },
           chainExpiresAt: cancellationExpiresAt,
         };
       })
       .with({ kind: "UNCANCELLED" }, () =>
-        subscription.uncancel(expiresAt, eventId)
-          ? { userState: activeUserState, payload: payloadWithExpiry() }
-          : null,
+        subscription.uncancel(expiresAt, eventId) ? { userState: activeUserState, payload } : null,
       )
       .with({ kind: "EXPIRED" }, () => {
         if (!subscription.expire(expiresAt ?? null, eventId, now())) {
@@ -665,13 +651,11 @@ export class ApplyStoreSubscriptionEvent {
           expiresAt,
           eventId,
         })
-          ? { userState: activeUserState, payload: payloadWithExpiry() }
+          ? { userState: activeUserState, payload }
           : null,
       )
       .with({ kind: "EXTENDED" }, () =>
-        subscription.extend(expiresAt, eventId)
-          ? { userState: activeUserState, payload: payloadWithExpiry() }
-          : null,
+        subscription.extend(expiresAt, eventId) ? { userState: activeUserState, payload } : null,
       )
       .exhaustive();
   }

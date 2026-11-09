@@ -105,8 +105,8 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
   });
 
   describe("SEND 잡 처리 통합 테스트", () => {
-    it("SEND 잡 admin 채널 — 포트에 admin 채널로 발송한다", async () => {
-      // Given - admin 채널로 알림 발송 잡
+    it("배포 전 큐에 남은 조립 메시지 잡도 admin 채널 일반 메시지로 발송한다", async () => {
+      // Given - 이전 형식(notification)으로 큐에 남은 admin 채널 잡
       const notification = {
         title: "신규 가입자 알림",
         body: "새로운 사용자가 가입했습니다.",
@@ -121,26 +121,26 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       await processor.process(job);
 
       // Then - 포트가 admin 채널로 호출되어야 함
-      expect(mockAdminNotifier.send).toHaveBeenCalledWith("admin", notification);
+      expect(mockAdminNotifier.send).toHaveBeenCalledWith("admin", {
+        type: "message",
+        message: notification,
+      });
     });
 
-    it("SEND 잡 payment 채널 — 포트에 payment 채널로 발송한다", async () => {
-      // Given - payment 채널로 알림 발송 잡
-      const notification = {
-        title: "결제 완료",
-        body: "구독 결제가 완료되었습니다.",
-        severity: "success",
+    it("SEND 잡 payment 채널 — 구독 알림을 그대로 payment 채널로 발송한다", async () => {
+      // Given - payment 채널로 구독 알림 발송 잡
+      const notice = {
+        type: "subscription_event",
+        user: { userId: "user-1", email: "user@example.com", userTag: "MATT2025" },
+        subscription: { event: "renewed", environment: "PRODUCTION", price: { usd: 2.99 } },
       };
-      const job = createMockJob("send-notification", {
-        channel: "payment",
-        notification,
-      });
+      const job = createMockJob("send-notification", { channel: "payment", notice });
 
       // When - 잡 처리
       await processor.process(job);
 
       // Then - 포트가 payment 채널로 호출되어야 함
-      expect(mockAdminNotifier.send).toHaveBeenCalledWith("payment", notification);
+      expect(mockAdminNotifier.send).toHaveBeenCalledWith("payment", notice);
     });
 
     it("재시도 가능한 실패 — 큐 재시도를 위해 에러가 throw된다", async () => {
@@ -152,7 +152,10 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       });
       const job = createMockJob("send-notification", {
         channel: "admin",
-        notification: { title: "테스트", body: "실패 테스트", severity: "info" },
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "실패 테스트", severity: "info" },
+        },
       });
 
       // When & Then
@@ -169,7 +172,10 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       });
       const job = createMockJob("send-notification", {
         channel: "payment",
-        notification: { title: "테스트", body: "거절 테스트", severity: "info" },
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "거절 테스트", severity: "info" },
+        },
       });
 
       // When
@@ -186,7 +192,10 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       mockAdminNotifier.send.mockResolvedValue({ status: "skipped", reason: "not_configured" });
       const job = createMockJob("send-notification", {
         channel: "admin",
-        notification: { title: "테스트", body: "미설정 테스트", severity: "info" },
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "미설정 테스트", severity: "info" },
+        },
       });
 
       // When & Then
@@ -207,9 +216,10 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       expect(mockSignupStatsReader.getSignupStats).toHaveBeenCalled();
       expect(mockQueuePort.enqueueSend).toHaveBeenCalledWith(
         "admin",
-        expect.objectContaining({
-          title: expect.stringContaining("일일 가입 리포트"),
-        }),
+        {
+          type: "message",
+          message: expect.objectContaining({ title: expect.stringContaining("일일 가입 리포트") }),
+        },
         expect.objectContaining({
           jobId: expect.stringContaining("signup-summary_"),
         }),

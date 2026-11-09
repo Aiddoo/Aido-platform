@@ -1,19 +1,16 @@
 import { match } from "ts-pattern";
 
+import type { AdminNotice } from "../../../application/read-models/notifications/admin-notice.read-model.js";
 import type {
   AdminNotification,
   AdminNotificationField,
   AdminNotificationSeverity,
 } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import { type DiscordEmbed, type DiscordEmbedField, field } from "./discord-notice.format.js";
+import { renderSignupNoticeEmbed } from "./discord-signup-notice.renderer.js";
+import { renderSubscriptionNoticeEmbed } from "./discord-subscription-notice.renderer.js";
 
-export interface DiscordEmbed {
-  readonly title: string;
-  readonly description: string;
-  readonly color: number;
-  readonly fields: readonly { name: string; value: string; inline?: boolean }[];
-  readonly url?: string;
-  readonly timestamp: string;
-}
+export type { DiscordEmbed };
 
 function severityColor(severity: AdminNotificationSeverity): number {
   return match(severity)
@@ -33,23 +30,39 @@ function formatDiscordTimestamp(iso: string): string {
   return `<t:${Math.floor(time / 1000)}:f>`;
 }
 
-function renderField(field: AdminNotificationField): DiscordEmbed["fields"][number] {
-  const value = match(field.value)
+function renderMessageField(notificationField: AdminNotificationField): DiscordEmbedField {
+  const value = match(notificationField.value)
     .with({ kind: "text" }, ({ text }) => text)
     .with({ kind: "datetime" }, ({ iso }) => formatDiscordTimestamp(iso))
     .exhaustive();
-  return field.inline == null
-    ? { name: field.label, value }
-    : { name: field.label, value, inline: field.inline };
+  const rendered = field(notificationField.label, value, notificationField.inline ?? false);
+  return notificationField.inline == null
+    ? { name: rendered.name, value: rendered.value }
+    : rendered;
 }
 
-export function renderDiscordEmbed(notification: AdminNotification, at: string): DiscordEmbed {
+function renderMessageEmbed(notification: AdminNotification, at: string): DiscordEmbed {
   return {
     title: notification.title,
     description: notification.body,
     color: severityColor(notification.severity),
-    fields: (notification.fields ?? []).map(renderField),
+    fields: (notification.fields ?? []).map(renderMessageField),
     ...(notification.link == null ? {} : { url: notification.link }),
     timestamp: at,
   };
+}
+
+/**
+ * 관리자 알림을 Discord embed 하나로 그린다. 제목·이모지·색·필드 배치·날짜 표시는 모두 이 어댑터가 정한다.
+ */
+export function renderDiscordEmbed(notice: AdminNotice, at: string): DiscordEmbed {
+  return match(notice)
+    .with({ type: "message" }, ({ message }) => renderMessageEmbed(message, at))
+    .with({ type: "user_registered" }, ({ user, signup }) =>
+      renderSignupNoticeEmbed(user, signup, at),
+    )
+    .with({ type: "subscription_event" }, ({ user, subscription }) =>
+      renderSubscriptionNoticeEmbed(user, subscription, at),
+    )
+    .exhaustive();
 }

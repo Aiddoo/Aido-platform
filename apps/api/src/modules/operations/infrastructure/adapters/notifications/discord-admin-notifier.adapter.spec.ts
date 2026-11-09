@@ -7,7 +7,7 @@ import { RecordingOperationalAlert } from "#test/mocks/recording-operational-ale
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import {
   type AdminNotifierContractScenario,
-  CONTRACT_NOTIFICATION,
+  CONTRACT_NOTICE,
   describeAdminNotifierContract,
 } from "./admin-notifier.contract.js";
 import {
@@ -92,7 +92,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     const fetch = nativeFetch.mockResolvedValue(new Response(null, { status: 204 }));
 
     // When
-    await adapter().send("payment", CONTRACT_NOTIFICATION);
+    await adapter().send("payment", CONTRACT_NOTICE);
 
     // Then
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -124,7 +124,10 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     const fetch = nativeFetch.mockResolvedValue(new Response(null, { status: 204 }));
 
     // When
-    await adapter().send("admin", { title: "가입", body: PRIVATE_BODY, severity: "success" });
+    await adapter().send("admin", {
+      type: "message",
+      message: { title: "가입", body: PRIVATE_BODY, severity: "success" },
+    });
 
     // Then
     expect(String(fetch.mock.calls[0]?.[0])).toBe(ADMIN_WEBHOOK);
@@ -135,7 +138,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     const fetch = nativeFetch.mockResolvedValue(new Response(PRIVATE_BODY, { status: 429 }));
 
     // When
-    await adapter().send("admin", CONTRACT_NOTIFICATION);
+    await adapter().send("admin", CONTRACT_NOTICE);
 
     // Then
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -159,7 +162,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     );
 
     // When
-    const pending = adapter().send("admin", CONTRACT_NOTIFICATION);
+    const pending = adapter().send("admin", CONTRACT_NOTICE);
     await vi.advanceTimersByTimeAsync(DISCORD_WEBHOOK_TIMEOUT_MS);
     const outcome = await pending;
 
@@ -175,7 +178,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
 
   it.each([undefined, ""])("미설정 URL %s는 HTTP 호출 없이 건너뛴다", async (webhook) => {
     // When
-    const outcome = await adapter({ admin: webhook }).send("admin", CONTRACT_NOTIFICATION);
+    const outcome = await adapter({ admin: webhook }).send("admin", CONTRACT_NOTICE);
 
     // Then
     expect(outcome).toEqual({ status: "skipped", reason: "not_configured" });

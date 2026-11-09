@@ -16,7 +16,7 @@ describe("renderDiscordEmbed", () => {
       const notification = { title: "제목", body: "본문", severity };
 
       // When
-      const embed = renderDiscordEmbed(notification, AT);
+      const embed = renderDiscordEmbed({ type: "message", message: notification }, AT);
 
       // Then
       expect(embed.color).toBe(color);
@@ -30,13 +30,16 @@ describe("renderDiscordEmbed", () => {
     // When
     const embed = renderDiscordEmbed(
       {
-        title: "제목",
-        body: "본문",
-        severity: "info",
-        fields: [
-          { label: "시각", value: { kind: "datetime", iso }, inline: false },
-          { label: "이름", value: { kind: "text", text: "아이도" } },
-        ],
+        type: "message",
+        message: {
+          title: "제목",
+          body: "본문",
+          severity: "info",
+          fields: [
+            { label: "시각", value: { kind: "datetime", iso }, inline: false },
+            { label: "이름", value: { kind: "text", text: "아이도" } },
+          ],
+        },
       },
       AT,
     );
@@ -58,7 +61,7 @@ describe("renderDiscordEmbed", () => {
     } as const;
 
     // When
-    const embed = renderDiscordEmbed(notification, AT);
+    const embed = renderDiscordEmbed({ type: "message", message: notification }, AT);
 
     // Then
     expect(embed.fields).toEqual([{ name: "시각", value: "not-a-date" }]);
@@ -66,7 +69,10 @@ describe("renderDiscordEmbed", () => {
 
   it("링크가 없으면 url 칸을 만들지 않고 필드가 없으면 빈 배열을 보낸다", () => {
     // When
-    const embed = renderDiscordEmbed({ title: "제목", body: "본문", severity: "info" }, AT);
+    const embed = renderDiscordEmbed(
+      { type: "message", message: { title: "제목", body: "본문", severity: "info" } },
+      AT,
+    );
 
     // Then
     expect(embed).toEqual({

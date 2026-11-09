@@ -92,7 +92,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
       return;
     }
 
-    const { channel, notification } = job.data;
-    await this.sendAdminNotification.execute(channel, notification);
+    const { channel, notice } = job.data;
+    await this.sendAdminNotification.execute(channel, notice);
   }
 }

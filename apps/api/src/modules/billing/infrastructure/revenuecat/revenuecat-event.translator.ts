@@ -73,7 +73,8 @@ function endReasonOf(reason: string | undefined): SubscriptionEndReason | null {
   return SUBSCRIPTION_END_REASONS.find((known) => known === reason) ?? "UNKNOWN";
 }
 
-function detailsOf(event: RevenueCatEvent): StoreSubscriptionEventDetails {
+// 이전 이벤트도 같은 부가 정보를 읽으므로 원문 이벤트를 넓게 받는다
+function detailsOf(event: unknown): StoreSubscriptionEventDetails {
   const parsed = revenueCatEventDetailsSchema.safeParse(event);
   if (!parsed.success) {
     return {};
@@ -149,7 +150,7 @@ function chainEventOf(event: RevenueCatEvent): StoreSubscriptionEvent {
         providerEventType: event.type,
         environment: common.environment,
         store: common.store,
-        details: {},
+        details: common.details,
         kind: "TRANSFERRED",
         receivers: [event.app_user_id, ...(event.transferred_to ?? [])],
         transferredFrom: event.transferred_from ?? [],
@@ -190,7 +191,7 @@ export function translateRevenueCatWebhook(
         providerEventType: event.type,
         environment: event.environment ?? null,
         store: storeOf(event.store),
-        details: {},
+        details: detailsOf(event),
         kind: "TRANSFERRED",
         receivers: event.transferred_to,
         transferredFrom: event.transferred_from,

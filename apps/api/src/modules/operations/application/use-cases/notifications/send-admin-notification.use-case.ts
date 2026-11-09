@@ -5,7 +5,7 @@ import { OperationsAlertKey } from "../../observability/notifications/operations
 import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
 import type { NotificationChannel } from "../../ports/notifications/admin-notification-queue.port.js";
 import { type AdminNotifierPort } from "../../ports/notifications/admin-notifier.port.js";
-import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
+import type { AdminNotice } from "../../read-models/notifications/admin-notice.read-model.js";
 
 export class AdminNotificationRetryableError extends Error {
   constructor(readonly channel: NotificationChannel) {
@@ -33,18 +33,20 @@ export class SendAdminNotification {
     this.#dependencies = dependencies;
   }
 
-  async execute(channel: NotificationChannel, notification: AdminNotification): Promise<void> {
+  async execute(channel: NotificationChannel, notice: AdminNotice): Promise<void> {
     this.#dependencies.logger.debug({
       event: OperationsNotificationsLogEvent.SEND_STARTED,
       channel,
+      noticeType: notice.type,
     });
 
-    const outcome = await this.#dependencies.notifier.send(channel, notification);
+    const outcome = await this.#dependencies.notifier.send(channel, notice);
 
     if (outcome.status === "sent") {
       this.#dependencies.logger.log({
         event: OperationsNotificationsLogEvent.SEND_COMPLETED,
         channel,
+        noticeType: notice.type,
       });
       return;
     }
