@@ -14,7 +14,7 @@ import {
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
-import { screen } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { VoiceNoteStartButton } from './voice-note-start-button';
@@ -67,5 +67,19 @@ describe('VoiceNoteStartButton 시작 요청', () => {
     expect(screen.getByTestId('voice-note-start')).toBeTruthy();
     expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
     expect(router.setParams).not.toHaveBeenCalled();
+  });
+
+  it('같은 화면에 머문 채 시작 요청이 다시 오면 또 시작한다', async () => {
+    // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderButton({ startVoiceNote: '1' });
+    await user.press(await screen.findByTestId('ai-consent-later'));
+    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+
+    // When
+    await act(async () => router.setParams({ startVoiceNote: '1' }));
+
+    // Then
+    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
   });
 });

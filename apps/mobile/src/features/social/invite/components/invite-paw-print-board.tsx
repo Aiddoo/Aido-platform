@@ -4,6 +4,7 @@ import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/us
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -22,7 +23,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
@@ -31,7 +32,6 @@ import Animated, {
   Easing,
   ReduceMotion,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -420,7 +420,7 @@ function StaticPawPrint({ state, isNext = false }: { state: PawPrintState; isNex
 
 /** 새 발자국: 크게 떠 있다가 쿵 찍히고 테두리가 퍼진다. transform·opacity만 바꾼다 */
 function PressedPawPrint({ delay }: { delay: number }) {
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const press = useSharedValue(isReducedMotion ? 1 : 0);
   const burst = useSharedValue(isReducedMotion ? 1 : 0);
 
@@ -473,13 +473,15 @@ function PressedPawPrint({ delay }: { delay: number }) {
   );
 }
 
-/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다 */
+/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다. 화면이 가려지면 UI 스레드에서 돌지 않게 멈춘다 */
 function WaitingPawPrint() {
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
+  const isFocused = useIsFocused();
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    if (isReducedMotion) {
+    if (isReducedMotion || !isFocused) {
+      rotation.set(0);
       return;
     }
 
@@ -497,7 +499,7 @@ function WaitingPawPrint() {
     );
 
     return () => cancelAnimation(rotation);
-  }, [isReducedMotion, rotation]);
+  }, [isFocused, isReducedMotion, rotation]);
 
   const wiggleStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.get()}deg` }],

@@ -72,8 +72,13 @@ function useStartRequestedVoiceNote(start: ReturnType<typeof useStartVoiceNote>)
     start().catch(reportUnexpectedError);
   });
 
+  // 요청을 지우면 다시 받을 수 있게 되돌린다. 같은 탭에 머문 채 다시 요청이 와도 또 시작한다
   useEffect(() => {
-    if (startVoiceNote == null || hasStartedRef.current) {
+    if (startVoiceNote == null) {
+      hasStartedRef.current = false;
+      return;
+    }
+    if (hasStartedRef.current) {
       return;
     }
     hasStartedRef.current = true;
