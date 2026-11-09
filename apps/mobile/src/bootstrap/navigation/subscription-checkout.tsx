@@ -118,75 +118,79 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
     <Box className="flex-1" testID="subscription-paywall">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={16} />
+          <ReadableContent>
+            <Spacing size={16} />
 
-          <PremiumNotice.GrantEnded className="mb-3" />
+            <PremiumNotice.GrantEnded className="mb-3" />
 
-          <ScallopedContainer>
-            <Box className="p-5">
-              <VStack gap={4} align="center">
-                <H2>{t('paywall.title')}</H2>
+            <ScallopedContainer>
+              <Box className="p-5">
+                <VStack gap={4} align="center">
+                  <H2>{t('paywall.title')}</H2>
 
-                <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-                  {t('paywall.subtitle')}
-                </Text>
-              </VStack>
+                  <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+                    {t('paywall.subtitle')}
+                  </Text>
+                </VStack>
 
-              <Spacing size={20} />
+                <Spacing size={20} />
 
-              <Paywall.BlockedFeature className="mb-4" />
+                <Paywall.BlockedFeature className="mb-4" />
 
-              <QueryErrorBoundary fallback={BenefitCarousel.Error}>
-                <Suspense fallback={<BenefitCarousel.Loading />}>
-                  <BenefitCarousel />
-                </Suspense>
-              </QueryErrorBoundary>
+                <QueryErrorBoundary fallback={BenefitCarousel.Error}>
+                  <Suspense fallback={<BenefitCarousel.Loading />}>
+                    <BenefitCarousel />
+                  </Suspense>
+                </QueryErrorBoundary>
 
-              <Spacing size={24} />
+                <Spacing size={24} />
 
-              <QueryErrorBoundary fallback={PlanPicker.Error}>
-                <Suspense fallback={<PlanPicker.Loading />}>
-                  <VStack gap={16}>
-                    <PlanPicker />
-                    <AmountDueToday className="px-1" />
-                    <TrialTimeline reminder={TrialReminderToggle} />
-                  </VStack>
-                </Suspense>
-              </QueryErrorBoundary>
+                <QueryErrorBoundary fallback={PlanPicker.Error}>
+                  <Suspense fallback={<PlanPicker.Loading />}>
+                    <VStack gap={16}>
+                      <PlanPicker />
+                      <AmountDueToday className="px-1" />
+                      <TrialTimeline reminder={TrialReminderToggle} />
+                    </VStack>
+                  </Suspense>
+                </QueryErrorBoundary>
 
-              <DashedDivider className="my-6" />
+                <DashedDivider className="my-6" />
 
-              <VStack gap={2}>
-                <Text size="b2" weight="bold" shade={9}>
-                  {t('planComparison.title')}
-                </Text>
-                <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
-                  {t('planComparison.hint')}
-                </Text>
-              </VStack>
+                <VStack gap={2}>
+                  <Text size="b2" weight="bold" shade={9}>
+                    {t('planComparison.title')}
+                  </Text>
+                  <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
+                    {t('planComparison.hint')}
+                  </Text>
+                </VStack>
 
-              <Spacing size={12} />
+                <Spacing size={12} />
 
-              <QueryErrorBoundary fallback={PlanComparisonTable.Error}>
-                <Suspense fallback={<PlanComparisonTable.Loading />}>
-                  <PlanComparisonTable />
-                </Suspense>
-              </QueryErrorBoundary>
-            </Box>
-          </ScallopedContainer>
+                <QueryErrorBoundary fallback={PlanComparisonTable.Error}>
+                  <Suspense fallback={<PlanComparisonTable.Loading />}>
+                    <PlanComparisonTable />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
+            </ScallopedContainer>
 
-          <Spacing size={24} />
+            <Spacing size={24} />
 
-          <VStack gap={8} className="items-center">
-            <Paywall.RenewalNotice />
-            <Paywall.Terms />
-            <RestorePurchaseButton size="small" />
-          </VStack>
+            <VStack gap={8} className="items-center">
+              <Paywall.RenewalNotice />
+              <Paywall.Terms />
+              <RestorePurchaseButton size="small" />
+            </VStack>
+          </ReadableContent>
         </StyledSafeAreaView>
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <PurchaseButton onPurchased={onPurchased} />
+        <ReadableContent>
+          <PurchaseButton onPurchased={onPurchased} />
+        </ReadableContent>
       </StyledSafeAreaView>
     </Box>
   );
@@ -211,21 +215,25 @@ SubscriptionScreen.Welcome = function Welcome({
     <Box className="flex-1">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={24} />
+          <ReadableContent>
+            <Spacing size={24} />
 
-          <SubscriptionWelcome
-            plan={plan}
-            purchasedOn={purchasedOn}
-            hadRewardOnly={hadRewardOnly}
-            reminder={TrialReminderToggle}
-          />
+            <SubscriptionWelcome
+              plan={plan}
+              purchasedOn={purchasedOn}
+              hadRewardOnly={hadRewardOnly}
+              reminder={TrialReminderToggle}
+            />
+          </ReadableContent>
         </StyledSafeAreaView>
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <Button onPress={onDone} testID="subscription-welcome-done">
-          {t('welcome.done')}
-        </Button>
+        <ReadableContent>
+          <Button onPress={onDone} testID="subscription-welcome-done">
+            {t('welcome.done')}
+          </Button>
+        </ReadableContent>
       </StyledSafeAreaView>
     </Box>
   );
@@ -242,41 +250,43 @@ SubscriptionScreen.Receipt = function Receipt() {
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
       <StyledSafeAreaView edges={['left', 'right']}>
-        <Spacing size={16} />
+        <ReadableContent>
+          <Spacing size={16} />
 
-        <PremiumNotice.Ending className="mb-3" />
+          <PremiumNotice.Ending className="mb-3" />
 
-        <SubscriptionReceipt />
+          <SubscriptionReceipt />
 
-        <Spacing size={16} />
+          <Spacing size={16} />
 
-        {match(primaryAction)
-          .with('subscribe', () => (
-            <Button
-              onPress={() =>
-                push({
-                  pathname,
-                  params: { view: 'plans' satisfies SubscriptionView },
-                })
-              }
-            >
-              {t('subscriber.subscribeAfterGrantButton')}
-            </Button>
-          ))
-          .with('manage', () => (
-            <Button onPress={openSubscriptionManagement} variant="weak" color="dark">
-              {t('subscriber.manageButton')}
-            </Button>
-          ))
-          .with(null, () => null)
-          .exhaustive()}
+          {match(primaryAction)
+            .with('subscribe', () => (
+              <Button
+                onPress={() =>
+                  push({
+                    pathname,
+                    params: { view: 'plans' satisfies SubscriptionView },
+                  })
+                }
+              >
+                {t('subscriber.subscribeAfterGrantButton')}
+              </Button>
+            ))
+            .with('manage', () => (
+              <Button onPress={openSubscriptionManagement} variant="weak" color="dark">
+                {t('subscriber.manageButton')}
+              </Button>
+            ))
+            .with(null, () => null)
+            .exhaustive()}
 
-        <Spacing size={16} />
+          <Spacing size={16} />
 
-        <VStack gap={8} className="items-center">
-          <RestorePurchaseButton size="medium" />
-          {!isOnline && <SubscriptionOfflineActionsNotice />}
-        </VStack>
+          <VStack gap={8} className="items-center">
+            <RestorePurchaseButton size="medium" />
+            {!isOnline && <SubscriptionOfflineActionsNotice />}
+          </VStack>
+        </ReadableContent>
       </StyledSafeAreaView>
     </ScrollView>
   );
@@ -299,8 +309,10 @@ SubscriptionScreen.Loading = function Loading() {
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
       <StyledSafeAreaView edges={['left', 'right']} accessibilityState={{ busy: true }}>
-        <Spacing size={16} />
-        <SubscriptionReceipt.Loading />
+        <ReadableContent>
+          <Spacing size={16} />
+          <SubscriptionReceipt.Loading />
+        </ReadableContent>
       </StyledSafeAreaView>
     </ScrollView>
   );

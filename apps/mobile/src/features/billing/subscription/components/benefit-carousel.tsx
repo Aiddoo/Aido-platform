@@ -6,6 +6,7 @@ import {
   HStack,
   type QueryErrorFallbackProps,
   QueryErrorFallback,
+  READABLE_CONTENT_MAX_WIDTH,
   Steps,
   Text,
   TextSkeleton,
@@ -51,14 +52,19 @@ const SLIDE_TONE_CLASS_NAMES = {
 } as const satisfies Record<BenefitSlideTone, string>;
 
 /** 결제 화면 좌우 여백(16)과 영수증 카드 안 여백(20). 첫 프레임 예상 폭에만 쓰고 실제 폭은 재서 맞춘다 */
-const ESTIMATED_PAGE_GUTTER = (16 + 20) * 2;
+const SCREEN_GUTTER = 16 * 2;
+const CARD_GUTTER = 20 * 2;
 
-/** 첫 프레임부터 넘기기 목록을 그려 폭을 잰 뒤 단일 카드에서 목록으로 바뀌며 그림이 다시 붙지 않게 한다 */
+/** 첫 프레임부터 넘기기 목록을 그려 폭을 잰 뒤 단일 카드에서 목록으로 바뀌며 그림이 다시 붙지 않게 한다. 넓은 창은 결제 화면이 읽기 폭으로 모은다 */
 function useEstimatedPageWidth() {
   const { width: frameWidth } = useSafeAreaFrame();
   const { left, right } = useSafeAreaInsets();
+  const contentWidth = Math.min(
+    frameWidth - left - right - SCREEN_GUTTER,
+    READABLE_CONTENT_MAX_WIDTH,
+  );
 
-  return Math.max(0, frameWidth - left - right - ESTIMATED_PAGE_GUTTER);
+  return Math.max(0, contentWidth - CARD_GUTTER);
 }
 
 /** 페이월 맨 위 AI 혜택 넘기기. 막혀서 들어온 기능의 장부터 보여 주고 저절로 넘기지 않는다 */
