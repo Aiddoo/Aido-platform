@@ -3,8 +3,11 @@ import { z } from 'zod';
 
 import { releaseSchema } from '../domains/whats-new.model';
 
+const whatsNewKeySchema = z.custom<ParseKeys<'whatsNew'>>((value) => typeof value === 'string');
+
 const releaseEntrySchema = releaseSchema.extend({
-  summaryKey: z.custom<ParseKeys<'whatsNew'>>((value) => typeof value === 'string'),
+  titleKey: whatsNewKeySchema,
+  descriptionKey: whatsNewKeySchema,
 });
 export type ReleaseEntry = z.infer<typeof releaseEntrySchema>;
 

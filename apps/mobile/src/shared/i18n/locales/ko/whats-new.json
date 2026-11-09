@@ -7,7 +7,10 @@
     "dismissLabel": "새로운 기능 카드 닫기"
   },
   "v1_15_0": {
-    "summary": "말로 할 일 만들기, 말로 메모하기",
+    "release": {
+      "title": "말만 하면 할 일과 메모로 정리해 드려요",
+      "description": "길게 말하면 할 일로 나누고, 회의를 들려주면 요약과 할 일을 찾아드려요"
+    },
     "intro": {
       "title": "말하면 아이두가 정리해요",
       "description": "새로 생긴 두 가지를 하나씩 보여드릴게요"
@@ -87,7 +90,10 @@
     }
   },
   "v1_14_0": {
-    "summary": "친구 초대",
+    "release": {
+      "title": "친구와 함께 발자국을 모아 보세요",
+      "description": "친구를 초대하면 친구도 나도 프리미엄을 받을 수 있어요"
+    },
     "friendInvite": {
       "title": "친구 초대하고 발자국 모으기",
       "description": "초대한 친구도 나도 프리미엄을 받을 수 있어요",
@@ -97,6 +103,7 @@
   "list": {
     "title": "새로운 기능",
     "newBadge": "새 기능",
+    "updatedOn": "{{date}} 업데이트",
     "unseenLabel": "아직 보지 않음"
   },
   "stage": {

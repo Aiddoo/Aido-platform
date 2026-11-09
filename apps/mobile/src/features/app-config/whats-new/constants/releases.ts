@@ -10,7 +10,8 @@ export const RELEASE_1_15_0 = {
   id: RELEASE_ID.v1_15_0,
   campaignId: WHATS_NEW_CAMPAIGN_ID,
   releasedOn: '2026-11-05',
-  summaryKey: 'v1_15_0.summary',
+  titleKey: 'v1_15_0.release.title',
+  descriptionKey: 'v1_15_0.release.description',
   requiresInvite: false,
 } satisfies ReleaseEntry;
 
@@ -18,7 +19,8 @@ export const RELEASE_1_14_0 = {
   id: RELEASE_ID.v1_14_0,
   campaignId: PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
   releasedOn: '2026-11-02',
-  summaryKey: 'v1_14_0.summary',
+  titleKey: 'v1_14_0.release.title',
+  descriptionKey: 'v1_14_0.release.description',
   requiresInvite: true,
 } satisfies ReleaseEntry;
 

@@ -19,13 +19,14 @@ describe('RELEASES', () => {
     expect(new Set(campaignIds).size).toBe(RELEASES.length);
   });
 
-  it('모든 출시에 요약 문구가 있다', () => {
+  it('모든 출시에 목록 제목과 설명 문구가 있다', () => {
     // When
-    const missingSummaryKeys = RELEASES.map((release) => release.summaryKey).filter(
-      (summaryKey) => !i18n.exists(summaryKey, { ns: 'whatsNew' }),
-    );
+    const missingKeys = RELEASES.flatMap(({ titleKey, descriptionKey }) => [
+      titleKey,
+      descriptionKey,
+    ]).filter((key) => !i18n.exists(key, { ns: 'whatsNew' }));
 
     // Then
-    expect(missingSummaryKeys).toEqual([]);
+    expect(missingKeys).toEqual([]);
   });
 });

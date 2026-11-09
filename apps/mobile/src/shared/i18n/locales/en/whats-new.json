@@ -7,7 +7,10 @@
     "dismissLabel": "Dismiss What's new card"
   },
   "v1_15_0": {
-    "summary": "Speak to add, voice notes",
+    "release": {
+      "title": "Just talk, and we'll sort it into to-dos and notes",
+      "description": "Speak freely to get to-dos, or play a meeting to get a summary and action items"
+    },
     "intro": {
       "title": "Talk, and Aido sorts it out",
       "description": "Here are two new things, one at a time"
@@ -87,7 +90,10 @@
     }
   },
   "v1_14_0": {
-    "summary": "Invite friends",
+    "release": {
+      "title": "Collect paw prints with friends",
+      "description": "Invite a friend and you can both get Premium"
+    },
     "friendInvite": {
       "title": "Invite friends, collect paws",
       "description": "You and your friend can both get Premium",
@@ -97,6 +103,7 @@
   "list": {
     "title": "What's new",
     "newBadge": "New",
+    "updatedOn": "Updated {{date}}",
     "unseenLabel": "Not viewed yet"
   },
   "stage": {
