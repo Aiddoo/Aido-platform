@@ -32,6 +32,37 @@ describe('normalizeInviteCodeInput', () => {
   });
 });
 
+describe('normalizePastedInviteCode', () => {
+  it('빈 칸에 붙여 넣으면 공백·하이픈·소문자를 맞춘 코드를 반환한다', () => {
+    // When
+    const result = InviteCodePolicy.normalizePastedInviteCode('', ' k7m-2qx ');
+
+    // Then
+    expect(result).toBe('K7M2QX');
+  });
+
+  it.each([
+    ['끝에', 'ABCDEFK7M2QX'],
+    ['가운데에', 'ABCK7M2QXDEF'],
+    ['앞에', 'K7M2QXABCDEF'],
+  ])('채운 코드 %s 붙여 넣으면 붙여 넣은 코드로 바꾼다', (_position, next) => {
+    // When
+    const result = InviteCodePolicy.normalizePastedInviteCode('ABCDEF', next);
+
+    // Then
+    expect(result).toBe('K7M2QX');
+  });
+
+  it('붙여 넣은 글자가 코드보다 짧으면 쓰던 코드에 이어 붙인다', () => {
+    // When
+    const result = InviteCodePolicy.normalizePastedInviteCode('K7', 'K7m-2qx');
+
+    // Then
+    // 붙여 넣은 'm-2qx'는 정규화하면 4자라 코드 하나를 채우지 못한다
+    expect(result).toBe('K7M2QX');
+  });
+});
+
 describe('isFilledInviteCode', () => {
   it.each([
     ['K7M2Q', false],

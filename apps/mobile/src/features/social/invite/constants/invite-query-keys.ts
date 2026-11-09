@@ -15,5 +15,4 @@ export const INVITE_QUERY_KEYS = {
     [...INVITE_QUERY_KEYS.inviteeLists(), { status: status ?? null }] as const,
   redemption: ({ inviterId }: { inviterId: string | null }) =>
     [...INVITE_QUERY_KEYS.all, 'redemption', { inviterId }] as const,
-  clipboardPresence: () => [...INVITE_QUERY_KEYS.all, 'clipboard-presence'] as const,
 } as const;

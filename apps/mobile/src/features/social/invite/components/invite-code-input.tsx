@@ -22,12 +22,14 @@ import { InviteCodePolicy } from '../domains/invite-code.model';
  * 영문 코드 자판을 띄운다. InputOTP는 inputMode(기본 numeric)를 늘 넘기고 RN은 inputMode가 있으면
  * keyboardType을 무시하므로, 마지막에 펼쳐지는 textInputProps에서 inputMode를 비운다. 소문자로 쳐도
  * InviteCodePolicy.normalizeInviteCodeInput이 대문자로 맞춘다. 초대 코드는 일회용 인증 코드가 아니므로 InputOTP 기본값(oneTimeCode)을
- * 꺼 키보드가 문자·메일 인증 번호를 제안하지 않게 한다.
+ * 꺼 키보드가 문자·메일 인증 번호를 제안하지 않게 한다. 길게 눌러 붙여 넣은 글자는 네이티브 maxLength가
+ * 먼저 자르면 하이픈이 섞인 코드가 모자라고 찬 칸에는 들어가지도 않아, 자르기는 InputOTP의 onChangeText에 맡긴다.
  */
 const CODE_TEXT_INPUT_PROPS: TextInputProps = {
   ...ASCII_CODE_TEXT_INPUT_PROPS,
   inputMode: undefined,
   textContentType: 'none',
+  maxLength: undefined,
 };
 
 const SHAKE_OFFSET = 6;
@@ -96,7 +98,7 @@ export function InviteCodeInput({
         maxLength={INVITE_CODE.LENGTH}
         value={value}
         onChange={(text) => onChange(InviteCodePolicy.normalizeInviteCodeInput(text))}
-        pasteTransformer={InviteCodePolicy.normalizeInviteCodeInput}
+        pasteTransformer={(pasted) => InviteCodePolicy.normalizePastedInviteCode(value, pasted)}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         isInvalid={isInvalid}
         textInputProps={{ ...CODE_TEXT_INPUT_PROPS, testID, ...textInputProps }}

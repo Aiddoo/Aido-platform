@@ -1,5 +1,5 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
-import { useClipboard, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
@@ -22,21 +22,6 @@ import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
 import { invalidateInviteAvailability } from './invite-cache';
-
-// 화면에 들어올 때마다 다시 확인하고, 떠나면 남기지 않는다
-export function useGetClipboardPresenceQueryOptions() {
-  const clipboard = useClipboard();
-
-  return queryOptions({
-    queryKey: INVITE_QUERY_KEYS.clipboardPresence(),
-    queryFn: () => clipboard.hasContent(),
-    // 기기 안에서만 처리해 연결 상태와 무관하다
-    networkMode: 'always',
-
-    staleTime: 0,
-    gcTime: 0,
-  });
-}
 
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
 const AVAILABILITY_STALE_TIME_MS = 5 * MINUTE_MS;

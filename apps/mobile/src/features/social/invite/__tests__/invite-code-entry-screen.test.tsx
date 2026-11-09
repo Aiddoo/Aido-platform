@@ -2,7 +2,6 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import {
   createAnalyticsStub,
-  createClipboardGatewayStub,
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
@@ -20,13 +19,6 @@ import { createInvitePreviewDto } from './invite.fixtures';
 
 const CODE = parseInviteCode('K7M2QX') ?? '';
 
-function createPasteableClipboard() {
-  const clipboard = createClipboardGatewayStub();
-  clipboard.hasContent.mockResolvedValue(true);
-  clipboard.paste.mockResolvedValue(CODE);
-  return clipboard;
-}
-
 describe('초대 코드 입력 화면', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
@@ -41,11 +33,10 @@ describe('초대 코드 입력 화면', () => {
       di: {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        clipboard: createPasteableClipboard(),
       },
       queryClient,
     });
-    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    await user.paste(await screen.findByLabelText('초대 코드'), CODE);
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 
     // When
@@ -58,7 +49,7 @@ describe('초대 코드 입력 화면', () => {
     ).toBeUndefined();
   });
 
-  it('유효한 코드를 확인하면 미리보기를 캐시에 두고 초대 카드로 이동한다', async () => {
+  it('붙여 넣은 코드의 공백·하이픈·소문자를 맞춰 확인하면 미리보기를 캐시에 두고 초대 카드로 이동한다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
@@ -69,11 +60,10 @@ describe('초대 코드 입력 화면', () => {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        clipboard: createPasteableClipboard(),
       },
       queryClient,
     });
-    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    await user.paste(await screen.findByLabelText('초대 코드'), ' k7m-2qx ');
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 
     // When
@@ -99,11 +89,10 @@ describe('초대 코드 입력 화면', () => {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        clipboard: createPasteableClipboard(),
       },
       queryClient: createTestQueryClient(),
     });
-    await user.press(await screen.findByText('복사한 코드 붙여넣기'));
+    await user.paste(await screen.findByLabelText('초대 코드'), CODE);
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
     await fireEvent(screen.getByLabelText('초대 코드'), 'submitEditing');
 
@@ -112,5 +101,23 @@ describe('초대 코드 입력 화면', () => {
 
     // Then
     expect(httpClient.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('채운 칸 뒤에 다른 코드를 붙여 넣으면 붙여 넣은 코드로 바꾼다', async () => {
+    // Given
+    const user = userEvent.setup();
+    await renderUi(<InviteCodeEntryRoute />, {
+      di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
+      queryClient: createTestQueryClient(),
+    });
+    const input = await screen.findByLabelText('초대 코드');
+    await user.paste(input, 'BCDFGH');
+
+    // When
+    // 길게 눌러 붙여 넣으면 커서 뒤에 이어 붙은 글자가 한 번에 들어온다
+    await fireEvent.changeText(input, 'BCDFGH k7m-2qx');
+
+    // Then
+    expect(input).toHaveDisplayValue(CODE);
   });
 });

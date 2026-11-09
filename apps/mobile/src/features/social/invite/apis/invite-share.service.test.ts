@@ -32,11 +32,7 @@ function createService({
   };
   const expoSystemShareGateway: Pick<SystemShareGateway, 'share'> = { share: systemShare };
   const copy = jest.fn().mockResolvedValue(undefined);
-  const clipboard: ClipboardGateway = {
-    hasContent: jest.fn(),
-    paste: jest.fn(),
-    copy,
-  };
+  const clipboard: ClipboardGateway = { copy };
   const addBreadcrumb = jest.fn();
   const errorReporter: ErrorReporter = {
     captureException: jest.fn(),

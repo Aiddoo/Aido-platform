@@ -16,10 +16,6 @@ onFlowStart:
 - extendedWaitUntil:
     visible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
     timeout: 15000
-# 붙여넣기 칩은 클립보드에 글자가 있을 때만 나타난다(조건부 요소라 optional)
-- tapOn:
-    id: invite-code-paste
-    optional: true
 - tapOn:
     id: invite-code-input
 - eraseText: 10

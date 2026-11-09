@@ -92,7 +92,7 @@ iOS는 Maestro `back`이 동작하지 않아 왼쪽 위 영역을 탭한다. 비
 
 ## 필요한 testID (앱에 추가 대기)
 
-`invite-code-input`, `invite-code-submit`, `invite-code-error`, `invite-code-paste`, `my-invite-code`,
+`invite-code-input`, `invite-code-submit`, `invite-code-error`, `my-invite-code`,
 `my-invite-rotate`, `invite-share-kakao`, `invite-share-copy-link`, `invite-share-system`, `invitees-see-all`,
 `invitees-tab-all`, `invitees-tab-waiting`, `invite-card-signup`, `invite-card-login`, `invite-card-redeem`,
 `invite-result-enter-code`, `invite-result-retry`, `invite-welcome-sheet`,

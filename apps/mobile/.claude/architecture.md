@@ -1134,7 +1134,7 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 | `SyncStorage`             | `get`·`set`·`remove`                                                                                                                                    | `storage/encrypted-draft-storage.ts`                  |
 | `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                                                             | `storage/device-sync-storage.ts`                      |
 | `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                                                                                                          | `storage/encrypted-draft-storage.ts`                  |
-| `ClipboardGateway`        | `copy`·`paste`·`hasContent`                                                                                                                             | `clipboard/expo-clipboard-gateway.ts`                 |
+| `ClipboardGateway`        | `copy`. 붙여 넣기는 입력 칸의 네이티브 메뉴에 맡긴다                                                                                                    | `clipboard/expo-clipboard-gateway.ts`                 |
 | `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                                                                                                | `linking/expo-external-link-gateway.ts`               |
 | `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                                                                                             | `linking/expo-incoming-link-gateway.ts`               |
 | `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                                                                                            | `share/expo-system-share-gateway.ts`                  |
@@ -1169,8 +1169,6 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 ```typescript
 // core/ports/clipboard-gateway.ts
 export interface ClipboardGateway {
-  hasContent(): Promise<boolean>;
-  paste(): Promise<string>;
   copy(text: string): Promise<void>;
 }
 
@@ -1178,8 +1176,6 @@ export interface ClipboardGateway {
 import * as Clipboard from 'expo-clipboard';
 
 export const expoClipboardGateway: ClipboardGateway = {
-  hasContent: () => Clipboard.hasStringAsync(),
-  paste: () => Clipboard.getStringAsync(),
   copy: async (text) => {
     await Clipboard.setStringAsync(text);
   },

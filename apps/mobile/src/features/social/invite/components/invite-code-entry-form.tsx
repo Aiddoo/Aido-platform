@@ -1,11 +1,9 @@
-import { useClipboard, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { isCodedError } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
-  CopyIcon,
   FormScrollView,
   HStack,
   InfoIcon,
@@ -16,16 +14,15 @@ import {
   Text,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
+import { onlineManager, useMutation } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
-import { type InputOTPRef, PressableFeedback } from 'heroui-native';
-import { type ComponentProps, type PropsWithChildren, useRef, useState } from 'react';
+import type { InputOTPRef } from 'heroui-native';
+import { type PropsWithChildren, useRef } from 'react';
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { InviteCodePolicy } from '../domains/invite-code.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
-import { useGetClipboardPresenceQueryOptions } from '../queries/invite.queries';
 import {
   type InvalidCharacterSummary,
   summarizeInvalidCharacters,
@@ -123,11 +120,6 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
       }
     })();
 
-  const handlePaste = (value: string) => {
-    form.clearErrors('inviteCode');
-    form.setValue('inviteCode', InviteCodePolicy.normalizeInviteCodeInput(value));
-  };
-
   return (
     <FormScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -178,97 +170,31 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
             )}
           />
 
-          <Spacing size={12} />
-
-          {errorMessage == null ? (
-            <PasteInviteCodeChip onPaste={handlePaste} />
-          ) : (
-            <HStack
-              gap={6}
-              align="center"
-              accessibilityRole="alert"
-              testID="invite-code-error"
-              accessibilityLiveRegion="polite"
-            >
-              <InfoIcon width={16} height={16} colorClassName="text-error" />
-              <Text
-                size="b4"
-                weight="semibold"
-                tone="danger"
-                lineBreakStrategyIOS="hangul-word"
-                className="flex-1"
+          {errorMessage != null && (
+            <>
+              <Spacing size={12} />
+              <HStack
+                gap={6}
+                align="center"
+                accessibilityRole="alert"
+                testID="invite-code-error"
+                accessibilityLiveRegion="polite"
               >
-                {errorMessage}
-              </Text>
-            </HStack>
+                <InfoIcon width={16} height={16} colorClassName="text-error" />
+                <Text
+                  size="b4"
+                  weight="semibold"
+                  tone="danger"
+                  lineBreakStrategyIOS="hangul-word"
+                  className="flex-1"
+                >
+                  {errorMessage}
+                </Text>
+              </HStack>
+            </>
           )}
         </ReadableContent>
       </StyledSafeAreaView>
     </FormScrollView>
-  );
-}
-
-interface PasteInviteCodeChipProps extends Omit<
-  ComponentProps<typeof PressableFeedback>,
-  'onPress' | 'children'
-> {
-  onPaste: (value: string) => void;
-}
-
-/**
- * 클립보드에 글자가 있는지만 보고 칩을 보여 준다. 실제로 읽는 건 누를 때라
- * iOS 붙여넣기 허용 배너가 화면에 들어오자마자 뜨지 않는다.
- */
-function PasteInviteCodeChip({ onPaste, ...props }: PasteInviteCodeChipProps) {
-  const clipboard = useClipboard();
-  const [hasPasted, setHasPasted] = useState(false);
-  const { data: hasClipboardText } = useQuery({
-    ...useGetClipboardPresenceQueryOptions(),
-    throwOnError: false,
-  });
-
-  const handlePaste = async () => {
-    const text = await clipboard.paste();
-    setHasPasted(true);
-    onPaste(text);
-  };
-
-  // 칩이 없어도 같은 모양을 보이지 않게 그려 글자 크기와 상관없이 오류 문구로 바뀔 때 버튼이 밀리지 않는다
-  if (hasClipboardText !== true || hasPasted) {
-    return (
-      <Box
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        className="self-start rounded-full px-3.5 py-2 opacity-0"
-      >
-        <PasteInviteCodeLabel />
-      </Box>
-    );
-  }
-
-  return (
-    <PressableFeedback
-      accessibilityRole="button"
-      testID="invite-code-paste"
-      onPress={() => handlePaste().catch(() => setHasPasted(true))}
-      className="self-start rounded-full bg-main/10 px-3.5 py-2"
-      {...props}
-    >
-      <PasteInviteCodeLabel />
-    </PressableFeedback>
-  );
-}
-
-function PasteInviteCodeLabel() {
-  const { t } = useTranslation('invite');
-
-  return (
-    <HStack gap={6} align="center">
-      <CopyIcon width={16} height={16} colorClassName="text-main" />
-      <Text size="b4" weight="semibold" tone="brand">
-        {t('codeEntry.paste')}
-      </Text>
-    </HStack>
   );
 }

@@ -36,7 +36,7 @@ export interface InviteShareContent {
 interface InviteShareServicePorts {
   socialShare: SocialShareGateway;
   systemShare: Pick<SystemShareGateway, 'share'>;
-  clipboard: Pick<ClipboardGateway, 'copy'>;
+  clipboard: ClipboardGateway;
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
 }
 
@@ -47,7 +47,7 @@ interface InviteShareServicePorts {
 export class InviteShareService {
   readonly #socialShare: SocialShareGateway;
   readonly #systemShare: Pick<SystemShareGateway, 'share'>;
-  readonly #clipboard: Pick<ClipboardGateway, 'copy'>;
+  readonly #clipboard: ClipboardGateway;
   readonly #errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
 
   readonly #channels: Record<

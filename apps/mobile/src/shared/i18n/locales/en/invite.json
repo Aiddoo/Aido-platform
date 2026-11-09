@@ -4,7 +4,6 @@
     "headline": "Enter the invite code\nyour friend sent you",
     "description": "It's 6 characters (letters and numbers), without look-alikes like 0, O, 1, I, or L",
     "inputLabel": "Invite code",
-    "paste": "Paste copied code",
     "submit": "Continue",
     "retry": "Check again",
     "invalidCharacter": {

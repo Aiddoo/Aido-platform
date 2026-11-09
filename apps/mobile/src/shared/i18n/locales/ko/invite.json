@@ -4,7 +4,6 @@
     "headline": "친구에게 받은\n초대 코드를 입력해주세요",
     "description": "영문과 숫자 6자리예요. 헷갈리는 0·O·1·I·L은 없어요",
     "inputLabel": "초대 코드",
-    "paste": "복사한 코드 붙여넣기",
     "submit": "확인",
     "retry": "다시 확인",
     "invalidCharacter": {
