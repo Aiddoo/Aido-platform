@@ -16,7 +16,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { createWhatsNewRepository } from '../apis/whats-new.repository';
@@ -97,7 +97,7 @@ describe('Release1150Steps', () => {
     ).toBe(true);
   });
 
-  it('말로 할 일 CTA는 흐름을 닫고 마이크 안내와 함께 할 일 추가 시트를 연다', async () => {
+  it('말로 할 일 CTA는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
     // Given
     const { analytics, unmount } = await renderSteps();
 
@@ -108,7 +108,7 @@ describe('Release1150Steps', () => {
     // Then
     expect(router.replace).toHaveBeenCalledWith({
       pathname: '/todo/new',
-      params: { voiceHint: '1' },
+      params: { startVoice: '1' },
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: RELEASE_1_15_0.campaignId,
@@ -125,7 +125,7 @@ describe('Release1150Steps', () => {
     );
   });
 
-  it('둘째 단계의 말로 메모 CTA는 한도·동의·권한을 지난 뒤 흐름을 닫고 녹음으로 간다', async () => {
+  it('둘째 단계의 말로 메모 CTA는 동의·권한을 묻기 전에 흐름을 닫고 메모 탭에서 시작하게 한다', async () => {
     // Given
     await renderSteps();
 
@@ -134,7 +134,10 @@ describe('Release1150Steps', () => {
     await fireEvent.press(screen.getByTestId('whats-new-step-action'));
 
     // Then
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/voice-notes/record'));
+    expect(router.replace).toHaveBeenCalledWith({
+      pathname: '/memo',
+      params: { startVoiceNote: '1' },
+    });
     expect(router.push).not.toHaveBeenCalled();
   });
 

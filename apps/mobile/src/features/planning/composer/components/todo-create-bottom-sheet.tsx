@@ -44,7 +44,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { type ComponentProps, Suspense, useEffect, useState } from 'react';
+import { type ComponentProps, Suspense, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Controller, useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
@@ -78,7 +78,7 @@ export function TodoCreateBottomSheet({ onMemoChanged }: TodoCreateBottomSheetPr
 TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSheetProps) {
   const sheet = useSheetRoute('/feed');
   const [date] = useTodoSheetDateKey();
-  const [{ categoryId: requestedCategoryId, title, time, voiceHint }] =
+  const [{ categoryId: requestedCategoryId, title, time, startVoice }] =
     useRouteParams(todoCreateParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(
@@ -108,7 +108,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
         visibility: 'PUBLIC',
         repeat: null,
       }}
-      isVoiceHintRequested={voiceHint != null}
+      isVoiceStartRequested={startVoice != null}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
       onClose={() => sheet.close()}
@@ -136,7 +136,8 @@ TodoCreateBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallba
 
 interface TodoCreateFormProps {
   defaultValues: AddTodoFormValues;
-  isVoiceHintRequested: boolean;
+  /** 새 기능 소개처럼 말하기를 권한 화면에서 왔다. 열리면 바로 동의·마이크를 거쳐 듣기 시작한다 */
+  isVoiceStartRequested: boolean;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
@@ -147,7 +148,7 @@ interface TodoCreateFormProps {
 
 function TodoCreateForm({
   defaultValues,
-  isVoiceHintRequested,
+  isVoiceStartRequested,
   isOpen,
   onOpenChange,
   onClose,
@@ -178,12 +179,23 @@ function TodoCreateForm({
 
   const voice = useAddTodoQuickVoice({ form, onExit });
   useOnScreenBlur(voice.interrupt);
-  const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
   const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
   const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
   // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
   const canSuggestVoice = aiParseQuotaType !== 'used-up';
-  const isVoiceHintShown = canSuggestVoice && (isVoiceHintRequested || isVoiceHintPending);
+  const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
+  const hasStartedRequestedVoiceRef = useRef(false);
+  const startRequestedVoice = useEffectEvent(() => {
+    voice.start().catch(reportUnexpectedError);
+  });
+  // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다
+  useEffect(() => {
+    if (!isVoiceStartRequested || !isOpen || hasStartedRequestedVoiceRef.current) {
+      return;
+    }
+    hasStartedRequestedVoiceRef.current = true;
+    startRequestedVoice();
+  }, [isVoiceStartRequested, isOpen]);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
@@ -346,7 +358,7 @@ function TodoCreateForm({
                   <BottomSheetInput
                     ref={ref}
                     // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
-                    autoFocus={!isVoiceHintShown && !voice.isRestarting}
+                    autoFocus={!isVoiceHintShown && !isVoiceStartRequested && !voice.isRestarting}
                     onFocus={() => setIsTitleFocused(true)}
                     onBlur={() => setIsTitleFocused(false)}
                     placeholder={t('add.placeholder')}
@@ -377,17 +389,8 @@ function TodoCreateForm({
                 isEnabled={canSuggestVoice && !isTitleFocused}
                 isPassThrough
                 isDismissed={hasTouchedForm}
-                isForced={isVoiceHintForced}
-                onDismiss={() => setIsVoiceHintForced(false)}
               >
-                <QuickVoiceButton
-                  onPress={() => {
-                    setIsVoiceHintForced(false);
-
-                    return voice.start();
-                  }}
-                  testID="todo-quick-voice-button"
-                />
+                <QuickVoiceButton onPress={() => voice.start()} testID="todo-quick-voice-button" />
               </CoachmarkPopover>
               <TodoComposerSubmitButton
                 isDisabled={isSubmitDisabled}

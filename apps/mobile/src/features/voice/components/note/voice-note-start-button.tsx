@@ -1,5 +1,7 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -9,8 +11,10 @@ import {
   useAdaptivePaneLayoutKey,
 } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
+import { useEffect, useEffectEvent, useRef } from 'react';
 
 import { useStartVoiceNote } from '../../hooks/use-start-voice-note';
+import { voiceNoteStartParamsSchema } from '../../schemas/voice-note-params.schema';
 
 interface VoiceNoteStartButtonProps {
   coachmarkPlacement: HintPopoverContentProps['placement'];
@@ -25,6 +29,7 @@ export function VoiceNoteStartButton({
   const fontScaledSize = useFontScaledSize();
   const start = useStartVoiceNote();
   const layoutKey = useAdaptivePaneLayoutKey();
+  useStartRequestedVoiceNote(start);
 
   return (
     <CoachmarkPopover
@@ -55,4 +60,23 @@ export function VoiceNoteStartButton({
       </PressableFeedback>
     </CoachmarkPopover>
   );
+}
+
+/** 다른 화면이 시작을 요청했으면 한 번만 버튼을 누른 것처럼 시작한다. 동의·마이크를 거절하면 메모 탭에 남아 다시 누를 수 있다 */
+function useStartRequestedVoiceNote(start: ReturnType<typeof useStartVoiceNote>) {
+  const [{ startVoiceNote }, setParams] = useRouteParams(voiceNoteStartParamsSchema);
+  const hasStartedRef = useRef(false);
+  const reportUnexpectedError = useReportUnexpectedError('voice');
+  const startRequested = useEffectEvent(() => {
+    setParams({ startVoiceNote: undefined });
+    start().catch(reportUnexpectedError);
+  });
+
+  useEffect(() => {
+    if (startVoiceNote == null || hasStartedRef.current) {
+      return;
+    }
+    hasStartedRef.current = true;
+    startRequested();
+  }, [startVoiceNote]);
 }

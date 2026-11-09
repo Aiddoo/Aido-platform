@@ -1,4 +1,3 @@
-import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-note';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Steps } from '@src/shared/ui';
@@ -28,7 +27,6 @@ export function Release1150Steps() {
   const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_15_0, source });
-  const startVoiceNote = useStartVoiceNote();
   const stepper = useStepper<Release1150StepMap>({
     id: 'whats-new-1.15.0',
     initial: { step: 'voiceTodo', context: {} },
@@ -82,7 +80,7 @@ export function Release1150Steps() {
                 actionLabel={t('v1_15_0.voiceTodo.action')}
                 onAction={() => {
                   flow.trackCta({ step: 'voiceTodo', feature: 'voice_quick' });
-                  flow.leaveTo({ pathname: '/todo/new', params: { voiceHint: '1' } });
+                  flow.leaveTo({ pathname: '/todo/new', params: { startVoice: '1' } });
                 }}
               />
             )}
@@ -99,7 +97,7 @@ export function Release1150Steps() {
                 actionLabel={t('v1_15_0.voiceNote.action')}
                 onAction={() => {
                   flow.trackCta({ step: 'voiceNote', feature: 'voice_note' });
-                  startVoiceNote({ onReadyToRecord: () => flow.leaveTo('/voice-notes/record') });
+                  flow.leaveTo({ pathname: '/memo', params: { startVoiceNote: '1' } });
                 }}
               />
             )}
