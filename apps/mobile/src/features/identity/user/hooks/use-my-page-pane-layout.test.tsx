@@ -35,7 +35,7 @@ async function renderPane() {
     getOffset: () => offset,
     growContent: (next: number) => {
       maxOffset = next;
-      view.result.current.handleContentSizeChange();
+      view.result.current.handleSizeChange();
     },
     userScrollTo: (y: number) => {
       view.result.current.handleScrollBeginDrag();

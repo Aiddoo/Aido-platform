@@ -1,4 +1,4 @@
-/** 메뉴를 그리는 곳(좁은 화면 마이 탭 첫 화면, 넓은 화면 왼쪽 칸)이 접고 펼 때 바뀌어도 같은 스크롤에서 시작하게 위치를 넘겨받는다 */
+/** 메뉴를 그리는 곳(좁은 화면 마이 탭 첫 화면, 넓은 화면 화면마다 왼쪽 칸)이 바뀌어도 같은 스크롤에서 시작하게 위치를 넘겨받는다 */
 export function createMyPagePaneLayoutStore() {
   let paneCount = 0;
   let scrollOffset = 0;

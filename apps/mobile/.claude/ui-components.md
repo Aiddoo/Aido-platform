@@ -117,6 +117,7 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
 - `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. 네이티브 Stack 헤더, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
 - `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
+- 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다.
 - Stack 화면 헤더는 네이티브 헤더와 `Stack.Toolbar` 네이티브 버튼을 쓴다. iOS가 레일·가로 바·Split View 바깥쪽으로 배치하고, 커스텀 뷰 버튼은 레일에서 빠진다([stack-header.md](../src/shared/ui/stack-header/stack-header.md)).
 
 ## Wrapper Props 계약
@@ -213,6 +214,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 
 - **창 폭으로 판단한다.** 1열·2열은 `useWindowSizeClass`(`compact`·`medium`·`expanded`)로 정한다. 기기 종류나 힌지로 레이아웃을 나누지 않는다.
 - **2열은 `AdaptivePane` 하나다.** 접기·펼치기에서 pane이 다시 마운트되지 않는다. 접힘선은 경계 위치만 맞춘다(`findVerticalFold`). 상세: [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md).
+  - 예외는 마이 탭 하나다. 상세 칸이 Stack이라 헤더를 전체 폭으로 두고 메뉴를 화면마다 본문 왼쪽 칸에 그린다(`MyPageStack`). iPadOS 세로의 떠 있는 탭 바가 칸 안 헤더의 뒤로 가기를 가리기 때문이다. [내 정보 메뉴](../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸).
 - **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
 - **`SplitView`·`ArrangementView`는 쓰지 않는다.** [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).

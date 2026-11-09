@@ -6,16 +6,14 @@ import { PlanTypeValue } from '@src/features/billing/subscription/components/pla
 import { AppIconValue } from '@src/features/device/app-icon/components/app-icon-value';
 import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
 import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
-import {
-  type MyPageMenuPlacement,
-  MyPagePaneLayout,
-} from '@src/features/identity/user/components/my-page-pane-layout';
+import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { PushStatusValue } from '@src/features/notification/components/push-status-value';
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
@@ -47,14 +45,17 @@ import {
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-/** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 왼쪽 칸이 그린다. 한 번에 하나만 그려 접고 펼 때 스크롤을 넘겨받는다 */
-export function MyPageMenuPane({ placement }: { placement: MyPageMenuPlacement }) {
+/** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 화면마다 왼쪽 칸이 그린다 */
+export function MyPageMenuPane() {
   const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();
+  const isCompact = useWindowSizeClass() === 'compact';
 
   return (
     <MyPageMenuNavigationProvider>
-      <MyPagePaneLayout placement={placement} title={<H3>{t('mypage.header')}</H3>}>
+      <MyPagePaneLayout>
+        {/* 넓은 화면은 헤더를 전체 폭으로 두어 제목이 헤더에 있다 */}
+        {isCompact && <H3>{t('mypage.header')}</H3>}
         <Spacing size={20} />
 
         <VStack gap={12}>

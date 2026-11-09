@@ -21,25 +21,7 @@ describe('AdaptivePane 컴포넌트', () => {
     expect(screen.queryByText('상세')).toBeNull();
   });
 
-  it('compactPane이 secondary면 compact에서 상세만 렌더링한다', async () => {
-    // Given
-    stubWindowDimensions(390);
-
-    // When
-    await render(
-      <AdaptivePane
-        primary={<Text>목록</Text>}
-        secondary={<Text>상세</Text>}
-        compactPane="secondary"
-      />,
-    );
-
-    // Then
-    expect(screen.queryByText('목록')).toBeNull();
-    expect(screen.getByText('상세')).toBeTruthy();
-  });
-
-  it('접기·펼치기로 size class가 바뀌어도 남아 있는 pane을 다시 마운트하지 않는다', async () => {
+  it('접기·펼치기로 size class가 바뀌어도 목록 pane을 다시 마운트하지 않는다', async () => {
     // Given
     const onMount = jest.fn();
     function MountProbe({ label }: { label: string }) {
@@ -49,11 +31,7 @@ describe('AdaptivePane 컴포넌트', () => {
       return <Text>{label}</Text>;
     }
     const createPane = () => (
-      <AdaptivePane
-        primary={<MountProbe label="목록" />}
-        secondary={<MountProbe label="상세" />}
-        compactPane="secondary"
-      />
+      <AdaptivePane primary={<MountProbe label="목록" />} secondary={<MountProbe label="상세" />} />
     );
     stubWindowDimensions(390);
     const { rerender } = await render(createPane());
@@ -65,7 +43,7 @@ describe('AdaptivePane 컴포넌트', () => {
     await rerender(createPane());
 
     // Then
-    expect(onMount.mock.calls).toEqual([['상세'], ['목록']]);
+    expect(onMount.mock.calls).toEqual([['목록'], ['상세']]);
   });
 
   it('펼친 pane은 첫 프레임부터 자기가 닿는 가장자리의 창 inset만 받는다', async () => {

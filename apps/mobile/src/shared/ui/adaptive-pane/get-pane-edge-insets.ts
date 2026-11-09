@@ -2,7 +2,7 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 
 export type PaneSlot = 'primary' | 'secondary';
 
-export function getPaneInitialInsets(
+export function getPaneEdgeInsets(
   windowInsets: EdgeInsets,
   pane: PaneSlot,
   { isRTL }: { isRTL: boolean },

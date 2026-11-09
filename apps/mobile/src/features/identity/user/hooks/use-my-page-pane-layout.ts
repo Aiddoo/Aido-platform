@@ -42,7 +42,7 @@ export function useMyPagePaneLayout() {
     }
   };
 
-  const handleContentSizeChange = () => {
+  const handleSizeChange = () => {
     if (restoreOffsetRef.current != null) {
       scrollRef.current?.scrollTo({ y: restoreOffsetRef.current, animated: false });
     }
@@ -55,7 +55,7 @@ export function useMyPagePaneLayout() {
   return {
     scrollRef,
     handleScrollEnd,
-    handleContentSizeChange,
+    handleSizeChange,
     handleScrollBeginDrag,
   };
 }

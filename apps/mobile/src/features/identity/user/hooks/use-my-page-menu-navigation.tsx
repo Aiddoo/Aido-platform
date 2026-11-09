@@ -1,6 +1,5 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { clearSplitDetailRootRequest, requestSplitDetailRoot } from '@src/shared/ui';
 import { type Href, router, usePathname } from 'expo-router';
 import {
   createContext,
@@ -12,6 +11,10 @@ import {
 } from 'react';
 import { Keyboard } from 'react-native';
 
+import {
+  clearMyPageDetailRootRequest,
+  requestMyPageDetailRoot,
+} from '../utils/my-page-detail-options';
 import { isMyPageMenuItemSelected } from '../utils/my-page-menu-navigation';
 
 export type MyPageMenuPathname = Extract<Href, string>;
@@ -53,18 +56,18 @@ export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     currentPathname.set(pathname);
-    clearSplitDetailRootRequest();
+    clearMyPageDetailRootRequest();
   }, [currentPathname, pathname]);
 
   const navigate = useSingleTap((target: Href) => {
     if (pathname === (typeof target === 'string' ? target : target.pathname)) {
       return;
     }
-    // 오른쪽 칸 입력의 키보드가 새 화면 위에 남지 않게 내린다
+    // 상세 칸 입력의 키보드가 새 화면 위에 남지 않게 내린다
     Keyboard.dismiss();
-    // 넓은 화면은 오른쪽 칸을 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
+    // 넓은 화면은 상세를 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
     if (!isCompact && router.canDismiss()) {
-      requestSplitDetailRoot(typeof target === 'string' ? target : target.pathname);
+      requestMyPageDetailRoot(typeof target === 'string' ? target : target.pathname);
       router.dismissAll();
     }
     router.push(target);
