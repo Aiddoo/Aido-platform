@@ -114,7 +114,8 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
         }
         right={
           isPremiumOnly && (
-            <Chip size="sm" variant="soft" color="accent">
+            // Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 카드가 눌리지 않는다
+            <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
               <Text size="e1" weight="semibold" tone="brand" numberOfLines={1}>
                 {t('tier.premium')}
               </Text>

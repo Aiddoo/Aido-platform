@@ -115,12 +115,18 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   );
 }
 
+/** Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 요금제가 골라지지 않는다 */
 function PlanChip({
   children,
   ...props
-}: Omit<ComponentProps<typeof Chip>, 'variant' | 'className'>) {
+}: Omit<ComponentProps<typeof Chip>, 'variant' | 'className' | 'pointerEvents'>) {
   return (
-    <Chip variant="soft" className="self-center rounded-full bg-main/10 px-2 py-0.5" {...props}>
+    <Chip
+      variant="soft"
+      className="self-center rounded-full bg-main/10 px-2 py-0.5"
+      pointerEvents="none"
+      {...props}
+    >
       <Text size="e2" weight="bold" className="text-main">
         {children}
       </Text>
