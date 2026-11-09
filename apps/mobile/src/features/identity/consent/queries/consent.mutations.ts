@@ -48,8 +48,8 @@ function revertConsentFields(
   );
 }
 
-/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다 */
-function getConsentResultKey<TKey extends string>(
+/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다. 구 서버라 둘 다 없으면 null이다 */
+function findConsentResult<TKey extends string>(
   agreedAt: Instant | null,
   withdrawnAt: Instant | null,
   keys: { agreed: TKey; withdrawn: TKey },
@@ -154,14 +154,14 @@ export function useUpdateMarketingConsentMutationOptions() {
     },
     onSuccess: (data) => {
       // 정보통신망법 50조: 동의·철회 결과를 전송자·일시와 함께 알린다. 일시는 서버가 처리한 값이고, 구 서버가 주지 않으면 알리지 않는다
-      const resultKey = getConsentResultKey(data.marketingAgreedAt, data.marketingWithdrawnAt, {
+      const result = findConsentResult(data.marketingAgreedAt, data.marketingWithdrawnAt, {
         agreed: 'notification:consentResult.marketingAgreed',
         withdrawn: 'notification:consentResult.marketingWithdrawn',
       });
-      if (resultKey != null) {
+      if (result != null) {
         toast.success(
-          t(resultKey.key, {
-            date: formatDateLabel(resultKey.at, 'fullDate', dateFormatContext),
+          t(result.key, {
+            date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
           }),
         );
       }
@@ -211,18 +211,14 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      const resultKey = getConsentResultKey(
-        data.marketingPushAgreedAt,
-        data.marketingPushWithdrawnAt,
-        {
-          agreed: 'notification:consentResult.marketingPushAgreed',
-          withdrawn: 'notification:consentResult.marketingPushWithdrawn',
-        },
-      );
-      if (resultKey != null) {
+      const result = findConsentResult(data.marketingPushAgreedAt, data.marketingPushWithdrawnAt, {
+        agreed: 'notification:consentResult.marketingPushAgreed',
+        withdrawn: 'notification:consentResult.marketingPushWithdrawn',
+      });
+      if (result != null) {
         toast.success(
-          t(resultKey.key, {
-            date: formatDateLabel(resultKey.at, 'fullDate', dateFormatContext),
+          t(result.key, {
+            date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
           }),
         );
       }

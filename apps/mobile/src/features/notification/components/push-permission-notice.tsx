@@ -11,6 +11,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Button, InlineAlert } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { match } from 'ts-pattern';
 
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
@@ -72,11 +73,20 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
     dismissNotice();
   };
 
-  return step === PUSH_PERMISSION_STEP.REQUEST_SYSTEM ? (
-    <PushPermissionNotice.RequestSystem className={className} onDismiss={dismiss} />
-  ) : (
-    <PushPermissionNotice.OpenSettings className={className} onDismiss={dismiss} />
-  );
+  return match(step)
+    .with(PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
+      <PushPermissionNotice.RequestSystem className={className} onDismiss={dismiss} />
+    ))
+    .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => (
+      <PushPermissionNotice.OpenSettings className={className} onDismiss={dismiss} />
+    ))
+    .with(
+      PUSH_PERMISSION_STEP.ASK,
+      PUSH_PERMISSION_STEP.ENABLE_IN_APP,
+      PUSH_PERMISSION_STEP.NONE,
+      () => null,
+    )
+    .exhaustive();
 }
 
 interface StepNoticeProps {
