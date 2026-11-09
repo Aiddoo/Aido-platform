@@ -206,6 +206,7 @@ toast.error(t('friend:toast.sendFailed'));
 - Row 내 텍스트 `shrink`(flexShrink), 고정 width 금지(padding 기반), 필요 시 `numberOfLines` + `ellipsizeMode`
 - en 번역은 ko 대비 ~1.4배 길이 상한 가이드
 - QA 최악 조합: **en × xlarge 글꼴 스케일**
+- 갈라지면 뜻이 흐려지는 묶음(숫자+단위 `{{amount}}\u00a0a\u00a0month`·`월\u00a0{{amount}}회`·`월\u00a0{{price}}`, 문장 속 고유 이름 `App\u00a0Store`·`Privacy\u00a0Policy`)은 카탈로그에서 줄바꿈 없는 공백(`\u00a0`)으로 잇는다. 코드에서 만드는 숫자+단위는 포매터가 같은 공백을 넣는다(`formatFileSize`)
 
 ---
 

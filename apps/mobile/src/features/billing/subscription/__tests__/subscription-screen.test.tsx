@@ -539,7 +539,7 @@ describe('구독 화면', () => {
       expect(within(amountDueToday).getByText('₩0')).toBeTruthy();
       expect(screen.getByRole('button', { name: '1개월 무료로 시작하기' })).toBeTruthy();
       expect(screen.getByTestId('subscription-trial-disclosure').props.children).toMatch(
-        /부터 연 ₩29,900 정기결제 · 언제든 해지할 수 있어요$/,
+        /부터 연\u00A0₩29,900 정기결제 · 언제든 해지할 수 있어요$/,
       );
       const timeline = screen.getByTestId('subscription-trial-timeline');
       expect(within(timeline).getByText('체험 시작')).toBeTruthy();
@@ -567,7 +567,7 @@ describe('구독 화면', () => {
       expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
       expect(screen.queryByTestId('subscription-trial-disclosure')).toBeNull();
       expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
-        '월 ₩3,900 정기결제 · 언제든 해지할 수 있어요',
+        '월\u00A0₩3,900 정기결제 · 언제든 해지할 수 있어요',
       );
       const amountDueToday = screen.getByTestId('subscription-amount-due-today');
       expect(within(amountDueToday).getByText('₩3,900')).toBeTruthy();
@@ -601,7 +601,7 @@ describe('구독 화면', () => {
       const amountDueToday = screen.getByTestId('subscription-amount-due-today');
       expect(within(amountDueToday).getByText('₩29,900')).toBeTruthy();
       expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
-        '연 ₩29,900 정기결제 · 언제든 해지할 수 있어요',
+        '연\u00A0₩29,900 정기결제 · 언제든 해지할 수 있어요',
       );
     });
 

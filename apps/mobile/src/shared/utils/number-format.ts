@@ -3,20 +3,6 @@ import type { ResolvedLanguage } from '@src/shared/preferences/language.preferen
 import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-const ZERO_DECIMAL_CURRENCIES = new Set(['KRW', 'JPY']);
-
-const CURRENCY_LOCALE_MAP: Record<string, string> = {
-  KRW: 'ko-KR',
-  JPY: 'ja-JP',
-  USD: 'en-US',
-  EUR: 'de-DE',
-  GBP: 'en-GB',
-  CNY: 'zh-CN',
-  TWD: 'zh-TW',
-  CAD: 'en-CA',
-  AUD: 'en-AU',
-};
-
 /** 이보다 크면 자릿수가 계속 늘어 옆 요소를 밀어낸다 */
 export const COUNT_BADGE_MAX = 99;
 
@@ -85,15 +71,18 @@ export function formatCount(value: number, locale: DateFormatContext['locale']):
 
 const BYTES_PER_UNIT = 1_000;
 
+/** 숫자와 단위가 줄바꿈으로 갈라지지 않는 공백(SI 표기) */
+const NUMBER_UNIT_SPACE = '\u00A0';
+
 /** 휴대폰 저장 공간과 같은 1,000 단위다 */
 export function formatFileSize(bytes: number, locale: DateFormatContext['locale']): string {
   const megabytes = bytes / BYTES_PER_UNIT ** 2;
   if (megabytes < 1) {
-    return `${formatCount(Math.ceil(bytes / BYTES_PER_UNIT), locale)}KB`;
+    return `${formatCount(Math.ceil(bytes / BYTES_PER_UNIT), locale)}${NUMBER_UNIT_SPACE}KB`;
   }
   return megabytes < BYTES_PER_UNIT
-    ? `${formatDecimal(megabytes, locale)}MB`
-    : `${formatDecimal(megabytes / BYTES_PER_UNIT, locale)}GB`;
+    ? `${formatDecimal(megabytes, locale)}${NUMBER_UNIT_SPACE}MB`
+    : `${formatDecimal(megabytes / BYTES_PER_UNIT, locale)}${NUMBER_UNIT_SPACE}GB`;
 }
 
 export function formatDecimal(
@@ -105,12 +94,4 @@ export function formatDecimal(
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
-}
-
-export function formatPrice(amount: number, currencyCode: string) {
-  return new Intl.NumberFormat(CURRENCY_LOCALE_MAP[currencyCode] ?? 'en-US', {
-    style: 'currency',
-    currency: currencyCode,
-    maximumFractionDigits: ZERO_DECIMAL_CURRENCIES.has(currencyCode) ? 0 : 2,
-  }).format(amount);
 }

@@ -4,7 +4,6 @@ import {
   formatCompactCount,
   formatDecimal,
   formatPercent,
-  formatPrice,
   formatFileSize,
 } from './number-format';
 
@@ -39,44 +38,6 @@ describe('formatPercent', () => {
 
     // Then
     expect(results).toEqual(['83', '8']);
-  });
-});
-
-describe('formatPrice', () => {
-  it('KRW는 소수점 없이 한국 로케일로 포맷한다', () => {
-    // When
-    const result = formatPrice(8_900, 'KRW');
-
-    // Then
-    expect(result).toContain('8,900');
-    expect(result).toContain('₩');
-  });
-
-  it('USD는 소수점 2자리로 미국 로케일로 포맷한다', () => {
-    // When
-    const result = formatPrice(6.99, 'USD');
-
-    // Then
-    expect(result).toContain('6.99');
-    expect(result).toContain('$');
-    expect(result).not.toContain('US$');
-  });
-
-  it('JPY는 소수점 없이 일본 로케일로 포맷한다', () => {
-    // When
-    const result = formatPrice(1_200, 'JPY');
-
-    // Then
-    expect(result).toContain('1,200');
-    expect(result).toContain('￥');
-  });
-
-  it('매핑되지 않은 통화도 en-US 폴백으로 포맷해 값을 반환한다', () => {
-    // When
-    const result = formatPrice(100, 'BRL');
-
-    // Then
-    expect(result).toBeDefined();
   });
 });
 
@@ -155,12 +116,12 @@ describe('formatDecimal', () => {
 
 describe('formatFileSize', () => {
   it.each([
-    [0, '0KB'],
-    [1, '1KB'],
-    [999_000, '999KB'],
-    [2_500_000, '2.5MB'],
-    [1_200_000_000, '1.2GB'],
-  ])('%d바이트는 %s로 보인다', (bytes, expected) => {
+    [0, '0\u00A0KB'],
+    [1, '1\u00A0KB'],
+    [999_000, '999\u00A0KB'],
+    [2_500_000, '2.5\u00A0MB'],
+    [1_200_000_000, '1.2\u00A0GB'],
+  ])('%d바이트는 숫자와 단위 사이를 줄바꿈 없는 공백으로 띄워 %s로 보인다', (bytes, expected) => {
     // Given
     const locale = 'ko-KR';
 

@@ -76,7 +76,7 @@ describe('녹음 저장 공간', () => {
     const total = await screen.findByTestId('voice-storage-total');
 
     // Then
-    expect(total).toHaveTextContent('2.5MB');
+    expect(total).toHaveTextContent('2.5 MB');
     expect(screen.getByText('주간 회의')).toBeTruthy();
   });
 
@@ -101,7 +101,7 @@ describe('녹음 저장 공간', () => {
 
     // Then
     expect(empty).toBeTruthy();
-    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0KB');
+    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0 KB');
     expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
   });
 
@@ -114,7 +114,9 @@ describe('녹음 저장 공간', () => {
     await fireEvent.press(await screen.findByText('삭제'));
 
     // Then
-    await waitFor(() => expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0KB'));
+    await waitFor(() =>
+      expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0 KB'),
+    );
     const note = storage.drafts.find(ACCOUNT_ID, 'draft-1');
     expect(note?.recordings).toEqual([]);
     expect(note?.digest?.title).toBe('주간 회의');
@@ -132,6 +134,6 @@ describe('녹음 저장 공간', () => {
 
     // Then
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(true);
-    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('2.5MB');
+    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('2.5 MB');
   });
 });

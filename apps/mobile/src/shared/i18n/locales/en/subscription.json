@@ -30,19 +30,19 @@
   "benefits": {
     "aiParsing": {
       "title": "More AI to-dos",
-      "description": "{{free}} a month on Free, up to {{premium}} a month with Premium"
+      "description": "{{free}}\u00a0a\u00a0month on Free, up to {{premium}}\u00a0a\u00a0month with Premium"
     },
     "voiceNote": {
-      "title": "Voice notes: {{premium}} a month, {{premiumMinutes}} min each",
-      "description": "{{free}} a month, {{freeMinutes}} min each on Free. {{premium}} a month, {{premiumMinutes}} min each with Premium"
+      "title": "Voice notes: {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each",
+      "description": "{{free}}\u00a0a\u00a0month, {{freeMinutes}}\u00a0min each on Free. {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each with Premium"
     },
     "nudge": {
       "title": "Unlimited nudges",
-      "description": "{{free}} a day on Free, unlimited with Premium"
+      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
     },
     "cheer": {
       "title": "Unlimited cheers",
-      "description": "{{free}} a day on Free, unlimited with Premium"
+      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
     },
     "reminder": {
       "title": "Choose your reminder times",
@@ -57,7 +57,7 @@
       "description": "{{free}} on Free, unlimited with Premium"
     },
     "categories": {
-      "title": "Up to {{premium}} categories",
+      "title": "Up to {{premium}}\u00a0categories",
       "description": "{{free}} on Free, up to {{premium}} with Premium"
     },
     "aiRepeat": {
@@ -90,13 +90,13 @@
     "trialDisclosure": "Billed {{price}} from {{date}} · Cancel anytime",
     "renewalDisclosure": "Billed {{price}} · Cancel anytime",
     "renewalNotice": {
-      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
-      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
+      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App\u00a0Store subscription settings.",
+      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google\u00a0Play subscription settings."
     },
     "termsPrefix": "By purchasing, you agree to the ",
-    "termsLink": "Terms of Service",
+    "termsLink": "Terms\u00a0of\u00a0Service",
     "termsAnd": " and ",
-    "privacyLink": "Privacy Policy",
+    "privacyLink": "Privacy\u00a0Policy",
     "termsSuffix": ".",
     "amountDueToday": "Due today",
     "benefitChip": "Benefit {{index}}",
@@ -259,10 +259,10 @@
     "premium": "Premium",
     "unlimited": "Unlimited",
     "amount": {
-      "perMonth": "{{amount}} a month",
-      "perDay": "{{amount}} a day",
-      "people": "{{amount}} friends",
-      "items": "{{amount}} categories"
+      "perMonth": "{{amount}}\u00a0a\u00a0month",
+      "perDay": "{{amount}}\u00a0a\u00a0day",
+      "people": "{{amount}}\u00a0friends",
+      "items": "{{amount}}\u00a0categories"
     }
   },
   "benefitSlides": {

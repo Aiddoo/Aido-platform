@@ -1,7 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatPrice } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -11,6 +10,7 @@ import { FREE_TRIAL_PERIOD_LABEL_KEYS } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { formatPlanAmount } from '../utils/plan-price.view-model';
 
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 
@@ -104,7 +104,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
             >
               {monthlyEquivalent != null
                 ? t('plan.monthlyEquivalent', {
-                    price: formatPrice(monthlyEquivalent, plan.currencyCode),
+                    price: formatPlanAmount(plan, monthlyEquivalent),
                   })
                 : '\u00A0'}
             </Text>

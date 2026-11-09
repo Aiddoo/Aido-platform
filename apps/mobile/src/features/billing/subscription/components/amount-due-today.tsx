@@ -1,12 +1,12 @@
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text } from '@src/shared/ui';
-import { formatPrice } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { formatPlanAmount } from '../utils/plan-price.view-model';
 
 export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'children'>) {
   const { t } = useTranslation('subscription');
@@ -33,7 +33,7 @@ export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'child
         {t('paywall.amountDueToday')}
       </Text>
       <Text size="t2" weight="bold" shade={9} className="tabular-nums">
-        {formatPrice(SubscriptionPolicy.getAmountDueToday(plan), plan.currencyCode)}
+        {formatPlanAmount(plan, SubscriptionPolicy.getAmountDueToday(plan))}
       </Text>
     </HStack>
   );
