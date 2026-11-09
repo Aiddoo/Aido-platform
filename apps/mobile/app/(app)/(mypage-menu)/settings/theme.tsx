@@ -3,13 +3,12 @@ import { useTranslation } from '@src/shared/i18n';
 import { isThemeMode } from '@src/shared/preferences/theme-mode.preference';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
-  DeviceIcon,
-  MoonFilledIcon,
+  DeviceDuoIcon,
+  MoonDuoIcon,
   SettingsListGroup,
   SettingsScreenLayout,
-  SunIcon,
+  SunDuoIcon,
 } from '@src/shared/ui';
-import { IconRadioItem } from '@src/shared/ui/icon-radio-item';
 import { RadioGroup } from 'heroui-native';
 
 function ThemeSettingsScreen() {
@@ -27,13 +26,26 @@ function ThemeSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <SettingsListGroup>
+      <SettingsListGroup label={t('theme.label')}>
         <RadioGroup value={mode} onValueChange={handleThemeChange} className="gap-0">
-          <IconRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
+          <SettingsListGroup.Radio
+            value="system"
+            label={t('theme.system')}
+            description={t('theme.systemDescription')}
+            icon={<SettingsListGroup.Icon Icon={DeviceDuoIcon} />}
+          />
           <SettingsListGroup.Separator />
-          <IconRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
+          <SettingsListGroup.Radio
+            value="light"
+            label={t('theme.light')}
+            icon={<SettingsListGroup.Icon Icon={SunDuoIcon} />}
+          />
           <SettingsListGroup.Separator />
-          <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonFilledIcon} />
+          <SettingsListGroup.Radio
+            value="dark"
+            label={t('theme.dark')}
+            icon={<SettingsListGroup.Icon Icon={MoonDuoIcon} />}
+          />
         </RadioGroup>
       </SettingsListGroup>
     </SettingsScreenLayout>

@@ -17,21 +17,27 @@
     "voiceStorage": "Recording storage"
   },
   "language": {
+    "label": "App language",
     "system": "System default",
     "systemDescription": "Follows your device language"
   },
   "theme": {
+    "label": "Appearance",
     "light": "Light mode",
     "dark": "Dark mode",
-    "system": "System default"
+    "system": "System default",
+    "systemDescription": "Matches your device setting"
   },
   "fontSize": {
+    "label": "Size",
+    "previewLabel": "Preview",
+    "previewTitle": "Ready to check off today's to-dos?",
+    "previewDescription": "The size you pick applies across the app right away",
     "xsmall": "Extra small",
     "small": "Small",
     "medium": "Medium",
     "large": "Large",
-    "xlarge": "Extra large",
-    "sample": "The quick brown fox 123"
+    "xlarge": "Extra large"
   },
   "terms": {
     "termsOfService": "Terms of Service",

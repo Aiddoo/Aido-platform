@@ -1,7 +1,7 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
-import { ControlField, ListGroup, Separator, Skeleton } from 'heroui-native';
+import { ControlField, ListGroup, Radio, RadioGroup, Separator, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -10,6 +10,7 @@ import { HStack } from '../h-stack';
 import { ArrowRightIcon, type StyledIcon } from '../icon';
 import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
 import { ReadableContent } from '../readable-content';
+import { Result } from '../result';
 import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { Text, TextSkeleton } from '../text';
 import { VStack } from '../v-stack';
@@ -26,13 +27,17 @@ export function SettingsListGroup({
 }: SettingsListGroupProps) {
   return (
     <ListGroup variant="transparent" className={cn('rounded-2xl bg-gray-1', className)} {...props}>
-      {label != null && (
-        <Text size="b2" weight="semibold" shade={9} className="px-4 pt-4 pb-1">
-          {label}
-        </Text>
-      )}
+      {label != null && <SettingsListGroupLabel label={label} />}
       {children}
     </ListGroup>
+  );
+}
+
+function SettingsListGroupLabel({ label }: { label: string }) {
+  return (
+    <Text size="b2" weight="semibold" shade={9} className="px-4 pt-4 pb-1">
+      {label}
+    </Text>
   );
 }
 
@@ -191,9 +196,63 @@ function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
   );
 }
 
+interface SettingsListGroupRadioProps extends Omit<
+  ComponentProps<typeof RadioGroup.Item>,
+  'children'
+> {
+  label: string;
+  description?: string;
+  icon?: ReactNode;
+}
+
+/** `RadioGroup` 안에서 `.Item`과 같은 글자·여백으로 고르는 행. 오른쪽 화살표 자리에 라디오를 둔다 */
+function SettingsListGroupRadio({
+  label,
+  description,
+  icon,
+  className,
+  ...props
+}: SettingsListGroupRadioProps) {
+  return (
+    <RadioGroup.Item
+      className={cn(
+        'min-h-12 px-4 py-3 active:bg-gray-3 disabled:opacity-40 dark:active:bg-gray-2',
+        className,
+      )}
+      {...props}
+    >
+      {icon}
+      <Box className="flex-1 gap-0.5">
+        <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">
+          {label}
+        </Text>
+        {description != null && (
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {description}
+          </Text>
+        )}
+      </Box>
+      <Radio />
+    </RadioGroup.Item>
+  );
+}
+
+SettingsListGroupRadio.Loading = function Loading({ icon }: { icon?: ReactNode }) {
+  return (
+    <HStack align="center" gap={12} className="min-h-12 px-4 py-3">
+      {icon}
+      <VStack flex={1}>
+        <TextSkeleton size="b2" className="w-24" />
+      </VStack>
+      <Skeleton className="size-6 rounded-full" />
+    </HStack>
+  );
+};
+
 SettingsListGroup.Item = SettingsListGroupItem;
 SettingsListGroup.Icon = SettingsListGroupIcon;
 SettingsListGroup.Toggle = SettingsListGroupToggle;
+SettingsListGroup.Radio = SettingsListGroupRadio;
 
 SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;
@@ -206,6 +265,14 @@ SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackPr
         <QueryErrorFallback className="py-4" illustrationSize="block" reset={reset} />
       </SettingsListGroup.Content>
     </SettingsListGroup>
+  );
+};
+
+SettingsListGroup.Empty = function Empty(props: ComponentProps<typeof Result>) {
+  return (
+    <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
+      <Result {...props} />
+    </Box>
   );
 };
 

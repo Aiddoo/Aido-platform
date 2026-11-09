@@ -1,11 +1,9 @@
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
+import { isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { Box, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
-import { SCALED_FONT_STYLES } from '@src/shared/utils/scaled-font-style';
-import { Radio, RadioGroup } from 'heroui-native';
-import { Text as RNText } from 'react-native';
+import { SettingsListGroup, SettingsScreenLayout, Text } from '@src/shared/ui';
+import { RadioGroup } from 'heroui-native';
 
 function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
@@ -22,17 +20,29 @@ function FontSizeSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <SettingsListGroup>
+      {/* 고르는 즉시 앱 전체 글꼴이 바뀌어 미리 보기도 고른 크기로 다시 그려진다 */}
+      <SettingsListGroup label={t('fontSize.previewLabel')}>
+        <SettingsListGroup.Content gap={2}>
+          <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">
+            {t('fontSize.previewTitle')}
+          </Text>
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('fontSize.previewDescription')}
+          </Text>
+        </SettingsListGroup.Content>
+      </SettingsListGroup>
+
+      <SettingsListGroup label={t('fontSize.label')}>
         <RadioGroup value={fontScale} onValueChange={handleChange} className="gap-0">
-          <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
+          <SettingsListGroup.Radio value="xsmall" label={t('fontSize.xsmall')} />
           <SettingsListGroup.Separator />
-          <FontScaleRadioItem value="small" label={t('fontSize.small')} />
+          <SettingsListGroup.Radio value="small" label={t('fontSize.small')} />
           <SettingsListGroup.Separator />
-          <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
+          <SettingsListGroup.Radio value="medium" label={t('fontSize.medium')} />
           <SettingsListGroup.Separator />
-          <FontScaleRadioItem value="large" label={t('fontSize.large')} />
+          <SettingsListGroup.Radio value="large" label={t('fontSize.large')} />
           <SettingsListGroup.Separator />
-          <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
+          <SettingsListGroup.Radio value="xlarge" label={t('fontSize.xlarge')} />
         </RadioGroup>
       </SettingsListGroup>
     </SettingsScreenLayout>
@@ -40,35 +50,3 @@ function FontSizeSettingsScreen() {
 }
 
 export default FontSizeSettingsScreen;
-
-interface FontScaleRadioItemProps {
-  value: FontScale;
-  label: string;
-}
-
-function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
-  const { t } = useTranslation('settings');
-  const sample = t('fontSize.sample');
-
-  return (
-    <RadioGroup.Item value={value}>
-      {() => (
-        <Box className="flex-row items-center gap-3 px-4 py-4">
-          <Box className="flex-1 gap-1">
-            <RNText allowFontScaling={false} className="text-b3 font-semibold text-foreground">
-              {label}
-            </RNText>
-            <RNText
-              allowFontScaling={false}
-              className="text-gray-6 font-normal"
-              style={SCALED_FONT_STYLES[value]}
-            >
-              {sample}
-            </RNText>
-          </Box>
-          <Radio />
-        </Box>
-      )}
-    </RadioGroup.Item>
-  );
-}

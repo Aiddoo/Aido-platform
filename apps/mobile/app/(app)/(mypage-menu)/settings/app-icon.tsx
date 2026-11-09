@@ -2,11 +2,10 @@ import { useAppIconService } from '@src/bootstrap/providers/di-context';
 import { AppIconSelector } from '@src/features/device/app-icon/components/app-icon-selector';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  HStack,
+  AppIconDuoIcon,
   QueryErrorBoundary,
   SettingsListGroup,
   SettingsScreenLayout,
-  Text,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -17,31 +16,22 @@ export default function AppIconScreen() {
   const isAvailable = useAppIconService().isAvailable();
 
   return (
-    <SettingsScreenLayout gap={8}>
+    <SettingsScreenLayout>
       {match(isAvailable)
         .with(false, () => (
-          <HStack justify="center" align="center">
-            <Text size="b4" shade={6}>
-              {t('screen.unsupported')}
-            </Text>
-          </HStack>
+          <SettingsListGroup.Empty
+            icon={<SettingsListGroup.Icon Icon={AppIconDuoIcon} />}
+            title={t('screen.unsupported')}
+          />
         ))
         .with(true, () => (
-          <>
-            <Text size="b4" shade={6} className="px-2">
-              {t('screen.chooseIcon')}
-            </Text>
-
-            <SettingsListGroup>
-              <SettingsListGroup.Content>
-                <QueryErrorBoundary fallback={AppIconSelector.Error}>
-                  <Suspense fallback={<AppIconSelector.Loading />}>
-                    <AppIconSelector />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </SettingsListGroup.Content>
-            </SettingsListGroup>
-          </>
+          <SettingsListGroup label={t('screen.label')}>
+            <QueryErrorBoundary fallback={AppIconSelector.Error}>
+              <Suspense fallback={<AppIconSelector.Loading />}>
+                <AppIconSelector />
+              </Suspense>
+            </QueryErrorBoundary>
+          </SettingsListGroup>
         ))
         .exhaustive()}
     </SettingsScreenLayout>

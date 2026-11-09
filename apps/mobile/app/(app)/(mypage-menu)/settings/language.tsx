@@ -3,13 +3,12 @@ import { useTranslation } from '@src/shared/i18n';
 import { isLanguageMode } from '@src/shared/preferences/language.preference';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
-  DeviceIcon,
-  EnglishIcon,
-  KoreanIcon,
+  DeviceDuoIcon,
+  EnglishDuoIcon,
+  KoreanDuoIcon,
   SettingsListGroup,
   SettingsScreenLayout,
 } from '@src/shared/ui';
-import { IconRadioItem } from '@src/shared/ui/icon-radio-item';
 import { RadioGroup } from 'heroui-native';
 
 function LanguageSettingsScreen() {
@@ -27,23 +26,28 @@ function LanguageSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <SettingsListGroup>
+      <SettingsListGroup label={t('language.label')}>
         <RadioGroup value={languageMode} onValueChange={handleChange} className="gap-0">
-          <IconRadioItem
+          <SettingsListGroup.Radio
             value="system"
             label={t('language.system')}
             description={t('language.systemDescription')}
-            Icon={DeviceIcon}
+            icon={<SettingsListGroup.Icon Icon={DeviceDuoIcon} />}
             testID="language-option-system"
           />
           <SettingsListGroup.Separator />
-          {/* 언어 이름은 해당 언어로 고정 표기한다 (번역하지 않음) */}
-          <IconRadioItem value="ko" label="한국어" Icon={KoreanIcon} testID="language-option-ko" />
+          {/* 언어 이름은 그 언어를 읽는 사람이 찾도록 번역하지 않는다 */}
+          <SettingsListGroup.Radio
+            value="ko"
+            label="한국어"
+            icon={<SettingsListGroup.Icon Icon={KoreanDuoIcon} />}
+            testID="language-option-ko"
+          />
           <SettingsListGroup.Separator />
-          <IconRadioItem
+          <SettingsListGroup.Radio
             value="en"
             label="English"
-            Icon={EnglishIcon}
+            icon={<SettingsListGroup.Icon Icon={EnglishDuoIcon} />}
             testID="language-option-en"
           />
         </RadioGroup>

@@ -10,8 +10,8 @@ import { IconRadioItem } from '@src/shared/ui';
 import { RadioGroup } from 'heroui-native';
 
 <RadioGroup value={mode} onValueChange={setMode}>
-  <IconRadioItem value="light" label="라이트" Icon={SunIcon} />
-  <IconRadioItem value="dark" label="다크" Icon={MoonFilledIcon} />
+  <IconRadioItem value="morning" label="아침" Icon={SunIcon} />
+  <IconRadioItem value="rain" label="비 오는 날" Icon={WeatherRainIcon} />
   <IconRadioItem value="plain" label="아이콘 없음" description="설명" />
 </RadioGroup>;
 ```

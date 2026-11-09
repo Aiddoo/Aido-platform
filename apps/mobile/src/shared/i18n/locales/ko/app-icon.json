@@ -12,7 +12,7 @@
   },
   "screen": {
     "unsupported": "이 기기에서는 앱 아이콘 변경을 지원하지 않아요",
-    "chooseIcon": "홈 화면에 표시될 앱 아이콘을 선택하세요"
+    "label": "홈 화면 아이콘"
   },
   "restartDialog": {
     "title": "앱 아이콘 변경",

@@ -22,6 +22,25 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 행은 `map`으로 돌리지 않고 나란히 둬요. 기획이 바뀌면 그 줄만 고치면 돼요.
 
+### 하나 고르기
+
+테마·글꼴 크기·언어·앱 아이콘처럼 하나를 고르는 화면은 heroui `RadioGroup`(`className="gap-0"`)을 카드 안에 두고 `.Radio`를 나란히 써요. 값은 `RadioGroup`의 `value`/`onValueChange`로 주고받아요.
+
+```tsx
+<SettingsListGroup label={t('theme.label')}>
+  <RadioGroup value={mode} onValueChange={handleChange} className="gap-0">
+    <SettingsListGroup.Radio
+      value="system"
+      label={t('theme.system')}
+      description={t('theme.systemDescription')}
+      icon={<SettingsListGroup.Icon Icon={DeviceDuoIcon} />}
+    />
+    <SettingsListGroup.Separator />
+    <SettingsListGroup.Radio value="light" label={t('theme.light')} />
+  </RadioGroup>
+</SettingsListGroup>
+```
+
 ### 로딩
 
 `.Item.Loading`·`.Toggle.Loading`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 `fallback={SettingsListGroup.Error}`로 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
@@ -86,6 +105,26 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 | ---------------- | --------- | ------- | ----------------------- |
 | `hasDescription` | `boolean` | `false` | 보조 설명 줄까지 잡을지 |
 
+### SettingsListGroup.Radio
+
+`RadioGroup.Item` props와 같아요(`value`, `isDisabled`, `testID` 등). `.Item`과 같은 글자·여백에 오른쪽 화살표 자리만 heroui `Radio`예요. `children`은 이 컴포넌트가 채워요.
+
+| Prop          | Type        | Default | Description                                                  |
+| ------------- | ----------- | ------- | ------------------------------------------------------------ |
+| `label`       | `string`    | -       | 항목 제목                                                    |
+| `description` | `string`    | -       | 제목 아래 보조 설명(b4)                                      |
+| `icon`        | `ReactNode` | -       | 앞 아이콘. 보통 `<SettingsListGroup.Icon Icon={XDuoIcon} />` |
+
+### SettingsListGroup.Radio.Loading
+
+| Prop   | Type        | Default | Description             |
+| ------ | ----------- | ------- | ----------------------- |
+| `icon` | `ReactNode` | -       | 앞 아이콘 자리 스켈레톤 |
+
+### SettingsListGroup.Empty
+
+`Result` props와 같아요(`icon`, `title`, `description`, `testID`). 빈 목록을 점선 카드 안에 그려요.
+
 ### SettingsListGroup.Content
 
 행 모양이 아닌 내용을 행과 같은 여백으로 담아요. `VStack` props와 같아요.
@@ -107,6 +146,6 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 ```
 settings-list-group/
 ├── index.ts
-├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, 스켈레톤, SettingsScreenLayout
+├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, .Radio, .Empty, 스켈레톤, SettingsScreenLayout
 └── settings-list-group.md
 ```
