@@ -60,6 +60,7 @@
     "timeFormat24": "24-hour time",
     "on": "On",
     "off": "Off",
+    "deviceOff": "Off on device",
     "pushLabel": "Push notifications",
     "pushDescription": "Receive all push notifications",
     "nightPushLabel": "Night push notifications",

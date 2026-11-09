@@ -9,6 +9,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
+import { PushPermissionPolicy } from '../../domains/push-permission.model';
+import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
+
 function SummaryText({ isEnabled, children }: { isEnabled: boolean; children: string }) {
   return (
     <Text size="b2" className={isEnabled ? 'text-main' : 'text-gray-5'}>
@@ -24,8 +27,14 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const push = useSingleTap(router.push);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { data: permission } = useSuspenseQuery(useGetPushPermissionQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const isPushEnabled = preference.pushEnabled;
+  // 서버 설정은 그대로 두고, 기기 알림이 꺼져 닿지 않는다는 것만 회색과 문구로 보인다
+  const isDeviceOff = isPushEnabled && !PushPermissionPolicy.isPushDeliverable(permission);
+  const canReceivePush = PushPermissionPolicy.canReceivePush(permission, {
+    pushEnabled: isPushEnabled,
+  });
   const isWeatherEnabled = PreferencePolicy.isWeatherEnabled(preference);
 
   return (
@@ -33,8 +42,12 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
       <SettingsListGroup.Item
         label={t('settings.pushLabel')}
         value={
-          <SummaryText isEnabled={isPushEnabled}>
-            {isPushEnabled ? t('settings.on') : t('settings.off')}
+          <SummaryText isEnabled={canReceivePush}>
+            {isDeviceOff
+              ? t('settings.deviceOff')
+              : isPushEnabled
+                ? t('settings.on')
+                : t('settings.off')}
           </SummaryText>
         }
         onPress={() => push('/settings/notifications/push')}
@@ -43,7 +56,7 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
       <SettingsListGroup.Item
         label={t('settings.weatherLabel')}
         value={
-          <SummaryText isEnabled={isWeatherEnabled}>
+          <SummaryText isEnabled={canReceivePush && isWeatherEnabled}>
             {isWeatherEnabled ? t('settings.on') : t('settings.off')}
           </SummaryText>
         }
@@ -54,7 +67,7 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
       <SettingsListGroup.Item
         label={t('settings.reminderLabel')}
         value={
-          <SummaryText isEnabled={isPushEnabled}>
+          <SummaryText isEnabled={canReceivePush}>
             {[
               { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
               { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },

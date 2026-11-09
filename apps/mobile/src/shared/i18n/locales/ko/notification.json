@@ -60,6 +60,7 @@
     "timeFormat24": "24시간제",
     "on": "켜짐",
     "off": "꺼짐",
+    "deviceOff": "기기에서 꺼짐",
     "pushLabel": "푸시 알림",
     "pushDescription": "모든 푸시 알림을 받아요",
     "nightPushLabel": "야간 푸시 알림",
