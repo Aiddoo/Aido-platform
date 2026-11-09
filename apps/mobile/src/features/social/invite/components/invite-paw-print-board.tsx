@@ -213,8 +213,10 @@ InvitePawPrintBoard.PawPrint = function PawPrint({ cell, size, newPawPrintOrder 
     >
       {match({ state: cell.state, isNew: cell.isNew })
         .with({ state: 'stamped', isNew: true }, () => (
-          <StampPress delay={newPawPrintOrder * NEW_PAW_PRINT_STAGGER_MS} className="flex-1">
-            <StaticPawPrint state="stamped" />
+          <StampPress delay={newPawPrintOrder * NEW_PAW_PRINT_STAGGER_MS}>
+            <Box style={{ width: size, height: size }}>
+              <StaticPawPrint state="stamped" />
+            </Box>
           </StampPress>
         ))
         .with({ state: 'stamped', isNew: false }, () => <StaticPawPrint state="stamped" />)

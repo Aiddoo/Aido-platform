@@ -49,7 +49,7 @@ export function getStampPressStartProgress(isReducedMotion: boolean): number {
 }
 
 export interface StampPressProps {
-  /** 처음 그릴 때 한 번 찍는다. 다시 찍으려면 쓰는 쪽이 key를 바꿔 새로 그린다 */
+  /** 처음 그릴 때 한 번 찍는다. 다시 찍으려면 쓰는 쪽이 key를 바꿔 새로 그린다. 도장 크기는 children이 정한다 */
   children: ReactNode;
   /** 여러 도장을 차례로 찍을 때 늦출 시간(ms) */
   delay?: number;
@@ -115,11 +115,7 @@ export function StampPress({
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, burstStyle]}>
         <Box className={cn('flex-1 rounded-full border-2 border-main', burstClassName)} />
       </Animated.View>
-      <Animated.View style={[styles.stamp, stampStyle]}>{children}</Animated.View>
+      <Animated.View style={stampStyle}>{children}</Animated.View>
     </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  stamp: { flexGrow: 1 },
-});
