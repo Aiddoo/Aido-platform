@@ -109,30 +109,38 @@ export interface PersistedQuerySchema {
   schema: z.ZodType;
 }
 
-/** 버전이 같아도 저장값이 깨졌으면 화면이 죽으므로 그 조회만 버리고 서버에서 다시 받는다. 값은 바꾸지 않는다 */
+/** 버전이 같아도 저장값이 깨졌으면 화면이 죽으므로 그 조회만 버리고 서버에서 다시 받는다. 남긴 조회는 스키마 출력(앱 모델)으로 바꿔 나중에 더한 칸의 기본값을 채운다 */
 function keepValidPersistedQueries(
   client: PersistedClient,
   schemas: readonly PersistedQuerySchema[],
 ): PersistedClient {
   const { queries } = client.clientState;
-  const droppedQueries = queries.filter((query) => {
+  const parsedQueries = queries.map((query) => {
     const entry = schemas.find(({ queryKey }) => partialMatchKey(query.queryKey, queryKey));
-    return entry?.schema.safeParse(query.state.data).success !== true;
+    const parsed = entry?.schema.safeParse(query.state.data);
+    return { query, parsed };
   });
-  if (droppedQueries.length === 0) {
-    return client;
+  const droppedQueries = parsedQueries
+    .filter(({ parsed }) => parsed?.success !== true)
+    .map(({ query }) => query);
+
+  if (droppedQueries.length > 0) {
+    logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
+      droppedCount: droppedQueries.length,
+      totalCount: queries.length,
+      droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))),
+    });
   }
 
-  logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
-    droppedCount: droppedQueries.length,
-    totalCount: queries.length,
-    droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))),
-  });
   return {
     ...client,
     clientState: {
       ...client.clientState,
-      queries: queries.filter((query) => !droppedQueries.includes(query)),
+      queries: parsedQueries.flatMap(({ query, parsed }) =>
+        parsed?.success === true
+          ? [{ ...query, state: { ...query.state, data: parsed.data } }]
+          : [],
+      ),
     },
   };
 }
