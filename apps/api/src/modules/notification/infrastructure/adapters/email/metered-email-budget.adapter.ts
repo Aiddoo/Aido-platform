@@ -17,14 +17,15 @@ import type {
 } from "../../../application/ports/email/email-budget.port.js";
 import type { EmailQuotaScope } from "../../../application/ports/email/email-sender.port.js";
 import {
-  EMAIL_SEND_BUDGET,
-  EMAIL_BUDGET_ALERT_THRESHOLDS,
+  emailBudgetAlertThresholds,
   resolveEmailBudgetLimits,
 } from "../../../domain/policies/email/email-budget.policy.js";
 import type { EmailPriority } from "../../../domain/types/email/email-delivery.types.js";
+import { RESEND_FREE_PLAN_EMAIL_BUDGET } from "./resend-email-budget.js";
 
 export const EMAIL_SENT_METER = "email.sent";
 const EMAIL_EXHAUSTED_ALERT_METER = "email.alert.exhausted";
+const EMAIL_BUDGET_ALERT_THRESHOLDS = emailBudgetAlertThresholds(RESEND_FREE_PLAN_EMAIL_BUDGET);
 
 interface MeteredEmailBudgetDependencies {
   readonly meter: Pick<UsageMeterPort, "tryReserve" | "release" | "read" | "add">;
@@ -41,7 +42,7 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
   }
 
   async reserve(priority: EmailPriority): Promise<EmailBudgetReservation> {
-    const limits = resolveEmailBudgetLimits(priority);
+    const limits = resolveEmailBudgetLimits(priority, RESEND_FREE_PLAN_EMAIL_BUDGET);
     const { day, month } = this.#keys();
     try {
       const daily = await this.#dependencies.meter.tryReserve(day, 1, limits.daily);
@@ -88,8 +89,8 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
     const { day, month } = this.#keys();
     const [key, limit] =
       scope === "daily"
-        ? [day, EMAIL_SEND_BUDGET.dailyLimit]
-        : [month, EMAIL_SEND_BUDGET.monthlyLimit];
+        ? [day, RESEND_FREE_PLAN_EMAIL_BUDGET.quota.daily]
+        : [month, RESEND_FREE_PLAN_EMAIL_BUDGET.quota.monthly];
     try {
       const [total = 0] = await this.#dependencies.meter.read([key]);
       if (total < limit) {

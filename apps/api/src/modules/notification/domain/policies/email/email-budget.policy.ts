@@ -2,22 +2,19 @@ import { match } from "ts-pattern";
 
 import type { EmailKind, EmailPriority } from "../../types/email/email-delivery.types.js";
 
-/**
- * Resend 무료 한도(하루 100통·한 달 3,000통)를 넘기지 않는 발송 예산.
- * standard는 한도보다 낮은 곳에서 멈춰 critical 몫의 여유분을 남긴다.
- */
-export const EMAIL_SEND_BUDGET = {
-  dailyLimit: 100,
-  monthlyLimit: 3000,
-  standardDailyLimit: 70,
-  standardMonthlyLimit: 2700,
-  /** 일·월 한도의 이 비율에 닿으면 운영 경보를 올린다 */
-  alertRatio: 0.8,
-} as const;
-
 export interface EmailBudgetLimits {
   readonly daily: number;
   readonly monthly: number;
+}
+
+/** 일·월 발송 예산. 값은 공급자 요금제를 아는 어댑터 설정이 정한다. */
+export interface EmailSendBudget {
+  /** 공급자가 받아 주는 일·월 한도. critical 메일은 여기까지 보낸다. */
+  readonly quota: EmailBudgetLimits;
+  /** standard 메일이 멈추는 곳. 한도보다 낮게 두어 critical 몫의 여유분을 남긴다. */
+  readonly standard: EmailBudgetLimits;
+  /** 한도의 이 비율에 닿으면 운영 경보를 올린다. */
+  readonly alertRatio: number;
 }
 
 export function resolveEmailPriority(kind: EmailKind): EmailPriority {
@@ -27,20 +24,19 @@ export function resolveEmailPriority(kind: EmailKind): EmailPriority {
     .exhaustive();
 }
 
-export function resolveEmailBudgetLimits(priority: EmailPriority): EmailBudgetLimits {
+export function resolveEmailBudgetLimits(
+  priority: EmailPriority,
+  budget: EmailSendBudget,
+): EmailBudgetLimits {
   return match(priority)
-    .with("critical", () => ({
-      daily: EMAIL_SEND_BUDGET.dailyLimit,
-      monthly: EMAIL_SEND_BUDGET.monthlyLimit,
-    }))
-    .with("standard", () => ({
-      daily: EMAIL_SEND_BUDGET.standardDailyLimit,
-      monthly: EMAIL_SEND_BUDGET.standardMonthlyLimit,
-    }))
+    .with("critical", () => budget.quota)
+    .with("standard", () => budget.standard)
     .exhaustive();
 }
 
-export const EMAIL_BUDGET_ALERT_THRESHOLDS: EmailBudgetLimits = {
-  daily: Math.floor(EMAIL_SEND_BUDGET.dailyLimit * EMAIL_SEND_BUDGET.alertRatio),
-  monthly: Math.floor(EMAIL_SEND_BUDGET.monthlyLimit * EMAIL_SEND_BUDGET.alertRatio),
-};
+export function emailBudgetAlertThresholds(budget: EmailSendBudget): EmailBudgetLimits {
+  return {
+    daily: Math.floor(budget.quota.daily * budget.alertRatio),
+    monthly: Math.floor(budget.quota.monthly * budget.alertRatio),
+  };
+}
