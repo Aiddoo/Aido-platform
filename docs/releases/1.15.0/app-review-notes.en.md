@@ -29,7 +29,7 @@ Please test voice on a real device.
 Subscriptions and free trial (Guideline 3.1.2)
 - Monthly or yearly auto-renewing plans; yearly is preselected. The largest price is the billed amount.
 - New yearly subscribers get a 1-month free trial, shown only if the App Store says the account is eligible.
-- The plan then shows "1 month free" and a dated timeline: trial starts today → reminder 3 days before the end → "{price}/year charged". The button reads "Start 1 month free", with "{price}/year from {date} · Cancel anytime" right below.
+- The plan then shows "1 month free" and a dated timeline: trial starts today → reminder 3 days before the end → "{price}/year charged". The button reads "Start free for 1 month", with "Billed {price}/year from {date} · Cancel anytime" right below.
 - The renewal notice, Terms and Privacy links, and Restore purchases are on the same screen.
 - During the trial, Me tab > Manage subscription shows "Free trial" with the end and first payment dates. The server sends a reminder push and inbox notice 3 days before it ends.
 
@@ -82,7 +82,7 @@ AI output
 - AI turns the person's own words into suggested to-dos and summaries, and nothing is saved until they confirm it. They can report a problem from Me tab > Contact us.
 
 Subscriptions, free trial, and limits
-- Monthly or yearly auto-renewing plans; yearly is preselected. New yearly subscribers get a 1-month free trial, set as a free-trial offer in Play Console and shown only when Google Play offers it to the account. The paywall then shows "Start 1 month free" with "{price}/year from {date} · Cancel anytime" below it, and a timeline with the reminder 3 days before billing.
+- Monthly or yearly auto-renewing plans; yearly is preselected. New yearly subscribers get a 1-month free trial, set as a free-trial offer in Play Console and shown only when Google Play offers it to the account. The paywall then shows "Start free for 1 month" with "Billed {price}/year from {date} · Cancel anytime" below it, and a timeline with the reminder 3 days before billing.
 - Free: 10 AI to-dos and 3 voice notes a month, 5 friends, 3 categories, 3 nudges and 3 cheers a day. Plans never limit adding or completing to-dos. At a limit or a Premium-only feature, a sheet shows usage, the reset date, and Free → Premium numbers, with "See Premium" and "Not now".
 
 How to test
