@@ -31,35 +31,3 @@ describe('getPromptSurface', () => {
     expect(result).toBe('sheet');
   });
 });
-
-describe('excludeBlockedBenefit', () => {
-  const benefits = [
-    { feature: 'AI_PARSE' },
-    { feature: 'CUSTOM_REMINDER_TIME' },
-    { feature: 'NUDGE' },
-    { feature: 'APP_ICON' },
-  ] as const;
-
-  it('막힌 기능은 빼고 나머지 순서는 그대로 둔다', () => {
-    // When
-    const visible = UpsellPolicy.excludeBlockedBenefit(benefits, 'NUDGE');
-
-    // Then
-    expect(visible.map(({ feature }) => feature)).toEqual([
-      'AI_PARSE',
-      'CUSTOM_REMINDER_TIME',
-      'APP_ICON',
-    ]);
-  });
-
-  it.each([
-    ['막힌 기능을 모르면', undefined],
-    ['목록에 없는 기능이면', 'FRIEND'],
-  ] as const)('%s 모두 보여 준다', (_case, feature) => {
-    // When
-    const visible = UpsellPolicy.excludeBlockedBenefit(benefits, feature);
-
-    // Then
-    expect(visible).toEqual(benefits);
-  });
-});

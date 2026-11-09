@@ -6,7 +6,11 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import { getPlanBenefitAmounts, getPlanComparison } from './plan-benefit.view-model';
+import {
+  excludeBlockedBenefit,
+  getPlanBenefitAmounts,
+  getPlanComparison,
+} from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
   it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 카탈로그를 쓴다', () => {
@@ -80,5 +84,37 @@ describe('getPlanComparison', () => {
 
     // Then
     expect(comparison).toEqual({ unit: 'people', free: 7, premium: null });
+  });
+});
+
+describe('excludeBlockedBenefit', () => {
+  const benefits = [
+    { feature: 'AI_PARSE' },
+    { feature: 'CUSTOM_REMINDER_TIME' },
+    { feature: 'NUDGE' },
+    { feature: 'APP_ICON' },
+  ] as const;
+
+  it('막힌 기능은 빼고 나머지 순서는 그대로 둔다', () => {
+    // When
+    const visible = excludeBlockedBenefit(benefits, 'NUDGE');
+
+    // Then
+    expect(visible.map(({ feature }) => feature)).toEqual([
+      'AI_PARSE',
+      'CUSTOM_REMINDER_TIME',
+      'APP_ICON',
+    ]);
+  });
+
+  it.each([
+    ['막힌 기능을 모르면', undefined],
+    ['목록에 없는 기능이면', 'FRIEND'],
+  ] as const)('%s 모두 보여 준다', (_case, feature) => {
+    // When
+    const visible = excludeBlockedBenefit(benefits, feature);
+
+    // Then
+    expect(visible).toEqual(benefits);
   });
 });

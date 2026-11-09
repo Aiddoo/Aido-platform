@@ -1,7 +1,7 @@
 import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
 
-import { type EntitlementSnapshot } from '../domains/entitlement.model';
+import { type EntitlementFeature, type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 
 const SECONDS_PER_MINUTE = 60;
@@ -83,4 +83,12 @@ export function getPlanComparison(
         }) satisfies PlanComparison,
     )
     .exhaustive();
+}
+
+/** 막힌 기능은 페이월 맨 위 카드가 이미 설명하므로 아래 혜택 목록에서 한 번 더 보이지 않게 뺀다 */
+export function excludeBlockedBenefit<TBenefit extends { feature: EntitlementFeature }>(
+  benefits: readonly TBenefit[],
+  blockedFeature: EntitlementFeature | undefined,
+): TBenefit[] {
+  return benefits.filter((benefit) => benefit.feature !== blockedFeature);
 }

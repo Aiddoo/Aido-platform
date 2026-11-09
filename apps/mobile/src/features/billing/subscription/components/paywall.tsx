@@ -7,7 +7,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { FeatureMedia, type FeatureMediaProps, H2, HStack, Text, VStack } from '@src/shared/ui';
+import { FeatureMedia, type FeatureMediaProps, HStack, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip, Separator } from 'heroui-native';
@@ -15,23 +15,33 @@ import { Fragment } from 'react';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature } from '../domains/entitlement.model';
-import { UpsellPolicy } from '../domains/upsell.model';
+import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
+import { excludeBlockedBenefit, getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
 import { PremiumFeatureIcon } from './premium-feature-icon';
 
-/** 페이월 머리글. 막힌 기능·요금제·혜택 순서는 화면이 정한다 */
+const IMAGE_BENEFITS = [
+  { feature: 'AI_PARSE', image: benefitAiParsingImage },
+  { feature: 'CUSTOM_REMINDER_TIME', image: benefitNotificationImage },
+  { feature: 'NUDGE', image: benefitNudgeImage },
+  { feature: 'APP_ICON', image: benefitAppIconImage },
+] as const satisfies readonly { feature: EntitlementFeature; image: FeatureMediaProps['source'] }[];
+
+/** 페이월의 그림 혜택. 막혀서 들어온 기능은 맨 위 카드가 이미 보여 줘 뺀다 */
 export function Paywall() {
-  const { t } = useTranslation('subscription');
+  const [{ feature }] = useSubscriptionParams();
+  const formatBenefit = useFormatBenefit();
 
   return (
-    <VStack gap={4} className="items-center">
-      <H2>{t('paywall.title')}</H2>
-
-      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-        {t('paywall.subtitle')}
-      </Text>
+    <VStack gap={20}>
+      {excludeBlockedBenefit(IMAGE_BENEFITS, feature).map((benefit) => (
+        <BenefitCard
+          key={benefit.feature}
+          {...formatBenefit(benefit.feature)}
+          image={benefit.image}
+        />
+      ))}
     </VStack>
   );
 }
@@ -79,29 +89,6 @@ Paywall.BlockedFeature = function BlockedFeature({ feature }: { feature: Entitle
   );
 };
 
-const IMAGE_BENEFITS = [
-  { feature: 'AI_PARSE', image: benefitAiParsingImage },
-  { feature: 'CUSTOM_REMINDER_TIME', image: benefitNotificationImage },
-  { feature: 'NUDGE', image: benefitNudgeImage },
-  { feature: 'APP_ICON', image: benefitAppIconImage },
-] as const satisfies readonly { feature: EntitlementFeature; image: FeatureMediaProps['source'] }[];
-
-Paywall.Benefits = function Benefits({ feature }: { feature?: EntitlementFeature }) {
-  const formatBenefit = useFormatBenefit();
-
-  return (
-    <VStack gap={20}>
-      {UpsellPolicy.excludeBlockedBenefit(IMAGE_BENEFITS, feature).map((benefit) => (
-        <BenefitCard
-          key={benefit.feature}
-          {...formatBenefit(benefit.feature)}
-          image={benefit.image}
-        />
-      ))}
-    </VStack>
-  );
-};
-
 const ADDITIONAL_BENEFITS = [
   { feature: 'VOICE_NOTE' },
   { feature: 'FRIEND' },
@@ -110,12 +97,9 @@ const ADDITIONAL_BENEFITS = [
   { feature: 'AI_REPORT' },
 ] as const satisfies readonly { feature: EntitlementFeature }[];
 
-Paywall.AdditionalBenefits = function AdditionalBenefits({
-  feature,
-}: {
-  feature?: EntitlementFeature;
-}) {
+Paywall.AdditionalBenefits = function AdditionalBenefits() {
   const { t } = useTranslation('subscription');
+  const [{ feature }] = useSubscriptionParams();
   const formatBenefit = useFormatBenefit();
 
   return (
@@ -124,23 +108,13 @@ Paywall.AdditionalBenefits = function AdditionalBenefits({
         {t('paywall.moreBenefits')}
       </Text>
 
-      {UpsellPolicy.excludeBlockedBenefit(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
+      {excludeBlockedBenefit(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
         <Fragment key={benefit.feature}>
           {index > 0 && <Separator className="bg-gray-3" />}
           <AdditionalBenefit feature={benefit.feature} {...formatBenefit(benefit.feature)} />
         </Fragment>
       ))}
     </VStack>
-  );
-};
-
-Paywall.FutureIncluded = function FutureIncluded() {
-  const { t } = useTranslation('subscription');
-
-  return (
-    <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-      {t('paywall.futureIncluded')}
-    </Text>
   );
 };
 

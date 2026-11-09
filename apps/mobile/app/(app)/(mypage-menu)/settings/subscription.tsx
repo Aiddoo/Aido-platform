@@ -22,12 +22,14 @@ import {
   Box,
   Button,
   DashedDivider,
+  H2,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   ReadableContent,
   ScallopedContainer,
   Spacing,
   StyledSafeAreaView,
+  Text,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -56,6 +58,7 @@ function SubscriptionScreen() {
 }
 
 SubscriptionScreen.Plans = function Plans() {
+  const { t } = useTranslation('subscription');
   const [{ feature }] = useSubscriptionParams();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
 
@@ -70,7 +73,13 @@ SubscriptionScreen.Plans = function Plans() {
 
           <ScallopedContainer>
             <Box className="p-5">
-              <Paywall />
+              <VStack gap={4} align="center">
+                <H2>{t('paywall.title')}</H2>
+
+                <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+                  {t('paywall.subtitle')}
+                </Text>
+              </VStack>
 
               <Spacing size={20} />
 
@@ -90,15 +99,17 @@ SubscriptionScreen.Plans = function Plans() {
 
               <DashedDivider className="my-6" />
 
-              <Paywall.Benefits feature={feature} />
+              <Paywall />
 
               <Spacing size={20} />
 
-              <Paywall.AdditionalBenefits feature={feature} />
+              <Paywall.AdditionalBenefits />
 
               <Spacing size={8} />
 
-              <Paywall.FutureIncluded />
+              <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+                {t('paywall.futureIncluded')}
+              </Text>
             </Box>
           </ScallopedContainer>
 
