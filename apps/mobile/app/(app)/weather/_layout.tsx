@@ -10,7 +10,11 @@ import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
-import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
+import {
+  SHEET_ROUTE_SCREEN_OPTIONS,
+  useStackBackToolbar,
+  useStackScreenOptions,
+} from '@src/shared/ui';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
@@ -19,7 +23,7 @@ const ALERT_SETTINGS_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notificatio
 const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh;
 
 export default function WeatherLayout() {
-  const { t } = useTranslation('weather');
+  const { t } = useTranslation(['weather', 'notification']);
   const location = useWeatherLocation();
   // 리포트가 없으면 하늘 장면 대신 흰 면의 위치 권한 안내라 기본 헤더 색을 쓴다
   const isSkyScene = WeatherLocationPolicy.shouldFetchReport(location);
@@ -37,6 +41,7 @@ export default function WeatherLayout() {
   const surfaceTintColor = useResolvedColor('text-gray-9');
   const { resolvedTheme } = useTheme();
   const { backgroundColor } = useResolveClassNames('bg-gray-10');
+  const settingsHeaderOptions = useStackScreenOptions({ hasContentBackground: true });
 
   return (
     <Stack
@@ -64,12 +69,22 @@ export default function WeatherLayout() {
           <Stack.Toolbar.Button
             icon={ALERT_SETTINGS_ICON}
             accessibilityLabel={t('titles.settings')}
-            onPress={() => push('/settings/notifications/weather')}
+            onPress={() => push('/weather/settings')}
           >
             {t('titles.settings')}
           </Stack.Toolbar.Button>
         </Stack.Toolbar>
       </Stack.Screen>
+      {/* 마이 탭의 같은 설정으로 보내면 탭 묶음이 날씨 위에 새로 쌓여 뒤로 갈 곳이 없다. 날씨 Stack에 열어 네이티브 뒤로 가기가 날씨로 돌아간다 */}
+      <Stack.Screen
+        name="settings"
+        options={{
+          ...settingsHeaderOptions,
+          headerTransparent: false,
+          title: t('notification:titles.weather'),
+          statusBarStyle: resolvedTheme === 'dark' ? 'light' : 'dark',
+        }}
+      />
       <Stack.Screen name="reschedule" options={SHEET_ROUTE_SCREEN_OPTIONS} />
     </Stack>
   );

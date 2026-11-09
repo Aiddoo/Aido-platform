@@ -78,6 +78,11 @@ async function renderApp(initialUrl: string) {
       '(app)/todo/[todoId]/index': createScreen('todo'),
       '(app)/whats-new/index': createScreen('whats-new'),
       '(app)/paywall': createScreen('paywall'),
+      '(app)/weather/_layout': () => (
+        <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
+      ),
+      '(app)/weather/index': createScreen('weather'),
+      '(app)/weather/settings': createScreen('weather/settings'),
     },
     { initialUrl, wrapper: TestUiProvider },
   );
@@ -217,6 +222,31 @@ describe('마이 탭 라우팅', () => {
 
     // When
     await act(() => router.back());
+    await act(() => router.back());
+
+    // Then
+    expect(route.getPathname()).toBe('/feed');
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('날씨 화면에서 연 날씨 알림 설정은 날씨 Stack에 쌓이고 뒤로 가면 날씨다', async () => {
+    // Given
+    const route = await renderApp('/feed');
+    await act(() => router.push('/weather'));
+
+    // When
+    await act(() => router.push('/weather/settings'));
+
+    // Then
+    expect(route.getSegments()).toEqual(['(app)', 'weather', 'settings']);
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(route.getPathname()).toBe('/weather');
+
+    // When
     await act(() => router.back());
 
     // Then
