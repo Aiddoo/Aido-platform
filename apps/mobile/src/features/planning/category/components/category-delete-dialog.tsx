@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
+  ChoiceRadio,
   ConfirmDialog,
   H4,
   HStack,
@@ -12,7 +13,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Dialog, Radio, RadioGroup } from 'heroui-native';
+import { Dialog, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
@@ -206,9 +207,7 @@ function CategoryRadioItem({ category }: CategoryRadioItemProps) {
   return (
     <RadioGroup.Item value={String(category.id)}>
       <HStack align="center" gap={10} className="rounded-lg px-3 py-2.5">
-        <Radio>
-          <Radio.Indicator />
-        </Radio>
+        <ChoiceRadio />
         <HStack align="center" gap={8}>
           <Box className="size-2.5 rounded-full" style={{ backgroundColor: category.color }} />
           <Text size="b3" weight="medium">
