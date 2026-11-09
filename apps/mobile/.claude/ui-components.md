@@ -1,6 +1,6 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
+**Version**: 1.4.0 · **Last Updated**: 2026-11-10 · **Owner**: Aido Mobile Team
 
 > 컴포넌트 선택 순서: HeroUI Native → Shared UI (`@src/shared/ui`) → React Native 기본.
 
@@ -279,6 +279,20 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | 정적 칩          | heroui `Chip` + 자식 `Text`                                             | `self-start` 기본이라 가운데 정렬 줄에서는 `self-center`를 준다                                                             |
 | 색 고르기        | heroui `RadioGroup`(색 원은 `RadioGroup.Item` 자식)                     | role `radiogroup`·`radio`는 heroui가 넣는다                                                                                 |
 | 아이콘 단독 버튼 | `IconButton`                                                            | 레이아웃을 지키려 `min-h-0 min-w-0`로 줄이고 `hitSlop`으로 44를 채운다. 라벨이 없던 곳에 라벨을 더했다                      |
+
+### 칩 크기 단계
+
+heroui `Chip`은 쓰임에 따라 아래 셋 중 하나로 고정한다. `size`·`variant`를 먼저 고르고, `className`은 배경색과 표에 적힌 덮어쓰기만 쓴다. 높이는 기본 글꼴 기준이며 글자 줄 높이 + 세로 여백 두 번이다.
+
+| 단계           | 쓰임                                               | Chip                              | 덮어쓰기 | 글자                | 가로·세로·높이        | 예                                                                |
+| -------------- | -------------------------------------------------- | --------------------------------- | -------- | ------------------- | --------------------- | ----------------------------------------------------------------- |
+| 섹션 머리 알약 | 목록 묶음의 머리. `+` 같은 아이콘이 함께 붙는다    | `size="md"` `variant="secondary"` | `px-2.5` | `b4` semibold       | 10 · 4 · 27           | `CategoryHeaderPill`(할 일 목록·친구 피드·상세·결과 시트·새 기능) |
+| 라벨 배지      | 행·카드 안의 상태·등급·횟수·할인·추천·새 기능 표시 | `size="sm"`                       | 없음     | `e1`(빽빽하면 `e2`) | 8 · 2 · 21(`e2`는 20) | `AccessTierChip`, `QuotaChip`, `ReportTypeChip`, 요금제 할인      |
+| 누르는 제안 칩 | 눌러서 값을 채우는 제안                            | `size="md"`                       | 없음     | `b3` medium         | 12 · 4 · 28           | 이메일 도메인 제안                                                |
+
+- `soft` + `accent` 라벨 배지의 글자는 `text-accent-soft-foreground`다. `tone="brand"`(`text-main`)는 연한 accent 면에서 대비가 2.6:1이라 12px 글자에 모자라고, soft-foreground는 라이트 4.1:1·다크 4.2:1이다.
+- radius는 Chip 기본값을 쓴다. 세 단계 모두 radius가 높이의 절반 이상이라 양끝이 둥근 알약이 된다.
+- 날씨 브리핑 칩(하늘 장면 위, 아이콘 + 값)은 장면 전용 모양이라 이 표 밖이다. 눌리는 칩(`ActionButton`, 오늘, 반복 프리셋)은 heroui `Chip`이 아니다(아래 표).
 
 ### 그대로 둔 것과 이유
 
