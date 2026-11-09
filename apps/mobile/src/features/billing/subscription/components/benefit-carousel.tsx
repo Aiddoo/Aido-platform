@@ -35,6 +35,7 @@ import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics'
 const BENEFIT_ART_RATIO = 1372 / 560;
 
 type BenefitSlideEntry = (typeof BENEFIT_SLIDES)[number];
+type BenefitFeature = BenefitSlideEntry['feature'];
 
 /** 그림에 구운 바탕색과 같은 토큰이라 그림 가장자리가 카드에 묻힌다(다크 모드에서도 같은 #424242) */
 const SLIDE_TONE_CLASS_NAMES = {
@@ -82,11 +83,19 @@ interface BenefitPagerProps {
   onIndexChange: (index: number) => void;
 }
 
-/** calendar-pager와 같은 넘기기. 장마다 높이가 달라도 목록 줄 높이는 가장 큰 장을 따른다 */
+/** calendar-pager와 같은 넘기기. 카드 높이는 내용으로 정하고, 글 길이가 장마다 달라 가장 긴 글 높이에 맞춘다 */
 function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
   // 폭이 바뀌어 새 목록을 만들 때만 지금 장을 시작 위치로 읽는다
   const [initialContentOffset] = useState(() => ({ x: index * pageWidth, y: 0 }));
   const [initialIndex] = useState(index);
+  const [copyHeights, setCopyHeights] = useState<Partial<Record<BenefitFeature, number>>>({});
+  const copyMinHeight = Math.max(0, ...Object.values(copyHeights));
+
+  const handleCopyLayout = (feature: BenefitFeature, height: number) => {
+    setCopyHeights((current) =>
+      current[feature] === height ? current : { ...current, [feature]: height },
+    );
+  };
 
   const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement } = event.nativeEvent;
@@ -101,9 +110,15 @@ function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
       pagingEnabled
       data={BENEFIT_SLIDES}
       keyExtractor={(slide) => slide.feature}
+      extraData={copyMinHeight}
       renderItem={({ item: slide, index: slideIndex }) => (
-        <Box className="flex-1" style={{ width: pageWidth }}>
-          <BenefitSlideCard slide={slide} number={slideIndex + 1} className="flex-1" />
+        <Box style={{ width: pageWidth }}>
+          <BenefitSlideCard
+            slide={slide}
+            number={slideIndex + 1}
+            copyMinHeight={copyMinHeight}
+            onCopyLayout={(height) => handleCopyLayout(slide.feature, height)}
+          />
         </Box>
       )}
       getItemLayout={(_, itemIndex) => ({
@@ -125,44 +140,52 @@ interface BenefitSlideCardProps {
   slide: BenefitSlideEntry;
   /** "혜택 N" 칩 번호. 1부터 */
   number: number;
-  className?: string;
+  /** 넘기는 장들의 글 칸을 가장 긴 장에 맞춰 그림 위치가 같게 한다 */
+  copyMinHeight?: number;
+  /** 늘리기 전 글 칸의 높이 */
+  onCopyLayout?: (height: number) => void;
 }
 
-function BenefitSlideCard({ slide, number, className }: BenefitSlideCardProps) {
+function BenefitSlideCard({ slide, number, copyMinHeight, onCopyLayout }: BenefitSlideCardProps) {
   const { t } = useTranslation('subscription');
   const { title, description } = useBenefitSlideText(slide.feature);
 
   return (
     <VStack
-      justify="between"
-      className={cn('overflow-hidden rounded-3xl', SLIDE_TONE_CLASS_NAMES[slide.tone], className)}
+      className={cn('overflow-hidden rounded-3xl', SLIDE_TONE_CLASS_NAMES[slide.tone])}
       testID={`paywall-benefit-${slide.feature}`}
     >
-      <VStack gap={8} className="px-5 pt-5">
-        <Chip size="sm" pointerEvents="none" className="self-start bg-on-sky/20">
-          <Text size="e1" weight="semibold" tone="onSky">
-            {t('paywall.benefitChip', { index: number })}
-          </Text>
-        </Chip>
+      <Box style={{ minHeight: copyMinHeight }}>
+        <VStack
+          gap={8}
+          className="px-5 pt-5"
+          onLayout={(event) => onCopyLayout?.(event.nativeEvent.layout.height)}
+        >
+          <Chip size="sm" pointerEvents="none" className="self-start bg-on-sky/20">
+            <Text size="e1" weight="semibold" tone="onSky">
+              {t('paywall.benefitChip', { index: number })}
+            </Text>
+          </Chip>
 
-        <VStack gap={2}>
-          <Text size="t3" weight="bold" tone="onSky" lineBreakStrategyIOS="hangul-word">
-            {title}
-          </Text>
-          <Text size="b4" tone="onSky" lineBreakStrategyIOS="hangul-word" className="opacity-90">
-            {description}
-          </Text>
+          <VStack gap={2}>
+            <Text size="t3" weight="bold" tone="onSky" lineBreakStrategyIOS="hangul-word">
+              {title}
+            </Text>
+            <Text size="b4" tone="onSky" lineBreakStrategyIOS="hangul-word" className="opacity-90">
+              {description}
+            </Text>
+          </VStack>
+
+          <BenefitQuota feature={slide.feature} />
         </VStack>
-
-        <BenefitQuota feature={slide.feature} />
-      </VStack>
+      </Box>
 
       <FeatureMedia source={slide.image} alt="" ratio={BENEFIT_ART_RATIO} />
     </VStack>
   );
 }
 
-function BenefitQuota({ feature }: Pick<BenefitSlideEntry, 'feature'>) {
+function BenefitQuota({ feature }: { feature: BenefitFeature }) {
   const { t } = useTranslation('subscription');
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const formatPlanValue = useFormatPlanValue();
@@ -184,7 +207,7 @@ function BenefitQuota({ feature }: Pick<BenefitSlideEntry, 'feature'>) {
   );
 }
 
-function useBenefitSlideText(feature: BenefitSlideEntry['feature']) {
+function useBenefitSlideText(feature: BenefitFeature) {
   const { t } = useTranslation('subscription');
 
   return match(feature)
