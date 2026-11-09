@@ -3,12 +3,9 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { SubTodoIndent } from '@src/features/planning/todo/components/sub-todo-indent';
 import {
   TodoCheckbox,
   TodoLabel,
-  TodoProgress,
-  TodoRow,
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
@@ -17,8 +14,11 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  AiFilledIcon,
   Box,
   Button,
+  EditIcon,
+  HintPopoverContent,
   HStack,
   InfoIcon,
   QueryErrorBoundary,
@@ -33,8 +33,8 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { Skeleton } from 'heroui-native';
-import { type ComponentProps, type ReactNode, Suspense, useRef } from 'react';
+import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
+import { type ComponentProps, type ReactNode, Suspense, useRef, useState } from 'react';
 import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
@@ -50,10 +50,20 @@ import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';
 
 const LOADING_ROW_COUNT = 3;
 const DUPLICATE_ICON_SIZE = 13;
-/** 체크(20)를 44로 넓히는 터치 여백. 행의 글자까지 먹지 않게 행 간격(12)과 같다 */
-const SELECT_HIT_SLOP = 12;
-/** 고르지 않은 행의 제목. 라이트 4.5:1, 다크 6:1 이상이라 흐려도 읽힌다 */
-const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-7 dark:text-gray-5';
+const GUIDE_AI_ICON_SIZE = 14;
+const GUIDE_INFO_ICON_SIZE = 16;
+const EDIT_ICON_SIZE = 16;
+/** 체크와 카드 사이 간격. 체크의 터치 여백과 같아 두 누름 영역이 겹치지 않는다 */
+const SELECT_GAP = 12;
+/** 체크(20)를 44로 넓히는 터치 여백 */
+const SELECT_HIT_SLOP = SELECT_GAP;
+/** 고르지 않은 카드의 글자. 카드 면 위에서 라이트·다크 모두 4.5:1 이상이라 흐려도 읽힌다 */
+const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-8 dark:text-gray-6';
+/** 다크 시트 면이 gray-1이라 시트 안 카드는 한 단계 밝힌다 */
+const TODO_CARD_CLASS_NAME = {
+  screen: 'bg-gray-1',
+  sheet: 'bg-gray-1 dark:bg-gray-2',
+} as const satisfies Record<NonNullable<PlanReviewProps['surface']>, string>;
 
 interface PlanApplyRequest {
   idempotencyKey: string;
@@ -145,30 +155,28 @@ export function PlanReview({
 
   return (
     <VStack className={className} style={style}>
+      <VStack gap={4} className="pb-4">
+        <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
+          {match(headline)
+            .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
+            .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
+            .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
+            .exhaustive()}
+        </Text>
+        <PlanReview.Guide />
+        {plan.omittedTodoCount > 0 && (
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
+          </Text>
+        )}
+      </VStack>
+
       <ScrollFade className="shrink grow">
         <ScrollView
-          contentContainerClassName="gap-4 pb-4"
+          contentContainerClassName="pb-4"
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
         >
-          <VStack gap={4}>
-            <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
-              {match(headline)
-                .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
-                .with({ kind: 'memo' }, () => t('voicePlan:plan.titleMemoOnly'))
-                .with({ kind: 'already-added' }, () => t('voicePlan:plan.titleAlreadyAdded'))
-                .exhaustive()}
-            </Text>
-            <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-              {t('voicePlan:plan.hint')}
-            </Text>
-            {plan.omittedTodoCount > 0 && (
-              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-                {t('voicePlan:plan.omitted', { count: plan.omittedTodoCount })}
-              </Text>
-            )}
-          </VStack>
-
           <VStack gap={8}>
             {VoicePlanPolicy.getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
               <VStack key={group.categoryId ?? 'memo'} gap={8}>
@@ -184,6 +192,7 @@ export function PlanReview({
                       form={form}
                       index={index}
                       fallbackCategoryId={fallbackCategoryId}
+                      surface={surface}
                     />
                   ),
                 )}
@@ -305,15 +314,16 @@ PlanReview.Loading = function Loading({
       <VStack flex={1} gap={16}>
         <VStack gap={4}>
           <TextSkeleton size="t3" className="w-2/3" />
-          <TextSkeleton size="b4" className="w-full" />
+          <TextSkeleton size="e2" className="w-1/2" />
         </VStack>
         <VStack gap={8}>
           {range(LOADING_ROW_COUNT).map((index) => (
-            <TodoRow
-              key={index}
-              left={<Skeleton className="size-5 rounded-md" />}
-              top={<TextSkeleton size="b3" className="w-3/4" />}
-            />
+            <HStack key={index} gap={SELECT_GAP} align="center">
+              <Skeleton className="size-5 rounded-md" />
+              <Box className={cn('flex-1 rounded-2xl px-4 py-3', TODO_CARD_CLASS_NAME.screen)}>
+                <TextSkeleton size="b3" className="w-3/4" />
+              </Box>
+            </HStack>
           ))}
         </VStack>
       </VStack>
@@ -321,6 +331,58 @@ PlanReview.Loading = function Loading({
         <Skeleton className="h-14 w-full rounded-xl" />
       </Box>
     </VStack>
+  );
+};
+
+PlanReview.Guide = function Guide() {
+  const { t } = useTranslation('voicePlan');
+  const fontScaledSize = useFontScaledSize();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <PressableFeedback
+          onPress={() => setIsOpen(true)}
+          className="self-start"
+          accessibilityRole="button"
+          accessibilityLabel={t('plan.guide.label')}
+          testID="plan-review-guide"
+        >
+          <HStack gap={4} align="center">
+            <AiFilledIcon
+              width={fontScaledSize(GUIDE_AI_ICON_SIZE)}
+              height={fontScaledSize(GUIDE_AI_ICON_SIZE)}
+              colorClassName="text-main"
+            />
+            <Text size="e2" weight="medium" shade={6} className="shrink">
+              {t('plan.guide.label')}
+            </Text>
+            <InfoIcon
+              width={fontScaledSize(GUIDE_INFO_ICON_SIZE)}
+              height={fontScaledSize(GUIDE_INFO_ICON_SIZE)}
+              colorClassName="text-gray-6"
+            />
+          </HStack>
+        </PressableFeedback>
+      </Popover.Trigger>
+      <HintPopoverContent
+        Icon={AiFilledIcon}
+        title={t('plan.guide.title')}
+        placement="bottom"
+        align="start"
+      >
+        <VStack gap={8}>
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('plan.guide.description')}
+          </Text>
+          <Separator thickness={1} className="bg-border" />
+          <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word">
+            {t('plan.guide.note')}
+          </Text>
+        </VStack>
+      </HintPopoverContent>
+    </Popover>
   );
 };
 
@@ -334,14 +396,16 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
   return <CategoryHeaderPill label={category.name} color={category.color} />;
 };
 
-PlanReview.TodoRow = function PlanTodoRow({
+PlanReview.TodoRow = function TodoRow({
   form,
   index,
   fallbackCategoryId,
+  surface,
 }: {
   form: UseFormReturn<PlanReviewFormValues>;
   index: number;
   fallbackCategoryId: number;
+  surface: NonNullable<PlanReviewProps['surface']>;
 }) {
   const { t } = useTranslation('voicePlan');
   const overlay = useOverlay();
@@ -361,6 +425,7 @@ PlanReview.TodoRow = function PlanTodoRow({
     dateFormatContext,
   });
   const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
+  const unselectedClassName = !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME;
 
   const handlePress = () => {
     overlay.open(({ isOpen, close, unmount }) => (
@@ -392,35 +457,35 @@ PlanReview.TodoRow = function PlanTodoRow({
   };
 
   return (
-    <TodoRow
-      onPress={handlePress}
-      left={
-        <TodoCheckbox
-          accessibilityLabel={t('plan.select', { title: todo.title })}
-          hitSlop={SELECT_HIT_SLOP}
-          isSelected={todo.isSelected}
-          onSelectedChange={(isSelected) =>
-            form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
-          }
-        />
-      }
-      top={
-        <TodoTitleLine
-          label={
-            <TodoLabel
-              isCompleted={false}
-              lineBreakStrategyIOS="hangul-word"
-              className={cn('flex-1', !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
-            >
-              {todo.title}
-            </TodoLabel>
-          }
-          isPrivate={TodoPolicy.isPrivate(todo)}
-        />
-      }
-      middle={
-        (subtitle != null || isDuplicate) && (
-          <VStack gap={2}>
+    <HStack gap={SELECT_GAP} align="center">
+      <TodoCheckbox
+        accessibilityLabel={t('plan.select', { title: todo.title })}
+        hitSlop={SELECT_HIT_SLOP}
+        isSelected={todo.isSelected}
+        onSelectedChange={(isSelected) =>
+          form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
+        }
+      />
+      <PressableFeedback
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityHint={t('plan.editHint')}
+        className={cn('flex-1 rounded-2xl px-4 py-3', TODO_CARD_CLASS_NAME[surface])}
+      >
+        <HStack gap={12} align="center">
+          <VStack flex={1} gap={2}>
+            <TodoTitleLine
+              label={
+                <TodoLabel
+                  isCompleted={false}
+                  lineBreakStrategyIOS="hangul-word"
+                  className={cn('flex-1', unselectedClassName)}
+                >
+                  {todo.title}
+                </TodoLabel>
+              }
+              isPrivate={TodoPolicy.isPrivate(todo)}
+            />
             {subtitle != null && (
               <Text size="e1" shade={6}>
                 {subtitle}
@@ -438,32 +503,31 @@ PlanReview.TodoRow = function PlanTodoRow({
                 </Text>
               </HStack>
             )}
+            {todo.items.length > 0 && (
+              <VStack gap={2} className="mt-1 border-l border-gray-3 pl-3">
+                {todo.items.map((item, itemIndex) => (
+                  <Text
+                    key={itemIndex}
+                    size="b4"
+                    shade={7}
+                    lineBreakStrategyIOS="hangul-word"
+                    className={cn(unselectedClassName)}
+                  >
+                    {item.title}
+                  </Text>
+                ))}
+              </VStack>
+            )}
           </VStack>
-        )
-      }
-      bottom={
-        todo.items.length > 0 ? <TodoProgress value={0} total={todo.items.length} /> : undefined
-      }
-    >
-      {todo.items.length > 0 && (
-        <SubTodoIndent>
-          {todo.items.map((item, itemIndex) => (
-            <TodoRow
-              key={itemIndex}
-              top={
-                <TodoLabel
-                  isCompleted={false}
-                  lineBreakStrategyIOS="hangul-word"
-                  className={cn(!todo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
-                >
-                  {item.title}
-                </TodoLabel>
-              }
-            />
-          ))}
-        </SubTodoIndent>
-      )}
-    </TodoRow>
+          <EditIcon
+            width={fontScaledSize(EDIT_ICON_SIZE)}
+            height={fontScaledSize(EDIT_ICON_SIZE)}
+            colorClassName="text-main"
+          />
+        </HStack>
+        <PressableFeedback.Highlight className="rounded-2xl" />
+      </PressableFeedback>
+    </HStack>
   );
 };
 
@@ -484,18 +548,16 @@ PlanReview.MemoRow = function MemoRow({
   const label = memo.title === '' ? memo.content : memo.title;
 
   return (
-    <TodoRow
-      left={
-        <TodoCheckbox
-          accessibilityLabel={t('plan.select', { title: label })}
-          hitSlop={SELECT_HIT_SLOP}
-          isSelected={memo.isSelected}
-          onSelectedChange={(isSelected) =>
-            form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
-          }
-        />
-      }
-      top={
+    <HStack gap={SELECT_GAP} align="center">
+      <TodoCheckbox
+        accessibilityLabel={t('plan.select', { title: label })}
+        hitSlop={SELECT_HIT_SLOP}
+        isSelected={memo.isSelected}
+        onSelectedChange={(isSelected) =>
+          form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
+        }
+      />
+      <VStack flex={1} gap={2} className="px-4 py-3">
         <TodoLabel
           isCompleted={false}
           numberOfLines={1}
@@ -503,12 +565,10 @@ PlanReview.MemoRow = function MemoRow({
         >
           {label}
         </TodoLabel>
-      }
-      middle={
         <Text size="e1" shade={6}>
           {t('plan.memoCaption')}
         </Text>
-      }
-    />
+      </VStack>
+    </HStack>
   );
 };

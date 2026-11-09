@@ -3,11 +3,17 @@
     "title": "할 일 {{count}}개로 나눴어요",
     "titleMemoOnly": "메모로 정리했어요",
     "titleAlreadyAdded": "이미 있는 할 일이에요",
-    "hint": "추가할 것만 체크해주세요.\n할 일을 누르면 고칠 수 있어요.",
+    "guide": {
+      "label": "체크한 것만 추가돼요",
+      "title": "추가하기 전에 고를 수 있어요",
+      "description": "추가할 것만 체크해주세요. 할 일을 누르면 제목·날짜·시간·반복을 고칠 수 있어요.",
+      "note": "아래 버튼을 누르기 전에는 저장되지 않아요"
+    },
     "omitted": "할 일 {{count}}개는 여기에 담지 못했어요.",
     "empty": "할 일을 찾지 못했어요",
     "duplicate": "이미 있어요",
     "select": "{{title}} 추가하기",
+    "editHint": "이 할 일을 고쳐요",
     "memoCaption": "메모로 저장해요",
     "apply": "할 일 {{count}}개 추가",
     "applyNothing": "할 일 추가",

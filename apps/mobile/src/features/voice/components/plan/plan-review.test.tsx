@@ -17,6 +17,7 @@ import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { View } from 'react-native';
 
 import {
   type PlannedTodo,
@@ -136,6 +137,10 @@ async function renderPlan(
 }
 
 describe('PlanReview', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('할 일이 전부 이미 있으면 메모로 정리했다고 말하지 않고 버튼도 메모 저장이 아니다', async () => {
     // Given
     const plan = { ...PLAN, actions: [createTodoAction({ duplicateOfTodoId: 9 })] };
@@ -159,7 +164,7 @@ describe('PlanReview', () => {
     expect(screen.getByText('할 일 2개 추가')).toBeTruthy();
   });
 
-  it('체크를 끄면 추가할 개수가 줄어든다', async () => {
+  it('체크를 끄면 추가할 개수가 줄어들고 고치는 시트는 열리지 않는다', async () => {
     // Given
     await renderPlan();
 
@@ -168,6 +173,40 @@ describe('PlanReview', () => {
 
     // Then
     await waitFor(() => expect(screen.getByText('할 일 1개 추가')).toBeTruthy());
+    expect(screen.queryByLabelText('할 일 제목')).toBeNull();
+  });
+
+  it('안내 줄의 ⓘ를 누르면 고르고 고치는 법이 보인다', async () => {
+    // Given
+    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+      if (typeof callback === 'function') {
+        callback(0, 0, 200, 20, 16, 120);
+      }
+    });
+    await renderPlan();
+    expect(screen.queryByText('추가하기 전에 고를 수 있어요')).toBeNull();
+
+    // When
+    await fireEvent.press(await screen.findByRole('button', { name: '체크한 것만 추가돼요' }));
+
+    // Then
+    expect(await screen.findByText('추가하기 전에 고를 수 있어요')).toBeTruthy();
+    expect(
+      screen.getByText(
+        '추가할 것만 체크해주세요. 할 일을 누르면 제목·날짜·시간·반복을 고칠 수 있어요.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('할 일 카드를 누르면 그 할 일을 고치는 시트가 열린다', async () => {
+    // Given
+    await renderPlan();
+
+    // When
+    await fireEvent.press(await screen.findByRole('button', { name: /장보기/ }));
+
+    // Then
+    expect(await screen.findByDisplayValue('장보기')).toBeTruthy();
   });
 
   describe('같은 카테고리가 나뉘어 온 계획', () => {
