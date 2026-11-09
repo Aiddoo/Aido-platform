@@ -287,7 +287,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - 넘기기용 래퍼(`Content → Header → Section`)를 만들지 않는다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않는다.
 - JSX 상수(`const waveform = …`)로 화면 구조를 숨기지 않는다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다.
-- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
+- fallback은 `fallback={X.Error}`, `fallback={<X.Loading />}`로 건다. 화살표로 감싸지 않는다. `X.Loading`이 있으면 `X.Error`도 짝으로 두고 남의 `.Error`(`SettingsListGroup.Error`)를 경계에 직접 빌리지 않는다. 모양이 같으면 `X.Error = SettingsListGroup.Error`로 잇는다. `.Error`가 없으면 경계 기본 fallback(다시 시도 + 문의하기)을 쓴다. 대부분 안 보이는 블록처럼 자리를 잡으면 오히려 밀리는 경우만 `fallback={null}`, `() => null`을 쓰고 위 예처럼 이유를 주석으로 남긴다.
 - 경계를 나눌 때는 한 오류가 한 곳에서만 보이는지, 로딩 모양이 지금과 같은지 먼저 확인한다. 같은 쿼리를 두 경계에서 읽으면 404가 두 번 보이므로 나누지 않는다.
 - 바깥 여백은 스크린의 `Spacing`이다. `mb`·`mt` 같은 여백 prop을 블록에 넘기지 않는다.
 - 스스로 숨는 블록은 간격도 함께 사라져야 한다. 조건을 스크린에서 알 수 있으면 `{isAvailable && (…)}` 안에 간격과 블록을 함께 둔다. 조회해야 알 수 있는 카드만 스크린이 `className`으로 넘긴다(`<PushPermissionNotice className="mx-4 mb-3" />`).
@@ -378,6 +378,8 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 `disabled`·`selected`·`onToggle`처럼 같은 뜻의 다른 이름을 만들지 않는다.
 
 **래퍼는 역할이 있을 때만 만든다.** 참고 저장소의 `AmountInput`(단위 suffix·숫자 포맷), 앱의 `MarketingPushOptInBottomSheet`(도메인 문구·동의 저장)처럼 자기 일이 있어야 한다. 역할이 없으면 원본을 쓴다. 상세: [Wrapper Props 계약](./ui-components.md#wrapper-props-계약).
+
+**행의 현재 값은 값만 그리는 컴포넌트가 읽는다.** 메뉴 행의 값(친구 수, 알림 켜짐·꺼짐, 요금제)은 `FriendCountValue`처럼 값 하나만 그리는 컴포넌트가 기존 쿼리를 직접 읽고, 자기 `QueryErrorBoundary`·`Suspense`를 `fallback={null}`로 가져 메뉴를 막지 않는다. 어떤 값을 보일지 판단은 view-model 순수 함수(`toPlanTypeLabelKey`)다.
 
 **반복 UI는 나란히 쓴다.** 항목마다 기획이 따로 바뀔 수 있는 표시는 설정 배열을 `map`하지 않고 `CalculationResult`의 `<Record />`처럼 한 줄씩 적는다. 한 줄만 고치면 되게 한다. 서버 항목처럼 데이터로 오는 목록은 `map`·`FlashList`다. 상수로 개수가 정해지는 반복(스켈레톤, `InputOTP.Slot`)은 es-toolkit `range(n).map`이다.
 
