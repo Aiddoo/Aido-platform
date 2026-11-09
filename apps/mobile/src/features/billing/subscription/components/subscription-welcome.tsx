@@ -11,11 +11,11 @@ import {
   HStack,
   IconCircle,
   ListRow,
+  SettingsListGroup,
   Text,
   VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
-import { Separator } from 'heroui-native';
 import type { ComponentType } from 'react';
 import { match } from 'ts-pattern';
 
@@ -80,11 +80,11 @@ export function SubscriptionWelcome({
         </VStack>
       </VStack>
 
-      <VStack className="rounded-2xl bg-gray-1 px-4 py-1">
+      <SettingsListGroup>
         <SummaryRow label={t('welcome.rows.plan')} value={price} />
         {reminderStep != null && (
           <>
-            <Separator className="bg-gray-3" />
+            <SettingsListGroup.Separator />
             <SummaryRow
               label={t('welcome.rows.reminder')}
               value={formatDate(reminderStep.dateKey)}
@@ -93,7 +93,7 @@ export function SubscriptionWelcome({
         )}
         {chargeStep != null && (
           <>
-            <Separator className="bg-gray-3" />
+            <SettingsListGroup.Separator />
             <SummaryRow
               label={t('welcome.rows.firstCharge')}
               value={t('receipt.rows.dateWithPrice', {
@@ -103,7 +103,7 @@ export function SubscriptionWelcome({
             />
           </>
         )}
-      </VStack>
+      </SettingsListGroup>
 
       {hadRewardOnly && (
         <Text
@@ -134,7 +134,7 @@ export function SubscriptionWelcome({
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <HStack justify="between" align="center" gap={12} className="py-2.5">
+    <HStack justify="between" align="center" gap={12} className="min-h-12 px-4 py-3">
       <Text size="b4" shade={7}>
         {label}
       </Text>

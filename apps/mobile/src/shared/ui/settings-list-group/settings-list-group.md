@@ -135,11 +135,12 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `RadioGroup.Item` props와 같아요(`value`, `isDisabled`, `testID` 등). `.Item`과 같은 글자·여백에 오른쪽 화살표 자리만 heroui `Radio`예요. `children`은 이 컴포넌트가 채워요.
 
-| Prop          | Type        | Default | Description                                                  |
-| ------------- | ----------- | ------- | ------------------------------------------------------------ |
-| `label`       | `string`    | -       | 항목 제목                                                    |
-| `description` | `string`    | -       | 제목 아래 보조 설명(b4)                                      |
-| `icon`        | `ReactNode` | -       | 앞 아이콘. 보통 `<SettingsListGroup.Icon Icon={XDuoIcon} />` |
+| Prop          | Type        | Default | Description                                                                           |
+| ------------- | ----------- | ------- | ------------------------------------------------------------------------------------- |
+| `label`       | `string`    | -       | 항목 제목                                                                             |
+| `description` | `string`    | -       | 제목 아래 보조 설명(b4)                                                               |
+| `icon`        | `ReactNode` | -       | 앞 아이콘. 보통 `<SettingsListGroup.Icon Icon={XDuoIcon} />`                          |
+| `badge`       | `ReactNode` | -       | 라디오 앞 짧은 표시(추천 `Chip` 등). 글자와 같은 흐름이라 큰 글꼴에서도 겹치지 않는다 |
 
 ### SettingsListGroup.Radio.Loading
 

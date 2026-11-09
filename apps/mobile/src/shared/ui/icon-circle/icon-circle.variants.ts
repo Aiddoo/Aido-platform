@@ -7,6 +7,7 @@ export const iconCircleVariants = tv({
       brand: 'bg-main',
       outline: 'border-[1.5px] border-dashed border-main bg-main/10',
       neutral: 'border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-1',
+      plain: '',
     },
   },
   defaultVariants: {

@@ -151,7 +151,7 @@ function CategoryHeader({ label, color, categoryId, date }: CategoryHeaderProps)
       hitSlop={8}
       className="self-start"
     >
-      <CategoryHeaderPill label={label} color={color}>
+      <CategoryHeaderPill label={label} color={color} pointerEvents="none">
         <PlusIcon
           width={fontScaledSize(14)}
           height={fontScaledSize(14)}

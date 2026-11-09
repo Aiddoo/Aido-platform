@@ -1,7 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Image, PawIcon, Spacing, Steps } from '@src/shared/ui';
+import { Box, HStack, IconCircle, Image, PawIcon, Spacing, Steps } from '@src/shared/ui';
 
 import { RELEASE_1_14_0 } from '../constants/releases';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
@@ -71,13 +71,16 @@ function FriendInviteMedia() {
       className="justify-center overflow-hidden rounded-3xl bg-highlight px-[18px]"
     >
       <HStack align="center" gap={10}>
-        <Box className="size-11 -rotate-6 items-center justify-center rounded-full bg-main">
-          <PawIcon width={22} height={22} colorClassName="text-white dark:text-gray-1" />
-        </Box>
+        <IconCircle
+          tone="brand"
+          className="-rotate-6"
+          icon={<PawIcon width={22} height={22} colorClassName="text-white dark:text-gray-1" />}
+        />
         <Box className="h-0.5 w-7 bg-main/50" />
-        <Box className="size-11 items-center justify-center rounded-full border-[1.5px] border-dashed border-main bg-main/10">
-          <PawIcon width={22} height={22} colorClassName="text-main opacity-40" />
-        </Box>
+        <IconCircle
+          tone="outline"
+          icon={<PawIcon width={22} height={22} colorClassName="text-main opacity-40" />}
+        />
       </HStack>
       <Image
         source={catHiImage}

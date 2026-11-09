@@ -14,7 +14,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
-import { Skeleton } from 'heroui-native';
+import { Chip, Skeleton } from 'heroui-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -139,11 +139,11 @@ function BenefitSlideCard({ slide, number, className }: BenefitSlideCardProps) {
       testID={`paywall-benefit-${slide.feature}`}
     >
       <VStack gap={8} className="px-5 pt-5">
-        <Box className="self-start rounded-full bg-on-sky/20 px-2.5 py-1">
+        <Chip size="sm" pointerEvents="none" className="self-start bg-on-sky/20">
           <Text size="e1" weight="semibold" tone="onSky">
             {t('paywall.benefitChip', { index: number })}
           </Text>
-        </Box>
+        </Chip>
 
         <VStack gap={2}>
           <Text size="t3" weight="bold" tone="onSky" lineBreakStrategyIOS="hangul-word">

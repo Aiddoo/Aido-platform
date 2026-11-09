@@ -17,7 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
+import { ControlField, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -75,18 +75,16 @@ export function TodoTimePickerContent({
     >
       <VStack>
         <VStack className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2" gap={8}>
-          <ListRow
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={t('picker.allDay')}
-                topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
-              />
-            }
-            right={<Switch isSelected={localIsAllDay} onSelectedChange={setLocalIsAllDay} />}
-            horizontalPadding="medium"
-            verticalPadding="medium"
-          />
+          <ControlField
+            isSelected={localIsAllDay}
+            onSelectedChange={setLocalIsAllDay}
+            className="px-4 py-2"
+          >
+            <Text size="b1" weight="medium" shade={8} className="flex-1">
+              {t('picker.allDay')}
+            </Text>
+            <ControlField.Indicator />
+          </ControlField>
           <ListRow
             contents={
               <ListRow.Texts

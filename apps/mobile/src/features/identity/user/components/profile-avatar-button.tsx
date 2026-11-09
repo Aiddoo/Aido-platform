@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { Box, EditIcon, VStack, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { useGetMeQueryOptions } from '../queries/user.queries';
@@ -38,11 +38,9 @@ export function ProfileAvatarButton({ onPress }: ProfileAvatarButtonProps) {
 
 ProfileAvatarButton.Loading = function Loading() {
   return (
-    <SkeletonGroup isLoading isSkeletonOnly>
-      <VStack align="center" py={32}>
-        <SkeletonGroup.Item className="size-24 rounded-full" />
-      </VStack>
-    </SkeletonGroup>
+    <VStack align="center" py={32}>
+      <Skeleton className="size-24 rounded-full" />
+    </VStack>
   );
 };
 

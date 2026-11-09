@@ -5,18 +5,19 @@ import {
   Button,
   GoogleIcon,
   HStack,
+  IconCircle,
   KakaoIcon,
   ListRow,
   NaverIcon,
   SettingsListGroup,
-  TextSkeleton,
   Text,
+  TextSkeleton,
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Chip, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import { Chip, Skeleton, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
@@ -72,25 +73,23 @@ export function LinkedAccountList() {
 LinkedAccountList.Loading = function Loading() {
   return (
     <SettingsListGroup>
-      <SkeletonGroup isLoading isSkeletonOnly>
-        <ProviderRow.Loading />
+      <ProviderRow.Loading />
 
-        <SettingsListGroup.Separator />
+      <SettingsListGroup.Separator />
 
-        <ProviderRow.Loading />
+      <ProviderRow.Loading />
 
-        {process.env.EXPO_OS === 'ios' && (
-          <>
-            <SettingsListGroup.Separator />
+      {process.env.EXPO_OS === 'ios' && (
+        <>
+          <SettingsListGroup.Separator />
 
-            <ProviderRow.Loading />
-          </>
-        )}
+          <ProviderRow.Loading />
+        </>
+      )}
 
-        <SettingsListGroup.Separator />
+      <SettingsListGroup.Separator />
 
-        <ProviderRow.Loading />
-      </SkeletonGroup>
+      <ProviderRow.Loading />
     </SettingsListGroup>
   );
 };
@@ -132,21 +131,18 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
     <ListRow
       horizontalPadding="medium"
       verticalPadding="large"
-      left={
-        <Box className={cn('w-10 h-10 rounded-full items-center justify-center', iconClassName)}>
-          {icon}
-        </Box>
-      }
+      left={<IconCircle tone="plain" icon={icon} className={cn('size-10', iconClassName)} />}
       contents={
         <VStack gap={2}>
           <Text size="b3" weight="medium">
             {getOAuthProviderLabel(provider)}
           </Text>
           <Chip
+            size="sm"
             variant="soft"
             color={isLinked ? 'accent' : 'default'}
-            size="sm"
-            className="self-start mt-0.5 px-2 rounded-lg"
+            pointerEvents="none"
+            className="mt-0.5 self-start"
           >
             <Text
               size="e2"

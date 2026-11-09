@@ -14,13 +14,13 @@ import { IconCircle, PawIcon } from '@src/shared/ui';
 
 ## Props
 
-| Prop               | 타입                                           | 기본값      | 설명                                                                                  |
-| ------------------ | ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
-| icon               | `ReactNode`                                    | -           | 가운데 둘 아이콘. 색·크기는 쓰는 쪽이 정한다                                          |
-| tone               | `'brand' \| 'outline' \| 'neutral'`            | `'neutral'` | `brand` main 바탕, `outline` main 점선 테두리와 옅은 main 바탕, `neutral` 회색 테두리 |
-| accessibilityLabel | `string`                                       | -           | 있으면 `image`로 읽힌다. 없으면 숨는다                                                |
-| className, style   | -                                              | -           | 기본 44pt(`size-11`). 크기·기울기를 바꿀 때 쓴다. 배치 여백은 부모가 정한다           |
-| ...props           | `Omit<ComponentProps<typeof Box>, 'children'>` | -           | 원본 `Box` props                                                                      |
+| Prop               | 타입                                           | 기본값      | 설명                                                                                                                  |
+| ------------------ | ---------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------- |
+| icon               | `ReactNode`                                    | -           | 가운데 둘 아이콘. 색·크기는 쓰는 쪽이 정한다                                                                          |
+| tone               | `'brand' \| 'outline' \| 'neutral' \| 'plain'` | `'neutral'` | `brand` main 바탕, `outline` main 점선 테두리와 옅은 main 바탕, `neutral` 회색 테두리, `plain` 모양만(색은 className) |
+| accessibilityLabel | `string`                                       | -           | 있으면 `image`로 읽힌다. 없으면 숨는다                                                                                |
+| className, style   | -                                              | -           | 기본 44pt(`size-11`). 크기·기울기를 바꿀 때 쓴다. 배치 여백은 부모가 정한다                                           |
+| ...props           | `Omit<ComponentProps<typeof Box>, 'children'>` | -           | 원본 `Box` props                                                                                                      |
 
 색은 초대 발자국 판의 도장(찍힘·기다림·빈 칸)과 같은 토큰이다.
 

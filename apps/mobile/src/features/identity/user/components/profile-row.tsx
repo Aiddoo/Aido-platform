@@ -51,6 +51,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
 
   return (
     <PressableFeedback
+      accessibilityRole="button"
       onPress={() => navigate('/settings/profile')}
       className={cn('rounded-2xl px-4 py-3', isSelected('/settings/profile') && 'bg-gray-2')}
     >

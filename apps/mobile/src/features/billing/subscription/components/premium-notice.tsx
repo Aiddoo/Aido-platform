@@ -78,7 +78,7 @@ function Ending({ className }: PremiumNoticeProps) {
       className={cn('rounded-2xl bg-main/10', className)}
       testID="subscription-ending-notice"
       image={
-        <Chip className="self-center rounded-full bg-main px-2 py-0.5">
+        <Chip size="sm" pointerEvents="none" className="self-center bg-main">
           <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
             {badge}
           </Text>

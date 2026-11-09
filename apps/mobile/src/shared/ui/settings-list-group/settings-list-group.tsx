@@ -206,6 +206,8 @@ interface SettingsListGroupRadioProps extends Omit<
   label: string;
   description?: string;
   icon?: ReactNode;
+  /** 라디오 앞에 둘 짧은 표시(추천 칩 등). 글자와 같은 흐름에 놓여 큰 글꼴에서도 겹치지 않는다 */
+  badge?: ReactNode;
 }
 
 /** `RadioGroup` 안에서 `.Item`과 같은 글자·여백으로 고르는 행. 오른쪽 화살표 자리에 라디오를 둔다 */
@@ -213,6 +215,7 @@ function SettingsListGroupRadio({
   label,
   description,
   icon,
+  badge,
   className,
   ...props
 }: SettingsListGroupRadioProps) {
@@ -235,6 +238,7 @@ function SettingsListGroupRadio({
           </Text>
         )}
       </Box>
+      {badge}
       <Radio />
     </RadioGroup.Item>
   );
