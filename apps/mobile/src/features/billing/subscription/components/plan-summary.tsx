@@ -1,7 +1,4 @@
 import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
-import { formatDateLabel } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -18,6 +15,7 @@ import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { toPlanSummary } from '../utils/plan-summary.view-model';
@@ -52,9 +50,8 @@ export function PlanSummary() {
 PlanSummary.Premium = function Premium() {
   const { t } = useTranslation('subscription');
   const navigate = useMyPageMenuNavigate();
-  const dateFormatContext = useDateFormatContext();
   const { headline, dateLabel, period, note } = toPlanSummary(useSubscriptionReceipt());
-  const formatDate = (date: Instant) => formatDateLabel(date, dateLabel, dateFormatContext);
+  const formatDate = useFormatReceiptDate(dateLabel);
 
   return (
     <PressableFeedback

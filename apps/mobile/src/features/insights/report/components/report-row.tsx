@@ -1,6 +1,7 @@
 import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -23,6 +24,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
 
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const reportId = isSample ? SAMPLE_REPORT_IDS[report.type] : String(report.id);
   const openReport = () => push({ pathname: '/reports/[reportId]', params: { reportId } });
 
@@ -52,6 +54,7 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
                 {formatDateKeyRange(
                   report.dateRange.startDate,
                   report.dateRange.endDate,
+                  todayKey,
                   dateFormatContext,
                 )}
               </Text>

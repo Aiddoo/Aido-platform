@@ -1,7 +1,8 @@
 import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -44,13 +45,14 @@ export function SubscriptionWelcome({
 }: SubscriptionWelcomeProps) {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
   const steps = toTrialScheduleSteps(plan, purchasedOn);
   const reminderStep = steps?.find((step) => step.kind === 'reminder');
   const chargeStep = steps?.find((step) => step.kind === 'charge');
   const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
   const formatDate = (dateKey: string) =>
-    formatDateKeyLabel(dateKey, 'monthDay', dateFormatContext);
+    formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
 
   return (
     <VStack gap={20} testID="subscription-welcome">

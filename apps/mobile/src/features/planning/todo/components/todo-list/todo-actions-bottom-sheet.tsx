@@ -143,6 +143,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         period: formatDateKeyCompactRange(
           todo.startDate,
           todo.endDate ?? todo.startDate,
+          todayKey,
           dateFormatContext,
         ),
       }),

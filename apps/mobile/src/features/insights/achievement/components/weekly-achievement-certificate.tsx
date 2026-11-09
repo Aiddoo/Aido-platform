@@ -5,6 +5,7 @@ import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
@@ -43,6 +44,7 @@ export function WeeklyAchievementCertificate() {
   });
   const { t } = useTranslation('achievement');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
 
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewCaptureHandle>(null);
@@ -117,6 +119,7 @@ export function WeeklyAchievementCertificate() {
               {formatDateKeyRange(
                 achievement.dateRange.startDate,
                 achievement.dateRange.endDate,
+                todayKey,
                 dateFormatContext,
               )}
             </Text>

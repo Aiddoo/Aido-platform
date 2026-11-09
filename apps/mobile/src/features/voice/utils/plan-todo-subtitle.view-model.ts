@@ -1,9 +1,9 @@
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
   type DateFormatContext,
-  formatDateKeyLabel,
   formatDateKeyRange,
   formatTimeOfDay,
+  formatYearAwareDateKeyLabel,
   type TimeFormat,
 } from '@src/shared/date/date-format';
 import { getHour, getMinute } from '@src/shared/date/time-of-day';
@@ -25,12 +25,12 @@ export function getPlanTodoSubtitle(
 ): string | null {
   const dateLabel = match(todo)
     .with({ endDate: P.nonNullable }, ({ startDate, endDate }) =>
-      formatDateKeyRange(startDate, endDate, dateFormatContext),
+      formatDateKeyRange(startDate, endDate, todayKey, dateFormatContext),
     )
     // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
     .when(
       ({ repeat, startDate }) => repeat == null && startDate !== todayKey,
-      ({ startDate }) => formatDateKeyLabel(startDate, 'monthDay', dateFormatContext),
+      ({ startDate }) => formatYearAwareDateKeyLabel(startDate, todayKey, dateFormatContext),
     )
     .otherwise(() => null);
   const timeLabel =
@@ -42,7 +42,7 @@ export function getPlanTodoSubtitle(
           dateFormatContext,
         );
   const repeatLabel =
-    todo.repeat == null ? null : formatRepeatSummary(todo.repeat, dateFormatContext);
+    todo.repeat == null ? null : formatRepeatSummary(todo.repeat, todayKey, dateFormatContext);
   const parts = compact([dateLabel, timeLabel, repeatLabel]);
 
   return parts.length === 0 ? null : parts.join(' · ');

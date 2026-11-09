@@ -4,7 +4,10 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { type Instant, toInstant } from '@src/shared/date/instant';
 
-import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
+import {
+  toReceiptDateLabel,
+  toSubscriptionReceiptViewModel,
+} from './subscription-receipt.view-model';
 
 const SEOUL = 'Asia/Seoul';
 // 2028년 3월 1일 12:00 KST
@@ -407,5 +410,20 @@ describe('toSubscriptionReceiptViewModel', () => {
         date: toInstant('2028-03-10T04:00:00.000Z'),
       });
     });
+  });
+});
+
+describe('toReceiptDateLabel', () => {
+  it.each([
+    ['paid', 'fullDate'],
+    ['trial', 'fullDate'],
+    ['reward', 'yearAware'],
+    ['admin', 'yearAware'],
+  ] as const)('%s 영수증 날짜는 %s로 보인다', (variant, expected) => {
+    // When
+    const label = toReceiptDateLabel(variant);
+
+    // Then
+    expect(label).toBe(expected);
   });
 });

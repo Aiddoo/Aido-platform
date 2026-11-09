@@ -1,13 +1,14 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
-  formatDateLabel,
   formatHHmmTime,
+  formatYearAwareDateLabel,
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -135,6 +136,7 @@ SuggestionsList.Item = function Item({
   const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
@@ -172,7 +174,7 @@ SuggestionsList.Item = function Item({
         <HStack justify="between" align="center" className="mt-1">
           <Text size="e1" shade={5}>
             {t('suggestions.list.expires', {
-              date: formatDateLabel(suggestion.expiresAt, 'monthDay', dateFormatContext),
+              date: formatYearAwareDateLabel(suggestion.expiresAt, todayKey, dateFormatContext),
             })}
           </Text>
 

@@ -45,10 +45,26 @@ describe('formatRepeatSummary', () => {
     // When
     const label = formatRepeatSummary(
       { frequency: 'MONTHLY', monthDay: 15, end: { type: 'COUNT', count: 10 } },
+      '2026-11-09',
       { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
     );
 
     // Then
     expect(label).toBe('매월 15일 · 10회');
+  });
+
+  it.each([
+    ['올해 끝나면 연도를 뺀다', '2026-12-31', '12월 31일까지'],
+    ['내년에 끝나면 연도를 붙인다', '2027-01-31', '2027년 1월 31일까지'],
+  ] as const)('%s', (_name, untilDate, expectedEnd) => {
+    // When
+    const label = formatRepeatSummary(
+      { frequency: 'DAILY', end: { type: 'UNTIL', date: untilDate } },
+      '2026-11-09',
+      { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+    );
+
+    // Then
+    expect(label).toBe(`매일 · ${expectedEnd}`);
   });
 });

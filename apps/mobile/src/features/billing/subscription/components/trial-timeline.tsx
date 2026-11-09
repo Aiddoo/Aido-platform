@@ -1,6 +1,6 @@
 import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -55,7 +55,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
     return null;
   }
   const formatDate = (dateKey: string) =>
-    formatDateKeyLabel(dateKey, 'monthDay', dateFormatContext);
+    formatYearAwareDateKeyLabel(dateKey, currentLocalDateKey, dateFormatContext);
   const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
   const reminderStep = steps.find((step) => step.kind === 'reminder');
   const chargeStep = steps.find((step) => step.kind === 'charge');

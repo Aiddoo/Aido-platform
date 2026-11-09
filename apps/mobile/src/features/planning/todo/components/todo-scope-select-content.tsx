@@ -1,5 +1,6 @@
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -83,7 +84,8 @@ export function TodoScopeSelectContent({
 }: TodoScopeSelectContentProps) {
   const { t } = useTranslation(['todo', 'common']);
   const dateFormatContext = useDateFormatContext();
-  const dateLabel = formatDateKeyLabel(date, 'monthDay', dateFormatContext);
+  const todayKey = useTodayKey();
+  const dateLabel = formatYearAwareDateKeyLabel(date, todayKey, dateFormatContext);
   const calendarIcon = <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />;
   const repeatIcon = <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />;
 

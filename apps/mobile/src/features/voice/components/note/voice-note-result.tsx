@@ -1,8 +1,9 @@
 import { useVoiceRecordingRepository } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useView } from '@src/shared/hooks/use-view';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
@@ -138,8 +139,9 @@ function useVoiceNoteResultPlayer(note: VoiceNote) {
 VoiceNoteResult.Title = function Title({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const markCount = VoiceNotePolicy.getMarkCount(note);
-  const date = formatDateLabel(note.createdAt, 'monthDay', dateFormatContext);
+  const date = formatYearAwareDateLabel(note.createdAt, todayKey, dateFormatContext);
   const duration = formatMediaTime(note.durationMs);
 
   return (

@@ -71,7 +71,7 @@ toast.error(t('friend:toast.sendFailed'));
   // 사용처: t(INQUIRY_CATEGORY_LABEL_KEYS[category])
   ```
 - **런타임 키**(에러 코드 등): `tDynamic('errors', code, fallback)` — 타입 검증 우회 전용
-- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/date/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel)와 카탈로그 문구를 붙이는 `date-labels.ts`의 formatRelativeTimeLabel·formatWeekOfMonthLabel로만 만든다. 모두 `DateFormatContext`를 인자로 받고, 컴포넌트는 `useDateFormatContext()`로 읽는다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고 기본 locale(en)을 유지한다 — 표시 언어가 주 시작·요일 계산을 바꾸지 않도록 `dayjs.locale()`을 호출하지 않는다. 주는 `date-key.ts` `getCalendarWeek`의 일요일 시작 규칙 하나만 쓴다. "오늘"은 `useToday()`/`useTodayKey()`로 읽어 인자로 넘긴다
+- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/date/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatYearAwareDateLabel, formatYearAwareDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel)와 카탈로그 문구를 붙이는 `date-labels.ts`의 formatRelativeTimeLabel·formatWeekOfMonthLabel로만 만든다. 모두 `DateFormatContext`를 인자로 받고, 컴포넌트는 `useDateFormatContext()`로 읽는다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고 기본 locale(en)을 유지한다 — 표시 언어가 주 시작·요일 계산을 바꾸지 않도록 `dayjs.locale()`을 호출하지 않는다. 주는 `date-key.ts` `getCalendarWeek`의 일요일 시작 규칙 하나만 쓴다. "오늘"은 `useToday()`/`useTodayKey()`로 읽어 인자로 넘긴다. 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 `formatYearAwareDateLabel`·`formatYearAwareDateKeyLabel`·`formatDateKeyRange`에 오늘 key를 넘겨 올해면 월·일, 아니면 연도까지 보인다
 
 ### 에러 메시지
 

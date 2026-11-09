@@ -1,9 +1,10 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-note';
 import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -135,6 +136,7 @@ interface MemoListItemProps {
 MemoList.Item = function Item({ memo, isSelected, onSelect }: MemoListItemProps) {
   const selectMemo = useSingleTap(onSelect);
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const { title, body } = toMemoPreview(memo);
 
   return (
@@ -164,7 +166,7 @@ MemoList.Item = function Item({ memo, isSelected, onSelect }: MemoListItemProps)
           </Text>
         )}
         <Text size="e1" shade={5}>
-          {formatDateLabel(memo.createdAt, 'monthDay', dateFormatContext)}
+          {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
         </Text>
       </VStack>
     </PressableFeedback>

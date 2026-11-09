@@ -2,6 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { formatDateKeyRange, formatHourLabel } from '@src/shared/date/date-format';
 import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   DashedDivider,
@@ -91,6 +92,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
 
 function ReportPeriodLabel({ report }: { report: AiReport }) {
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   return (
     <HStack align="center" gap={8} className="flex-wrap">
       <ReportTypeChip type={report.type} className="self-center" />
@@ -103,6 +105,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
         {formatDateKeyRange(
           report.dateRange.startDate,
           report.dateRange.endDate,
+          todayKey,
           dateFormatContext,
         )}
       </Text>

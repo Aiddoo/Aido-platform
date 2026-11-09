@@ -1,6 +1,7 @@
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useCallback } from 'react';
@@ -12,6 +13,7 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 export function useFormatRefillSentence() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
 
   return useCallback(
     (snapshot: EntitlementSnapshot | undefined, feature: EntitlementFeature): string | null => {
@@ -33,11 +35,11 @@ export function useFormatRefillSentence() {
         .with({ type: 'date' }, ({ date }) =>
           t('gate.refillOn', {
             amount,
-            date: formatDateLabel(date, 'monthDay', dateFormatContext),
+            date: formatYearAwareDateLabel(date, todayKey, dateFormatContext),
           }),
         )
         .exhaustive();
     },
-    [t, dateFormatContext],
+    [t, dateFormatContext, todayKey],
   );
 }

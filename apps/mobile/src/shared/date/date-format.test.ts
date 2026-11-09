@@ -10,6 +10,8 @@ import {
   formatRelativeTimeWith,
   formatHHmmTime,
   formatTimeOfDay,
+  formatYearAwareDateKeyLabel,
+  formatYearAwareDateLabel,
 } from './date-format';
 import { fromEpochMs, toEpochMs, toInstant } from './instant';
 
@@ -191,45 +193,132 @@ describe('formatDateKeyLabel', () => {
   });
 });
 
-describe('formatDateKeyRange', () => {
-  it('같은 해의 기간은 월·일만 표시한다', () => {
+describe('formatYearAwareDateLabel', () => {
+  // 2026-12-31T16:00Z = 서울 2027-01-01 01:00, LA 2026-12-31 08:00
+  const NEW_YEAR_BOUNDARY = toInstant('2026-12-31T16:00:00Z');
+  const LA_EN: DateFormatContext = { locale: 'en-US', timeZone: 'America/Los_Angeles' };
+  const LA_KO: DateFormatContext = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' };
+
+  it.each([
+    ['서울에서 오늘이 2027-01-01이면 새해 첫날이라 연도를 뺀다', '2027-01-01', KO_SEOUL, '1월 1일'],
+    [
+      '서울에서 오늘이 2026-12-31이면 내년 날이라 연도를 붙인다',
+      '2026-12-31',
+      KO_SEOUL,
+      '2027년 1월 1일',
+    ],
+    ['LA에서 오늘이 2026-12-31이면 같은 해라 연도를 뺀다', '2026-12-31', LA_EN, 'Dec 31'],
+    [
+      'LA에서 오늘이 2027-01-01이면 지난해라 연도를 붙인다',
+      '2027-01-01',
+      LA_EN,
+      'December 31, 2026',
+    ],
+  ] as const)('%s', (_name, todayDateKey, context, expected) => {
     // When
-    const ko = formatDateKeyRange('2026-10-19', '2026-10-25', KO_SEOUL);
-    const en = formatDateKeyRange('2026-10-19', '2026-10-25', EN_SEOUL);
+    const label = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, todayDateKey, context);
+
+    // Then
+    expect(label).toBe(expected);
+  });
+
+  it('같은 순간도 사용자 시간대의 날짜로 해를 가른다', () => {
+    // Given
+    const seoulToday = '2027-01-01';
+    const losAngelesToday = '2026-12-31';
+
+    // When
+    const seoul = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, seoulToday, KO_SEOUL);
+    const losAngeles = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, losAngelesToday, LA_KO);
+
+    // Then
+    expect(seoul).toBe('1월 1일');
+    expect(losAngeles).toBe('12월 31일');
+  });
+
+  it('유효하지 않은 날짜는 빈 문자열이다', () => {
+    // When
+    const label = formatYearAwareDateLabel(new Date('invalid'), '2026-11-09', KO_SEOUL);
+
+    // Then
+    expect(label).toBe('');
+  });
+});
+
+describe('formatYearAwareDateKeyLabel', () => {
+  it.each([
+    ['ko 올해', 'ko-KR', '2028-01-15', '2월 29일'],
+    ['en 올해', 'en-US', '2028-01-15', 'Feb 29'],
+    ['ko 다른 해', 'ko-KR', '2027-12-31', '2028년 2월 29일'],
+    ['en 다른 해', 'en-US', '2029-01-01', 'February 29, 2028'],
+  ] as const)('윤일 2028-02-29를 %s에는 %s', (_name, locale, todayDateKey, expected) => {
+    // When
+    const label = formatYearAwareDateKeyLabel('2028-02-29', todayDateKey, {
+      locale,
+      timeZone: 'America/Los_Angeles',
+    });
+
+    // Then
+    expect(label).toBe(expected);
+  });
+});
+
+describe('formatDateKeyRange', () => {
+  it('두 끝이 모두 올해면 월·일만 표시한다', () => {
+    // When
+    const ko = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', KO_SEOUL);
+    const en = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', EN_SEOUL);
 
     // Then
     expect(ko).toBe('10월 19일 ~ 10월 25일');
     expect(en).toBe('Oct 19 ~ Oct 25');
   });
 
-  it('해를 넘는 기간은 연도까지 표시한다', () => {
+  it('같은 해라도 올해가 아니면 연도까지 표시한다', () => {
     // When
-    const range = formatDateKeyRange('2026-12-28', '2027-01-03', KO_SEOUL);
+    const lastYear = formatDateKeyRange('2025-10-19', '2025-10-25', '2026-11-09', KO_SEOUL);
 
     // Then
-    expect(range).toBe('2026년 12월 28일 ~ 2027년 1월 3일');
+    expect(lastYear).toBe('2025년 10월 19일 ~ 2025년 10월 25일');
+  });
+
+  it('해를 넘는 기간은 연도까지 표시한다', () => {
+    // When
+    const ko = formatDateKeyRange('2026-12-28', '2027-01-03', '2026-12-31', KO_SEOUL);
+    const en = formatDateKeyRange('2026-12-28', '2027-01-03', '2027-01-01', EN_SEOUL);
+
+    // Then
+    expect(ko).toBe('2026년 12월 28일 ~ 2027년 1월 3일');
+    expect(en).toBe('December 28, 2026 ~ January 3, 2027');
   });
 });
 
 describe('formatDateKeyCompactRange', () => {
-  it('같은 달이면 끝은 날만 쓴다', () => {
+  it('올해 같은 달이면 끝은 날만 쓴다', () => {
     // When
-    const ko = formatDateKeyCompactRange('2026-11-05', '2026-11-07', KO_SEOUL);
-    const en = formatDateKeyCompactRange('2026-11-05', '2026-11-07', EN_SEOUL);
+    const ko = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', KO_SEOUL);
+    const en = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', EN_SEOUL);
 
     // Then
     expect(ko).toBe('11월 5일~7일');
     expect(en).toBe('Nov 5~7');
   });
 
-  it('달이 다르면 끝에도 달을 쓰고 해가 다르면 연도까지 쓴다', () => {
+  it('달이 다르면 끝에도 달을 쓰고 올해가 아닌 끝이 있으면 연도까지 쓴다', () => {
     // When
-    const otherMonth = formatDateKeyCompactRange('2026-11-30', '2026-12-02', KO_SEOUL);
-    const otherYear = formatDateKeyCompactRange('2026-12-30', '2027-01-02', KO_SEOUL);
+    const otherMonth = formatDateKeyCompactRange(
+      '2026-11-30',
+      '2026-12-02',
+      '2026-11-09',
+      KO_SEOUL,
+    );
+    const otherYear = formatDateKeyCompactRange('2026-12-30', '2027-01-02', '2026-11-09', KO_SEOUL);
+    const nextYear = formatDateKeyCompactRange('2027-01-05', '2027-01-07', '2026-11-09', KO_SEOUL);
 
     // Then
     expect(otherMonth).toBe('11월 30일~12월 2일');
     expect(otherYear).toBe('2026년 12월 30일 ~ 2027년 1월 2일');
+    expect(nextYear).toBe('2027년 1월 5일 ~ 2027년 1월 7일');
   });
 });
 

@@ -137,6 +137,7 @@ export function AchievementSummary() {
                 period: formatDateKeyRange(
                   latest.dateRange.startDate,
                   latest.dateRange.endDate,
+                  todayKey,
                   dateFormatContext,
                 ),
               }),

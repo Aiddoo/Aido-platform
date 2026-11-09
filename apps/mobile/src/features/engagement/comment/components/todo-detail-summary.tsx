@@ -22,8 +22,7 @@ import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-in
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/date/date-format';
-import { isSameYearDateKey } from '@src/shared/date/date-key';
+import { formatDateKeyRange, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -145,18 +144,11 @@ TodoDetailSummary.Schedule = function Schedule() {
   const { todo } = detail;
   const timeLabel = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isRecurring = TodoPolicy.isRecurringTodo(todo);
-  const dateLabel = match({
-    endDate: todo.endDate,
-    isMultiDay: TodoPolicy.isMultiDayTodo(todo),
-    isThisYear: isSameYearDateKey(todo.startDate, todayKey),
-  })
+  const dateLabel = match({ endDate: todo.endDate, isMultiDay: TodoPolicy.isMultiDayTodo(todo) })
     .with({ isMultiDay: true, endDate: P.string }, ({ endDate }) =>
-      formatDateKeyRange(todo.startDate, endDate, dateFormatContext),
+      formatDateKeyRange(todo.startDate, endDate, todayKey, dateFormatContext),
     )
-    .with({ isThisYear: true }, () =>
-      formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext),
-    )
-    .otherwise(() => formatDateKeyLabel(todo.startDate, 'fullDate', dateFormatContext));
+    .otherwise(() => formatYearAwareDateKeyLabel(todo.startDate, todayKey, dateFormatContext));
 
   return (
     <VStack gap={6}>
@@ -363,11 +355,12 @@ function OwnRepeatLabel() {
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: list } = useQuery(useGetTodosByDateQueryOptions({ date: detail.todo.startDate }));
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const repeat = list?.todos.find((todo) => todo.id === todoId)?.repeat;
 
   return (
     <Text size="b4" shade={6} className="shrink">
-      {repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext)}
+      {repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, todayKey, dateFormatContext)}
     </Text>
   );
 }

@@ -13,8 +13,8 @@ import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-re
 import { parseInstant } from '@src/features/planning/todo/utils/parse-instant';
 import {
   formatDateKeyCompactRange,
-  formatDateKeyLabel,
   formatHHmmTime,
+  formatYearAwareDateKeyLabel,
 } from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -188,7 +188,7 @@ function DateChip({
   const singleDayLabel =
     startDateKey === todayDateKey
       ? t('dateSections.today')
-      : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
+      : formatYearAwareDateKeyLabel(startDateKey, todayDateKey, dateFormatContext);
 
   const applyStartDate = (nextStartDate: Date) => {
     const repeat = getValues('repeat');
@@ -242,7 +242,7 @@ function DateChip({
       label={
         endDateKey == null || endDateKey === startDateKey
           ? singleDayLabel
-          : formatDateKeyCompactRange(startDateKey, endDateKey, dateFormatContext)
+          : formatDateKeyCompactRange(startDateKey, endDateKey, todayDateKey, dateFormatContext)
       }
       isActive
       onPress={handlePress}
@@ -323,6 +323,7 @@ function RepeatChip({
 }: Pick<ComponentProps<typeof ActionButton>, 'onPress'> & { form: ComposerForm }) {
   const { t } = useTranslation('todo');
   const dateFormatContext = useDateFormatContext();
+  const todayDateKey = useTodayKey();
   const repeat = useWatch({ control: form.control, name: 'repeat' });
 
   return (
@@ -333,7 +334,11 @@ function RepeatChip({
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
       }
-      label={repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext)}
+      label={
+        repeat == null
+          ? t('chip.repeat')
+          : formatRepeatSummary(repeat, todayDateKey, dateFormatContext)
+      }
       isActive={repeat != null}
       onPress={onPress}
     />

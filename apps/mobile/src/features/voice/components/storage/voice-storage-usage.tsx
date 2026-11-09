@@ -2,9 +2,10 @@ import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -34,6 +35,7 @@ export function VoiceStorageUsage() {
   const { t } = useTranslation('settings');
   const { t: tVoiceNote } = useTranslation('voiceNote');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   // 저장 용량은 기기의 동기 값이라 쿼리 없이 읽고, 기다리는 것은 계정(me)뿐이다
   const storage = useVoiceNoteStorageService();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -100,7 +102,7 @@ export function VoiceStorageUsage() {
                     </Text>
                     <Text size="b4" shade={6} numberOfLines={1} className="tabular-nums">
                       {tVoiceNote('result.meta', {
-                        date: formatDateLabel(note.createdAt, 'monthDay', dateFormatContext),
+                        date: formatYearAwareDateLabel(note.createdAt, todayKey, dateFormatContext),
                         duration: formatMediaTime(note.durationMs),
                       })}
                     </Text>

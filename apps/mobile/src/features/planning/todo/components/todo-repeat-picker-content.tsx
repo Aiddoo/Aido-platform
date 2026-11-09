@@ -1,12 +1,12 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -418,6 +418,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
 }: RepeatPeriodFooterProps) {
   const { t } = useTranslation(['todo', 'common']);
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const [startDate, endType, untilDate, count] = useWatch({
     control: form.control,
     name: ['startDate', 'endType', 'untilDate', 'count'],
@@ -435,8 +436,8 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
           );
     },
   });
-  const formatMonthDay = (date: Date | Instant) =>
-    formatDateKeyLabel(toDateKey(date, dateFormatContext.timeZone), 'monthDay', dateFormatContext);
+  const formatDate = (date: Date | Instant) =>
+    formatYearAwareDateLabel(date, todayKey, dateFormatContext);
   const isMonthDayClamped = useWatch({
     control: form.control,
     compute: (values) => {
@@ -463,13 +464,13 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
           {match(endType)
             .with('NEVER', () => (
               <Text size="b3" tone="brand">
-                {t('picker.periodNever', { date: formatMonthDay(periodStart) })}
+                {t('picker.periodNever', { date: formatDate(periodStart) })}
               </Text>
             ))
             .with('COUNT', () => (
               <Text size="b3" tone="brand">
                 {t('picker.periodCount', {
-                  date: formatMonthDay(periodStart),
+                  date: formatDate(periodStart),
                   count,
                 })}
               </Text>
@@ -478,7 +479,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
               untilDate != null &&
               !isSameDay(periodStart, untilDate, dateFormatContext.timeZone) ? (
                 <Text size="b3" tone="brand">
-                  {formatMonthDay(periodStart)} - {formatMonthDay(untilDate)}
+                  {formatDate(periodStart)} - {formatDate(untilDate)}
                 </Text>
               ) : (
                 <Text size="b3" tone="neutral" shade={5}>

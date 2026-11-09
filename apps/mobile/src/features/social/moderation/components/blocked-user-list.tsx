@@ -1,7 +1,8 @@
 import { UserList } from '@src/features/identity/user/components/user-list';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -62,6 +63,7 @@ export function BlockedUserList() {
 BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser }) {
   const { t } = useTranslation('moderation');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const displayName = blockedUser.name ?? t('fallbackName');
 
   return (
@@ -69,7 +71,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
       displayName={displayName}
       subtitle={t('blockedUsers.subtitle', {
         userTag: blockedUser.userTag,
-        date: formatDateLabel(blockedUser.blockedAt, 'monthDay', dateFormatContext),
+        date: formatYearAwareDateLabel(blockedUser.blockedAt, todayKey, dateFormatContext),
       })}
       profileImage={blockedUser.profileImage}
       horizontalPadding="medium"

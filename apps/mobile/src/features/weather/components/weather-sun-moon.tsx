@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatClockTime, formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatClockTime, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -69,7 +69,7 @@ export function WeatherSunMoon() {
     nextFullMoon == null
       ? null
       : t('sunMoon.nextFullMoon', {
-          date: formatDateKeyLabel(nextFullMoon, 'monthDay', dateFormat),
+          date: formatYearAwareDateKeyLabel(nextFullMoon, todayKey, dateFormat),
         }),
   ].filter(isNotNil);
 

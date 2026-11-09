@@ -3,9 +3,10 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -34,6 +35,7 @@ interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' |
 export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const displayName = friend.name ?? friend.userTag;
 
   return (
@@ -61,9 +63,9 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             {match(InvitedFriendPolicy.getPawPrintState(friend))
               .with('stamped', () =>
                 t('friendList.stamped', {
-                  date: formatDateLabel(
+                  date: formatYearAwareDateLabel(
                     friend.qualifiedAt ?? friend.joinedAt,
-                    'monthDay',
+                    todayKey,
                     dateFormatContext,
                   ),
                 }),
@@ -92,7 +94,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
               )
               .with('unknown', () =>
                 t('friendList.joined', {
-                  date: formatDateLabel(friend.joinedAt, 'monthDay', dateFormatContext),
+                  date: formatYearAwareDateLabel(friend.joinedAt, todayKey, dateFormatContext),
                 }),
               )
               .exhaustive()}

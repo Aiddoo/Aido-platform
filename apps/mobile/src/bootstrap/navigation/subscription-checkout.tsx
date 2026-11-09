@@ -23,7 +23,7 @@ import type { SubscriptionView } from '@src/features/billing/subscription/schema
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -322,7 +322,12 @@ SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFa
 /** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
 function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: string }) {
   const { t } = useTranslation('notification');
-  const date = formatDateKeyLabel(reminderDateKey, 'monthDay', useDateFormatContext());
+  const { currentLocalDateKey } = useLocalDate();
+  const date = formatYearAwareDateKeyLabel(
+    reminderDateKey,
+    currentLocalDateKey,
+    useDateFormatContext(),
+  );
 
   return (
     // 권한·알림 설정을 못 읽어도 요금제와 결제는 그대로 보이게 이 칸만 숨긴다

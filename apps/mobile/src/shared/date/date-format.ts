@@ -103,22 +103,50 @@ export function formatDateKeyLabel(
   return formatDateLabel(toUtcMidnight(dateKey), kind, toUtcContext(context));
 }
 
+/** 오늘(사용자 시간대의 날짜 key)과 같은 해의 날만 연도를 뺀다. 지난해·내년 날짜는 연도까지 보여야 헷갈리지 않는다 */
+function toYearAwareDateLabel(dateKeys: readonly string[], todayDateKey: string): DateLabel {
+  return dateKeys.every((dateKey) => isSameYearDateKey(dateKey, todayDateKey))
+    ? 'monthDay'
+    : 'fullDate';
+}
+
+/** 올해면 "1월 5일", 올해가 아니면 "2027년 1월 5일". 순간의 해는 context 시간대로 읽는다 */
+export function formatYearAwareDateLabel(
+  value: Date | Instant,
+  todayDateKey: string,
+  context: DateFormatContext,
+): string {
+  const kind = toYearAwareDateLabel([toDateKey(value, context.timeZone)], todayDateKey);
+  return formatDateLabel(value, kind, context);
+}
+
+export function formatYearAwareDateKeyLabel(
+  dateKey: string,
+  todayDateKey: string,
+  context: DateFormatContext,
+): string {
+  return formatDateKeyLabel(dateKey, toYearAwareDateLabel([dateKey], todayDateKey), context);
+}
+
+/** 두 끝이 모두 올해면 월·일만, 하나라도 올해가 아니면 둘 다 연도까지 쓴다 */
 export function formatDateKeyRange(
   startDateKey: string,
   endDateKey: string,
+  todayDateKey: string,
   context: DateFormatContext,
 ): string {
-  const kind: DateLabel = isSameYearDateKey(startDateKey, endDateKey) ? 'monthDay' : 'fullDate';
+  const kind = toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey);
   return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
 }
 
 export function formatDateKeyCompactRange(
   startDateKey: string,
   endDateKey: string,
+  todayDateKey: string,
   context: DateFormatContext,
 ): string {
-  if (!isSameYearDateKey(startDateKey, endDateKey)) {
-    return formatDateKeyRange(startDateKey, endDateKey, context);
+  if (toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey) === 'fullDate') {
+    return formatDateKeyRange(startDateKey, endDateKey, todayDateKey, context);
   }
   const endLabel = isSameMonthDateKey(startDateKey, endDateKey)
     ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(toUtcMidnight(endDateKey))

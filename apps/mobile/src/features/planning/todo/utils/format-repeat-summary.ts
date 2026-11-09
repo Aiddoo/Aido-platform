@@ -1,4 +1,4 @@
-import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/date-format';
+import { type DateFormatContext, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
 import { t } from '@src/shared/i18n';
 import { compact } from 'es-toolkit';
@@ -34,19 +34,29 @@ export function formatRepeatCadence(
     .exhaustive();
 }
 
-function formatEnd(end: TodoRepeatEnd, context: DateFormatContext): string | null {
+function formatEnd(
+  end: TodoRepeatEnd,
+  todayDateKey: string,
+  context: DateFormatContext,
+): string | null {
   return match(end)
     .with({ type: 'NEVER' }, () => null)
     .with({ type: 'UNTIL' }, ({ date }) =>
-      t('todo:repeat.summary.untilSuffix', { date: formatDateKeyLabel(date, 'monthDay', context) }),
+      t('todo:repeat.summary.untilSuffix', {
+        date: formatYearAwareDateKeyLabel(date, todayDateKey, context),
+      }),
     )
     .with({ type: 'COUNT' }, ({ count }) => t('todo:repeat.summary.countSuffix', { count }))
     .exhaustive();
 }
 
-export function formatRepeatSummary(repeat: TodoRepeat, context: DateFormatContext): string {
+export function formatRepeatSummary(
+  repeat: TodoRepeat,
+  todayDateKey: string,
+  context: DateFormatContext,
+): string {
   return compact([
     formatRepeatCadence(repeat, toCatalogLanguage(context)),
-    formatEnd(repeat.end, context),
+    formatEnd(repeat.end, todayDateKey, context),
   ]).join(SUMMARY_SEPARATOR);
 }

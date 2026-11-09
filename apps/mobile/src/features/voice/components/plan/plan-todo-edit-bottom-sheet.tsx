@@ -10,9 +10,9 @@ import { TodoTimePickerContent } from '@src/features/planning/todo/components/to
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
-  formatDateKeyLabel,
   formatDateKeyRange,
   formatHHmmTime,
+  formatYearAwareDateKeyLabel,
 } from '@src/shared/date/date-format';
 import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -140,7 +140,7 @@ function DateChip({ form }: PlanTodoChipProps) {
   const singleDayLabel =
     startDate === todayKey
       ? t('dateSections.today')
-      : formatDateKeyLabel(startDate, 'monthDay', dateFormatContext);
+      : formatYearAwareDateKeyLabel(startDate, todayKey, dateFormatContext);
 
   const handlePress = () => {
     overlay.open(({ isOpen, close, unmount }) => (
@@ -171,7 +171,9 @@ function DateChip({ form }: PlanTodoChipProps) {
     <ActionButton
       icon={<ActionButton.Icon Icon={CalendarIcon} colorClassName="text-main" />}
       label={
-        endDate == null ? singleDayLabel : formatDateKeyRange(startDate, endDate, dateFormatContext)
+        endDate == null
+          ? singleDayLabel
+          : formatDateKeyRange(startDate, endDate, todayKey, dateFormatContext)
       }
       isActive
       onPress={handlePress}
@@ -242,6 +244,7 @@ function RepeatChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const [startDate, repeat] = useWatch({
     control: form.control,
     name: ['todo.startDate', 'todo.repeat'],
@@ -280,7 +283,9 @@ function RepeatChip({ form }: PlanTodoChipProps) {
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
       }
-      label={repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext)}
+      label={
+        repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, todayKey, dateFormatContext)
+      }
       isActive={repeat != null}
       onPress={handlePress}
     />

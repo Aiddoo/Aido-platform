@@ -3,8 +3,9 @@ import {
   type PremiumPlanType,
 } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { InlineAlert, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -115,6 +116,7 @@ function GrantEnded({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const grantEndedAt = PremiumAccessPolicy.getRecentGrantEndedAt(user.premiumAccess);
 
   if (grantEndedAt == null) {
@@ -130,7 +132,7 @@ function GrantEnded({ className }: PremiumNoticeProps) {
       className={cn('rounded-2xl bg-gray-1 px-4 py-3', className)}
     >
       {t('paywall.grantEnded', {
-        date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),
+        date: formatYearAwareDateLabel(grantEndedAt, todayKey, dateFormatContext),
       })}
     </Text>
   );

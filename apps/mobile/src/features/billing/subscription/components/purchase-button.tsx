@@ -1,4 +1,4 @@
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';
@@ -97,6 +97,7 @@ interface PurchaseDisclosureProps {
 function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDisclosureProps) {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
+  const { currentLocalDateKey } = useLocalDate();
 
   if (plan == null) {
     // 오프라인으로 멈춘 조회는 로딩이 아니라 자리를 잡지 않는다. 버튼 위 오프라인 안내가 대신 알린다
@@ -123,7 +124,11 @@ function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDi
       {trialEndDateKey == null
         ? t('paywall.renewalDisclosure', { price })
         : t('paywall.trialDisclosure', {
-            date: formatDateKeyLabel(trialEndDateKey, 'monthDay', dateFormatContext),
+            date: formatYearAwareDateKeyLabel(
+              trialEndDateKey,
+              currentLocalDateKey,
+              dateFormatContext,
+            ),
             price,
           })}
     </Text>

@@ -1,5 +1,4 @@
 import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
-import { formatDateLabel } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,6 +26,7 @@ import { match } from 'ts-pattern';
 
 import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import { SubscriptionPolicy } from '../domains/subscription.model';
+import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
@@ -47,9 +47,7 @@ export function SubscriptionReceipt() {
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   const trialPlanType =
     rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PremiumPlanType);
-  const receiptDateLabel = toReceiptDateLabel(variant);
-  const formatReceiptDate = (date: Instant) =>
-    formatDateLabel(date, receiptDateLabel, dateFormatContext);
+  const formatReceiptDate = useFormatReceiptDate(toReceiptDateLabel(variant));
 
   return (
     <ScallopedContainer>

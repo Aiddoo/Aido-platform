@@ -75,6 +75,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const badgeType = AchievementPolicy.getBadgeType(achievement);
 
   const handlePress = () => {
@@ -103,6 +104,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
             period: formatDateKeyRange(
               achievement.dateRange.startDate,
               achievement.dateRange.endDate,
+              todayKey,
               dateFormatContext,
             ),
             completed: achievement.completedTodos,
