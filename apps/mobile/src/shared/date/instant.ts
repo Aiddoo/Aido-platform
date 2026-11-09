@@ -82,7 +82,7 @@ export function toDate(date: Date | string | number): Date {
 }
 
 /** 그 순간에 그 시간대의 벽시계가 UTC보다 앞선 밀리초 */
-function getZoneOffsetMs(epochMs: number, timeZone: string): number {
+export function getZoneOffsetMs(epochMs: number, timeZone: string): number {
   const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, WALL_CLOCK_OPTIONS).formatToParts(
     new Date(epochMs),
   );

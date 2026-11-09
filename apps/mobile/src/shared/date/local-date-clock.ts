@@ -2,7 +2,7 @@ import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezon
 import { minBy } from 'es-toolkit';
 
 import { addDaysToDateKey } from './date-key';
-import { toDateKey } from './instant';
+import { getZoneOffsetMs, toDateKey } from './instant';
 
 export type LocalDateState = {
   currentLocalDate: Date;
@@ -12,16 +12,6 @@ export type LocalDateState = {
 };
 
 const MIDNIGHT_GRACE_MS = 100;
-
-const WALL_CLOCK_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric',
-  hourCycle: 'h23',
-};
 
 export function createLocalDateState(
   now: Date,
@@ -49,30 +39,12 @@ export function isSameLocalDateState(previous: LocalDateState, next: LocalDateSt
   );
 }
 
-function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    ...WALL_CLOCK_FORMAT_OPTIONS,
-    timeZone,
-  }).formatToParts(new Date(instantMs));
-  const read = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value);
-  const wallClockMs = Date.UTC(
-    read('year'),
-    read('month') - 1,
-    read('day'),
-    read('hour'),
-    read('minute'),
-    read('second'),
-  );
-  return wallClockMs - Math.floor(instantMs / 1000) * 1000;
-}
-
 /** 자정이 없거나 두 번 오는 DST 날짜가 있어 다음 날짜 key에 속하는 가장 이른 후보를 고른다 */
 export function getNextLocalMidnight(now: Date, timeZone: string): Date {
   const nextDateKey = addDaysToDateKey(toDateKey(now, timeZone), 1);
   const wallMidnightMs = Date.parse(`${nextDateKey}T00:00:00Z`);
-  const firstGuessMs = wallMidnightMs - getTimeZoneOffsetMs(wallMidnightMs, timeZone);
-  const secondGuessMs = wallMidnightMs - getTimeZoneOffsetMs(firstGuessMs, timeZone);
+  const firstGuessMs = wallMidnightMs - getZoneOffsetMs(wallMidnightMs, timeZone);
+  const secondGuessMs = wallMidnightMs - getZoneOffsetMs(firstGuessMs, timeZone);
   const startsNextDate = (instantMs: number) =>
     instantMs > now.getTime() && toDateKey(new Date(instantMs), timeZone) === nextDateKey;
   const earliestStart = minBy([firstGuessMs, secondGuessMs].filter(startsNextDate), (ms) => ms);
