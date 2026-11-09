@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ComponentType } from 'react';
 
 import {
   useUpdateMarketingConsentMutationOptions,
@@ -11,7 +11,16 @@ import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
-export function MarketingConsentSettings(props: SettingsSectionProps) {
+interface MarketingConsentSettingsProps extends SettingsSectionProps {
+  /** 광고성 앱 푸시 설명 칸. consent는 기기 알림을 모르므로 화면이 채운다 */
+  marketingPushDescription?: ComponentType;
+}
+
+/** 동의는 기기 알림과 따로 지키는 법적 선택이라 기기 알림이 꺼져 있어도 늘 바꿀 수 있다 */
+export function MarketingConsentSettings({
+  marketingPushDescription: MarketingPushDescription,
+  ...props
+}: MarketingConsentSettingsProps) {
   const { t } = useTranslation('notification');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
@@ -29,7 +38,13 @@ export function MarketingConsentSettings(props: SettingsSectionProps) {
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle
         label={t('settings.marketingPushLabel')}
-        description={t('settings.marketingPushDescription')}
+        description={
+          MarketingPushDescription == null ? (
+            t('settings.marketingPushDescription')
+          ) : (
+            <MarketingPushDescription />
+          )
+        }
         isSelected={consent.marketingPushAgreedAt != null}
         onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed })}
         isDisabled={marketingPushMutation.isPending}

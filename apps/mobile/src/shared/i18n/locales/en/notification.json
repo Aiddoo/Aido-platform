@@ -70,6 +70,7 @@
     "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",
     "marketingPushDescription": "Receive events, benefits, and tailored picks",
+    "marketingPushDeviceOff": "Device notifications are off, so you won't get these for now",
     "weatherLabel": "Weather alerts",
     "weatherDescription": "Get today's weather in the morning and tomorrow's in the evening",
     "weatherMorningLabel": "Morning weather alert",

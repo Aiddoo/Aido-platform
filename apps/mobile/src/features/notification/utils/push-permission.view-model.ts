@@ -1,14 +1,17 @@
 import { type PushPermission, PushPermissionPolicy } from '../domains/push-permission.model';
 
-type PushSummary = 'on' | 'off' | 'deviceOff';
+export type PushSummary = 'on' | 'off' | 'deviceOff';
 
-/** 알림 설정 목록의 푸시 값. 앱에서 켰는데 기기 알림이 꺼져 닿지 않으면 그 이유를 따로 보인다 */
+/**
+ * 알림 설정 값. 앱에서 켰는데 기기에서 거절해 닿지 않으면 그 이유를 따로 보인다.
+ * 아직 묻지 않은 기기는 거절한 것이 아니라 꺼짐으로 둔다
+ */
 export function toPushSummary(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },
 ): PushSummary {
-  if (!pushEnabled) {
-    return 'off';
+  if (PushPermissionPolicy.isPushDeliverable(permission)) {
+    return pushEnabled ? 'on' : 'off';
   }
-  return PushPermissionPolicy.isPushDeliverable(permission) ? 'on' : 'deviceOff';
+  return pushEnabled && !PushPermissionPolicy.isNotDetermined(permission) ? 'deviceOff' : 'off';
 }

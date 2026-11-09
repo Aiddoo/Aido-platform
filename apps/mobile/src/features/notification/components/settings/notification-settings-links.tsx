@@ -16,14 +16,9 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
+import { PUSH_SUMMARY_LABEL_KEYS } from '../../constants/notification-labels';
 import { useGetPushPermissionQueryOptions } from '../../queries/notification.queries';
 import { toPushSummary } from '../../utils/push-permission.view-model';
-
-const PUSH_SUMMARY_LABEL_KEYS = {
-  on: 'settings.on',
-  off: 'settings.off',
-  deviceOff: 'settings.deviceOff',
-} as const satisfies Record<ReturnType<typeof toPushSummary>, string>;
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 

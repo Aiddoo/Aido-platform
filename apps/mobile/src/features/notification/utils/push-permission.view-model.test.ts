@@ -22,6 +22,12 @@ describe('toPushSummary', () => {
       'on',
     ],
     [
+      '기기 알림을 아직 묻지 않았으면 거절한 것이 아니라 꺼짐',
+      { status: 'NOT_DETERMINED', canAskAgain: true },
+      true,
+      'off',
+    ],
+    [
       '앱 설정에서 끈 푸시는 기기 권한과 상관없이 꺼짐',
       { status: 'DENIED', canAskAgain: false },
       false,

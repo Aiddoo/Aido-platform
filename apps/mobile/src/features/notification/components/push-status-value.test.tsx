@@ -49,8 +49,14 @@ describe('PushStatusValue', () => {
       '꺼짐',
     ],
     [
-      '앱 알림은 켰지만 기기에서 거절했으면 꺼짐',
+      '앱 알림은 켰지만 기기에서 거절했으면 기기에서 꺼짐',
       { status: 'denied', canAskAgain: false, iosStatus: null },
+      true,
+      '기기에서 꺼짐',
+    ],
+    [
+      '앱 알림은 켰지만 기기 알림을 아직 묻지 않았으면 꺼짐',
+      { status: 'undetermined', canAskAgain: true, iosStatus: null },
       true,
       '꺼짐',
     ],

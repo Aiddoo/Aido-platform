@@ -70,6 +70,7 @@
     "marketingDescription": "이벤트·혜택·프로모션 소식을 받아요",
     "marketingPushLabel": "광고성 앱 푸시",
     "marketingPushDescription": "이벤트·혜택·맞춤 추천 알림을 받아요",
+    "marketingPushDeviceOff": "기기 알림이 꺼져 있어 지금은 받을 수 없어요",
     "weatherLabel": "날씨 알림",
     "weatherDescription": "아침엔 오늘, 저녁엔 내일 날씨를 알려줘요",
     "weatherMorningLabel": "오전 날씨 알림",

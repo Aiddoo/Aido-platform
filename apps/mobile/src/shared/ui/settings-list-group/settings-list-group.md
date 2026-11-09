@@ -119,11 +119,11 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요.
 
-| Prop          | Type        | Default | Description                                                            |
-| ------------- | ----------- | ------- | ---------------------------------------------------------------------- |
-| `label`       | `string`    | -       | 토글 제목                                                              |
-| `description` | `string`    | -       | 제목 아래 보조 설명                                                    |
-| `icon`        | `ReactNode` | -       | 앞 아이콘. `.Item`과 같은 `<SettingsListGroup.Icon Icon={XDuoIcon} />` |
+| Prop          | Type        | Default | Description                                                                                  |
+| ------------- | ----------- | ------- | -------------------------------------------------------------------------------------------- |
+| `label`       | `string`    | -       | 토글 제목                                                                                    |
+| `description` | `ReactNode` | -       | 제목 아래 보조 설명. 상태에 따라 글자를 고르는 컴포넌트도 받아요(설명 글자 모양 안에 그려요) |
+| `icon`        | `ReactNode` | -       | 앞 아이콘. `.Item`과 같은 `<SettingsListGroup.Icon Icon={XDuoIcon} />`                       |
 
 ### SettingsListGroup.Toggle.Loading
 

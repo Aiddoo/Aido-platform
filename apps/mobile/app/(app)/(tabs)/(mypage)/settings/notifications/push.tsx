@@ -1,4 +1,5 @@
 import { MarketingConsentSettings } from '@src/features/identity/consent/components/marketing-consent-settings';
+import { MarketingPushDescription } from '@src/features/notification/components/settings/marketing-push-description';
 import { PushDeliverySettings } from '@src/features/notification/components/settings/push-delivery-settings';
 import { PushPermissionSettings } from '@src/features/notification/components/settings/push-permission-settings';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,7 +28,10 @@ export default function PushSettingsScreen() {
         <Suspense
           fallback={<MarketingConsentSettings.Loading label={t('settings.sections.marketing')} />}
         >
-          <MarketingConsentSettings label={t('settings.sections.marketing')} />
+          <MarketingConsentSettings
+            label={t('settings.sections.marketing')}
+            marketingPushDescription={MarketingPushDescription}
+          />
         </Suspense>
       </QueryErrorBoundary>
     </SettingsScreenLayout>

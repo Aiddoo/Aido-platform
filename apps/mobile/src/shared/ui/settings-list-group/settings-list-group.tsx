@@ -132,7 +132,8 @@ interface SettingsListGroupToggleProps extends Omit<
   'children'
 > {
   label: string;
-  description?: string;
+  /** 글자, 또는 상태에 따라 글자를 고르는 컴포넌트(설명 글자 모양 안에 그려진다) */
+  description?: ReactNode;
   icon?: ReactNode;
 }
 
