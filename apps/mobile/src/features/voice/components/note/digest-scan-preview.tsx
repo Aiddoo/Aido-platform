@@ -6,6 +6,7 @@ import { cn } from '@src/shared/utils/cn';
 import { type ComponentProps, useEffect, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import {
+  cancelAnimation,
   Easing,
   useDerivedValue,
   useSharedValue,
@@ -36,6 +37,8 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
         -1,
       ),
     );
+
+    return () => cancelAnimation(offset);
   }, [isReducedMotion, size.height, offset]);
 
   const transform = useDerivedValue(() => [{ translateY: offset.get() }]);
