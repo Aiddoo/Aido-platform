@@ -1,4 +1,5 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
@@ -10,6 +11,13 @@ interface OptOutMarketingPushDependencies {
   readonly logger: Pick<ApplicationLogger, "log">;
 }
 
+export interface OptOutMarketingPushResult {
+  /** 토큰이 맞아 철회했는지. 응답에는 싣지 않는다 */
+  readonly isOptedOut: boolean;
+  /** 결과 안내에 쓰는 처리 시각. 토큰 유효 여부와 상관없이 준다 */
+  readonly processedAt: Date;
+}
+
 export class OptOutMarketingPush {
   readonly #dependencies: OptOutMarketingPushDependencies;
 
@@ -17,16 +25,17 @@ export class OptOutMarketingPush {
     this.#dependencies = dependencies;
   }
 
-  async execute(token: string): Promise<boolean> {
+  async execute(token: string): Promise<OptOutMarketingPushResult> {
+    const processedAt = now();
     const userId = this.#dependencies.tokens.verify(token);
     if (!userId) {
-      return false;
+      return { isOptedOut: false, processedAt };
     }
     await this.#dependencies.settings.updateMarketingPushConsent(userId, false);
     this.#dependencies.logger.log({
       event: NotificationDeliveryLogEvent.OPT_OUT_MARKETING_PUSH_OPTED_OUT,
       userId,
     });
-    return true;
+    return { isOptedOut: true, processedAt };
   }
 }

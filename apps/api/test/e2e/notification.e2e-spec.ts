@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  marketingPushOptOutResponseSchema,
   notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
@@ -1037,7 +1038,10 @@ describe("알림 E2E", () => {
         .send({ token: tokenPort.issue(user.userId) })
         .expect(200);
 
-      expect(response.body.data.optedOut).toBe(true);
+      expect(marketingPushOptOutResponseSchema.parse(response.body.data)).toMatchObject({
+        optedOut: true,
+        marketingPushWithdrawnAt: expect.any(String),
+      });
       const consent = requireRecord(
         await client.query.userConsent.findFirst({ where: { userId: user.userId } }),
       );
@@ -1050,7 +1054,10 @@ describe("알림 E2E", () => {
         .send({ token: "invalid.token" })
         .expect(200);
 
-      expect(response.body.data.optedOut).toBe(true);
+      // 처리 시각도 유효한 토큰과 같은 모양이라 응답만으로 구별할 수 없다
+      expect(
+        Object.keys(marketingPushOptOutResponseSchema.parse(response.body.data)).sort(),
+      ).toEqual(["marketingPushWithdrawnAt", "optedOut"]);
     });
   });
 

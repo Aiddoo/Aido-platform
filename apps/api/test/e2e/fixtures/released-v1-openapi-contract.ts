@@ -320,8 +320,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 광고성 동의 변경 응답(UpdateMarketingConsentResponseDto·UpdateMarketingPushConsentResponseDto)에 선택 칸 marketingWithdrawnAt·marketingPushWithdrawnAt(철회 처리 서버 시각)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/consent-records.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
 	preMarketingWithdrawnSchemasFingerprint:
 		"0be330447e0fccab4294698ba69a64e4c5418d2ddb4c3f3631199454e813ea88",
-	schemasFingerprint:
+	/** 1.15.0: 광고성 푸시 수신 거부 응답(MarketingPushOptOutResponseDto)에 선택 칸 marketingPushWithdrawnAt(요청을 처리한 서버 시각)만 추가. 토큰 유효 여부와 상관없이 항상 줘 유효성을 드러내지 않는다. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/notification.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	preMarketingPushOptOutProcessedAtSchemasFingerprint:
 		"94854f7143e4150eb621cd55280d8f51e7c9329197b97155a2c2baef3cbe1f39",
+	schemasFingerprint:
+		"9884b465b5620978687c2933e8d3e76a6e29987249d441fe999f461d2df29f1b",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
