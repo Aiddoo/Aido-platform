@@ -2,15 +2,19 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { AFTER_COMMIT_TASK_REGISTRY, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
+import { PREMIUM_GRANT_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/premium-grant-ending-notice.source.port.js";
 import { PREMIUM_GRANT_NOTIFIER } from "./application/ports/subscriptions/premium-grant-notifier.port.js";
 import { PREMIUM_GRANT_REPOSITORY } from "./application/ports/subscriptions/premium-grant.repository.port.js";
+import { QUIET_HOURS_READER } from "./application/ports/subscriptions/quiet-hours.reader.port.js";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
 import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subscriptions/subscription-event-receipt.repository.port.js";
 import { SUBSCRIPTION_USER_MUTATION_LOCK } from "./application/ports/subscriptions/subscription-user-mutation-lock.port.js";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/subscription-webhook-lock.port.js";
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
+import { TRIAL_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/trial-ending-notice.source.port.js";
 import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
+import { BillingNoticeSweeper } from "./application/services/subscriptions/billing-notice-sweeper.js";
 import { PremiumAccessProjector } from "./application/services/subscriptions/premium-access-projector.service.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
@@ -144,40 +148,38 @@ export const revokePremiumGrantProvider: FactoryProvider<RevokePremiumGrant> = {
     }),
 };
 
+export const billingNoticeSweeperProvider: FactoryProvider<BillingNoticeSweeper> = {
+  provide: BillingNoticeSweeper,
+  inject: [QUIET_HOURS_READER, UNIT_OF_WORK],
+  useFactory: (
+    quietHoursReader: ConstructorParameters<typeof BillingNoticeSweeper>[0]["quietHoursReader"],
+    unitOfWork: ConstructorParameters<typeof BillingNoticeSweeper>[0]["unitOfWork"],
+  ) =>
+    new BillingNoticeSweeper({
+      quietHoursReader,
+      unitOfWork,
+      logger: new Logger(BillingNoticeSweeper.name),
+    }),
+};
+
 export const notifyEndingPremiumGrantsProvider: FactoryProvider<NotifyEndingPremiumGrants> = {
   provide: NotifyEndingPremiumGrants,
-  inject: [PREMIUM_GRANT_REPOSITORY, PREMIUM_GRANT_NOTIFIER, UNIT_OF_WORK],
+  inject: [BillingNoticeSweeper, PREMIUM_GRANT_ENDING_NOTICE_SOURCE, PREMIUM_GRANT_NOTIFIER],
   useFactory: (
-    premiumGrantRepository: ConstructorParameters<
-      typeof NotifyEndingPremiumGrants
-    >[0]["premiumGrantRepository"],
+    sweeper: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["source"],
     notifier: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["notifier"],
-    unitOfWork: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["unitOfWork"],
-  ) =>
-    new NotifyEndingPremiumGrants({
-      premiumGrantRepository,
-      notifier,
-      unitOfWork,
-      logger: new Logger(NotifyEndingPremiumGrants.name),
-    }),
+  ) => new NotifyEndingPremiumGrants({ sweeper, source, notifier }),
 };
 
 export const notifyEndingTrialsProvider: FactoryProvider<NotifyEndingTrials> = {
   provide: NotifyEndingTrials,
-  inject: [SUBSCRIPTION_REPOSITORY, TRIAL_ENDING_NOTIFIER, UNIT_OF_WORK],
+  inject: [BillingNoticeSweeper, TRIAL_ENDING_NOTICE_SOURCE, TRIAL_ENDING_NOTIFIER],
   useFactory: (
-    subscriptionRepository: ConstructorParameters<
-      typeof NotifyEndingTrials
-    >[0]["subscriptionRepository"],
+    sweeper: ConstructorParameters<typeof NotifyEndingTrials>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyEndingTrials>[0]["source"],
     notifier: ConstructorParameters<typeof NotifyEndingTrials>[0]["notifier"],
-    unitOfWork: ConstructorParameters<typeof NotifyEndingTrials>[0]["unitOfWork"],
-  ) =>
-    new NotifyEndingTrials({
-      subscriptionRepository,
-      notifier,
-      unitOfWork,
-      logger: new Logger(NotifyEndingTrials.name),
-    }),
+  ) => new NotifyEndingTrials({ sweeper, source, notifier }),
 };
 
 export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {

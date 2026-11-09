@@ -6,9 +6,9 @@ import {
   type SubscriptionEventNotifierPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import {
-  SUBSCRIPTION_REPOSITORY,
-  type SubscriptionRepositoryPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
+  TRIAL_ENDING_NOTICE_SOURCE,
+  type TrialEndingNoticeSourcePort,
+} from "#api/modules/billing/application/ports/subscriptions/trial-ending-notice.source.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { NotifyEndingTrials } from "#api/modules/billing/application/use-cases/subscriptions/notify-ending-trials.use-case";
@@ -57,7 +57,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   let context: E2eTestContext;
   let webhook: HandleWebhookEvent;
   let notifyEndingTrials: NotifyEndingTrials;
-  let repository: SubscriptionRepositoryPort;
+  let noticeSource: TrialEndingNoticeSourcePort;
   let premiumAccess: PremiumAccessReaderPort;
   let unitOfWork: UnitOfWorkPort;
 
@@ -71,7 +71,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     });
     webhook = context.module.get(HandleWebhookEvent);
     notifyEndingTrials = context.module.get(NotifyEndingTrials);
-    repository = context.module.get(SUBSCRIPTION_REPOSITORY);
+    noticeSource = context.module.get(TRIAL_ENDING_NOTICE_SOURCE);
     premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });
@@ -361,23 +361,20 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       // Given
       const userId = await givenUser("TRIALG01");
       await webhook.execute({ body: trialPurchase(userId) });
-      const stored = await client.query.subscription.findFirst({
-        columns: { id: true },
-        where: { revenueCatId: chainOf(userId) },
-      });
-      const subscriptionId = stored?.id ?? -1;
+      const [notice] = await noticeSource.findDue({ now: at, endsBefore: trialEndsAt, limit: 1 });
+      const notices = notice == null ? [] : [notice];
       const firstClaimed = Promise.withResolvers<void>();
       const releaseFirst = Promise.withResolvers<void>();
 
       // When
       const first = unitOfWork.run(async () => {
-        const claimed = await repository.claimTrialEndingNotices([subscriptionId], at);
+        const claimed = await noticeSource.claim(notices, at);
         firstClaimed.resolve();
         await releaseFirst.promise;
         return claimed;
       });
       await firstClaimed.promise;
-      const second = unitOfWork.run(() => repository.claimTrialEndingNotices([subscriptionId], at));
+      const second = unitOfWork.run(() => noticeSource.claim(notices, at));
       try {
         await vi.waitFor(
           async () => {
@@ -395,7 +392,8 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       }
 
       // Then
-      expect(await first).toEqual([subscriptionId]);
+      expect(await first).toEqual(notices);
+      expect(notices).toHaveLength(1);
       expect(await second).toEqual([]);
     });
 

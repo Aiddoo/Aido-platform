@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, inArray, isNull, lte, ne, not, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, ne, not } from "drizzle-orm";
 
 import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
@@ -12,10 +12,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type {
   CreateSubscriptionData,
   FindLapsedPremiumUsersParams,
-  FindTrialEndingNoticesParams,
   SubscriptionRepositoryPort,
   SubscriptionUser,
-  TrialEndingNotice,
   UpdateSubscriptionStatusData,
   UpdateUserSubscriptionStatusData,
 } from "../../../application/ports/subscriptions/subscription.repository.port.js";
@@ -97,55 +95,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       where: { userId, deletedAt: { isNull: true } },
     });
     return rows.map((row) => ({ ...row, periodType: toStorePeriodType(row.periodType) }));
-  }
-
-  async findTrialEndingNotices(params: FindTrialEndingNoticesParams): Promise<TrialEndingNotice[]> {
-    const rows = await this.db
-      .select({
-        subscriptionId: subscription.id,
-        userId: subscription.userId,
-        startedAt: subscription.startedAt,
-        expiresAt: subscription.expiresAt,
-        status: subscription.status,
-      })
-      .from(subscription)
-      .where(
-        and(
-          eq(subscription.periodType, "TRIAL"),
-          isNull(subscription.trialEndingNotifiedAt),
-          isNull(subscription.deletedAt),
-          inArray(subscription.status, ["ACTIVE", "CANCELLED"]),
-          gt(subscription.expiresAt, params.now),
-          lte(subscription.expiresAt, params.endsBefore),
-          params.after == null
-            ? undefined
-            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
-        ),
-      )
-      .orderBy(asc(subscription.expiresAt), asc(subscription.id))
-      .limit(params.limit);
-    return rows.map(({ status, ...row }) => ({ ...row, willRenew: status === "ACTIVE" }));
-  }
-
-  async claimTrialEndingNotices(
-    subscriptionIds: readonly number[],
-    notifiedAt: Date,
-  ): Promise<number[]> {
-    if (subscriptionIds.length === 0) {
-      return [];
-    }
-    const claimed = await this.db
-      .update(subscription)
-      .set({ trialEndingNotifiedAt: notifiedAt })
-      .where(
-        and(
-          inArray(subscription.id, [...subscriptionIds]),
-          isNull(subscription.trialEndingNotifiedAt),
-          eq(subscription.periodType, "TRIAL"),
-        ),
-      )
-      .returning({ id: subscription.id });
-    return claimed.map((row) => row.id);
   }
 
   async findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]> {

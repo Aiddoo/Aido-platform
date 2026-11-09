@@ -58,25 +58,6 @@ export interface FindLapsedPremiumUsersParams {
   readonly limit: number;
 }
 
-export interface FindTrialEndingNoticesParams {
-  readonly now: Date;
-  /** 이 시각 이전에 끝나는 체험만 고른다. */
-  readonly endsBefore: Date;
-  /** 같은 실행에서 이미 본 후보 다음부터 읽는다(expiresAt, id 순 keyset). */
-  readonly after?: { readonly expiresAt: Date; readonly subscriptionId: number };
-  readonly limit: number;
-}
-
-/** 아직 종료 안내를 보내지 않은 무료 체험 구독 */
-export interface TrialEndingNotice {
-  readonly subscriptionId: number;
-  readonly userId: string;
-  readonly startedAt: Date;
-  readonly expiresAt: Date;
-  /** 해지하지 않아 체험이 끝나면 결제가 이어지는지 */
-  readonly willRenew: boolean;
-}
-
 /**
  * 구독 저장소 포트.
  *
@@ -96,13 +77,6 @@ export interface SubscriptionRepositoryPort {
    * 만료 웹훅을 잃은 스토어 구독자가 대상이고, 다시 계산하면 조건에서 빠진다.
    */
   findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]>;
-  /** 지금~endsBefore에 끝나는, 안내하지 않은 체험 구독을 끝나는 순서로 읽는다. */
-  findTrialEndingNotices(params: FindTrialEndingNoticesParams): Promise<TrialEndingNotice[]>;
-  /**
-   * 아직 안내하지 않은 행만 안내 시각을 기록하고 기록한 id를 돌려준다. 같은 행을 두 실행이 함께
-   * 고르면 행 잠금 뒤 조건을 다시 보므로 한 실행만 그 행을 얻는다.
-   */
-  claimTrialEndingNotices(subscriptionIds: readonly number[], notifiedAt: Date): Promise<number[]>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

@@ -5,7 +5,6 @@ import {
   isStoreSubscriptionRenewing,
   PremiumAccessPolicy,
   type PremiumGrantTerm,
-  premiumGrantEndingNoticeUntil,
   premiumGrantDaysOf,
   premiumGrantEndsAt,
   remainingPremiumGrantMs,
@@ -191,19 +190,6 @@ describe("PremiumAccessPolicy", () => {
 
       // Then
       expect(applied).toEqual([]);
-    });
-  });
-
-  describe("premiumGrantEndingNoticeUntil", () => {
-    it("지금부터 정확히 24시간 뒤까지 끝나는 기간을 안내 대상으로 본다", () => {
-      // Given
-      const now = NOW;
-
-      // When
-      const until = premiumGrantEndingNoticeUntil(now);
-
-      // Then
-      expect(until).toEqual(new Date("2028-02-27T12:00:00.000Z"));
     });
   });
 

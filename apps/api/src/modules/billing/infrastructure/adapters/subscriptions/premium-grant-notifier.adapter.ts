@@ -5,14 +5,12 @@ import {
   NotificationPublisher,
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
-  PUSH_QUIET_HOURS_READER,
-  type PushQuietHoursReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
+import type { PremiumGrantEndingNotice } from "../../../application/ports/subscriptions/premium-grant-ending-notice.source.port.js";
 import type { PremiumGrantNotifierPort } from "../../../application/ports/subscriptions/premium-grant-notifier.port.js";
-import type { PremiumGrantEndingNotice } from "../../../application/ports/subscriptions/premium-grant.repository.port.js";
 
 @Injectable()
 export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
@@ -20,15 +18,9 @@ export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
     private readonly notificationPublisher: NotificationPublisher,
     @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
     private readonly localeReader: NotificationRecipientLocaleReaderPort,
-    @Inject(PUSH_QUIET_HOURS_READER)
-    private readonly quietHoursReader: PushQuietHoursReaderPort,
   ) {}
 
-  findUsersInQuietHours(userIds: readonly string[], at: Date): Promise<ReadonlySet<string>> {
-    return this.quietHoursReader.findUsersInQuietHours(userIds, at);
-  }
-
-  async notifyEndingSoon(notices: readonly PremiumGrantEndingNotice[]): Promise<void> {
+  async notify(notices: readonly PremiumGrantEndingNotice[]): Promise<void> {
     if (notices.length === 0) {
       return;
     }

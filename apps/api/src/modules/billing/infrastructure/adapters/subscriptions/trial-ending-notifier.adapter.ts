@@ -8,14 +8,12 @@ import {
   NOTIFICATION_RECIPIENT_TIMEZONE_READER,
   type NotificationRecipientLocaleReaderPort,
   type NotificationRecipientTimezoneReaderPort,
-  PUSH_QUIET_HOURS_READER,
-  type PushQuietHoursReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { TrialEndingNotice } from "../../../application/ports/subscriptions/subscription.repository.port.js";
+import type { TrialEndingNotice } from "../../../application/ports/subscriptions/trial-ending-notice.source.port.js";
 import type { TrialEndingNotifierPort } from "../../../application/ports/subscriptions/trial-ending-notifier.port.js";
 
 @Injectable()
@@ -26,15 +24,9 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
     private readonly localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(NOTIFICATION_RECIPIENT_TIMEZONE_READER)
     private readonly timezoneReader: NotificationRecipientTimezoneReaderPort,
-    @Inject(PUSH_QUIET_HOURS_READER)
-    private readonly quietHoursReader: PushQuietHoursReaderPort,
   ) {}
 
-  findUsersInQuietHours(userIds: readonly string[], at: Date): Promise<ReadonlySet<string>> {
-    return this.quietHoursReader.findUsersInQuietHours(userIds, at);
-  }
-
-  async notifyTrialEnding(notices: readonly TrialEndingNotice[], now: Date): Promise<void> {
+  async notify(notices: readonly TrialEndingNotice[], now: Date): Promise<void> {
     if (notices.length === 0) {
       return;
     }

@@ -2,8 +2,10 @@ import { and, eq } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { PREMIUM_GRANT_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
-import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
+import {
+  PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
+  type PremiumGrantEndingNoticeSourcePort,
+} from "#api/modules/billing/application/ports/subscriptions/premium-grant-ending-notice.source.port";
 import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
@@ -200,6 +202,49 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       recentGrantEndedAt: new Date("2028-02-27T04:00:00.000Z"),
       isTrial: false,
     });
+  });
+
+  it("두 sweep이 동시에 돌아도 보상 종료 알림은 하나다", async () => {
+    // Given
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:race", durationDays: 1 });
+    const notify = context.module.get(NotifyEndingPremiumGrants);
+    const at = new Date("2028-02-26T06:00:00.000Z");
+
+    // When
+    const results = await Promise.all([notify.execute({ now: at }), notify.execute({ now: at })]);
+
+    // Then
+    expect(results.map((result) => result.notifiedCount).sort()).toEqual([0, 1]);
+    expect(
+      await client.$count(
+        notification,
+        and(eq(notification.userId, userId), eq(notification.type, "PREMIUM_GRANT_ENDING")),
+      ),
+    ).toBe(1);
+  });
+
+  it("보상 중에 산 스토어 구독이 보상 끝 뒤까지 이어지면 보상 종료 알림을 보내지 않는다", async () => {
+    // Given
+    await granter.grant({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:then-store",
+      durationDays: 1,
+    });
+    await givenStoreSubscription();
+    const notify = context.module.get(NotifyEndingPremiumGrants);
+
+    // When
+    const result = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
+
+    // Then
+    expect(result.notifiedCount).toBe(0);
+    expect(
+      await client.$count(
+        notification,
+        and(eq(notification.userId, userId), eq(notification.type, "PREMIUM_GRANT_ENDING")),
+      ),
+    ).toBe(0);
   });
 
   it("스토어 구독이 웹훅 없이 끝나도 sweep이 그 시각부터 쌓아 둔 보상을 시작하고, 아직 유효한 구독의 보상은 그대로 둔다", async () => {
@@ -794,19 +839,17 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
         durationDays: 1,
       });
     }
-    const repository = context.module.get<PremiumGrantRepositoryPort>(PREMIUM_GRANT_REPOSITORY);
+    const source = context.module.get<PremiumGrantEndingNoticeSourcePort>(
+      PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
+    );
     const params = {
       now: new Date("2028-02-26T06:00:00.000Z"),
       endsBefore: new Date("2028-02-28T00:00:00.000Z"),
     };
 
     // When
-    const first = await repository.lockEndingNotices({ ...params, limit: 1 });
-    const rest = await repository.lockEndingNotices({
-      ...params,
-      after: { endsAt: first[0]?.endsAt ?? params.now, grantId: first[0]?.grantId ?? "" },
-      limit: 10,
-    });
+    const first = await source.findDue({ ...params, limit: 1 });
+    const rest = await source.findDue({ ...params, after: first.at(-1), limit: 10 });
 
     // Then
     expect(first).toHaveLength(1);

@@ -1,19 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import {
-  and,
-  eq,
-  exists,
-  gt,
-  gte,
-  inArray,
-  isNull,
-  lte,
-  ne,
-  notExists,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, eq, exists, gt, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { validStoreEntitlementCondition } from "#api/modules/access/access-entitlement-sql.public";
@@ -22,9 +9,7 @@ import { premiumGrant, subscription } from "#api/platform/database/schema/index"
 import { now } from "#api/shared/domain/date/utils/core";
 
 import type {
-  FindPremiumGrantEndingNoticesParams,
   FindPremiumGrantUsersToReconcileParams,
-  PremiumGrantEndingNotice,
   PremiumGrantRepositoryPort,
 } from "../../../application/ports/subscriptions/premium-grant.repository.port.js";
 import {
@@ -34,7 +19,6 @@ import {
 
 const grantOf = alias(premiumGrant, "grant");
 const currentOf = alias(premiumGrant, "current");
-const nextOf = alias(premiumGrant, "next");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
@@ -176,70 +160,5 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
       .orderBy(grantOf.userId)
       .limit(params.limit);
     return rows.map((row) => row.userId);
-  }
-
-  async lockEndingNotices(
-    params: FindPremiumGrantEndingNoticesParams,
-  ): Promise<PremiumGrantEndingNotice[]> {
-    const rows = await this.db
-      .select({ grantId: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })
-      .from(grantOf)
-      .where(
-        and(
-          eq(grantOf.status, "ACTIVE"),
-          isNull(grantOf.endingNotifiedAt),
-          gt(grantOf.endsAt, params.now),
-          lte(grantOf.endsAt, params.endsBefore),
-          notExists(
-            this.db
-              .select({ one: sql`1` })
-              .from(nextOf)
-              .where(
-                and(
-                  eq(nextOf.userId, grantOf.userId),
-                  ne(nextOf.id, grantOf.id),
-                  or(
-                    eq(nextOf.status, "BANKED"),
-                    and(eq(nextOf.status, "ACTIVE"), gt(nextOf.endsAt, grantOf.endsAt)),
-                  ),
-                ),
-              ),
-          ),
-          notExists(
-            this.db
-              .select({ one: sql`1` })
-              .from(storeOf)
-              .where(
-                and(
-                  this.storeOfGrantUser(),
-                  inArray(storeOf.status, ["ACTIVE", "CANCELLED"]),
-                  or(
-                    gte(storeOf.expiresAt, grantOf.endsAt),
-                    gte(storeOf.gracePeriodEndsAt, grantOf.endsAt),
-                  ),
-                ),
-              ),
-          ),
-          params.after == null
-            ? undefined
-            : sql`(${grantOf.endsAt}, ${grantOf.id}) > (${sql.param(params.after.endsAt, grantOf.endsAt)}, ${params.after.grantId})`,
-        ),
-      )
-      .orderBy(grantOf.endsAt, grantOf.id)
-      .limit(params.limit)
-      .for("update", { of: grantOf, skipLocked: true });
-    return rows.flatMap((row) =>
-      row.endsAt == null ? [] : [{ grantId: row.grantId, userId: row.userId, endsAt: row.endsAt }],
-    );
-  }
-
-  async markEndingNotified(grantIds: readonly string[], notifiedAt: Date): Promise<void> {
-    if (grantIds.length === 0) {
-      return;
-    }
-    await this.db
-      .update(premiumGrant)
-      .set({ endingNotifiedAt: notifiedAt })
-      .where(and(inArray(premiumGrant.id, [...grantIds]), isNull(premiumGrant.endingNotifiedAt)));
   }
 }

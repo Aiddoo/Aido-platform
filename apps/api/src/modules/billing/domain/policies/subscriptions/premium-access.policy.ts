@@ -1,6 +1,5 @@
 import {
   PREMIUM_GRANT_ENDED_WINDOW_DAYS,
-  PREMIUM_GRANT_ENDING_NOTICE_DAYS,
   PREMIUM_SOURCE,
   type PremiumSource,
   STORE_PERIOD_TYPE,
@@ -16,9 +15,6 @@ export type PremiumGrantStatusValue = "BANKED" | "ACTIVE" | "ENDED" | "REVOKED";
 
 /** 보상 기간 계산은 UTC 달력 기준이라 하루는 항상 24시간이다. */
 const DAY_MS = 24 * 60 * 60 * 1_000;
-
-/** 보상 기간이 끝나기 이만큼 전에 한 번 안내한다. */
-const PREMIUM_GRANT_ENDING_NOTICE_MS = PREMIUM_GRANT_ENDING_NOTICE_DAYS * DAY_MS;
 
 /** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간 */
 const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
@@ -218,11 +214,6 @@ export function remainingPremiumGrantMs(grant: PremiumGrantTerm, now: Date): num
  */
 function storeHandoffAt(subscription: StoreEntitlement): Date {
   return storeEntitlementEndsAt(subscription) ?? new Date(subscription.expiresAt);
-}
-
-/** 이 시각 이전에 끝나는 마지막 보상 기간을 지금 안내한다. */
-export function premiumGrantEndingNoticeUntil(now: Date): Date {
-  return addMilliseconds(PREMIUM_GRANT_ENDING_NOTICE_MS, now);
 }
 
 /** 지금 기간을 정하는(가장 늦게 끝나는) 유효한 스토어 구독이 체험이면 체험 중이다. */
