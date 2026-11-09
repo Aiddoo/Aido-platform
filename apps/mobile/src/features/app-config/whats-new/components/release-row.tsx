@@ -30,8 +30,9 @@ export function ReleaseRow({ release }: { release: Pick<ReleaseEntry, 'id' | 'su
       <HStack align="center" gap={12}>
         <VStack flex={1} gap={8}>
           <HStack align="center" gap={8}>
+            {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
             {isLatest && (
-              <Chip size="sm" className="bg-highlight">
+              <Chip size="sm" className="bg-highlight" pointerEvents="none">
                 <Text size="e1" weight="semibold" tone="brand">
                   {t('list.newBadge')}
                 </Text>

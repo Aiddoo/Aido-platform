@@ -236,8 +236,10 @@ WeatherBriefing.Item = function Item({
   const advice = translate(row.advice);
   const openActions = () =>
     push({ pathname: '/todo/[todoId]/actions', params: { todoId: todo.todoId, date: todayKey } });
+  // TodoRow가 누름 영역이라 Pressable인 Chip이 줄 탭을 가로채지 않게 한다
   const chip = (
     <WeatherBriefingChip
+      pointerEvents="none"
       condition={row.chipCondition}
       isDaylight={todo.hour.isDaylight}
       label={row.chipLabel}

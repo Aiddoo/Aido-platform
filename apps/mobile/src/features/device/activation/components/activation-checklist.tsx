@@ -200,8 +200,9 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
         >
           {label}
         </Text>
+        {/* 초대 단계는 PressableFeedback 안이라 Pressable인 Chip이 탭을 가로채지 않게 한다 */}
         {hasReward && (
-          <Chip size="sm" variant="soft" color="accent" className="max-w-full">
+          <Chip size="sm" variant="soft" color="accent" className="max-w-full" pointerEvents="none">
             <Text
               size="e1"
               weight="semibold"

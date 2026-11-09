@@ -112,8 +112,9 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
             })}
           </Text>
         </VStack>
+        {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
         {note.digest == null && (
-          <Chip size="sm" variant="soft" color="accent">
+          <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
             <Text size="e1" weight="medium" className="text-accent-soft-foreground">
               {t('drafts.notDigested')}
             </Text>

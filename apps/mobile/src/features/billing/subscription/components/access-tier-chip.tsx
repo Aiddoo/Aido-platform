@@ -32,8 +32,9 @@ export function AccessTierChip() {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { labelKey, color, className, textClassName } = ACCESS_TIER_CHIP_CONFIG[entitlements.tier];
 
+  // 프로필 줄 안에 놓이는 표시용이라 Pressable인 Chip이 줄 탭을 가로채지 않게 한다
   return (
-    <Chip size="sm" variant="soft" color={color} className={className}>
+    <Chip size="sm" variant="soft" color={color} className={className} pointerEvents="none">
       <Text size="e1" weight="medium" className={textClassName}>
         {t(labelKey)}
       </Text>

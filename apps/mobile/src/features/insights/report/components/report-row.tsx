@@ -33,14 +33,15 @@ export function ReportRow({ report, isSample, isLast = false }: ReportRowProps) 
         <VStack gap={10}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
+              {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
               {isSample && (
-                <Chip size="sm" variant="soft" color="warning">
+                <Chip size="sm" variant="soft" color="warning" pointerEvents="none">
                   <Text size="e1" weight="medium" className="text-warning">
                     {t('report.sampleBadge')}
                   </Text>
                 </Chip>
               )}
-              <ReportTypeChip type={report.type} />
+              <ReportTypeChip type={report.type} pointerEvents="none" />
             </HStack>
 
             <VStack align="end">
