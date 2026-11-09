@@ -10,12 +10,16 @@ import { getErrorMessage } from '@src/shared/errors';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useEffectEvent, useRef } from 'react';
+import { match } from 'ts-pattern';
 
 import { MarketingPushOptInBottomSheet } from '../components/marketing-push-opt-in-bottom-sheet';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+
+/** null은 답 없이 사라졌을 때(로그아웃 등)라 거절로 남기지 않는다 */
+type MarketingPushOfferChoice = 'agree' | 'dismiss' | null;
 
 /** 완료 체크가 끝나는 모습을 보고 난 뒤에 시트를 올린다 */
 const OFFER_DELAY_MS = 700;
@@ -67,23 +71,30 @@ export function useOfferMarketingPushAfterCompletion() {
     }
     hasOfferedRef.current = true;
     trackEvent('marketing_push_prompt_shown', { source: 'completion_sheet' });
-    overlay.open(({ isOpen, close, unmount }) => (
-      <MarketingPushOptInBottomSheet
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            repository.dismiss(me.id, getNowInstant());
-            trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
-            close();
-          }
-        }}
-        onExit={unmount}
-        onAgree={() => {
-          trackEvent('marketing_push_opted_in', { source: 'completion_sheet' });
-          close();
-        }}
-      />
-    ));
+    // 동의 뒤 닫히는 애니메이션도 닫힘을 알리므로 처음 고른 답 하나만 남긴다
+    const choice = await overlay.openAsync<MarketingPushOfferChoice>(
+      ({ isOpen, close, unmount }) => (
+        <MarketingPushOptInBottomSheet
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              close('dismiss');
+            }
+          }}
+          onExit={unmount}
+          onAgree={() => close('agree')}
+        />
+      ),
+      { dismissedValue: null },
+    );
+    match(choice)
+      .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
+      .with('dismiss', () => {
+        repository.dismiss(me.id, getNowInstant());
+        trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
+      })
+      .with(null, () => undefined)
+      .exhaustive();
   });
 
   useEffect(() => {

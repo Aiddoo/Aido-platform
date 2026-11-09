@@ -9,13 +9,17 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-quer
 import {
   createAnalyticsStub,
   createHttpClientStub,
+  createMemoryObservableSyncStorage,
   createTestQueryClient,
   renderUi,
+  setupFakeTimersPerTest,
 } from '@src/shared/__tests__';
+import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import { act } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
+import { createMarketingPushPromptRepository } from '../apis/marketing-push-prompt.repository';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useOfferMarketingPushAfterCompletion } from './use-offer-marketing-push';
 
@@ -42,6 +46,7 @@ async function renderOffer() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createPreferenceDto({ pushEnabled: true })));
   const analytics = createAnalyticsStub();
+  const syncStorage = createMemoryObservableSyncStorage();
   // 앱처럼 Overlay 호스트를 LocalDateProvider 안에 둔다(제안 시트가 날짜 형식을 쓴다)
   await renderUi(
     <LocalDateProvider>
@@ -49,19 +54,17 @@ async function renderOffer() {
         <OfferProbe />
       </OverlayProvider>
     </LocalDateProvider>,
-    { queryClient, di: { httpClient, analytics } },
+    { queryClient, di: { httpClient, analytics, syncStorage } },
   );
-  return { analytics, httpClient };
+  return {
+    analytics,
+    httpClient,
+    prompts: createMarketingPushPromptRepository(syncStorage),
+  };
 }
 
 describe('useOfferMarketingPushAfterCompletion', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('설정 화면을 열지 않아 알림 설정이 캐시에 없어도 받아 와서 제안한다', async () => {
     // Given
@@ -95,5 +98,33 @@ describe('useOfferMarketingPushAfterCompletion', () => {
       'marketing_push_prompt_shown',
       expect.anything(),
     );
+  });
+
+  it('동의하면 시트가 닫히는 순간에도 거절로 남기지 않는다', async () => {
+    // Given
+    const { analytics, httpClient, prompts } = await renderOffer();
+    httpClient.patch.mockResolvedValue(ok({ marketingPushAgreedAt: '2026-03-01T12:00:00.000Z' }));
+    await act(async () => {
+      emitTodoCompletionChanged({ isCompleted: true });
+      await jest.advanceTimersByTimeAsync(OFFER_DELAY_MS);
+    });
+
+    // When
+    await act(async () => {
+      fireEvent.press(await screen.findByText('받을게요'));
+      await jest.runOnlyPendingTimersAsync();
+    });
+    // 동의 뒤 닫히는 애니메이션이 시작되면 시트는 닫힘을 한 번 더 알린다
+    await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('marketing_push_opted_in', {
+      source: 'completion_sheet',
+    });
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'marketing_push_prompt_dismissed',
+      expect.anything(),
+    );
+    expect(prompts.find(createUser().id).dismissedAt).toBeNull();
   });
 });
