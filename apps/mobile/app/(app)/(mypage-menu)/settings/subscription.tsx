@@ -14,7 +14,6 @@ import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
-import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -144,7 +143,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 
         <PremiumNotice.Ending className="mb-3" />
 
-        <SubscriptionReceipt rewardStamp={<InvitePawPrintBoard.Stamp />} />
+        <SubscriptionReceipt />
 
         <Spacing size={16} />
 

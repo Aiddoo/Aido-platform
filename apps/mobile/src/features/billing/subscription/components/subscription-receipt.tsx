@@ -8,7 +8,9 @@ import {
   DashedDivider,
   FillTicketIcon,
   HStack,
+  IconCircle,
   ListRow,
+  PawIcon,
   ScallopedContainer,
   Spacing,
   Text,
@@ -20,7 +22,6 @@ import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
@@ -31,12 +32,7 @@ import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import type { SubscriptionReceiptRow } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
-interface SubscriptionReceiptProps {
-  /** 보상 기간 영수증 모서리에 찍는 장식. 어떤 도장인지는 화면이 정한다 */
-  rewardStamp?: ReactNode;
-}
-
-export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
+export function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
@@ -52,8 +48,18 @@ export function SubscriptionReceipt({ rewardStamp }: SubscriptionReceiptProps) {
 
   return (
     <ScallopedContainer>
-      {variant === 'reward' && rewardStamp != null && (
-        <Box className="absolute right-4 top-4">{rewardStamp}</Box>
+      {variant === 'reward' && (
+        <IconCircle
+          tone="brand"
+          pointerEvents="none"
+          className="absolute right-4 top-4 -rotate-6"
+          icon={
+            <>
+              <Box className="absolute inset-1 rounded-full border border-dashed border-white/90 dark:border-gray-1/90" />
+              <PawIcon width={20} height={20} colorClassName="text-white dark:text-gray-1" />
+            </>
+          }
+        />
       )}
 
       <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>

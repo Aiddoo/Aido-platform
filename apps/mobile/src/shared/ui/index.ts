@@ -99,6 +99,7 @@ export {
   TrashIcon,
 } from './icon';
 export { IconButton, type IconButtonProps } from './icon-button';
+export { IconCircle } from './icon-circle';
 export * from './icon-count-button';
 export { Image } from './image';
 export {
