@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { HttpClientModule } from "@nestjs/http-client";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import {
@@ -21,6 +22,8 @@ import {
   QUIET_HOURS_READER,
   type QuietHoursReaderPort,
 } from "./application/ports/subscriptions/quiet-hours.reader.port.js";
+import { STORE_SUBSCRIPTION_RECONCILE_SCHEDULER } from "./application/ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
+import { STORE_SUBSCRIPTION_STATUS_READER } from "./application/ports/subscriptions/store-subscription-status.reader.port.js";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
 import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subscriptions/subscription-event-receipt.repository.port.js";
@@ -42,10 +45,16 @@ import {
   premiumAccessProjectorProvider,
   premiumAccessReaderProvider,
   premiumGranterProvider,
+  reconcileStoreSubscriptionsProvider,
   sweepPremiumGrantsProvider,
   revokePremiumGrantProvider,
 } from "./billing-subscriptions-application.providers.js";
 import { PremiumGrantNotifierAdapter } from "./infrastructure/adapters/subscriptions/premium-grant-notifier.adapter.js";
+import {
+  REVENUECAT_HTTP_CLIENT,
+  REVENUECAT_TIMEOUT_MS,
+  RevenueCatStoreSubscriptionStatusReader,
+} from "./infrastructure/adapters/subscriptions/revenuecat-store-subscription-status.reader.js";
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscriptions/subscription-event-notifier.adapter.js";
 import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter.js";
@@ -54,6 +63,8 @@ import { UpcomingRenewalNotifierAdapter } from "./infrastructure/adapters/subscr
 import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
 import { PremiumGrantSweepJob } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.job.js";
 import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.processor.js";
+import { StoreSubscriptionReconcileProcessor } from "./infrastructure/jobs/subscriptions/store-subscription-reconcile.processor.js";
+import { StoreSubscriptionReconcileScheduler } from "./infrastructure/jobs/subscriptions/store-subscription-reconcile.scheduler.js";
 import { DrizzlePremiumGrantEndingNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-premium-grant-ending-notice.source.js";
 import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/subscriptions/drizzle-premium-grant.repository.js";
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription-event-receipt.repository.js";
@@ -68,6 +79,12 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     AccessModule,
     OperationsNotificationsModule,
     NotificationDeliveryModule,
+    HttpClientModule.register({
+      name: REVENUECAT_HTTP_CLIENT,
+      retry: false,
+      throwOnHttpError: false,
+      timeout: REVENUECAT_TIMEOUT_MS,
+    }),
   ],
   controllers: [SubscriptionController],
   providers: [
@@ -120,6 +137,16 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },
     PremiumGrantSweepJob,
     PremiumGrantSweepProcessor,
+    {
+      provide: STORE_SUBSCRIPTION_STATUS_READER,
+      useClass: RevenueCatStoreSubscriptionStatusReader,
+    },
+    {
+      provide: STORE_SUBSCRIPTION_RECONCILE_SCHEDULER,
+      useClass: StoreSubscriptionReconcileScheduler,
+    },
+    reconcileStoreSubscriptionsProvider,
+    StoreSubscriptionReconcileProcessor,
   ],
   exports: [PREMIUM_GRANTER, PREMIUM_ACCESS_READER],
 })

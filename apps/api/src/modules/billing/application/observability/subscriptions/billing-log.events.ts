@@ -20,6 +20,11 @@ export const BillingLogEvent = {
   TRIAL_ENDING_NOTIFIED: "billing.subscription.trial-ending.notified",
   RENEWAL_UPCOMING_NOTIFIED: "billing.subscription.renewal-upcoming.notified",
   PREMIUM_GRANT_SWEEP_STEP_FAILED: "billing.premium-grant.sweep.step.failed",
+  RECONCILE_CORRECTED: "billing.subscription.reconcile.corrected",
+  RECONCILE_UNCHANGED: "billing.subscription.reconcile.unchanged",
+  RECONCILE_FAILED: "billing.subscription.reconcile.failed",
+  RECONCILE_DISABLED: "billing.subscription.reconcile.disabled",
+  RECONCILE_INVALID: "billing.subscription.reconcile.invalid",
   PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED: "billing.premium-grant.sweep.scheduler.registered",
   PREMIUM_GRANT_SWEEP_JOB_FAILED: "billing.premium-grant.sweep.job.failed",
 } as const;

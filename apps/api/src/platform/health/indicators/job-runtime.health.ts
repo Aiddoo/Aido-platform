@@ -5,6 +5,7 @@ import { withTimeout } from "es-toolkit";
 import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-jobs.public";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/billing-subscriptions-jobs.public";
 import {
   NOTIFICATION_DEAD_LETTER_QUEUE,
   NOTIFICATION_QUEUE,
@@ -40,6 +41,7 @@ const MONITORED_QUEUES = [
   TODO_SERIES_MATERIALIZATION_QUEUE,
   TODO_TIMEZONE_REBASE_QUEUE,
   QUOTA_ABANDONED_REFUND_QUEUE,
+  STORE_SUBSCRIPTION_RECONCILE_QUEUE,
 ] as const;
 
 /**

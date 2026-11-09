@@ -63,6 +63,30 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       : Subscription.reconstitute({ ...row, periodType: toStorePeriodType(row.periodType) });
   }
 
+  async findReconcilableByUserId(userId: string): Promise<Subscription[]> {
+    const rows = await this.db.query.subscription.findMany({
+      columns: {
+        id: true,
+        userId: true,
+        revenueCatId: true,
+        productId: true,
+        status: true,
+        startedAt: true,
+        expiresAt: true,
+        gracePeriodEndsAt: true,
+        cancelledAt: true,
+        lastProcessedEventId: true,
+        nextProductId: true,
+        periodType: true,
+      },
+      where: { userId, deletedAt: { isNull: true }, status: { in: ["ACTIVE", "CANCELLED"] } },
+      orderBy: { id: "asc" },
+    });
+    return rows.map((row) =>
+      Subscription.reconstitute({ ...row, periodType: toStorePeriodType(row.periodType) }),
+    );
+  }
+
   /**
    * RevenueCat appUserId로 사용자 조회
    *

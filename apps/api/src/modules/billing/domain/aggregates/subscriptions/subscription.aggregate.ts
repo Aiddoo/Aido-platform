@@ -8,6 +8,7 @@ import {
 import { isSame } from "#api/shared/domain/date/utils/compare";
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot } from "#api/shared/domain/index";
+import { storeEntitlementEndsAt } from "#api/shared/domain/store-renewal-grace";
 
 import { SubscriptionPlanPolicy } from "../../policies/subscriptions/subscription-plan.policy.js";
 
@@ -40,6 +41,23 @@ export type SubscriptionPersistenceState = Pick<
   | "nextProductId"
   | "periodType"
 >;
+
+/** 스토어가 지금 알려 주는 한 체인의 상태. 웹훅이 늦거나 빠져도 이 값이 진실이다. */
+export interface StoreSubscriptionState {
+  /** 우리 체인 키(Subscription.revenueCatId)로 찾은 체인 */
+  readonly storeSubscriptionId: string;
+  /** 지금 기간의 스토어 상품 ID. 스토어가 알려 주지 않으면 null이다. */
+  readonly productId: string | null;
+  /** 지금 기간의 끝. 무기한 일시정지면 null이다. */
+  readonly periodEndsAt: Date | null;
+  readonly willRenew: boolean;
+  readonly isTrial: boolean;
+  /** 스토어 기준으로 지금 엔타이틀먼트를 줘야 하는지 */
+  readonly givesAccess: boolean;
+}
+
+/** 스토어 상태와 달라 고친 칸 */
+export type SubscriptionReconcileField = "status" | "expiresAt" | "productId" | "periodType";
 
 function copyDate(value: Date | null): Date | null {
   return value == null ? null : new Date(value);
@@ -279,6 +297,58 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     this.#changeExpiry(expiresAt);
     this.#recordEvent(eventId);
     return true;
+  }
+
+  /**
+   * 스토어가 알려 준 상태로 행을 맞추고 고친 칸을 돌려준다. 같으면 빈 배열이다. 스토어가 접근을 주지 않는데
+   * 우리가 아직 엔타이틀먼트를 주는 행(놓친 환불·만료, Play 요금제 교체로 남은 옛 체인)은 지금 끝낸다.
+   * 접근을 주면 만료·자동 갱신·체험·상품을 스토어 값으로 맞춘다(놓친 갱신, 늦게 온 지난 기간 이벤트).
+   */
+  reconcileWithStore(state: StoreSubscriptionState, at: Date): SubscriptionReconcileField[] {
+    if (!state.givesAccess) {
+      const entitlementEndsAt = storeEntitlementEndsAt(this.props);
+      if (entitlementEndsAt == null || entitlementEndsAt.getTime() <= at.getTime()) {
+        return [];
+      }
+      const fields: SubscriptionReconcileField[] = ["status"];
+      this.props.status = "EXPIRED";
+      this.props.gracePeriodEndsAt = null;
+      if (this.props.expiresAt.getTime() > at.getTime()) {
+        this.props.expiresAt = new Date(at);
+        fields.push("expiresAt");
+      }
+      return fields;
+    }
+
+    const fields: SubscriptionReconcileField[] = [];
+    const status = state.willRenew ? "ACTIVE" : "CANCELLED";
+    if (this.props.status !== status) {
+      this.props.status = status;
+      this.props.cancelledAt = state.willRenew ? null : (this.props.cancelledAt ?? new Date(at));
+      fields.push("status");
+    }
+    if (state.periodEndsAt != null && !isSame(this.props.expiresAt, state.periodEndsAt)) {
+      this.props.expiresAt = new Date(state.periodEndsAt);
+      fields.push("expiresAt");
+    }
+    if (state.productId != null && state.productId !== this.props.productId) {
+      this.#applyProduct(state.productId);
+      fields.push("productId");
+    }
+    const periodType = this.#reconciledPeriodType(state.isTrial);
+    if (periodType !== this.props.periodType) {
+      this.props.periodType = periodType;
+      fields.push("periodType");
+    }
+    return fields;
+  }
+
+  // 체험 여부만 스토어로 맞춘다. 도입가·프로모션 같은 다른 유형은 웹훅이 정한 그대로 둔다
+  #reconciledPeriodType(isTrial: boolean): StorePeriodType | null {
+    if (isTrial) {
+      return STORE_PERIOD_TYPE.TRIAL;
+    }
+    return this.isTrial() ? STORE_PERIOD_TYPE.NORMAL : this.props.periodType;
   }
 
   /** 이벤트의 만료 시각이 지금 기간보다 이르면 이미 지난 기간의 이벤트다. 만료 시각이 없으면 판단하지 않는다. */

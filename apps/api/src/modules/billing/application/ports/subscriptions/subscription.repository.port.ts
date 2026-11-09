@@ -66,6 +66,8 @@ export interface FindLapsedPremiumUsersParams {
  */
 export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
+  /** 이 사용자가 소유한, 아직 엔타이틀먼트 상태(ACTIVE·CANCELLED)인 삭제되지 않은 체인 행 */
+  findReconcilableByUserId(userId: string): Promise<Subscription[]>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
   /** 이 사용자가 소유한 삭제되지 않은 스토어 구독 행을 한 번에 읽는다. */
   findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]>;

@@ -9,6 +9,11 @@ export const externalSchema = z.object({
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */
   REVENUECAT_PROJECT_ID: z.string().min(1).optional(),
+  /**
+   * RevenueCat REST API v2 비밀 키(읽기 전용: customer_information:subscriptions:read,
+   * project_configuration:products:read). REVENUECAT_PROJECT_ID와 함께 있어야 웹훅 뒤 스토어 상태 대조가 켜진다.
+   */
+  REVENUECAT_API_V2_SECRET_KEY: z.string().min(1).optional(),
 
   // Redis 캐시/세션 (선택) - 빈 문자열 허용
   REDIS_URL: z

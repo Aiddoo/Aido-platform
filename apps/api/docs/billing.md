@@ -45,3 +45,25 @@ RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_f
 ## 상품 변경
 
 RevenueCat `PRODUCT_CHANGE`는 정보성 안내다. `product_id`는 바꾸기 전 상품, `new_product_id`는 바꾼 대상이고 `expiration_at_ms`는 바꾸기 전 상품의 만료다. 실제 적용 신호는 App Store·Stripe가 `RENEWAL`, Google Play가 `INITIAL_PURCHASE`(새 체인)다([이벤트 필드](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields), [구독 관리](https://www.revenuecat.com/docs/subscription-guidance/managing-subscriptions)). 그래서 서버는 `PRODUCT_CHANGE`에서 상품·만료·상태를 바꾸지 않고 `Subscription.nextProductId = new_product_id ?? null`만 남기고(갱신 뒤 늦게 온 지난 기간의 안내는 무시), `RENEWAL`·`INITIAL_PURCHASE`가 `productId`를 이벤트 상품으로 맞추고 `nextProductId`를 비운다. `/me`의 `premiumPlanType`은 지금 기간 상품(`planType()`), 연간 갱신 안내는 다음 결제 상품(`renewingPlanType()` = `nextProductId ?? productId`)으로 판단한다.
+
+## 웹훅 뒤 스토어 상태 대조
+
+RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기를 권한다([웹훅](https://www.revenuecat.com/docs/integrations/webhooks): "we recommend calling the GET /subscribers REST API endpoint after receiving any webhook"). 서버는 웹훅을 신호로 보고, 처리 원장에 새로 기록된 이벤트마다 같은 트랜잭션에 `store-subscription-reconcile.v1` 잡을 넣는다. 1분 구간마다 사용자당 잡 하나로 묶고(idempotency key `store-subscription-reconcile_<userId>_<구간 시작>`, 구간이 끝난 뒤 시작), 재시도 3회·backoff·만료 5분이다.
+
+`ReconcileStoreSubscriptions`는 사용자의 ACTIVE·CANCELLED 체인 행을 스토어 상태로 맞춘다. 스토어 읽기는 트랜잭션 밖에서 하고, 실패하면 아무것도 바꾸지 않고 던져 잡이 다시 시도한다. 재시도가 끝나면 운영 경보 `billing.subscription.reconcile.failed`를 올린다.
+
+| 스토어 상태                     | 우리 행                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 접근 없음(`gives_access=false`) | 아직 엔타이틀먼트를 주는 행을 지금 끝낸다(EXPIRED). 놓친 환불·만료, Play 요금제 교체로 남은 옛 체인 |
+| 접근 있음                       | 만료(`current_period_ends_at`)·자동 갱신(ACTIVE/CANCELLED)·체험 여부·상품을 스토어 값으로 맞춘다    |
+| 스토어가 모르는 체인            | 바꾸지 않는다                                                                                       |
+
+바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비우며 `billing.subscription.reconcile.corrected`(`userId`·`correctedCount`·`fields`)를 남긴다. 같으면 `…unchanged`다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
+
+API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscription)(`GET /projects/{project_id}/subscriptions?store_subscription_identifier=`)을 쓴다. 이 검색은 App Store 체인의 어떤 거래 ID나 Play의 어떤 주문 ID도 받으므로, 우리 체인 키 `Subscription.revenueCatId`(웹훅의 `original_transaction_id`)로 행과 1:1로 맞는다. 응답의 [Subscription](https://www.revenuecat.com/docs/api-v2/subscription-data-model)은 `gives_access`·`auto_renewal_status`·`status`(`trialing` 등)·`current_period_ends_at`을 주므로 교체된 Play 체인·환불·체험을 웹훅 없이 판별한다. 상품 ID는 RevenueCat 내부 ID라 [상품 조회](https://www.revenuecat.com/docs/api-v2/product)의 `store_identifier`(Play는 `상품:기본요금제`)로 바꾸고 프로세스 안에서 한 번만 읽는다.
+
+- 고객 단위 목록(`/customers/{id}/subscriptions`)은 `store_subscription_identifier`가 최신 거래·주문 ID라 우리 행과 바로 맞지 않아 쓰지 않는다.
+- v1 `GET /subscribers`는 상품 ID로 묶여 같은 상품의 여러 체인을 구분하지 못하고, 없는 고객을 만드는 부작용이 있어 쓰지 않는다.
+- 레이트 리밋([API v2](https://www.revenuecat.com/docs/api-v2)): Customer Information 480회/분, Project Configuration 60회/분. 대조는 체인마다 한 번, 상품은 프로세스당 한 번이다. 호출은 `revenuecat` 외부 호출 정책(bulkhead 2, 연속 5회 공급자 장애에 회로) 안에서 하고 재시도는 pg-boss 한 층이다.
+- 설정: `REVENUECAT_API_V2_SECRET_KEY`와 `REVENUECAT_PROJECT_ID`가 모두 있어야 켜진다. 없으면 시작할 때 `billing.subscription.reconcile.disabled`를 한 번 남기고 잡을 넣지 않는다(기존 웹훅 처리만). 키는 RevenueCat 대시보드 Project settings → API keys에서 **V2**로 만들고 권한은 읽기 둘(`customer_information:subscriptions:read`, `project_configuration:products:read`)만 준다. v1 키는 v2에서 동작하지 않는다.
+- Google Play는 요금제를 바꾸면 새 구매 토큰(새 체인)이 생기고 옛 토큰은 `linkedPurchaseToken`으로 무효화해야 한다([Play 구독](https://developer.android.com/google/play/billing/subscriptions)). 옛 체인의 EXPIRATION은 만료 시각이 저장값보다 일러 무시되지만, 대조가 스토어의 `gives_access=false`를 보고 옛 체인을 끝낸다.

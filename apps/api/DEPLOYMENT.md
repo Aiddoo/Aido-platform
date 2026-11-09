@@ -227,6 +227,7 @@ WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
 | WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY         | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
 | RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
+| REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID              | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다(`docs/billing.md`). v2 비밀 키, 권한은 읽기 둘뿐               |
 | FEATURE_DISCOVERY_*                                               | 새 기능 소개. 규칙은 아래                                                                                         |
 
 새 기능 소개 값은 릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
@@ -235,7 +236,7 @@ WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
 - `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다(1.15.0).
 - `FEATURE_DISCOVERY_LAUNCHED_AT`: 끝이 `Z`인 UTC ISO로 쓴 그 릴리스의 배포 시각이다. 이후 가입자는 소개 대신 활성화 흐름을 본다.
 
-운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)·`planning.todo-timezone-rebase-failed`(시간대 재계산 실패)·`social.invite-reward.*`(초대 보상 재시도 소진)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
+운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)·`planning.todo-timezone-rebase-failed`(시간대 재계산 실패)·`social.invite-reward.*`(초대 보상 재시도 소진)·`billing.subscription.reconcile.failed`(스토어 상태 대조 재시도 소진)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 

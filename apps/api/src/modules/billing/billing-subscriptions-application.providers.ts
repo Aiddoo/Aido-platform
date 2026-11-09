@@ -6,6 +6,8 @@ import { PREMIUM_GRANT_ENDING_NOTICE_SOURCE } from "./application/ports/subscrip
 import { PREMIUM_GRANT_NOTIFIER } from "./application/ports/subscriptions/premium-grant-notifier.port.js";
 import { PREMIUM_GRANT_REPOSITORY } from "./application/ports/subscriptions/premium-grant.repository.port.js";
 import { QUIET_HOURS_READER } from "./application/ports/subscriptions/quiet-hours.reader.port.js";
+import { STORE_SUBSCRIPTION_RECONCILE_SCHEDULER } from "./application/ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
+import { STORE_SUBSCRIPTION_STATUS_READER } from "./application/ports/subscriptions/store-subscription-status.reader.port.js";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
 import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subscriptions/subscription-event-receipt.repository.port.js";
@@ -24,6 +26,7 @@ import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
 import { NotifyEndingTrials } from "./application/use-cases/subscriptions/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewals } from "./application/use-cases/subscriptions/notify-upcoming-renewals.use-case.js";
+import { ReconcileStoreSubscriptions } from "./application/use-cases/subscriptions/reconcile-store-subscriptions.use-case.js";
 import { RevokePremiumGrant } from "./application/use-cases/subscriptions/revoke-premium-grant.use-case.js";
 import { SweepPremiumGrants } from "./application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 
@@ -206,6 +209,7 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
     SUBSCRIPTION_EVENT_NOTIFIER,
     SUBSCRIPTION_WEBHOOK_LOCK,
     PremiumAccessProjector,
+    STORE_SUBSCRIPTION_RECONCILE_SCHEDULER,
   ],
   useFactory: (
     subscriptionRepository: ConstructorParameters<
@@ -220,6 +224,7 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
     premiumAccessProjector: ConstructorParameters<
       typeof HandleWebhookEvent
     >[0]["premiumAccessProjector"],
+    reconcileScheduler: ConstructorParameters<typeof HandleWebhookEvent>[0]["reconcileScheduler"],
   ) =>
     new HandleWebhookEvent({
       subscriptionRepository,
@@ -230,6 +235,42 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
       notifier,
       webhookLock,
       premiumAccessProjector,
+      reconcileScheduler,
       logger: new Logger(HandleWebhookEvent.name),
+    }),
+};
+
+export const reconcileStoreSubscriptionsProvider: FactoryProvider<ReconcileStoreSubscriptions> = {
+  provide: ReconcileStoreSubscriptions,
+  inject: [
+    SUBSCRIPTION_REPOSITORY,
+    STORE_SUBSCRIPTION_STATUS_READER,
+    SUBSCRIPTION_USER_MUTATION_LOCK,
+    UNIT_OF_WORK,
+    PremiumAccessProjector,
+    SUBSCRIPTION_CACHE,
+  ],
+  useFactory: (
+    subscriptionRepository: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["subscriptionRepository"],
+    statusReader: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["statusReader"],
+    userMutationLock: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["userMutationLock"],
+    unitOfWork: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["unitOfWork"],
+    premiumAccessProjector: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["premiumAccessProjector"],
+    cache: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["cache"],
+  ) =>
+    new ReconcileStoreSubscriptions({
+      subscriptionRepository,
+      statusReader,
+      userMutationLock,
+      unitOfWork,
+      premiumAccessProjector,
+      cache,
+      logger: new Logger(ReconcileStoreSubscriptions.name),
     }),
 };

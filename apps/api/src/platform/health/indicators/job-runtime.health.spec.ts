@@ -58,6 +58,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "todo-series-materialization.v1",
       "todo-timezone-rebase.v1",
       "quota-abandoned-refund.v1",
+      "store-subscription-reconcile.v1",
     ]);
   });
 

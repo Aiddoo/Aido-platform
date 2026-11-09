@@ -8,6 +8,7 @@ import { UserFixture } from "#test/fixtures/user.fixture";
 import {
   StubPremiumGrantRepository,
   StubSubscriptionCache,
+  StubStoreSubscriptionReconcileScheduler,
   StubSubscriptionNotifier,
   StubSubscriptionReceiptRepository,
   StubSubscriptionRepository,
@@ -100,6 +101,7 @@ export function createSubscriptionFixture(
       subscriptionRepository,
       premiumGrantRepository,
     }),
+    reconcileScheduler: new StubStoreSubscriptionReconcileScheduler(),
     unitOfWork: createUnitOfWorkMock(),
     logger: mock<ApplicationLogger>(),
   };

@@ -26,6 +26,7 @@ import {
 } from "../../../domain/services/subscriptions/cancellation-user-status.js";
 import { TransactionId } from "../../../domain/value-objects/subscriptions/transaction-id.vo.js";
 import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
+import type { StoreSubscriptionReconcileSchedulerPort } from "../../ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
 import type {
   SubscriptionEventNotifierPort,
@@ -74,6 +75,7 @@ interface HandleWebhookEventDependencies {
   readonly notifier: SubscriptionEventNotifierPort;
   readonly webhookLock: SubscriptionWebhookLockPort;
   readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
+  readonly reconcileScheduler: StoreSubscriptionReconcileSchedulerPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -345,6 +347,8 @@ export class HandleWebhookEvent {
           return null;
         }
 
+        // 웹훅은 신호다. 늦거나 빠진 이벤트로 어긋난 상태를 스토어에서 다시 읽어 맞추도록 함께 커밋한다
+        await this.#dependencies.reconcileScheduler.schedule(user.id, now());
         const transactionId = event.original_transaction_id ?? event.transaction_id;
         const subscription =
           transactionId != null && transactionId !== ""

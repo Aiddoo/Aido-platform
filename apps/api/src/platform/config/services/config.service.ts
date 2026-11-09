@@ -215,6 +215,7 @@ export class TypedConfigService {
       secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),
       webhookSecret: this.get("REVENUECAT_WEBHOOK_SECRET"),
       projectId: this.get("REVENUECAT_PROJECT_ID"),
+      apiV2SecretKey: this.get("REVENUECAT_API_V2_SECRET_KEY"),
     };
   }
 

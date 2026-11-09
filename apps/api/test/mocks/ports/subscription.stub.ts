@@ -2,6 +2,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { pickBy } from "es-toolkit";
 
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
+import type { StoreSubscriptionReconcileSchedulerPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-reconcile.scheduler.port";
+import type { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-status.reader.port";
 import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
 import type {
   SubscriptionEventNotifierPort,
@@ -28,6 +30,7 @@ import {
   type PremiumGrantProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/premium-grant.aggregate";
 import {
+  type StoreSubscriptionState,
   Subscription,
   type SubscriptionProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
@@ -89,6 +92,15 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       .slice(0, params.limit);
   }
 
+  async findReconcilableByUserId(userId: string): Promise<Subscription[]> {
+    return [...this.subscriptions.values()]
+      .filter(
+        (record) =>
+          record.userId === userId && (record.status === "ACTIVE" || record.status === "CANCELLED"),
+      )
+      .map((record) => Subscription.reconstitute(record));
+  }
+
   async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
     const record = this.subscriptions.get(revenueCatId);
     return record ? Subscription.reconstitute(record) : null;
@@ -145,6 +157,31 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
         user.subscriptionExpiresAt === null ? null : new Date(user.subscriptionExpiresAt),
       profile: user.profile === null ? null : { ...user.profile },
     };
+  }
+}
+
+/** 웹훅이 예약한 대조를 사용자 순서대로 기록한다. */
+export class StubStoreSubscriptionReconcileScheduler implements StoreSubscriptionReconcileSchedulerPort {
+  readonly scheduledUserIds: string[] = [];
+
+  async schedule(userId: string): Promise<void> {
+    this.scheduledUserIds.push(userId);
+  }
+}
+
+/** 체인 키별 스토어 상태를 돌려주는 대역. 읽기 실패를 흉내 내려면 failure를 넣는다. */
+export class StubStoreSubscriptionStatusReader implements StoreSubscriptionStatusReaderPort {
+  readonly states = new Map<string, StoreSubscriptionState>();
+  failure: Error | null = null;
+
+  async read(storeSubscriptionIds: readonly string[]): Promise<StoreSubscriptionState[]> {
+    if (this.failure != null) {
+      throw this.failure;
+    }
+    return storeSubscriptionIds.flatMap((id) => {
+      const state = this.states.get(id);
+      return state == null ? [] : [{ ...state }];
+    });
   }
 }
 
