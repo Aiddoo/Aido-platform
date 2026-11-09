@@ -3,7 +3,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { Box, Button, Text } from '@src/shared/ui';
+import { Box, Button, Text, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
@@ -29,9 +29,8 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
   const [{ view }] = useSubscriptionParams();
   const isOnline = useIsOnline();
   const { currentLocalDateKey } = useLocalDate();
-  const dateFormatContext = useDateFormatContext();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
-  const { data: availability } = useQuery({
+  const { data: availability, isLoading: isPlanLoading } = useQuery({
     ...useGetOfferingsQueryOptions(),
     throwOnError: false,
   });
@@ -81,25 +80,58 @@ export function PurchaseButton({ planId }: PurchaseButtonProps) {
                 }),
         })}
       </Button>
-      {/* "무료"만 크게 보이지 않게 버튼 바로 아래에 체험 뒤 금액·주기·해지를 함께 둔다(App Store 3.1.2) */}
-      {selectedPlan != null && trialEndDateKey != null && (
-        <Text
-          size="e1"
-          shade={6}
-          align="center"
-          lineBreakStrategyIOS="hangul-word"
-          className="pt-2"
-          testID="subscription-trial-disclosure"
-        >
-          {t('paywall.trialDisclosure', {
-            date: formatDateKeyLabel(trialEndDateKey, 'monthDay', dateFormatContext),
-            price: t(PLAN_PRICE_LABEL_KEYS[selectedPlan.planType], {
-              price: selectedPlan.priceString,
-            }),
-          })}
-        </Text>
-      )}
+      {/* "무료"만 크게 보이지 않게 버튼 바로 아래에 금액·주기·해지를 함께 둔다(App Store 3.1.2) */}
+      <PurchaseDisclosure
+        plan={selectedPlan}
+        trialEndDateKey={trialEndDateKey}
+        isPlanLoading={isPlanLoading}
+      />
     </>
+  );
+}
+
+const DISCLOSURE_TEXT_SIZE = 'e1';
+
+interface PurchaseDisclosureProps {
+  plan: SubscriptionPlan | null;
+  trialEndDateKey: string | null;
+  isPlanLoading: boolean;
+}
+
+/** 체험이 있든 없든 같은 한 줄로 그리고, 요금제를 받는 동안에도 그 줄을 잡아 둬 하단 바 높이가 바뀌지 않는다 */
+function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDisclosureProps) {
+  const { t } = useTranslation('subscription');
+  const dateFormatContext = useDateFormatContext();
+
+  if (plan == null) {
+    // 오프라인으로 멈춘 조회는 로딩이 아니라 자리를 잡지 않는다. 버튼 위 오프라인 안내가 대신 알린다
+    return isPlanLoading ? (
+      <TextSkeleton size={DISCLOSURE_TEXT_SIZE} className="mt-2 w-56 self-center" />
+    ) : null;
+  }
+
+  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
+
+  return (
+    <Text
+      size={DISCLOSURE_TEXT_SIZE}
+      shade={6}
+      align="center"
+      lineBreakStrategyIOS="hangul-word"
+      className="pt-2"
+      testID={
+        trialEndDateKey == null
+          ? 'subscription-renewal-disclosure'
+          : 'subscription-trial-disclosure'
+      }
+    >
+      {trialEndDateKey == null
+        ? t('paywall.renewalDisclosure', { price })
+        : t('paywall.trialDisclosure', {
+            date: formatDateKeyLabel(trialEndDateKey, 'monthDay', dateFormatContext),
+            price,
+          })}
+    </Text>
   );
 }
 

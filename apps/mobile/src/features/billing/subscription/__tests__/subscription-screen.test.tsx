@@ -413,7 +413,7 @@ describe('구독 화면', () => {
       });
     });
 
-    it('체험이 없는 월간으로 바꾸면 일정과 고지를 숨기고, 다시 연간으로 와도 일정은 한 번만 센다', async () => {
+    it('체험이 없는 월간으로 바꾸면 일정을 숨기고 체험 고지 대신 정기결제 고지를 두며, 다시 연간으로 와도 일정은 한 번만 센다', async () => {
       // Given
       const user = userEvent.setup();
       const { analytics } = await renderSubscriptionScreen(FREE, () =>
@@ -428,6 +428,9 @@ describe('구독 화면', () => {
       expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
       expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
       expect(screen.queryByTestId('subscription-trial-disclosure')).toBeNull();
+      expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
+        '월 ₩3,900 정기결제 · 언제든 해지할 수 있어요',
+      );
       expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_plan_selected', {
         plan_type: 'monthly',
         is_trial: false,
