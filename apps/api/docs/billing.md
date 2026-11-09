@@ -59,6 +59,8 @@ RevenueCat은 non-2xx 응답이면 웹훅을 다시 보낸다([웹훅](https://w
 | DB·잠금 대기 등 일시 실패                                        | 5xx  | 로그만 남기고 RevenueCat 재전송에 맡긴다                                                     |
 | 커밋 뒤 캐시 무효화 실패                                         | 200  | 이미 반영돼 재전송이 원장에 막히므로 운영 경보로 올린다                                      |
 
+웹훅 실패 경보는 tag `eventKind`·`store`·`storeEnvironment`(SANDBOX·PRODUCTION·unknown)를 싣는다. Sentry의 `environment`는 배포 환경(APP_ENV)이라 결제 환경은 `storeEnvironment`다. SANDBOX도 App Review 경로라 심각도는 같은 error다.
+
 처리하지 않는 이벤트(`TEST`·`SUBSCRIBER_ALIAS` 등)는 실패가 아니라 200과 `billing.subscription.webhook.ignored` 로그만 남긴다. 사용자를 찾기 전에 판정하므로 대시보드 "Send test event"처럼 우리 사용자가 아닌 이벤트도 경보가 없다.
 
 ## 웹훅 뒤 스토어 상태 대조

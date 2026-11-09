@@ -26,6 +26,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
       kind: "STARTED",
       providerEventId: "evt-1",
       store: "APP_STORE",
+      environment: "SANDBOX",
       productId: "premium_monthly",
     };
 
@@ -54,7 +55,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
         key: "billing.subscription.webhook.processing-failed",
         severity: "error",
         message: "RevenueCat 웹훅 처리에 실패했습니다",
-        tags: { eventKind: "STARTED", store: "APP_STORE" },
+        tags: { eventKind: "STARTED", store: "APP_STORE", storeEnvironment: "SANDBOX" },
         details: {
           eventId: "evt-1",
           productId: "premium_monthly",
@@ -79,7 +80,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     expect(alerts.alerts[0]?.details).toMatchObject({ errorCode: ErrorCode.SUBSCRIPTION_1602 });
   });
 
-  it("스토어·이벤트 id가 없는 웹훅도 경보를 올린다", () => {
+  it("스토어·환경·이벤트 id가 없는 웹훅도 경보를 올린다", () => {
     // Given
     const transfer: StoreSubscriptionEventFailureContext = { kind: "TRANSFERRED" };
 
@@ -88,7 +89,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 
     // Then
     expect(alerts.alerts[0]).toMatchObject({
-      tags: { eventKind: "TRANSFERRED", store: "unknown" },
+      tags: { eventKind: "TRANSFERRED", store: "unknown", storeEnvironment: "unknown" },
       details: { eventId: null, productId: null },
     });
   });

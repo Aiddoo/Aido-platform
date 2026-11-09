@@ -1,3 +1,5 @@
+import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
+
 import type {
   StoreSubscriptionEventKind,
   SubscriptionStore,
@@ -9,6 +11,8 @@ export interface StoreSubscriptionEventFailureContext {
   readonly kind: StoreSubscriptionEventKind;
   readonly providerEventId?: string;
   readonly store?: SubscriptionStore;
+  /** SANDBOX면 App Review·TestFlight 또는 개발 빌드 구매다. 심각도는 같고 경보에서 구분만 한다. */
+  readonly environment?: SubscriptionEnvironment;
   readonly productId?: string;
 }
 

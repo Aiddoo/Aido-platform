@@ -118,6 +118,7 @@ function failureContextOf(event: StoreSubscriptionEvent): StoreSubscriptionEvent
     kind: event.kind,
     ...(event.providerEventId != null && { providerEventId: event.providerEventId }),
     ...(event.store != null && { store: event.store }),
+    ...(event.environment != null && { environment: event.environment }),
     ...(event.kind !== "TRANSFERRED" && { productId: event.productId }),
   };
 }

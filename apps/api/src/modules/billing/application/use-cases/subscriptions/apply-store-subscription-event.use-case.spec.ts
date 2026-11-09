@@ -412,6 +412,7 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
             kind: "STARTED",
             providerEventId: "start",
             store: "APP_STORE",
+            environment: "PRODUCTION",
             productId: "premium_monthly",
           },
         },

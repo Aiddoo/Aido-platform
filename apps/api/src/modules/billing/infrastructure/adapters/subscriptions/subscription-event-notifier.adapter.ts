@@ -54,7 +54,12 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
       key: BillingAlertKey.WEBHOOK_PROCESSING_FAILED,
       severity: "error",
       message: "RevenueCat 웹훅 처리에 실패했습니다",
-      tags: { eventKind: context.kind, store: context.store ?? "unknown" },
+      // Sentry 이벤트의 environment는 배포 환경(APP_ENV)이라 스토어 결제 환경은 다른 이름으로 싣는다
+      tags: {
+        eventKind: context.kind,
+        store: context.store ?? "unknown",
+        storeEnvironment: context.environment ?? "unknown",
+      },
       details: {
         eventId: context.providerEventId ?? null,
         productId: context.productId ?? null,
