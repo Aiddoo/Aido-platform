@@ -3,8 +3,9 @@ import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { Box, CloseIcon, FeatureMedia, H3, HStack, Spacing, Text } from '@src/shared/ui';
-import { Chip, CloseButton, PressableFeedback } from 'heroui-native';
+import { Box, FeatureMedia, H3, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
+import { Stack } from 'expo-router';
+import { Chip, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView, StyleSheet } from 'react-native';
@@ -14,7 +15,6 @@ import { useUniwind } from 'uniwind';
 /** 화면 캡처 WebP의 가로 ÷ 세로 */
 const MEDIA_RATIO = 3 / 4;
 const MEDIA_MIN_HEIGHT = 160;
-const CLOSE_ICON_SIZE = 22;
 
 interface WhatsNewStepProps {
   media: ReactNode;
@@ -79,30 +79,27 @@ export function WhatsNewStep({
   );
 }
 
+/** 닫기는 흐름형 화면 규칙대로 네이티브 헤더 오른쪽(Duo 레일 포함)에 두고, 본문에는 새 기능 표시만 둔다 */
 WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onClose: () => void }) {
   const { t } = useTranslation(['whatsNew', 'common']);
 
   return (
-    <HStack align="center" justify="between">
-      {isNew ? (
-        <Chip size="sm" className="bg-highlight">
+    <>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon={STACK_CLOSE_ICON}
+          accessibilityLabel={t('common:actions.close')}
+          onPress={onClose}
+        />
+      </Stack.Toolbar>
+      {isNew && (
+        <Chip size="sm" className="self-start bg-highlight">
           <Text size="e1" weight="semibold" tone="brand">
             {t('list.newBadge')}
           </Text>
         </Chip>
-      ) : (
-        <Box />
       )}
-      <CloseButton
-        variant="ghost"
-        testID="whats-new-close"
-        className="size-11"
-        accessibilityLabel={t('common:actions.close')}
-        onPress={onClose}
-      >
-        <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
-      </CloseButton>
-    </HStack>
+    </>
   );
 };
 

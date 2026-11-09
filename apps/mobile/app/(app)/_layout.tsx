@@ -75,8 +75,16 @@ function AppLayout() {
         options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
       />
       <Stack.Screen name="weather" />
-      {/* 닫기가 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
-      <Stack.Screen name="whats-new/index" options={{ animation: 'slide_from_bottom' }} />
+      {/* 닫기가 헤더 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
+      <Stack.Screen
+        name="whats-new/index"
+        options={{
+          ...headerOptions,
+          title: '',
+          headerBackVisible: false,
+          animation: 'slide_from_bottom',
+        }}
+      />
       {/* 업셀 결제는 지금 맥락 위에 올리는 흐름이라 닫기만 둔다(오른쪽) */}
       <Stack.Screen
         name="paywall"
