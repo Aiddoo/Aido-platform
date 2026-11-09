@@ -1,93 +1,95 @@
 # Aido 1.15.0 review notes (draft)
 
-**Status: draft, not submitted.** Fill in the demo account before pasting. Menu paths match code `da9b73498`. The Korean version is [app-review-notes.ko.md](app-review-notes.ko.md), and data declarations follow [privacy-label.md](privacy-label.md). The simulator and emulator lines come from library docs and code. We did not run them on a simulator or emulator.
+**Status: draft, not submitted.** Menu paths and on-screen text match code `42c2c30a2`. The Korean version is [app-review-notes.ko.md](app-review-notes.ko.md), and data declarations follow [privacy-label.md](privacy-label.md). The simulator and emulator lines come from library docs and code. We did not run them on a simulator or emulator.
+
+Before pasting:
+
+- The App Store Notes field allows 4,000 characters. The text below is 3,905 characters with the demo account left blank, so the email and password can use up to 95 characters together. Count again after filling them in.
+- The demo account must be on the free plan (no subscription or invite reward), have only the 2 default categories, and be more than 1 day old. A newer account sees the notifications screen right after sign-in instead of the system alert described in the notes.
+- The 1-month free trial is an introductory offer on the yearly subscription in App Store Connect and a free-trial offer on the yearly base plan in Play Console. If it isn't set there, the app shows only the regular prices, and the trial lines in the notes don't apply.
+- `{price}` and `{date}` stand for the store price and the trial end date that the app fills in.
 
 ## App Store Connect: App Review Information > Notes
 
 ```text
-Aido 1.15.0 adds voice input ("Speak to add" and "Voice notes"), AI-organized to-dos from text, and repeating to-dos. Weather and friend invites are unchanged since 1.14.0.
+Aido 1.15.0 adds Speak to add, Voice notes, AI to-dos from text, repeating to-dos, a Premium limit sheet, and a 1-month free trial on the yearly plan.
 
-Demo account
+Demo account (free plan)
 - Email:
 - Password:
 
-When the microphone and speech recognition are used
-- Only after someone taps a control: the mic in the add to-do sheet (Speak to add), "Make a voice note" on the Memos tab (Voice notes), or the voice typing button in the subtask sheet.
-- The system permission alert appears at that moment. There is no custom screen before it. Speak to add and Voice notes first show the AI data sharing sheet described below, which is a separate consent.
-- While listening, the screen shows an animated indicator or a recording timer and waveform, and text appears as it is recognized.
-- Speak to add and Voice notes stop listening when the app goes to the background or another screen opens, such as from a notification. The app declares no background audio mode.
-- If someone denies access, voice features stop and the app explains how to allow it in Settings. Typing to-dos and every other feature keep working.
-
-Where voice and text go
-- Speech recognition: On iOS, Speak to add uses Apple speech recognition. Voice notes use on-device recognition when the device supports it for the chosen language. Otherwise, and for subtask voice typing, Apple speech recognition may process the voice over the network.
-- Audio files: Voice notes saves audio on the device for playback. Audio files aren't sent to Aido's servers. They are removed after 30 days, and can be deleted in Me tab > Recording storage. They may be part of device backups.
-- Text: after speech becomes text, the text goes to Aido's server and to AI providers (Anthropic Claude, Google Gemini, OpenAI) to organize it into to-dos or a summary. Our server does not store the transcript.
-- Recognition hints: a fixed list of common words goes with network recognition. A person's category and to-do names go only with on-device recognition.
-
-Consent for third-party AI (Guideline 5.1.2(i))
-- Before AI features first send anything, a sheet lists what is sent, who receives it, how it is used, and how long it is kept, with a Privacy Policy link. The choices are Agree and Not now.
-- Not now sends nothing, and the action stops there. Other features keep working. The server also rejects AI requests without consent.
-- Withdraw anytime: Me tab > Terms & policies > AI data sharing.
-- People who agreed to the previous notice see the updated notice once. If they skip it, their previous consent still applies and only Google is used.
-
-AI uses and limits
-- Places that use AI show an AI icon. Free accounts also see how many uses are left. Me tab shows this month's totals.
-- There is no prompt on each use. When the monthly uses run out, a Premium dialog appears.
-- Free accounts get 10 AI to-do uses and 3 voice notes a month.
-
 How to test
-1. Sign in with the demo account.
-2. To-dos tab: open the add to-do sheet and tap the mic. Choose Agree on the AI sheet, allow the microphone (and speech recognition if asked), then say "Workout every Monday, Wednesday, and Friday". Review the suggested to-dos and save the ones you want.
-3. Memos tab: tap "Make a voice note", speak for a few seconds, stop, then summarize. Play the recording from the result screen.
-4. Me tab > Terms & policies: withdraw AI data sharing, then try step 2 again to see the consent sheet return.
-5. Me tab > Recording storage: delete the recording.
+1. To-dos tab: tap the mic in the add to-do sheet, choose Agree, allow the mic, and say "Workout every Monday and Friday". Save the to-dos you want.
+2. Memos tab: tap "Make a voice note", speak, stop, then summarize.
+3. Me tab > App icon: tap a cat icon. The Premium sheet opens ("See Premium" / "Not now").
+4. Me tab > Manage categories: add a third category, then tap add again. The sheet appears before any typing.
+5. Tap "See Premium" for the paywall. The trial shows only for a sandbox Apple Account that never subscribed to Aido.
+Please test voice on a real device.
 
-Please test voice features on a real device. A simulator may have no microphone input or on-device speech model, so listening can fail there.
+Subscriptions and free trial (Guideline 3.1.2)
+- Monthly or yearly auto-renewing plans; yearly is preselected. The largest price is the billed amount.
+- New yearly subscribers get a 1-month free trial, shown only if the App Store says the account is eligible.
+- The plan then shows "1 month free" and a dated timeline: trial starts today → reminder 3 days before the end → "{price}/year charged". The button reads "Start 1 month free", with "{price}/year from {date} · Cancel anytime" right below.
+- The renewal notice, Terms and Privacy links, and Restore purchases are on the same screen.
+- During the trial, Me tab > Manage subscription shows "Free trial" with the end and first payment dates. The server sends a reminder push and inbox notice 3 days before it ends.
 
-Other permissions
-- Location: only "While Using the App", for the weather screen and weather notifications. To-dos work without it.
-- Notifications: reminders and friend activity. The app explains them first, then shows the system alert.
-- Photos (add only): the share sheet's "Save Image" for images you share.
-- Photo library read: the purpose string exists because an included SDK references the API. Aido does not read the photo library.
+Limits and the Premium sheet
+- Plans never limit adding or completing to-dos. Free: 10 AI to-dos and 3 voice notes a month, 5 friends (+1 per qualified invite), 3 categories, 3 nudges and 3 cheers a day. Premium: up to 1,000 AI to-dos (fair use) and 100 voice notes a month, 30 categories, unlimited friends, nudges, and cheers.
+- The sheet shows usage ("10 of 10 used"), the reset date, and Free → Premium numbers. After "Not now", that feature shows a toast with "See Premium" for the day. At the friend limit, the main button is "Invite a friend to add 1 more".
+
+Third-party AI consent (Guideline 5.1.2(i))
+- Before any AI request, a sheet shows what is sent (what you type or say, to-dos, date and time zone; never name, email, friends, or audio), who processes it (Anthropic, Google, OpenAI for text; Apple or Google speech recognition for voice), and that it's for AI features only, never ads. Not now sends nothing, and the server rejects AI requests without consent. Withdraw: Me tab > Terms & policies > AI data sharing.
+
+Permissions and notifications
+- Mic: only after tapping a mic or "Make a voice note". No background audio. Audio files aren't sent to our servers. Only text is, and we don't store transcripts.
+- Notifications: one screen right after sign-up ("Get notified" / "Not now"), then the system alert. The demo account gets it on first setting a to-do time. If denied, the app works and a timed to-do shows "Notifications are off, so we can't remind you · Open settings".
+- Location: While Using only, after tapping the weather badge and "Continue".
+- Promotional push is opt-in only, titled "(Ad)" ("(광고)" in Korean) with opt-out steps and a "Turn off promotional notifications" action. Changes show the server's date; opted-in users are reminded every 2 years.
+
+Invite rewards (since 1.13.0)
+Free Premium time inside Aido only: no cash value, not transferable, no purchase required, nothing for ratings, reviews, or other app downloads, and inviting is never required. Reward Premium involves no payment, does not auto-renew, and starts after an active subscription ends. Terms, Article 13-2: https://aido.kr/en/terms
 
 Where to find other items
-- Subscription price and period, Restore Purchases, Terms and Privacy: Me tab > Manage subscription.
-- Account deletion: Delete account at the bottom of the Me tab. Web: https://aido.kr/en/account-deletion
-- Report and block (Guideline 1.2): same as 1.14.0, from the ••• menu and Me tab > Manage friends. Contact: matthew@redband.co.kr
+- Account deletion: Me tab > Delete account. Web: https://aido.kr/en/account-deletion
+- Report and block (1.2): ••• menu and Me tab > Manage friends. Contact: matthew@redband.co.kr
 ```
 
 ## Google Play: App content > App access and release notes for review
 
 ```text
-Demo account
+Demo account (free plan)
 - Email:
 - Password:
 
 Sensitive permissions
 - RECORD_AUDIO: only after someone taps the mic in the add to-do sheet, "Make a voice note" on the Memos tab, or the voice typing button in the subtask sheet. Denying it leaves typing and every other feature working. Speak to add and Voice notes stop listening when the app goes to the background or another screen opens. No foreground service records audio.
-- ACCESS_FINE_LOCATION and ACCESS_COARSE_LOCATION: foreground only, for the weather screen and weather notifications. There is no background location permission. The app requests balanced accuracy.
-- POST_NOTIFICATIONS: reminders and friend activity.
+- ACCESS_FINE_LOCATION and ACCESS_COARSE_LOCATION: foreground only, for the weather screen and weather notifications. The app asks only after someone taps the weather badge and "Continue". There is no background location permission. The app requests balanced accuracy.
+- POST_NOTIFICATIONS: reminders and friend activity. Right after sign-up, one screen ("Get notified" / "Not now") comes before the system dialog. Older accounts see the dialog when they first set a to-do time. Denying keeps the app fully usable.
 
 Removed in 1.15.0 because Aido does not use them: USE_BIOMETRIC, USE_FINGERPRINT, SYSTEM_ALERT_WINDOW, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE.
 
 Where voice and text go
 - Speech recognition uses Android's speech service. It runs on the device when the language model is available for Speak to add and Voice notes. Otherwise, and for subtask voice typing, Google speech recognition may process the voice over the network.
 - Voice notes saves audio on the device on Android 13 and above. Audio files aren't sent to Aido's servers. They are removed after 30 days, and can be deleted in Me tab > Recording storage. They may be part of device backups.
-- Recognition hints: a fixed list of common words goes with network recognition. A person's category and to-do names go only with on-device recognition.
 - After speech becomes text, the text goes to Aido's server and to AI providers (Anthropic Claude, Google Gemini, OpenAI) to organize it into to-dos or a summary. Our server does not store the transcript.
 
 Consent
-- Before AI features first send anything, a sheet lists what is sent, who receives it, how it is used, and how long it is kept. It requires tapping Agree. Not now or tapping outside sends nothing.
+- Before AI features first send anything, a sheet shows what is sent, who processes it, and how it's used. It requires tapping Agree. Not now or tapping outside sends nothing.
 - Withdraw anytime: Me tab > Terms & policies > AI data sharing.
+- Promotional push is opt-in only. Titles start with "(Ad)" ("(광고)" in Korean) with opt-out steps, and the push has a "Turn off promotional notifications" action.
 
 AI output
 - AI turns the person's own words into suggested to-dos and summaries, and nothing is saved until they confirm it. They can report a problem from Me tab > Contact us.
-- Places that use AI show an AI icon. There is no prompt on each use. When the monthly uses run out, a Premium dialog appears. Free accounts get 10 AI to-do uses and 3 voice notes a month.
+
+Subscriptions, free trial, and limits
+- Monthly or yearly auto-renewing plans; yearly is preselected. New yearly subscribers get a 1-month free trial, set as a free-trial offer in Play Console and shown only when Google Play offers it to the account. The paywall then shows "Start 1 month free" with "{price}/year from {date} · Cancel anytime" below it, and a timeline with the reminder 3 days before billing.
+- Free: 10 AI to-dos and 3 voice notes a month, 5 friends, 3 categories, 3 nudges and 3 cheers a day. Plans never limit adding or completing to-dos. At a limit or a Premium-only feature, a sheet shows usage, the reset date, and Free → Premium numbers, with "See Premium" and "Not now".
 
 How to test
 1. Sign in with the demo account.
 2. To-dos tab: open the add to-do sheet and tap the mic. Choose Agree, allow the microphone, then speak. Review the suggested to-dos and save the ones you want.
 3. Memos tab: tap "Make a voice note", speak, stop, then summarize.
+4. Me tab > App icon: tap a cat icon to see the Premium sheet. "See Premium" opens the paywall. Use a license tester account that never subscribed to see the trial.
 
 Test environment
 - Voice features need a speech service, such as the Google app, and a working microphone. An emulator without them can't listen.
