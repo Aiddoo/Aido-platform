@@ -194,7 +194,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       .set({
         subscriptionStatus: data.subscriptionStatus,
         subscriptionExpiresAt: data.subscriptionExpiresAt,
-        revenueCatUserId: data.revenueCatUserId,
       })
       .where(eq(user.id, userId))
       .returning({ id: user.id });

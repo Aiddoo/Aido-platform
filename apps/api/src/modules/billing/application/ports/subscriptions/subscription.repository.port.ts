@@ -51,7 +51,6 @@ export interface UpdateSubscriptionStatusData {
 export interface UpdateUserSubscriptionStatusData {
   subscriptionStatus: SubscriptionStatus;
   subscriptionExpiresAt?: Date | null;
-  revenueCatUserId?: string;
 }
 
 export interface FindLapsedPremiumUsersParams {
