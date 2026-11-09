@@ -1,5 +1,6 @@
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { DEFAULT_CATEGORY_COLOR } from '@src/features/planning/category/constants/todo-category.constants';
+import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { LiveTranscript } from '@src/features/voice/components/quick-voice/live-transcript';
 import {
   VoiceTranscriptPolicy,
@@ -132,9 +133,7 @@ export function VoiceTodoReviewDemo({ value, onValueChange, onApply }: VoiceTodo
           <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
             {t('voicePlan:plan.title', { count: DEMO_PLANNED_TODOS.length })}
           </Text>
-          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-            {t('whatsNew:v1_15_0.review.hint')}
-          </Text>
+          <PlanReview.Guide />
         </VStack>
         <VStack flex={1} gap={8} className="overflow-hidden">
           <CategoryHeaderPill

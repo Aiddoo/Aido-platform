@@ -26,8 +26,7 @@
     },
     "review": {
       "title": "AI splits it into to-dos",
-      "description": "Just check the ones to add. Try tapping them",
-      "hint": "Check only the ones you want to add."
+      "description": "Just check the ones to add. Try tapping them"
     },
     "list": {
       "title": "They go straight to your list",
