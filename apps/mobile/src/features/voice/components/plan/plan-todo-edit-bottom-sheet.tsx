@@ -27,11 +27,11 @@ import {
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
-  HStack,
   KeyboardBottomSheet,
   ModalBottomSheet,
   QueryErrorBoundary,
   RepeatIcon,
+  SheetChipRow,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -77,14 +77,13 @@ export function PlanTodoEditBottomSheet({
       onOpenChange={onOpenChange}
       footer={
         <VStack gap={12}>
-          {/* 시트 안 가로 스크롤은 시트 끌기와 제스처를 다퉈 넘친 카테고리 칩을 고를 수 없었다. 넘치면 다음 줄로 내린다 */}
-          <HStack gap={8} wrap="wrap">
+          <SheetChipRow>
             <DateChip form={form} />
             <TimeChip form={form} />
             <RepeatChip form={form} />
             <VisibilityChip form={form} />
             <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
-          </HStack>
+          </SheetChipRow>
 
           <Button
             isDisabled={!isValid}

@@ -412,6 +412,8 @@ export function KeyboardBottomSheet({
               maxDynamicContentSize={maxDynamicContentSize}
               enablePanDownToClose
               enableContentPanningGesture={enableContentPanningGesture}
+              activeOffsetY={PAN_ACTIVE_OFFSET_Y}
+              failOffsetX={PAN_FAIL_OFFSET_X}
               keyboardBehavior="interactive"
               keyboardBlurBehavior="restore"
               android_keyboardInputMode="adjustPan"
@@ -507,6 +509,9 @@ const FOOTER_CONTENT_GAP = 4;
 const FOOTER_KEYBOARD_GAP = 8;
 const FORCE_CLOSE_RETRY_DELAY_MS = 500;
 const MIN_CONTENT_HEIGHT_CHANGE = 2;
+// 시트 끌기는 세로로 움직일 때만 잡아, 손가락이 조금 흔들려도 칩 줄 같은 가로 스크롤이 제스처를 가져가게 한다
+const PAN_ACTIVE_OFFSET_Y: [number, number] = [-15, 15];
+const PAN_FAIL_OFFSET_X: [number, number] = [-10, 10];
 
 const styles = StyleSheet.create({
   content: {

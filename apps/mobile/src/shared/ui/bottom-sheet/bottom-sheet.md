@@ -55,7 +55,7 @@ import { BottomSheet } from '@src/shared/ui';
 
 내용은 스크롤된다. 짧으면 시트가 그 높이로 줄어들지만, 키보드가 올라온 채로 내용이
 길어지면 아래쪽 버튼에 손이 닿지 않기 때문이다. 그래서 시트 안에 세로 스크롤 컨테이너를
-또 두면 안 된다 (가로 스크롤은 무방하다).
+또 두면 안 된다. 가로로 미는 칩 줄은 `SheetChipRow`를 쓴다.
 
 ```tsx
 import { KeyboardBottomSheet } from '@src/shared/ui';
@@ -68,6 +68,10 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 내용이 안쪽 스크롤을 직접 두면(빠른 말하기 자막) `enableContentPanningGesture={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 손잡이로만
 움직이게 한다. 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다. 시트 테두리에 맞물리는 장식은 `backgroundDecoration`으로
 시트 면 뒤에 깐다. 내용 제스처를 꺼도 시트 면을 탭하면 뒤 backdrop까지 내려가지 않는다(시트 면이 터치를 받는다).
+
+`SheetChipRow`는 칩을 한 줄로 두고 시트 좌우 끝까지 가로로 민다. gorhom 문제 해결 문서대로 Gesture Handler `ScrollView`를 쓰고,
+시트 끌기는 gorhom `activeOffsetY`(세로 15dp)·`failOffsetX`(가로 10dp)로 세로로 움직일 때만 잡는다. Gesture Handler
+`ScrollView`만으로는 Android에서 손가락이 조금만 흔들려도 시트가 끌기를 가져가 칩 줄이 밀리지 않았다.
 
 바깥 탭과 Android 뒤로 가기에서 닫기 전에 할 일이 있으면(빠른 말하기의 듣기 취소·계획 버리기 확인) `onDismissRequest`를 넘긴다. 없으면 닫는다.
 손잡이·내용 끌어내리기는 gorhom이 닫으므로 이 경로를 타지 않는다. 핸들러는 ref로 읽어 렌더마다 바뀌어도 backdrop이 다시 마운트되지 않는다.

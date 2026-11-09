@@ -29,11 +29,11 @@ import {
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
-  HStack,
   ModalBottomSheet,
   type Overlay,
   QueryErrorBoundary,
   RepeatIcon,
+  SheetChipRow,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -65,8 +65,7 @@ export function TodoComposerChips({
 
   return (
     <VStack gap={8}>
-      {/* 시트 안 가로 스크롤은 시트 끌기와 제스처를 다퉈 넘친 카테고리 칩을 고를 수 없었다. 넘치면 다음 줄로 내린다 */}
-      <HStack gap={8} wrap="wrap">
+      <SheetChipRow>
         <DateChip form={form} isSeriesOccurrence={isSeriesOccurrence} />
         <TimeChip form={form} />
         {canChangeRepeat && (
@@ -79,7 +78,7 @@ export function TodoComposerChips({
             <CategoryChip form={form} />
           </Suspense>
         </QueryErrorBoundary>
-      </HStack>
+      </SheetChipRow>
       <TimePushNotice form={form} />
     </VStack>
   );

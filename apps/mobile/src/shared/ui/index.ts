@@ -11,6 +11,7 @@ export {
   BottomSheet,
   KeyboardBottomSheet,
   ModalBottomSheet,
+  SheetChipRow,
   SheetHeaderLayout,
   SHEET_RADIUS,
   SHEET_ROUTE_SCREEN_OPTIONS,
