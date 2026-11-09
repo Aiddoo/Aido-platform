@@ -11,7 +11,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
   <SettingsListGroup label={t('section')}>
     <SettingsListGroup.Item
       label={t('theme')}
-      icon={<SettingsListGroup.Icon Icon={MoonIcon} />}
+      icon={<SettingsListGroup.Icon Icon={ThemeDuoIcon} />}
       onPress={openTheme}
     />
     <SettingsListGroup.Separator />

@@ -28,7 +28,8 @@
     "accept": "수락",
     "reject": "거절",
     "edit": "편집",
-    "loadFailed": "친구 목록을 불러오지 못했어요"
+    "loadFailed": "친구 목록을 불러오지 못했어요",
+    "countValue": "{{count}}명"
   },
   "add": {
     "title": "친구를 추가해보세요",

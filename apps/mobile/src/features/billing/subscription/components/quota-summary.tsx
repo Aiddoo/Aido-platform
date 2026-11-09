@@ -4,14 +4,20 @@ import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, HStack, Meter, Text, VStack, WordWrapText } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
-/** 무료 사용자의 이번 달 AI 사용량. 구독 권유는 이 카드가 아니라 막힌 순간의 안내가 맡는다 */
-export function QuotaSummary() {
+interface QuotaSummaryProps {
+  /** 제목 줄 오른쪽에 둘 행동. 어디로 가는지는 화면이 정한다 */
+  action?: ReactNode;
+}
+
+/** 무료 사용자의 이번 달 AI 사용량 */
+export function QuotaSummary({ action }: QuotaSummaryProps) {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');
   const voiceNote = useQuotaStatus('VOICE_NOTE');
@@ -24,9 +30,10 @@ export function QuotaSummary() {
     <VStack gap={16} className="rounded-2xl bg-gray-1 p-4" testID="quota-summary">
       <HStack gap={6} align="center">
         <AiFilledIcon width={16} height={16} colorClassName="text-main" />
-        <Text size="b4" weight="semibold" shade={7}>
+        <Text size="b4" weight="semibold" shade={7} className="flex-1">
           {t('quota.summaryTitle')}
         </Text>
+        {action}
       </HStack>
       <QuotaRow feature="AI_PARSE" label={t('quota.aiParse')} hint={t('quota.aiParseHint')} />
       <QuotaRow feature="VOICE_NOTE" label={t('quota.voiceNote')} />

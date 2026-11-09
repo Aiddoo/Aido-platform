@@ -359,5 +359,13 @@
       }
     },
     "rewardContinues": "Your remaining invite reward continues after your subscription ends"
+  },
+  "planSummary": {
+    "annual": "Annual plan",
+    "monthly": "Monthly plan",
+    "unknown": "Subscribed",
+    "nextBilling": "Next payment on {{date}}",
+    "firstBilling": "Billing starts on {{date}}",
+    "endsOn": "Ends on {{date}}"
   }
 }

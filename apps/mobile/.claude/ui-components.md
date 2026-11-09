@@ -606,6 +606,6 @@ MyComponent.Loading = function Loading() {
 
 ## AI 기능 표시
 
-- AI를 쓰는 실행 지점에는 `AiIcon`을 두고, 횟수를 쓰면 남은 횟수를 함께 보인다. 문구는 `useQuotaStatus`(글자), `QuotaChip`(알약)에서 가져온다.
+- AI를 쓰는 실행 지점에는 `AiFilledIcon`을 두고, 횟수를 쓰면 남은 횟수를 함께 보인다. 문구는 `useQuotaStatus`(글자), `QuotaChip`(알약)에서 가져온다.
 - 쓸 때마다 묻는 Dialog는 두지 않는다. 처음 한 번 AI 동의, 횟수를 다 쓰면 `useEntitlementGate`의 프리미엄 안내 시트(그날 두 번째부터 토스트)만 띄운다. 실패해서 차감되지 않으면 그 자리에서 알린다.
 - 프리미엄·관리자에게는 남은 횟수를 보이지 않는다. 전체 횟수는 내 정보의 `QuotaSummary`에서 본다.

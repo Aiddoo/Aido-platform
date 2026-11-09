@@ -1,36 +1,47 @@
 import { AppVersionCheck } from '@src/features/app-config/app-version/components/app-version-check';
 import { WhatsNewMenuItem } from '@src/features/app-config/whats-new/components/whats-new-menu-item';
 import { AccessTierChip } from '@src/features/billing/subscription/components/access-tier-chip';
-import { QuotaSummary } from '@src/features/billing/subscription/components/quota-summary';
+import { PlanSummary } from '@src/features/billing/subscription/components/plan-summary';
+import { PlanTypeValue } from '@src/features/billing/subscription/components/plan-type-value';
+import { AppIconValue } from '@src/features/device/app-icon/components/app-icon-value';
 import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
 import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
+import { PushStatusValue } from '@src/features/notification/components/push-status-value';
+import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useTranslation } from '@src/shared/i18n';
+import type { FontScale } from '@src/shared/preferences/font-scale.preference';
+import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { useLanguage } from '@src/shared/providers/language-provider';
+import { useTheme } from '@src/shared/providers/theme-provider';
 import {
-  AiIcon,
-  AppSquareIcon,
-  BellIcon,
-  BlockIcon,
-  ChatBubbleIcon,
-  CrownIcon,
-  FlagIcon,
-  GlobeIcon,
+  BadgeDuoIcon,
+  BellDuoIcon,
+  BlockedDuoIcon,
+  CategoryDuoIcon,
+  CrownDuoIcon,
+  AppIconDuoIcon,
+  FontSizeDuoIcon,
+  FriendsDuoIcon,
   H3,
-  ListIcon,
-  MemoIcon,
-  MicIcon,
-  MoonIcon,
-  PersonIcon,
+  InquiryDuoIcon,
+  LanguageDuoIcon,
   QueryErrorBoundary,
+  ReportDuoIcon,
   SettingsListGroup,
   Spacing,
-  TextSizeIcon,
+  TermsDuoIcon,
+  Text,
+  ThemeDuoIcon,
+  VoiceDuoIcon,
   VStack,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
+import { match } from 'ts-pattern';
 
 /** 내 정보 탭과 메뉴 화면(`(mypage-menu)/_layout`)이 같은 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
 export function MyPageMenuPane() {
@@ -50,43 +61,11 @@ export function MyPageMenuPane() {
           </Suspense>
         </QueryErrorBoundary>
 
-        <SettingsListGroup label={t('mypage.sections.settings')}>
-          <MyPageMenuItem
-            Icon={BellIcon}
-            label={t('mypage.items.notifications')}
-            pathname="/settings/notifications"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={ListIcon}
-            label={t('mypage.items.categories')}
-            pathname="/settings/category-settings"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={MoonIcon}
-            label={t('mypage.items.theme')}
-            pathname="/settings/theme"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={TextSizeIcon}
-            label={t('mypage.items.fontSize')}
-            pathname="/settings/font-size"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={GlobeIcon}
-            label={t('settings:titles.language')}
-            pathname="/settings/language"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={MicIcon}
-            label={t('settings:titles.voiceStorage')}
-            pathname="/settings/voice-storage"
-          />
-        </SettingsListGroup>
+        <QueryErrorBoundary fallback={PlanSummary.Error}>
+          <Suspense fallback={<PlanSummary.Loading />}>
+            <PlanSummary />
+          </Suspense>
+        </QueryErrorBoundary>
 
         {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
         {isInviteAvailable && (
@@ -98,10 +77,15 @@ export function MyPageMenuPane() {
         )}
 
         <SettingsListGroup label={t('mypage.sections.friends')}>
-          <MyPageMenuItem Icon={PersonIcon} label={t('mypage.items.friends')} pathname="/friends" />
+          <MyPageMenuItem
+            Icon={FriendsDuoIcon}
+            label={t('mypage.items.friends')}
+            pathname="/friends"
+            value={<FriendCountValue />}
+          />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={BlockIcon}
+            Icon={BlockedDuoIcon}
             label={t('mypage.items.blockedUsers')}
             pathname="/settings/blocked-users"
           />
@@ -109,27 +93,73 @@ export function MyPageMenuPane() {
 
         <SettingsListGroup label={t('mypage.sections.records')}>
           <MyPageMenuItem
-            Icon={FlagIcon}
+            Icon={BadgeDuoIcon}
             label={t('mypage.items.achievements')}
             pathname="/achievements"
           />
           <SettingsListGroup.Separator />
-          <MyPageMenuItem Icon={AiIcon} label={t('mypage.items.aiReports')} pathname="/reports" />
+          <MyPageMenuItem
+            Icon={ReportDuoIcon}
+            label={t('mypage.items.aiReports')}
+            pathname="/reports"
+          />
         </SettingsListGroup>
 
-        <QuotaSummary />
-
-        <SettingsListGroup label={t('mypage.sections.subscription')}>
+        <SettingsListGroup label={t('mypage.sections.settings')}>
           <MyPageMenuItem
-            Icon={CrownIcon}
-            label={t('mypage.items.subscription')}
-            pathname="/settings/subscription"
+            Icon={BellDuoIcon}
+            label={t('mypage.items.notifications')}
+            pathname="/settings/notifications"
+            value={<PushStatusValue />}
           />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={AppSquareIcon}
+            Icon={CategoryDuoIcon}
+            label={t('mypage.items.categories')}
+            pathname="/settings/category-settings"
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={ThemeDuoIcon}
+            label={t('mypage.items.theme')}
+            pathname="/settings/theme"
+            value={<ThemeValue />}
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={FontSizeDuoIcon}
+            label={t('mypage.items.fontSize')}
+            pathname="/settings/font-size"
+            value={<FontScaleValue />}
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={LanguageDuoIcon}
+            label={t('settings:titles.language')}
+            pathname="/settings/language"
+            value={<LanguageValue />}
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={VoiceDuoIcon}
+            label={t('settings:titles.voiceStorage')}
+            pathname="/settings/voice-storage"
+          />
+        </SettingsListGroup>
+
+        <SettingsListGroup label={t('mypage.sections.subscription')}>
+          <MyPageMenuItem
+            Icon={CrownDuoIcon}
+            label={t('mypage.items.subscription')}
+            pathname="/settings/subscription"
+            value={<PlanTypeValue />}
+          />
+          <SettingsListGroup.Separator />
+          <MyPageMenuItem
+            Icon={AppIconDuoIcon}
             label={t('mypage.items.appIcon')}
             pathname="/settings/app-icon"
+            value={<AppIconValue />}
           />
         </SettingsListGroup>
 
@@ -137,13 +167,13 @@ export function MyPageMenuPane() {
           <WhatsNewMenuItem />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={ChatBubbleIcon}
+            Icon={InquiryDuoIcon}
             label={t('mypage.items.inquiry')}
             pathname="/settings/inquiry"
           />
           <SettingsListGroup.Separator />
           <MyPageMenuItem
-            Icon={MemoIcon}
+            Icon={TermsDuoIcon}
             label={t('mypage.items.terms')}
             pathname="/settings/terms"
           />
@@ -162,5 +192,57 @@ export function MyPageMenuPane() {
 
       <Spacing size={40} />
     </MyPagePaneLayout>
+  );
+}
+
+const THEME_LABEL_KEYS = {
+  system: 'theme.system',
+  light: 'theme.light',
+  dark: 'theme.dark',
+} as const satisfies Record<ThemeMode, string>;
+
+const FONT_SCALE_LABEL_KEYS = {
+  xsmall: 'fontSize.xsmall',
+  small: 'fontSize.small',
+  medium: 'fontSize.medium',
+  large: 'fontSize.large',
+  xlarge: 'fontSize.xlarge',
+} as const satisfies Record<FontScale, string>;
+
+function ThemeValue() {
+  const { t } = useTranslation('settings');
+  const { mode } = useTheme();
+
+  return (
+    <Text size="b3" shade={7}>
+      {t(THEME_LABEL_KEYS[mode])}
+    </Text>
+  );
+}
+
+function FontScaleValue() {
+  const { t } = useTranslation('settings');
+  const { fontScale } = useFontScale();
+
+  return (
+    <Text size="b3" shade={7}>
+      {t(FONT_SCALE_LABEL_KEYS[fontScale])}
+    </Text>
+  );
+}
+
+function LanguageValue() {
+  const { t } = useTranslation('settings');
+  const { languageMode } = useLanguage();
+
+  // 언어 이름은 언어 설정 화면처럼 그 언어로 고정해 적는다
+  return (
+    <Text size="b3" shade={7}>
+      {match(languageMode)
+        .with('system', () => t('language.system'))
+        .with('ko', () => '한국어')
+        .with('en', () => 'English')
+        .exhaustive()}
+    </Text>
   );
 }

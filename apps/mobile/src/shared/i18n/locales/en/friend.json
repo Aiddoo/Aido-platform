@@ -30,7 +30,9 @@
     "accept": "Accept",
     "reject": "Decline",
     "edit": "Edit",
-    "loadFailed": "Couldn’t load friends"
+    "loadFailed": "Couldn’t load friends",
+    "countValue_one": "{{count}} friend",
+    "countValue_other": "{{count}} friends"
   },
   "add": {
     "title": "Add your friends",

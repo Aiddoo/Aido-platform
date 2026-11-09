@@ -26,5 +26,6 @@ SVG를 변경하면 `pnpm generate:tab-icons`로 PNG를 함께 갱신하고 `pnp
 
 ## 선·채움 짝과 네이티브 헤더 아이콘
 
-- 같은 그림의 선·채움 짝은 `ic_x.svg`(1.8px 둥근 선)·`ic_x_filled.svg`로 두고 `XIcon`·`XFilledIcon`으로 내보낸다(`HeartIcon`·`HeartFilledIcon`, `BellIcon`·`BellFilledIcon`).
+- 같은 그림의 선·채움 짝은 `ic_x.svg`(1.8px 둥근 선)·`ic_x_filled.svg`로 두고 `XIcon`·`XFilledIcon`으로 내보낸다(`HeartIcon`·`HeartFilledIcon`).
+- 마이 탭·설정 행의 듀오톤 아이콘은 `ic_duo_x.svg`(옅은 면 `fill-opacity 0.28` + 1.9px 둥근 선, 모두 `currentColor`)로 두고 `XDuoIcon`으로 내보낸다. `SettingsListGroup.Icon` 타일 안에서 쓴다.
 - Android 네이티브 헤더(`Stack.Toolbar.Button`)는 `@expo/material-symbols` 기본(outlined)을 쓰고, 채움 같은 다른 축은 `npx add-material-symbols --fill <이름> -o assets/icons/material`로 받아 같은 폴더에 둔다. iOS는 SF Symbol 이름(`bell.badge.fill`)을 쓴다.

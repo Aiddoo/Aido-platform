@@ -351,5 +351,13 @@
       }
     },
     "rewardContinues": "남은 초대 보상은 구독이 끝나면 이어져요"
+  },
+  "planSummary": {
+    "annual": "연간 구독 이용 중",
+    "monthly": "월간 구독 이용 중",
+    "unknown": "구독 이용 중",
+    "nextBilling": "{{date}}에 다음 결제",
+    "firstBilling": "{{date}}에 결제 시작",
+    "endsOn": "{{date}}에 끝나요"
   }
 }
