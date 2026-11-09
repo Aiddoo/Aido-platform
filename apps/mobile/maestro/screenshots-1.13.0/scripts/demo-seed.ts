@@ -1343,7 +1343,7 @@ async function seedStoreSubscription(ctx: Context, owner: Owner): Promise<void> 
   const expiresAt = new Date(startedAt.getTime() + 365 * DAY_MS);
   await ctx.db.query(
     `INSERT INTO "Subscription" ("userId", "revenueCatId", "productId", "status", "startedAt", "expiresAt", "createdAt", "updatedAt")
-     VALUES ($1, $2, 'aido_premium_annual', 'ACTIVE', $3, $4, $3, $3)`,
+     VALUES ($1, $2, 'com.aido.pro.yearly', 'ACTIVE', $3, $4, $3, $3)`,
     [owner.id, `demo_${randomBytes(8).toString('hex')}`, utc(startedAt), utc(expiresAt)],
   );
   // 스토어 구독 행은 User projection이 ACTIVE일 때만 믿는다(PremiumAccessPolicy)
