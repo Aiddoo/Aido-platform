@@ -37,7 +37,8 @@
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
     "deleteRetry": "Please try deleting again later",
-    "limitReached": "You can't add more memos",
+    "limitReached": "You can keep up to {{max}} memos",
+    "limitReachedDescription": "Delete memos you no longer need to add new ones",
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
   "aiReview": {

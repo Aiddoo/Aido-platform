@@ -24,8 +24,11 @@ export function MemoCreateButton() {
   const canCreate = MemoPolicy.canCreateMemo(resourceLimit);
 
   const handleCreate = () => {
+    // 한도는 요금제와 상관없이 같아 업셀 대신 지우면 다시 쓸 수 있다고 알린다
     if (!canCreate) {
-      toast.error(t('toasts.limitReached'));
+      toast.warning(t('toasts.limitReached', { max: resourceLimit.maxPerUser }), {
+        description: t('toasts.limitReachedDescription'),
+      });
       return;
     }
     push('/memo/create');
