@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /** 스토어 갱신 체인의 ID(원 거래 ID). 갱신마다 바뀌는 거래 ID와 섞이지 않게 값으로 감싼다. */
 export class StoreSubscriptionId {
@@ -13,7 +13,7 @@ export class StoreSubscriptionId {
   /** 체인 ID가 없으면 처리할 구독을 찾을 수 없어 SUBSCRIPTION_1604로 거절한다. */
   static from(value: string | null | undefined): StoreSubscriptionId {
     if (value == null || value === "") {
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
+      throw new DomainException(ErrorCode.SUBSCRIPTION_1604, {
         reason: "Missing store subscription id",
       });
     }

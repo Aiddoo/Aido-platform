@@ -8,6 +8,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import type { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
 import type {
@@ -102,8 +103,9 @@ const PERMANENT_FAILURE_CODES: ReadonlySet<string> = new Set([
   ErrorCode.SUBSCRIPTION_1604,
 ]);
 
+// 체인 ID가 없는 이벤트는 StoreSubscriptionId(Domain)가 같은 코드로 거절한다
 function isPermanentFailure(error: unknown): boolean {
-  return error instanceof ApplicationException && PERMANENT_FAILURE_CODES.has(error.errorCode);
+  return error instanceof ErrorCodedException && PERMANENT_FAILURE_CODES.has(error.errorCode);
 }
 
 function requireDate(value: Date | undefined, kind: string, reason: string): Date {
@@ -166,7 +168,7 @@ export class ApplyStoreSubscriptionEvent {
         event: BillingLogEvent.WEBHOOK_FAILED,
         eventKind: context.kind,
         isRetryable,
-        errorCode: error instanceof ApplicationException ? error.errorCode : undefined,
+        errorCode: error instanceof ErrorCodedException ? error.errorCode : undefined,
         errorType: toErrorType(error),
       });
       if (isRetryable) {
