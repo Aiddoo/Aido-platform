@@ -1,10 +1,8 @@
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import type { SubscriptionReconcileField } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
-import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
 import type { StoreSubscriptionStatusReaderPort } from "../../ports/subscriptions/store-subscription-status.reader.port.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
 import type { SubscriptionUserMutationLockPort } from "../../ports/subscriptions/subscription-user-mutation-lock.port.js";
@@ -32,7 +30,6 @@ interface ReconcileStoreSubscriptionsDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
   readonly cache: SubscriptionCachePort;
-  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 const UNCHANGED: ReconcileStoreSubscriptionsResult = { correctedCount: 0, fields: [] };
@@ -40,6 +37,7 @@ const UNCHANGED: ReconcileStoreSubscriptionsResult = { correctedCount: 0, fields
 /**
  * 웹훅은 신호로 보고 스토어 상태를 다시 읽어 사용자의 체인 행을 맞춘다. 스토어 읽기는 트랜잭션 밖에서 하고,
  * 실패하면 아무것도 바꾸지 않고 던져 잡이 다시 시도한다. 고친 것이 있을 때만 프리미엄을 다시 계산한다.
+ * 결과 로그는 잡 처리기가 요약 한 건으로 남긴다.
  */
 export class ReconcileStoreSubscriptions {
   readonly #dependencies: ReconcileStoreSubscriptionsDependencies;
@@ -61,7 +59,6 @@ export class ReconcileStoreSubscriptions {
             candidates.map((subscription) => subscription.storeSubscriptionId.value),
           );
     if (states == null || states.length === 0) {
-      this.#logUnchanged(userId);
       return UNCHANGED;
     }
     const stateByChain = new Map(states.map((state) => [state.storeSubscriptionId, state]));
@@ -92,20 +89,9 @@ export class ReconcileStoreSubscriptions {
     });
 
     if (corrections.length === 0) {
-      this.#logUnchanged(userId);
       return UNCHANGED;
     }
     await this.#dependencies.cache.invalidate(userId);
-    const result = { correctedCount: corrections.length, fields: uniq(corrections.flat()) };
-    this.#dependencies.logger.log({
-      event: BillingLogEvent.RECONCILE_CORRECTED,
-      userId,
-      ...result,
-    });
-    return result;
-  }
-
-  #logUnchanged(userId: string): void {
-    this.#dependencies.logger.log({ event: BillingLogEvent.RECONCILE_UNCHANGED, userId });
+    return { correctedCount: corrections.length, fields: uniq(corrections.flat()) };
   }
 }

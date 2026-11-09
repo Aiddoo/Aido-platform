@@ -277,6 +277,5 @@ export const reconcileStoreSubscriptionsProvider: FactoryProvider<ReconcileStore
       unitOfWork,
       premiumAccessProjector,
       cache,
-      logger: new Logger(ReconcileStoreSubscriptions.name),
     }),
 };

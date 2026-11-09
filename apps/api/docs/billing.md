@@ -75,7 +75,7 @@ RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기
 | 접근 있음                       | 만료(`current_period_ends_at`)·자동 갱신(ACTIVE/CANCELLED)·체험 여부·상품을 스토어 값으로 맞춘다    |
 | 스토어가 모르는 체인            | 바꾸지 않는다                                                                                       |
 
-바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비우며 `billing.subscription.reconcile.corrected`(`userId`·`correctedCount`·`fields`)를 남긴다. 같으면 `…unchanged`다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
+바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비운다. 로그는 잡 묶음마다 사용자 ID 없는 요약 한 건 `billing.subscription.reconcile.completed`(`jobCount`·`correctedUserCount`·`correctedChainCount`·`unchangedCount`·`fields`·`invalidCount`·`failedCount`·`errorTypes`)이고, 실패나 형식이 틀린 잡이 있으면 warn이다. 어느 사용자가 실패했는지는 재시도가 끝난 뒤의 운영 경보에만 싣는다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
 
 API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscription)(`GET /projects/{project_id}/subscriptions?store_subscription_identifier=`)을 쓴다. 이 검색은 App Store 체인의 어떤 거래 ID나 Play의 어떤 주문 ID도 받으므로, 우리 체인 키 `Subscription.storeSubscriptionId`(DB 칼럼 `revenueCatId`, 웹훅의 `original_transaction_id`)로 행과 1:1로 맞는다. 응답의 [Subscription](https://www.revenuecat.com/docs/api-v2/subscription-data-model)은 `gives_access`·`auto_renewal_status`·`status`(`trialing` 등)·`current_period_ends_at`을 주므로 교체된 Play 체인·환불·체험을 웹훅 없이 판별한다. 상품 ID는 RevenueCat 내부 ID라 [상품 조회](https://www.revenuecat.com/docs/api-v2/product)의 `store_identifier`(Play는 `상품:기본요금제`)로 바꾸고 프로세스 안에서 한 번만 읽는다.
 
