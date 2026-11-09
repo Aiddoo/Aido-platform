@@ -13,19 +13,21 @@
     },
     "intro": {
       "title": "Talk, and Aido sorts it out",
-      "description": "Here are two new things, one at a time"
+      "description": "Here's the all-new Speak to add and the new Voice notes"
     },
     "voiceTodo": {
-      "title": "Speak to add",
-      "description": "Say it all at once, and we'll split it into to-dos"
+      "title": "Talk, and AI makes your to-dos",
+      "description": "With dates and times filled in",
+      "badge": "All new"
     },
     "voiceNote": {
-      "title": "Voice notes",
-      "description": "Let it hear your meeting for a summary and to-dos"
+      "title": "AI sums up your meetings",
+      "description": "Just record to get key points and to-dos",
+      "badge": "New"
     },
     "capture": {
-      "title": "Say everything on your mind",
-      "description": "What you say shows up as text right away"
+      "title": "Now talk as long as you like",
+      "description": "Your words appear as you speak, then AI splits them into to-dos"
     },
     "review": {
       "title": "AI splits it into to-dos",
@@ -33,7 +35,7 @@
     },
     "list": {
       "title": "They go straight to your list",
-      "description": "With the times you mentioned filled in",
+      "description": "AI fills in the dates and times you mentioned",
       "justAdded": "Just added"
     },
     "record": {
@@ -41,7 +43,7 @@
       "description": "Mark the moments that matter as you go"
     },
     "result": {
-      "title": "Get a summary and to-dos",
+      "title": "AI finds a summary and to-dos",
       "description": "Switch tabs to see key points and to-dos"
     },
     "quota": {
@@ -95,9 +97,17 @@
       "description": "Invite a friend and you can both get Premium"
     },
     "friendInvite": {
-      "title": "Invite friends, collect paws",
-      "description": "You and your friend can both get Premium",
+      "title": "Collect paw prints with friends",
+      "description": "When a friend completes to-dos on {{activeDays}} days, you get a paw print and you can both get Premium",
       "action": "Start inviting"
+    },
+    "demo": {
+      "steps": {
+        "invite": "Invite",
+        "join": "Friend joins",
+        "pawPrint": "Paw print",
+        "reward": "Premium"
+      }
     }
   },
   "list": {

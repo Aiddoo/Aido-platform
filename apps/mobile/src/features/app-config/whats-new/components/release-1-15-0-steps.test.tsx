@@ -150,6 +150,20 @@ describe('Release1150Steps', () => {
     expect(screen.queryByText('우유랑 계란 사기')).toBeNull();
   });
 
+  it('다음 단계로 넘어가면 받아쓰기 예시는 내려가 지난 장면의 그림이 함께 돌지 않는다', async () => {
+    // Given
+    await renderSteps();
+    await fireEvent.press(screen.getByTestId('whats-new-intro-voice-todo'));
+    // 예시 무대는 읽기 도구에서 숨겨 두어 숨은 요소까지 찾는다
+    const captureFinishButton = screen.getByText('다 말했어요', { includeHiddenElements: true });
+
+    // When
+    await fireEvent.press(screen.getByText('다음'));
+
+    // Then
+    expect(captureFinishButton).not.toBeOnTheScreen();
+  });
+
   it('마무리의 말로 할 일 만들기는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
     // Given
     const { analytics, unmount } = await renderSteps();

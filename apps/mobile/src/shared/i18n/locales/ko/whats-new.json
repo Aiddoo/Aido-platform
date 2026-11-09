@@ -13,19 +13,21 @@
     },
     "intro": {
       "title": "말하면 아이두가 정리해요",
-      "description": "새로 생긴 두 가지를 하나씩 보여드릴게요"
+      "description": "새로워진 말로 할 일 만들기와 새로 생긴 말로 메모하기를 보여드릴게요"
     },
     "voiceTodo": {
-      "title": "말로 할 일 만들기",
-      "description": "길게 말하면 할 일로 나눠드려요"
+      "title": "말하면 AI가 할 일로 나눠드려요",
+      "description": "날짜·시간까지 채워 목록에 넣어드려요",
+      "badge": "새로워졌어요"
     },
     "voiceNote": {
-      "title": "말로 메모하기",
-      "description": "회의를 들려주면 요약과 할 일을 찾아드려요"
+      "title": "AI가 회의를 요약해 드려요",
+      "description": "녹음만 하면 핵심과 할 일까지 찾아드려요",
+      "badge": "새 기능"
     },
     "capture": {
-      "title": "생각나는 대로 길게 말해보세요",
-      "description": "말하는 동안 들은 내용이 바로 글자로 보여요"
+      "title": "이제 길게 말해도 괜찮아요",
+      "description": "들은 말은 바로 글자로 보이고, 다 말하면 AI가 할 일로 나눠드려요"
     },
     "review": {
       "title": "AI가 할 일로 나눠드려요",
@@ -33,7 +35,7 @@
     },
     "list": {
       "title": "할 일 목록에 바로 들어가요",
-      "description": "말한 시간까지 채워서 넣어드려요",
+      "description": "AI가 말한 날짜·시간까지 채워 넣어드려요",
       "justAdded": "방금 추가"
     },
     "record": {
@@ -41,7 +43,7 @@
       "description": "중요한 순간에는 표시를 남길 수 있어요"
     },
     "result": {
-      "title": "요약과 할 일을 찾아드려요",
+      "title": "AI가 요약과 할 일을 찾아드려요",
       "description": "핵심 포인트와 할 일을 탭에서 골라 보세요"
     },
     "quota": {
@@ -95,9 +97,17 @@
       "description": "친구를 초대하면 친구도 나도 프리미엄을 받을 수 있어요"
     },
     "friendInvite": {
-      "title": "친구 초대하고 발자국 모으기",
-      "description": "초대한 친구도 나도 프리미엄을 받을 수 있어요",
+      "title": "친구와 함께 발자국을 모아요",
+      "description": "친구가 {{activeDays}}일 동안 할 일을 끝내면 발자국이 찍히고 둘 다 프리미엄을 받을 수 있어요",
       "action": "초대하러 가기"
+    },
+    "demo": {
+      "steps": {
+        "invite": "초대",
+        "join": "친구 합류",
+        "pawPrint": "발자국",
+        "reward": "프리미엄"
+      }
     }
   },
   "list": {

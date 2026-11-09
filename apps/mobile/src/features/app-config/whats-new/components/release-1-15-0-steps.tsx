@@ -20,7 +20,7 @@ import {
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
+import { Chip, PressableFeedback } from 'heroui-native';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -243,6 +243,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
           Icon={VoiceDuoIcon}
           title={t('v1_15_0.voiceTodo.title')}
           description={t('v1_15_0.voiceTodo.description')}
+          badge={t('v1_15_0.voiceTodo.badge')}
           onPress={() => onSelect('voiceTodo')}
           testID="whats-new-intro-voice-todo"
         />
@@ -250,6 +251,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
           Icon={ReportDuoIcon}
           title={t('v1_15_0.voiceNote.title')}
           description={t('v1_15_0.voiceNote.description')}
+          badge={t('v1_15_0.voiceNote.badge')}
           onPress={() => onSelect('voiceNote')}
           testID="whats-new-intro-voice-note"
         />
@@ -262,6 +264,7 @@ interface IntroFeatureButtonProps {
   Icon: StyledIcon;
   title: string;
   description: string;
+  badge: string;
   onPress: () => void;
   testID: string;
 }
@@ -270,6 +273,7 @@ function IntroFeatureButton({
   Icon,
   title,
   description,
+  badge,
   onPress,
   testID,
 }: IntroFeatureButtonProps) {
@@ -296,8 +300,18 @@ function IntroFeatureButton({
             colorClassName="text-main"
           />
         </Box>
-        <VStack flex={1} gap={2}>
-          <Text size="b3" weight="semibold">
+        <VStack flex={1} gap={4}>
+          <Chip size="sm" variant="soft" color="accent" pointerEvents="none" className="self-start">
+            <Text
+              size="e1"
+              weight="semibold"
+              numberOfLines={1}
+              className="text-accent-soft-foreground"
+            >
+              {badge}
+            </Text>
+          </Chip>
+          <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
             {title}
           </Text>
           <WordWrapText size="e1" shade={6}>

@@ -1,5 +1,7 @@
 import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
+import { DigestScanPreview } from '@src/features/voice/components/note/digest-scan-preview';
 import { KeyPointList } from '@src/features/voice/components/note/key-point-list';
+import { RecognizerWaveform } from '@src/features/voice/components/note/recognizer-waveform';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import type { VoiceNoteSentence } from '@src/features/voice/domains/voice-note.model';
@@ -12,16 +14,25 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, SegmentTabTrigger, Text, VStack, WordWrapText } from '@src/shared/ui';
+import {
+  AiFilledIcon,
+  HStack,
+  SegmentTabTrigger,
+  Text,
+  VStack,
+  WordWrapText,
+} from '@src/shared/ui';
 import { Tabs } from 'heroui-native';
 import { useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { DEMO_SCRIPT, DEMO_WAVEFORM_LEVELS } from '../constants/release-1-15-0.constants';
+import { DEMO_SCRIPT } from '../constants/release-1-15-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
+import { useDemoVoiceLevel } from '../hooks/use-demo-voice-level';
 import { DemoTodoRow } from './demo-todo-row';
 import { WhatsNewStep } from './whats-new-step';
 
@@ -47,9 +58,11 @@ const DEMO_NOTE_DURATION_MS = 31 * SECOND_MS;
 
 /** 녹음 화면처럼 방금 들은 문장 몇 개만 보이고 앞 문장은 위로 밀려난다 */
 const VISIBLE_CAPTION_COUNT = 2;
-const WAVEFORM_BAR = { minHeight: 4, levelHeight: 28 } as const;
 /** 글자로 바꾸기·핵심 포인트·할 일이 모두 끝난 다음 장면에서 결과로 넘어간다 */
 const DIGEST_STEP_COUNT = 3;
+/** 실제 정리 화면처럼 앞 문장 몇 개만 스캔하는 모습으로 보여 준다 */
+const SCAN_PREVIEW_SENTENCE_COUNT = 2;
+const DIGEST_AI_ICON_SIZE = 18;
 const CAPTION_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
 const CAPTION_LAYOUT = LinearTransition.duration(ANIMATION.duration.slow).reduceMotion(
   ReduceMotion.System,
@@ -72,24 +85,23 @@ export function VoiceNoteRecordDemo() {
   });
   const elapsedMs =
     heardCount === 0 ? 0 : (DEMO_NOTE_SENTENCES[heardCount]?.startMs ?? DEMO_NOTE_DURATION_MS);
-  const barCount = Math.round(
-    (DEMO_WAVEFORM_LEVELS.length * heardCount) / DEMO_NOTE_SENTENCES.length,
-  );
-  const captions = DEMO_NOTE_SENTENCES.slice(0, heardCount).slice(-VISIBLE_CAPTION_COUNT);
+  const isRecording = heardCount < DEMO_NOTE_SENTENCES.length;
+  const level = useDemoVoiceLevel(isRecording);
+  const heardSentences = DEMO_NOTE_SENTENCES.slice(0, heardCount);
+  const captions = heardSentences.slice(-VISIBLE_CAPTION_COUNT);
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <VStack flex={1} gap={12} align="center" className="pb-4">
         <RecordingTimer elapsedMs={elapsedMs} limitMs={null} />
-        <HStack gap={3} align="center" className="h-8 self-stretch">
-          {DEMO_WAVEFORM_LEVELS.slice(0, barCount).map((level, index) => (
-            <Box
-              key={index}
-              className="w-1 rounded-full bg-main"
-              style={{ height: WAVEFORM_BAR.minHeight + level * WAVEFORM_BAR.levelHeight }}
-            />
-          ))}
-        </HStack>
+        <RecognizerWaveform
+          level={level}
+          isActive={isRecording}
+          bookmarksMs={heardSentences
+            .filter(({ isBookmarked }) => isBookmarked)
+            .map(({ startMs }) => startMs)}
+          className="h-14 self-stretch"
+        />
         <VStack gap={8} className="self-stretch">
           {captions.map((sentence) => (
             <Animated.View key={sentence.id} entering={CAPTION_ENTERING} layout={CAPTION_LAYOUT}>
@@ -128,24 +140,38 @@ export function VoiceNoteResultDemo() {
 }
 
 function DigestingNote({ doneCount }: { doneCount: number }) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['whatsNew', 'voiceNote']);
+  const fontScaledSize = useFontScaledSize();
 
   return (
-    <VStack gap={16}>
-      <Text size="t3" weight="bold">
-        {t('digest.title')}
-      </Text>
+    <VStack flex={1} gap={16}>
+      <HStack gap={6} align="center">
+        <AiFilledIcon
+          width={fontScaledSize(DIGEST_AI_ICON_SIZE)}
+          height={fontScaledSize(DIGEST_AI_ICON_SIZE)}
+          colorClassName="text-main"
+        />
+        <Text size="t3" weight="bold" className="shrink">
+          {t('voiceNote:digest.title')}
+        </Text>
+      </HStack>
+      <DigestScanPreview
+        paragraphs={DEMO_NOTE_SENTENCES.slice(0, SCAN_PREVIEW_SENTENCE_COUNT).map(({ id }) =>
+          t(`whatsNew:v1_15_0.demo.note.sentences.${id}`),
+        )}
+        className="max-h-[50%]"
+      />
       <VStack gap={12}>
         <DigestProgress.Step
-          label={t('digest.steps.transcript')}
+          label={t('voiceNote:digest.steps.transcript')}
           status={doneCount >= 1 ? 'done' : 'doing'}
         />
         <DigestProgress.Step
-          label={t('digest.steps.keyPoints')}
+          label={t('voiceNote:digest.steps.keyPoints')}
           status={doneCount >= 2 ? 'done' : 'doing'}
         />
         <DigestProgress.Step
-          label={t('digest.steps.todos')}
+          label={t('voiceNote:digest.steps.todos')}
           status={doneCount >= 3 ? 'done' : 'doing'}
         />
       </VStack>

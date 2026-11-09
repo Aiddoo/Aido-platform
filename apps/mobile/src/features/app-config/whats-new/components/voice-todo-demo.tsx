@@ -2,6 +2,7 @@ import { CategoryHeaderPill } from '@src/features/planning/category/components/c
 import { DEFAULT_CATEGORY_COLOR } from '@src/features/planning/category/constants/todo-category.constants';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { LiveTranscript } from '@src/features/voice/components/quick-voice/live-transcript';
+import { VoiceVisual } from '@src/features/voice/components/visualizers/voice-visual';
 import {
   VoiceTranscriptPolicy,
   type VoiceTranscript,
@@ -15,12 +16,9 @@ import { Chip } from 'heroui-native';
 import { useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
-import {
-  DEMO_PLANNED_TODOS,
-  DEMO_SCRIPT,
-  DEMO_WAVEFORM_LEVELS,
-} from '../constants/release-1-15-0.constants';
+import { DEMO_PLANNED_TODOS, DEMO_SCRIPT } from '../constants/release-1-15-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
+import { useDemoVoiceLevel } from '../hooks/use-demo-voice-level';
 import { DemoTodoRow } from './demo-todo-row';
 import { WhatsNewStep } from './whats-new-step';
 
@@ -31,7 +29,8 @@ type DemoTodoId = DemoPlannedTodoId | typeof DEMO_EXISTING_TODO.id;
 
 /** 실제 인식처럼 끝 몇 단어는 흐리게 보이다 확정된다 */
 const INTERIM_WORD_COUNT = 2;
-const ORB_BAR = { count: 6, minHeight: 6, levelHeight: 30 } as const;
+/** 말이 끝난 뒤 파형이 조용히 가라앉을 때까지 듣는 모습을 이어 가다 그리기를 멈춘다 */
+const LISTENING_SETTLE_MS = 1_500;
 const ROW_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
 const ROW_LAYOUT = LinearTransition.duration(ANIMATION.duration.slow).reduceMotion(
   ReduceMotion.System,
@@ -45,7 +44,14 @@ export function VoiceTodoCaptureDemo({ onFinish }: VoiceTodoCaptureDemoProps) {
   const { t } = useTranslation(['whatsNew', 'voice']);
   const words = splitWords(t('whatsNew:v1_15_0.demo.transcript'));
   const heardCount = useDemoScript({ frameCount: words.length, frameMs: DEMO_SCRIPT.wordMs });
-  const isListening = heardCount < words.length;
+  const settledCount = useDemoScript({
+    frameCount: 1,
+    frameMs: 0,
+    startDelayMs:
+      DEMO_SCRIPT.startDelayMs + words.length * DEMO_SCRIPT.wordMs + LISTENING_SETTLE_MS,
+  });
+  const isListening = settledCount === 0;
+  const level = useDemoVoiceLevel(heardCount < words.length);
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -62,10 +68,7 @@ export function VoiceTodoCaptureDemo({ onFinish }: VoiceTodoCaptureDemoProps) {
             placeholder={t('voice:listening.prompt')}
           />
         </Box>
-        <ListeningOrb />
-        <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-          {t('voice:listening.autoFinishHint')}
-        </Text>
+        <VoiceVisual level={level} isActive={isListening} />
         <Button size="medium" isDisabled={heardCount === 0} onPress={onFinish}>
           {t('voice:listening.done')}
         </Button>
@@ -82,34 +85,6 @@ function toDemoTranscript(words: readonly string[], heardCount: number): VoiceTr
     sentences: finalCount > 0 ? [words.slice(0, finalCount).join(' ')] : [],
     interim: words.slice(finalCount, heardCount).join(' '),
   });
-}
-
-/** 실제 화면의 Skia 원 대신 멈춰 있는 원과 막대다. 저사양 기기에서 프레임마다 그리지 않는다 */
-function ListeningOrb() {
-  const bars = DEMO_WAVEFORM_LEVELS.slice(0, ORB_BAR.count);
-
-  return (
-    <HStack gap={6} align="center" justify="center">
-      {[...bars].reverse().map((level, index) => (
-        <OrbBar key={`left-${index}`} level={level} />
-      ))}
-      <Box className="size-16 items-center justify-center rounded-full bg-main/15">
-        <Box className="size-11 rounded-full bg-main" />
-      </Box>
-      {bars.map((level, index) => (
-        <OrbBar key={`right-${index}`} level={level} />
-      ))}
-    </HStack>
-  );
-}
-
-function OrbBar({ level }: { level: number }) {
-  return (
-    <Box
-      className="w-1 rounded-full bg-main/40"
-      style={{ height: ORB_BAR.minHeight + level * ORB_BAR.levelHeight }}
-    />
-  );
 }
 
 interface VoiceTodoReviewDemoProps {
