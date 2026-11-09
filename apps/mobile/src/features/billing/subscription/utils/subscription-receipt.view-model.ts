@@ -5,7 +5,7 @@ import {
 } from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { type User } from '@src/features/identity/user/domains/user.model';
-import { hasInstantPassed, type Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
@@ -121,7 +121,7 @@ function toBillingRow(
   if (!access.willRenew) {
     return { type: 'subscriptionEndsOn', date: periodEndsAt };
   }
-  return hasInstantPassed(periodEndsAt, now)
+  return PremiumAccessPolicy.isRenewalPending(access, now)
     ? { type: 'renewalPending' }
     : { type: 'nextBillingDate', date: periodEndsAt };
 }
@@ -194,7 +194,7 @@ function toTrialBillingRow(
   if (!access.willRenew) {
     return [];
   }
-  return hasInstantPassed(periodEndsAt, now)
+  return PremiumAccessPolicy.isRenewalPending(access, now)
     ? [{ type: 'renewalPending' }]
     : [{ type: 'firstBillingDate', date: periodEndsAt }];
 }

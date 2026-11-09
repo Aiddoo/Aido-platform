@@ -131,6 +131,13 @@ function getAnnualRenewalDaysLeft(
   return isWithinNoticeDays(daysLeft, PREMIUM_RENEWAL_NOTICE_DAYS) ? daysLeft : null;
 }
 
+/** 자동 갱신 중인데 지금 기간 끝이 지났으면 스토어 갱신 결과를 기다리는 중이다. 경계는 끝나는 시각 자체를 포함한다 */
+function isRenewalPending(access: Pick<PremiumAccess, 'willRenew' | 'periodEndsAt'>, now: Instant) {
+  return (
+    access.willRenew && access.periodEndsAt != null && hasInstantPassed(access.periodEndsAt, now)
+  );
+}
+
 /** 무료 페이월에서 "초대 보상 프리미엄이 끝났어요"를 붙일 시각. 아직 프리미엄이면 null이다 */
 function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEndedAt'>) {
   return access.source == null ? access.grantEndedAt : null;
@@ -188,4 +195,5 @@ export const PremiumAccessPolicy = {
   hasChanged,
   getBankedRewardStartsAt,
   getAnnualRenewalDaysLeft,
+  isRenewalPending,
 } as const;

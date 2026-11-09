@@ -413,3 +413,55 @@ describe('getBankedRewardStartsAt', () => {
     expect(startsAt).toBeNull();
   });
 });
+
+describe('isRenewalPending', () => {
+  const PERIOD_ENDS_AT = toInstant('2026-12-09T00:00:00.000Z');
+
+  it('자동 갱신 중인데 기간 끝이 지났으면 갱신 확인을 기다리는 중이다', () => {
+    // Given
+    const access = createPremiumAccess({ willRenew: true, periodEndsAt: PERIOD_ENDS_AT });
+
+    // When
+    const isPending = PremiumAccessPolicy.isRenewalPending(
+      access,
+      toInstant('2026-12-09T00:00:01.000Z'),
+    );
+
+    // Then
+    expect(isPending).toBe(true);
+  });
+
+  it('끝나는 시각 자체부터 갱신 확인 중으로 본다', () => {
+    // Given
+    const access = createPremiumAccess({ willRenew: true, periodEndsAt: PERIOD_ENDS_AT });
+
+    // When
+    const isPending = PremiumAccessPolicy.isRenewalPending(access, PERIOD_ENDS_AT);
+
+    // Then
+    expect(isPending).toBe(true);
+  });
+
+  it.each([
+    [
+      '기간 끝이 아직 오지 않았으면',
+      { willRenew: true, periodEndsAt: PERIOD_ENDS_AT },
+      '2026-12-08T23:59:59.000Z',
+    ],
+    [
+      '자동 갱신을 껐으면',
+      { willRenew: false, periodEndsAt: PERIOD_ENDS_AT },
+      '2026-12-09T00:00:01.000Z',
+    ],
+    ['기간 끝을 모르면', { willRenew: true, periodEndsAt: null }, '2026-12-09T00:00:01.000Z'],
+  ] as const)('%s 갱신 확인 중이 아니다', (_case, overrides, now) => {
+    // Given
+    const access = createPremiumAccess(overrides);
+
+    // When
+    const isPending = PremiumAccessPolicy.isRenewalPending(access, toInstant(now));
+
+    // Then
+    expect(isPending).toBe(false);
+  });
+});
