@@ -8,38 +8,85 @@ describe("createPremiumTrialEndingNotificationMessage — 체험 종료 안내 �
   it.each([
     {
       locale: "ko" as const,
-      willRenew: true,
+      planType: "ANNUAL" as const,
       title: "3일 뒤 연간 구독이 시작돼요",
       body: "12월 9일 결제 예정 · 해지는 스토어에서",
     },
     {
       locale: "ko" as const,
-      willRenew: false,
-      title: "무료 체험이 3일 뒤 끝나요",
-      body: "12월 9일까지 이용 · 결제는 없어요",
+      planType: "MONTHLY" as const,
+      title: "3일 뒤 월간 구독이 시작돼요",
+      body: "12월 9일 결제 예정 · 해지는 스토어에서",
+    },
+    {
+      locale: "ko" as const,
+      planType: null,
+      title: "3일 뒤 구독이 시작돼요",
+      body: "12월 9일 결제 예정 · 해지는 스토어에서",
     },
     {
       locale: "en" as const,
-      willRenew: true,
+      planType: "ANNUAL" as const,
       title: "Your annual plan starts in 3 days",
       body: "Billing on Dec 9 · Cancel in your store",
     },
     {
       locale: "en" as const,
-      willRenew: false,
+      planType: "MONTHLY" as const,
+      title: "Your monthly plan starts in 3 days",
+      body: "Billing on Dec 9 · Cancel in your store",
+    },
+    {
+      locale: "en" as const,
+      planType: null,
+      title: "Your subscription starts in 3 days",
+      body: "Billing on Dec 9 · Cancel in your store",
+    },
+  ])(
+    "$locale · 자동 갱신 · 요금제 $planType이면 그 요금제로 결제 예정을 알린다",
+    ({ locale, planType, title, body }) => {
+      // Given
+      const input = { locale, timezone: "Asia/Seoul", endsAt, now, willRenew: true, planType };
+
+      // When
+      const message = createPremiumTrialEndingNotificationMessage(input);
+
+      // Then
+      expect(message).toMatchObject({ title, body });
+    },
+  );
+
+  it.each([
+    {
+      locale: "ko" as const,
+      title: "무료 체험이 3일 뒤 끝나요",
+      body: "12월 9일까지 이용 · 결제는 없어요",
+    },
+    {
+      locale: "en" as const,
       title: "Your free trial ends in 3 days",
       body: "Use it until Dec 9 · No charge",
     },
-  ])("$locale · 자동 갱신 $willRenew", ({ locale, willRenew, title, body }) => {
-    // Given
-    const input = { locale, timezone: "Asia/Seoul", endsAt, now, willRenew };
+  ])(
+    "$locale · 해지한 체험은 요금제와 결제 예정 없이 끝난다고만 알린다",
+    ({ locale, title, body }) => {
+      // Given
+      const input = {
+        locale,
+        timezone: "Asia/Seoul",
+        endsAt,
+        now,
+        willRenew: false,
+        planType: "ANNUAL" as const,
+      };
 
-    // When
-    const message = createPremiumTrialEndingNotificationMessage(input);
+      // When
+      const message = createPremiumTrialEndingNotificationMessage(input);
 
-    // Then
-    expect(message).toMatchObject({ title, body });
-  });
+      // Then
+      expect(message).toMatchObject({ title, body });
+    },
+  );
 
   it("남은 일수와 날짜는 받는 사람 시간대 달력으로 센다", () => {
     // Given
@@ -49,6 +96,7 @@ describe("createPremiumTrialEndingNotificationMessage — 체험 종료 안내 �
       endsAt,
       now,
       willRenew: true,
+      planType: "ANNUAL" as const,
     };
 
     // When
@@ -74,6 +122,7 @@ describe("createPremiumTrialEndingNotificationMessage — 체험 종료 안내 �
         locale: "ko",
         timezone: "Asia/Seoul",
         willRenew: false,
+        planType: null,
       }),
     );
 

@@ -1,12 +1,15 @@
 import {
   STORE_PERIOD_TYPE,
   type StorePeriodType,
+  type SubscriptionPlanType,
   type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 
 import { isSame } from "#api/shared/domain/date/utils/compare";
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot } from "#api/shared/domain/index";
+
+import { SubscriptionPlanPolicy } from "../../policies/subscriptions/subscription-plan.policy.js";
 
 export interface SubscriptionProps {
   id: number;
@@ -85,6 +88,11 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
   get periodType(): StorePeriodType | null {
     return this.props.periodType;
+  }
+
+  /** 상품 ID로 정한 요금제. 모르는 상품이면 null이다. */
+  planType(): SubscriptionPlanType | null {
+    return SubscriptionPlanPolicy.planTypeOf(this.props.productId);
   }
 
   isTrial(): boolean {

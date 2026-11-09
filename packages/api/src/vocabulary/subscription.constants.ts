@@ -80,6 +80,17 @@ export const STORE_PERIOD_TYPE = {
   PREPAID: "PREPAID",
 } as const satisfies Record<StorePeriodType, StorePeriodType>;
 
+/** 요금제 종류. 스토어 상품 ID로 정하고, 모르는 상품이면 서버가 null로 보낸다. */
+export const SUBSCRIPTION_PLAN_TYPES = ["ANNUAL", "MONTHLY"] as const;
+
+export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLAN_TYPES)[number];
+
+/** 스토어 상품 ID → 요금제. Play 구독은 "상품:기본요금제"로 와서 ':' 앞만 본다. */
+export const STORE_SUBSCRIPTION_PRODUCTS = {
+  "com.aido.pro.yearly": "ANNUAL",
+  "com.aido.pro.monthly": "MONTHLY",
+} as const satisfies Record<string, SubscriptionPlanType>;
+
 /** 무료 체험이 끝나기 며칠 전에 한 번 알릴지. 체험이 이보다 짧게 남은 채 시작했으면 알리지 않는다. */
 export const PREMIUM_TRIAL_ENDING_NOTICE_DAYS = 3;
 
@@ -88,3 +99,6 @@ export const PREMIUM_GRANT_ENDING_NOTICE_DAYS = 1;
 
 /** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간(일). 지나면 /me의 premiumGrantEndedAt이 null이다. */
 export const PREMIUM_GRANT_ENDED_WINDOW_DAYS = 7;
+
+/** 연간 구독이 자동 갱신되기 며칠 전에 한 번 알릴지. 월간은 매달 알리면 피로해서 알리지 않는다. */
+export const PREMIUM_RENEWAL_NOTICE_DAYS = 7;

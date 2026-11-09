@@ -10,6 +10,7 @@ import type {
   TrialEndingNotice,
   TrialEndingNoticeSourcePort,
 } from "../../../application/ports/subscriptions/trial-ending-notice.source.port.js";
+import { SubscriptionPlanPolicy } from "../../../domain/policies/subscriptions/subscription-plan.policy.js";
 
 @Injectable()
 export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePort {
@@ -29,6 +30,7 @@ export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePo
         startedAt: subscription.startedAt,
         expiresAt: subscription.expiresAt,
         status: subscription.status,
+        productId: subscription.productId,
       })
       .from(subscription)
       .where(
@@ -46,7 +48,11 @@ export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePo
       )
       .orderBy(asc(subscription.expiresAt), asc(subscription.id))
       .limit(params.limit);
-    return rows.map(({ status, ...row }) => ({ ...row, willRenew: status === "ACTIVE" }));
+    return rows.map(({ status, productId, ...row }) => ({
+      ...row,
+      willRenew: status === "ACTIVE",
+      planType: SubscriptionPlanPolicy.planTypeOf(productId),
+    }));
   }
 
   async claim(

@@ -70,6 +70,7 @@ export class GetCurrentUser {
           bankedPremiumDays: premiumAccess.bankedDays,
           premiumGrantEndedAt: toISOStringOrNull(premiumAccess.recentGrantEndedAt),
           premiumIsTrial: premiumAccess.isTrial,
+          premiumPlanType: premiumAccess.planType,
         };
       },
     );
@@ -101,6 +102,8 @@ export class GetCurrentUser {
       bankedPremiumDays: cachedProfile.bankedPremiumDays,
       premiumGrantEndedAt: cachedProfile.premiumGrantEndedAt,
       premiumIsTrial: cachedProfile.premiumIsTrial,
+      // 배포 전 캐시(TTL 5분 이하)에는 이 칸이 없어 키 버전을 올리지 않고 모름(null)으로 읽는다
+      premiumPlanType: cachedProfile.premiumPlanType ?? null,
       isPremium,
       entitlements,
     };

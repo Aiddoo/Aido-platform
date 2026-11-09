@@ -119,7 +119,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       .withTransactionId(chainOf(userId))
       .withEventId(`start-${userId}`)
       .withPeriodType("TRIAL")
-      .withProductId("aido_premium_yearly")
+      .withProductId("com.aido.pro.yearly")
       .withPrice(0)
       .withPurchasedAtMs(trialStartedAt.getTime())
       .withExpirationAtMs(trialEndsAt.getTime())

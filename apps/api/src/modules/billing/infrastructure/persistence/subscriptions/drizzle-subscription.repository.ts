@@ -87,6 +87,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
     const rows = await this.db.query.subscription.findMany({
       columns: {
         revenueCatId: true,
+        productId: true,
         status: true,
         expiresAt: true,
         gracePeriodEndsAt: true,

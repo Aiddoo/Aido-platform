@@ -37,7 +37,12 @@ function banked(id: string, createdAt: string, durationDays = 7): PremiumGrantTe
 }
 
 function store(overrides: Partial<StoreEntitlement> = {}): StoreEntitlement {
-  return { status: "ACTIVE", expiresAt: new Date("2028-03-10T00:00:00.000Z"), ...overrides };
+  return {
+    productId: "com.aido.pro.yearly",
+    status: "ACTIVE",
+    expiresAt: new Date("2028-03-10T00:00:00.000Z"),
+    ...overrides,
+  };
 }
 
 describe("PremiumAccessPolicy", () => {
@@ -157,6 +162,7 @@ describe("PremiumAccessPolicy", () => {
   describe("applyStoreEventChain", () => {
     const stored = {
       revenueCatId: "chain-1",
+      productId: "com.aido.pro.yearly",
       status: "CANCELLED" as const,
       expiresAt: new Date("2028-03-10T00:00:00.000Z"),
       gracePeriodEndsAt: new Date("2028-03-20T00:00:00.000Z"),
@@ -173,6 +179,7 @@ describe("PremiumAccessPolicy", () => {
       expect(applied).toEqual([
         {
           revenueCatId: "chain-1",
+          productId: "com.aido.pro.yearly",
           status: "ACTIVE",
           expiresAt: stored.expiresAt,
           gracePeriodEndsAt: stored.gracePeriodEndsAt,
@@ -215,6 +222,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 0,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -239,6 +247,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 0,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: null,
       });
     });
 
@@ -261,6 +270,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 7,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: null,
       });
     });
 
@@ -283,6 +293,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 7,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: null,
       });
     });
 
@@ -308,6 +319,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 21,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -330,6 +342,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 7,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -353,6 +366,7 @@ describe("PremiumAccessPolicy", () => {
         bankedDays: 7,
         recentGrantEndedAt: null,
         isTrial: false,
+        planType: "ANNUAL",
       });
     });
 

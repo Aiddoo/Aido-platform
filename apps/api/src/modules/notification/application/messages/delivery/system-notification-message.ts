@@ -1,3 +1,5 @@
+import type { SubscriptionPlanType } from "@aido/api/vocabulary";
+
 import {
   calendarDaysBetween,
   localDateInTimezone,
@@ -98,6 +100,8 @@ export interface PremiumTrialEndingNotificationInput {
   readonly now: Date;
   /** 해지하지 않아 체험이 끝나면 결제가 이어지는지 */
   readonly willRenew: boolean;
+  /** 체험 뒤 이어질 요금제. 모르는 상품이면 null이다. */
+  readonly planType: SubscriptionPlanType | null;
   readonly variantContext?: NotificationVariantContext;
 }
 
@@ -122,7 +126,7 @@ export function createPremiumTrialEndingNotificationMessage(
   return input.willRenew
     ? renderLocalizedNotification({
         template: templates.PREMIUM_TRIAL_ENDING_RENEWING,
-        variables,
+        variables: { ...variables, planType: input.planType },
         variantContext: input.variantContext,
         templateKey: "premium_trial_ending.renewing",
       })

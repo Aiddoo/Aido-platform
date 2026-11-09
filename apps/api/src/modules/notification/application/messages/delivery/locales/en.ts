@@ -1,4 +1,5 @@
-import type { WeatherCondition } from "@aido/api/vocabulary";
+import type { SubscriptionPlanType, WeatherCondition } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
@@ -451,6 +452,19 @@ export const SOCIAL_TEMPLATES = {
   },
 } satisfies SocialNotificationCopyCatalog;
 
+/** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
+function dayPhrase(days: number): string {
+  return days <= 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
+}
+
+function planPhrase(planType: SubscriptionPlanType | null): string {
+  return match(planType)
+    .with("ANNUAL", () => "annual plan")
+    .with("MONTHLY", () => "monthly plan")
+    .with(null, () => "subscription")
+    .exhaustive();
+}
+
 export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
@@ -536,13 +550,9 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("Your Premium ends tomorrow", "See details on the Subscription screen"),
   },
   PREMIUM_TRIAL_ENDING_RENEWING: {
-    copy: ({ days, date }) =>
+    copy: ({ days, date, planType }) =>
       copy(
-        days <= 0
-          ? "Your annual plan starts today"
-          : days === 1
-            ? "Your annual plan starts tomorrow"
-            : `Your annual plan starts in ${days} days`,
+        `Your ${planPhrase(planType)} starts ${dayPhrase(days)}`,
         `Billing on ${date} · Cancel in your store`,
       ),
   },

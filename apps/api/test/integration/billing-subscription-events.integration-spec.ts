@@ -579,6 +579,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(sortBy(entitlements, [(entitlement) => entitlement.revenueCatId])).toEqual([
       {
         revenueCatId: transactionId,
+        productId: "premium_monthly",
         status: "ACTIVE",
         expiresAt: previousExpiry,
         gracePeriodEndsAt: null,
@@ -586,6 +587,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       },
       {
         revenueCatId: "other-subscription-chain",
+        productId: "premium_monthly",
         status: "CANCELLED",
         expiresAt: nextExpiry,
         gracePeriodEndsAt: null,
@@ -593,6 +595,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       },
       {
         revenueCatId: "shorter-other",
+        productId: "premium_monthly",
         status: "ACTIVE",
         expiresAt: shorterExpiry,
         gracePeriodEndsAt: null,

@@ -6711,6 +6711,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "premiumGrantEndedAt": null,
         "premiumIsTrial": false,
         "premiumPeriodEndsAt": null,
+        "premiumPlanType": null,
         "premiumSource": null,
         "profileImage": "https://example.com/profiles/matthew.jpg",
         "providers": [
@@ -7100,6 +7101,16 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "format": "date-time",
           "nullable": true,
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "premiumPlanType": {
+          "description": "지금 프리미엄 기간을 정하는 스토어 구독의 요금제입니다. 스토어 상품 ID로 정하고(Play의 "상품:기본요금제"는 ':' 앞만 봅니다) 무료 체험이면 체험 뒤 이어질 요금제입니다. premiumSource가 STORE가 아니거나 모르는 상품이면 null입니다. 1.15.0+ 서버이며 구버전 서버는 생략합니다.",
+          "enum": [
+            "ANNUAL",
+            "MONTHLY",
+            null,
+          ],
+          "nullable": true,
           "type": "string",
         },
         "premiumSource": {

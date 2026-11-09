@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from "@aido/api/vocabulary";
+import type { NudgeReplyKind, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {
@@ -145,6 +145,11 @@ export interface PremiumTrialEndingCopyVariables {
   readonly date: string;
 }
 
+/** 체험 뒤 이어질 요금제. 모르는 상품이면 null이라 요금제 없이 "구독"이라고 쓴다. */
+export interface PremiumTrialRenewingCopyVariables extends PremiumTrialEndingCopyVariables {
+  readonly planType: SubscriptionPlanType | null;
+}
+
 export interface SystemCopyVariablesByKey {
   readonly WINBACK_DAY3: undefined;
   readonly WINBACK_DAY7: undefined;
@@ -159,7 +164,7 @@ export interface SystemCopyVariablesByKey {
   readonly AI_SUGGESTION: undefined;
   readonly BILLING_ISSUE: undefined;
   readonly PREMIUM_GRANT_ENDING: undefined;
-  readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialEndingCopyVariables;
+  readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialRenewingCopyVariables;
   readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
   /** 처음 동의한 날을 받는 사람 시간대·언어로 쓴 값 */
   readonly MARKETING_CONSENT_RECONFIRM: { readonly agreedOn: string };

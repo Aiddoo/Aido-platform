@@ -1,5 +1,6 @@
-import type { WeatherCondition } from "@aido/api/vocabulary";
+import type { SubscriptionPlanType, WeatherCondition } from "@aido/api/vocabulary";
 import { josa } from "es-hangul";
+import { match } from "ts-pattern";
 
 import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
@@ -498,6 +499,19 @@ export const SOCIAL_TEMPLATES = {
   },
 } satisfies SocialNotificationCopyCatalog;
 
+/** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
+function dayPhrase(days: number): string {
+  return days <= 0 ? "오늘" : days === 1 ? "내일" : `${days}일 뒤`;
+}
+
+function planPhrase(planType: SubscriptionPlanType | null): string {
+  return match(planType)
+    .with("ANNUAL", () => "연간 구독")
+    .with("MONTHLY", () => "월간 구독")
+    .with(null, () => "구독")
+    .exhaustive();
+}
+
 export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
@@ -574,13 +588,9 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("내일 프리미엄이 끝나요", "남은 기간은 구독 화면에서 볼 수 있어요"),
   },
   PREMIUM_TRIAL_ENDING_RENEWING: {
-    copy: ({ days, date }) =>
+    copy: ({ days, date, planType }) =>
       copy(
-        days <= 0
-          ? "오늘 연간 구독이 시작돼요"
-          : days === 1
-            ? "내일 연간 구독이 시작돼요"
-            : `${days}일 뒤 연간 구독이 시작돼요`,
+        `${dayPhrase(days)} ${planPhrase(planType)}이 시작돼요`,
         `${date} 결제 예정 · 해지는 스토어에서`,
       ),
   },

@@ -77,6 +77,7 @@ describe("premiumGrantImpactOf — 보상 기간 영향", () => {
     bankedDays: 0,
     recentGrantEndedAt: null,
     isTrial: false,
+    planType: null,
   };
 
   it.each([

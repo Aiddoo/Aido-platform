@@ -42,6 +42,7 @@ function createSweep(
             bankedDays: 0,
             recentGrantEndedAt: null,
             isTrial: false,
+            planType: null,
           },
           userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           changedGrantCount: 1,

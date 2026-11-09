@@ -43,6 +43,7 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
           endsAt: notice.expiresAt,
           now,
           willRenew: notice.willRenew,
+          planType: notice.planType,
           variantContext: {
             campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_TRIAL_ENDING,
             recipientId: notice.userId,

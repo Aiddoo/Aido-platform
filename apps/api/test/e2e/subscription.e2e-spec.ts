@@ -433,4 +433,40 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       premiumPeriodEndsAt: nextYear.toISOString(),
     });
   });
+
+  it.each([
+    { productId: "com.aido.pro.monthly", expected: "MONTHLY" },
+    { productId: "com.aido.pro.yearly:yearly-base", expected: "ANNUAL" },
+    { productId: "premium_monthly", expected: null },
+  ])(
+    "/me는 스토어 상품 $productId의 요금제를 premiumPlanType $expected로 반환한다",
+    async ({ productId, expected }) => {
+      // Given
+      const user = await context.helpers.createVerifiedUser(
+        "billing-plan@example.com",
+        "Test1234!",
+      );
+      const purchased = SubscriptionEventBuilder.initialPurchase()
+        .withAppUserId(user.userId)
+        .withOriginalTransactionId("billing-plan")
+        .withEventId("billing-plan-purchase")
+        .withProductId(productId)
+        .withPurchasedAtMs(at.getTime())
+        .withExpirationAtMs(futureExpiry.getTime())
+        .build();
+
+      // When
+      const before = currentUserSchema.parse(
+        (await currentUser(user.accessToken).expect(200)).body.data,
+      );
+      await webhook(purchased).expect(200);
+      const after = currentUserSchema.parse(
+        (await currentUser(user.accessToken).expect(200)).body.data,
+      );
+
+      // Then
+      expect(before.premiumPlanType).toBeNull();
+      expect(after).toMatchObject({ premiumSource: "STORE", premiumPlanType: expected });
+    },
+  );
 });

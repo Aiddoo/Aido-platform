@@ -141,6 +141,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
           periodEndsAt: NEXT_EXPIRY,
           willRenew: true,
           isTrial: false,
+          planType: null,
           bankedDays: 7,
           recentGrantEndedAt: null,
         });

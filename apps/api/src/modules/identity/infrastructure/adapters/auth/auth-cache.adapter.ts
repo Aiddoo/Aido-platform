@@ -1,6 +1,7 @@
 import {
   accountProviderSchema,
   premiumSourceSchema,
+  subscriptionPlanTypeSchema,
   subscriptionStatusSchema,
   userRoleSchema,
   userStatusSchema,
@@ -53,6 +54,7 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
   bankedPremiumDays: z.number().optional(),
   premiumGrantEndedAt: z.string().nullable().optional(),
   premiumIsTrial: z.boolean().optional(),
+  premiumPlanType: subscriptionPlanTypeSchema.nullable().optional(),
 }) satisfies z.ZodType<AuthCachedUserProfile>;
 
 @Injectable()

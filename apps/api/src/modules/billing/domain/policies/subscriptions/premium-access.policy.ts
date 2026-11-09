@@ -4,12 +4,15 @@ import {
   type PremiumSource,
   STORE_PERIOD_TYPE,
   type StorePeriodType,
+  type SubscriptionPlanType,
   type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
 
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { storeEntitlementEndsAt, storePeriodEndsAt } from "#api/shared/domain/store-renewal-grace";
+
+import { SubscriptionPlanPolicy } from "./subscription-plan.policy.js";
 
 export type PremiumGrantStatusValue = "BANKED" | "ACTIVE" | "ENDED" | "REVOKED";
 
@@ -21,6 +24,8 @@ const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 
 /** 스토어 구독 행 중 프리미엄 판단에 필요한 값 */
 export interface StoreEntitlement {
+  /** 저장한 스토어 상품 ID. Play 구독은 "상품:기본요금제"다. */
+  readonly productId: string;
   readonly status: SubscriptionStatus;
   readonly expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
@@ -64,6 +69,8 @@ export interface PremiumAccess {
   readonly willRenew: boolean;
   /** 지금 기간이 스토어 무료 체험인지. 체험은 새 출처가 아니라 STORE + periodType TRIAL이다. */
   readonly isTrial: boolean;
+  /** 지금 기간을 정하는 스토어 구독의 요금제. STORE가 아니거나 모르는 상품이면 null이다. */
+  readonly planType: SubscriptionPlanType | null;
   /** 지금 기간이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 합계 */
   readonly bankedDays: number;
   /** 프리미엄이 아닐 때만, 최근 7일 안에 끝난 마지막 보상 기간의 끝 시각 */
@@ -150,6 +157,7 @@ export function applyStoreEventChain(
     return [
       {
         revenueCatId: subscription.revenueCatId,
+        productId: subscription.productId,
         status: eventChain.status,
         expiresAt: eventChain.expiresAt ?? subscription.expiresAt,
         gracePeriodEndsAt,
@@ -216,12 +224,9 @@ function storeHandoffAt(subscription: StoreEntitlement): Date {
   return storeEntitlementEndsAt(subscription) ?? new Date(subscription.expiresAt);
 }
 
-/** 지금 기간을 정하는(가장 늦게 끝나는) 유효한 스토어 구독이 체험이면 체험 중이다. */
-function isStoreTrial(validStores: readonly StoreEntitlement[]): boolean {
-  const current = maxBy([...validStores], (subscription) =>
-    storePeriodEndsAt(subscription).getTime(),
-  );
-  return current?.periodType === STORE_PERIOD_TYPE.TRIAL;
+/** 지금 기간을 정하는(가장 늦게 끝나는) 유효한 스토어 구독. 체험 여부와 요금제를 이 구독으로 본다. */
+function currentStoreOf(validStores: readonly StoreEntitlement[]): StoreEntitlement | undefined {
+  return maxBy([...validStores], (subscription) => storePeriodEndsAt(subscription).getTime());
 }
 
 function hasStoreEntitlement(entitlements: PremiumEntitlements, now: Date): boolean {
@@ -324,6 +329,7 @@ export const PremiumAccessPolicy = {
         ...validStores.map(storeHandoffAt),
         ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
       ]);
+      const currentStore = currentStoreOf(validStores);
       return {
         source: PREMIUM_SOURCE.STORE,
         endsAt:
@@ -332,7 +338,9 @@ export const PremiumAccessPolicy = {
         willRenew: validStores.some((subscription) =>
           isStoreSubscriptionRenewing(subscription, now),
         ),
-        isTrial: isStoreTrial(validStores),
+        isTrial: currentStore?.periodType === STORE_PERIOD_TYPE.TRIAL,
+        planType:
+          currentStore == null ? null : SubscriptionPlanPolicy.planTypeOf(currentStore.productId),
         bankedDays,
         recentGrantEndedAt: null,
       };
@@ -345,6 +353,7 @@ export const PremiumAccessPolicy = {
         periodEndsAt: null,
         willRenew: false,
         isTrial: false,
+        planType: null,
         bankedDays,
         recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
       };
@@ -355,6 +364,7 @@ export const PremiumAccessPolicy = {
       periodEndsAt: activeGrantEndsAt,
       willRenew: false,
       isTrial: false,
+      planType: null,
       bankedDays,
       recentGrantEndedAt: null,
     };

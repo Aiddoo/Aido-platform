@@ -118,6 +118,7 @@ export abstract class AuthMapper {
       bankedPremiumDays: result.bankedPremiumDays,
       premiumGrantEndedAt: result.premiumGrantEndedAt,
       premiumIsTrial: result.premiumIsTrial,
+      premiumPlanType: result.premiumPlanType,
       isPremium: result.isPremium,
       entitlements: result.entitlements,
     };

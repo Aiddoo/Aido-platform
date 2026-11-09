@@ -1,5 +1,5 @@
 import type { PremiumEntitlements, SubscriptionStatus, UserRole } from "@aido/api";
-import type { PremiumSource } from "@aido/api/vocabulary";
+import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type {
   AccountProvider,
@@ -113,6 +113,7 @@ export interface CurrentUserResult {
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
   premiumIsTrial?: boolean;
+  premiumPlanType?: SubscriptionPlanType | null;
   isPremium?: boolean;
   entitlements?: PremiumEntitlements;
 }
