@@ -4,7 +4,10 @@ import {
   PREMIUM_SOURCE,
   REDEEM_OUTCOME,
 } from '@aido/api/vocabulary';
-import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
+import {
+  type PremiumAccess,
+  PremiumAccessPolicy,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
@@ -108,7 +111,10 @@ export function getMissingRewardReason(result: RedemptionResult) {
 
 // 수락 뒤 다시 받은 내 정보로만 판단한다. 구독·다른 보상 기간 중이면 서버가 쌓아 두고 그 뒤에 잇는다
 export function getRewardStart(premiumAccess: Pick<PremiumAccess, 'source' | 'bankedDays'>) {
-  return match({ source: premiumAccess.source, hasBankedDays: premiumAccess.bankedDays > 0 })
+  return match({
+    source: premiumAccess.source,
+    hasBankedDays: PremiumAccessPolicy.hasBankedDays(premiumAccess),
+  })
     .with(
       { source: PREMIUM_SOURCE.STORE, hasBankedDays: true },
       () => 'after-subscription' as const,
