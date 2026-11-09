@@ -89,6 +89,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       columns: {
         revenueCatId: true,
         productId: true,
+        startedAt: true,
         status: true,
         expiresAt: true,
         gracePeriodEndsAt: true,

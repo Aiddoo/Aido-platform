@@ -283,6 +283,34 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     expect(await renewalNotices(userId)).toEqual([]);
   });
 
+  it("Play에서 연간 중간에 월간으로 바꾼 직후 /me는 새 체인의 월간·만료·갱신을 보이고 결제한 연간 끝까지 프리미엄이다", async () => {
+    // Given
+    const userId = await givenUser("RENEW007");
+    const annualEndsAt = new Date("2027-06-01T00:00:00.000Z");
+    const monthlyEndsAt = new Date(at.getTime() + 31 * DAY_MS);
+    await givenPurchase(userId, "com.aido.pro.yearly:yearly-base", {
+      chain: "play-yearly-mid",
+      startedAt: new Date("2026-06-01T00:00:00.000Z"),
+      expiresAt: annualEndsAt,
+    });
+
+    // When
+    await givenPurchase(userId, "com.aido.pro.monthly:monthly-base", {
+      chain: "play-monthly-mid",
+      startedAt: at,
+      expiresAt: monthlyEndsAt,
+    });
+
+    // Then
+    expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({
+      source: "STORE",
+      planType: "MONTHLY",
+      periodEndsAt: monthlyEndsAt,
+      willRenew: true,
+      endsAt: annualEndsAt,
+    });
+  });
+
   it("갱신 뒤 늦게 온 지난 기간의 상품 변경은 갱신된 기간·상품을 앞당기거나 바꾸지 않는다", async () => {
     // Given
     const userId = await givenUser("RENEW006");

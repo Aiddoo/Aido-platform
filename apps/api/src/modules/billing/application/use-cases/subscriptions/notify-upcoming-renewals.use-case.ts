@@ -15,8 +15,8 @@ import type {
 
 export const UPCOMING_RENEWAL_NOTICE = {
   noticeDays: PREMIUM_RENEWAL_NOTICE_DAYS,
-  // 연간 기간은 안내 기간(7일)보다 길어 기간 시작 직후 알림이 되는 경우가 없다
-  isNoticeable: () => true,
+  // Play에서 요금제를 바꿔 원래 만료까지 남은 옛 체인은 다음 결제를 정하지 않는다
+  isNoticeable: (notice) => notice.isCurrentChain,
   logEvent: BillingLogEvent.RENEWAL_UPCOMING_NOTIFIED,
 } as const satisfies BillingNoticeSettings<UpcomingRenewalNotice>;
 

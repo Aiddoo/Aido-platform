@@ -1205,6 +1205,7 @@ describe("알림 E2E", () => {
         action: { type: "DEEP_LINK", url: "/settings/subscription" },
       });
     });
+
     it.each([undefined, "1.13.0"])(
       "연간 갱신 안내는 앱 버전 %s 알림함에 SYSTEM_NOTICE·구독 화면 DEEP_LINK로 보이고 공지 카테고리에 든다",
       async (version) => {
@@ -1218,6 +1219,7 @@ describe("알림 E2E", () => {
                 subscriptionId: 1,
                 userId: user.userId,
                 expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000),
+                isCurrentChain: true,
               },
             ],
             now,

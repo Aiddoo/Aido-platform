@@ -39,6 +39,7 @@ function banked(id: string, createdAt: string, durationDays = 7): PremiumGrantTe
 function store(overrides: Partial<StoreEntitlement> = {}): StoreEntitlement {
   return {
     productId: "com.aido.pro.yearly",
+    startedAt: new Date("2027-03-10T00:00:00.000Z"),
     status: "ACTIVE",
     expiresAt: new Date("2028-03-10T00:00:00.000Z"),
     ...overrides,
@@ -163,6 +164,7 @@ describe("PremiumAccessPolicy", () => {
     const stored = {
       revenueCatId: "chain-1",
       productId: "com.aido.pro.yearly",
+      startedAt: new Date("2027-03-10T00:00:00.000Z"),
       status: "CANCELLED" as const,
       expiresAt: new Date("2028-03-10T00:00:00.000Z"),
       gracePeriodEndsAt: new Date("2028-03-20T00:00:00.000Z"),
@@ -180,6 +182,7 @@ describe("PremiumAccessPolicy", () => {
         {
           revenueCatId: "chain-1",
           productId: "com.aido.pro.yearly",
+          startedAt: stored.startedAt,
           status: "ACTIVE",
           expiresAt: stored.expiresAt,
           gracePeriodEndsAt: stored.gracePeriodEndsAt,
@@ -223,6 +226,40 @@ describe("PremiumAccessPolicy", () => {
         recentGrantEndedAt: null,
         isTrial: false,
         planType: "ANNUAL",
+      });
+    });
+
+    it("Play에서 연간→월간으로 바꿔 새 체인이 생기면 지금 기간·갱신·요금제는 새 체인, 프리미엄 끝은 옛 체인 만료까지다", () => {
+      // Given
+      const annualEndsAt = new Date("2028-12-01T00:00:00.000Z");
+      const monthlyEndsAt = new Date("2028-03-26T12:00:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [
+          store({
+            productId: "com.aido.pro.yearly:yearly-base",
+            startedAt: new Date("2027-12-01T00:00:00.000Z"),
+            expiresAt: annualEndsAt,
+          }),
+          store({
+            productId: "com.aido.pro.monthly:monthly-base",
+            startedAt: NOW,
+            status: "CANCELLED",
+            expiresAt: monthlyEndsAt,
+          }),
+        ],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        planType: "MONTHLY",
+        periodEndsAt: monthlyEndsAt,
+        willRenew: false,
+        endsAt: annualEndsAt,
       });
     });
 

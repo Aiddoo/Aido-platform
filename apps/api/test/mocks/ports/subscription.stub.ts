@@ -52,6 +52,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       .map((record) => ({
         revenueCatId: record.revenueCatId,
         productId: record.productId,
+        startedAt: new Date(record.startedAt),
         status: record.status,
         expiresAt: new Date(record.expiresAt),
         periodType: record.periodType,

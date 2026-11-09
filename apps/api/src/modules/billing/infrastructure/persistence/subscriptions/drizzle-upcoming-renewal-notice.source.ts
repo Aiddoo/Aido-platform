@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, inArray, isNull, lte, ne, notExists, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { groupBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { subscription } from "#api/platform/database/schema/index";
@@ -11,9 +11,9 @@ import type {
   UpcomingRenewalNotice,
   UpcomingRenewalNoticeSourcePort,
 } from "../../../application/ports/subscriptions/upcoming-renewal-notice.source.port.js";
+import { currentStoreChainOf } from "../../../domain/policies/subscriptions/premium-access.policy.js";
+import { toStorePeriodType } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
 import { SubscriptionPlanPolicy } from "../../../domain/policies/subscriptions/subscription-plan.policy.js";
-
-const otherOf = alias(subscription, "other");
 
 @Injectable()
 export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNoticeSourcePort {
@@ -29,6 +29,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
     const rows = await this.db
       .select({
         subscriptionId: subscription.id,
+        revenueCatId: subscription.revenueCatId,
         userId: subscription.userId,
         expiresAt: subscription.expiresAt,
       })
@@ -46,26 +47,6 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
             sql`split_part(coalesce(${subscription.nextProductId}, ${subscription.productId}), ':', 1)`,
             SubscriptionPlanPolicy.storeProductIdsOf("ANNUAL"),
           ),
-          // Play는 요금제를 바꾸면 새 체인이 생기고 옛 체인이 원래 만료까지 ACTIVE로 남는다. 더 늦게 시작했거나
-          // 더 늦게 끝나는 살아 있는 체인이 있으면 이 체인은 다음 결제를 정하지 않는다
-          notExists(
-            this.db
-              .select({ one: sql`1` })
-              .from(otherOf)
-              .where(
-                and(
-                  eq(otherOf.userId, subscription.userId),
-                  ne(otherOf.id, subscription.id),
-                  isNull(otherOf.deletedAt),
-                  inArray(otherOf.status, ["ACTIVE", "CANCELLED"]),
-                  gt(otherOf.expiresAt, params.now),
-                  or(
-                    gt(otherOf.startedAt, subscription.startedAt),
-                    gt(otherOf.expiresAt, subscription.expiresAt),
-                  ),
-                ),
-              ),
-          ),
           params.after == null
             ? undefined
             : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
@@ -73,7 +54,46 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
       )
       .orderBy(asc(subscription.expiresAt), asc(subscription.id))
       .limit(params.limit);
-    return rows;
+    const currentChains = await this.#currentChainsOf(
+      rows.map((row) => row.userId),
+      params.now,
+    );
+    return rows.map(({ revenueCatId, ...row }) => ({
+      ...row,
+      isCurrentChain: currentChains.get(row.userId) === revenueCatId,
+    }));
+  }
+
+  // 현재 체인은 /me와 같은 도메인 규칙으로 고른다. 사용자 묶음을 한 번에 읽는다
+  async #currentChainsOf(userIds: readonly string[], now: Date): Promise<Map<string, string>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.db
+      .select({
+        userId: subscription.userId,
+        revenueCatId: subscription.revenueCatId,
+        productId: subscription.productId,
+        startedAt: subscription.startedAt,
+        status: subscription.status,
+        expiresAt: subscription.expiresAt,
+        gracePeriodEndsAt: subscription.gracePeriodEndsAt,
+        periodType: subscription.periodType,
+      })
+      .from(subscription)
+      .where(
+        and(inArray(subscription.userId, [...new Set(userIds)]), isNull(subscription.deletedAt)),
+      );
+    const chainsByUser = groupBy(
+      rows.map((row) => ({ ...row, periodType: toStorePeriodType(row.periodType) })),
+      (row) => row.userId,
+    );
+    return new Map(
+      Object.entries(chainsByUser).flatMap(([userId, chains]) => {
+        const current = currentStoreChainOf(chains, now);
+        return current == null ? [] : [[userId, current.revenueCatId] as const];
+      }),
+    );
   }
 
   // 읽은 뒤 갱신으로 기간이 바뀐 행은 다음 기간을 미리 표시하지 않도록 읽은 만료 시각과 같을 때만 표시한다

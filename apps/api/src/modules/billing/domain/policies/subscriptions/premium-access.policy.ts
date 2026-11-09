@@ -26,6 +26,8 @@ const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 export interface StoreEntitlement {
   /** 저장한 스토어 상품 ID. Play 구독은 "상품:기본요금제"다. */
   readonly productId: string;
+  /** 체인을 처음 산 시각. 요금제를 바꿔 새 체인이 생기면 새 체인이 더 늦다. */
+  readonly startedAt: Date;
   readonly status: SubscriptionStatus;
   readonly expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
@@ -158,6 +160,7 @@ export function applyStoreEventChain(
       {
         revenueCatId: subscription.revenueCatId,
         productId: subscription.productId,
+        startedAt: subscription.startedAt,
         status: eventChain.status,
         expiresAt: eventChain.expiresAt ?? subscription.expiresAt,
         gracePeriodEndsAt,
@@ -224,9 +227,21 @@ function storeHandoffAt(subscription: StoreEntitlement): Date {
   return storeEntitlementEndsAt(subscription) ?? new Date(subscription.expiresAt);
 }
 
-/** 지금 기간을 정하는(가장 늦게 끝나는) 유효한 스토어 구독. 체험 여부와 요금제를 이 구독으로 본다. */
-function currentStoreOf(validStores: readonly StoreEntitlement[]): StoreEntitlement | undefined {
-  return maxBy([...validStores], (subscription) => storePeriodEndsAt(subscription).getTime());
+/**
+ * 지금 결제를 정하는 체인. Play는 요금제를 바꾸면 새 체인을 만들고 옛 체인이 원래 만료까지 ACTIVE로 남으므로
+ * 유효한 체인 중 가장 늦게 시작한 체인이다(같으면 늦게 끝나는 쪽). /me 표시와 갱신 안내가 이 규칙 하나를 쓴다.
+ */
+export function currentStoreChainOf<TSubscription extends StoreEntitlement>(
+  subscriptions: readonly TSubscription[],
+  now: Date,
+): TSubscription | undefined {
+  return sortBy(
+    subscriptions.filter((subscription) => isStoreEntitlementValid(subscription, now)),
+    [
+      (subscription) => subscription.startedAt.getTime(),
+      (subscription) => storePeriodEndsAt(subscription).getTime(),
+    ],
+  ).at(-1);
 }
 
 function hasStoreEntitlement(entitlements: PremiumEntitlements, now: Date): boolean {
@@ -318,29 +333,22 @@ export const PremiumAccessPolicy = {
     const banked = bankedInReceivedOrder(entitlements.premiumGrants);
     const bankedDays = premiumGrantDaysOf(sumBy(banked, premiumGrantDurationMs));
 
-    const storeEndsAt = latestOf(validStores.map(storePeriodEndsAt));
-    if (storeEndsAt != null) {
-      // 예전에 스토어와 겹쳐 시작한 기간이 남아 있으면 그 끝까지 프리미엄이다
-      const periodEndsAt = latestOf([
-        storeEndsAt,
-        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
-      ]);
-      const handoffAt = latestOf([
-        ...validStores.map(storeHandoffAt),
-        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
-      ]);
-      const currentStore = currentStoreOf(validStores);
+    const currentStore = currentStoreChainOf(validStores, now);
+    if (currentStore != null) {
+      const activeGrantEnds = activeGrantEndsAt == null ? [] : [activeGrantEndsAt];
+      // 지금 기간·갱신·요금제는 현재 체인으로 보여 주고, 프리미엄 끝과 보상 이어 붙이기는 아직 유효한 모든
+      // 체인의 끝까지 본다(결제한 기간을 앞당겨 빼앗지 않는다). 겹쳐 시작한 보상 기간이 남으면 그 끝까지다
+      const periodEndsAt = latestOf([storePeriodEndsAt(currentStore), ...activeGrantEnds]);
+      const premiumEndsAt = latestOf([...validStores.map(storePeriodEndsAt), ...activeGrantEnds]);
+      const handoffAt = latestOf([...validStores.map(storeHandoffAt), ...activeGrantEnds]);
       return {
         source: PREMIUM_SOURCE.STORE,
         endsAt:
-          banked.length === 0 || handoffAt == null ? periodEndsAt : chainBanked(handoffAt, banked),
+          banked.length === 0 || handoffAt == null ? premiumEndsAt : chainBanked(handoffAt, banked),
         periodEndsAt,
-        willRenew: validStores.some((subscription) =>
-          isStoreSubscriptionRenewing(subscription, now),
-        ),
-        isTrial: currentStore?.periodType === STORE_PERIOD_TYPE.TRIAL,
-        planType:
-          currentStore == null ? null : SubscriptionPlanPolicy.planTypeOf(currentStore.productId),
+        willRenew: isStoreSubscriptionRenewing(currentStore, now),
+        isTrial: currentStore.periodType === STORE_PERIOD_TYPE.TRIAL,
+        planType: SubscriptionPlanPolicy.planTypeOf(currentStore.productId),
         bankedDays,
         recentGrantEndedAt: null,
       };
