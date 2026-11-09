@@ -15,9 +15,25 @@ import Animated, {
 
 import { Box } from '../box';
 
-const STAMP_PRESS_SPRING = { duration: 400, dampingRatio: 0.55, reduceMotion: ReduceMotion.System };
-/** 크게 떠 있다가(1.7배, -20°) 찍히며 제자리(1배, -6°)로 온다 */
-const STAMP_LIFTED = { scale: 1.7, rotateDeg: -20, rotateTravelDeg: 14 } as const;
+/**
+ * `stamp`: 크게 떠 있다가(1.7배, -20°) 쿵 찍히며 제자리(1배, -6°)로 온다.
+ * `rise`: 살짝 작게(0.9배) 있다가 부드럽게 제 크기로 떠오른다(결제 완료 왕관).
+ */
+const STAMP_MOTIONS = {
+  stamp: {
+    spring: { duration: 400, dampingRatio: 0.55 },
+    scale: 1.7,
+    rotateDeg: -20,
+    rotateTravelDeg: 14,
+  },
+  rise: {
+    spring: { duration: 400, dampingRatio: 0.8 },
+    scale: 0.9,
+    rotateDeg: 0,
+    rotateTravelDeg: 0,
+  },
+} as const;
+type StampMotion = keyof typeof STAMP_MOTIONS;
 /** 찍힌 뒤 delayMs 만에 테두리가 퍼지기 시작해 durationMs 동안 커지며 사라진다 */
 const STAMP_BURST = {
   delayMs: 120,
@@ -37,13 +53,22 @@ export interface StampPressProps {
   children: ReactNode;
   /** 여러 도장을 차례로 찍을 때 늦출 시간(ms) */
   delay?: number;
+  /** 찍히는 모양. 기본은 쿵 찍히는 `stamp` */
+  motion?: StampMotion;
   /** 퍼지는 테두리 모양. 기본은 main 색 둥근 테두리 */
   burstClassName?: string;
   className?: string;
 }
 
 /** 도장이 쿵 찍히고 테두리가 한 번 퍼진다. transform·opacity만 UI 스레드에서 바꾸고, 사라지면 멈춘다 */
-export function StampPress({ children, delay = 0, burstClassName, className }: StampPressProps) {
+export function StampPress({
+  children,
+  delay = 0,
+  motion = 'stamp',
+  burstClassName,
+  className,
+}: StampPressProps) {
+  const { spring, scale, rotateDeg, rotateTravelDeg } = STAMP_MOTIONS[motion];
   const isReducedMotion = useIsReduceMotionEnabled();
   const press = useSharedValue(getStampPressStartProgress(isReducedMotion));
   const burst = useSharedValue(getStampPressStartProgress(isReducedMotion));
@@ -55,7 +80,7 @@ export function StampPress({ children, delay = 0, burstClassName, className }: S
       return;
     }
 
-    press.set(withDelay(delay, withSpring(1, STAMP_PRESS_SPRING)));
+    press.set(withDelay(delay, withSpring(1, { ...spring, reduceMotion: ReduceMotion.System })));
     burst.set(
       withDelay(
         delay + STAMP_BURST.delayMs,
@@ -71,13 +96,13 @@ export function StampPress({ children, delay = 0, burstClassName, className }: S
       cancelAnimation(press);
       cancelAnimation(burst);
     };
-  }, [burst, delay, isReducedMotion, press]);
+  }, [burst, delay, isReducedMotion, press, spring]);
 
   const stampStyle = useAnimatedStyle(() => ({
     opacity: Math.min(press.get() * 2, 1),
     transform: [
-      { scale: STAMP_LIFTED.scale - press.get() * (STAMP_LIFTED.scale - 1) },
-      { rotate: `${STAMP_LIFTED.rotateDeg + press.get() * STAMP_LIFTED.rotateTravelDeg}deg` },
+      { scale: scale - press.get() * (scale - 1) },
+      { rotate: `${rotateDeg + press.get() * rotateTravelDeg}deg` },
     ],
   }));
   const burstStyle = useAnimatedStyle(() => ({

@@ -1,1 +1,1 @@
-export { getStampPressStartProgress, StampPress } from './stamp-press';
+export { StampPress } from './stamp-press';

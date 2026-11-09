@@ -10,6 +10,7 @@ import {
   H2,
   HStack,
   IconCircle,
+  StampPress,
   ListRow,
   SettingsListGroup,
   Text,
@@ -57,20 +58,23 @@ export function SubscriptionWelcome({
   return (
     <VStack gap={20} testID="subscription-welcome">
       <VStack gap={12} align="center">
-        <IconCircle
-          tone="brand"
-          style={{
-            width: fontScaledSize(CROWN_CIRCLE_SIZE),
-            height: fontScaledSize(CROWN_CIRCLE_SIZE),
-          }}
-          icon={
-            <CrownFilledIcon
-              width={fontScaledSize(CROWN_ICON_SIZE)}
-              height={fontScaledSize(CROWN_ICON_SIZE)}
-              colorClassName="text-white dark:text-gray-1"
-            />
-          }
-        />
+        {/* 결제를 마친 순간이라 왕관이 한 번 떠오르고 테두리가 퍼진다(햅틱은 결제 성공이 이미 준다) */}
+        <StampPress motion="rise">
+          <IconCircle
+            tone="brand"
+            style={{
+              width: fontScaledSize(CROWN_CIRCLE_SIZE),
+              height: fontScaledSize(CROWN_CIRCLE_SIZE),
+            }}
+            icon={
+              <CrownFilledIcon
+                width={fontScaledSize(CROWN_ICON_SIZE)}
+                height={fontScaledSize(CROWN_ICON_SIZE)}
+                colorClassName="text-white dark:text-gray-1"
+              />
+            }
+          />
+        </StampPress>
         <VStack gap={4} align="center">
           <H2 align="center">{t('welcome.title')}</H2>
           <Text size="b3" shade={7} align="center" lineBreakStrategyIOS="hangul-word">

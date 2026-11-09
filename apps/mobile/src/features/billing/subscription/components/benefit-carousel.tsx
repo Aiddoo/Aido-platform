@@ -17,11 +17,16 @@ import { clamp } from 'es-toolkit';
 import { Chip, Skeleton } from 'heroui-native';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
-  FlatList,
+  type FlatList,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import Animated, {
+  type SharedValue,
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -63,6 +68,7 @@ export function BenefitCarousel() {
   const estimatedPageWidth = useEstimatedPageWidth();
   const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
   const pageWidth = measuredPageWidth ?? estimatedPageWidth;
+  const progress = useSharedValue(index);
   useTrackBenefitViewed(index);
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -72,11 +78,16 @@ export function BenefitCarousel() {
   return (
     <VStack gap={12}>
       <Box onLayout={handleLayout}>
-        <BenefitPager pageWidth={pageWidth} index={index} onIndexChange={setIndex} />
+        <BenefitPager
+          pageWidth={pageWidth}
+          index={index}
+          progress={progress}
+          onIndexChange={setIndex}
+        />
       </Box>
 
       <HStack justify="center">
-        <Steps.Dots index={index} count={BENEFIT_SLIDES.length} />
+        <Steps.Dots index={index} count={BENEFIT_SLIDES.length} progress={progress} />
       </HStack>
     </VStack>
   );
@@ -85,12 +96,22 @@ export function BenefitCarousel() {
 interface BenefitPagerProps {
   pageWidth: number;
   index: number;
+  /** 넘기는 동안 점 표시가 따라오도록 UI 스레드에서 장 위치를 적는다 */
+  progress: SharedValue<number>;
+  /** 분석·접근성용 장 번호는 넘기기가 멈출 때만 바꾼다 */
   onIndexChange: (index: number) => void;
 }
 
 /** calendar-pager와 같은 넘기기. 카드 높이는 내용으로 정하고, 글 길이가 장마다 달라 가장 긴 글 높이에 맞춘다 */
-function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
+function BenefitPager({ pageWidth, index, progress, onIndexChange }: BenefitPagerProps) {
   const listRef = useRef<FlatList<BenefitSlideEntry>>(null);
+  const handleScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      if (pageWidth > 0) {
+        progress.set(event.contentOffset.x / pageWidth);
+      }
+    },
+  });
   const [initialIndex] = useState(index);
   const copyHeightsRef = useRef(new Map<BenefitFeature, number>());
   const [copyMinHeight, setCopyMinHeight] = useState(0);
@@ -122,7 +143,7 @@ function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
   };
 
   return (
-    <FlatList
+    <Animated.FlatList
       ref={listRef}
       horizontal
       pagingEnabled
@@ -147,6 +168,8 @@ function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
       initialScrollIndex={initialIndex}
       initialNumToRender={BENEFIT_SLIDES.length}
       showsHorizontalScrollIndicator={false}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
       onMomentumScrollEnd={handleScrollEnd}
       testID="paywall-benefit-pager"
     />
