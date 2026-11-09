@@ -13,11 +13,13 @@ import {
   createMemoryObservableSyncStorage,
   createTestQueryClient,
 } from '@src/shared/__tests__';
+// 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
+import { useSegments } from '@src/shared/__tests__/mocks/expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import { useLinkingURL } from 'expo-linking';
-import { router, usePathname, useSegments } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 
 import { useWidgetAppEntry } from './use-widget-app-entry';
@@ -56,7 +58,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   function authenticate() {
     authSessionStore.setStatus('authenticated');
-    jest.mocked(useSegments).mockReturnValue(['(app)', '(tabs)', 'feed']);
+    useSegments.mockReturnValue(['(app)', '(tabs)', 'feed']);
     jest.mocked(usePathname).mockReturnValue('/feed');
   }
 
@@ -77,7 +79,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       }
     });
     authSessionStore = createAuthSessionStoreStub('loading');
-    jest.mocked(useSegments).mockReturnValue(['loading']);
+    useSegments.mockReturnValue(['loading']);
     jest.mocked(usePathname).mockReturnValue('/loading');
     jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
     mockRepository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
