@@ -2,10 +2,8 @@ import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/voc
 import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateLabel } from '@src/shared/date/date-format';
-import { getNowInstant, type Instant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import {
@@ -18,7 +16,8 @@ import { pick } from 'es-toolkit';
 
 import { CONSENT_MUTATION_KEYS } from '../constants/consent-mutation-keys';
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import { type Consent } from '../domains/consent.model';
+import { type Consent, ConsentPolicy } from '../domains/consent.model';
+import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 
 /** 지금 끝나는 저장이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게 마지막만 응답을 캐시에 쓴다 */
@@ -46,21 +45,6 @@ function revertConsentFields(
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
     consent == null ? consent : { ...consent, ...pick(previousData, fields) },
   );
-}
-
-/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다. 구 서버라 둘 다 없으면 null이다 */
-function findConsentResult<TKey extends string>(
-  agreedAt: Instant | null,
-  withdrawnAt: Instant | null,
-  keys: { agreed: TKey; withdrawn: TKey },
-): { key: TKey; at: Instant } | null {
-  if (agreedAt != null) {
-    return { key: keys.agreed, at: agreedAt };
-  }
-  if (withdrawnAt != null) {
-    return { key: keys.withdrawn, at: withdrawnAt };
-  }
-  return null;
 }
 
 const AI_DATA_SHARING_FIELDS = [
@@ -132,7 +116,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 }
 
 export function useUpdateMarketingConsentMutationOptions() {
-  const dateFormatContext = useDateFormatContext();
+  const showConsentResult = useConsentResultToast();
   const haptics = useHaptics();
   const toast = useAppToast();
   const consentService = useConsentService();
@@ -153,17 +137,13 @@ export function useUpdateMarketingConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      // 정보통신망법 50조: 동의·철회 결과를 전송자·일시와 함께 알린다. 일시는 서버가 처리한 값이고, 구 서버가 주지 않으면 알리지 않는다
-      const result = findConsentResult(data.marketingAgreedAt, data.marketingWithdrawnAt, {
-        agreed: 'notification:consentResult.marketingAgreed',
-        withdrawn: 'notification:consentResult.marketingWithdrawn',
+      // 구 서버가 처리 일시를 주지 않으면 알리지 않는다
+      const result = ConsentPolicy.getConsentResult({
+        agreedAt: data.marketingAgreedAt,
+        withdrawnAt: data.marketingWithdrawnAt,
       });
       if (result != null) {
-        toast.success(
-          t(result.key, {
-            date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
-          }),
-        );
+        showConsentResult('marketing', result);
       }
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
         return;
@@ -186,7 +166,7 @@ export function useUpdateMarketingConsentMutationOptions() {
 }
 
 export function useUpdateMarketingPushConsentMutationOptions() {
-  const dateFormatContext = useDateFormatContext();
+  const showConsentResult = useConsentResultToast();
   const haptics = useHaptics();
   const toast = useAppToast();
   const consentService = useConsentService();
@@ -211,16 +191,12 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      const result = findConsentResult(data.marketingPushAgreedAt, data.marketingPushWithdrawnAt, {
-        agreed: 'notification:consentResult.marketingPushAgreed',
-        withdrawn: 'notification:consentResult.marketingPushWithdrawn',
+      const result = ConsentPolicy.getConsentResult({
+        agreedAt: data.marketingPushAgreedAt,
+        withdrawnAt: data.marketingPushWithdrawnAt,
       });
       if (result != null) {
-        toast.success(
-          t(result.key, {
-            date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
-          }),
-        );
+        showConsentResult('marketingPush', result);
       }
       if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
         return;

@@ -14,7 +14,7 @@ import { isForeignNotificationError } from '../domains/notification.error';
 import { NotificationPolicy } from '../domains/notification.model';
 import type { NotificationOwnership } from '../domains/notification.model';
 import type { GetNotificationsQuery } from '../schemas/get-notifications-request.schema';
-import { toNotificationListResult } from './notification.mapper';
+import { toMarketingPushOptOutResult, toNotificationListResult } from './notification.mapper';
 
 interface NotificationServicePorts {
   httpClient: HttpClient;
@@ -82,7 +82,7 @@ export class NotificationService {
     parseApiResponse(
       await this.#publicHttpClient.post('v1/notifications/marketing-push/opt-out', { token }),
       marketingPushOptOutResponseSchema,
-      (dto) => dto.optedOut,
+      toMarketingPushOptOutResult,
       '[NotificationService] Invalid marketing opt-out response',
     );
 

@@ -40,23 +40,30 @@ function createHarness({
     const dated = withLocalDate ? <LocalDateProvider>{overlaid}</LocalDateProvider> : overlaid;
 
     return (
-      <GestureHandlerProvider>
-        <StaticDIProvider container={container}>
-          <QueryClientProvider client={client}>
-            <FontScaleProvider>
-              <HeroUIProvider
-                config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
-              >
-                {dated}
-              </HeroUIProvider>
-            </FontScaleProvider>
-          </QueryClientProvider>
-        </StaticDIProvider>
-      </GestureHandlerProvider>
+      <StaticDIProvider container={container}>
+        <QueryClientProvider client={client}>
+          <TestUiProvider>{dated}</TestUiProvider>
+        </QueryClientProvider>
+      </StaticDIProvider>
     );
   }
 
   return { Harness, client, container };
+}
+
+/** 앱처럼 토스트·시트가 뜰 자리를 둔다. renderRouter로 직접 감싸는 테스트도 같은 구성을 쓴다 */
+export function TestUiProvider({ children }: { children: ReactNode }) {
+  return (
+    <GestureHandlerProvider>
+      <FontScaleProvider>
+        <HeroUIProvider
+          config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
+        >
+          {children}
+        </HeroUIProvider>
+      </FontScaleProvider>
+    </GestureHandlerProvider>
+  );
 }
 
 type RenderUiResult = Awaited<ReturnType<typeof render>> & { queryClient: QueryClient };

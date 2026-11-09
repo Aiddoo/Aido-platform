@@ -9,6 +9,7 @@ import {
   createTestDi,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
+  TestUiProvider,
 } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
@@ -78,7 +79,9 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       <QueryClientProvider client={queryClient}>
         <StaticDIProvider container={container}>
           <ThemeProvider syncStorage={createMemoryObservableSyncStorage()}>
-            <LocalDateProvider>{children}</LocalDateProvider>
+            <TestUiProvider>
+              <LocalDateProvider>{children}</LocalDateProvider>
+            </TestUiProvider>
           </ThemeProvider>
         </StaticDIProvider>
       </QueryClientProvider>

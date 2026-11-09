@@ -1,15 +1,23 @@
 import {
+  type MarketingPushOptOutResponse,
   type NotificationInboxResponse,
   type NotificationInboxItem as ServerNotification,
   notificationRoutingSchema,
 } from '@aido/api';
-import { toInstant, toNullableInstant } from '@src/shared/date/instant';
+import { type Instant, toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import {
   type Notification,
   type NotificationListResult,
   type NotificationRouting,
 } from '../domains/notification.model';
+
+/** 구 서버는 처리 시각을 주지 않아 null이다 */
+export function toMarketingPushOptOutResult(dto: MarketingPushOptOutResponse): {
+  withdrawnAt: Instant | null;
+} {
+  return { withdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt ?? null) };
+}
 
 export function toNotification(server: ServerNotification): Notification {
   const routing = toNotificationRouting(server.metadata);

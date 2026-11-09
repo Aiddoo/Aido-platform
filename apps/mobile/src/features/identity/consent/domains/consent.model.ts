@@ -3,7 +3,7 @@ import {
   AI_DATA_SHARING_DECISION,
   AI_DATA_SHARING_DECISIONS,
 } from '@aido/api/vocabulary';
-import { instantSchema } from '@src/shared/date/instant';
+import { type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 export const consentSchema = z.object({
@@ -59,7 +59,30 @@ function shouldShowAiConsentRenewal(
   );
 }
 
+export interface ConsentResult {
+  type: 'agreed' | 'withdrawn';
+  at: Instant;
+}
+
+/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다. 구 서버라 둘 다 없으면 null이다 */
+function getConsentResult({
+  agreedAt,
+  withdrawnAt,
+}: {
+  agreedAt: Instant | null;
+  withdrawnAt: Instant | null;
+}): ConsentResult | null {
+  if (agreedAt != null) {
+    return { type: 'agreed', at: agreedAt };
+  }
+  if (withdrawnAt != null) {
+    return { type: 'withdrawn', at: withdrawnAt };
+  }
+  return null;
+}
+
 export const ConsentPolicy = {
   hasAgreedToAiDataSharing,
   shouldShowAiConsentRenewal,
+  getConsentResult,
 } as const;
