@@ -155,6 +155,7 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
       };
       return (
         <FriendDeleteConfirmDialog
+          name={displayName}
           isOpen={isOpen}
           onOpenChange={(open) => {
             if (!open) {

@@ -8,7 +8,7 @@
     "requestFailed": "Couldn't send the friend request"
   },
   "deleteDialog": {
-    "title": "Remove this friend?",
+    "title": "Remove {{name}} from friends?",
     "description": "You'll no longer see each other's to-dos"
   },
   "tabs": {
