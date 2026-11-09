@@ -89,8 +89,8 @@ export function BenefitCarousel() {
         progress={progress}
         onIndexChange={setIndex}
       />
-      {/* 작은 화면에서도 첫 화면에 넘길 장이 더 있다는 것이 보이게 카드 아래쪽 그림 위에 얹는다 */}
-      <HStack justify="center" pointerEvents="none" className="absolute inset-x-0 bottom-3">
+      {/* 작은 화면에서도 첫 화면에 넘길 장이 더 있다는 것이 보이게 카드 안에 둔다. 그림 위는 밝은 그림에 반투명 흰 점이 묻혀 "혜택 N" 칩 줄 오른쪽 색 면에 얹는다 */}
+      <HStack pointerEvents="none" className="absolute right-5 top-4">
         <Steps.Dots
           index={index}
           count={BENEFIT_SLIDES.length}
