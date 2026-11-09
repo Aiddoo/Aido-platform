@@ -12,12 +12,9 @@ import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useEffect, useEffectEvent } from 'react';
 
-import type {
-  WidgetSnapshotContext,
-  WidgetSummaryInput,
-  WidgetTranslateFn,
-} from '../apis/widget-snapshot.mapper';
+import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetSyncService } from '../apis/widget-sync.service';
+import type { WidgetTranslateFn } from '../utils/widget-snapshot.view-model';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
 
