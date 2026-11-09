@@ -105,24 +105,34 @@ export interface PremiumTrialEndingNotificationInput {
   readonly variantContext?: NotificationVariantContext;
 }
 
-const TRIAL_END_DATE_FORMAT = {
+const BILLING_DATE_FORMAT = {
   ko: { month: "long", day: "numeric" },
   en: { month: "short", day: "numeric" },
 } as const satisfies Record<SupportedLocale, Intl.DateTimeFormatOptions>;
 
-/** 체험 종료 안내. 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). */
+/** 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). 날짜도 그 달력으로 쓴다. */
+function billingDayVariables(input: {
+  readonly locale: SupportedLocale;
+  readonly timezone: string;
+  readonly at: Date;
+  readonly now: Date;
+}) {
+  const timeZone = resolveTimezone(input.timezone);
+  return {
+    days: calendarDaysBetween(input.now, input.at, timeZone),
+    date: new Intl.DateTimeFormat(input.locale, {
+      ...BILLING_DATE_FORMAT[input.locale],
+      timeZone,
+    }).format(input.at),
+  };
+}
+
+/** 체험 종료 안내 */
 export function createPremiumTrialEndingNotificationMessage(
   input: PremiumTrialEndingNotificationInput,
 ): NotificationMessage {
   const templates = LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES;
-  const timeZone = resolveTimezone(input.timezone);
-  const variables = {
-    days: calendarDaysBetween(input.now, input.endsAt, timeZone),
-    date: new Intl.DateTimeFormat(input.locale, {
-      ...TRIAL_END_DATE_FORMAT[input.locale],
-      timeZone,
-    }).format(input.endsAt),
-  };
+  const variables = billingDayVariables({ ...input, at: input.endsAt });
   return input.willRenew
     ? renderLocalizedNotification({
         template: templates.PREMIUM_TRIAL_ENDING_RENEWING,
@@ -136,6 +146,27 @@ export function createPremiumTrialEndingNotificationMessage(
         variantContext: input.variantContext,
         templateKey: "premium_trial_ending.cancelled",
       });
+}
+
+export interface PremiumRenewalUpcomingNotificationInput {
+  readonly locale: SupportedLocale;
+  /** 받는 사람 시간대. 남은 일수와 날짜를 이 달력으로 센다. */
+  readonly timezone: string;
+  /** 스토어가 알려 준 지금 기간의 끝(다음 결제 예정 시각) */
+  readonly renewsAt: Date;
+  readonly now: Date;
+  readonly variantContext?: NotificationVariantContext;
+}
+
+/** 연간 구독 자동 갱신 안내. 금액은 국가별 스토어 가격이라 서버가 모르므로 싣지 않는다. */
+export function createPremiumRenewalUpcomingNotificationMessage(
+  input: PremiumRenewalUpcomingNotificationInput,
+): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.PREMIUM_RENEWAL_UPCOMING,
+    variables: billingDayVariables({ ...input, at: input.renewsAt }),
+    variantContext: input.variantContext,
+  });
 }
 
 /** 2년 재확인 안내. 날짜는 받는 사람 시간대로 ko "2024.11.09", en "Nov 9, 2024"다. */

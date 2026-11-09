@@ -1,0 +1,136 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "30935b33-5d97-4135-b75f-1042cce97ec4",
+  "prevIds": [
+    "342da3b2-6570-4d16-a811-31be109fd173"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "NotificationType"
+      ],
+      "writes": [
+        "s|enum|public.NotificationType"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Subscription",
+        "nextProductId"
+      ],
+      "writes": [
+        "s|col|public.Subscription.nextProductId",
+        "n|col|public.Subscription.nextProductId",
+        "e|col|public.Subscription.nextProductId"
+      ],
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Subscription",
+        "renewalNoticeExpiresAt"
+      ],
+      "writes": [
+        "s|col|public.Subscription.renewalNoticeExpiresAt",
+        "n|col|public.Subscription.renewalNoticeExpiresAt",
+        "e|col|public.Subscription.renewalNoticeExpiresAt"
+      ],
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Subscription",
+        "name": "nextProductId",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Subscription",
+        "name": "renewalNoticeExpiresAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "enums\u0000[\"public\",\"NotificationType\"]",
+      "set": {
+        "values": [
+          "FOLLOW_NEW",
+          "FOLLOW_ACCEPTED",
+          "NUDGE_RECEIVED",
+          "CHEER_RECEIVED",
+          "DAILY_COMPLETE",
+          "FRIEND_COMPLETED",
+          "TODO_REMINDER",
+          "TODO_SHARED",
+          "MORNING_REMINDER",
+          "EVENING_REMINDER",
+          "WEEKLY_ACHIEVEMENT",
+          "SYSTEM_NOTICE",
+          "ADMIN_BROADCAST",
+          "ADMIN_TARGETED",
+          "MONTHLY_REPORT",
+          "AI_SUGGESTION",
+          "WEEKLY_REPORT",
+          "WINBACK",
+          "SOCIAL_DIGEST",
+          "NUDGE_SUGGEST",
+          "LUNCH_NUDGE",
+          "STREAK_AT_RISK",
+          "WEATHER_MORNING",
+          "WEATHER_EVENING",
+          "NUDGE_REPLIED",
+          "NUDGE_THANKED",
+          "INVITE_JOINED",
+          "INVITE_REWARDED",
+          "PREMIUM_GRANT_ENDING",
+          "INVITE_PROGRESS",
+          "INVITE_QUALIFY_REMINDER",
+          "PREMIUM_TRIAL_ENDING",
+          "PREMIUM_RENEWAL_UPCOMING"
+        ]
+      }
+    }
+  ]
+}

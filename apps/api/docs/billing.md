@@ -41,3 +41,7 @@ RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_f
 ## 보상 취소
 
 `RevokePremiumGrant`(출처 키 기준)는 기간을 지우지 않고 REVOKED로 남기며, 진행 중이면 지금 끝내고 다시 쌓아 둔 남은 기간도 함께 취소한다. 공개·관리자 HTTP 경로는 없고 운영 작업에서 UseCase로 호출한다.
+
+## 상품 변경
+
+RevenueCat `PRODUCT_CHANGE`는 정보성 안내다. `product_id`는 바꾸기 전 상품, `new_product_id`는 바꾼 대상이고 `expiration_at_ms`는 바꾸기 전 상품의 만료다. 실제 적용 신호는 App Store·Stripe가 `RENEWAL`, Google Play가 `INITIAL_PURCHASE`(새 체인)다([이벤트 필드](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields), [구독 관리](https://www.revenuecat.com/docs/subscription-guidance/managing-subscriptions)). 그래서 서버는 `PRODUCT_CHANGE`에서 상품·만료·상태를 바꾸지 않고 `Subscription.nextProductId = new_product_id ?? null`만 남기고(갱신 뒤 늦게 온 지난 기간의 안내는 무시), `RENEWAL`·`INITIAL_PURCHASE`가 `productId`를 이벤트 상품으로 맞추고 `nextProductId`를 비운다. `/me`의 `premiumPlanType`은 지금 기간 상품(`planType()`), 연간 갱신 안내는 다음 결제 상품(`renewingPlanType()` = `nextProductId ?? productId`)으로 판단한다.

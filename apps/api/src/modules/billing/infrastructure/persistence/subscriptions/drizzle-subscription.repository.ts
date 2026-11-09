@@ -53,6 +53,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
         gracePeriodEndsAt: true,
         cancelledAt: true,
         lastProcessedEventId: true,
+        nextProductId: true,
         periodType: true,
       },
       where: { revenueCatId },

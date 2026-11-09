@@ -42,6 +42,7 @@ export interface UpdateSubscriptionStatusData {
   cancelledAt?: Date | null;
   productId?: string;
   lastProcessedEventId?: string | null;
+  nextProductId?: string | null;
   periodType?: StorePeriodType | null;
 }
 

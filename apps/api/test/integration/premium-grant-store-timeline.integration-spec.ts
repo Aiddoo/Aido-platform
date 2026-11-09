@@ -478,7 +478,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     });
   });
 
-  it("월간에서 연간으로 바꾸면 만료 시각만 늘고 쌓아 둔 보상은 유지된다", async () => {
+  it("월간에서 연간으로 바꾸면 상품 변경 안내는 기간을 두고, 연간 갱신이 만료만 늘리며 쌓아 둔 보상은 유지된다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "p-purchase"));
     await granter.grant({ userId, source: "INVITE", sourceKey: "p:invite", durationDays: 7 });
@@ -486,17 +486,25 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
     // When
     await webhook(
-      SubscriptionEventBuilder.productChange()
+      storeEvent(
+        SubscriptionEventBuilder.productChange().withNewProductId("premium_annual"),
+        "p-change",
+      ),
+    );
+    const afterChange = await premiumAccess();
+    await webhook(
+      SubscriptionEventBuilder.renewal()
         .withAppUserId(userId)
         .withOriginalTransactionId(CHAIN)
         .withTransactionId(`${CHAIN}-annual`)
         .withProductId("premium_annual")
-        .withEventId("p-change")
+        .withEventId("p-renew-annual")
         .withExpirationAtMs(annualExpiry.getTime())
         .build(),
     );
 
     // Then
+    expect(afterChange).toMatchObject({ periodEndsAt: STORE_EXPIRY, bankedDays: 7 });
     expect(await premiumAccess()).toMatchObject({
       source: "STORE",
       periodEndsAt: annualExpiry,

@@ -166,6 +166,8 @@ export interface SystemCopyVariablesByKey {
   readonly PREMIUM_GRANT_ENDING: undefined;
   readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialRenewingCopyVariables;
   readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
+  /** 연간 구독 갱신까지 남은 사용자 달력 일수와 결제 날짜 */
+  readonly PREMIUM_RENEWAL_UPCOMING: PremiumTrialEndingCopyVariables;
   /** 처음 동의한 날을 받는 사람 시간대·언어로 쓴 값 */
   readonly MARKETING_CONSENT_RECONFIRM: { readonly agreedOn: string };
   readonly ONBOARDING_DAY0: undefined;

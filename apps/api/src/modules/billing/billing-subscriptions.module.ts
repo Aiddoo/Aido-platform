@@ -29,6 +29,8 @@ import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/sub
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
 import { TRIAL_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/trial-ending-notice.source.port.js";
 import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
+import { UPCOMING_RENEWAL_NOTICE_SOURCE } from "./application/ports/subscriptions/upcoming-renewal-notice.source.port.js";
+import { UPCOMING_RENEWAL_NOTIFIER } from "./application/ports/subscriptions/upcoming-renewal-notifier.port.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
 import {
@@ -36,6 +38,7 @@ import {
   handleWebhookEventProvider,
   notifyEndingPremiumGrantsProvider,
   notifyEndingTrialsProvider,
+  notifyUpcomingRenewalsProvider,
   premiumAccessProjectorProvider,
   premiumAccessReaderProvider,
   premiumGranterProvider,
@@ -47,6 +50,7 @@ import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscription
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscriptions/subscription-event-notifier.adapter.js";
 import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter.js";
 import { TrialEndingNotifierAdapter } from "./infrastructure/adapters/subscriptions/trial-ending-notifier.adapter.js";
+import { UpcomingRenewalNotifierAdapter } from "./infrastructure/adapters/subscriptions/upcoming-renewal-notifier.adapter.js";
 import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
 import { PremiumGrantSweepJob } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.job.js";
 import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.processor.js";
@@ -55,6 +59,7 @@ import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/subs
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription-event-receipt.repository.js";
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-trial-ending-notice.source.js";
+import { DrizzleUpcomingRenewalNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-upcoming-renewal-notice.source.js";
 import { SubscriptionController } from "./presentation/controllers/subscriptions/v1/subscription.controller.js";
 
 @Module({
@@ -94,6 +99,8 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
       useClass: DrizzlePremiumGrantEndingNoticeSource,
     },
     { provide: TRIAL_ENDING_NOTICE_SOURCE, useClass: DrizzleTrialEndingNoticeSource },
+    { provide: UPCOMING_RENEWAL_NOTIFIER, useClass: UpcomingRenewalNotifierAdapter },
+    { provide: UPCOMING_RENEWAL_NOTICE_SOURCE, useClass: DrizzleUpcomingRenewalNoticeSource },
     // 야간 판단은 notification Context의 공개 capability다. 반환 타입으로 두 Port의 구조 호환을 확인한다
     {
       provide: QUIET_HOURS_READER,
@@ -108,6 +115,7 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     billingNoticeSweeperProvider,
     notifyEndingPremiumGrantsProvider,
     notifyEndingTrialsProvider,
+    notifyUpcomingRenewalsProvider,
     { provide: PREMIUM_GRANTER, useExisting: PremiumGranter },
     { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },
     PremiumGrantSweepJob,

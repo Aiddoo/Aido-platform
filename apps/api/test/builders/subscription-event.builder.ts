@@ -129,6 +129,12 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
+  /** PRODUCT_CHANGE에서 바꾼 대상 상품 */
+  withNewProductId(newProductId: string): this {
+    this.event.new_product_id = newProductId;
+    return this;
+  }
+
   withStore(store: string): this {
     this.event.store = store;
     return this;

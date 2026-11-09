@@ -567,6 +567,13 @@ export const SYSTEM_TEMPLATES = {
         `Use it until ${date} · No charge`,
       ),
   },
+  PREMIUM_RENEWAL_UPCOMING: {
+    copy: ({ days, date }) =>
+      copy(
+        `Your annual plan renews ${dayPhrase(days)}`,
+        `Billing on ${date} · Cancel in your store`,
+      ),
+  },
   MARKETING_CONSENT_RECONFIRM: {
     copy: ({ agreedOn }) =>
       copy("You’re opted in to marketing alerts", `Agreed ${agreedOn} · Change in Settings`),

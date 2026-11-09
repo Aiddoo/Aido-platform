@@ -74,20 +74,31 @@ describe("알림 클라이언트 호환성", () => {
     expect(types).not.toContain("PREMIUM_GRANT_ENDING");
     expect(types).not.toContain("INVITE_PROGRESS");
     expect(types).not.toContain("INVITE_QUALIFY_REMINDER");
-    // 서버 전용 PREMIUM_TRIAL_ENDING은 SYSTEM_NOTICE로 보내므로 모든 앱 알림함에 보인다
+    // 서버 전용 체험 종료·연간 갱신 안내는 SYSTEM_NOTICE로 보내므로 모든 앱 알림함에 보인다
     expect(types).toContain("PREMIUM_TRIAL_ENDING");
-    expect(types).toHaveLength(Object.values(NOTIFICATION_TYPE).length - 5 + 1);
+    expect(types).toContain("PREMIUM_RENEWAL_UPCOMING");
+    expect(types).toHaveLength(Object.values(NOTIFICATION_TYPE).length - 5 + 2);
   });
 
-  it("서버 전용 체험 종료 알림은 모든 앱에 SYSTEM_NOTICE로 보내고 계약 타입은 그대로 둔다", () => {
+  it("서버 전용 체험 종료·연간 갱신 알림은 모든 앱에 SYSTEM_NOTICE로 보내고 계약 타입은 그대로 둔다", () => {
     // Given
-    const types = ["PREMIUM_TRIAL_ENDING", "PREMIUM_GRANT_ENDING", "SYSTEM_NOTICE"] as const;
+    const types = [
+      "PREMIUM_TRIAL_ENDING",
+      "PREMIUM_RENEWAL_UPCOMING",
+      "PREMIUM_GRANT_ENDING",
+      "SYSTEM_NOTICE",
+    ] as const;
 
     // When
     const wire = types.map(toWireNotificationType);
 
     // Then
-    expect(wire).toEqual(["SYSTEM_NOTICE", "PREMIUM_GRANT_ENDING", "SYSTEM_NOTICE"]);
+    expect(wire).toEqual([
+      "SYSTEM_NOTICE",
+      "SYSTEM_NOTICE",
+      "PREMIUM_GRANT_ENDING",
+      "SYSTEM_NOTICE",
+    ]);
   });
 
   it("공지 카테고리는 계약 표에 서버 전용 체험 종료 알림을 더해 고른다", () => {

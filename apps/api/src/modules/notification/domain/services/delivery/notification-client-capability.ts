@@ -14,13 +14,17 @@ import type { NotificationType } from "../../types/delivery/notification-type.js
  */
 const WIRE_NOTIFICATION_TYPE = {
   PREMIUM_TRIAL_ENDING: NOTIFICATION_TYPE.SYSTEM_NOTICE,
+  PREMIUM_RENEWAL_UPCOMING: NOTIFICATION_TYPE.SYSTEM_NOTICE,
 } as const satisfies Partial<Record<NotificationType, WireNotificationType>>;
 
 /** 알림함 조회에서 계약 타입과 함께 고를 서버 전용 타입과 그 카테고리 */
 const SERVER_ONLY_NOTIFICATIONS: readonly {
   readonly type: NotificationType;
   readonly category: Exclude<NotificationCategory, "ALL">;
-}[] = [{ type: "PREMIUM_TRIAL_ENDING", category: "NOTICE" }];
+}[] = [
+  { type: "PREMIUM_TRIAL_ENDING", category: "NOTICE" },
+  { type: "PREMIUM_RENEWAL_UPCOMING", category: "NOTICE" },
+];
 
 const SERVER_ONLY_NOTIFICATION_TYPES = SERVER_ONLY_NOTIFICATIONS.map(({ type }) => type);
 

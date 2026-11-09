@@ -632,7 +632,7 @@ export class HandleWebhookEvent {
       .with("RENEWAL", () => {
         if (
           renewalExpiresAt == null ||
-          !subscription.renew(renewalExpiresAt, eventId, periodTypeAfter(event))
+          !subscription.renew(renewalExpiresAt, eventId, periodTypeAfter(event), event.product_id)
         ) {
           return null;
         }
@@ -686,10 +686,15 @@ export class HandleWebhookEvent {
           payload,
         } satisfies SubscriptionTransition;
       })
-      .with("PRODUCT_CHANGE", () => {
-        subscription.changeProduct(event.product_id, expiresAt, eventId);
-        return { userState: activeUserState, payload: payloadWithExpiry() };
-      })
+      .with("PRODUCT_CHANGE", () =>
+        subscription.reserveProductChange({
+          newProductId: event.new_product_id,
+          expiresAt,
+          eventId,
+        })
+          ? { userState: activeUserState, payload: payloadWithExpiry() }
+          : null,
+      )
       .with("SUBSCRIPTION_EXTENDED", () =>
         subscription.extend(expiresAt, eventId)
           ? { userState: activeUserState, payload: payloadWithExpiry() }

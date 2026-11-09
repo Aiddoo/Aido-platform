@@ -36,9 +36,13 @@ export const subscription = pgTable(
     gracePeriodEndsAt: timestamp({ precision: 3 }),
     id: serial().primaryKey(),
     lastProcessedEventId: varchar({ length: 255 }),
+    /** PRODUCT_CHANGE가 예약한 다음 갱신의 상품(new_product_id). 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
+    nextProductId: varchar({ length: 100 }),
     /** 지금 기간의 RevenueCat period_type(STORE_PERIOD_TYPES). 이 열을 추가하기 전에 만든 행은 null = NORMAL이다. */
     periodType: text(),
     productId: varchar({ length: 100 }).notNull(),
+    /** 연간 갱신 7일 전 안내를 보낸 기간의 expiresAt. 갱신으로 expiresAt이 바뀌면 다음 기간에 다시 보낸다. */
+    renewalNoticeExpiresAt: timestamp({ precision: 3 }),
     revenueCatId: varchar({ length: 255 }).notNull(),
     startedAt: timestamp({ precision: 3 }).notNull(),
     status: subscriptionStatus().notNull(),

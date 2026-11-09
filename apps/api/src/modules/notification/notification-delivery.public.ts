@@ -37,6 +37,7 @@ export {
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
   createPremiumGrantEndingNotificationMessage,
+  createPremiumRenewalUpcomingNotificationMessage,
   createPremiumTrialEndingNotificationMessage,
   createTodoCommentNotificationMessage,
 } from "./application/messages/delivery/notification-messages.js";

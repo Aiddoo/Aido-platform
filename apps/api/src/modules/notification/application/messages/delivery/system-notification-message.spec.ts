@@ -1,4 +1,7 @@
-import { createPremiumTrialEndingNotificationMessage } from "./system-notification-message.js";
+import {
+  createPremiumRenewalUpcomingNotificationMessage,
+  createPremiumTrialEndingNotificationMessage,
+} from "./system-notification-message.js";
 
 describe("createPremiumTrialEndingNotificationMessage — 체험 종료 안내 문구", () => {
   // 서울 2026-12-06 12:00, 체험 끝은 서울 2026-12-09 09:00
@@ -131,5 +134,49 @@ describe("createPremiumTrialEndingNotificationMessage — 체험 종료 안내 �
       "내일 무료 체험이 끝나요",
       "오늘 무료 체험이 끝나요",
     ]);
+  });
+});
+
+describe("createPremiumRenewalUpcomingNotificationMessage — 연간 구독 갱신 안내 문구", () => {
+  // 서울 2026-11-02 12:00, 갱신은 서울 2026-11-09 09:00
+  const now = new Date("2026-11-02T03:00:00.000Z");
+  const renewsAt = new Date("2026-11-09T00:00:00.000Z");
+
+  it.each([
+    {
+      locale: "ko" as const,
+      title: "7일 뒤 연간 구독이 갱신돼요",
+      body: "11월 9일 결제 예정 · 해지는 스토어에서",
+    },
+    {
+      locale: "en" as const,
+      title: "Your annual plan renews in 7 days",
+      body: "Billing on Nov 9 · Cancel in your store",
+    },
+  ])("$locale · 남은 일수와 결제 날짜를 받는 사람 달력으로 쓴다", ({ locale, title, body }) => {
+    // Given
+    const input = { locale, timezone: "Asia/Seoul", renewsAt, now };
+
+    // When
+    const message = createPremiumRenewalUpcomingNotificationMessage(input);
+
+    // Then
+    expect(message).toMatchObject({ title, body });
+  });
+
+  it("다음 날 갱신되면 내일로 쓴다", () => {
+    // Given
+    const input = {
+      locale: "en" as const,
+      timezone: "Asia/Seoul",
+      renewsAt: new Date("2026-11-03T00:00:00.000Z"),
+      now,
+    };
+
+    // When
+    const message = createPremiumRenewalUpcomingNotificationMessage(input);
+
+    // Then
+    expect(message.title).toBe("Your annual plan renews tomorrow");
   });
 });

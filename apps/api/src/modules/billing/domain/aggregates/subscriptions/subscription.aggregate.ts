@@ -23,6 +23,8 @@ export interface SubscriptionProps {
   gracePeriodEndsAt: Date | null;
   cancelledAt: Date | null;
   lastProcessedEventId: string | null;
+  /** PRODUCT_CHANGE가 예약한 다음 갱신의 상품. 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
+  nextProductId: string | null;
   /** 지금 기간의 스토어 기간 유형. null은 이 값을 저장하기 전에 만든 행(NORMAL)이다. */
   periodType: StorePeriodType | null;
 }
@@ -35,6 +37,7 @@ export type SubscriptionPersistenceState = Pick<
   | "gracePeriodEndsAt"
   | "cancelledAt"
   | "lastProcessedEventId"
+  | "nextProductId"
   | "periodType"
 >;
 
@@ -55,6 +58,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       gracePeriodEndsAt: copyDate(props.gracePeriodEndsAt),
       cancelledAt: copyDate(props.cancelledAt),
       lastProcessedEventId: props.lastProcessedEventId,
+      nextProductId: props.nextProductId,
       periodType: props.periodType,
     });
   }
@@ -90,9 +94,14 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return this.props.periodType;
   }
 
-  /** 상품 ID로 정한 요금제. 모르는 상품이면 null이다. */
+  /** 지금 기간의 요금제. 모르는 상품이면 null이다. */
   planType(): SubscriptionPlanType | null {
     return SubscriptionPlanPolicy.planTypeOf(this.props.productId);
+  }
+
+  /** 다음 갱신에 결제될 요금제. 예약한 상품 변경이 있으면 그 상품이다. */
+  renewingPlanType(): SubscriptionPlanType | null {
+    return SubscriptionPlanPolicy.planTypeOf(this.props.nextProductId ?? this.props.productId);
   }
 
   isTrial(): boolean {
@@ -107,6 +116,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       gracePeriodEndsAt: copyDate(this.props.gracePeriodEndsAt),
       cancelledAt: copyDate(this.props.cancelledAt),
       lastProcessedEventId: this.props.lastProcessedEventId,
+      nextProductId: this.props.nextProductId,
       periodType: this.props.periodType,
     };
   }
@@ -125,9 +135,14 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
 
   /**
    * 새 기간으로 갱신한다. 같은 만료 시각의 재전송은 false다. periodType을 비우면 지금 유형을 둔다
-   * (체험 전환 갱신은 NORMAL을 넘긴다).
+   * (체험 전환 갱신은 NORMAL을 넘긴다). App Store는 상품 변경을 갱신에 적용하므로 갱신의 상품을 저장한다.
    */
-  renew(expiresAt: Date, eventId?: string, periodType?: StorePeriodType): boolean {
+  renew(
+    expiresAt: Date,
+    eventId?: string,
+    periodType?: StorePeriodType,
+    productId?: string,
+  ): boolean {
     // 같은 만료의 재전송과 지난 기간의 늦은 갱신은 이미 반영한 기간을 되돌리지 않는다
     if (
       this.isActiveWithSameExpiry(expiresAt) ||
@@ -138,6 +153,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     if (periodType != null) {
       this.props.periodType = periodType;
     }
+    this.#applyProduct(productId);
     this.props.status = "ACTIVE";
     this.props.expiresAt = new Date(expiresAt);
     this.props.gracePeriodEndsAt = null;
@@ -236,10 +252,22 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return true;
   }
 
-  changeProduct(productId: string, expiresAt: Date | undefined, eventId?: string): void {
-    this.props.productId = productId;
-    this.#changeExpiry(expiresAt);
-    this.#recordEvent(eventId);
+  /**
+   * 상품 변경 예약을 기록한다. 상품 변경은 정보성 안내라 지금 기간의 상품·만료·상태는 실제 결제 이벤트
+   * (Apple RENEWAL·Play INITIAL_PURCHASE)가 맞추므로, 이 이벤트의 product_id가 바꾸기 전·후 어느 값이든
+   * 결과가 같도록 바꾼 대상(new_product_id)만 남긴다. 갱신 뒤 늦게 온 지난 기간의 안내는 false다.
+   */
+  reserveProductChange(input: {
+    newProductId?: string;
+    expiresAt?: Date;
+    eventId?: string;
+  }): boolean {
+    if (this.#isPreviousPeriod(input.expiresAt)) {
+      return false;
+    }
+    this.props.nextProductId = input.newProductId ?? null;
+    this.#recordEvent(input.eventId);
+    return true;
   }
 
   /** 갱신 뒤 늦게 온 지난 기간의 연장은 갱신된 기간을 앞당기지 않고 false다. */
@@ -256,6 +284,15 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   /** 이벤트의 만료 시각이 지금 기간보다 이르면 이미 지난 기간의 이벤트다. 만료 시각이 없으면 판단하지 않는다. */
   #isPreviousPeriod(eventExpiresAt: Date | null | undefined): boolean {
     return eventExpiresAt != null && eventExpiresAt.getTime() < this.props.expiresAt.getTime();
+  }
+
+  /** 결제 이벤트의 상품이 지금 기간의 상품이다. 예약해 둔 변경은 적용됐으므로 비운다. */
+  #applyProduct(productId: string | undefined): void {
+    if (productId == null || productId === "") {
+      return;
+    }
+    this.props.productId = productId;
+    this.props.nextProductId = null;
   }
 
   #changeExpiry(expiresAt: Date | undefined): void {

@@ -433,11 +433,6 @@ describe("HandleWebhookEvent", () => {
       expect(
         fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
       ).toMatchObject({ status: "ACTIVE", expiresAt: SUBSCRIPTION_EXPIRY });
-      if (body.event.type === "PRODUCT_CHANGE") {
-        expect(
-          fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID)?.productId,
-        ).toBe("premium_yearly");
-      }
       expect(
         fixture.subscriptionRepository.users.get(fixture.user.id)?.subscriptionExpiresAt,
       ).toEqual(SUBSCRIPTION_EXPIRY);
@@ -754,14 +749,32 @@ describe("HandleWebhookEvent", () => {
     await release?.();
   });
 
-  it.each([
-    { name: "상품 변경", builder: SubscriptionEventBuilder.productChange },
-    { name: "기간 연장", builder: SubscriptionEventBuilder.subscriptionExtended },
-  ])("$name 이벤트는 전달된 만료를 사용자와 구독에 함께 저장한다", async ({ builder }) => {
+  it("상품 변경은 바꾸기 전 상품의 만료를 싣는 정보성 안내라 상품·만료를 두고 다음 갱신 상품만 예약한다", async () => {
+    // Given
+    givenSubscription();
+    const body = payloadFor(
+      SubscriptionEventBuilder.productChange()
+        .withProductId("premium_monthly")
+        .withNewProductId("premium_yearly"),
+    );
+    body.event.expiration_at_ms = SUBSCRIPTION_EXPIRY.getTime();
+    // When
+    await useCase.execute({ body });
+    // Then
+    expect(
+      fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+    ).toMatchObject({
+      productId: "premium_monthly",
+      nextProductId: "premium_yearly",
+      expiresAt: SUBSCRIPTION_EXPIRY,
+    });
+  });
+
+  it("기간 연장 이벤트는 전달된 만료를 사용자와 구독에 함께 저장한다", async () => {
     // Given
     givenSubscription();
     const expiresAt = new Date("2026-04-10T12:00:00.000Z");
-    const body = payloadFor(builder());
+    const body = payloadFor(SubscriptionEventBuilder.subscriptionExtended());
     body.event.expiration_at_ms = expiresAt.getTime();
     // When
     await useCase.execute({ body });

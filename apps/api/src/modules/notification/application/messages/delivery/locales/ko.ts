@@ -605,6 +605,10 @@ export const SYSTEM_TEMPLATES = {
         `${date}까지 이용 · 결제는 없어요`,
       ),
   },
+  PREMIUM_RENEWAL_UPCOMING: {
+    copy: ({ days, date }) =>
+      copy(`${dayPhrase(days)} 연간 구독이 갱신돼요`, `${date} 결제 예정 · 해지는 스토어에서`),
+  },
   MARKETING_CONSENT_RECONFIRM: {
     copy: ({ agreedOn }) =>
       copy("광고성 알림 수신에 동의 중이에요", `${agreedOn} 동의 · 설정에서 바꿀 수 있어요`),

@@ -14,6 +14,8 @@ import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/sub
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
 import { TRIAL_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/trial-ending-notice.source.port.js";
 import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
+import { UPCOMING_RENEWAL_NOTICE_SOURCE } from "./application/ports/subscriptions/upcoming-renewal-notice.source.port.js";
+import { UPCOMING_RENEWAL_NOTIFIER } from "./application/ports/subscriptions/upcoming-renewal-notifier.port.js";
 import { BillingNoticeSweeper } from "./application/services/subscriptions/billing-notice-sweeper.js";
 import { PremiumAccessProjector } from "./application/services/subscriptions/premium-access-projector.service.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
@@ -21,6 +23,7 @@ import { PremiumGranter } from "./application/services/subscriptions/premium-gra
 import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle-webhook-event.use-case.js";
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
 import { NotifyEndingTrials } from "./application/use-cases/subscriptions/notify-ending-trials.use-case.js";
+import { NotifyUpcomingRenewals } from "./application/use-cases/subscriptions/notify-upcoming-renewals.use-case.js";
 import { RevokePremiumGrant } from "./application/use-cases/subscriptions/revoke-premium-grant.use-case.js";
 import { SweepPremiumGrants } from "./application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 
@@ -180,6 +183,16 @@ export const notifyEndingTrialsProvider: FactoryProvider<NotifyEndingTrials> = {
     source: ConstructorParameters<typeof NotifyEndingTrials>[0]["source"],
     notifier: ConstructorParameters<typeof NotifyEndingTrials>[0]["notifier"],
   ) => new NotifyEndingTrials({ sweeper, source, notifier }),
+};
+
+export const notifyUpcomingRenewalsProvider: FactoryProvider<NotifyUpcomingRenewals> = {
+  provide: NotifyUpcomingRenewals,
+  inject: [BillingNoticeSweeper, UPCOMING_RENEWAL_NOTICE_SOURCE, UPCOMING_RENEWAL_NOTIFIER],
+  useFactory: (
+    sweeper: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["source"],
+    notifier: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["notifier"],
+  ) => new NotifyUpcomingRenewals({ sweeper, source, notifier }),
 };
 
 export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {

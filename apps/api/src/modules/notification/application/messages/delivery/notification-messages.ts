@@ -34,6 +34,7 @@ export {
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,
   createPremiumGrantEndingNotificationMessage,
+  createPremiumRenewalUpcomingNotificationMessage,
   createPremiumTrialEndingNotificationMessage,
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,

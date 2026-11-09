@@ -38,4 +38,6 @@ export type NotificationType =
   | "INVITE_QUALIFY_REMINDER"
   | "PREMIUM_GRANT_ENDING"
   /** 서버 전용. 앱 계약 enum에 없어 푸시·알림함에는 SYSTEM_NOTICE로 보낸다(toWireNotificationType). */
-  | "PREMIUM_TRIAL_ENDING";
+  | "PREMIUM_TRIAL_ENDING"
+  /** 서버 전용. 연간 구독 자동 갱신 7일 전 안내. 앱에는 SYSTEM_NOTICE로 보낸다. */
+  | "PREMIUM_RENEWAL_UPCOMING";

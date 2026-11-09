@@ -17,6 +17,7 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
     gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: "seed",
+    nextProductId: null,
     periodType: null,
     ...overrides,
   });
@@ -50,6 +51,7 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: "renewal",
+      nextProductId: null,
       periodType: null,
     });
   });
@@ -106,16 +108,36 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
     expect(aggregate.expiresAt).toEqual(expiresAt);
   });
 
-  it("상품 변경과 연장은 생략한 만료일·취소 시각을 임의로 지우지 않는다", () => {
+  it("연간→월간 예약은 지금 기간 요금제를 두고 다음 결제 요금제만 바꾸며, 갱신하면 새 상품이 지금 기간이 된다", () => {
+    // Given
+    const aggregate = subscription({ productId: "com.aido.pro.yearly" });
+
+    // When
+    aggregate.reserveProductChange({
+      newProductId: "com.aido.pro.monthly",
+      expiresAt,
+      eventId: "change",
+    });
+    const reserved = [aggregate.planType(), aggregate.renewingPlanType()];
+    aggregate.renew(nextExpiry, "renew", undefined, "com.aido.pro.monthly");
+
+    // Then
+    expect(reserved).toEqual(["ANNUAL", "MONTHLY"]);
+    expect([aggregate.planType(), aggregate.renewingPlanType()]).toEqual(["MONTHLY", "MONTHLY"]);
+    expect(aggregate.persistenceState.nextProductId).toBeNull();
+    expect(aggregate.expiresAt).toEqual(nextExpiry);
+  });
+
+  it("상품 변경 예약과 연장은 생략한 만료일·취소 시각을 임의로 지우지 않는다", () => {
     // Given
     const aggregate = subscription({ status: "CANCELLED", cancelledAt: at });
 
     // When
-    aggregate.changeProduct("yearly", undefined, "product");
+    aggregate.reserveProductChange({ newProductId: "yearly", eventId: "product" });
 
     // Then
     expect(aggregate.status).toBe("CANCELLED");
-    expect(aggregate.productId).toBe("yearly");
+    expect(aggregate.productId).not.toBe("yearly");
     expect(aggregate.expiresAt).toEqual(expiresAt);
 
     // When

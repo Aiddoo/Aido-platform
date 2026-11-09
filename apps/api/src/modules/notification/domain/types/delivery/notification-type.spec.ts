@@ -6,7 +6,7 @@ type Extends<T, U> = [T] extends [U] ? true : false;
 type Expect<T extends true> = T;
 
 /** 앱 계약에 없고 앱에는 SYSTEM_NOTICE로 보내는 서버 전용 타입 */
-type ServerOnlyNotificationType = "PREMIUM_TRIAL_ENDING";
+type ServerOnlyNotificationType = "PREMIUM_TRIAL_ENDING" | "PREMIUM_RENEWAL_UPCOMING";
 
 type DomainMatchesContract = Expect<
   Extends<Exclude<DomainNotificationType, ServerOnlyNotificationType>, ContractNotificationType>

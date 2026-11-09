@@ -18,6 +18,8 @@ export const BillingLogEvent = {
   PREMIUM_GRANT_CACHE_INVALIDATION_FAILED: "billing.premium-grant.cache-invalidation.failed",
   PREMIUM_GRANT_ENDING_NOTIFIED: "billing.premium-grant.ending.notified",
   TRIAL_ENDING_NOTIFIED: "billing.subscription.trial-ending.notified",
+  RENEWAL_UPCOMING_NOTIFIED: "billing.subscription.renewal-upcoming.notified",
+  PREMIUM_GRANT_SWEEP_STEP_FAILED: "billing.premium-grant.sweep.step.failed",
   PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED: "billing.premium-grant.sweep.scheduler.registered",
   PREMIUM_GRANT_SWEEP_JOB_FAILED: "billing.premium-grant.sweep.job.failed",
 } as const;

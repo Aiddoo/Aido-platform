@@ -102,6 +102,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: data.lastProcessedEventId ?? null,
+      nextProductId: null,
       periodType: data.periodType ?? null,
     });
   }
