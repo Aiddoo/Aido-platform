@@ -1,3 +1,4 @@
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/ui';
@@ -6,6 +7,7 @@ import { range } from 'es-toolkit';
 import { Card } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
@@ -49,6 +51,7 @@ PlanPicker.Plans = function Plans({
   const [{ view, feature }] = useSubscriptionParams();
   const [selectedPlanId, setSelectedPlanId] = useSelectedPlanId();
   const { trackEvent } = useTrack();
+  const haptics = useHaptics();
   const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, selectedPlanId);
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 프리미엄 보기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
@@ -62,6 +65,7 @@ PlanPicker.Plans = function Plans({
   const handleValueChange = (planId: string) => {
     const nextPlan = SubscriptionPolicy.findSelectedPlan(offering, planId);
     if (nextPlan != null && nextPlan.identifier !== selectedPlan?.identifier) {
+      haptics.selection();
       trackEvent('paywall_plan_selected', {
         plan_type: nextPlan.planType,
         is_trial: SubscriptionPolicy.hasFreeTrial(nextPlan),
@@ -82,6 +86,9 @@ PlanPicker.Plans = function Plans({
 /** 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 요금제를 채운다 */
 PlanPicker.Loading = function Loading() {
   const isOnline = useIsOnline();
+  // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
+  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
+  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
 
   return match(isOnline)
     .with(false, () => <SubscriptionResult.Offline target="plans" />)
@@ -90,9 +97,9 @@ PlanPicker.Loading = function Loading() {
         {range(PLAN_ROW_COUNT).map((index) => (
           <Card key={index} className="flex-1 border-2 border-gray-2 bg-white dark:bg-gray-2">
             <VStack gap={8}>
-              <TextSkeleton size="b3" className="w-16" />
-              <TextSkeleton size="t2" className="w-28" />
-              <TextSkeleton size="b4" className="w-24" />
+              <TextSkeleton size="b3" color={color} className="w-16" />
+              <TextSkeleton size="t2" color={color} className="w-28" />
+              <TextSkeleton size="b4" color={color} className="w-24" />
             </VStack>
           </Card>
         ))}

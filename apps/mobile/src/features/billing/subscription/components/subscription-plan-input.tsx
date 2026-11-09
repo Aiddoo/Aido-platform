@@ -1,10 +1,13 @@
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { ChoiceRadio, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Card, Chip, RadioGroup } from 'heroui-native';
+import { Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
+import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 import { FREE_TRIAL_PERIOD_LABEL_KEYS } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
@@ -40,6 +43,8 @@ interface PlanOptionProps {
 
 function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   const { t } = useTranslation('subscription');
+  const { color: selectedBorderColor } = useResolveClassNames('text-main');
+  const { color: idleBorderColor } = useResolveClassNames('text-gray-2');
   const { label, periodLabel, monthlyEquivalent } = match(plan.planType)
     .with('annual', () => ({
       label: t('plan.annual'),
@@ -56,11 +61,15 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   return (
     <RadioGroup.Item value={plan.identifier} className="rounded-2xl">
       {({ isSelected }) => (
-        <Card
-          className={cn(
-            'flex-1 border-2 bg-white dark:bg-gray-2',
-            isSelected ? 'border-main' : 'border-gray-2',
-          )}
+        // 고른 테두리 색이 끊기지 않고 바뀌게 UI 스레드 CSS 전환으로 칠한다
+        <Animated.View
+          className="flex-1 overflow-hidden rounded-3xl border-2 bg-white p-4 dark:bg-gray-2"
+          style={{
+            borderColor: isSelected ? selectedBorderColor : idleBorderColor,
+            transitionProperty: 'borderColor',
+            transitionDuration: ANIMATION.duration.fast,
+            transitionTimingFunction: 'ease-out',
+          }}
         >
           <VStack gap={8}>
             <HStack className="items-center justify-between">
@@ -107,7 +116,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                 : '\u00A0'}
             </Text>
           </VStack>
-        </Card>
+        </Animated.View>
       )}
     </RadioGroup.Item>
   );
