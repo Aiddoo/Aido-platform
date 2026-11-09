@@ -18,9 +18,30 @@
 - 4c33c2c: 반복 할 일의 범위 수정·삭제와 반복 끝내기를 더한다. `PATCH /v1/todos/:id`에 선택 `scope`(`THIS_ONLY`·`THIS_AND_FOLLOWING`), `repeat`(생략은 변경 없음, null은 이 회차 뒤로 끝내기, 값은 단일 할 일 전환 또는 규칙 변경), `checklist`, `DELETE /v1/todos/:id`에 선택 `scope`(`THIS_ONLY`·`THIS_AND_FOLLOWING`·`ALL`), 새 `GET /v1/todo-series/:seriesId`를 연다. 규칙을 바꾸면 이 회차부터 나누되 맞는 회차의 id·댓글을 유지하고, 완료한 회차의 내용은 바꾸지 않으며(`ALL` 삭제만 지움), 첫 회차에서 고치면 나누지 않는다. 체크리스트만 바꾸면 나누지 않고 앞으로 만들 회차에 쓰는 규칙의 체크리스트만 바꾼다(`THIS_AND_FOLLOWING`에서만 받는다). 시간을 바꾸면 회차 날짜마다 규칙 시간대로 다시 계산해 리마인더를 재등록한다. 모든 필드는 optional이고 생략하면 동작이 같다. 출시 앱 지문은 `preTodoSeriesScope…Fingerprint`에 이전 값과 사유를 남겼다.
 - 2c6ec82: 매일 03:10 KST pg-boss 작업 `todo-series-materialization.v1`이 진행 중 반복 할 일의 회차를 앞으로 90일까지 채운다. 규칙당 트랜잭션(`FOR UPDATE SKIP LOCKED` → 정렬 잠금 → INSERT 한 번 → 커서 갱신)이고, 재실행·동시 실행은 `(seriesId, occurrenceDate)` 유니크로 멱등이다. 부팅 때 놓친 실행을 실행일 키로 따라잡고, 정지·탈퇴 대기 계정과 60일 넘게 쓰지 않은 무료 계정은 건너뛰며(돌아오면 오늘부터 이어 만든다, `docs/server/todo-series-dormancy.md`), 실패하거나 4분 상한을 넘으면 운영 경보를 올린다.
 - d1507da: 반복 할 일의 기반을 더한다. `TodoSeries` 테이블과 `Todo.occurrenceDate`, `(recurrenceGroupId, occurrenceDate)` 부분 유니크 인덱스를 만들고 기존 묶음을 끝난 규칙으로 이관한다(같은 날짜 중복은 최소 id만 남기고 묶음 해제). 서버 코드 이름은 `seriesId`이고 DB 열과 응답 필드 `recurrenceGroupId`는 출시 앱·1.14.2 롤백 호환을 위해 그대로 둔다. 공유 계약에 `todoRepeatSchema`·`TodoRepeat`와 `TODO_REPEAT_FREQUENCIES`·`TODO_REPEAT_INTERVALS`·`TODO_REPEAT_END_TYPES`·`TODO_EDIT_SCOPES`를 더한다.
+- 11882e8: 서비스·거래 알림을 광고성 동의와 분리한다. 온보딩 D0~D7 사용법 안내는 서비스 알림으로 바꿔 광고성 동의 없이 보내고, 광고성 푸시는 제목 앞 "(광고)"와 본문 끝 수신 거부 방법을 한 곳에서 붙인다. 광고성 수신 동의 2년 재확인 알림을 매월 보내고 `UserConsent.marketingReconfirmedAt`에 남긴다. 광고성 동의 변경 응답에 철회를 처리한 서버 시각(`marketingWithdrawnAt`·`marketingPushWithdrawnAt`)을 더했다. 이메일·소셜 가입이 동의한 약관 버전(`agreedTermsVersion`, 지금까지 늘 null)을 `TERMS_VERSION.CURRENT`로 남긴다. 소셜 가입은 지금처럼 가입 때 약관·개인정보 동의를 기록한다. `pushEnabled`·`nightPushEnabled`의 DB·어휘 기본값을 가입 seed와 같은 true로 맞췄다(기존 행은 그대로).
+- a4fc198: 할 일 시간을 떠 있는 시각으로 바꾼다. `Todo.scheduledLocalTime`(HH:mm)이 진실이고 `scheduledTime`은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이다. 응답에 선택 칸 `scheduledLocalTime`을 더하고, 저장 시간대가 바뀌면 `todo-timezone-rebase.v1` 작업이 시간 있는 모든 할 일의 순간을 다시 계산하고 완료 전이고 앞으로 울릴 회차의 알림을 다시 잡는다. 이미 지난 알림 단계는 바로 보내지 않고 건너뛴다. 출시 앱의 옛 경로(`POST /v1/todos/recurring`, 메모 변환의 `isRecurring`, AI 제안 수락)에는 진행 중 반복 300개 상한을 두고 `TODO_0813`으로 거절한다.
+- 19708b7: 일일 완료 조회 응답(`GET /v1/daily-completions`, 친구 조회 포함)에 선택 칸 `multiDayTodos`(시작일·끝 날짜·완료 여부·카테고리 색)를 더한다. `completions`는 출시 앱이 읽던 대로 시작일에만 세고, 새 앱이 달력에서 기간 안의 날에도 점을 그린다.
+- 0750b0b: 메모 나누기(`parse-memo`)도 빠른 계획·녹음 정리처럼 다가오는 할 일을 맥락으로 받아 겹침을 판정한다. 응답 할 일에 선택 칸 `duplicateOfTodoId`를 더하고, 모델이 못 고른 겹침은 같은 정책(`findDuplicateTodoId`)이 제목과 날짜로 다시 찾는다. 출시 앱은 새 칸을 버리므로 동작이 같다.
+- c93dcec: 메모 나누기(`POST /v1/ai/parse-memo`)에 선택 `Idempotency-Key` 헤더를 더해 재시도가 두 번 차감되지 않게 한다. 헤더가 없는 출시 앱은 지금처럼 요청마다 차감한다. 공통 헤더 이름 `IDEMPOTENCY_KEY_HEADER`를 vocabulary에 더한다.
+- 5c5da5b: 1.15.0 호환 검증에서 나온 반복 할 일 결함을 고친다. 이후 모두로 시간을 고치면 요청 시간대로 해석하고 규칙 시간대도 바꾼다. 나뉜 반복의 앞 구간에서 이후 모두가 뒤 구간까지 닿는다. 이관은 묶음 전체에서 규칙을 유추한다. 규칙 없는 묶음의 전체 삭제가 동작하고, 출시 앱의 `POST /v1/todos/recurring`에는 진행 중 반복 상한을 적용하지 않는다.
+- d6ea3c6: 구독 웹훅을 신호로 보고 스토어 상태를 다시 읽어 맞춘다. 처리 원장에 새로 기록된 웹훅마다 `store-subscription-reconcile.v1` 잡(1분 구간마다 사용자당 하나)을 같은 트랜잭션에 넣고, RevenueCat REST v2 구독 검색으로 체인 행의 만료·자동 갱신·체험·상품을 맞추며, 스토어가 접근을 주지 않는 행(놓친 환불·만료, Play 요금제 교체로 남은 옛 체인)은 끝낸다. 바뀐 것이 있을 때만 프리미엄을 다시 계산하고 캐시를 비운다. 새 선택 env `REVENUECAT_API_V2_SECRET_KEY`(읽기 전용 v2 키)와 `REVENUECAT_PROJECT_ID`가 있어야 켜진다.
+- 68cc868: `/me`에 선택 칸 `premiumPlanType`(`ANNUAL`·`MONTHLY`, 모르면 null)을 더한다. 지금 프리미엄 기간을 정하는 스토어 구독의 상품 ID로 정하고 Play의 `상품:기본요금제`는 `:` 앞만 본다. 체험 종료 3일 전 알림의 자동 갱신 문구가 "연간 구독"을 하드코딩하지 않고 요금제로 고르며, 모르는 상품이면 "구독"이라고 쓴다. 어휘 `SUBSCRIPTION_PLAN_TYPES`·`STORE_SUBSCRIPTION_PRODUCTS`·`PREMIUM_RENEWAL_NOTICE_DAYS`를 더했다.
+- c123a4c: 연간으로 자동 갱신될 구독에 결제 7일 전 기간마다 한 번 알린다(서버 전용 `PREMIUM_RENEWAL_UPCOMING`, 앱에는 `SYSTEM_NOTICE`와 구독 화면 경로). 월간·모르는 상품은 보내지 않고, Play에서 요금제를 바꿔 남은 옛 체인에도 보내지 않는다. `Subscription.renewalNoticeExpiresAt`에 알린 기간의 만료를 남겨 갱신으로 기간이 바뀌면 다음 기간에 다시 보낸다. RevenueCat `PRODUCT_CHANGE`는 정보성이라 상품·만료·상태를 바꾸지 않고 웹훅 `new_product_id`를 `Subscription.nextProductId`로 예약만 하며, `RENEWAL`·`INITIAL_PURCHASE`가 이벤트 상품을 지금 상품으로 맞춘다(지난 기간 `PRODUCT_CHANGE`가 만료를 앞당겨 쌓아 둔 보상을 시작하던 문제를 고친다). `premium-grant-sweep`의 안내 단계는 한 단계가 실패해도 나머지를 보낸 뒤 잡을 실패로 끝낸다.
+- 113cf8a: 스토어 무료 체험을 저장하고 끝나기 3일 전에 한 번 알린다. RevenueCat 웹훅의 `period_type`을 `Subscription.periodType`에 남기고(`INITIAL_PURCHASE`·`RENEWAL`, 전환 갱신은 `NORMAL`), 체험 단계(시작·해지·전환·종료)는 billing 정책 하나가 판단한다. 계약은 추가만 했다: 웹훅 `is_trial_conversion`·`expiration_reason`, `/me`의 `premiumIsTrial`, 어휘 `STORE_PERIOD_TYPES`·`PREMIUM_TRIAL_ENDING_NOTICE_DAYS`. 체험 끝은 스토어 `expiration_at_ms` 그대로이고 체험 중 받은 초대 보상은 체험 뒤에 이어진다. 안내 알림 `PREMIUM_TRIAL_ENDING`은 서버 전용 타입이라 앱에는 `SYSTEM_NOTICE`와 구독 화면 경로로 보내며 기존 `premium-grant-sweep` 잡에 붙였다. 보상 종료 알림 `PREMIUM_GRANT_ENDING`은 거래 알림으로 바꿔 광고성 동의 없이 보낸다. 관리자 결제 알림은 체험 시작을 ₩0 구매 대신 "무료 체험 시작"과 체험 끝 날짜로 보여 준다. 전환 뒤 늦게 온 체험 해지와 지난 기간의 늦은 갱신은 상태를 되돌리지 않는다.
+- 702e303: 출시 전 응답인 `POST /v1/quick-plans`, `POST /v1/voice-notes/digest`에서 `meta`(모델·토큰·프롬프트 버전)를 뺀다. 값은 서버 로그에만 남긴다. `parse-todo`, `parse-memo`의 응답은 그대로다.
 
 ### Patch Changes
 
+- 93c40f8: AI 일정 해석이 지난 날짜를 만들지 않는다. 지난 요일은 다음 그 요일로, 이번 달 초·올해 초는 시기가 지났으면 다음 시기로 넘긴다.
+- ac4c9d2: AI가 말하지 않은 반복 끝을 만들지 않게 한다. 시작일보다 뒤가 아닌 `until`·`forDuration`은 버리고, "30분 운동"의 걸리는 시간은 제목에 남기며 반복 기간으로 쓰지 않는다. 끝 없는 주말 반복은 "주말마다"·"매주 주말"·"weekends"일 때만이고, 계획에서 그냥 "주말에"·"이번 주말"·"다음 주말"은 그 주말 토요일 한 번이다. 녹음 정리의 제목·요약·핵심 포인트는 말한 언어와 상관없이 앱 언어로 쓴다. 프롬프트 버전은 `parse-todo@6`, `parse-memo@6`, `quick-plan@6`, `voice-note-digest@6`다.
+- 0dc7ea7: 결제 문제(BILLING_ISSUE) 푸시 잡을 커밋 뒤가 아니라 구독 변경·처리 원장과 같은 트랜잭션에 기록한다. 커밋과 등록 사이에 프로세스가 멈춰도 알림을 잃지 않는다.
+- ac1462c: 구독 웹훅의 실패 응답을 나눈다. 처리 대상이 없는 영구 실패(사용자·체인·필수 시각 없음)와 계약과 다른 원문만 200과 운영 경보로 닫고, DB 같은 일시 실패는 5xx로 응답해 RevenueCat 재전송에 맡긴다(처리 원장이 같은 트랜잭션이라 한 번만 반영된다). 영구 실패여도 사용자가 확인되면 스토어 상태 대조를 예약한다.
+- 89fd262: 새로 가입할 때 기본 카테고리 이름을 요청의 `Accept-Language`로 정한다. `en`이면 `Important`·`To-do`, 없거나 그 밖이면 지금처럼 `중요한 일`·`할 일`이다. 사용자가 고칠 수 있는 데이터라 이미 있는 카테고리는 바꾸지 않는다.
+- 9ab0246: 웹 흐름 소셜 가입의 관리자 알림을 앱 요청인 `POST /v1/auth/exchange`에서 보내 앱 버전·기기·시간대가 비지 않게 한다. 응답과 출시 앱 동작은 그대로다.
+- c6d0d47: 빠른 말하기 AI 체인 제한 시간 기본값을 15초에서 24초로 늘린다. 실측 지연의 최댓값이 앞 업체 몫 3.75초를 넘어 정상 응답이 시간 초과와 폴백으로 처리되던 것을 줄인다.
+- ed4713b: 완료한 할 일에 하위 항목을 추가하면 남은 일이 생긴 것이므로 할 일을 미완료로 되돌린다. 응답 모양은 그대로이고 `completed`만 `false`로 온다.
+- b5283b4: `/me`의 `premiumPlanType`·`premiumIsTrial`·`premiumPeriodEndsAt`·`willRenew`를 현재 체인(유효한 스토어 체인 중 가장 늦게 시작한 체인)으로 정한다. Play에서 요금제를 바꿔 옛 체인이 원래 만료까지 남아 있어도 새 체인의 요금제·만료·갱신을 보인다. 프리미엄 끝(`premiumEndsAt`)과 쌓아 둔 보상의 시작은 지금처럼 유효한 모든 체인의 끝까지 본다. 연간 갱신 안내도 같은 규칙으로 현재 체인에만 보낸다.
+- a0bc1fd: 할 일 알림 중복 방지를 "할 일 + 단계"에서 "할 일 + 단계 + 회차(날짜 + 벽시계)"로 바꾼다. 울린 할 일을 다른 날짜나 시각으로 옮기면 새 회차로 다시 울리고, 시간대를 왕복해도 같은 회차의 같은 단계는 한 번만 울린다. 응답·푸시 모양은 그대로다.
 - Updated dependencies [3d19ee9]
 - Updated dependencies [f64ca65]
 - Updated dependencies [22c7b54]
@@ -31,6 +52,16 @@
 - Updated dependencies [ce63b19]
 - Updated dependencies [4c33c2c]
 - Updated dependencies [d1507da]
+- Updated dependencies [11882e8]
+- Updated dependencies [a4fc198]
+- Updated dependencies [19708b7]
+- Updated dependencies [0750b0b]
+- Updated dependencies [c93dcec]
+- Updated dependencies [5c5da5b]
+- Updated dependencies [68cc868]
+- Updated dependencies [c123a4c]
+- Updated dependencies [113cf8a]
+- Updated dependencies [702e303]
   - @aido/api@1.15.0
 
 ## 1.14.2
