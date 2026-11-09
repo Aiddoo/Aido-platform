@@ -2,7 +2,7 @@ import { getSplitDetailRootOptions } from './get-split-detail-root-options';
 
 function createInput(routeKey: string, stackKeys: string[]) {
   return {
-    route: { key: routeKey },
+    route: { key: routeKey, name: routeKey },
     navigation: { getState: () => ({ routes: stackKeys.map((key) => ({ key })) }) },
   };
 }

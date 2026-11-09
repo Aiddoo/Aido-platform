@@ -1,8 +1,10 @@
 export { ActionButton } from './action-button';
 export {
   AdaptivePane,
+  clearSplitDetailRootRequest,
   getPrimaryPaneWidth,
   getSplitDetailRootOptions,
+  requestSplitDetailRoot,
   useAdaptivePaneLayoutKey,
 } from './adaptive-pane';
 export { Avatar } from './avatar';
