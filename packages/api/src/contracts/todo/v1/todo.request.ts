@@ -211,13 +211,9 @@ export const deleteTodoQuerySchema = z.object({
     ),
 });
 
-export type DeleteTodoQuery = z.infer<typeof deleteTodoQuerySchema>;
-
 export const todoSeriesIdParamSchema = z.object({
   seriesId: z.string().min(1).max(36).describe("반복 할 일 ID"),
 });
-
-export type TodoSeriesIdParam = z.infer<typeof todoSeriesIdParamSchema>;
 
 export const toggleTodoCompleteSchema = z.object({
   completed: z.boolean().describe("완료 상태 (true: 완료, false: 미완료)"),

@@ -5,14 +5,12 @@ import { TODO_SERIES_LIMITS } from "../../../vocabulary/todo.constants.js";
 import {
   DAYS_OF_WEEK,
   TODO_EDIT_SCOPES,
-  TODO_REPEAT_FREQUENCIES,
   TODO_UPDATE_SCOPES,
   TODO_VISIBILITIES,
 } from "../../../vocabulary/todo.types.js";
 export const todoVisibilitySchema = z.enum(TODO_VISIBILITIES);
 export const dayOfWeekSchema = z.enum(DAYS_OF_WEEK);
 
-export const todoRepeatFrequencySchema = z.enum(TODO_REPEAT_FREQUENCIES);
 export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 

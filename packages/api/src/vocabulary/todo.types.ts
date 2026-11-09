@@ -11,7 +11,6 @@ export const TODO_REPEAT_INTERVALS = [1, 2] as const;
 export type TodoRepeatInterval = (typeof TODO_REPEAT_INTERVALS)[number];
 
 export const TODO_REPEAT_END_TYPES = ["NEVER", "UNTIL", "COUNT"] as const;
-export type TodoRepeatEndType = (typeof TODO_REPEAT_END_TYPES)[number];
 
 export const TODO_EDIT_SCOPES = ["THIS_ONLY", "THIS_AND_FOLLOWING", "ALL"] as const;
 export type TodoEditScope = (typeof TODO_EDIT_SCOPES)[number];

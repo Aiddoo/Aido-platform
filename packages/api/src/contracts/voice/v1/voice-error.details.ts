@@ -15,8 +15,6 @@ export const voiceNoteTooLongErrorDetailsSchema = quotaErrorDetailsSchema
   })
   .describe("녹음 길이 초과 상세 (차감 없음 + 글자 수 + 현재 한도)");
 
-export type VoiceNoteTooLongErrorDetails = z.infer<typeof voiceNoteTooLongErrorDetailsSchema>;
-
 /** AI_1315 공개 상세 */
 export const actionPlanRejectedErrorDetailsSchema = z
   .object({
@@ -27,5 +25,3 @@ export const actionPlanRejectedErrorDetailsSchema = z
       .describe("CATEGORY_NOT_OWNED일 때 내 카테고리가 아닌 id"),
   })
   .describe("계획 저장 거절 상세");
-
-export type ActionPlanRejectedErrorDetails = z.infer<typeof actionPlanRejectedErrorDetailsSchema>;

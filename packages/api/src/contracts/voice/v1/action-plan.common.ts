@@ -52,9 +52,7 @@ export const plannedMemoActionSchema = z.object({
     .describe(`메모 내용 (최대 ${MEMO_LIMITS.MAX_CONTENT_LENGTH}자)`),
 });
 
-export type PlannedMemoAction = z.infer<typeof plannedMemoActionSchema>;
-
-export const plannedTodoActionSchema = z.object({
+const plannedTodoActionSchema = z.object({
   ...plannedTodoFields,
   categoryId: z
     .number()
@@ -69,8 +67,6 @@ export const plannedTodoActionSchema = z.object({
     .nullable()
     .describe("이미 있는 같은 할 일의 id. 있으면 앱은 기본으로 선택하지 않는다"),
 });
-
-export type PlannedTodoAction = z.infer<typeof plannedTodoActionSchema>;
 
 export const plannedActionSchema = z.discriminatedUnion("type", [
   plannedTodoActionSchema,

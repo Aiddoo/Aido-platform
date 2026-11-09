@@ -9,13 +9,13 @@ import {
   type PlanFeature,
 } from "../../../vocabulary/plan-catalog.constants.js";
 
-export const planFeatureSchema = z.enum(PLAN_FEATURE_KEYS).describe("PLAN_CATALOG 기능 키");
+const planFeatureSchema = z.enum(PLAN_FEATURE_KEYS).describe("PLAN_CATALOG 기능 키");
 
 export const accessTierSchema = z
   .enum(ACCESS_TIERS)
   .describe("권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 모든 기능 무제한)");
 
-export const featurePerUseLimitSchema = z
+const featurePerUseLimitSchema = z
   .object({
     maxSeconds: z
       .number()
@@ -99,7 +99,6 @@ export const featureQuotaSchema = z
   });
 
 export type FeatureQuota = z.infer<typeof featureQuotaSchema>;
-export type FeaturePerUseLimit = z.infer<typeof featurePerUseLimitSchema>;
 
 const featureQuotasShape = {
   AI_PARSE: featureQuotaSchema,

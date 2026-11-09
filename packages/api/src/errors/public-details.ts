@@ -40,8 +40,6 @@ export const friendQuotaErrorDetailsSchema = quotaErrorDetailsSchema
   .extend(friendLimitErrorDetailsSchema.shape)
   .describe("친구 한도 초과 상세 (current·limit + 차감 없음 + 현재 한도)");
 
-export type FriendQuotaErrorDetails = z.infer<typeof friendQuotaErrorDetailsSchema>;
-
 // 운영 응답에는 여기 등록한 코드의 검증된 필드만 싣고 나머지 details는 숨긴다
 const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.TODO_0841]: todoSeriesNotFoundErrorDetailsSchema,

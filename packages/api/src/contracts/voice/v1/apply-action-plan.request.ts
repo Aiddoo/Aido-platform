@@ -5,7 +5,7 @@ import { ACTION_PLAN_SOURCES } from "../../../vocabulary/voice.constants.js";
 import { plannedMemoActionSchema, plannedTodoFields } from "./action-plan.common.js";
 
 /** 저장할 때는 카테고리가 정해져 있어야 한다. 앱이 AI가 고르지 못한 할 일에 현재 카테고리를 넣어 보낸다. */
-export const applyTodoActionSchema = z
+const applyTodoActionSchema = z
   .object({
     ...plannedTodoFields,
     categoryId: z.number().int().positive().describe("저장할 카테고리 id"),
@@ -19,9 +19,7 @@ export const applyTodoActionSchema = z
     path: ["endDate"],
   });
 
-export type ApplyTodoAction = z.infer<typeof applyTodoActionSchema>;
-
-export const applyActionSchema = z.discriminatedUnion("type", [
+const applyActionSchema = z.discriminatedUnion("type", [
   applyTodoActionSchema,
   plannedMemoActionSchema,
 ]);

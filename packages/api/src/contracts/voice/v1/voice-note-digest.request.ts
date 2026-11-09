@@ -3,13 +3,11 @@ import { z } from "zod";
 import { ACTION_PLAN_LIMITS } from "../../../vocabulary/ai.constants.js";
 import { PLAN_CATALOG } from "../../../vocabulary/plan-catalog.constants.js";
 
-export const voiceNoteSegmentSchema = z.object({
+const voiceNoteSegmentSchema = z.object({
   startMs: z.number().int().nonnegative().describe("녹음 시작부터 이 문장까지의 시간 (밀리초)"),
   text: z.string().min(1).describe("기기가 전사한 문장"),
   isBookmarked: z.boolean().describe("녹음 중 중요 표시를 했는지"),
 });
-
-export type VoiceNoteSegment = z.infer<typeof voiceNoteSegmentSchema>;
 
 /**
  * 글자 상한은 등급마다 달라 요청 schema가 아니라 서버 정책이 막는다(AI_1312).

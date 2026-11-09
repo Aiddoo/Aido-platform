@@ -22,7 +22,7 @@ export const QUOTA_CHARGE_STATUSES = ["RESERVED", "COMMITTED", "REFUNDED"] as co
 export type QuotaChargeStatus = (typeof QUOTA_CHARGE_STATUSES)[number];
 
 /** 등급별 값. 무료와 프리미엄 둘이고 ADMIN은 서버 정책이 무제한으로 연다. */
-export interface PlanTierValues<T> {
+interface PlanTierValues<T> {
   readonly free: T;
   readonly premium: T;
 }
@@ -31,7 +31,7 @@ export interface PlanTierValues<T> {
  * 기간마다 쓸 수 있는 횟수. premium null은 사용자에게 무제한으로 보이는 한도다.
  * fairUse.premium은 무제한으로 보이는 프리미엄에서도 남용을 막으려고 서버가 집행하는 공정 사용 상한이다.
  */
-export interface PlanQuotaFeature {
+interface PlanQuotaFeature {
   readonly kind: "quota";
   readonly period: PlanQuotaPeriod;
   readonly free: number;
@@ -46,14 +46,14 @@ export interface PlanQuotaFeature {
 }
 
 /** 동시에 가질 수 있는 개수. null은 무제한이다. 보상으로 받은 자리는 서버가 더한다. */
-export interface PlanResourceFeature {
+interface PlanResourceFeature {
   readonly kind: "resource";
   readonly free: number;
   readonly premium: number | null;
 }
 
 /** 켜고 끄는 기능 */
-export interface PlanFlagFeature {
+interface PlanFlagFeature {
   readonly kind: "flag";
   readonly free: boolean;
   readonly premium: boolean;
@@ -61,7 +61,7 @@ export interface PlanFlagFeature {
   readonly clientOnly?: true;
 }
 
-export type PlanFeatureDefinition = PlanQuotaFeature | PlanResourceFeature | PlanFlagFeature;
+type PlanFeatureDefinition = PlanQuotaFeature | PlanResourceFeature | PlanFlagFeature;
 
 /** 출시 앱의 /me.entitlements가 아는 기능 키. 순서는 앱 표시·응답 정렬 순서다. */
 export const PREMIUM_FEATURE_KEYS = [

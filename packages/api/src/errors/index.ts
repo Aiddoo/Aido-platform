@@ -12,16 +12,12 @@ export {
   getErrorsByHttpStatus,
   isErrorCode,
 } from "./utils.js";
-export type { FriendLimitErrorDetails, FriendQuotaErrorDetails } from "./public-details.js";
+export type { FriendLimitErrorDetails } from "./public-details.js";
 export {
   friendLimitErrorDetailsSchema,
   friendQuotaErrorDetailsSchema,
   toPublicErrorDetails,
 } from "./public-details.js";
-export type {
-  NotChargedErrorDetails,
-  QuotaErrorDetails,
-} from "../contracts/entitlement/v1/quota-error.details.js";
 export {
   notChargedErrorDetailsSchema,
   quotaErrorDetailsSchema,
