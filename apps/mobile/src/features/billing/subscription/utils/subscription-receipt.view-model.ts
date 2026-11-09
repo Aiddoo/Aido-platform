@@ -1,5 +1,8 @@
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
-import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
+import {
+  type PremiumAccess,
+  type PremiumPlanType,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { hasInstantPassed, type Instant } from '@src/shared/date/instant';
@@ -8,14 +11,24 @@ import { match } from 'ts-pattern';
 /** 곧 끝난다는 안내를 어느 날로 보일지. 끝나는 날이면 today, 하루 남았으면 tomorrow다 */
 type PremiumEndingNotice = 'tomorrow' | 'today';
 
+/** 자동 갱신되는 연간 구독이 서버 갱신 알림과 같은 날수 안에 결제된다 */
+interface AnnualRenewingNotice {
+  type: 'annualRenewing';
+  daysLeft: number;
+}
+
 /** 체험 끝까지 남은 날과 그날 결제되는지. 결제 여부로 "구독이 시작돼요"/"체험이 끝나요"가 갈린다 */
 interface TrialEndingNotice {
   daysLeft: number;
   willRenew: boolean;
+  /** 체험 뒤 이어질 요금제. 모르면 요금제 없이 "구독"으로 말한다 */
+  planType: PremiumPlanType | null;
 }
 
 export type SubscriptionReceiptRow =
   | { type: 'account' }
+  /** 지금 구독(체험이면 체험 뒤)의 요금제. 모르면 null이고 "구독"으로 보인다 */
+  | { type: 'plan'; planType: PremiumPlanType | null }
   | { type: 'rewardRecord'; endsAt: Instant }
   | { type: 'nextBillingDate'; date: Instant }
   | { type: 'trialEndsOn'; date: Instant }
@@ -34,6 +47,8 @@ export type SubscriptionReceiptRow =
 type SubscriptionReceiptFootnote =
   | { type: 'returnsToFreePlan'; date: Instant }
   | { type: 'rewardStartsAfterSubscription'; days: number }
+  /** 자동 갱신이 꺼져 구독 끝이 정해졌으면 보상이 이어지는 날까지 보인다 */
+  | { type: 'rewardStartsOn'; days: number; date: Instant }
   | { type: 'manageAutoRenewalInStore' }
   | { type: 'cancelTrialInStore' };
 
@@ -49,7 +64,11 @@ interface SubscriptionReceiptContents {
 export type SubscriptionReceiptViewModel =
   | (SubscriptionReceiptContents & { variant: 'admin'; endingNotice: null })
   | (SubscriptionReceiptContents & {
-      variant: 'paid' | 'reward';
+      variant: 'paid';
+      endingNotice: PremiumEndingNotice | AnnualRenewingNotice | null;
+    })
+  | (SubscriptionReceiptContents & {
+      variant: 'reward';
       endingNotice: PremiumEndingNotice | null;
     })
   | (SubscriptionReceiptContents & {
@@ -115,15 +134,23 @@ function toPaidRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow
 
   // 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
   return [
+    { type: 'plan', planType: access.planType },
     toBillingRow(access, periodEndsAt, now),
     { type: 'autoRenewal', willRenew: access.willRenew },
     ...toBankedRows(access, access.willRenew ? null : access.endsAt),
   ];
 }
 
+function toBankedRewardFootnote(access: PremiumAccess): SubscriptionReceiptFootnote {
+  const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+  return startsAt == null
+    ? { type: 'rewardStartsAfterSubscription', days: access.bankedDays }
+    : { type: 'rewardStartsOn', days: access.bankedDays, date: startsAt };
+}
+
 function toPaidFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | null {
   if (PremiumAccessPolicy.hasBankedDays(access)) {
-    return { type: 'rewardStartsAfterSubscription', days: access.bankedDays };
+    return toBankedRewardFootnote(access);
   }
 
   if (access.willRenew) {
@@ -131,6 +158,19 @@ function toPaidFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | nu
   }
 
   return access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt };
+}
+
+/** 이어질 길이 없이 끝나는 안내가 먼저고, 자동 갱신 중인 연간 구독이면 결제 며칠 전에 알린다 */
+function toPaidEndingNotice(
+  access: PremiumAccess,
+  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+): PremiumEndingNotice | AnnualRenewingNotice | null {
+  const endingNotice = toEndingNotice(access, { now, timeZone });
+  if (endingNotice != null) {
+    return endingNotice;
+  }
+  const renewalDaysLeft = PremiumAccessPolicy.getAnnualRenewalDaysLeft(access, now, timeZone);
+  return renewalDaysLeft == null ? null : { type: 'annualRenewing', daysLeft: renewalDaysLeft };
 }
 
 function toPaidReceipt(
@@ -142,7 +182,7 @@ function toPaidReceipt(
     rows: toPaidRows(access, now),
     footnote: toPaidFootnote(access),
     primaryAction: 'manage',
-    endingNotice: toEndingNotice(access, { now, timeZone }),
+    endingNotice: toPaidEndingNotice(access, { now, timeZone }),
   };
 }
 
@@ -166,6 +206,7 @@ function toTrialRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRo
   }
 
   return [
+    { type: 'plan', planType: access.planType },
     { type: 'trialEndsOn', date: periodEndsAt },
     ...toTrialBillingRow(access, periodEndsAt, now),
     { type: 'autoRenewal', willRenew: access.willRenew },
@@ -179,7 +220,7 @@ function toTrialFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | n
     return { type: 'cancelTrialInStore' };
   }
   if (PremiumAccessPolicy.hasBankedDays(access)) {
-    return { type: 'rewardStartsAfterSubscription', days: access.bankedDays };
+    return toBankedRewardFootnote(access);
   }
   return access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt };
 }
@@ -192,7 +233,7 @@ function toTrialEndingNotice(
   if (daysLeft == null || !PremiumAccessPolicy.isTrialEndingSoon(access, now, timeZone)) {
     return null;
   }
-  return { daysLeft, willRenew: access.willRenew };
+  return { daysLeft, willRenew: access.willRenew, planType: access.planType };
 }
 
 function toTrialReceipt(

@@ -9,9 +9,11 @@ import { RestorePurchaseButton } from '@src/features/billing/subscription/compon
 import { SubscriptionOfflineActionsNotice } from '@src/features/billing/subscription/components/subscription-offline-actions-notice';
 import { SubscriptionReceipt } from '@src/features/billing/subscription/components/subscription-receipt';
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
+import { SubscriptionWelcome } from '@src/features/billing/subscription/components/subscription-welcome';
 import { TrialTimeline } from '@src/features/billing/subscription/components/trial-timeline';
 import { BENEFIT_SLIDES } from '@src/features/billing/subscription/constants/subscription.constants';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { SubscriptionPlan } from '@src/features/billing/subscription/domains/subscription.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
@@ -21,11 +23,14 @@ import type { SubscriptionView } from '@src/features/billing/subscription/schema
 import { hasBenefitSlide } from '@src/features/billing/subscription/utils/benefit-slides.view-model';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
+import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   Button,
@@ -47,7 +52,43 @@ import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
+type CheckoutStepContexts = {
+  status: Record<string, never>;
+  welcome: { plan: SubscriptionPlan; purchasedOn: string; hadRewardOnly: boolean };
+};
+
+/** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다 */
 function SubscriptionScreen() {
+  const { trackEvent } = useTrack();
+  const { currentLocalDateKey } = useLocalDate();
+  const stepper = useStepper<CheckoutStepContexts>({
+    id: 'premium-checkout',
+    initial: { step: 'status', context: {} },
+    onStepChange: ({ step }) => trackEvent('checkout_step_viewed', { step }),
+  });
+
+  return stepper.Render({
+    status: ({ history }) => (
+      <SubscriptionScreen.Status
+        onPurchased={({ plan, hadRewardOnly }) =>
+          history.replace('welcome', { plan, purchasedOn: currentLocalDateKey, hadRewardOnly })
+        }
+      />
+    ),
+    welcome: ({ context, history }) => (
+      <SubscriptionScreen.Welcome
+        {...context}
+        onDone={() => (router.canGoBack() ? router.back() : history.replace('status', {}))}
+      />
+    ),
+  });
+}
+
+interface PurchaseFlowProps {
+  onPurchased: (purchase: { plan: SubscriptionPlan; hadRewardOnly: boolean }) => void;
+}
+
+SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const receipt = useSubscriptionReceipt();
   const [{ view }] = useSubscriptionParams();
@@ -60,13 +101,13 @@ function SubscriptionScreen() {
     view,
   })
     .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => (
-      <SubscriptionScreen.Plans />
+      <SubscriptionScreen.Plans onPurchased={onPurchased} />
     ))
     .with({ hasFullAccess: true }, () => <SubscriptionScreen.Receipt />)
     .exhaustive();
-}
+};
 
-SubscriptionScreen.Plans = function Plans() {
+SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
   const { t } = useTranslation('subscription');
   const [{ feature }] = useSubscriptionParams();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
@@ -152,7 +193,46 @@ SubscriptionScreen.Plans = function Plans() {
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <PurchaseButton planId={chosenPlanId} />
+        <PurchaseButton planId={chosenPlanId} onPurchased={onPurchased} />
+      </StyledSafeAreaView>
+    </Box>
+  );
+};
+
+interface WelcomeProps {
+  plan: SubscriptionPlan;
+  purchasedOn: string;
+  hadRewardOnly: boolean;
+  onDone: () => void;
+}
+
+SubscriptionScreen.Welcome = function Welcome({
+  plan,
+  purchasedOn,
+  hadRewardOnly,
+  onDone,
+}: WelcomeProps) {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <Box className="flex-1">
+      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={24} />
+
+          <SubscriptionWelcome
+            plan={plan}
+            purchasedOn={purchasedOn}
+            hadRewardOnly={hadRewardOnly}
+            reminder={TrialReminderToggle}
+          />
+        </StyledSafeAreaView>
+      </ScrollView>
+
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        <Button onPress={onDone} testID="subscription-welcome-done">
+          {t('welcome.done')}
+        </Button>
       </StyledSafeAreaView>
     </Box>
   );

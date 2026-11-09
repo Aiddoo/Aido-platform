@@ -375,3 +375,41 @@ describe('isTrialEndingSoon', () => {
     expect(daysLeft).toBeNull();
   });
 });
+
+describe('getBankedRewardStartsAt', () => {
+  const PERIOD_ENDS_AT = toInstant('2026-12-09T00:00:00.000Z');
+
+  it('해지한 구독 뒤에 보상이 있으면 구독이 끝나는 순간부터 이어진다', () => {
+    // Given
+    const access = createPremiumAccess({
+      source: 'STORE',
+      willRenew: false,
+      bankedDays: 14,
+      periodEndsAt: PERIOD_ENDS_AT,
+    });
+
+    // When
+    const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+
+    // Then
+    expect(startsAt).toBe(PERIOD_ENDS_AT);
+  });
+
+  it.each([
+    ['자동 갱신 중이면 구독 끝이 정해지지 않아', { willRenew: true, bankedDays: 14 }],
+    ['이어서 받을 보상이 없으면', { willRenew: false, bankedDays: 0 }],
+  ] as const)('%s 시작일이 없다', (_case, overrides) => {
+    // Given
+    const access = createPremiumAccess({
+      source: 'STORE',
+      periodEndsAt: PERIOD_ENDS_AT,
+      ...overrides,
+    });
+
+    // When
+    const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+
+    // Then
+    expect(startsAt).toBeNull();
+  });
+});

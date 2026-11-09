@@ -1,4 +1,7 @@
-import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
+import {
+  PremiumAccessPolicy,
+  type PremiumPlanType,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -19,17 +22,32 @@ type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 function Ending({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();
+  const toDaysLeftBadge = (daysLeft: number) =>
+    match(daysLeft)
+      .with(0, () => t('endingNotice.badgeToday'))
+      .with(1, () => t('endingNotice.badgeTomorrow'))
+      .otherwise((days) => t('endingNotice.badgeDaysLeft', { days }));
 
   // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
   const notice = match(receipt)
     .with({ endingNotice: null }, () => null)
     .with({ variant: 'trial', endingNotice: P.nonNullable }, ({ endingNotice }) => ({
-      badge: match(endingNotice.daysLeft)
-        .with(0, () => t('endingNotice.badgeToday'))
-        .with(1, () => t('endingNotice.badgeTomorrow'))
-        .otherwise((days) => t('endingNotice.badgeDaysLeft', { days })),
-      message: t(getTrialEndingMessageKey(endingNotice), { days: endingNotice.daysLeft }),
+      badge: toDaysLeftBadge(endingNotice.daysLeft),
+      message: t(getTrialEndingMessageKey(endingNotice), {
+        days: endingNotice.daysLeft,
+        plan: t(PLAN_NAME_KEYS[endingNotice.planType ?? 'unknown']),
+      }),
     }))
+    .with(
+      { variant: 'paid', endingNotice: { type: 'annualRenewing' } },
+      ({ endingNotice: { daysLeft } }) => ({
+        badge: toDaysLeftBadge(daysLeft),
+        message: match(daysLeft)
+          .with(0, () => t('endingNotice.annualRenewingToday'))
+          .with(1, () => t('endingNotice.annualRenewingTomorrow'))
+          .otherwise((days) => t('endingNotice.annualRenewing', { days })),
+      }),
+    )
     .with({ variant: 'paid', endingNotice: 'today' }, () => ({
       badge: t('endingNotice.badgeToday'),
       message: t('endingNotice.paidToday'),
@@ -70,6 +88,12 @@ function Ending({ className }: PremiumNoticeProps) {
     />
   );
 }
+
+const PLAN_NAME_KEYS = {
+  annual: 'endingNotice.plan.annual',
+  monthly: 'endingNotice.plan.monthly',
+  unknown: 'endingNotice.plan.unknown',
+} as const satisfies Record<PremiumPlanType | 'unknown', string>;
 
 type TrialEndingNotice = NonNullable<
   Extract<SubscriptionReceiptViewModel, { variant: 'trial' }>['endingNotice']

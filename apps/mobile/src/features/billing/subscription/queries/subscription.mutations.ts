@@ -38,16 +38,19 @@ export function usePurchaseMutationOptions() {
   return mutationOptions({
     // 오프라인 동안 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다(화면은 오프라인이면 버튼을 잠근다)
     networkMode: 'always',
-    // 결제 전 출처를 기억해 둔다. 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없다
-    onMutate: () => ({ previousAccess: getCachedMe(queryClient)?.premiumAccess }),
     // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
     mutationFn: async ({ identifier }: PurchaseVariables) => {
+      // 반영된 뒤에는 출처가 STORE라 보상 기간 중 결제였는지 결제 전에 읽어 둔다
+      const previousAccess = getCachedMe(queryClient)?.premiumAccess;
+      const hadRewardOnly =
+        previousAccess != null && PremiumAccessPolicy.isGrantOnly(previousAccess);
       const hasStoreEntitlement = unwrap(await subscriptionService.purchase(identifier));
       const isReflected = hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
 
-      return { isReflected };
+      return { isReflected, hadRewardOnly };
     },
-    onSuccess: ({ isReflected }, plan, context) => {
+    // 성공은 결제 뒤 시작 화면이 알린다. 서버 반영이 늦을 때만 기다려 달라고 따로 알린다
+    onSuccess: ({ isReflected }, plan) => {
       trackEvent('subscription_started', {
         product_id: plan.identifier,
         plan_type: plan.planType,
@@ -56,35 +59,7 @@ export function usePurchaseMutationOptions() {
       haptics.notify('success');
       if (!isReflected) {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
-        return;
       }
-      // 체험인지는 반영된 서버 값으로 본다. 보상 기간 중이었으면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다
-      const currentAccess = getCachedMe(queryClient)?.premiumAccess;
-      const startedTrial = currentAccess != null && PremiumAccessPolicy.isTrial(currentAccess);
-      const hadRewardOnly =
-        context.previousAccess != null && PremiumAccessPolicy.isGrantOnly(context.previousAccess);
-      toast.success(
-        t(
-          match({ startedTrial, hadRewardOnly })
-            .with(
-              { startedTrial: true, hadRewardOnly: true },
-              () => 'subscription:toast.trialStartSuccessWithReward' as const,
-            )
-            .with(
-              { startedTrial: true, hadRewardOnly: false },
-              () => 'subscription:toast.trialStartSuccess' as const,
-            )
-            .with(
-              { startedTrial: false, hadRewardOnly: true },
-              () => 'subscription:toast.purchaseSuccessWithReward' as const,
-            )
-            .with(
-              { startedTrial: false, hadRewardOnly: false },
-              () => 'subscription:toast.purchaseSuccess' as const,
-            )
-            .exhaustive(),
-        ),
-      );
     },
     onError: (error, plan) =>
       match(toSubscriptionActionFailure('purchase', error))

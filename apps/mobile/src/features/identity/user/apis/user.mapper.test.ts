@@ -30,6 +30,7 @@ describe('toUser', () => {
         isTrial: false,
         bankedDays: 5,
         grantEndedAt: null,
+        planType: null,
       },
     ],
     [
@@ -43,6 +44,7 @@ describe('toUser', () => {
         isTrial: false,
         bankedDays: 7,
         grantEndedAt: null,
+        planType: null,
       },
     ],
     [
@@ -56,6 +58,7 @@ describe('toUser', () => {
         isTrial: false,
         bankedDays: 0,
         grantEndedAt: toInstant('2028-03-04T04:00:00.000Z'),
+        planType: null,
       },
     ],
   ] as const)('%s', (_case, dto, expected) => {

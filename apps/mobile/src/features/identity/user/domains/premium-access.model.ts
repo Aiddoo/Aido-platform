@@ -1,5 +1,6 @@
 import {
   PREMIUM_GRANT_ENDING_NOTICE_DAYS,
+  PREMIUM_RENEWAL_NOTICE_DAYS,
   PREMIUM_SOURCE,
   PREMIUM_TRIAL_ENDING_NOTICE_DAYS,
 } from '@aido/api/vocabulary';
@@ -11,6 +12,9 @@ import {
   toEpochMs,
 } from '@src/shared/date/instant';
 import { z } from 'zod';
+
+const premiumPlanTypeSchema = z.enum(['annual', 'monthly']);
+export type PremiumPlanType = z.infer<typeof premiumPlanTypeSchema>;
 
 export const premiumAccessSchema = z.object({
   source: z.enum(PREMIUM_SOURCE).nullable(),
@@ -25,6 +29,8 @@ export const premiumAccessSchema = z.object({
   bankedDays: z.int().nonnegative(),
   /** 프리미엄이 아닐 때 최근 PREMIUM_GRANT_ENDED_WINDOW_DAYS일 안에 끝난 마지막 보상 기간의 끝. 그 뒤로는 서버가 null로 보낸다 */
   grantEndedAt: instantSchema.nullable(),
+  /** 지금 기간을 정하는 스토어 구독의 요금제(체험이면 체험 뒤 요금제). 모르거나 저장해 둔 옛 캐시에 없으면 null이다 */
+  planType: premiumPlanTypeSchema.nullable().default(null),
 });
 export type PremiumAccess = z.infer<typeof premiumAccessSchema>;
 
@@ -105,6 +111,26 @@ function isTrialEndingSoon(
   );
 }
 
+/** 자동 갱신되는 연간 구독이 서버 갱신 알림과 같은 날수 안에 결제될 때 남은 달력 일수. 그 밖에는 null이다 */
+function getAnnualRenewalDaysLeft(
+  access: Pick<PremiumAccess, 'source' | 'isTrial' | 'willRenew' | 'planType' | 'periodEndsAt'>,
+  now: Instant,
+  timeZone: string,
+) {
+  if (
+    !isStoreSubscribed(access) ||
+    isTrial(access) ||
+    !access.willRenew ||
+    access.planType !== 'annual' ||
+    access.periodEndsAt == null ||
+    hasInstantPassed(access.periodEndsAt, now)
+  ) {
+    return null;
+  }
+  const daysLeft = calculateCalendarDaysLeft(access.periodEndsAt, now, timeZone);
+  return isWithinNoticeDays(daysLeft, PREMIUM_RENEWAL_NOTICE_DAYS) ? daysLeft : null;
+}
+
 /** 무료 페이월에서 "초대 보상 프리미엄이 끝났어요"를 붙일 시각. 아직 프리미엄이면 null이다 */
 function getRecentGrantEndedAt(access: Pick<PremiumAccess, 'source' | 'grantEndedAt'>) {
   return access.source == null ? access.grantEndedAt : null;
@@ -120,6 +146,16 @@ function hasEndedSince(
     (endsAt) =>
       endsAt != null && !hasInstantPassed(endsAt, lastCheckedAt) && hasInstantPassed(endsAt, now),
   );
+}
+
+/** 초대 보상은 지금 구독(체험 포함)이 끝나는 순간부터 이어진다. 자동 갱신 중이면 끝이 정해지지 않아 시작일도 없다 */
+function getBankedRewardStartsAt(
+  access: Pick<PremiumAccess, 'bankedDays' | 'willRenew' | 'periodEndsAt'>,
+) {
+  if (!hasBankedDays(access) || access.willRenew || access.periodEndsAt == null) {
+    return null;
+  }
+  return access.periodEndsAt;
 }
 
 function isSameInstant(a: Instant | null, b: Instant | null) {
@@ -150,4 +186,6 @@ export const PremiumAccessPolicy = {
   getRecentGrantEndedAt,
   hasEndedSince,
   hasChanged,
+  getBankedRewardStartsAt,
+  getAnnualRenewalDaysLeft,
 } as const;

@@ -1,3 +1,4 @@
+import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -37,10 +38,12 @@ export function SubscriptionReceipt() {
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
   const premium = getPremiumBenefitAmounts();
-  const firstBillingPrice = useFirstBillingPrice(
-    rows.some((row) => row.type === 'firstBillingDate'),
+  const planPrices = usePlanPrices(
+    rows.some((row) => row.type === 'firstBillingDate' || row.type === 'plan'),
   );
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
+  const trialPlanType =
+    rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PremiumPlanType);
   // 스토어 구독(체험 포함)의 결제일은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
   const receiptDateLabel = variant === 'paid' || variant === 'trial' ? 'fullDate' : 'monthDay';
   const formatReceiptDate = (date: Instant) =>
@@ -98,7 +101,8 @@ export function SubscriptionReceipt() {
               key={row.type}
               row={row}
               formatDate={formatReceiptDate}
-              firstBillingPrice={firstBillingPrice}
+              planPrices={planPrices}
+              trialPlanType={trialPlanType}
             />
           ))}
         </VStack>
@@ -111,6 +115,12 @@ export function SubscriptionReceipt() {
               )
               .with({ type: 'rewardStartsAfterSubscription' }, ({ days }) =>
                 t('receipt.footnote.rewardStartsAfterSubscription', { count: days }),
+              )
+              .with({ type: 'rewardStartsOn' }, ({ days, date }) =>
+                t('receipt.footnote.rewardStartsOn', {
+                  count: days,
+                  date: formatReceiptDate(date),
+                }),
               )
               .with({ type: 'manageAutoRenewalInStore' }, () =>
                 t('receipt.footnote.manageAutoRenewalInStore'),
@@ -212,36 +222,43 @@ SubscriptionReceipt.Loading = function Loading() {
 };
 
 /**
- * 서버는 체험 뒤 금액을 몰라 스토어 요금제에서 붙인다. 체험은 연간 요금제에만 두므로(스토어 설정) 연간 가격이다.
- * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜만 보인다
+ * 서버는 금액을 몰라(국가별 스토어 가격) 스토어 요금제에서 붙인다.
+ * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜·요금제 이름만 보인다
  */
-function useFirstBillingPrice(isEnabled: boolean) {
+function usePlanPrices(isEnabled: boolean): Record<PremiumPlanType, string | null> {
   const { t } = useTranslation('subscription');
   const { data: availability } = useQuery({
     ...useGetOfferingsQueryOptions(),
     enabled: isEnabled,
     throwOnError: false,
   });
-  const annualPlan =
-    availability?.status === 'available'
-      ? SubscriptionPolicy.findPlanByType(availability.offering.plans, 'annual')
-      : null;
+  const plans = availability?.status === 'available' ? availability.offering.plans : [];
+  const formatPlanPrice = (planType: PremiumPlanType) => {
+    const plan = SubscriptionPolicy.findPlanByType(plans, planType);
+    return plan == null ? null : t(PLAN_PRICE_LABEL_KEYS[planType], { price: plan.priceString });
+  };
 
-  return annualPlan == null
-    ? null
-    : t(PLAN_PRICE_LABEL_KEYS.annual, { price: annualPlan.priceString });
+  return { annual: formatPlanPrice('annual'), monthly: formatPlanPrice('monthly') };
 }
+
+const PLAN_NAME_KEYS = {
+  annual: 'plan.annual',
+  monthly: 'plan.monthly',
+} as const satisfies Record<PremiumPlanType, string>;
 
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
   formatDate: (date: Instant) => string;
-  firstBillingPrice: string | null;
+  planPrices: Record<PremiumPlanType, string | null>;
+  /** 체험 뒤 첫 결제 금액에 쓸 요금제. 서버가 모르면 체험을 두는 연간이다(스토어 설정) */
+  trialPlanType: PremiumPlanType;
 }
 
 type ReceiptValueTone = 'default' | 'brand' | 'muted';
 
-function ReceiptDetailRow({ row, formatDate, firstBillingPrice }: ReceiptDetailRowProps) {
+function ReceiptDetailRow({ row, formatDate, planPrices, trialPlanType }: ReceiptDetailRowProps) {
   const { t } = useTranslation('subscription');
+  const firstBillingPrice = planPrices[trialPlanType];
   const { label, value, tone } = match<
     SubscriptionReceiptRow,
     { label: string; value: string; tone: ReceiptValueTone }
@@ -256,6 +273,15 @@ function ReceiptDetailRow({ row, formatDate, firstBillingPrice }: ReceiptDetailR
       value: t('receipt.rows.until', { date: formatDate(endsAt) }),
       tone: 'default',
     }))
+    .with({ type: 'plan' }, ({ planType }) => {
+      const price = planType == null ? null : planPrices[planType];
+      const name = t(planType == null ? 'receipt.rows.planUnknown' : PLAN_NAME_KEYS[planType]);
+      return {
+        label: t('receipt.rows.plan'),
+        value: price == null ? name : t('receipt.rows.planWithPrice', { plan: name, price }),
+        tone: 'default',
+      };
+    })
     .with({ type: 'nextBillingDate' }, ({ date }) => ({
       label: t('receipt.rows.nextBillingDate'),
       value: formatDate(date),

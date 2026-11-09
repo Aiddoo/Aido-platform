@@ -19,6 +19,12 @@ export type EntitlementGateSurface =
   | 'reminder_settings'
   | 'voice_note';
 
+/** 결제 직후 시작 화면에서 바로 해 볼 수 있게 둔 기능 */
+export type PremiumQuickstartAction = 'voice_note' | 'ai_report' | 'app_icon';
+
+/** 구독 화면 단계. status는 요금제·영수증, welcome은 결제 직후 시작 화면이다 */
+export type CheckoutStep = 'status' | 'welcome';
+
 /** precheck: 시작 전에 남은 횟수 0을 보고 막았다 · server: 서버가 한도 오류로 막았다 */
 export type LimitReachedTrigger = 'precheck' | 'server';
 
@@ -51,6 +57,10 @@ declare module '@src/shared/analytics/event-map' {
     paywall_viewed: { view: SubscriptionView; feature?: PremiumGateAnalyticsFeature };
     /** 사용자가 고른 요금제를 바꿨다. 처음 골라 둔 연간은 세지 않는다 */
     paywall_plan_selected: { plan_type: PlanType; is_trial: boolean };
+    /** 구독 화면의 단계를 보였다. 결제 뒤 시작 화면까지 가는 비율을 본다 */
+    checkout_step_viewed: { step: CheckoutStep };
+    /** 결제 직후 시작 화면에서 바로 해 볼 기능을 눌렀다 */
+    premium_quickstart_tapped: { action: PremiumQuickstartAction };
     /** 페이월 혜택 장을 보였다. `index`는 "혜택 N" 칩 번호(1부터)이고 페이월마다 장별로 한 번이다 */
     paywall_benefit_viewed: { feature: PremiumGateAnalyticsFeature; index: number };
     /** 비교표에서 기능 이름을 눌러 설명을 열었다 */

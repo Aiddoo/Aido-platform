@@ -17,6 +17,7 @@ export function createPremiumAccess(overrides?: Partial<PremiumAccess>): Premium
     isTrial: false,
     bankedDays: 0,
     grantEndedAt: null,
+    planType: null,
     ...overrides,
   };
 }

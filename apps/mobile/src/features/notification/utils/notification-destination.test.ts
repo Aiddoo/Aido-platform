@@ -556,3 +556,22 @@ describe('펼친 화면 할 일 알림의 목록 pane', () => {
     });
   });
 });
+
+describe('연간 구독 갱신 7일 전 알림', () => {
+  // 서버 전용 PREMIUM_RENEWAL_UPCOMING은 SYSTEM_NOTICE로 오고, 새 앱은 navigation을, 구 앱은 deep link를 읽는다
+  const RENEWAL_ACTION = { type: 'DEEP_LINK', url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION } as const;
+
+  it.each([
+    ['새 앱은 navigation SUBSCRIPTION으로', { navigation: { kind: 'SUBSCRIPTION' } } as const],
+    ['구 앱은 공지 deep link로', {}],
+  ])('%s 구독 영수증 화면을 연다', (_case, navigation) => {
+    // When
+    const result = resolveNotificationDestination(
+      { type: 'SYSTEM_NOTICE', action: RENEWAL_ACTION, ...navigation },
+      COMPACT,
+    );
+
+    // Then
+    expect(result).toEqual({ kind: 'route', href: { pathname: '/settings/subscription' } });
+  });
+});

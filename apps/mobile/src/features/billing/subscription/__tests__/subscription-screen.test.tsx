@@ -9,6 +9,7 @@ import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premi
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { type User, userSchema } from '@src/features/identity/user/domains/user.model';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import {
   createAnalyticsStub,
@@ -68,6 +69,8 @@ const ANNUAL_WITH_FREE_TRIAL: PurchaseOffering = {
 interface ScreenState {
   tier: AccessTier;
   me: CurrentUserResponse;
+  /** 서버 응답 대신 영속 캐시에서 복원한 내 정보 */
+  restoredMe?: User;
 }
 
 const FREE: ScreenState = {
@@ -118,6 +121,7 @@ function createTrialState({ daysLeft, willRenew }: { daysLeft: number; willRenew
       bankedPremiumDays: 0,
       premiumGrantEndedAt: null,
       premiumIsTrial: true,
+      premiumPlanType: 'ANNUAL',
     }),
   } satisfies ScreenState;
 }
@@ -143,7 +147,7 @@ async function renderSubscriptionScreen(
   });
   queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), toPreference(createPreferenceDto()));
   if (state != null) {
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(state.me));
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), state.restoredMe ?? toUser(state.me));
     queryClient.setQueryData(
       ENTITLEMENT_QUERY_KEYS.snapshot(),
       createEntitlementSnapshot({ tier: state.tier }),
@@ -180,12 +184,13 @@ describe('구독 화면', () => {
   });
 
   it.each([
-    ['결제', PAID, 'subscription-receipt-paid'],
-    ['초대 보상', REWARD, 'subscription-receipt-reward'],
-    ['관리자', ADMIN, 'subscription-receipt-admin'],
+    // 결제 영수증은 요금제 줄에 스토어 가격을 붙이려고 요금제만 읽는다
+    ['결제', PAID, 'subscription-receipt-paid', true],
+    ['초대 보상', REWARD, 'subscription-receipt-reward', false],
+    ['관리자', ADMIN, 'subscription-receipt-admin', false],
   ] as const)(
     '%s 사용자는 구매를 권하지 않고 영수증을 보여 준다',
-    async (_case, state, receiptTestId) => {
+    async (_case, state, receiptTestId, readsPlanPrice) => {
       // Given
       const screenState = state;
 
@@ -194,10 +199,25 @@ describe('구독 화면', () => {
 
       // Then
       expect(await screen.findByTestId(receiptTestId)).toBeTruthy();
-      expect(purchases.getOffering).not.toHaveBeenCalled();
+      expect(purchases.getOffering).toHaveBeenCalledTimes(readsPlanPrice ? 1 : 0);
       expect(screen.queryByTestId('subscription-paywall')).toBeNull();
+      expect(screen.queryByTestId('subscription-purchase')).toBeNull();
     },
   );
+
+  it('저장해 둔 옛 내 정보에 요금제가 없어도 영수증은 요금제 없이 구독으로 보인다', async () => {
+    // Given
+    // 앱 버전이 같은 OTA 뒤에는 요금제 필드가 생기기 전의 /me가 영속 캐시에서 복원된다
+    const { planType: _planType, ...restoredAccess } = toUser(PAID.me).premiumAccess;
+    const restoredMe = userSchema.parse({ ...toUser(PAID.me), premiumAccess: restoredAccess });
+
+    // When
+    await renderSubscriptionScreen({ ...PAID, restoredMe });
+
+    // Then
+    const planRow = await screen.findByTestId('subscription-receipt-row-plan');
+    expect(within(planRow).getByText('구독')).toBeTruthy();
+  });
 
   it('관리자 영수증은 관리자 계정 행만 보이고 구독 버튼이 없다', async () => {
     // Given
@@ -425,6 +445,62 @@ describe('구독 화면', () => {
       );
     expect(purchaseEvents).toEqual(['purchase_cancelled']);
   });
+  describe('결제 뒤 시작 화면', () => {
+    it('체험으로 결제하면 서버 반영이 늦어도 방금 산 요금제로 체험 일정을 보여 주고 반영이 늦는다고 알린다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const { purchases, analytics } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
+      );
+      // 스토어 결제는 끝났지만 권한이 아직 안 보여 서버 반영을 기다리지 못한 경우
+      purchases.purchase.mockResolvedValue({
+        type: 'purchased',
+        status: { activeEntitlements: [] },
+      });
+
+      // When
+      await user.press(await screen.findByRole('button', { name: '1개월 무료로 시작하기' }));
+
+      // Then
+      const welcome = await screen.findByTestId('subscription-welcome');
+      expect(within(welcome).getByText('프리미엄을 시작했어요')).toBeTruthy();
+      expect(within(welcome).getByText(/전까지 모든 기능을 무료로 써요$/)).toBeTruthy();
+      expect(within(welcome).getByText('연 ₩29,900')).toBeTruthy();
+      expect(within(welcome).getByText(/ · 연 ₩29,900$/)).toBeTruthy();
+      expect(
+        await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
+      ).not.toHaveLength(0);
+      expect(analytics.trackEvent).toHaveBeenCalledWith('checkout_step_viewed', {
+        step: 'welcome',
+      });
+    });
+
+    it('체험 없이 월간으로 결제하면 체험 일정 없이 요금제만 보여 준다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const { purchases } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
+      );
+      purchases.purchase.mockResolvedValue({
+        type: 'purchased',
+        status: { activeEntitlements: [] },
+      });
+      await user.press(await screen.findByText('월간 구독'));
+
+      // When
+      await user.press(await screen.findByRole('button', { name: '월간으로 시작하기' }));
+
+      // Then
+      const welcome = await screen.findByTestId('subscription-welcome');
+      expect(within(welcome).getByText('모든 기능을 넉넉하게 써 보세요')).toBeTruthy();
+      expect(within(welcome).getByText('월 ₩3,900')).toBeTruthy();
+      expect(within(welcome).queryByText('첫 결제')).toBeNull();
+      expect(
+        await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
+      ).not.toHaveLength(0);
+    });
+  });
+
   describe('무료 체험', () => {
     it('체험 자격이 있는 연간을 고르면 칩·일정·체험 버튼과 그 아래 결제 고지를 보여 준다', async () => {
       // When
@@ -573,6 +649,34 @@ describe('구독 화면', () => {
         expect(within(notice).getByText(message)).toBeTruthy();
       },
     );
+
+    it('자동 갱신되는 연간 구독이 7일 남았으면 갱신 푸시와 같은 문장으로 알린다', async () => {
+      // Given
+      const renewsAt = new Date(Date.now() + 7 * DAY_MS).toISOString();
+      const state: ScreenState = {
+        tier: 'PREMIUM',
+        me: createCurrentUserDto({
+          subscriptionStatus: 'ACTIVE',
+          isPremium: true,
+          premiumSource: 'STORE',
+          premiumEndsAt: renewsAt,
+          premiumPeriodEndsAt: renewsAt,
+          willRenew: true,
+          bankedPremiumDays: 0,
+          premiumGrantEndedAt: null,
+          premiumIsTrial: false,
+          premiumPlanType: 'ANNUAL',
+        }),
+      };
+
+      // When
+      await renderSubscriptionScreen(state);
+
+      // Then
+      const notice = await screen.findByTestId('subscription-ending-notice');
+      expect(within(notice).getByText('D-7')).toBeTruthy();
+      expect(within(notice).getByText('7일 뒤 연간 구독이 갱신돼요')).toBeTruthy();
+    });
 
     it('체험이 4일 넘게 남았으면 끝남 안내를 보이지 않는다', async () => {
       // Given

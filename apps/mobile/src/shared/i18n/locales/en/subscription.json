@@ -21,15 +21,11 @@
     "year_other": "{{count}} years"
   },
   "toast": {
-    "purchaseSuccess": "You're subscribed!",
     "purchaseSyncPending": "It may take a moment for your payment to show up",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
-    "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
-    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is",
-    "trialStartSuccess": "Your free trial has started!",
-    "trialStartSuccessWithReward": "Your free trial has started. Your remaining invite reward continues after your subscription ends"
+    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
   "benefits": {
     "aiParsing": {
@@ -123,12 +119,20 @@
     "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
     "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going",
     "badgeDaysLeft": "In {{days}} days",
-    "trialRenewing": "Your annual plan starts in {{days}} days",
-    "trialRenewingTomorrow": "Your annual plan starts tomorrow",
-    "trialRenewingToday": "Your annual plan starts today",
+    "trialRenewing": "Your {{plan}} starts in {{days}} days",
+    "trialRenewingTomorrow": "Your {{plan}} starts tomorrow",
+    "trialRenewingToday": "Your {{plan}} starts today",
     "trialCancelled": "Your free trial ends in {{days}} days",
     "trialCancelledTomorrow": "Your free trial ends tomorrow",
-    "trialCancelledToday": "Your free trial ends today"
+    "trialCancelledToday": "Your free trial ends today",
+    "annualRenewing": "Your annual plan renews in {{days}} days",
+    "annualRenewingTomorrow": "Your annual plan renews tomorrow",
+    "annualRenewingToday": "Your annual plan renews today",
+    "plan": {
+      "annual": "annual plan",
+      "monthly": "monthly plan",
+      "unknown": "subscription"
+    }
   },
   "receipt": {
     "paid": {
@@ -148,6 +152,9 @@
       "description": "All features unlocked"
     },
     "rows": {
+      "plan": "Plan",
+      "planUnknown": "Subscription",
+      "planWithPrice": "{{plan}} · {{price}}",
       "account": "Account",
       "accountAdmin": "Admin",
       "rewardRecord": "Invite reward record",
@@ -175,7 +182,9 @@
       "rewardStartsAfterSubscription_one": "When your subscription ends, your {{count}} reward day starts",
       "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
       "manageAutoRenewalInStore": "You can change auto-renew in your store settings",
-      "cancelTrialInStore": "Cancel in your store subscription settings before the trial ends and you won't be charged"
+      "cancelTrialInStore": "Cancel in your store subscription settings before the trial ends and you won't be charged",
+      "rewardStartsOn_one": "When your subscription ends on {{date}}, your {{count}}-day reward starts",
+      "rewardStartsOn_other": "When your subscription ends on {{date}}, your {{count}}-day reward starts"
     }
   },
   "failure": {
@@ -323,5 +332,32 @@
         "term": "Pick a cat icon for your home screen."
       }
     }
+  },
+  "welcome": {
+    "title": "You're on Premium",
+    "subtitle": "Enjoy every feature with room to spare",
+    "subtitleTrial": "Use every feature free until {{date}}",
+    "done": "Done",
+    "rows": {
+      "plan": "Plan",
+      "reminder": "Reminder",
+      "firstCharge": "First charge"
+    },
+    "quickstart": {
+      "title": "Try these first",
+      "voiceNote": {
+        "title": "Record a voice note",
+        "description": "Get a summary and to-dos, even from long recordings"
+      },
+      "aiReport": {
+        "title": "See your AI report",
+        "description": "Check your completion rate and best days and times"
+      },
+      "appIcon": {
+        "title": "Change the app icon",
+        "description": "Pick one of the cat icons"
+      }
+    },
+    "rewardContinues": "Your remaining invite reward continues after your subscription ends"
   }
 }

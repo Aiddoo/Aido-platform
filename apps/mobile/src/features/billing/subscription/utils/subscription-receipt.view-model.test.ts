@@ -39,6 +39,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       expect(result).toEqual({
         variant: 'trial',
         rows: [
+          { type: 'plan', planType: null },
           { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
           { type: 'firstBillingDate', date: TRIAL_ENDS_AT },
           { type: 'autoRenewal', willRenew: true },
@@ -61,7 +62,9 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       expect(result.endingNotice).toEqual(
-        expectedDaysLeft == null ? null : { daysLeft: expectedDaysLeft, willRenew: true },
+        expectedDaysLeft == null
+          ? null
+          : { daysLeft: expectedDaysLeft, willRenew: true, planType: null },
       );
     });
 
@@ -79,11 +82,12 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       expect(result.rows).toEqual([
+        { type: 'plan', planType: null },
         { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
         { type: 'autoRenewal', willRenew: false },
       ]);
       expect(result.footnote).toEqual({ type: 'returnsToFreePlan', date: TRIAL_ENDS_AT });
-      expect(result.endingNotice).toEqual({ daysLeft: 1, willRenew: false });
+      expect(result.endingNotice).toEqual({ daysLeft: 1, willRenew: false, planType: null });
     });
 
     it('체험 끝이 지났는데 결제가 아직 반영되지 않았으면 갱신 확인 중으로 보이고 끝남 안내를 하지 않는다', () => {
@@ -102,7 +106,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       expect(result.variant).toBe('paid');
-      expect(result.rows[0]).toEqual({ type: 'nextBillingDate', date: TRIAL_ENDS_AT });
+      expect(result.rows[1]).toEqual({ type: 'nextBillingDate', date: TRIAL_ENDS_AT });
     });
   });
 
@@ -116,6 +120,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       expect(result).toEqual({
         variant: 'paid',
         rows: [
+          { type: 'plan', planType: null },
           { type: 'nextBillingDate', date: toInstant('2028-03-10T04:00:00.000Z') },
           { type: 'autoRenewal', willRenew: true },
           { type: 'bankedReward', days: 5, endsAt: null },
@@ -155,6 +160,7 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       expect(result.rows).toEqual([
+        { type: 'plan', planType: null },
         { type: 'subscriptionEndsOn', date: toInstant('2028-03-10T04:00:00.000Z') },
         { type: 'autoRenewal', willRenew: false },
         { type: 'bankedReward', days: 7, endsAt: toInstant('2028-03-17T04:00:00.000Z') },
@@ -193,7 +199,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // Then
-      expect(result.rows[0]).toEqual({ type: 'renewalPending' });
+      expect(result.rows[1]).toEqual({ type: 'renewalPending' });
     });
 
     it('자동 갱신 결제 예정 시각 1분 전에는 다음 결제일을 그대로 보인다', () => {
@@ -203,7 +209,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // Then
-      expect(result.rows[0]).toEqual({
+      expect(result.rows[1]).toEqual({
         type: 'nextBillingDate',
         date: toInstant('2028-03-10T04:00:00.000Z'),
       });
@@ -338,6 +344,68 @@ describe('toSubscriptionReceiptViewModel', () => {
       ]);
       expect(result.endingNotice).toBeNull();
       expect(result.primaryAction).toBeNull();
+    });
+  });
+
+  describe('요금제와 갱신 안내', () => {
+    // 3월 10일 13:00 KST에 자동 갱신되는 구독
+    const RENEWS_AT = '2028-03-10T04:00:00.000Z';
+
+    function createRenewingMe(overrides: Partial<CurrentUserResponse> = {}): CurrentUserResponse {
+      return {
+        ...PREMIUM_ME_EXAMPLES.buyDuringReward,
+        bankedPremiumDays: 0,
+        premiumEndsAt: RENEWS_AT,
+        premiumPlanType: 'ANNUAL',
+        ...overrides,
+      };
+    }
+
+    it.each([
+      ['서버가 연간이라고 보내면 연간', 'ANNUAL', 'annual'],
+      ['서버가 월간이라고 보내면 월간', 'MONTHLY', 'monthly'],
+      ['구버전 서버나 모르는 상품이라 없으면 요금제 없이', undefined, null],
+    ] as const)('%s 요금제 줄을 보인다', (_case, premiumPlanType, planType) => {
+      // When
+      const result = createReceipt(createRenewingMe({ premiumPlanType }));
+
+      // Then
+      expect(result.rows[0]).toEqual({ type: 'plan', planType });
+    });
+
+    it.each([
+      ['7일 전이면 갱신 7일 전으로 알린다', '2028-03-03T03:00:00Z', 7],
+      ['하루 전이면 D-1로 알린다', '2028-03-09T03:00:00Z', 1],
+    ] as const)('자동 갱신되는 연간 구독은 %s', (_case, now, daysLeft) => {
+      // When
+      const result = createReceipt(createRenewingMe(), { now: toInstant(now) });
+
+      // Then
+      expect(result.endingNotice).toEqual({ type: 'annualRenewing', daysLeft });
+    });
+
+    it.each([
+      ['8일 전이면', createRenewingMe(), '2028-03-02T03:00:00Z'],
+      ['월간이면', createRenewingMe({ premiumPlanType: 'MONTHLY' }), '2028-03-09T03:00:00Z'],
+      ['요금제를 모르면', createRenewingMe({ premiumPlanType: null }), '2028-03-09T03:00:00Z'],
+    ] as const)('%s 갱신 안내를 하지 않는다', (_case, me, now) => {
+      // When
+      const result = createReceipt(me, { now: toInstant(now) });
+
+      // Then
+      expect(result.endingNotice).toBeNull();
+    });
+
+    it('자동 갱신을 끄고 보상이 쌓여 있으면 구독이 끝나는 날부터 보상이 이어진다고 안내한다', () => {
+      // When
+      const result = createReceipt(PREMIUM_ME_EXAMPLES.cancelledWithBanked);
+
+      // Then
+      expect(result.footnote).toEqual({
+        type: 'rewardStartsOn',
+        days: 7,
+        date: toInstant('2028-03-10T04:00:00.000Z'),
+      });
     });
   });
 });

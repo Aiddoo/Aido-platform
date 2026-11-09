@@ -16,18 +16,12 @@ import {
 } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { act, screen } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { usePurchaseMutationOptions } from './subscription.mutations';
 
-const TOAST = {
-  trial: i18n.t('subscription:toast.trialStartSuccess'),
-  trialWithReward: i18n.t('subscription:toast.trialStartSuccessWithReward'),
-  paid: i18n.t('subscription:toast.purchaseSuccess'),
-  paidWithReward: i18n.t('subscription:toast.purchaseSuccessWithReward'),
-  syncPending: i18n.t('subscription:toast.purchaseSyncPending'),
-};
+const SYNC_PENDING_TOAST = i18n.t('subscription:toast.purchaseSyncPending');
 
 type PurchasePlan = Pick<SubscriptionPlan, 'identifier' | 'planType' | 'freeTrial'>;
 
@@ -101,83 +95,71 @@ async function renderPurchase({
         result.current.mutate(plan);
       });
     },
+    getResult: () => result.current.data,
   };
 }
 
-describe('결제 성공 안내', () => {
+describe('결제 성공', () => {
   setupFakeTimersPerTest();
 
-  it('무료 사용자가 체험을 시작하면 체험 시작만 알린다', async () => {
+  it.each([
+    [
+      '무료 사용자가 체험을 시작하면',
+      FREE_ME,
+      createStoreMe({ isTrial: true, bankedDays: 0 }),
+      ANNUAL_TRIAL_PLAN,
+      false,
+    ],
+    [
+      '무료 사용자가 바로 결제하면',
+      FREE_ME,
+      createStoreMe({ isTrial: false, bankedDays: 0 }),
+      ANNUAL_PLAN,
+      false,
+    ],
+    [
+      '초대 보상 기간에 체험을 시작하면',
+      REWARD_ME,
+      createStoreMe({ isTrial: true, bankedDays: 5 }),
+      ANNUAL_TRIAL_PLAN,
+      true,
+    ],
+    [
+      '초대 보상 기간에 바로 결제하면',
+      REWARD_ME,
+      PREMIUM_ME_EXAMPLES.buyDuringReward,
+      ANNUAL_PLAN,
+      true,
+    ],
+  ] as const)(
+    '%s 시작 화면이 알리므로 토스트 없이 보상이 이어지는지만 돌려준다',
+    async (_case, previousMe, serverMe, plan, hadRewardOnly) => {
+      // Given
+      const { purchase, getResult } = await renderPurchase({ previousMe, serverMe });
+
+      // When
+      await purchase(plan);
+
+      // Then
+      await waitFor(() => expect(getResult()).toEqual({ isReflected: true, hadRewardOnly }));
+      expect(screen.queryByText(SYNC_PENDING_TOAST)).toBeNull();
+    },
+  );
+
+  it('서버가 끝내 결제를 반영하지 못하면 반영을 기다린다고 알린다', async () => {
     // Given
-    const { purchase } = await renderPurchase({
+    const { purchase, getResult } = await renderPurchase({
       previousMe: FREE_ME,
-      serverMe: createStoreMe({ isTrial: true, bankedDays: 0 }),
+      serverMe: FREE_ME,
     });
-
-    // When
-    await purchase(ANNUAL_TRIAL_PLAN);
-
-    // Then
-    expect(await screen.findAllByText(TOAST.trial)).not.toHaveLength(0);
-    expect(screen.queryByText(TOAST.trialWithReward)).toBeNull();
-  });
-
-  it('초대 보상 기간에 체험을 시작하면 남은 보상이 구독 뒤에 이어진다고 함께 알린다', async () => {
-    // Given
-    const { purchase } = await renderPurchase({
-      previousMe: REWARD_ME,
-      serverMe: createStoreMe({ isTrial: true, bankedDays: 5 }),
-    });
-
-    // When
-    await purchase(ANNUAL_TRIAL_PLAN);
-
-    // Then
-    expect(await screen.findAllByText(TOAST.trialWithReward)).not.toHaveLength(0);
-    expect(screen.queryByText(TOAST.trial)).toBeNull();
-  });
-
-  it('무료 사용자가 바로 결제하면 구독 시작만 알린다', async () => {
-    // Given
-    const { purchase } = await renderPurchase({
-      previousMe: FREE_ME,
-      serverMe: createStoreMe({ isTrial: false, bankedDays: 0 }),
-    });
-
-    // When
-    await purchase(ANNUAL_PLAN);
-
-    // Then
-    expect(await screen.findAllByText(TOAST.paid)).not.toHaveLength(0);
-    expect(screen.queryByText(TOAST.trial)).toBeNull();
-  });
-
-  it('초대 보상 기간에 바로 결제하면 남은 보상이 구독 뒤에 이어진다고 함께 알린다', async () => {
-    // Given
-    const { purchase } = await renderPurchase({
-      previousMe: REWARD_ME,
-      serverMe: PREMIUM_ME_EXAMPLES.buyDuringReward,
-    });
-
-    // When
-    await purchase(ANNUAL_PLAN);
-
-    // Then
-    expect(await screen.findAllByText(TOAST.paidWithReward)).not.toHaveLength(0);
-    expect(screen.queryByText(TOAST.trialWithReward)).toBeNull();
-  });
-
-  it('서버가 끝내 결제를 반영하지 못하면 체험이어도 반영을 기다린다고만 알린다', async () => {
-    // Given
-    const { purchase } = await renderPurchase({ previousMe: FREE_ME, serverMe: FREE_ME });
 
     // When
     await purchase(ANNUAL_TRIAL_PLAN);
 
     // Then
     expect(
-      await screen.findAllByText(TOAST.syncPending, {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
+      await screen.findAllByText(SYNC_PENDING_TOAST, {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
     ).not.toHaveLength(0);
-    expect(screen.queryByText(TOAST.trial)).toBeNull();
+    expect(getResult()).toEqual({ isReflected: false, hadRewardOnly: false });
   });
 });
