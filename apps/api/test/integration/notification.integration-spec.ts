@@ -843,7 +843,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       const result = await facade.optOutMarketingPush(`opt-out:${mockUserId}`);
 
       // Then
-      expect(result).toBe(true);
+      expect(result).toEqual({ isOptedOut: true, processedAt: expect.any(Date) });
       expect(
         await client.query.userConsent.findFirst({ where: { userId: mockUserId } }),
       ).toMatchObject({ marketingPushAgreedAt: null });
