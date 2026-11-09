@@ -2,7 +2,6 @@ import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtim
 
 export const MARKETING_CONSENT_RECONFIRM_QUEUE = "notification.marketing-consent-reconfirm.v1";
 export const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
-export type MarketingConsentReconfirmJobData = Record<string, never>;
 
 // 야간 사용자는 건너뛰고 남겨 두므로, 어느 시간대든 낮 시간에 한 번은 돌도록 매시 정각에 돈다.
 // 대상이 없으면 인덱스 조회 한 번으로 끝난다

@@ -109,8 +109,3 @@ export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
     }),
   }),
 ]);
-
-export interface AdminNotificationJobMap {
-  [AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
-  [AdminNotificationJobName.SEND]: AdminNotificationSendData;
-}
