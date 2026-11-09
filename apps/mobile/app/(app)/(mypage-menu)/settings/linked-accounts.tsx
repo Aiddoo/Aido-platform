@@ -1,6 +1,6 @@
 import { LinkedAccountList } from '@src/features/identity/auth/components/linked-account-list';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsScreenLayout, Text } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function LinkedAccountsScreen() {
@@ -12,7 +12,7 @@ export default function LinkedAccountsScreen() {
         {t('linkedAccounts.description')}
       </Text>
 
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={LinkedAccountList.Error}>
         <Suspense fallback={<LinkedAccountList.Loading />}>
           <LinkedAccountList />
         </Suspense>

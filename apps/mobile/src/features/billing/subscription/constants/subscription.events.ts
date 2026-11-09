@@ -19,10 +19,8 @@ export type EntitlementGateSurface =
   | 'reminder_settings'
   | 'voice_note';
 
-/** 결제 직후 시작 화면에서 바로 해 볼 수 있게 둔 기능 */
 export type PremiumQuickstartAction = 'voice_note' | 'ai_report' | 'app_icon';
 
-/** 구독 화면 단계. status는 요금제·영수증, welcome은 결제 직후 시작 화면이다 */
 export type CheckoutStep = 'status' | 'welcome';
 
 /** precheck: 시작 전에 남은 횟수 0을 보고 막았다 · server: 서버가 한도 오류로 막았다 */

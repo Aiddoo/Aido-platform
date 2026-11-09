@@ -2,7 +2,7 @@ import { MarketingConsentSettings } from '@src/features/identity/consent/compone
 import { PushDeliverySettings } from '@src/features/notification/components/settings/push-delivery-settings';
 import { PushPermissionSettings } from '@src/features/notification/components/settings/push-permission-settings';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function PushSettingsScreen() {
@@ -10,20 +10,20 @@ export default function PushSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={PushPermissionSettings.Error}>
         <Suspense fallback={<PushPermissionSettings.Loading />}>
           <PushPermissionSettings />
         </Suspense>
       </QueryErrorBoundary>
 
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={PushDeliverySettings.Error}>
         <Suspense fallback={<PushDeliverySettings.Loading label={t('settings.sections.app')} />}>
           <PushDeliverySettings label={t('settings.sections.app')} />
         </Suspense>
       </QueryErrorBoundary>
 
       {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={MarketingConsentSettings.Error}>
         <Suspense
           fallback={<MarketingConsentSettings.Loading label={t('settings.sections.marketing')} />}
         >

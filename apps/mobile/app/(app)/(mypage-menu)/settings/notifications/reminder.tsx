@@ -8,7 +8,7 @@ export default function ReminderSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={ReminderSettingsScreen.Error}>
         <Suspense fallback={<ReminderSettingsScreen.Loading />}>
           <SettingsListGroup label={t('settings.sections.times')}>
             <ReminderTimeInput
@@ -40,3 +40,5 @@ ReminderSettingsScreen.Loading = function Loading() {
     </SettingsListGroup>
   );
 };
+
+ReminderSettingsScreen.Error = SettingsListGroup.Error;

@@ -2,7 +2,7 @@ import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, IconRadioItem, Text } from '@src/shared/ui';
+import { Box, SettingsListGroup, Text } from '@src/shared/ui';
 import { Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -45,7 +45,7 @@ export function WeatherRescheduleTimeInput({
 }
 
 interface RescheduleTimeOptionProps extends Omit<
-  ComponentProps<typeof IconRadioItem>,
+  ComponentProps<typeof SettingsListGroup.Radio>,
   'value' | 'label' | 'description'
 > {
   option: RescheduleOption;
@@ -67,7 +67,12 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
 
   return (
     <Box>
-      <IconRadioItem value={option.startsAt} label={time} description={description} {...props} />
+      <SettingsListGroup.Radio
+        value={option.startsAt}
+        label={time}
+        description={description}
+        {...props}
+      />
       {option.isRecommended && (
         <Box className="absolute right-14 top-0 h-full justify-center" pointerEvents="none">
           <Chip size="sm" color="accent" variant="soft">

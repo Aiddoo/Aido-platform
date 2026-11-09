@@ -9,7 +9,7 @@ export default function WeatherSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={WeatherSettingsScreen.Error}>
         <Suspense fallback={<WeatherSettingsScreen.Loading />}>
           <SettingsListGroup>
             <WeatherEnabledToggle />
@@ -51,3 +51,5 @@ WeatherSettingsScreen.Loading = function Loading() {
     </>
   );
 };
+
+WeatherSettingsScreen.Error = SettingsListGroup.Error;

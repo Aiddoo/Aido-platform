@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, EditIcon, VStack } from '@src/shared/ui';
+import { Box, EditIcon, VStack, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, SkeletonGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -45,3 +45,5 @@ ProfileAvatarButton.Loading = function Loading() {
     </SkeletonGroup>
   );
 };
+
+ProfileAvatarButton.Error = SettingsListGroup.Error;

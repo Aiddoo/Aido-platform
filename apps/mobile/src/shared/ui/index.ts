@@ -26,7 +26,6 @@ export { FormScrollView, FormStepLayout } from './form-step-layout';
 export { Grid, GridItem } from './grid';
 export { HStack } from './h-stack';
 export { HINT_OFFSET, HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
-export { IconRadioItem } from './icon-radio-item';
 export {
   BellDuoIcon,
   ReminderDuoIcon,

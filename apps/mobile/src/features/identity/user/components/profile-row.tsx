@@ -11,6 +11,7 @@ import {
   Text,
   TextSkeleton,
   VStack,
+  SettingsListGroup,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
@@ -109,3 +110,5 @@ ProfileRow.Loading = function Loading() {
     </HStack>
   );
 };
+
+ProfileRow.Error = SettingsListGroup.Error;

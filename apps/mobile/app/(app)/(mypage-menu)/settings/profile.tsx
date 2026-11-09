@@ -20,14 +20,14 @@ export default function ProfileScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={ProfileAvatarButton.Error}>
         <Suspense fallback={<ProfileAvatarButton.Loading />}>
           <ProfileAvatarButton onPress={() => setIsImageSheetOpen(true)} />
           <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
         </Suspense>
       </QueryErrorBoundary>
 
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={AccountSettingsList.Error}>
         <Suspense fallback={<AccountSettingsList.Loading label={t('sections.account')} />}>
           <AccountSettingsList label={t('sections.account')} />
         </Suspense>

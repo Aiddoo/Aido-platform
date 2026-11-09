@@ -68,7 +68,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### 로딩
 
-`.Item.Loading`·`.Toggle.Loading`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 `fallback={SettingsListGroup.Error}`로 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
+`.Item.Loading`·`.Toggle.Loading`은 실제 행과 높이·여백이 같아 Suspense가 풀릴 때 화면이 밀리지 않아요. 실패는 카드를 그리는 컴포넌트가 `X.Error = SettingsListGroup.Error`로 짝을 두고 화면은 `fallback={X.Error}`로 걸어 카드 자리에 안내(다시 시도 + 문의하기)를 보여요.
 
 ```tsx
 <QueryErrorBoundary fallback={SettingsListGroup.Error}>
@@ -98,15 +98,15 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `ListGroup.Item` props와 같아요(`onPress`, `testID` 등). `disabled` 대신 `isDisabled`를 써요.
 
-| Prop          | Type        | Default | Description                                                                                                                                                                     |
-| ------------- | ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `label`       | `string`    | -       | 항목 제목                                                                                                                                                                       |
-| `description` | `string`    | -       | 제목 아래 보조 설명                                                                                                                                                             |
-| `icon`        | `ReactNode` | -       | 앞 아이콘. 메뉴는 `<SettingsListGroup.Icon Icon={XIcon} />`(옅은 `main` 바탕 30 + 선 아이콘 18, 글꼴 배율을 따른다). 선 아이콘(`ic_x.svg`)을 쓰고 채움(`_filled`)은 쓰지 않는다 |
-| `value`       | `ReactNode` | -       | 화살표 앞에 두는 현재 값                                                                                                                                                        |
-| `right`       | `ReactNode` | 화살표  | 오른쪽 전체를 바꿀 때                                                                                                                                                           |
-| `isSelected`  | `boolean`   | `false` | 넓은 화면의 선택 표시                                                                                                                                                           |
-| `isDisabled`  | `boolean`   | `false` | 누를 수 없음                                                                                                                                                                    |
+| Prop          | Type        | Default | Description                                                                                                                                               |
+| ------------- | ----------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`       | `string`    | -       | 항목 제목                                                                                                                                                 |
+| `description` | `string`    | -       | 제목 아래 보조 설명                                                                                                                                       |
+| `icon`        | `ReactNode` | -       | 앞 아이콘. 메뉴는 `<SettingsListGroup.Icon Icon={XDuoIcon} />`(옅은 `main` 바탕 30 + 듀오톤 아이콘 18, 글꼴 배율을 따른다). 듀오톤(`ic_duo_x.svg`)을 쓴다 |
+| `value`       | `ReactNode` | -       | 화살표 앞에 두는 현재 값                                                                                                                                  |
+| `right`       | `ReactNode` | 화살표  | 오른쪽 전체를 바꿀 때                                                                                                                                     |
+| `isSelected`  | `boolean`   | `false` | 넓은 화면의 선택 표시                                                                                                                                     |
+| `isDisabled`  | `boolean`   | `false` | 누를 수 없음                                                                                                                                              |
 
 ### SettingsListGroup.Item.Loading
 
@@ -119,10 +119,11 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요.
 
-| Prop          | Type     | Default | Description         |
-| ------------- | -------- | ------- | ------------------- |
-| `label`       | `string` | -       | 토글 제목           |
-| `description` | `string` | -       | 제목 아래 보조 설명 |
+| Prop          | Type        | Default | Description                                                            |
+| ------------- | ----------- | ------- | ---------------------------------------------------------------------- |
+| `label`       | `string`    | -       | 토글 제목                                                              |
+| `description` | `string`    | -       | 제목 아래 보조 설명                                                    |
+| `icon`        | `ReactNode` | -       | 앞 아이콘. `.Item`과 같은 `<SettingsListGroup.Icon Icon={XDuoIcon} />` |
 
 ### SettingsListGroup.Toggle.Loading
 

@@ -132,16 +132,19 @@ interface SettingsListGroupToggleProps extends Omit<
 > {
   label: string;
   description?: string;
+  icon?: ReactNode;
 }
 
 function SettingsListGroupToggle({
   label,
   description,
+  icon,
   className,
   ...props
 }: SettingsListGroupToggleProps) {
   return (
     <ControlField className={cn('min-h-12 px-4 py-3', className)} {...props}>
+      {icon}
       <Box className="flex-1 gap-0.5">
         <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">
           {label}
@@ -175,7 +178,7 @@ SettingsListGroupToggle.Loading = function Loading({
   );
 };
 
-/** 메뉴 아이콘 칸. 옅은 브랜드 바탕 위에 브랜드 색 선 아이콘을 그려 목록마다 같은 크기·색으로 보인다 */
+/** 메뉴 아이콘 칸. 옅은 브랜드 바탕 위에 듀오톤 아이콘을 브랜드 색으로 그려 목록마다 같은 크기·색으로 보인다 */
 const ITEM_ICON_TILE_SIZE = 30;
 const ITEM_ICON_SIZE = 18;
 

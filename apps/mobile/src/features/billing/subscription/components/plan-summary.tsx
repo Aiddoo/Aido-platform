@@ -25,7 +25,6 @@ import { QuotaSummary } from './quota-summary';
 
 const SUBSCRIPTION_PATHNAME = '/settings/subscription';
 
-/** 마이 탭 맨 위 요금제 칸. 무료면 이번 달 사용량과 프리미엄 보기, 이용 중이면 영수증과 같은 규칙의 요약이다 */
 export function PlanSummary() {
   const { t } = useTranslation('subscription');
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());

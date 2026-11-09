@@ -197,5 +197,4 @@ function useFormatBenefit() {
       .exhaustive();
 }
 
-/** 페이월의 막힌 기능 카드와 맨 아래 고지·약관. 혜택·요금제·비교표는 각자 파일이다 */
 export const Paywall = { BlockedFeature, RenewalNotice, Terms } as const;

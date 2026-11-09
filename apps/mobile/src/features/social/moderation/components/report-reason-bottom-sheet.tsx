@@ -8,11 +8,11 @@ import {
   Button,
   H4,
   HStack,
-  IconRadioItem,
   KeyboardBottomSheet,
+  SettingsListGroup,
   Text,
-  VStack,
   useSheetRoute,
+  VStack,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { formatCount } from '@src/shared/utils/number-format';
@@ -114,27 +114,27 @@ export function ReportReasonBottomSheet({
           name="reason"
           render={({ field: { onChange, value } }) => (
             <RadioGroup value={value} onValueChange={onChange} className="gap-0 overflow-hidden">
-              <IconRadioItem
+              <SettingsListGroup.Radio
                 value="SPAM"
                 label={t('report.reason.SPAM')}
                 testID="report-reason-SPAM"
               />
-              <IconRadioItem
+              <SettingsListGroup.Radio
                 value="HARASSMENT"
                 label={t('report.reason.HARASSMENT')}
                 testID="report-reason-HARASSMENT"
               />
-              <IconRadioItem
+              <SettingsListGroup.Radio
                 value="INAPPROPRIATE"
                 label={t('report.reason.INAPPROPRIATE')}
                 testID="report-reason-INAPPROPRIATE"
               />
-              <IconRadioItem
+              <SettingsListGroup.Radio
                 value="IMPERSONATION"
                 label={t('report.reason.IMPERSONATION')}
                 testID="report-reason-IMPERSONATION"
               />
-              <IconRadioItem
+              <SettingsListGroup.Radio
                 value="OTHER"
                 label={t('report.reason.OTHER')}
                 testID="report-reason-OTHER"

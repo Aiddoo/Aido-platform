@@ -23,7 +23,6 @@ import { SubscriptionResult } from './subscription-result';
 
 const PLAN_ROW_COUNT = 2;
 
-/** 고른 요금제는 URL(`useSelectedPlanId`)에서 읽고 바꾼다 */
 type PlanPickerProps = Omit<
   ComponentProps<typeof SubscriptionPlanInput>,
   'value' | 'onValueChange'

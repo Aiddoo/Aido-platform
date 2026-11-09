@@ -2,7 +2,7 @@ import { PreferencePolicy } from '@src/features/identity/preference/domains/pref
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { SettingsListGroup } from '@src/shared/ui';
+import { SettingsListGroup, WeatherDuoIcon } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
 export function WeatherEnabledToggle() {
@@ -12,6 +12,7 @@ export function WeatherEnabledToggle() {
 
   return (
     <SettingsListGroup.Toggle
+      icon={<SettingsListGroup.Icon Icon={WeatherDuoIcon} />}
       label={t('settings.weatherLabel')}
       description={
         preference.pushEnabled

@@ -94,3 +94,5 @@ PushPermissionSettings.Loading = function Loading() {
     </SettingsListGroup>
   );
 };
+
+PushPermissionSettings.Error = SettingsListGroup.Error;

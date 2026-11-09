@@ -9,7 +9,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={NotificationSettingsScreen.Error}>
         <Suspense fallback={<NotificationSettingsScreen.Loading />}>
           <NotificationSettingsLinks label={t('sections.notifications')} />
 
@@ -33,3 +33,5 @@ NotificationSettingsScreen.Loading = function Loading() {
     </>
   );
 };
+
+NotificationSettingsScreen.Error = SettingsListGroup.Error;

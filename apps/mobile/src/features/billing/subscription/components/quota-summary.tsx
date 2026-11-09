@@ -12,11 +12,9 @@ import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
 interface QuotaSummaryProps {
-  /** 제목 줄 오른쪽에 둘 행동. 어디로 가는지는 화면이 정한다 */
   action?: ReactNode;
 }
 
-/** 무료 사용자의 이번 달 AI 사용량 */
 export function QuotaSummary({ action }: QuotaSummaryProps) {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');

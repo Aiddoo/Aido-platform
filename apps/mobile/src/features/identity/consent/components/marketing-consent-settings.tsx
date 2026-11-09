@@ -47,3 +47,5 @@ MarketingConsentSettings.Loading = function Loading(props: SettingsSectionProps)
     </SettingsListGroup>
   );
 };
+
+MarketingConsentSettings.Error = SettingsListGroup.Error;

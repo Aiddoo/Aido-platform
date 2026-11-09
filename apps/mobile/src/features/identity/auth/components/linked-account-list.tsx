@@ -95,6 +95,8 @@ LinkedAccountList.Loading = function Loading() {
   );
 };
 
+LinkedAccountList.Error = SettingsListGroup.Error;
+
 interface ProviderRowProps {
   provider: OAuthProvider;
   icon: ReactNode;

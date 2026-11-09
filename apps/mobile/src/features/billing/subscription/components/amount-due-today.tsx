@@ -8,7 +8,6 @@ import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 
-/** 고른 요금제로 오늘 실제 결제되는 금액. 체험이 되면 0이고, 첫 결제 금액은 체험 일정과 버튼 아래 고지가 보여 준다 */
 export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'children'>) {
   const { t } = useTranslation('subscription');
   const [planId] = useSelectedPlanId();

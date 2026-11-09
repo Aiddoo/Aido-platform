@@ -32,13 +32,11 @@ interface SubscriptionWelcomeProps {
   plan: SubscriptionPlan;
   /** 결제한 날. 체험 일정은 이 날부터 센다 */
   purchasedOn: string;
-  /** 초대 보상 기간 중에 결제했다. 남은 보상은 구독이 끝나면 이어진다 */
   hadRewardOnly: boolean;
   /** 체험 알림 칸. billing은 알림 기능을 모르므로 화면이 채운다 */
   reminder?: ComponentType<{ reminderDateKey: string }>;
 }
 
-/** 결제 직후 시작 화면. 무엇을 샀고 언제 결제되는지, 무엇부터 해 볼지 보여 준다 */
 export function SubscriptionWelcome({
   plan,
   purchasedOn,

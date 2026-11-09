@@ -55,7 +55,7 @@ export function MyPageMenuPane() {
       <Spacing size={20} />
 
       <VStack gap={12}>
-        <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+        <QueryErrorBoundary fallback={ProfileRow.Error}>
           <Suspense fallback={<ProfileRow.Loading />}>
             <ProfileRow tierChip={<AccessTierChip />} />
           </Suspense>
@@ -184,7 +184,7 @@ export function MyPageMenuPane() {
 
       <Spacing size={32} />
 
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={AccountActionButtons.Error}>
         <Suspense fallback={<AccountActionButtons.Loading />}>
           <AccountActionButtons />
         </Suspense>

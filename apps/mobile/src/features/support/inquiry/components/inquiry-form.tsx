@@ -8,8 +8,8 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   FormStepLayout,
-  IconRadioItem,
   KeyboardAdaptiveButton,
+  SettingsListGroup,
   Spacing,
   Text,
   TextArea,
@@ -76,32 +76,30 @@ export function InquiryForm({ title }: InquiryFormProps) {
         control={form.control}
         name="category"
         render={({ field: { value, onChange } }) => (
-          <RadioGroup
-            value={value}
-            onValueChange={onChange}
-            className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
-          >
-            <IconRadioItem
-              value="BUG_REPORT"
-              label={t('category.bugReport')}
-              testID="inquiry-category-BUG_REPORT"
-            />
-            <IconRadioItem
-              value="FEATURE_REQUEST"
-              label={t('category.featureRequest')}
-              testID="inquiry-category-FEATURE_REQUEST"
-            />
-            <IconRadioItem
-              value="PAYMENT"
-              label={t('category.payment')}
-              testID="inquiry-category-PAYMENT"
-            />
-            <IconRadioItem
-              value="OTHER"
-              label={t('category.other')}
-              testID="inquiry-category-OTHER"
-            />
-          </RadioGroup>
+          <SettingsListGroup>
+            <RadioGroup value={value} onValueChange={onChange} className="gap-0">
+              <SettingsListGroup.Radio
+                value="BUG_REPORT"
+                label={t('category.bugReport')}
+                testID="inquiry-category-BUG_REPORT"
+              />
+              <SettingsListGroup.Radio
+                value="FEATURE_REQUEST"
+                label={t('category.featureRequest')}
+                testID="inquiry-category-FEATURE_REQUEST"
+              />
+              <SettingsListGroup.Radio
+                value="PAYMENT"
+                label={t('category.payment')}
+                testID="inquiry-category-PAYMENT"
+              />
+              <SettingsListGroup.Radio
+                value="OTHER"
+                label={t('category.other')}
+                testID="inquiry-category-OTHER"
+              />
+            </RadioGroup>
+          </SettingsListGroup>
         )}
       />
 

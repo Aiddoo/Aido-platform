@@ -1,7 +1,7 @@
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { SettingsListGroup } from '@src/shared/ui';
+import { BellDuoIcon, MoonDuoIcon, SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
@@ -26,6 +26,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
       className={PushPermissionPolicy.isPushDeliverable(permission) ? undefined : 'opacity-50'}
     >
       <SettingsListGroup.Toggle
+        icon={<SettingsListGroup.Icon Icon={BellDuoIcon} />}
         label={t('settings.pushLabel')}
         description={t('settings.pushDescription')}
         isSelected={preference.pushEnabled}
@@ -34,6 +35,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle
+        icon={<SettingsListGroup.Icon Icon={MoonDuoIcon} />}
         label={t('settings.nightPushLabel')}
         description={
           preference.pushEnabled
@@ -59,3 +61,5 @@ PushDeliverySettings.Loading = function Loading(props: SettingsSectionProps) {
     </SettingsListGroup>
   );
 };
+
+PushDeliverySettings.Error = SettingsListGroup.Error;

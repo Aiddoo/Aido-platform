@@ -112,7 +112,6 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
 const STAMP_SIZE = 44;
 const PAW_ICON_SIZE = 20;
 
-/** 초대 발자국 판과 같은 도장 모양. 찍힘은 시작한 체험, 기다림은 알림, 빈 칸은 첫 결제다 */
 const STAMP_STYLES = {
   stamped: { tone: 'brand', className: '-rotate-6', iconClassName: 'text-white dark:text-gray-1' },
   waiting: { tone: 'outline', className: undefined, iconClassName: 'text-main opacity-40' },

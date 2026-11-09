@@ -2,7 +2,14 @@ import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, TextButton, TextSkeleton, useConfirmDialog } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  TextButton,
+  TextSkeleton,
+  useConfirmDialog,
+  SettingsListGroup,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 
@@ -70,3 +77,5 @@ AccountActionButtons.Loading = function Loading() {
     </Box>
   );
 };
+
+AccountActionButtons.Error = SettingsListGroup.Error;

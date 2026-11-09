@@ -9,7 +9,7 @@ export default function TermsSettingsScreen() {
 
   return (
     <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsListGroup.Error}>
+      <QueryErrorBoundary fallback={TermsSettingsScreen.Error}>
         <Suspense fallback={<TermsSettingsScreen.Loading />}>
           <TermsAgreementList label={t('sections.agreements')} />
 
@@ -37,3 +37,5 @@ TermsSettingsScreen.Loading = function Loading() {
     </>
   );
 };
+
+TermsSettingsScreen.Error = SettingsListGroup.Error;

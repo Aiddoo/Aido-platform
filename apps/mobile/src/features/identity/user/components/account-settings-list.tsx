@@ -48,3 +48,5 @@ AccountSettingsList.Loading = function Loading(props: SettingsSectionProps) {
     </SettingsListGroup>
   );
 };
+
+AccountSettingsList.Error = SettingsListGroup.Error;

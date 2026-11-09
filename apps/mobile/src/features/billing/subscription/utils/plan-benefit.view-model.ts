@@ -85,7 +85,6 @@ export function getPlanComparison(
     .exhaustive();
 }
 
-/** 비교 칸 하나의 값. 켜고 끄는 기능은 포함 여부만 있다 */
 export type PlanValue =
   | { type: 'amount'; unit: PlanComparison['unit']; amount: number }
   | { type: 'unlimited' }
@@ -101,7 +100,6 @@ function toPlanValue(unit: PlanComparison['unit'], amount: number | null): PlanV
   return amount == null ? { type: 'unlimited' } : { type: 'amount', unit, amount };
 }
 
-/** 비교표 한 줄. 숫자는 getPlanComparison, 켜고 끄는 기능은 무료에 없고 프리미엄에 있다 */
 export function toPlanFeatureComparison(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
@@ -122,7 +120,6 @@ type BenefitQuotaLabel =
   | { type: 'premiumOnly' }
   | { type: 'upgrade'; free: PlanValue; premium: PlanValue };
 
-/** 혜택 장 아래 한도 띠. 무료에 없는 기능은 "프리미엄 전용", 있으면 "무료 → 프리미엄" 양이다 */
 export function toBenefitQuotaLabel(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
