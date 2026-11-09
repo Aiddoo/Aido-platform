@@ -10,7 +10,7 @@ import { NetworkError } from '@src/shared/errors/infra-error';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import EditNameRoute from '../../../../../app/(app)/(mypage-menu)/settings/edit-name';
+import EditNameRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/edit-name';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { createUser } from './user.fixtures';
 import { createUpdateProfileDto } from './user.fixtures';

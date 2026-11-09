@@ -7,7 +7,7 @@ import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import LanguageSettingsScreen from '../../../../app/(app)/(mypage-menu)/settings/language';
+import LanguageSettingsScreen from '../../../../app/(app)/(tabs)/(mypage)/settings/language';
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');

@@ -19,7 +19,7 @@ src/shared/i18n/
 
 **네임스페이스**: `resources.ts`가 정본이다. feature별(`todo`, `voice`, `voicePlan`, `voiceNote` 등)과 횡단 4개(`common`, `errors`, `validation`, `settings`)가 있다. 파일 이름은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 
-**언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/(mypage-menu)/settings/language.tsx`.
+**언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
 
 ---
 

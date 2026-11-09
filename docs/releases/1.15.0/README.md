@@ -77,7 +77,7 @@
 
 ### 넓은 화면 두 칸
 
-- **내 정보**: `AdaptivePane`과 URL을 바꾸지 않는 라우트 그룹 `(mypage-menu)`로 친구·배지·리포트·설정을 묶는다. 넓은 화면은 왼쪽 메뉴가 그대로 있고 오른쪽만 바뀐다. 접힌 화면은 기존처럼 push다. 세부는 [클라이언트 문서](../../../apps/mobile/docs/releases/1.15.0-client.md#넓은-화면)에 있다.
+- **내 정보**: 친구·배지·리포트·설정·새로운 기능 목록을 URL을 바꾸지 않는 마이 탭 안 그룹 `(tabs)/(mypage)`의 Stack에 두어 하위 화면에서도 탭 바가 남는다. 넓은 화면은 `AdaptivePane`으로 왼쪽 메뉴가 그대로 있고 오른쪽 Stack만 바뀐다. 접힌 화면은 push다. 세부는 [클라이언트 문서](../../../apps/mobile/docs/releases/1.15.0-client.md#넓은-화면)에 있다.
 - **`SplitView`·`ArrangementView`**: 시험했으나 넣지 않았고 다음 버전에 다시 검토한다. 이유는 [AdaptivePane 문서](../../../apps/mobile/src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유)에 있다.
 
 ## 한도·정책 (`PLAN_CATALOG`)

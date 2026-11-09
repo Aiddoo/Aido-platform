@@ -16,7 +16,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import VoiceStorageRoute from '../../../../app/(app)/(mypage-menu)/settings/voice-storage';
+import VoiceStorageRoute from '../../../../app/(app)/(tabs)/(mypage)/settings/voice-storage';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';

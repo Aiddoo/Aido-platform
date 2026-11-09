@@ -6,7 +6,7 @@ import { NetworkError } from '@src/shared/errors/infra-error';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import InquiryRoute from '../../../../../app/(app)/(mypage-menu)/settings/inquiry';
+import InquiryRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/inquiry';
 import { createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';

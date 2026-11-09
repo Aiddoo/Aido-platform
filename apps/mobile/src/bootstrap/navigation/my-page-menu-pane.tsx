@@ -43,7 +43,7 @@ import {
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-/** 내 정보 탭과 메뉴 화면(`(mypage-menu)/_layout`)이 같은 칸을 그려 들어가고 나올 때 왼쪽이 그대로다 */
+/** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 왼쪽 칸이 그린다. 한 번에 하나만 그려 접고 펼 때 스크롤을 넘겨받는다 */
 export function MyPageMenuPane() {
   const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();

@@ -4,7 +4,7 @@ import { createHttpClientStub, createPendingResponse, renderUi } from '@src/shar
 import { i18n } from '@src/shared/i18n';
 import { act, screen } from '@testing-library/react-native';
 
-import ProfileScreen from '../../../../../app/(app)/(mypage-menu)/settings/profile';
+import ProfileScreen from '../../../../../app/(app)/(tabs)/(mypage)/settings/profile';
 import { createCurrentUserDto } from './user.fixtures';
 
 describe('프로필 화면', () => {

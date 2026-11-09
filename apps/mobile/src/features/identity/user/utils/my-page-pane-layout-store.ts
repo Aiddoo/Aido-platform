@@ -1,4 +1,4 @@
-/** 내 정보 탭과 메뉴 화면이 왼쪽 메뉴를 따로 그려서 들어가고 나올 때 메뉴가 움직이지 않게 스크롤을 나눠 갖는다 */
+/** 메뉴를 그리는 곳(좁은 화면 마이 탭 첫 화면, 넓은 화면 왼쪽 칸)이 접고 펼 때 바뀌어도 같은 스크롤에서 시작하게 위치를 넘겨받는다 */
 export function createMyPagePaneLayoutStore() {
   let paneCount = 0;
   let scrollOffset = 0;

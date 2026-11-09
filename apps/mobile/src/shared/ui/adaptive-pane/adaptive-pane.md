@@ -25,17 +25,20 @@ import { AdaptivePane } from '@src/shared/ui';
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 두 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 남아 있는 pane은 다시 마운트되지 않아 스크롤·입력·내비게이터 상태가 유지된다.
 
-## 내 정보 메뉴 (왼쪽 메뉴 + 오른쪽 내비게이터)
+## 내 정보 메뉴 (마이 탭 안의 왼쪽 메뉴 + 오른쪽 Stack)
 
-- 라우트 그룹 `app/(app)/(mypage-menu)`가 `friends`·`achievements`·`reports`·`settings`를 URL 변경 없이 묶고, `_layout`에서 `primary`에 `MyPageMenuPane`(`bootstrap/navigation/my-page-menu-pane.tsx`), `secondary`에 `Stack`, `compactPane="secondary"`로 쓴다. 접힌 화면은 왼쪽 메뉴 없이 기존처럼 push다.
-- 내 정보 탭도 같은 `MyPageMenuPane`을 두 칸 왼쪽에 그린다. 조립은 스크린이 맡고 메뉴 화면은 그 칸을 가져다 쓴다. 탭에서 들어갈 때 넓은 화면은 애니메이션을 끄고, `useMyPagePaneLayout`이 탭과 메뉴 화면의 스크롤을 맞춰 왼쪽이 움직이지 않는다.
-- 종은 할 일·메모 탭처럼 네이티브 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`)다. 넓은 화면의 메뉴 화면도 `(app)/_layout`에서 같은 헤더(`headerShown`, 뒤로 가기는 숨김)를 켜고 종을 붙여, 두 칸이 탭과 같은 높이에서 시작한다. 오른쪽 칸의 제목·뒤로 가기는 그 아래 메뉴 Stack 헤더가 맡는다. 접힌 화면의 메뉴 화면은 바깥 헤더 없이 메뉴 Stack 헤더만 쓴다.
-- 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 메뉴 화면 안에서는 상세만 교체(더 들어간 화면은 먼저 걷어 냄)해 뒤로 가기에 쌓이지 않는다.
-- 탭 바는 탭 화면에만 있다. 넓은 화면의 메뉴 화면에서 탭으로 돌아갈 때는 첫 화면의 뒤로 가기를 쓴다.
+- 마이 탭 하위 화면은 탭 안 그룹 `app/(app)/(tabs)/(mypage)`에 둔다. 그룹 이름은 URL에 들어가지 않아 `/mypage`·`/settings/…`·`/friends…`·`/achievements…`·`/reports…`·`/whats-new/releases`가 그대로다. 탭 안 Stack이라 하위 화면에서도 탭 바(넓은 iPad·iOS 27 큰 iPhone에서는 사이드바)가 남는다.
+- `(mypage)/_layout`은 `primary`에 `MyPageMenuPane`(`bootstrap/navigation/my-page-menu-pane.tsx`), `secondary`에 마이 탭 `Stack`, `compactPane="secondary"`로 쓴다. 좁은 화면은 Stack 첫 화면(`mypage/index`)이 메뉴를 그리고 하위 화면은 일반 push + 네이티브 뒤로 가기다. 넓은 화면은 첫 화면이 빈 안내다.
+- `unstable_settings.anchor = 'mypage/index'`라 푸시·링크로 하위 화면을 바로 열어도 아래에 메뉴가 깔려 뒤로 가면 메뉴다. 탭 레이아웃은 `anchor = 'feed'`로 탭을 정하지 않은 링크가 할 일 탭에 열리게 한다.
+- 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
+- 넓은 화면 오른쪽 칸의 첫 상세는 `getSplitDetailRootOptions`로 뒤로 가기·스와이프를 두지 않고 애니메이션 없이 바꾼다(옆 목록이 고른다). 두 번째 단계부터는 네이티브 헤더의 뒤로 가기다.
+- 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 좁은 화면은 push, 넓은 화면은 오른쪽 칸에 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다.
+- 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다.
+- 메뉴는 한 번에 한 곳(좁은 화면 첫 화면 또는 넓은 화면 왼쪽 칸)에만 그린다. `useMyPagePaneLayout`이 스크롤 위치를 넘겨 접고 펼 때 메뉴가 같은 자리다.
 
 ## `SplitView`·`ArrangementView`를 쓰지 않는 이유
 
-1.15.0에서 시험했고 넣지 않았다. 다음 버전에 다시 검토한다. expo-router 58.0.30·react-native-screens 4.30.1·@expo/ui 58.0.27 기준(2026-11 확인).
+1.15.0에서 시험했고 넣지 않았다. SDK 58에서 `SplitView`는 실험 기능이라 향후 다시 검토한다. expo-router 58.0.30·react-native-screens 4.30.1·@expo/ui 58.0.27 기준(2026-11 확인).
 
 - **`SplitView`**: 다른 네이티브 내비게이터 안에서 throw해 루트를 Slot으로 바꿔야 하고, 왼쪽 칸은 라우트가 아니다. iOS 전용이다. 접힌 화면에서 `RNSSplitNavigationController`의 뒤로 가기가 모든 화면에 추가로 뜬다(react-native-screens #4858, 일반 iPhone에서도 재현).
 - **`ArrangementView`**: iOS 27.1 미만은 컨테이너 없이 그려 시험에서 목록이 보이지 않았고, Android 대응이 없다. 시뮬레이터로 두 칸을 검증할 수 없다.

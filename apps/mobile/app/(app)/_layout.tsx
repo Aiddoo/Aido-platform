@@ -5,15 +5,8 @@ import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/au
 import { useIsPushOnboardingDue } from '@src/features/notification/hooks/use-is-push-onboarding-due';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
 import { classifyBoundaryError } from '@src/shared/errors';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  HStack,
-  Result,
-  SHEET_ROUTE_SCREEN_OPTIONS,
-  StyledSafeAreaView,
-  useStackScreenOptions,
-} from '@src/shared/ui';
+import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
 import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import { type ErrorBoundaryProps, Stack } from 'expo-router';
 import { useEffect } from 'react';
@@ -46,8 +39,6 @@ export const unstable_settings = {
 
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
-  const isCompact = useWindowSizeClass() === 'compact';
-  const headerOptions = useStackScreenOptions();
   const isPushOnboardingDue = useIsPushOnboardingDue();
   useRecordTodoCompletion();
   useOfferMarketingPushAfterCompletion();
@@ -65,19 +56,9 @@ function AppLayout() {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="nudges" />
       <Stack.Screen name="suggestions" />
-      {/* 넓은 화면은 왼쪽 메뉴가 탭과 같은 헤더 아래 같은 자리에 있어 들어갈 때 화면 전체가 밀리지 않게 한다. 뒤로 가기는 오른쪽 칸 헤더가 맡는다 */}
-      <Stack.Screen
-        name="(mypage-menu)"
-        options={{
-          ...headerOptions,
-          title: '',
-          headerShown: !isCompact,
-          headerBackVisible: false,
-          animation: isCompact ? 'slide_from_right' : 'none',
-        }}
-      />
       <Stack.Screen name="weather" />
-      <Stack.Screen name="whats-new" />
+      {/* 닫기가 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
+      <Stack.Screen name="whats-new/index" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
       {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
       <Stack.Screen

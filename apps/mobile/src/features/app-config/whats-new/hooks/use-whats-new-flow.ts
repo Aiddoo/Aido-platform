@@ -58,9 +58,10 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
     };
   }, [campaignId, source, trackEvent]);
 
+  // 탭 안 화면(메모·친구 초대)은 탭을 새로 쌓지 않고 아래 탭에서 연다. 기록에 없는 화면이면 이 화면 자리에 연다
   const leaveTo = useSingleTap((href: Href) => {
     isFinishedRef.current = true;
-    router.replace(href);
+    router.dismissTo(href);
   });
 
   const trackStepViewed = ({ step, index }: { step: string; index: number }) => {

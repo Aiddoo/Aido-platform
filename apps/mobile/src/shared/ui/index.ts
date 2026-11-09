@@ -1,5 +1,10 @@
 export { ActionButton } from './action-button';
-export { AdaptivePane, getPrimaryPaneWidth, useAdaptivePaneLayoutKey } from './adaptive-pane';
+export {
+  AdaptivePane,
+  getPrimaryPaneWidth,
+  getSplitDetailRootOptions,
+  useAdaptivePaneLayoutKey,
+} from './adaptive-pane';
 export { Avatar } from './avatar';
 export { Barcode } from './barcode';
 export {

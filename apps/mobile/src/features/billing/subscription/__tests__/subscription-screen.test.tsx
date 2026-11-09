@@ -25,7 +25,7 @@ import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
-import SubscriptionRoute from '../../../../../app/(app)/(mypage-menu)/settings/subscription';
+import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 

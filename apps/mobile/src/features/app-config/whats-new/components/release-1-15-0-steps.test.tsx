@@ -70,7 +70,7 @@ async function renderSteps() {
 
 describe('Release1150Steps', () => {
   beforeEach(() => {
-    jest.mocked(router.replace).mockClear();
+    jest.mocked(router.dismissTo).mockClear();
     jest.mocked(router.push).mockClear();
   });
 
@@ -106,7 +106,7 @@ describe('Release1150Steps', () => {
     await unmount();
 
     // Then
-    expect(router.replace).toHaveBeenCalledWith({
+    expect(router.dismissTo).toHaveBeenCalledWith({
       pathname: '/todo/new',
       params: { startVoice: '1' },
     });
@@ -134,7 +134,7 @@ describe('Release1150Steps', () => {
     await fireEvent.press(screen.getByTestId('whats-new-step-action'));
 
     // Then
-    expect(router.replace).toHaveBeenCalledWith({
+    expect(router.dismissTo).toHaveBeenCalledWith({
       pathname: '/memo',
       params: { startVoiceNote: '1' },
     });
