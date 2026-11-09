@@ -1,50 +1,19 @@
-import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsing.webp';
-import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
-import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
-import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { FeatureMedia, type FeatureMediaProps, HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Chip, Separator } from 'heroui-native';
-import { Fragment } from 'react';
+import { Chip } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature } from '../domains/entitlement.model';
-import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { excludeBlockedBenefit, getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
+import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
 import { PremiumFeatureIcon } from './premium-feature-icon';
-
-const IMAGE_BENEFITS = [
-  { feature: 'AI_PARSE', image: benefitAiParsingImage },
-  { feature: 'CUSTOM_REMINDER_TIME', image: benefitNotificationImage },
-  { feature: 'NUDGE', image: benefitNudgeImage },
-  { feature: 'APP_ICON', image: benefitAppIconImage },
-] as const satisfies readonly { feature: EntitlementFeature; image: FeatureMediaProps['source'] }[];
-
-/** 페이월의 그림 혜택. 막혀서 들어온 기능은 맨 위 카드가 이미 보여 줘 뺀다 */
-export function Paywall() {
-  const [{ feature }] = useSubscriptionParams();
-  const formatBenefit = useFormatBenefit();
-
-  return (
-    <VStack gap={20}>
-      {excludeBlockedBenefit(IMAGE_BENEFITS, feature).map((benefit) => (
-        <BenefitCard
-          key={benefit.feature}
-          {...formatBenefit(benefit.feature)}
-          image={benefit.image}
-        />
-      ))}
-    </VStack>
-  );
-}
 
 const BLOCKED_LABEL_KEYS = {
   AI_PARSE: 'paywall.blockedLimit',
@@ -59,8 +28,8 @@ const BLOCKED_LABEL_KEYS = {
   APP_ICON: 'paywall.blockedLocked',
 } as const satisfies Record<EntitlementFeature, string>;
 
-/** 막혀서 들어온 기능을 요금제보다 먼저 보여 준다 */
-Paywall.BlockedFeature = function BlockedFeature({ feature }: { feature: EntitlementFeature }) {
+/** 혜택 장에 없는 기능에서 막혀 들어왔을 때 그 기능을 요금제보다 먼저 보여 준다 */
+function BlockedFeature({ feature }: { feature: EntitlementFeature }) {
   const { t } = useTranslation('subscription');
   const formatBenefit = useFormatBenefit();
   const { title, description } = formatBenefit(feature);
@@ -87,43 +56,14 @@ Paywall.BlockedFeature = function BlockedFeature({ feature }: { feature: Entitle
       </HStack>
     </VStack>
   );
-};
-
-const ADDITIONAL_BENEFITS = [
-  { feature: 'VOICE_NOTE' },
-  { feature: 'FRIEND' },
-  { feature: 'TODO_CATEGORY' },
-  { feature: 'AI_SUGGESTION' },
-  { feature: 'AI_REPORT' },
-] as const satisfies readonly { feature: EntitlementFeature }[];
-
-Paywall.AdditionalBenefits = function AdditionalBenefits() {
-  const { t } = useTranslation('subscription');
-  const [{ feature }] = useSubscriptionParams();
-  const formatBenefit = useFormatBenefit();
-
-  return (
-    <VStack gap={16}>
-      <Text size="b3" weight="semibold" shade={9}>
-        {t('paywall.moreBenefits')}
-      </Text>
-
-      {excludeBlockedBenefit(ADDITIONAL_BENEFITS, feature).map((benefit, index) => (
-        <Fragment key={benefit.feature}>
-          {index > 0 && <Separator className="bg-gray-3" />}
-          <AdditionalBenefit feature={benefit.feature} {...formatBenefit(benefit.feature)} />
-        </Fragment>
-      ))}
-    </VStack>
-  );
-};
+}
 
 const RENEWAL_NOTICE_KEYS = {
   appStore: 'paywall.renewalNotice.appStore',
   googlePlay: 'paywall.renewalNotice.googlePlay',
 } as const satisfies Record<RenewalNoticeStore, string>;
 
-Paywall.RenewalNotice = function RenewalNotice() {
+function RenewalNotice() {
   const { t } = useTranslation('subscription');
   const store = findSubscriptionStore(process.env.EXPO_OS);
 
@@ -136,9 +76,9 @@ Paywall.RenewalNotice = function RenewalNotice() {
       {t(RENEWAL_NOTICE_KEYS[store])}
     </Text>
   );
-};
+}
 
-Paywall.Terms = function Terms() {
+function Terms() {
   const { t } = useTranslation('subscription');
   const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
@@ -166,7 +106,7 @@ Paywall.Terms = function Terms() {
       {t('paywall.termsSuffix')}
     </Text>
   );
-};
+}
 
 /** 기능 하나의 혜택 제목·설명. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 온다 */
 function useFormatBenefit() {
@@ -235,49 +175,5 @@ function useFormatBenefit() {
       .exhaustive();
 }
 
-interface BenefitCardProps {
-  title: string;
-  description: string;
-  image: FeatureMediaProps['source'];
-}
-
-function BenefitCard({ title, description, image }: BenefitCardProps) {
-  return (
-    <VStack gap={12}>
-      <VStack className="flex-1">
-        <Text size="b3" weight="semibold" shade={9} lineBreakStrategyIOS="hangul-word">
-          {title}
-        </Text>
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-          {description}
-        </Text>
-      </VStack>
-
-      <FeatureMedia source={image} alt="" ratio={16 / 9} className="rounded-xl" />
-    </VStack>
-  );
-}
-
-interface AdditionalBenefitProps {
-  feature: EntitlementFeature;
-  title: string;
-  description: string;
-}
-
-function AdditionalBenefit({ feature, title, description }: AdditionalBenefitProps) {
-  return (
-    <HStack gap={12} className="items-center">
-      <PremiumFeatureIcon feature={feature} size="medium" />
-
-      <VStack gap={2} className="flex-1">
-        <Text size="b3" weight="bold" shade={9} lineBreakStrategyIOS="hangul-word">
-          {title}
-        </Text>
-
-        <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-          {description}
-        </Text>
-      </VStack>
-    </HStack>
-  );
-}
+/** 페이월의 막힌 기능 카드와 맨 아래 고지·약관. 혜택·요금제·비교표는 각자 파일이다 */
+export const Paywall = { BlockedFeature, RenewalNotice, Terms } as const;

@@ -80,9 +80,7 @@
   "paywall": {
     "title": "프리미엄으로 업그레이드",
     "subtitle": "모든 기능을 넉넉하게 써보세요",
-    "futureIncluded": "향후 출시되는 모든 프리미엄 기능도 포함돼요",
     "grantEnded": "초대 보상 프리미엄이 {{date}}에 끝났어요. 구독하면 다시 모든 기능을 쓸 수 있어요",
-    "moreBenefits": "더 많은 프리미엄 혜택",
     "blockedLimit": "방금 다 쓴 기능",
     "blockedLocked": "프리미엄 기능",
     "subscribeButton": "구독하기",
@@ -99,15 +97,19 @@
     "termsLink": "이용약관",
     "termsAnd": " 및 ",
     "privacyLink": "개인정보처리방침",
-    "termsSuffix": "에 동의하게 돼요."
+    "termsSuffix": "에 동의하게 돼요.",
+    "amountDueToday": "오늘 결제 금액",
+    "benefitChip": "혜택 {{index}}",
+    "benefitQuota": "무료 {{free}} → 프리미엄 {{premium}}",
+    "premiumOnly": "프리미엄 전용"
   },
   "trialTimeline": {
     "title": "무료 체험 일정",
     "today": "오늘",
-    "start": "무료 체험 시작",
-    "reminder": "끝나기 {{days}}일 전에 알려드려요",
-    "charge": "{{price}} 결제",
-    "chargeHint": "해지하면 결제되지 않아요"
+    "start": "체험 시작",
+    "reminder": "{{days}}일 전 알림",
+    "charge": "첫 결제 {{price}}",
+    "cancelHint": "{{date}} 전에 해지하면 결제되지 않아요"
   },
   "endingNotice": {
     "badgeTomorrow": "D-1",
@@ -245,6 +247,74 @@
       "perDay": "하루 {{amount}}회",
       "people": "{{amount}}명",
       "items": "{{amount}}개"
+    }
+  },
+  "benefitSlides": {
+    "aiParse": {
+      "title": "AI 할 일 만들기 넉넉하게",
+      "description": "말이나 글을 할 일 여러 개로 나눠 줘요"
+    },
+    "aiReport": {
+      "title": "AI 주간·월간 리포트",
+      "description": "달성률과 잘 되는 요일·시간을 정리해 줘요"
+    },
+    "aiSuggestion": {
+      "title": "AI 반복 제안",
+      "description": "자주 하는 일을 반복 할 일로 제안해 줘요"
+    },
+    "voiceNote": {
+      "title": "말로 메모 AI 요약",
+      "description": "녹음하면 요약과 해야 할 일을 찾아 줘요"
+    }
+  },
+  "planComparison": {
+    "title": "무료와 프리미엄 비교",
+    "hint": "밑줄 친 이름을 누르면 설명이 나와요",
+    "benefit": "혜택",
+    "included": "포함",
+    "excluded": "없음",
+    "groups": {
+      "ai": "AI 기능",
+      "limits": "넉넉한 한도",
+      "reminderAndLooks": "알림·꾸미기"
+    },
+    "rows": {
+      "aiParse": {
+        "label": "AI 할 일 만들기",
+        "term": "말이나 글을 할 일 여러 개로 나눠 줘요. 날짜와 시간도 함께 넣어요."
+      },
+      "aiReport": {
+        "label": "AI 주간·월간 리포트",
+        "term": "달성률과 자주 끝내는 요일·시간을 정리해 줘요."
+      },
+      "aiSuggestion": {
+        "label": "AI 반복 제안",
+        "term": "자주 하는 일을 찾아 반복 할 일로 제안해 줘요."
+      },
+      "voiceNote": {
+        "label": "말로 메모 AI 요약",
+        "term": "녹음하면 요약과 해야 할 일을 찾아 줘요. 녹음 파일은 기기에만 남아요."
+      },
+      "friend": {
+        "label": "친구",
+        "term": "서로 공개한 할 일을 보고 응원할 수 있는 사람이에요."
+      },
+      "nudge": {
+        "label": "콕 찌르기·응원",
+        "term": "친구에게 보내는 알림이에요."
+      },
+      "category": {
+        "label": "카테고리",
+        "term": "할 일을 나누는 묶음이에요."
+      },
+      "reminderTime": {
+        "label": "원하는 시간 리마인드",
+        "term": "정해진 시간 대신 원하는 시각에 알림을 받아요."
+      },
+      "appIcon": {
+        "label": "고양이 앱 아이콘",
+        "term": "홈 화면 아이콘을 고양이 아이콘 중에서 골라요."
+      }
     }
   }
 }

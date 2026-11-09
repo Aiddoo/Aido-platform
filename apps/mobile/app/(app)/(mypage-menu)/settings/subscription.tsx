@@ -1,4 +1,7 @@
+import { AmountDueToday } from '@src/features/billing/subscription/components/amount-due-today';
+import { BenefitCarousel } from '@src/features/billing/subscription/components/benefit-carousel';
 import { Paywall } from '@src/features/billing/subscription/components/paywall';
+import { PlanComparisonTable } from '@src/features/billing/subscription/components/plan-comparison-table';
 import { PlanPicker } from '@src/features/billing/subscription/components/plan-picker';
 import { PremiumNotice } from '@src/features/billing/subscription/components/premium-notice';
 import { PurchaseButton } from '@src/features/billing/subscription/components/purchase-button';
@@ -7,13 +10,19 @@ import { SubscriptionOfflineActionsNotice } from '@src/features/billing/subscrip
 import { SubscriptionReceipt } from '@src/features/billing/subscription/components/subscription-receipt';
 import { SubscriptionResult } from '@src/features/billing/subscription/components/subscription-result';
 import { TrialTimeline } from '@src/features/billing/subscription/components/trial-timeline';
+import { BENEFIT_SLIDES } from '@src/features/billing/subscription/constants/subscription.constants';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
+import { hasBenefitSlide } from '@src/features/billing/subscription/utils/benefit-slides.view-model';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
+import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
+import { formatDateKeyLabel } from '@src/shared/date/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -26,12 +35,13 @@ import {
   type QueryErrorFallbackProps,
   ReadableContent,
   ScallopedContainer,
+  SettingsListGroup,
   Spacing,
   StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -60,8 +70,10 @@ SubscriptionScreen.Plans = function Plans() {
   const { t } = useTranslation('subscription');
   const [{ feature }] = useSubscriptionParams();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
+  // 혜택·요금제·비교표가 형제 경계라 서로를 기다리지 않게 한 번에 시작한다
+  usePrefetchQuery(useGetEntitlementsQueryOptions());
+  usePrefetchQuery(useGetOfferingsQueryOptions());
 
-  // 막혀서 들어왔으면 그 기능을 먼저 보이고, 고를 요금제를 혜택 그림보다 위에 둔다
   return (
     <Box className="flex-1" testID="subscription-paywall">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -82,33 +94,50 @@ SubscriptionScreen.Plans = function Plans() {
 
               <Spacing size={20} />
 
-              {feature != null && (
+              {/* 혜택 장에 있는 기능은 그 장부터 넘기기가 보여 주고, 없는 기능만 카드로 먼저 보인다 */}
+              {feature != null && !hasBenefitSlide(BENEFIT_SLIDES, feature) && (
                 <>
                   <Paywall.BlockedFeature feature={feature} />
                   <Spacing size={16} />
                 </>
               )}
 
+              <QueryErrorBoundary fallback={BenefitCarousel.Error}>
+                <Suspense fallback={<BenefitCarousel.Loading />}>
+                  <BenefitCarousel />
+                </Suspense>
+              </QueryErrorBoundary>
+
+              <Spacing size={24} />
+
               <QueryErrorBoundary fallback={PlanPicker.Error}>
                 <Suspense fallback={<PlanPicker.Loading />}>
-                  <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
-                  <TrialTimeline planId={chosenPlanId} className="mt-3" />
+                  <VStack gap={16}>
+                    <PlanPicker value={chosenPlanId} onValueChange={setChosenPlanId} />
+                    <AmountDueToday planId={chosenPlanId} className="px-1" />
+                    <TrialTimeline planId={chosenPlanId} reminder={TrialReminderToggle} />
+                  </VStack>
                 </Suspense>
               </QueryErrorBoundary>
 
               <DashedDivider className="my-6" />
 
-              <Paywall />
+              <VStack gap={2}>
+                <Text size="b2" weight="bold" shade={9}>
+                  {t('planComparison.title')}
+                </Text>
+                <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
+                  {t('planComparison.hint')}
+                </Text>
+              </VStack>
 
-              <Spacing size={20} />
+              <Spacing size={12} />
 
-              <Paywall.AdditionalBenefits />
-
-              <Spacing size={8} />
-
-              <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-                {t('paywall.futureIncluded')}
-              </Text>
+              <QueryErrorBoundary fallback={PlanComparisonTable.Error}>
+                <Suspense fallback={<PlanComparisonTable.Loading />}>
+                  <PlanComparisonTable />
+                </Suspense>
+              </QueryErrorBoundary>
             </Box>
           </ScallopedContainer>
 
@@ -215,6 +244,29 @@ SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFa
     </StyledSafeAreaView>
   );
 };
+
+/** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
+function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: string }) {
+  const { t } = useTranslation('notification');
+  const date = formatDateKeyLabel(reminderDateKey, 'monthDay', useDateFormatContext());
+
+  return (
+    // 권한·알림 설정을 못 읽어도 요금제와 결제는 그대로 보이게 이 칸만 숨긴다
+    <QueryErrorBoundary fallback={() => null}>
+      <Suspense fallback={<SettingsListGroup.Toggle.Loading hasDescription />}>
+        <PushPermissionToggle
+          source="paywall"
+          label={t('billingReminder.label')}
+          descriptions={{
+            on: t('billingReminder.on', { date }),
+            off: t('billingReminder.off', { date }),
+          }}
+          className="px-1 py-0"
+        />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}
 
 export default function SubscriptionRoute() {
   return (

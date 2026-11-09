@@ -84,9 +84,7 @@
   "paywall": {
     "title": "Upgrade to Premium",
     "subtitle": "Get more out of every feature",
-    "futureIncluded": "All future Premium features are included too",
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
-    "moreBenefits": "More Premium benefits",
     "blockedLimit": "Just ran out",
     "blockedLocked": "Premium feature",
     "subscribeButton": "Subscribe",
@@ -103,15 +101,19 @@
     "termsLink": "Terms of Service",
     "termsAnd": " and ",
     "privacyLink": "Privacy Policy",
-    "termsSuffix": "."
+    "termsSuffix": ".",
+    "amountDueToday": "Due today",
+    "benefitChip": "Benefit {{index}}",
+    "benefitQuota": "Free {{free}} → Premium {{premium}}",
+    "premiumOnly": "Premium only"
   },
   "trialTimeline": {
     "title": "Your free trial",
     "today": "Today",
-    "start": "Free trial starts",
-    "reminder": "We'll remind you {{days}} days before it ends",
-    "charge": "{{price}} charged",
-    "chargeHint": "Cancel before then and you won't be charged"
+    "start": "Trial starts",
+    "reminder": "Reminder {{days}} days before",
+    "charge": "First charge {{price}}",
+    "cancelHint": "Cancel before {{date}} and you won't be charged"
   },
   "endingNotice": {
     "badgeTomorrow": "Tomorrow",
@@ -252,6 +254,74 @@
       "perDay": "{{amount}} a day",
       "people": "{{amount}} friends",
       "items": "{{amount}} categories"
+    }
+  },
+  "benefitSlides": {
+    "aiParse": {
+      "title": "More AI to-dos",
+      "description": "Turn what you say or type into several to-dos"
+    },
+    "aiReport": {
+      "title": "AI weekly and monthly reports",
+      "description": "See your completion rate and your best days and times"
+    },
+    "aiSuggestion": {
+      "title": "AI repeat suggestions",
+      "description": "Get suggestions to repeat the to-dos you do often"
+    },
+    "voiceNote": {
+      "title": "AI voice note summaries",
+      "description": "Record and get a summary and the to-dos you mentioned"
+    }
+  },
+  "planComparison": {
+    "title": "Free vs Premium",
+    "hint": "Tap an underlined name to see what it means",
+    "benefit": "Benefit",
+    "included": "Included",
+    "excluded": "Not included",
+    "groups": {
+      "ai": "AI features",
+      "limits": "Higher limits",
+      "reminderAndLooks": "Reminders and looks"
+    },
+    "rows": {
+      "aiParse": {
+        "label": "AI to-dos",
+        "term": "Turns what you say or type into several to-dos, with dates and times."
+      },
+      "aiReport": {
+        "label": "AI weekly and monthly reports",
+        "term": "Sums up your completion rate and the days and times you get things done."
+      },
+      "aiSuggestion": {
+        "label": "AI repeat suggestions",
+        "term": "Finds what you do often and suggests it as a repeating to-do."
+      },
+      "voiceNote": {
+        "label": "AI voice note summaries",
+        "term": "Record and get a summary and the to-dos you mentioned. Recordings stay on your device."
+      },
+      "friend": {
+        "label": "Friends",
+        "term": "People who can see your shared to-dos and cheer you on."
+      },
+      "nudge": {
+        "label": "Nudges and cheers",
+        "term": "Notifications you send to friends."
+      },
+      "category": {
+        "label": "Categories",
+        "term": "Groups that sort your to-dos."
+      },
+      "reminderTime": {
+        "label": "Custom reminder times",
+        "term": "Get reminders at the time you pick instead of a set time."
+      },
+      "appIcon": {
+        "label": "Cat app icons",
+        "term": "Pick a cat icon for your home screen."
+      }
     }
   }
 }

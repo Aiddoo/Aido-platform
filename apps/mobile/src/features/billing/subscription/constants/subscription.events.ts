@@ -51,6 +51,10 @@ declare module '@src/shared/analytics/event-map' {
     paywall_viewed: { view: SubscriptionView; feature?: PremiumGateAnalyticsFeature };
     /** 사용자가 고른 요금제를 바꿨다. 처음 골라 둔 연간은 세지 않는다 */
     paywall_plan_selected: { plan_type: PlanType; is_trial: boolean };
+    /** 페이월 혜택 장을 보였다. `index`는 "혜택 N" 칩 번호(1부터)이고 페이월마다 장별로 한 번이다 */
+    paywall_benefit_viewed: { feature: PremiumGateAnalyticsFeature; index: number };
+    /** 비교표에서 기능 이름을 눌러 설명을 열었다 */
+    plan_comparison_term_opened: { feature: PremiumGateAnalyticsFeature };
     /** 체험 일정을 페이월에서 처음 보여 줬다. 요금제를 오가도 페이월마다 한 번이다 */
     trial_timeline_viewed: { plan_type: PlanType };
     /** 문의로 안내한 결제 실패. 직접 취소·승인 대기는 세지 않는다 */

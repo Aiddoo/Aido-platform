@@ -93,6 +93,11 @@ function getFreeTrialReminderDateKey(plan: Pick<SubscriptionPlan, 'freeTrial'>, 
   return diffDateKeysInDays(todayKey, reminderDateKey) > 0 ? reminderDateKey : null;
 }
 
+/** 체험을 받을 수 있으면 오늘은 결제되지 않고, 아니면 고른 요금제 가격이 바로 결제된다 */
+function getAmountDueToday(plan: Pick<SubscriptionPlan, 'freeTrial' | 'price'>) {
+  return plan.freeTrial == null ? plan.price : 0;
+}
+
 export const SubscriptionPolicy = {
   getAnnualDiscountPercent,
   getMonthlyEquivalent,
@@ -101,4 +106,5 @@ export const SubscriptionPolicy = {
   hasFreeTrial,
   getFreeTrialEndDateKey,
   getFreeTrialReminderDateKey,
+  getAmountDueToday,
 } as const;

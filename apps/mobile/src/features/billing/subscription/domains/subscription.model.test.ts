@@ -196,3 +196,34 @@ describe('hasFreeTrial', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('getAmountDueToday', () => {
+  it('체험 자격이 있는 요금제는 오늘 결제가 없다', () => {
+    // Given
+    const plan = createPlan({
+      planType: 'annual',
+      price: 29_900,
+      freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 },
+    });
+
+    // When
+    const amount = SubscriptionPolicy.getAmountDueToday(plan);
+
+    // Then
+    expect(amount).toBe(0);
+  });
+
+  it.each([
+    ['체험 자격이 없는 연간', 'annual', 29_900],
+    ['체험이 없는 월간', 'monthly', 3_900],
+  ] as const)('%s은 가격이 오늘 바로 결제된다', (_case, planType, price) => {
+    // Given
+    const plan = createPlan({ planType, price, freeTrial: null });
+
+    // When
+    const amount = SubscriptionPolicy.getAmountDueToday(plan);
+
+    // Then
+    expect(amount).toBe(price);
+  });
+});

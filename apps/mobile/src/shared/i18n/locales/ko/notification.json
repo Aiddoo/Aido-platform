@@ -63,7 +63,7 @@
     "off": "꺼짐",
     "deviceOff": "기기에서 꺼짐",
     "pushLabel": "푸시 알림",
-    "pushDescription": "모든 푸시 알림을 받아요",
+    "pushDescription": "할 일·결제 안내를 받아요. 광고성 알림은 따로 동의해요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00 시간대에도 알림을 받아요",
     "marketingLabel": "마케팅 수신 동의",
@@ -119,5 +119,10 @@
   "bell": {
     "unreadLabel": "알림, 읽지 않은 알림 있음",
     "retryLabel": "알림을 불러오지 못했어요. 다시 시도"
+  },
+  "billingReminder": {
+    "label": "체험 끝나기 전 알림",
+    "on": "{{date}}에 푸시로 알려드려요",
+    "off": "알림을 켜면 {{date}}에 알려드려요"
   }
 }

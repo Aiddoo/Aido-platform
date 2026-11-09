@@ -63,7 +63,7 @@
     "off": "Off",
     "deviceOff": "Off on device",
     "pushLabel": "Push notifications",
-    "pushDescription": "Receive all push notifications",
+    "pushDescription": "Get to-do and billing updates. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
     "marketingLabel": "Marketing communications",
@@ -119,5 +119,10 @@
   "bell": {
     "unreadLabel": "Notifications, unread",
     "retryLabel": "Couldn't load notifications. Retry"
+  },
+  "billingReminder": {
+    "label": "Trial ending reminder",
+    "on": "We'll remind you on {{date}}",
+    "off": "Turn on notifications to get a reminder on {{date}}"
   }
 }

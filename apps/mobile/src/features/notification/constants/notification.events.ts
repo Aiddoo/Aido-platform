@@ -1,6 +1,11 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 
-export type PushPermissionPromptSource = 'onboarding' | 'todo_time' | 'feed_card' | 'settings';
+export type PushPermissionPromptSource =
+  | 'onboarding'
+  | 'todo_time'
+  | 'feed_card'
+  | 'settings'
+  | 'paywall';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

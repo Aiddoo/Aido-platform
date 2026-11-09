@@ -7,9 +7,10 @@ import {
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
 import {
-  excludeBlockedBenefit,
   getPlanBenefitAmounts,
   getPlanComparison,
+  toBenefitQuotaLabel,
+  toPlanFeatureComparison,
 } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
@@ -87,34 +88,48 @@ describe('getPlanComparison', () => {
   });
 });
 
-describe('excludeBlockedBenefit', () => {
-  const benefits = [
-    { feature: 'AI_PARSE' },
-    { feature: 'CUSTOM_REMINDER_TIME' },
-    { feature: 'NUDGE' },
-    { feature: 'APP_ICON' },
-  ] as const;
+describe('toBenefitQuotaLabel', () => {
+  it('무료에 없는 AI 리포트는 프리미엄 전용이다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot();
 
-  it('막힌 기능은 빼고 나머지 순서는 그대로 둔다', () => {
     // When
-    const visible = excludeBlockedBenefit(benefits, 'NUDGE');
+    const label = toBenefitQuotaLabel(snapshot, 'AI_REPORT');
 
     // Then
-    expect(visible.map(({ feature }) => feature)).toEqual([
-      'AI_PARSE',
-      'CUSTOM_REMINDER_TIME',
-      'APP_ICON',
-    ]);
+    expect(label).toEqual({ type: 'premiumOnly' });
   });
 
-  it.each([
-    ['막힌 기능을 모르면', undefined],
-    ['목록에 없는 기능이면', 'FRIEND'],
-  ] as const)('%s 모두 보여 준다', (_case, feature) => {
+  it('초대로 늘어난 무료 한도와 프리미엄 상한을 견준다', () => {
+    // Given
+    const snapshot = EntitlementPolicy.withFeatureQuota(
+      createEntitlementSnapshot(),
+      toFeatureQuota({ ...createFeatureQuotaDto('AI_PARSE'), limit: 15 }),
+    );
+
     // When
-    const visible = excludeBlockedBenefit(benefits, feature);
+    const label = toBenefitQuotaLabel(snapshot, 'AI_PARSE');
 
     // Then
-    expect(visible).toEqual(benefits);
+    expect(label).toEqual({
+      type: 'upgrade',
+      free: { type: 'amount', unit: 'perMonth', amount: 15 },
+      premium: { type: 'amount', unit: 'perMonth', amount: PLAN_CATALOG.AI_PARSE.fairUse.premium },
+    });
+  });
+});
+
+describe('toPlanFeatureComparison', () => {
+  it('콕 찌르기와 응원은 같은 한도라 비교표 한 줄로 보여도 맞다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot();
+
+    // When
+    const nudge = toPlanFeatureComparison(snapshot, 'NUDGE');
+    const cheer = toPlanFeatureComparison(snapshot, 'CHEER');
+
+    // Then
+    expect(nudge).toEqual(cheer);
+    expect(nudge.premium).toEqual({ type: 'unlimited' });
   });
 });

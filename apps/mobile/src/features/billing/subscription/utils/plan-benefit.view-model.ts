@@ -85,10 +85,48 @@ export function getPlanComparison(
     .exhaustive();
 }
 
-/** 막힌 기능은 페이월 맨 위 카드가 이미 설명하므로 아래 혜택 목록에서 한 번 더 보이지 않게 뺀다 */
-export function excludeBlockedBenefit<TBenefit extends { feature: EntitlementFeature }>(
-  benefits: readonly TBenefit[],
-  blockedFeature: EntitlementFeature | undefined,
-): TBenefit[] {
-  return benefits.filter((benefit) => benefit.feature !== blockedFeature);
+/** 비교 칸 하나의 값. 켜고 끄는 기능은 포함 여부만 있다 */
+export type PlanValue =
+  | { type: 'amount'; unit: PlanComparison['unit']; amount: number }
+  | { type: 'unlimited' }
+  | { type: 'included' }
+  | { type: 'excluded' };
+
+interface PlanFeatureComparison {
+  free: PlanValue;
+  premium: PlanValue;
+}
+
+function toPlanValue(unit: PlanComparison['unit'], amount: number | null): PlanValue {
+  return amount == null ? { type: 'unlimited' } : { type: 'amount', unit, amount };
+}
+
+/** 비교표 한 줄. 숫자는 getPlanComparison, 켜고 끄는 기능은 무료에 없고 프리미엄에 있다 */
+export function toPlanFeatureComparison(
+  snapshot: EntitlementSnapshot,
+  feature: EntitlementFeature,
+): PlanFeatureComparison {
+  return match(feature)
+    .with('AI_REPORT', 'AI_SUGGESTION', 'CUSTOM_REMINDER_TIME', 'APP_ICON', () => ({
+      free: { type: 'excluded' } as const,
+      premium: { type: 'included' } as const,
+    }))
+    .with('AI_PARSE', 'VOICE_NOTE', 'CHEER', 'NUDGE', 'FRIEND', 'TODO_CATEGORY', (limitFeature) => {
+      const { unit, free, premium } = getPlanComparison(snapshot, limitFeature);
+      return { free: toPlanValue(unit, free), premium: toPlanValue(unit, premium) };
+    })
+    .exhaustive();
+}
+
+type BenefitQuotaLabel =
+  | { type: 'premiumOnly' }
+  | { type: 'upgrade'; free: PlanValue; premium: PlanValue };
+
+/** 혜택 장 아래 한도 띠. 무료에 없는 기능은 "프리미엄 전용", 있으면 "무료 → 프리미엄" 양이다 */
+export function toBenefitQuotaLabel(
+  snapshot: EntitlementSnapshot,
+  feature: EntitlementFeature,
+): BenefitQuotaLabel {
+  const { free, premium } = toPlanFeatureComparison(snapshot, feature);
+  return free.type === 'excluded' ? { type: 'premiumOnly' } : { type: 'upgrade', free, premium };
 }

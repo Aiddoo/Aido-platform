@@ -2,6 +2,9 @@ import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api';
 import { ok } from '@src/core/errors/result';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases-gateway';
+import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
+import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
@@ -138,6 +141,7 @@ async function renderSubscriptionScreen(
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
+  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), toPreference(createPreferenceDto()));
   if (state != null) {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(state.me));
     queryClient.setQueryData(
@@ -245,7 +249,8 @@ describe('구독 화면', () => {
     const { analytics } = await renderSubscriptionScreen(FREE, () => Promise.resolve(offering));
 
     // Then
-    expect(await screen.findByText('₩68,000')).toBeTruthy();
+    const amountDueToday = await screen.findByTestId('subscription-amount-due-today');
+    expect(within(amountDueToday).getByText('₩68,000')).toBeTruthy();
     expect(
       screen.getByTestId('subscription-purchase').props.accessibilityState.disabled,
     ).toBeFalsy();
@@ -267,6 +272,9 @@ describe('구독 화면', () => {
       // Then
       expect(await screen.findByTestId('subscription-load-failure')).toBeTruthy();
       expect(screen.getByTestId('subscription-paywall')).toBeTruthy();
+      expect(screen.queryByTestId('subscription-amount-due-today')).toBeNull();
+      expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
+      expect(screen.queryByText('체험 끝나기 전 알림')).toBeNull();
       expect(screen.getByTestId('subscription-purchase').props.accessibilityState.disabled).toBe(
         true,
       );
@@ -284,6 +292,11 @@ describe('구독 화면', () => {
     // Then
     expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
     expect(screen.getByTestId('subscription-paywall')).toBeTruthy();
+    expect(screen.queryByTestId('subscription-amount-due-today')).toBeNull();
+    expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
+    expect(screen.getByTestId('subscription-purchase').props.accessibilityState.disabled).toBe(
+      true,
+    );
   });
 
   it('오프라인에서 내 정보가 없으면 영수증 자리에서 연결되면 보여 준다고 알린다', async () => {
@@ -297,9 +310,34 @@ describe('구독 화면', () => {
     expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
   });
 
-  it('막혀서 들어오면 그 기능을 요금제보다 먼저 한 번만, 연간 요금제를 월간보다 먼저 보여 준다', async () => {
+  it.each([
+    ['AI 리포트', 'AI_REPORT', 'ai_report', 2],
+    ['말로 메모하기', 'VOICE_NOTE', 'voice_note', 4],
+  ] as const)(
+    '%s에서 막혀 들어오면 그 혜택 장부터 보여 주고 따로 기능 카드를 두지 않는다',
+    async (_case, feature, analyticsFeature, index) => {
+      // Given
+      jest.mocked(useLocalSearchParams).mockReturnValue({ feature });
+
+      // When
+      const { analytics } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(MONTHLY_AND_ANNUAL),
+      );
+
+      // Then
+      expect(await screen.findByTestId(`paywall-benefit-${feature}`)).toBeTruthy();
+      expect(screen.queryByTestId('paywall-blocked-feature')).toBeNull();
+      expect(
+        analytics.trackEvent.mock.calls.filter(
+          ([eventName]) => eventName === 'paywall_benefit_viewed',
+        ),
+      ).toEqual([['paywall_benefit_viewed', { feature: analyticsFeature, index }]]);
+    },
+  );
+
+  it('혜택 장에 없는 친구 한도에서 막혀 들어오면 기능 카드를 먼저 두고 첫 혜택 장부터 보여 준다', async () => {
     // Given
-    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'AI_PARSE' });
+    jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'FRIEND' });
 
     // When
     const { analytics } = await renderSubscriptionScreen(FREE, () =>
@@ -307,22 +345,21 @@ describe('구독 화면', () => {
     );
 
     // Then
-    expect(await screen.findByText('₩29,900')).toBeTruthy();
-    const blockedFeature = screen.getByTestId('paywall-blocked-feature');
-    expect(within(blockedFeature).getByText('AI 할 일 만들기 넉넉하게')).toBeTruthy();
-    expect(
-      screen
-        .getAllByText(/^(AI 할 일 만들기 넉넉하게|연간 구독|월간 구독)$/)
-        .map((element) => element.props.children),
-    ).toEqual(['AI 할 일 만들기 넉넉하게', '연간 구독', '월간 구독']);
-    expect(screen.getByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
+    const blockedFeature = await screen.findByTestId('paywall-blocked-feature');
+    expect(within(blockedFeature).getByText('친구 무제한')).toBeTruthy();
+    expect(screen.getByTestId('paywall-benefit-AI_PARSE')).toBeTruthy();
+    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_benefit_viewed', {
+      feature: 'ai_parse',
+      index: 1,
+    });
+    expect(await screen.findByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
     expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', {
       view: 'status',
-      feature: 'ai_parse',
+      feature: 'friend_limit',
     });
   });
 
-  it('모르는 기능으로 들어오면 막힌 기능 없이 페이월을 보여 준다', async () => {
+  it('모르는 기능으로 들어오면 막힌 기능 없이 첫 혜택 장부터 보여 준다', async () => {
     // Given
     jest.mocked(useLocalSearchParams).mockReturnValue({ feature: 'UNKNOWN' });
 
@@ -332,8 +369,9 @@ describe('구독 화면', () => {
     );
 
     // Then
-    expect(await screen.findByText('₩29,900')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
     expect(screen.queryByTestId('paywall-blocked-feature')).toBeNull();
+    expect(screen.getByTestId('paywall-benefit-AI_PARSE')).toBeTruthy();
     expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', { view: 'status' });
   });
 
@@ -398,16 +436,19 @@ describe('구독 화면', () => {
       expect(await screen.findByTestId('subscription-trial-timeline')).toBeTruthy();
       expect(screen.getByTestId('subscription-plan-free-trial')).toBeTruthy();
       expect(screen.getByText('1개월 무료')).toBeTruthy();
-      // 가장 큰 가격은 체험 뒤 실제 청구액이다
+      // 가장 큰 가격은 체험 뒤 실제 청구액이고, 오늘은 결제되지 않는다
       expect(screen.getByText('₩29,900')).toBeTruthy();
+      const amountDueToday = screen.getByTestId('subscription-amount-due-today');
+      expect(within(amountDueToday).getByText('₩0')).toBeTruthy();
       expect(screen.getByRole('button', { name: '1개월 무료로 시작하기' })).toBeTruthy();
       expect(screen.getByTestId('subscription-trial-disclosure').props.children).toMatch(
         /부터 연 ₩29,900 정기결제 · 언제든 해지할 수 있어요$/,
       );
       const timeline = screen.getByTestId('subscription-trial-timeline');
-      expect(within(timeline).getByText('무료 체험 시작')).toBeTruthy();
-      expect(within(timeline).getByText('끝나기 3일 전에 알려드려요')).toBeTruthy();
-      expect(within(timeline).getByText('연 ₩29,900 결제')).toBeTruthy();
+      expect(within(timeline).getByText('체험 시작')).toBeTruthy();
+      expect(within(timeline).getByText('3일 전 알림')).toBeTruthy();
+      expect(within(timeline).getByText('첫 결제 연 ₩29,900')).toBeTruthy();
+      expect(await within(timeline).findByText('체험 끝나기 전 알림')).toBeTruthy();
       expect(analytics.trackEvent).toHaveBeenCalledWith('trial_timeline_viewed', {
         plan_type: 'annual',
       });
@@ -431,6 +472,9 @@ describe('구독 화면', () => {
       expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
         '월 ₩3,900 정기결제 · 언제든 해지할 수 있어요',
       );
+      const amountDueToday = screen.getByTestId('subscription-amount-due-today');
+      expect(within(amountDueToday).getByText('₩3,900')).toBeTruthy();
+      expect(screen.queryByText('체험 끝나기 전 알림')).toBeNull();
       expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_plan_selected', {
         plan_type: 'monthly',
         is_trial: false,
@@ -457,6 +501,11 @@ describe('구독 화면', () => {
       expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
       expect(screen.queryByTestId('subscription-plan-free-trial')).toBeNull();
       expect(screen.queryByTestId('subscription-trial-disclosure')).toBeNull();
+      const amountDueToday = screen.getByTestId('subscription-amount-due-today');
+      expect(within(amountDueToday).getByText('₩29,900')).toBeTruthy();
+      expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
+        '연 ₩29,900 정기결제 · 언제든 해지할 수 있어요',
+      );
     });
 
     it('체험으로 결제 창에서 취소하면 체험이었다는 것까지 센다', async () => {
