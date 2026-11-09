@@ -13,8 +13,8 @@ describe("BillingNoticeWindowPolicy", () => {
   });
 
   it.each([
-    // 1개월 체험은 스토어가 정한 끝(1/31 → 2/29)으로 판단한다
-    { startedAt: "2028-01-31T00:00:00Z", endsAt: "2028-02-29T00:00:00Z", expected: true },
+    // 2주 체험은 스토어가 정한 끝(2/15 → 2/29)으로 판단한다
+    { startedAt: "2028-02-15T00:00:00Z", endsAt: "2028-02-29T00:00:00Z", expected: true },
     { startedAt: "2026-11-01T00:00:00Z", endsAt: "2026-11-04T00:00:00.001Z", expected: true },
     { startedAt: "2026-11-01T00:00:00Z", endsAt: "2026-11-04T00:00:00Z", expected: false },
     { startedAt: "2026-11-01T00:00:00Z", endsAt: "2026-11-02T00:00:00Z", expected: false },

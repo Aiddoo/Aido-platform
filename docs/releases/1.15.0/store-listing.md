@@ -20,7 +20,7 @@
 
 > 말하면 AI가 할 일로 나눠드려요. 녹음 파일은 아이두 서버로 보내지 않고, 저장 전에 하나씩 확인할 수 있어요.
 
-**description** (2,925/4,000자)
+**description** (2,924/4,000자)
 
 ```text
 할 일 관리, 혼자 하니까 안 되셨죠?
@@ -116,7 +116,7 @@
 친구 초대로 받은 프리미엄에서도 같은 기능을 쓸 수 있어요. 구독 중에 받은 보상은 구독이 끝난 뒤 이어서 시작돼요.
 
 - 아이두 프리미엄은 월간·연간 자동 갱신 구독이에요. 가격과 기간은 구매 전에 앱에서 보여드려요.
-- 연간 구독을 처음 시작하면 1개월 무료 체험을 받을 수 있어요(스토어가 대상으로 정한 계정). 체험이 끝나기 전에 해지하지 않으면 연간 구독료가 정기결제되고, 끝나기 3일 전에 알려드려요.
+- 연간 구독을 처음 시작하면 2주 무료 체험을 받을 수 있어요(스토어가 대상으로 정한 계정). 체험이 끝나기 전에 해지하지 않으면 연간 구독료가 정기결제되고, 끝나기 3일 전에 알려드려요.
 - 구독료는 구매를 확인하면 Apple 계정으로 청구돼요.
 - 현재 구독 기간이 끝나기 최소 24시간 전에 자동 갱신을 끄지 않으면 자동으로 갱신돼요.
 - 구독은 구매 후 기기 설정에서 관리할 수 있어요.
@@ -129,14 +129,14 @@
 - 한국 대기질(미세먼지): 에어코리아(한국환경공단), 공공데이터포털(data.go.kr)
 ```
 
-**release_notes** (388/4,000자. Play 한도 500자도 넘지 않는다)
+**release_notes** (387/4,000자. Play 한도 500자도 넘지 않는다)
 
 ```text
 새로운 기능
 - 말로 할 일 만들기: 말하면 AI가 할 일로 나눠요. 저장 전에 하나씩 확인해요.
 - 말로 메모하기: 긴 이야기를 요약과 핵심 포인트, 할 일로 정리해요.
 - 핵심 포인트를 누르면 그 지점부터 다시 들을 수 있어요.
-- 연간 구독을 처음 시작하면 1개월 무료 체험을 받을 수 있어요.
+- 연간 구독을 처음 시작하면 2주 무료 체험을 받을 수 있어요.
 
 개선
 - 반복 할 일은 이 할 일만, 이후 할 일까지, 반복 전체 중에 골라 고치거나 지울 수 있어요.
@@ -244,7 +244,7 @@ Subscribe to Aido Premium to unlock:
 Premium from invites has the same features. Rewards earned while subscribed start after it ends.
 
 - Aido Premium is a monthly or yearly auto-renewing subscription. Price and period are shown before you buy.
-- New yearly subscribers may get 1 month free. Cancel before it ends, or the yearly price is charged.
+- New yearly subscribers may get 2 weeks free. Cancel before it ends, or the yearly price is charged.
 - Payment is charged to your Apple Account at confirmation of purchase.
 - It renews automatically unless auto-renew is turned off at least 24 hours before the current period ends.
 - Manage your subscription in your device settings after purchase.
@@ -264,7 +264,7 @@ New
 - Speak to add: AI drafts to-dos you check before saving.
 - Voice notes: summaries, key points, and to-dos.
 - Tap a key point to listen from there.
-- New yearly subscribers can get 1 month free.
+- New yearly subscribers can get 2 weeks free.
 
 Improvements
 - Edit or delete one repeat, the ones after it, or all.
@@ -279,10 +279,10 @@ Bug fixes
 ## Google Play
 
 - `title`, `short_description`(ko·en)은 1.14.0 값을 그대로 둔다.
-- `full_description`(ko·en)은 위 App Store 본문과 같다. 아래 다섯 곳만 Play용으로 바꾼다. 1.14.0과 같은 방식이다. 바꾼 뒤 길이는 ko 2,953/4,000자, en 3,988/4,000자다.
+- `full_description`(ko·en)은 위 App Store 본문과 같다. 아래 다섯 곳만 Play용으로 바꾼다. 1.14.0과 같은 방식이다. 바꾼 뒤 길이는 ko 2,952/4,000자, en 3,988/4,000자다.
   1. 위젯 줄(ko): "2×2·4×2·4×4 세 가지 위젯으로 오늘 할 일과 달성률, 연속 기록을 홈 화면에서 확인" / "4×4 위젯은 이번 주 7일과 할 일을 다 끝낸 날의 발자국까지 한눈에" (en: "2×2, 4×2, and 4×4 widgets show ..." / "The 4×4 widget adds ...")
   2. 큰 화면 줄(ko): "폴더블 기기를 펼치면 목록과 상세를 나란히, 접고 펼쳐도 보던 화면 그대로" (en: "Unfold your foldable to see ...")
   3. 구독 결제 계정(ko): "구독료는 구매를 확인하면 Google Play 계정으로 청구돼요." (en: "Payment is charged to your Google Play account on purchase.")
   4. 구독 관리 경로(ko): "구독은 구매 후 Google Play 설정 > 구독에서 관리할 수 있어요." (en: "Manage your subscription in Google Play > Payments & subscriptions > Subscriptions.")
   5. 영문 제목만 다르다: "[ Home screen widgets ]"(Play) / "[ Home Screen widgets ]"(App Store). 나머지는 App Store와 같다.
-- `release_notes`(ko·en)는 위 App Store 릴리스 노트와 같은 문장이다. `store:check`가 두 스토어의 같은 언어 문장이 같은지 본다. 길이는 ko 388/500자, en 495/500자다. 문장을 고치면 en이 500자에 가까우니 다시 센다.
+- `release_notes`(ko·en)는 위 App Store 릴리스 노트와 같은 문장이다. `store:check`가 두 스토어의 같은 언어 문장이 같은지 본다. 길이는 ko 387/500자, en 495/500자다. 문장을 고치면 en이 500자에 가까우니 다시 센다.

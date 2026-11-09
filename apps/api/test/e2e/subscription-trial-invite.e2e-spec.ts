@@ -13,11 +13,11 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 
 const webhookSecret = "subscription-trial-invite-webhook-secret";
 const DAY_MS = 24 * 60 * 60 * 1_000;
-// 1월 31일에 시작한 한 달 체험을 스토어가 윤년 2월 말일로 끝낸다
-const TRIAL_STARTED_AT = new Date("2028-01-31T09:00:00.000Z");
+// 2월 15일에 시작한 2주 체험을 스토어가 윤년 2월 29일로 끝낸다
+const TRIAL_STARTED_AT = new Date("2028-02-15T09:00:00.000Z");
 const TRIAL_ENDS_AT = new Date("2028-02-29T09:00:00.000Z");
-const INVITED_AT = new Date("2028-02-10T09:00:00.000Z");
-const CANCELLED_AT = new Date("2028-02-20T09:00:00.000Z");
+const INVITED_AT = new Date("2028-02-18T09:00:00.000Z");
+const CANCELLED_AT = new Date("2028-02-22T09:00:00.000Z");
 const GRANT_ENDS_AT = new Date(TRIAL_ENDS_AT.getTime() + 7 * DAY_MS);
 const CHAIN = "trial-invite-chain";
 const EMAIL = "trial-invite@example.com";

@@ -28,7 +28,7 @@ type PurchasePlan = Pick<SubscriptionPlan, 'identifier' | 'planType' | 'freeTria
 const ANNUAL_TRIAL_PLAN = {
   identifier: 'annual',
   planType: 'annual',
-  freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 },
+  freeTrial: { periodUnit: 'week', periodNumberOfUnits: 2 },
 } as const satisfies PurchasePlan;
 
 const ANNUAL_PLAN = {

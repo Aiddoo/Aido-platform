@@ -4,15 +4,15 @@
 
 Before pasting:
 
-- The App Store Notes field allows 4,000 characters. The text below is 3,900 characters with the demo account left blank, so the email and password can use up to 100 characters together. Count again after filling them in.
+- The App Store Notes field allows 4,000 characters. The text below is 3,914 characters with the demo account left blank, so the email and password can use up to 86 characters together. Count again after filling them in.
 - The demo account must be on the free plan (no subscription or invite reward), have only the 2 default categories, and be more than 1 day old. A newer account sees the notifications screen right after sign-in instead of the system alert described in the notes.
-- The 1-month free trial is an introductory offer on the yearly subscription in App Store Connect and a free-trial offer on the yearly base plan in Play Console. If it isn't set there, the app shows only the regular prices, and the trial lines in the notes don't apply.
+- The 2-week free trial is an introductory offer on the yearly subscription in App Store Connect and a free-trial offer on the yearly base plan in Play Console. If it isn't set there, the app shows only the regular prices, and the trial lines in the notes don't apply.
 - `{price}` and `{date}` stand for the store price and the trial end date that the app fills in.
 
 ## App Store Connect: App Review Information > Notes
 
 ```text
-Aido 1.15.0 adds Speak to add, Voice notes, AI to-dos from text, repeating to-dos, a Premium limit sheet, and a 1-month free trial on the yearly plan.
+Aido 1.15.0 adds Speak to add, Voice notes, AI to-dos from text, repeating to-dos, a Premium limit sheet, and a 2-week free trial on the yearly plan.
 
 Demo account (free plan)
 - Email:
@@ -28,8 +28,8 @@ Please test voice on a real device.
 
 Subscriptions and free trial (Guideline 3.1.2)
 - Monthly or yearly auto-renewing plans; yearly is preselected. The largest price is the billed amount.
-- New yearly subscribers get a 1-month free trial, shown only if the App Store says the account is eligible.
-- The plan then shows "1 month free" and a dated timeline: trial starts today → reminder 3 days before the end → "{price}/year charged". The button reads "Start free for 1 month", with "Billed {price}/year from {date} · Cancel anytime" right below.
+- New yearly subscribers get a 2-week free trial, shown only if the App Store says the account is eligible.
+- The plan then shows "2 weeks free" and a dated timeline: trial starts today → reminder 3 days before the end → "{price}/year charged". The button reads "Start free for 2 weeks", with "Billed {price}/year from {date} · Cancel anytime" right below.
 - The renewal notice, Terms and Privacy links, and Restore purchases are on the same screen.
 - During the trial, Me tab > Manage subscription shows "Free trial" with the end and first payment dates. The server sends a reminder push and inbox notice 3 days before it ends.
 
@@ -42,7 +42,7 @@ Third-party AI consent (Guideline 5.1.2(i))
 
 Permissions and notifications
 - Mic: only after tapping a mic or "Make a voice note". No background audio. Audio files aren't sent to our servers. Only text is, and we don't store transcripts.
-- Notifications: asked right after sign-up, after tapping "Continue" on a notifications screen. The demo account gets it on first setting a to-do time. If denied, the app works and a timed to-do shows "Notifications are off, so we can't remind you · Open settings".
+- Notifications: one screen right after sign-up ("Get notified" / "Not now"), then the system alert. The demo account gets it on first setting a to-do time. If denied, the app works and a timed to-do shows "Notifications are off, so we can't remind you · Open settings".
 - Location: While Using only, after tapping the weather badge and "Continue".
 - Promotional push is opt-in only, titled "(Ad)" ("(광고)" in Korean) with opt-out steps and a "Turn off promotional notifications" action. Changes show the server's date; opted-in users are reminded every 2 years.
 
@@ -64,7 +64,7 @@ Demo account (free plan)
 Sensitive permissions
 - RECORD_AUDIO: only after someone taps the mic in the add to-do sheet, "Make a voice note" on the Memos tab, or the voice typing button in the subtask sheet. Denying it leaves typing and every other feature working. Speak to add and Voice notes stop listening when the app goes to the background or another screen opens. No foreground service records audio.
 - ACCESS_FINE_LOCATION and ACCESS_COARSE_LOCATION: foreground only, for the weather screen and weather notifications. The app asks only after someone taps the weather badge and "Continue". There is no background location permission. The app requests balanced accuracy.
-- POST_NOTIFICATIONS: reminders and friend activity. Right after sign-up, the system dialog appears after tapping "Continue" on a notifications screen. Older accounts see the dialog when they first set a to-do time. Denying keeps the app fully usable.
+- POST_NOTIFICATIONS: reminders and friend activity. Right after sign-up, one screen ("Get notified" / "Not now") comes before the system dialog. Older accounts see the dialog when they first set a to-do time. Denying keeps the app fully usable.
 
 Removed in 1.15.0 because Aido does not use them: USE_BIOMETRIC, USE_FINGERPRINT, SYSTEM_ALERT_WINDOW, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE.
 
@@ -82,7 +82,7 @@ AI output
 - AI turns the person's own words into suggested to-dos and summaries, and nothing is saved until they confirm it. They can report a problem from Me tab > Contact us.
 
 Subscriptions, free trial, and limits
-- Monthly or yearly auto-renewing plans; yearly is preselected. New yearly subscribers get a 1-month free trial, set as a free-trial offer in Play Console and shown only when Google Play offers it to the account. The paywall then shows "Start free for 1 month" with "Billed {price}/year from {date} · Cancel anytime" below it, and a timeline with the reminder 3 days before billing.
+- Monthly or yearly auto-renewing plans; yearly is preselected. New yearly subscribers get a 2-week free trial, set as a free-trial offer in Play Console and shown only when Google Play offers it to the account. The paywall then shows "Start free for 2 weeks" with "Billed {price}/year from {date} · Cancel anytime" below it, and a timeline with the reminder 3 days before billing.
 - Free: 10 AI to-dos and 3 voice notes a month, 5 friends, 3 categories, 3 nudges and 3 cheers a day. Plans never limit adding or completing to-dos. At a limit or a Premium-only feature, a sheet shows usage, the reset date, and Free → Premium numbers, with "See Premium" and "Not now".
 
 How to test

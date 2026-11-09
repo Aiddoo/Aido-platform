@@ -20,6 +20,7 @@ import {
   createTestQueryClient,
   renderUi,
 } from '@src/shared/__tests__';
+import { i18n } from '@src/shared/i18n';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
@@ -57,14 +58,18 @@ const MONTHLY_AND_ANNUAL: PurchaseOffering = {
   packages: [createPackage('MONTHLY', 3_900), createPackage('ANNUAL', 29_900)],
 };
 
-/** 연간에만 1개월 무료 체험이 있고 이 사용자는 자격이 있다 */
-const ANNUAL_WITH_FREE_TRIAL: PurchaseOffering = {
-  identifier: 'default',
-  packages: [
-    createPackage('MONTHLY', 3_900),
-    createPackage('ANNUAL', 29_900, { periodUnit: 'MONTH', periodNumberOfUnits: 1 }),
-  ],
-};
+function createAnnualTrialOffering(freeTrial: StorePackage['product']['freeTrial']) {
+  return {
+    identifier: 'default',
+    packages: [createPackage('MONTHLY', 3_900), createPackage('ANNUAL', 29_900, freeTrial)],
+  } satisfies PurchaseOffering;
+}
+
+/** 연간에만 2주 무료 체험이 있고 이 사용자는 자격이 있다 */
+const ANNUAL_WITH_FREE_TRIAL = createAnnualTrialOffering({
+  periodUnit: 'WEEK',
+  periodNumberOfUnits: 2,
+});
 
 interface ScreenState {
   tier: AccessTier;
@@ -169,8 +174,9 @@ async function renderSubscriptionScreen(
 }
 
 describe('구독 화면', () => {
-  afterEach(() => {
+  afterEach(async () => {
     onlineManager.setOnline(true);
+    await i18n.changeLanguage('ko');
   });
 
   it('무료 사용자에게는 요금제를 받아 페이월을 보여 준다', async () => {
@@ -480,7 +486,7 @@ describe('구독 화면', () => {
       });
 
       // When
-      await user.press(await screen.findByRole('button', { name: '1개월 무료로 시작하기' }));
+      await user.press(await screen.findByRole('button', { name: '2주 무료로 시작하기' }));
 
       // Then
       const welcome = await screen.findByTestId('subscription-welcome');
@@ -532,12 +538,12 @@ describe('구독 화면', () => {
       // Then
       expect(await screen.findByTestId('subscription-trial-timeline')).toBeTruthy();
       expect(screen.getByTestId('subscription-plan-free-trial')).toBeTruthy();
-      expect(screen.getByText('1개월 무료')).toBeTruthy();
+      expect(screen.getByText('2주 무료')).toBeTruthy();
       // 가장 큰 가격은 체험 뒤 실제 청구액이고, 오늘은 결제되지 않는다
       expect(screen.getByText('₩29,900')).toBeTruthy();
       const amountDueToday = screen.getByTestId('subscription-amount-due-today');
       expect(within(amountDueToday).getByText('₩0')).toBeTruthy();
-      expect(screen.getByRole('button', { name: '1개월 무료로 시작하기' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '2주 무료로 시작하기' })).toBeTruthy();
       expect(screen.getByTestId('subscription-trial-disclosure').props.children).toMatch(
         /부터 연\u00A0₩29,900 정기결제 · 언제든 해지할 수 있어요$/,
       );
@@ -550,6 +556,29 @@ describe('구독 화면', () => {
         plan_type: 'annual',
       });
     });
+
+    it.each([
+      ['ko', 'WEEK', 1, '1주 무료', '1주 무료로 시작하기'],
+      ['ko', 'MONTH', 1, '1개월 무료', '1개월 무료로 시작하기'],
+      ['en', 'WEEK', 2, '2 weeks free', 'Start free for 2 weeks'],
+      ['en', 'WEEK', 1, '1 week free', 'Start free for 1 week'],
+      ['en', 'MONTH', 1, '1 month free', 'Start free for 1 month'],
+    ] as const)(
+      '%s: 스토어가 준 체험 기간(%s × %i)을 칩과 버튼에 그대로 쓴다',
+      async (language, periodUnit, periodNumberOfUnits, chipLabel, buttonLabel) => {
+        // Given
+        await i18n.changeLanguage(language);
+
+        // When
+        await renderSubscriptionScreen(FREE, () =>
+          Promise.resolve(createAnnualTrialOffering({ periodUnit, periodNumberOfUnits })),
+        );
+
+        // Then
+        expect(await screen.findByRole('button', { name: buttonLabel })).toBeTruthy();
+        expect(screen.getByText(chipLabel)).toBeTruthy();
+      },
+    );
 
     it('체험이 없는 월간으로 바꾸면 일정을 숨기고 체험 고지 대신 정기결제 고지를 두며, 다시 연간으로 와도 일정은 한 번만 센다', async () => {
       // Given
@@ -616,7 +645,7 @@ describe('구독 화면', () => {
       );
 
       // When
-      await user.press(await screen.findByRole('button', { name: '1개월 무료로 시작하기' }));
+      await user.press(await screen.findByRole('button', { name: '2주 무료로 시작하기' }));
 
       // Then
       await waitFor(() =>

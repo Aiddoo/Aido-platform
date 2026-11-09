@@ -8,7 +8,7 @@ const DEFAULT_PLAN: SubscriptionPlan = {
   currencyCode: 'KRW',
   title: '연간',
   description: null,
-  freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 },
+  freeTrial: { periodUnit: 'week', periodNumberOfUnits: 2 },
 };
 
 export function createSubscriptionPlan(

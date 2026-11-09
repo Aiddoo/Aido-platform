@@ -108,6 +108,10 @@ describe('getMonthlyEquivalent', () => {
 
 describe('getFreeTrialEndDateKey', () => {
   it.each([
+    ['2주 체험은 14일 뒤에 끝난다', 'week', 2, '2026-11-09', '2026-11-23'],
+    ['14일로 실린 2주 체험도 같은 날에 끝난다', 'day', 14, '2026-11-09', '2026-11-23'],
+    ['2주 체험은 해를 넘겨 센다', 'week', 2, '2026-12-25', '2027-01-08'],
+    ['1주 체험은 7일 뒤에 끝난다', 'week', 1, '2026-11-09', '2026-11-16'],
     ['1개월 체험은 다음 달 같은 날에 끝난다', 'month', 1, '2026-11-09', '2026-12-09'],
     [
       '1월 31일에 시작한 1개월 체험은 평년 2월 말일에 끝난다',
@@ -131,7 +135,6 @@ describe('getFreeTrialEndDateKey', () => {
       '2029-02-28',
     ],
     ['7일 체험은 해를 넘겨 센다', 'day', 7, '2026-12-28', '2027-01-04'],
-    ['2주 체험은 14일 뒤에 끝난다', 'week', 2, '2026-11-09', '2026-11-23'],
   ] as const)('%s', (_case, periodUnit, periodNumberOfUnits, todayKey, expected) => {
     // Given
     const plan = createPlan({ planType: 'annual', freeTrial: { periodUnit, periodNumberOfUnits } });
@@ -153,17 +156,25 @@ describe('getFreeTrialEndDateKey', () => {
 });
 
 describe('getFreeTrialReminderDateKey', () => {
-  it('체험이 끝나기 3일 전을 알림 날로 반환한다', () => {
-    // Given
-    const plan = createPlan({ freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 } });
+  it.each([
+    ['2주 체험은 11월 23일에 끝나므로 11월 20일', 'week', 2, '2026-11-09', '2026-11-20'],
+    ['14일로 실린 2주 체험도 11월 20일', 'day', 14, '2026-11-09', '2026-11-20'],
+    ['해를 넘겨 1월 8일에 끝나는 2주 체험은 1월 5일', 'week', 2, '2026-12-25', '2027-01-05'],
+    ['1주 체험은 11월 16일에 끝나므로 11월 13일', 'week', 1, '2026-11-09', '2026-11-13'],
+    ['윤년 3월 1일에 끝나는 1개월 체험은 2월 27일', 'month', 1, '2028-02-01', '2028-02-27'],
+  ] as const)(
+    '체험이 끝나기 3일 전을 알림 날로 반환한다: %s',
+    (_case, periodUnit, periodNumberOfUnits, todayKey, expected) => {
+      // Given
+      const plan = createPlan({ freeTrial: { periodUnit, periodNumberOfUnits } });
 
-    // When
-    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, '2028-02-01');
+      // When
+      const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, todayKey);
 
-    // Then
-    // 윤년 3월 1일에 끝나므로 2월 27일
-    expect(reminderDateKey).toBe('2028-02-27');
-  });
+      // Then
+      expect(reminderDateKey).toBe(expected);
+    },
+  );
 
   it.each([
     ['3일 체험이면 알림 날이 오늘이라', 3],
@@ -184,7 +195,7 @@ describe('hasFreeTrial', () => {
   it.each([
     [
       '스토어가 체험을 줄 수 있다고 했으면 true',
-      { periodUnit: 'month', periodNumberOfUnits: 1 },
+      { periodUnit: 'week', periodNumberOfUnits: 2 },
       true,
     ],
     ['자격이 없으면 false', null, false],
@@ -203,7 +214,7 @@ describe('getAmountDueToday', () => {
     const plan = createPlan({
       planType: 'annual',
       price: 29_900,
-      freeTrial: { periodUnit: 'month', periodNumberOfUnits: 1 },
+      freeTrial: { periodUnit: 'week', periodNumberOfUnits: 2 },
     });
 
     // When

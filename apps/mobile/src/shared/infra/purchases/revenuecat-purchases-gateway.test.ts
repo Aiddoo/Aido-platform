@@ -78,22 +78,23 @@ function createStoreProduct(overrides: Partial<PurchasesStoreProduct> = {}): Pur
 }
 
 /** App Store 무료 체험은 가격 0인 소개 가격으로 실린다 */
-const APP_STORE_FREE_MONTH = {
+const APP_STORE_FREE_TWO_WEEKS = {
   price: 0,
   priceString: '₩0',
   cycles: 1,
-  period: 'P1M',
-  periodUnit: 'MONTH',
-  periodNumberOfUnits: 1,
+  period: 'P2W',
+  periodUnit: 'WEEK',
+  periodNumberOfUnits: 2,
 };
 
 function createPricingPhase(
   amountMicros: number,
   iso8601: string,
   unit: PERIOD_UNIT,
+  value = 1,
 ): PricingPhase {
   return {
-    billingPeriod: { unit, value: 1, iso8601 },
+    billingPeriod: { unit, value, iso8601 },
     recurrenceMode: null,
     billingCycleCount: null,
     price: { formatted: amountMicros === 0 ? '₩0' : '₩29,900', amountMicros, currencyCode: 'KRW' },
@@ -104,7 +105,7 @@ function createPricingPhase(
 function createPlayOption(freePhase: PricingPhase | null): SubscriptionOption {
   const fullPricePhase = createPricingPhase(29_900_000_000, 'P1Y', PERIOD_UNIT.YEAR);
   return {
-    id: freePhase == null ? 'yearly-base' : 'yearly-base:annual-trial-1m',
+    id: freePhase == null ? 'yearly-base' : 'yearly-base:annual-trial-2w',
     storeProductId: `${ANNUAL_PRODUCT_ID}:yearly-base`,
     productId: ANNUAL_PRODUCT_ID,
     pricingPhases: freePhase == null ? [fullPricePhase] : [freePhase, fullPricePhase],
@@ -249,7 +250,7 @@ describe('createRevenueCatPurchasesGateway', () => {
   });
 
   describe('무료 체험', () => {
-    const ONE_MONTH = { periodUnit: 'MONTH', periodNumberOfUnits: 1 };
+    const TWO_WEEKS = { periodUnit: 'WEEK', periodNumberOfUnits: 2 };
 
     async function getAnnualFreeTrial() {
       const offering = await revenueCatPurchasesGateway.getOffering();
@@ -258,14 +259,14 @@ describe('createRevenueCatPurchasesGateway', () => {
 
     it('App Store 무료 체험에 자격이 있으면 체험 기간을 싣는다', async () => {
       // Given
-      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_TWO_WEEKS }));
       givenIntroEligibility(INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE);
 
       // When
       const freeTrial = await getAnnualFreeTrial();
 
       // Then
-      expect(freeTrial).toEqual(ONE_MONTH);
+      expect(freeTrial).toEqual(TWO_WEEKS);
       expect(purchases.checkTrialOrIntroductoryPriceEligibility).toHaveBeenCalledWith([
         ANNUAL_PRODUCT_ID,
       ]);
@@ -278,7 +279,7 @@ describe('createRevenueCatPurchasesGateway', () => {
       'App Store 무료 체험이 있어도 %s 일반 가격만 보이게 체험을 싣지 않는다',
       async (_case, status) => {
         // Given
-        givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+        givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_TWO_WEEKS }));
         givenIntroEligibility(status);
 
         // When
@@ -291,7 +292,7 @@ describe('createRevenueCatPurchasesGateway', () => {
 
     it('자격 확인이 실패해도 요금제는 받고 체험만 싣지 않으며 실패를 남긴다', async () => {
       // Given
-      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
+      givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_TWO_WEEKS }));
       purchases.checkTrialOrIntroductoryPriceEligibility.mockRejectedValue(new Error('boom'));
 
       // When
@@ -308,7 +309,7 @@ describe('createRevenueCatPurchasesGateway', () => {
       // Given
       givenOffering(
         createStoreProduct({
-          introPrice: { ...APP_STORE_FREE_MONTH, price: 9_900, priceString: '₩9,900' },
+          introPrice: { ...APP_STORE_FREE_TWO_WEEKS, price: 9_900, priceString: '₩9,900' },
         }),
       );
 
@@ -322,12 +323,12 @@ describe('createRevenueCatPurchasesGateway', () => {
 
     it('Google Play 기본 옵션에 무료 단계가 있으면 자격이 있어 체험 기간을 싣는다', async () => {
       // Given
-      const option = createPlayOption(createPricingPhase(0, 'P1M', PERIOD_UNIT.MONTH));
+      const option = createPlayOption(createPricingPhase(0, 'P2W', PERIOD_UNIT.WEEK, 2));
       givenOffering(
         createStoreProduct({
           defaultOption: option,
           subscriptionOptions: [option],
-          introPrice: APP_STORE_FREE_MONTH,
+          introPrice: APP_STORE_FREE_TWO_WEEKS,
         }),
       );
 
@@ -335,7 +336,7 @@ describe('createRevenueCatPurchasesGateway', () => {
       const freeTrial = await getAnnualFreeTrial();
 
       // Then
-      expect(freeTrial).toEqual(ONE_MONTH);
+      expect(freeTrial).toEqual(TWO_WEEKS);
       expect(purchases.checkTrialOrIntroductoryPriceEligibility).not.toHaveBeenCalled();
     });
 
@@ -343,7 +344,7 @@ describe('createRevenueCatPurchasesGateway', () => {
       ['기본 옵션에 무료 단계가 없으면', createPlayOption(null)],
       [
         '무료 단계의 기간 단위를 모르면',
-        createPlayOption(createPricingPhase(0, 'P1M', PERIOD_UNIT.UNKNOWN)),
+        createPlayOption(createPricingPhase(0, 'P2W', PERIOD_UNIT.UNKNOWN, 2)),
       ],
     ])('Google Play %s 체험을 싣지 않는다', async (_case, option) => {
       // Given

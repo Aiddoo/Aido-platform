@@ -42,8 +42,8 @@ describe('toSubscriptionOffering', () => {
   it.each([
     [
       '스토어 체험 기간을 요금제 체험으로 옮긴다',
-      { periodUnit: 'MONTH', periodNumberOfUnits: 1 },
-      { periodUnit: 'month', periodNumberOfUnits: 1 },
+      { periodUnit: 'WEEK', periodNumberOfUnits: 2 },
+      { periodUnit: 'week', periodNumberOfUnits: 2 },
     ],
     ['체험 자격이 없으면 체험 없이 옮긴다', null, null],
   ] as const)('%s', (_case, freeTrial, expected) => {
