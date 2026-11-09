@@ -325,7 +325,7 @@ export function DIProvider({
 
     const userService = new UserService(authHttpClient);
 
-    const purchasesGateway = createRevenueCatPurchasesGateway({ isLogEnabled: __DEV__ });
+    const purchasesGateway = createRevenueCatPurchasesGateway({ isLogEnabled: __DEV__, logger });
     const purchasesSession = new PurchasesSession({
       purchases: purchasesGateway,
       logger,

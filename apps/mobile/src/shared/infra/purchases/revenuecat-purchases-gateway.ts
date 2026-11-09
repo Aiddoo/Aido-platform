@@ -1,3 +1,4 @@
+import type { Logger } from '@src/core/ports/logger';
 import {
   type PurchaseStatus,
   type PurchaseFailureKind,
@@ -22,6 +23,7 @@ import Purchases, {
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
+import { PURCHASES_LOG_EVENT } from './purchases-log-events';
 import { getRevenueCatApiKey } from './revenuecat-api-key';
 
 const storeErrorCodeSchema = z.enum(PURCHASES_ERROR_CODE);
@@ -141,6 +143,7 @@ function hasAppStoreFreeTrialOffer(product: PurchasesStoreProduct) {
 /** SDK 안내대로 ELIGIBLE만 체험을 보이고, UNKNOWN·INELIGIBLE·확인 실패는 일반 가격만 보인다 */
 async function findIntroEligibleProductIds(
   products: readonly PurchasesStoreProduct[],
+  logger: Pick<Logger, 'warn'>,
 ): Promise<ReadonlySet<string>> {
   const productIds = products.filter(hasAppStoreFreeTrialOffer).map(({ identifier }) => identifier);
   if (productIds.length === 0) {
@@ -155,7 +158,10 @@ async function findIntroEligibleProductIds(
           INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
       ),
     );
-  } catch {
+  } catch (error) {
+    logger.warn(PURCHASES_LOG_EVENT.TRIAL_ELIGIBILITY_CHECK_FAILED, {
+      error: getErrorMessage(error),
+    });
     return new Set();
   }
 }
@@ -194,10 +200,12 @@ function toPurchasePackage(
 
 interface RevenueCatPurchasesGatewayOptions {
   isLogEnabled: boolean;
+  logger: Pick<Logger, 'warn'>;
 }
 
 export function createRevenueCatPurchasesGateway({
   isLogEnabled,
+  logger,
 }: RevenueCatPurchasesGatewayOptions): PurchasesGateway {
   return {
     configure: () => {
@@ -236,6 +244,7 @@ export function createRevenueCatPurchasesGateway({
         }
         const introEligibleProductIds = await findIntroEligibleProductIds(
           current.availablePackages.map(({ product }) => product),
+          logger,
         );
         return {
           identifier: current.identifier,

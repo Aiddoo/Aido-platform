@@ -1,4 +1,5 @@
 import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
+import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
 import Purchases, {
   INTRO_ELIGIBILITY_STATUS,
   PACKAGE_TYPE,
@@ -224,7 +225,11 @@ describe('toPurchasesGatewayError', () => {
 });
 
 describe('createRevenueCatPurchasesGateway', () => {
-  const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({ isLogEnabled: false });
+  const logger = createLoggerStub();
+  const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({
+    isLogEnabled: false,
+    logger,
+  });
 
   afterEach(() => {
     delete mockExtra.revenueCatAppleApiKey;
@@ -284,7 +289,7 @@ describe('createRevenueCatPurchasesGateway', () => {
       },
     );
 
-    it('자격 확인이 실패해도 요금제는 받고 체험만 싣지 않는다', async () => {
+    it('자격 확인이 실패해도 요금제는 받고 체험만 싣지 않으며 실패를 남긴다', async () => {
       // Given
       givenOffering(createStoreProduct({ introPrice: APP_STORE_FREE_MONTH }));
       purchases.checkTrialOrIntroductoryPriceEligibility.mockRejectedValue(new Error('boom'));
@@ -294,6 +299,9 @@ describe('createRevenueCatPurchasesGateway', () => {
 
       // Then
       expect(offering?.packages[0]?.product).toMatchObject({ price: 29_900, freeTrial: null });
+      expect(logger.warn).toHaveBeenCalledWith('subscription.trial-eligibility.check-failed', {
+        error: 'boom',
+      });
     });
 
     it('유료 소개 가격은 무료 체험이 아니라 자격을 묻지 않는다', async () => {
