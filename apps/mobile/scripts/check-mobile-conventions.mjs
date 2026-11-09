@@ -2058,6 +2058,18 @@ function collectRatchetFindings(sourceFile, relativePath, findings, repositoryRo
       });
     }
 
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'Render'
+    ) {
+      findings.push({
+        rule: 'render-call',
+        key: relativePath,
+        message: `${getLocation(sourceFile, node, repositoryRoot)} X.Render(...)는 훅을 쓰는 컴포넌트라 함수로 부르면 훅 순서가 부모와 섞입니다. <X.Render … /> JSX로 그리세요.`,
+      });
+    }
+
     if (isChipLabelElement(node)) {
       findings.push({
         rule: 'chip-label',

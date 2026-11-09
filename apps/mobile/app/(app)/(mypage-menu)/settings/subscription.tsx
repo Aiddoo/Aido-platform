@@ -65,21 +65,23 @@ function SubscriptionScreen() {
     onStepChange: ({ step }) => trackEvent('checkout_step_viewed', { step }),
   });
 
-  return stepper.Render({
-    status: ({ history }) => (
-      <SubscriptionScreen.Status
-        onPurchased={({ plan, hadRewardOnly }) =>
-          history.replace('welcome', { plan, purchasedOn: currentLocalDateKey, hadRewardOnly })
-        }
-      />
-    ),
-    welcome: ({ context, history }) => (
-      <SubscriptionScreen.Welcome
-        {...context}
-        onDone={() => (router.canGoBack() ? router.back() : history.replace('status', {}))}
-      />
-    ),
-  });
+  return (
+    <stepper.Render
+      status={({ history }) => (
+        <SubscriptionScreen.Status
+          onPurchased={({ plan, hadRewardOnly }) =>
+            history.replace('welcome', { plan, purchasedOn: currentLocalDateKey, hadRewardOnly })
+          }
+        />
+      )}
+      welcome={({ context, history }) => (
+        <SubscriptionScreen.Welcome
+          {...context}
+          onDone={() => (router.canGoBack() ? router.back() : history.replace('status', {}))}
+        />
+      )}
+    />
+  );
 }
 
 interface PurchaseFlowProps {

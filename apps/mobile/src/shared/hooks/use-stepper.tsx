@@ -57,6 +57,7 @@ export type Stepper<Contexts extends StepperContexts> = StepEntry<Contexts> & {
   index: number;
   historySteps: readonly StepEntry<Contexts>[];
   history: StepperHistory<Contexts>;
+  /** 안에서 훅을 쓰는 컴포넌트라 `<stepper.Render … />` JSX로만 그린다. 함수로 부르면 훅이 부모 훅에 섞여 순서가 흔들린다 */
   Render: (renderers: StepRenderers<Contexts>) => ReactNode;
 };
 
