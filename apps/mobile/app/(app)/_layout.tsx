@@ -6,7 +6,13 @@ import { useIsPushOnboardingDue } from '@src/features/notification/hooks/use-is-
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
+import {
+  HStack,
+  Result,
+  SHEET_ROUTE_SCREEN_OPTIONS,
+  StyledSafeAreaView,
+  useStackScreenOptions,
+} from '@src/shared/ui';
 import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import { type ErrorBoundaryProps, Stack } from 'expo-router';
 import { useEffect } from 'react';
@@ -31,6 +37,7 @@ const SHEET_ROUTES = [
   'users/[userId]/block',
   'users/[userId]/report',
   'users/[userId]/nudge',
+  'suggestions/[suggestionId]/category',
 ] as const;
 
 export const unstable_settings = {
@@ -39,6 +46,8 @@ export const unstable_settings = {
 
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
+  const headerOptions = useStackScreenOptions();
+  const { t } = useTranslation(['notification', 'todo', 'ai']);
   const isPushOnboardingDue = useIsPushOnboardingDue();
   useRecordTodoCompletion();
   useOfferMarketingPushAfterCompletion();
@@ -53,9 +62,18 @@ function AppLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="nudges" />
-      <Stack.Screen name="suggestions" />
+      <Stack.Screen
+        name="notifications/index"
+        options={{ ...headerOptions, title: t('notification:titles.notifications') }}
+      />
+      <Stack.Screen
+        name="nudges/[nudgeId]"
+        options={{ ...headerOptions, title: t('todo:interaction.detailTitle') }}
+      />
+      <Stack.Screen
+        name="suggestions/index"
+        options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
+      />
       <Stack.Screen name="weather" />
       {/* 닫기가 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
       <Stack.Screen name="whats-new/index" options={{ animation: 'slide_from_bottom' }} />

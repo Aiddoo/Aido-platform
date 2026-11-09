@@ -28,13 +28,15 @@ const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 ## useStackBackToolbar
 
 중첩 Stack의 첫 화면은 이전 화면이 부모 Stack에 있어 iOS가 뒤로가기를 그리지 않습니다.
-같은 자리에 네이티브 뒤로가기 버튼을 두는 `Stack.Toolbar` 요소를 돌려주며, 레이아웃의 `Stack.Screen` 자식으로 넣습니다.
+먼저 화면을 부모 Stack에 직접 선언해 네이티브 뒤로가기를 씁니다(`(app)/_layout`의 알림·콕 찌르기·AI 제안, 마이 탭 Stack).
+그룹 Stack이 꼭 필요한 흐름(메모 AI 정리·녹음·날씨·공개 초대)만 이 훅으로 같은 자리에 네이티브 뒤로가기 버튼을 둡니다.
+`Stack.Toolbar` 요소를 돌려주며, 레이아웃의 `Stack.Screen` 자식으로 넣습니다.
 `Stack.Screen`은 자식 타입을 직접 읽으므로 컴포넌트로 감싸지 않고 요소를 그대로 넘깁니다.
 
 ```tsx
-const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
+const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
 
-<Stack.Screen name="index" options={{ title: t('titles.notifications') }}>
+<Stack.Screen name="index" options={{ title: t('drafts.title') }}>
   {backToolbar}
 </Stack.Screen>;
 ```
