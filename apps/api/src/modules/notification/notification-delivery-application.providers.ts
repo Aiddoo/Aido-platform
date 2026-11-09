@@ -510,6 +510,7 @@ export const reconfirmMarketingConsentsProvider: FactoryProvider<ReconfirmMarket
     MARKETING_CONSENT_RECONFIRM_ACCESS,
     NOTIFICATION_RECIPIENT_LOCALE_READER,
     NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+    PushQuietHoursReader,
     NotificationPublisher,
     UNIT_OF_WORK,
   ],
@@ -517,6 +518,9 @@ export const reconfirmMarketingConsentsProvider: FactoryProvider<ReconfirmMarket
     reconfirmAccess: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["reconfirmAccess"],
     localeReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["localeReader"],
     timezoneReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["timezoneReader"],
+    quietHoursReader: ConstructorParameters<
+      typeof ReconfirmMarketingConsents
+    >[0]["quietHoursReader"],
     notificationPublisher: ConstructorParameters<
       typeof ReconfirmMarketingConsents
     >[0]["notificationPublisher"],
@@ -526,6 +530,7 @@ export const reconfirmMarketingConsentsProvider: FactoryProvider<ReconfirmMarket
       reconfirmAccess,
       localeReader,
       timezoneReader,
+      quietHoursReader,
       notificationPublisher,
       unitOfWork,
       logger: new Logger(ReconfirmMarketingConsents.name),

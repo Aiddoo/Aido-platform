@@ -20,6 +20,7 @@ import type {
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import type { NotificationRecipientLocaleReaderPort } from "../../ports/delivery/notification-recipient-locale.reader.port.js";
 import type { NotificationRecipientTimezoneReaderPort } from "../../ports/delivery/notification-recipient-timezone.reader.port.js";
+import type { PushQuietHoursReaderPort } from "../../ports/delivery/push-quiet-hours.reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
 
 export const MARKETING_CONSENT_RECONFIRM = {
@@ -43,6 +44,7 @@ interface ReconfirmMarketingConsentsDependencies {
   readonly reconfirmAccess: MarketingConsentReconfirmPort;
   readonly localeReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly timezoneReader: NotificationRecipientTimezoneReaderPort;
+  readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "findUsersInQuietHours">;
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: Pick<ApplicationLogger, "log">;
@@ -50,8 +52,9 @@ interface ReconfirmMarketingConsentsDependencies {
 
 /**
  * 광고성 정보 수신에 동의한 지(또는 마지막으로 알린 지) 2년이 지난 사용자에게 동의 사실을 한 번 알린다
- * (정보통신망법 시행령 제62조). 거래 정보라 광고성 동의·야간 광고 제한 없이 알림함과 푸시로 보낸다.
- * 표시는 조건부 UPDATE라 두 실행이 겹쳐도 한 번만 보낸다.
+ * (정보통신망법 시행령 제62조). 거래 정보라 광고성 동의 없이 알림함과 푸시로 보낸다.
+ * 현지 야간(21:00–08:00)인 사용자는 표시하지 않고 남겨 낮 시간 실행이 보낸다. 표시한 뒤 야간 설정으로
+ * 푸시가 빠지면 2년 동안 다시 알리지 않기 때문이다. 표시는 조건부 UPDATE라 두 실행이 겹쳐도 한 번만 보낸다.
  */
 export class ReconfirmMarketingConsents {
   readonly #dependencies: ReconfirmMarketingConsentsDependencies;
@@ -72,12 +75,15 @@ export class ReconfirmMarketingConsents {
         ...(afterUserId != null && { afterUserId }),
         limit: MARKETING_CONSENT_RECONFIRM.BATCH_SIZE,
       });
-      for (const users of chunk(targets, MARKETING_CONSENT_RECONFIRM.CLAIM_CHUNK_SIZE)) {
-        notifiedCount += await this.#claimAndNotify(
-          users.map((target) => target.userId),
-          cutoff,
-          input.now,
-        );
+      const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
+        targets.map((target) => target.userId),
+        input.now,
+      );
+      const daytimeUserIds = targets
+        .map((target) => target.userId)
+        .filter((userId) => !quietUserIds.has(userId));
+      for (const userIds of chunk(daytimeUserIds, MARKETING_CONSENT_RECONFIRM.CLAIM_CHUNK_SIZE)) {
+        notifiedCount += await this.#claimAndNotify(userIds, cutoff, input.now);
       }
       hasRemaining = targets.length === MARKETING_CONSENT_RECONFIRM.BATCH_SIZE;
       if (!hasRemaining) {

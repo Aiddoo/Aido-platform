@@ -4,10 +4,11 @@ export const MARKETING_CONSENT_RECONFIRM_QUEUE = "notification.marketing-consent
 export const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
 export type MarketingConsentReconfirmJobData = Record<string, never>;
 
-// 2년 기준이 하루 단위라 한 달에 한 번이면 충분하다. 한국 낮 시간에 돌아 야간 푸시를 피한다
+// 야간 사용자는 건너뛰고 남겨 두므로, 어느 시간대든 낮 시간에 한 번은 돌도록 매시 정각에 돈다.
+// 대상이 없으면 인덱스 조회 한 번으로 끝난다
 export const MARKETING_CONSENT_RECONFIRM_SCHEDULE = {
-  id: "monthly-marketing-consent-reconfirm-scheduler",
-  cron: "0 11 1 * *",
+  id: "hourly-marketing-consent-reconfirm-scheduler",
+  cron: "0 * * * *",
   timezone: "Asia/Seoul",
 };
 

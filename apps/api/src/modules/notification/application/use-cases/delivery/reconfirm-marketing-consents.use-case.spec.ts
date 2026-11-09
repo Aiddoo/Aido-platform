@@ -7,7 +7,10 @@ import { ReconfirmMarketingConsents } from "./reconfirm-marketing-consents.use-c
 const NOW = new Date("2026-12-01T02:00:00.000Z");
 
 /** 표시한 사용자를 다시 고르지 않는 대역. 조건부 UPDATE는 실제 PG에서 확인한다. */
-function createReconfirm(targets: readonly MarketingReconfirmRecipient[]) {
+function createReconfirm(
+  targets: readonly MarketingReconfirmRecipient[],
+  quietUserIds: ReadonlySet<string> = new Set(),
+) {
   const reconfirmed = new Set<string>();
   const cutoffs: Date[] = [];
   const sent: CreateNotificationData[] = [];
@@ -33,6 +36,10 @@ function createReconfirm(targets: readonly MarketingReconfirmRecipient[]) {
     },
     timezoneReader: {
       getTimezones: async (userIds) => new Map(userIds.map((userId) => [userId, "Asia/Seoul"])),
+    },
+    quietHoursReader: {
+      findUsersInQuietHours: async (userIds) =>
+        new Set(userIds.filter((userId) => quietUserIds.has(userId))),
     },
     notificationPublisher: {
       publishBatch: async (notices) => {
@@ -111,5 +118,35 @@ describe("ReconfirmMarketingConsents — 광고성 수신 동의 2년 재확인"
     // Then
     expect(result.notifiedCount).toBe(0);
     expect(sent).toEqual([]);
+  });
+
+  it("현지 야간인 사용자는 표시하지 않고 남겨, 낮이 된 다음 실행에서 알린다", async () => {
+    // Given: 런던은 지금 야간(02:00), 서울은 낮(11:00)
+    const quietUserIds = new Set(["user-london"]);
+    const { useCase, sent } = createReconfirm(
+      [
+        {
+          userId: "user-seoul",
+          marketingAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+          marketingPushAgreedAt: null,
+        },
+        {
+          userId: "user-london",
+          marketingAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+          marketingPushAgreedAt: null,
+        },
+      ],
+      quietUserIds,
+    );
+
+    // When
+    const night = await useCase.execute({ now: NOW });
+    quietUserIds.clear();
+    const daytime = await useCase.execute({ now: NOW });
+
+    // Then
+    expect(night.notifiedCount).toBe(1);
+    expect(daytime.notifiedCount).toBe(1);
+    expect(sent.map((notice) => notice.userId)).toEqual(["user-seoul", "user-london"]);
   });
 });
