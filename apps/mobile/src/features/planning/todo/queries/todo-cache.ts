@@ -37,8 +37,6 @@ export function getCachedTodoDateSpan(
   return todo == null ? { startDate: date, endDate: date } : getTodoDateSpan(todo);
 }
 
-// ---- setQueryData updater로 쓰는 순수 함수 ----
-
 export function withTodoAdded(list: TodoListResult, todo: Todo): TodoListResult {
   return { ...list, todos: [...list.todos, todo] };
 }
@@ -80,8 +78,6 @@ export function withTodoCreated(existence: TodoExistence): TodoExistence {
 export function withTodoCompleted(existence: TodoExistence): TodoExistence {
   return existence.hasCompletedTodo ? existence : { ...existence, hasCompletedTodo: true };
 }
-
-// ---- 캐시 읽기·쓰기 ----
 
 export function snapshotTodo(
   queryClient: QueryClient,
@@ -191,8 +187,6 @@ export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: 
   );
 }
 
-// ---- 쿼리 고르기 ----
-
 function isDateInSpan(date: string, span: DateSpan) {
   return span.startDate <= date && date <= span.endDate;
 }
@@ -283,8 +277,6 @@ function todoListsFilter(todoId: number, spans: readonly DateSpan[]): Invalidate
 function listsShowingTodoFilter(queryKey: QueryKey, todoId: number): InvalidateQueryFilters {
   return { queryKey, predicate: (query) => showsTodo(query, todoId) };
 }
-
-// ---- 낙관적 쓰기의 시작과 끝 ----
 
 interface TodoWriteTarget {
   /** 낙관적으로 고친 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜다 */
@@ -452,8 +444,6 @@ export function getUpcomingRepeatFilters(todo: Todo | undefined): InvalidateQuer
     ? [{ queryKey: TODO_QUERY_KEYS.upcomingRepeats() }]
     : [];
 }
-
-// ---- 어느 날짜가 바뀌었는지 모를 때의 무효화 ----
 
 function isTodoDependentQuery(query: Pick<Query, 'meta'>) {
   return query.meta?.refreshOnTodoChange === true;
