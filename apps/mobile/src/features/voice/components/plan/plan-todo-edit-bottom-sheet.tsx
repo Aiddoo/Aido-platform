@@ -27,11 +27,11 @@ import {
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
+  HStack,
   KeyboardBottomSheet,
   ModalBottomSheet,
   QueryErrorBoundary,
   RepeatIcon,
-  SHEET_CONTENT_PADDING,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -39,7 +39,6 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
-import { ScrollView } from 'react-native-gesture-handler';
 
 import { VoicePlanPolicy, type PlannedTodo } from '../../domains/voice-plan.model';
 import {
@@ -78,20 +77,14 @@ export function PlanTodoEditBottomSheet({
       onOpenChange={onOpenChange}
       footer={
         <VStack gap={12}>
-          {/* RN ScrollView는 Android에서 시트 드래그에 가로 제스처를 뺏겨 움직이지 않는다 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            style={{ marginHorizontal: -SHEET_CONTENT_PADDING }}
-            contentContainerStyle={{ gap: 8, paddingHorizontal: SHEET_CONTENT_PADDING }}
-          >
+          {/* 시트 안 가로 스크롤은 시트 끌기와 제스처를 다퉈 넘친 카테고리 칩을 고를 수 없었다. 넘치면 다음 줄로 내린다 */}
+          <HStack gap={8} wrap="wrap">
             <DateChip form={form} />
             <TimeChip form={form} />
             <RepeatChip form={form} />
             <VisibilityChip form={form} />
             <CategoryChip form={form} fallbackCategoryId={fallbackCategoryId} />
-          </ScrollView>
+          </HStack>
 
           <Button
             isDisabled={!isValid}
