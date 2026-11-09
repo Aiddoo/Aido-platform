@@ -5,17 +5,22 @@ import { useTranslation } from '@src/shared/i18n';
 import { H3, HStack, Image, ReadableContent, Spacing, TextButton, Box } from '@src/shared/ui';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function EmailLoginScreen() {
   const { t } = useTranslation('auth');
   const push = useSingleTap(router.push);
+  const { right: rightInset } = useSafeAreaInsets();
 
   return (
     <Box className="flex-1 overflow-hidden bg-white">
       <Image
         source={idoCatHiImage}
-        className="absolute right-0 top-0 z-10 h-[100px] w-[100px]"
-        style={{ transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }] }}
+        className="absolute top-0 z-10 h-[100px] w-[100px]"
+        style={{
+          right: rightInset,
+          transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }],
+        }}
         contentFit="contain"
       />
       <ReadableContent flex={1}>

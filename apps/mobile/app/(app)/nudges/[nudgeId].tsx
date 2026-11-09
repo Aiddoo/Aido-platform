@@ -89,7 +89,7 @@ NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFal
 
   if (isNudgeUnavailableError(error)) {
     return (
-      <VStack flex={1} p={24}>
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1 p-6">
         <Result
           title={t('todo:interaction.unavailable')}
           description={t('todo:interaction.unavailableDescription')}
@@ -99,17 +99,17 @@ NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFal
             </Result.Button>
           }
         />
-      </VStack>
+      </StyledSafeAreaView>
     );
   }
 
   return (
-    <VStack flex={1} p={24}>
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 p-6">
       <Result
         title={t('todo:interaction.loadError')}
         button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
       />
-    </VStack>
+    </StyledSafeAreaView>
   );
 };
 

@@ -38,7 +38,8 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: IS_IOS ? 0 : headerHeight,
-          paddingBottom: insets.bottom + SCREEN_BOTTOM_PADDING + bottomInset,
+          // iOS는 contentInsetAdjustmentBehavior가 아래 안전 영역을 이미 더한다
+          paddingBottom: (IS_IOS ? 0 : insets.bottom) + SCREEN_BOTTOM_PADDING + bottomInset,
         }}
         refreshControl={
           <RefreshControl

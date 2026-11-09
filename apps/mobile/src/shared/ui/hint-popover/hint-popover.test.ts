@@ -88,19 +88,37 @@ describe('getHintPlacement', () => {
 });
 
 describe('getHintWidth', () => {
-  const INPUT = { windowWidth: 393, leftInset: 0, offset: 9 };
+  const INPUT = { windowWidth: 393, leftInset: 0, rightInset: 0, offset: 9 };
 
   it('위아래로 열면 대상 자리와 상관없이 화면 안의 최대 폭이다', () => {
     // When
-    const width = getHintWidth({ ...INPUT, placement: 'top', trigger: { pageX: 100 } });
+    const width = getHintWidth({ ...INPUT, placement: 'top', trigger: { pageX: 100, width: 24 } });
 
     // Then
     expect(width).toBe(300);
   });
 
+  it('위아래로 열어도 좌우 레일이 있으면 그 안으로 줄인다', () => {
+    // Given
+    // Duo 세로 레일 84pt가 오른쪽에 있다
+    const rail = { leftInset: 0, rightInset: 84 };
+
+    // When
+    const width = getHintWidth({
+      ...INPUT,
+      ...rail,
+      windowWidth: 344,
+      placement: 'bottom',
+      trigger: { pageX: 100, width: 24 },
+    });
+
+    // Then
+    expect(width).toBe(236);
+  });
+
   it('왼쪽으로 열면 대상과 화면 왼쪽 끝 사이로 줄인다', () => {
     // When
-    const width = getHintWidth({ ...INPUT, placement: 'left', trigger: { pageX: 297 } });
+    const width = getHintWidth({ ...INPUT, placement: 'left', trigger: { pageX: 297, width: 24 } });
 
     // Then
     expect(width).toBe(276);
@@ -112,11 +130,30 @@ describe('getHintWidth', () => {
       ...INPUT,
       leftInset: 84,
       placement: 'left',
-      trigger: { pageX: 297 },
+      trigger: { pageX: 297, width: 24 },
     });
 
     // Then
     expect(width).toBe(192);
+  });
+
+  it('오른쪽으로 열면 대상 오른쪽 끝과 오른쪽 레일 사이로 줄인다', () => {
+    // When
+    const withoutRail = getHintWidth({
+      ...INPUT,
+      placement: 'right',
+      trigger: { pageX: 100, width: 24 },
+    });
+    const withRail = getHintWidth({
+      ...INPUT,
+      rightInset: 84,
+      placement: 'right',
+      trigger: { pageX: 100, width: 24 },
+    });
+
+    // Then
+    expect(withoutRail).toBe(248);
+    expect(withRail).toBe(164);
   });
 
   it('아직 대상을 재지 못했으면 최대 폭이다', () => {

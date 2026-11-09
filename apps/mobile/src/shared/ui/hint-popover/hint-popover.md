@@ -21,14 +21,14 @@ import { Popover, PressableFeedback } from 'heroui-native';
 
 ## Props
 
-| Prop          | 타입                    | 설명                                                                                |
-| ------------- | ----------------------- | ----------------------------------------------------------------------------------- |
-| Icon          | `StyledIcon`            | 제목 앞 아이콘. `text-main`으로 그린다                                              |
-| title         | `string`                | 제목. 없으면 설명과 X가 한 줄에 놓인다                                              |
-| description   | `string`                | 설명                                                                                |
-| isPassThrough | `boolean`               | 바깥을 막지 않아 대상과 화면을 그대로 누른다. 이때 바깥 탭으로는 닫히지 않는다      |
-| children      | `ReactNode`             | 설명 아래에 더 보일 내용                                                            |
-| placement 외  | `Popover.Content` props | 원본 이름 그대로. 기본은 `placement="top"`, `align="end"`, 폭 300(화면 안으로 줄임) |
+| Prop          | 타입                    | 설명                                                                                          |
+| ------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
+| Icon          | `StyledIcon`            | 제목 앞 아이콘. `text-main`으로 그린다                                                        |
+| title         | `string`                | 제목. 없으면 설명과 X가 한 줄에 놓인다                                                        |
+| description   | `string`                | 설명                                                                                          |
+| isPassThrough | `boolean`               | 바깥을 막지 않아 대상과 화면을 그대로 누른다. 이때 바깥 탭으로는 닫히지 않는다                |
+| children      | `ReactNode`             | 설명 아래에 더 보일 내용                                                                      |
+| placement 외  | `Popover.Content` props | 원본 이름 그대로. 기본은 `placement="top"`, `align="end"`, 폭 300(좌우 안전 영역 안으로 줄임) |
 
 닫기는 세 가지다: X, 바깥 탭(`Popover.Overlay`, `isPassThrough`면 없음), 대상 다시 누르기(`Popover.Trigger`).
 
@@ -53,4 +53,4 @@ hint-popover/
 
 기본 간격은 `HINT_OFFSET`이다. 옆 요소를 건너 펴려면 호출부가 건너뛸 거리에 이 값을 더해 `offset`으로 넘긴다(메모 화면).
 
-위아래로 열면 입력 칸을 덮는 대상(시트 아래쪽 줄의 버튼)은 `placement="left"`, `align="center"`로 연다. 폭은 대상과 화면 왼쪽 끝 사이로 줄어든다(`getHintWidth`). 키보드는 Android에서 말풍선 위에 그려지므로 아래로 열면 가려진다.
+위아래로 열면 입력 칸을 덮는 대상(시트 아래쪽 줄의 버튼)은 `placement="left"`, `align="center"`로 연다. 폭은 대상과 화면 왼쪽 끝(왼쪽 레일) 사이로 줄어든다(`getHintWidth`). `right`도 같은 규칙으로 오른쪽 레일까지 줄인다. 키보드는 Android에서 말풍선 위에 그려지므로 아래로 열면 가려진다.

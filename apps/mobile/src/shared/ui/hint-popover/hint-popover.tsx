@@ -5,6 +5,7 @@ import { Popover, usePopover } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { match } from 'ts-pattern';
 
 import { HStack } from '../h-stack';
 import { CloseIcon, type StyledIcon } from '../icon';
@@ -72,24 +73,38 @@ export function getHintPlacement({
 
 interface HintWidthInput {
   placement: NonNullable<PopoverContentProps['placement']>;
-  trigger: { pageX: number } | null | undefined;
+  trigger: { pageX: number; width: number } | null | undefined;
   windowWidth: number;
   leftInset: number;
+  rightInset: number;
   offset: number;
 }
 
+/** 세로 레일·가로 화면에서도 좌우 안전 영역 안에 들어가는 폭 */
 export function getHintWidth({
   placement,
   trigger,
   windowWidth,
   leftInset,
+  rightInset,
   offset,
 }: HintWidthInput): number {
-  const widest = Math.min(windowWidth - HINT_SCREEN_INSET * 2, HINT_MAX_WIDTH);
-  if (placement !== 'left' || trigger == null) {
+  const widest = Math.min(
+    windowWidth - leftInset - rightInset - HINT_SCREEN_INSET * 2,
+    HINT_MAX_WIDTH,
+  );
+  if (trigger == null) {
     return widest;
   }
-  return Math.min(trigger.pageX - offset - HINT_SCREEN_INSET - leftInset, widest);
+  return match(placement)
+    .with('left', () => Math.min(trigger.pageX - offset - HINT_SCREEN_INSET - leftInset, widest))
+    .with('right', () =>
+      Math.min(
+        windowWidth - rightInset - HINT_SCREEN_INSET - (trigger.pageX + trigger.width + offset),
+        widest,
+      ),
+    )
+    .otherwise(() => widest);
 }
 
 export function HintPopoverContent({
@@ -109,7 +124,12 @@ export function HintPopoverContent({
   const { t } = useTranslation('common');
   const fontScaledSize = useFontScaledSize();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { top: topInset, bottom: bottomInset, left: leftInset } = useSafeAreaInsets();
+  const {
+    top: topInset,
+    bottom: bottomInset,
+    left: leftInset,
+    right: rightInset,
+  } = useSafeAreaInsets();
   const { triggerPosition, contentLayout } = usePopover();
 
   const resolvedPlacement = getHintPlacement({
@@ -165,6 +185,7 @@ export function HintPopoverContent({
             trigger: triggerPosition,
             windowWidth,
             leftInset,
+            rightInset,
             offset,
           })
         }
