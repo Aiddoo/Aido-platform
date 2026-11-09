@@ -133,7 +133,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Radio
 
-`RadioGroup.Item` props와 같아요(`value`, `isDisabled`, `testID` 등). `.Item`과 같은 글자·여백에 오른쪽 화살표 자리만 heroui `Radio`예요. `children`은 이 컴포넌트가 채워요.
+`RadioGroup.Item` props와 같아요(`value`, `isDisabled`, `testID` 등). `.Item`과 같은 글자·여백에 오른쪽 화살표 자리만 [`ChoiceRadio`](../choice-radio/choice-radio.md)예요. `children`은 이 컴포넌트가 채워요.
 
 | Prop          | Type        | Default | Description                                                                           |
 | ------------- | ----------- | ------- | ------------------------------------------------------------------------------------- |

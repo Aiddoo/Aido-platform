@@ -1,8 +1,8 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { ChoiceRadio, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Card, Chip, Radio, RadioGroup } from 'heroui-native';
+import { Card, Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
@@ -81,9 +81,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                   </PlanChip>
                 )}
               </HStack>
-              <Radio>
-                <Radio.Indicator />
-              </Radio>
+              <ChoiceRadio />
             </HStack>
 
             <HStack className="items-baseline" gap={4}>

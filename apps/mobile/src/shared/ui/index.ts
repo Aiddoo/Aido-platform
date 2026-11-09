@@ -23,6 +23,7 @@ export {
 } from './bottom-sheet';
 export { Box } from './box';
 export { Button, KeyboardAdaptiveButton } from './button';
+export { ChoiceRadio } from './choice-radio';
 export { ConfirmDialog, useConfirmDialog } from './confirm-dialog';
 export { DashedDivider } from './dashed-divider';
 export { FeatureMedia, type FeatureMediaProps } from './feature-media';

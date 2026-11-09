@@ -1,11 +1,12 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
-import { ControlField, ListGroup, Radio, RadioGroup, Separator, Skeleton } from 'heroui-native';
+import { ControlField, ListGroup, RadioGroup, Separator, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 
 import { Box } from '../box';
+import { ChoiceRadio } from '../choice-radio';
 import { HStack } from '../h-stack';
 import { ArrowRightIcon, type StyledIcon } from '../icon';
 import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
@@ -239,7 +240,7 @@ function SettingsListGroupRadio({
         )}
       </Box>
       {badge}
-      <Radio />
+      <ChoiceRadio />
     </RadioGroup.Item>
   );
 }
