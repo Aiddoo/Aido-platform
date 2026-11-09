@@ -1,9 +1,13 @@
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { renderHook } from '@testing-library/react-native';
 
 import { useSingleTap } from './use-single-tap';
 
 /** 가드 간격(600ms)보다 확실히 긴 시간 */
 const AFTER_GUARD_MS = 700;
+
+/** 가드 간격보다 짧고 렌더가 건 타이머는 끝나는 시간 */
+const RENDER_SETTLE_MS = 10;
 
 /**
  * 시간은 렌더가 끝난 뒤에만 조작한다 — 렌더 도중 Date.now를 고정하면
@@ -85,5 +89,26 @@ describe('useSingleTap', () => {
     // Then
     expect(dismiss).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  describe('언마운트', () => {
+    setupFakeTimersPerTest();
+
+    it('화면이 내려가면 남은 가드 타이머를 지운다', async () => {
+      // Given
+      const { result, unmount } = await renderHook(() => useSingleTap(jest.fn()));
+      // 마운트가 건 React 타이머를 먼저 흘려 가드 타이머만 남긴다
+      await jest.advanceTimersByTimeAsync(RENDER_SETTLE_MS);
+      result.current();
+      const guardTimerCount = jest.getTimerCount();
+
+      // When
+      await unmount();
+      await jest.advanceTimersByTimeAsync(RENDER_SETTLE_MS);
+
+      // Then
+      expect(guardTimerCount).toBe(1);
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 });

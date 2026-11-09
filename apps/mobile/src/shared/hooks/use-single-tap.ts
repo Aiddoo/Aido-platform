@@ -1,4 +1,5 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { throttle } from 'es-toolkit';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /** 손가락이 두 번 튀는 시간. 이 안에 들어온 반복 탭은 같은 한 번으로 본다. */
 const TAP_GUARD_MS = 600;
@@ -14,17 +15,14 @@ export function useSingleTap<Args extends unknown[]>(
     onTapRef.current = onTap;
   });
 
-  const lastTappedAtRef = useRef(0);
+  const [throttledTap] = useState(() =>
+    throttle((tap: () => void) => tap(), TAP_GUARD_MS, { edges: ['leading'] }),
+  );
 
-  return useCallback((...args: Args) => {
-    const now = Date.now();
+  useEffect(() => () => throttledTap.cancel(), [throttledTap]);
 
-    if (now - lastTappedAtRef.current < TAP_GUARD_MS) {
-      return;
-    }
-
-    lastTappedAtRef.current = now;
-
-    onTapRef.current(...args);
-  }, []);
+  return useCallback(
+    (...args: Args) => throttledTap(() => onTapRef.current(...args)),
+    [throttledTap],
+  );
 }
