@@ -175,6 +175,7 @@ VoiceNoteResult.TabList = function TabList({
 }: VoiceNoteResultTabListProps) {
   const { t } = useTranslation('voiceNote');
   const isCompact = useWindowSizeClass() === 'compact';
+  const todoCount = VoiceNotePolicy.findTodoCount(note);
 
   return (
     <ViewTabs
@@ -200,7 +201,9 @@ VoiceNoteResult.TabList = function TabList({
             size="b2"
             numberOfLines={1}
           >
-            {t('result.tabs.todos', { amount: VoiceNotePolicy.getPlannedTodoCount(note) })}
+            {todoCount == null
+              ? t('result.tabs.todosUncounted')
+              : t('result.tabs.todos', { amount: todoCount })}
           </SegmentTabTrigger>
         )}
         <SegmentTabTrigger

@@ -132,6 +132,7 @@
     "tabs": {
       "summary": "Summary",
       "todos": "To-dos {{amount}}",
+      "todosUncounted": "To-dos",
       "transcript": "Transcript"
     },
     "planLost": "We couldn't load the to-do cards. Your summary and transcript are still here.",

@@ -28,7 +28,7 @@ interface VoiceNotePlanTodosProps extends Pick<
 }
 
 export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNotePlanTodosProps) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'voicePlan']);
   const [{ accountId, draftId }] = useVoiceNoteRoute();
   const drafts = useVoiceNoteDraftRepository();
   // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoRow가 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
@@ -65,9 +65,14 @@ export function VoiceNotePlanTodos({ note, className, onMemoChanged }: VoiceNote
   return match(VoiceNotePolicy.getPlanStatus(note))
     .with({ status: 'applied' }, () => (
       <Result
-        title={
-          VoiceNotePolicy.hasAppliedOnlyMemo(note) ? t('result.appliedMemo') : t('result.applied')
-        }
+        // 말로 정리하기 시트가 추가한 뒤 보여 주는 문구와 같다. 수를 남기기 전에 추가한 노트는 수 없이 알린다
+        title={match(VoiceNotePolicy.findTodoCount(note))
+          .when(
+            () => VoiceNotePolicy.hasAppliedOnlyMemo(note),
+            () => t('result.appliedMemo'),
+          )
+          .with(null, () => t('result.applied'))
+          .otherwise((count) => t('voicePlan:applied.todos', { count }))}
         testID="voice-note-applied"
       />
     ))

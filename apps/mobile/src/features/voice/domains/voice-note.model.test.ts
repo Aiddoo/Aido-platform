@@ -531,19 +531,50 @@ describe('findSentenceIndexAt', () => {
   });
 });
 
-describe('getPlannedTodoCount', () => {
-  it('계획 카드 중 할 일만 센다. 카드가 없으면 0이다', () => {
+describe('findTodoCount', () => {
+  it('추가하기 전에는 계획 카드 중 할 일만 센다. 카드가 없으면 0이다', () => {
     // Given
     const withTodo = createSpokenVoiceNote({ planDraft: createPlanDraftWithTodo() });
     const withoutDraft = createSpokenVoiceNote({ planDraft: null });
 
     // When
-    const counted = VoiceNotePolicy.getPlannedTodoCount(withTodo);
-    const empty = VoiceNotePolicy.getPlannedTodoCount(withoutDraft);
+    const counted = VoiceNotePolicy.findTodoCount(withTodo);
+    const empty = VoiceNotePolicy.findTodoCount(withoutDraft);
 
     // Then
     expect(counted).toBe(1);
     expect(empty).toBe(0);
+  });
+
+  it('추가한 뒤에는 계획 카드가 비어도 추가한 수를 센다', () => {
+    // Given
+    const planned = createSpokenVoiceNote({ planDraft: createPlanDraftWithTodo() });
+    const applied = VoiceNotePolicy.withAppliedAt(
+      planned,
+      toInstant('2026-11-05T12:00:00.000Z'),
+      3,
+    );
+
+    // When
+    const result = VoiceNotePolicy.findTodoCount(applied);
+
+    // Then
+    expect(result).toBe(3);
+  });
+
+  it('추가한 수를 남기기 전에 추가한 노트는 수를 모른다', () => {
+    // Given
+    const note = createSpokenVoiceNote({
+      appliedAt: toInstant('2026-11-05T12:00:00.000Z'),
+      appliedTodoCount: null,
+      planDraft: null,
+    });
+
+    // When
+    const result = VoiceNotePolicy.findTodoCount(note);
+
+    // Then
+    expect(result).toBeNull();
   });
 });
 

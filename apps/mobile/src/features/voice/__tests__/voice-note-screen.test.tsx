@@ -21,6 +21,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
   renderUi,
+  stubWindowDimensions,
 } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { toInstant } from '@src/shared/date/instant';
@@ -309,6 +310,24 @@ describe('말로 메모 화면', () => {
 
     // Then
     expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent('할 일을 추가했어요');
+  });
+
+  it('할 일을 추가한 메모는 할 일 탭이 추가한 수를 세고 몇 개를 추가했는지 알린다', async () => {
+    // Given
+    stubWindowDimensions(390);
+    const appliedAt = toInstant('2026-11-02T00:00:00.000Z');
+
+    // When
+    await renderScreen(
+      { digest: createVoiceNoteDigest(), planDraft: null, appliedAt, appliedTodoCount: 2 },
+      'todos',
+    );
+
+    // Then
+    expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent(
+      '할 일 2개를 추가했어요',
+    );
+    expect(screen.getByText('할 일 2')).toBeOnTheScreen();
   });
 
   it('할 일 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남긴다', async () => {

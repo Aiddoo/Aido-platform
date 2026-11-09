@@ -131,6 +131,7 @@
     "tabs": {
       "summary": "요약",
       "todos": "할 일 {{amount}}",
+      "todosUncounted": "할 일",
       "transcript": "전체 글"
     },
     "planLost": "할 일 카드를 불러오지 못했어요. 요약과 전체 글은 그대로 있어요.",

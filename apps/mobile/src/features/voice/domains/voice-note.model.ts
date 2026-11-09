@@ -268,7 +268,11 @@ export function getPlanStatus(note: VoiceNote): VoiceNotePlanStatus {
     : { status: 'reviewable', planDraft: note.planDraft };
 }
 
-export function getPlannedTodoCount(note: VoiceNote): number {
+/** 추가하기 전에는 카드 중 할 일 수, 추가한 뒤에는 추가한 수다. 수를 남기기 전에 추가한 노트는 알 수 없어 null이다 */
+export function findTodoCount(note: VoiceNote): number | null {
+  if (note.appliedAt != null) {
+    return note.appliedTodoCount;
+  }
   return note.planDraft?.form.actions.filter(VoicePlanPolicy.isTodoAction).length ?? 0;
 }
 
@@ -391,7 +395,7 @@ export const VoiceNotePolicy = {
   findRecordingIndexAt,
   findSentenceIndexAt,
   getPlanStatus,
-  getPlannedTodoCount,
+  findTodoCount,
   getCharacterCount,
   getMarkCount,
   findDigestTitle,
