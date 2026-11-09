@@ -1,8 +1,13 @@
+import { ok } from '@src/core/errors/result';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
-import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
+import {
+  createCurrentUserDto,
+  createUser,
+} from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
   createAppLifecycleGatewayStub,
+  createHttpClientStub,
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestQueryClient,
@@ -11,7 +16,7 @@ import {
 } from '@src/shared/__tests__';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { toInstant } from '@src/shared/date/instant';
-import { act } from '@testing-library/react-native';
+import { act, waitFor } from '@testing-library/react-native';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useIsPushOnboardingDue } from './use-is-push-onboarding-due';
@@ -102,4 +107,51 @@ describe('useIsPushOnboardingDue — 앱 화면 묶음 guard', () => {
     expect(getRenderCount()).toBe(rendersAfterWindow);
     expect(appLifecycle.getListenerCount()).toBe(0);
   });
+});
+
+describe('useIsPushOnboardingDue — 알림 권한을 이미 답한 사용자', () => {
+  setupFakeTimersPerTest({ now: NOW });
+
+  it.each(['granted', 'denied'] as const)(
+    '기기 권한이 %s이면 내 정보·권한을 읽기 전 첫 렌더부터 한 번도 열지 않는다',
+    async (status) => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockImplementation(async () =>
+        ok(createCurrentUserDto({ createdAt: SIGNED_UP_AT })),
+      );
+      const pushNotification = createPushNotificationGatewayStub();
+      pushNotification.getPermission.mockResolvedValue({
+        status,
+        canAskAgain: false,
+        iosStatus: null,
+      });
+      const renderedValues: boolean[] = [];
+
+      // When
+      const { queryClient } = await renderUiHook(
+        () => {
+          const isDue = useIsPushOnboardingDue();
+          renderedValues.push(isDue);
+          return isDue;
+        },
+        {
+          di: {
+            httpClient,
+            authSessionStore: createAuthSessionStoreStub('authenticated'),
+            syncStorage: createMemoryObservableSyncStorage(),
+            pushNotification,
+          },
+        },
+      );
+      await waitFor(() => {
+        expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
+        expect(queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.permission())).toBeDefined();
+      });
+
+      // Then
+      expect(renderedValues[0]).toBe(false);
+      expect(renderedValues).not.toContain(true);
+    },
+  );
 });
