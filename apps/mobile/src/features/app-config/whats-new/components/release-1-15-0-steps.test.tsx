@@ -139,7 +139,7 @@ describe('Release1150Steps', () => {
     await fireEvent.press(screen.getByTestId('whats-new-intro-voice-todo'));
     await fireEvent.press(screen.getByText('다음'));
     await act(() => jest.runAllTimersAsync());
-    await fireEvent(screen.getByLabelText('우유랑 계란 사기 추가하기'), 'selectedChange', false);
+    await fireEvent(screen.getByLabelText('보고서 마무리하기 추가하기'), 'selectedChange', false);
 
     // When
     await fireEvent.press(screen.getByText('할 일 2개 추가'));
@@ -147,7 +147,8 @@ describe('Release1150Steps', () => {
 
     // Then
     expect(screen.getByText('치과에 전화하기')).toBeOnTheScreen();
-    expect(screen.queryByText('우유랑 계란 사기')).toBeNull();
+    expect(screen.queryByText('보고서 마무리하기')).toBeNull();
+    expect(screen.queryByText('업무')).toBeNull();
   });
 
   it('다음 단계로 넘어가면 받아쓰기 예시는 내려가 지난 장면의 그림이 함께 돌지 않는다', async () => {
@@ -164,7 +165,7 @@ describe('Release1150Steps', () => {
     expect(captureFinishButton).not.toBeOnTheScreen();
   });
 
-  it('마무리의 말로 할 일 만들기는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
+  it('마무리의 말로 할 일 만들기 카드는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
     // Given
     const { analytics, unmount } = await renderSteps();
     await goToFinish();
@@ -193,7 +194,7 @@ describe('Release1150Steps', () => {
     );
   });
 
-  it('마무리의 말로 메모하기는 동의·권한을 묻기 전에 흐름을 닫고 메모 탭에서 시작하게 한다', async () => {
+  it('마무리의 말로 메모하기 카드는 동의·권한을 묻기 전에 흐름을 닫고 메모 탭에서 시작하게 한다', async () => {
     // Given
     await renderSteps();
     await goToFinish();
@@ -207,6 +208,23 @@ describe('Release1150Steps', () => {
       params: { startVoiceNote: '1' },
     });
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('마무리 카드를 연달아 눌러도 CTA는 한 번만 남는다', async () => {
+    // Given
+    const { analytics } = await renderSteps();
+    await goToFinish();
+
+    // When
+    await fireEvent.press(screen.getByTestId('whats-new-start-voice-note'));
+    await fireEvent.press(screen.getByTestId('whats-new-start-voice-note'));
+
+    // Then
+    const ctaEvents = jest
+      .mocked(analytics.trackEvent)
+      .mock.calls.filter(([eventName]) => eventName === 'whats_new_cta_pressed');
+    expect(ctaEvents).toHaveLength(1);
+    expect(router.dismissTo).toHaveBeenCalledTimes(1);
   });
 
   it('뒤로 돌아와도 단계 조회는 단계마다 한 번만 남는다', async () => {

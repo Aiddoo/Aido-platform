@@ -125,7 +125,7 @@ export function findSubTodo(
   return todo?.subTodos.find((subTodo) => subTodo.id === subTodoId) ?? null;
 }
 
-export function isRecurringTodo(todo: Todo): boolean {
+export function isRecurringTodo(todo: Pick<Todo, 'recurrenceGroupId'>): boolean {
   return todo.recurrenceGroupId != null;
 }
 

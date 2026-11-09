@@ -50,8 +50,8 @@ const DEMO_NOTE_KEY_POINTS = [
 ] as const;
 
 const DEMO_NOTE_TODOS = [
-  { id: 'design', time: { hour: 10, minute: 0 } },
-  { id: 'qa', time: { hour: 14, minute: 0 } },
+  { id: 'design', scheduledTime: '10:00' },
+  { id: 'qa', scheduledTime: '14:00' },
 ] as const;
 
 const DEMO_NOTE_DURATION_MS = 31 * SECOND_MS;
@@ -239,8 +239,16 @@ function DigestedNote() {
                 <DemoTodoRow
                   key={todo.id}
                   surface="plan"
-                  title={t(`whatsNew:v1_15_0.demo.note.todos.${todo.id}`)}
-                  time={todo.time}
+                  todo={{
+                    title: t(`whatsNew:v1_15_0.demo.note.todos.${todo.id}`),
+                    startDate: todayKey,
+                    endDate: null,
+                    scheduledTime: todo.scheduledTime,
+                    repeat: null,
+                    visibility: null,
+                    items: [],
+                    recurrenceGroupId: null,
+                  }}
                   isSelected={selectedTodoIds.includes(todo.id)}
                   onSelectedChange={(isSelected) =>
                     setSelectedTodoIds((current) =>

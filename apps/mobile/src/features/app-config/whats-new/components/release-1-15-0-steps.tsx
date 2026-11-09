@@ -1,5 +1,6 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -7,6 +8,7 @@ import {
   Box,
   Button,
   HStack,
+  IconCircle,
   Image,
   MicIcon,
   QueryErrorBoundary,
@@ -15,13 +17,13 @@ import {
   Steps,
   type StyledIcon,
   Text,
-  TextButton,
   VoiceDuoIcon,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { Chip, PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { type ComponentProps, Suspense, useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -49,8 +51,11 @@ import { WhatsNewStep } from './whats-new-step';
 
 /** 왼쪽 끝은 iOS 스와이프 뒤로 가기 자리라 밀어 넘기기에서 뺀다 */
 const SCREEN_EDGE_INSET = 24;
-const INTRO_ICON_TILE_SIZE = 40;
-const INTRO_ICON_SIZE = 24;
+/** 마무리는 고를 카드가 아래에 붙어 있어, 작은 화면·큰 글꼴에서 그림이 먼저 줄고 질문 제목이 보이게 한다 */
+const FINISH_MEDIA_MIN_HEIGHT = 120;
+const FINISH_CAT_SIZE = 140;
+const FEATURE_ICON_CIRCLE_SIZE = 40;
+const FEATURE_ICON_SIZE = 22;
 
 type Release1150StepMap = Record<Release1150Step, object>;
 
@@ -170,6 +175,7 @@ export function Release1150Steps() {
             finish={() => (
               <WhatsNewStep
                 media={<FinishMedia />}
+                mediaMinHeight={FINISH_MEDIA_MIN_HEIGHT}
                 title={t('v1_15_0.finish.title')}
                 description={t('v1_15_0.finish.description')}
               />
@@ -180,48 +186,54 @@ export function Release1150Steps() {
 
       <Spacing size={12} />
 
-      <Box className="items-center">
-        <Steps.Dots index={position} count={RELEASE_1_15_0_STEPS.length} />
-      </Box>
-
-      <Spacing size={16} />
-
       {step === 'finish' ? (
-        <VStack gap={8}>
-          <Button
-            size="large"
-            onPress={() => {
-              flow.trackCta({ step, feature: 'voice_quick' });
-              flow.leaveTo({ pathname: '/todo/new', params: { startVoice: '1' } });
-            }}
-            testID="whats-new-start-voice-todo"
-          >
-            {t('v1_15_0.finish.voiceTodo')}
-          </Button>
-          <Button
-            size="large"
-            variant="weak"
-            onPress={() => {
-              flow.trackCta({ step, feature: 'voice_note' });
-              flow.leaveTo({ pathname: '/memo', params: { startVoiceNote: '1' } });
-            }}
-            testID="whats-new-start-voice-note"
-          >
-            {t('v1_15_0.finish.voiceNote')}
-          </Button>
-          <TextButton className="self-center" onPress={flow.complete} testID="whats-new-later">
+        <>
+          <VStack gap={8}>
+            <FeatureCard
+              Icon={VoiceDuoIcon}
+              title={t('v1_15_0.finish.voiceTodo')}
+              description={t('v1_15_0.voiceTodo.title')}
+              onPress={() => {
+                flow.trackCta({ step, feature: 'voice_quick' });
+                flow.leaveTo({ pathname: '/todo/new', params: { startVoice: '1' } });
+              }}
+              testID="whats-new-start-voice-todo"
+            />
+            <FeatureCard
+              Icon={ReportDuoIcon}
+              title={t('v1_15_0.finish.voiceNote')}
+              description={t('v1_15_0.voiceNote.title')}
+              onPress={() => {
+                flow.trackCta({ step, feature: 'voice_note' });
+                flow.leaveTo({ pathname: '/memo', params: { startVoiceNote: '1' } });
+              }}
+              testID="whats-new-start-voice-note"
+            />
+          </VStack>
+
+          <Spacing size={12} />
+
+          <Button variant="weak" color="dark" onPress={flow.complete} testID="whats-new-later">
             {t('v1_15_0.finish.later')}
-          </TextButton>
-        </VStack>
+          </Button>
+        </>
       ) : (
-        <Steps.Buttons
-          index={position}
-          isLast={false}
-          backLabel={t('common:actions.back')}
-          nextLabel={t('common:actions.continue')}
-          onBack={history.back}
-          onNext={goNext}
-        />
+        <>
+          <Box className="items-center">
+            <Steps.Dots index={position} count={RELEASE_1_15_0_STEPS.length} />
+          </Box>
+
+          <Spacing size={16} />
+
+          <Steps.Buttons
+            index={position}
+            isLast={false}
+            backLabel={t('common:actions.back')}
+            nextLabel={t('common:actions.continue')}
+            onBack={history.back}
+            onNext={goNext}
+          />
+        </>
       )}
     </>
   );
@@ -239,78 +251,95 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
         contentFit="contain"
       />
       <VStack gap={8}>
-        <IntroFeatureButton
+        <FeatureCard
           Icon={VoiceDuoIcon}
           title={t('v1_15_0.voiceTodo.title')}
           description={t('v1_15_0.voiceTodo.description')}
           badge={t('v1_15_0.voiceTodo.badge')}
           onPress={() => onSelect('voiceTodo')}
           testID="whats-new-intro-voice-todo"
+          className="bg-white"
         />
-        <IntroFeatureButton
+        <FeatureCard
           Icon={ReportDuoIcon}
           title={t('v1_15_0.voiceNote.title')}
           description={t('v1_15_0.voiceNote.description')}
           badge={t('v1_15_0.voiceNote.badge')}
           onPress={() => onSelect('voiceNote')}
           testID="whats-new-intro-voice-note"
+          className="bg-white"
         />
       </VStack>
     </Box>
   );
 }
 
-interface IntroFeatureButtonProps {
+interface FeatureCardProps extends Omit<
+  ComponentProps<typeof PressableFeedback>,
+  'children' | 'onPress'
+> {
   Icon: StyledIcon;
   title: string;
   description: string;
-  badge: string;
+  badge?: string;
   onPress: () => void;
-  testID: string;
 }
 
-function IntroFeatureButton({
+/** 소개와 마무리가 같은 카드로 이어진다. 바탕은 놓인 면에 따라 쓰는 쪽이 정한다 */
+function FeatureCard({
   Icon,
   title,
   description,
   badge,
   onPress,
-  testID,
-}: IntroFeatureButtonProps) {
+  className,
+  ...pressableProps
+}: FeatureCardProps) {
   const fontScaledSize = useFontScaledSize();
+  const handlePress = useSingleTap(onPress);
 
   return (
     <PressableFeedback
       accessibilityRole="button"
-      onPress={onPress}
-      testID={testID}
-      className="rounded-2xl bg-white p-4"
+      onPress={handlePress}
+      className={cn('rounded-2xl bg-gray-1 p-4', className)}
+      {...pressableProps}
     >
       <HStack gap={12} align="center">
-        <Box
-          className="items-center justify-center rounded-xl bg-main/10"
+        <IconCircle
+          tone="plain"
+          className="bg-main/10"
           style={{
-            width: fontScaledSize(INTRO_ICON_TILE_SIZE),
-            height: fontScaledSize(INTRO_ICON_TILE_SIZE),
+            width: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
+            height: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
           }}
-        >
-          <Icon
-            width={fontScaledSize(INTRO_ICON_SIZE)}
-            height={fontScaledSize(INTRO_ICON_SIZE)}
-            colorClassName="text-main"
-          />
-        </Box>
+          icon={
+            <Icon
+              width={fontScaledSize(FEATURE_ICON_SIZE)}
+              height={fontScaledSize(FEATURE_ICON_SIZE)}
+              colorClassName="text-main"
+            />
+          }
+        />
         <VStack flex={1} gap={4}>
-          <Chip size="sm" variant="soft" color="accent" pointerEvents="none" className="self-start">
-            <Text
-              size="e1"
-              weight="semibold"
-              numberOfLines={1}
-              className="text-accent-soft-foreground"
+          {badge != null && (
+            <Chip
+              size="sm"
+              variant="soft"
+              color="accent"
+              pointerEvents="none"
+              className="self-start"
             >
-              {badge}
-            </Text>
-          </Chip>
+              <Text
+                size="e1"
+                weight="semibold"
+                numberOfLines={1}
+                className="text-accent-soft-foreground"
+              >
+                {badge}
+              </Text>
+            </Chip>
+          )}
           <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
             {title}
           </Text>
@@ -328,27 +357,27 @@ function FinishMedia() {
   const { t } = useTranslation('whatsNew');
 
   return (
-    <VStack
+    <Box
       flex={1}
-      align="center"
-      justify="center"
-      gap={8}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       className="overflow-hidden rounded-3xl bg-highlight"
     >
-      <HStack gap={6} align="center" className="rounded-2xl bg-white px-4 py-3">
-        <MicIcon width={18} height={18} colorClassName="text-main" />
-        <Text size="b3" weight="semibold">
-          {t('v1_15_0.finish.bubble')}
-        </Text>
-      </HStack>
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="size-[140px]"
-        contentFit="contain"
-      />
-    </VStack>
+      {/* 그림 높이가 무대를 늘리지 않고 남은 자리에 맞춰 고양이가 줄어든다 */}
+      <VStack align="center" justify="center" gap={8} className="absolute inset-0 p-3">
+        <HStack gap={6} align="center" className="rounded-2xl bg-white px-4 py-3">
+          <MicIcon width={18} height={18} colorClassName="text-main" />
+          <Text size="b3" weight="semibold">
+            {t('v1_15_0.finish.bubble')}
+          </Text>
+        </HStack>
+        <Image
+          source={catHiImage}
+          accessibilityIgnoresInvertColors
+          style={{ height: FINISH_CAT_SIZE, aspectRatio: 1, flexShrink: 1, minHeight: 0 }}
+          contentFit="contain"
+        />
+      </VStack>
+    </Box>
   );
 }

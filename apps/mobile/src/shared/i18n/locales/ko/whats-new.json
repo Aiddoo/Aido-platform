@@ -35,7 +35,7 @@
     },
     "list": {
       "title": "할 일 목록에 바로 들어가요",
-      "description": "AI가 말한 날짜·시간까지 채워 넣어드려요",
+      "description": "AI가 날짜·시간·반복·카테고리, 나만 보기까지 알아서 채워 넣어드려요",
       "justAdded": "방금 추가"
     },
     "record": {
@@ -62,13 +62,21 @@
       "bubble": "말해보세요"
     },
     "demo": {
-      "transcript": "오늘 3시에 치과에 전화하고 퇴근길에 우유랑 계란 사고 자기 전에 주간 보고서 마무리해야 해",
-      "category": "일상",
+      "transcript": "매주 월수금 아침 7시에 운동하고 내일 오후 3시 치과 전화는 나만 보게 해 줘 일주일 안에 보고서도 끝내야 하니까 자료 정리랑 초안 쓰기로 나눠 줘",
+      "categories": {
+        "exercise": "운동",
+        "daily": "일상",
+        "work": "업무"
+      },
       "todos": {
+        "workout": "아침 운동하기",
         "dentist": "치과에 전화하기",
-        "groceries": "우유랑 계란 사기",
-        "report": "주간 보고서 마무리하기",
+        "report": "보고서 마무리하기",
         "water": "물 2L 마시기"
+      },
+      "items": {
+        "research": "자료 정리하기",
+        "draft": "초안 쓰기"
       },
       "note": {
         "title": "이번 주 출시 회의",

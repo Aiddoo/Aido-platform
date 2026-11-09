@@ -20,6 +20,8 @@ interface WhatsNewStepProps {
   /** 없으면 소개만 하고 바로 써 보기를 두지 않는다 */
   actionLabel?: string;
   onAction?: () => void;
+  /** 그림만 있는 장면은 더 줄여 작은 화면에서도 제목이 아래 버튼에 밀리지 않게 한다 */
+  mediaMinHeight?: number;
 }
 
 /** 큰 글꼴이나 작은 화면에서는 미디어가 먼저 줄고, 그래도 넘치면 스크롤해 바로 써 보기에 닿는다 */
@@ -29,6 +31,7 @@ export function WhatsNewStep({
   description,
   actionLabel,
   onAction,
+  mediaMinHeight = MEDIA_MIN_HEIGHT,
 }: WhatsNewStepProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const handleAction = useSingleTap(() => onAction?.());
@@ -43,7 +46,7 @@ export function WhatsNewStep({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        <Box flex={1} style={{ minHeight: MEDIA_MIN_HEIGHT }}>
+        <Box flex={1} style={{ minHeight: mediaMinHeight }}>
           {media}
         </Box>
 

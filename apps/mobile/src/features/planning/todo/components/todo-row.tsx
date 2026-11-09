@@ -167,7 +167,7 @@ export function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
 }
 
 interface TodoScheduleLineProps {
-  todo: Todo;
+  todo: Pick<Todo, 'repeat' | 'recurrenceGroupId'>;
   /** 표시할 시간. 종일이면 null */
   timeLabel: string | null;
   /** 알림이 닿지 않아 시간 옆에 종 꺼짐을 그린다 */

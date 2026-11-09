@@ -35,7 +35,7 @@
     },
     "list": {
       "title": "They go straight to your list",
-      "description": "AI fills in the dates and times you mentioned",
+      "description": "AI fills in dates, times, repeats, categories, even who can see it",
       "justAdded": "Just added"
     },
     "record": {
@@ -62,13 +62,21 @@
       "bubble": "Go ahead, talk"
     },
     "demo": {
-      "transcript": "I need to call the dentist at 3 grab milk and eggs on the way home and finish the weekly report before bed",
-      "category": "Daily",
+      "transcript": "Work out every Mon Wed and Fri at 7 am call the dentist tomorrow at 3 pm and keep that private then finish the report within a week split into research and a first draft",
+      "categories": {
+        "exercise": "Workout",
+        "daily": "Daily",
+        "work": "Work"
+      },
       "todos": {
+        "workout": "Morning workout",
         "dentist": "Call the dentist",
-        "groceries": "Buy milk and eggs",
-        "report": "Finish the weekly report",
+        "report": "Finish the report",
         "water": "Drink 2L of water"
+      },
+      "items": {
+        "research": "Gather research",
+        "draft": "Write a first draft"
       },
       "note": {
         "title": "Weekly launch meeting",
