@@ -1,9 +1,15 @@
+import { LinkedAccountCountValue } from '@src/features/identity/auth/components/linked-account-count-value';
 import { AccountSettingsList } from '@src/features/identity/user/components/account-settings-list';
 import { ProfileAvatarButton } from '@src/features/identity/user/components/profile-avatar-button';
 import { ProfileImageBottomSheet } from '@src/features/identity/user/components/profile-image-bottom-sheet';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
+import {
+  LinkDuoIcon,
+  QueryErrorBoundary,
+  SettingsListGroup,
+  SettingsScreenLayout,
+} from '@src/shared/ui';
 import { router } from 'expo-router';
 import { Suspense, useState } from 'react';
 
@@ -29,7 +35,9 @@ export default function ProfileScreen() {
 
       <SettingsListGroup label={t('sections.signIn')}>
         <SettingsListGroup.Item
+          icon={<SettingsListGroup.Icon Icon={LinkDuoIcon} />}
           label={t('titles.linkedAccounts')}
+          value={<LinkedAccountCountValue />}
           onPress={() => push('/settings/linked-accounts')}
         />
       </SettingsListGroup>

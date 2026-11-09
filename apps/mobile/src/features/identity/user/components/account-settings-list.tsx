@@ -1,6 +1,6 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { SettingsListGroup, Text } from '@src/shared/ui';
+import { KeyDuoIcon, NameDuoIcon, SettingsListGroup, Text } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -18,9 +18,10 @@ export function AccountSettingsList(props: SettingsSectionProps) {
   return (
     <SettingsListGroup {...props}>
       <SettingsListGroup.Item
+        icon={<SettingsListGroup.Icon Icon={NameDuoIcon} />}
         label={t('titles.editName')}
         value={
-          <Text size="b2" shade={6}>
+          <Text size="b3" shade={7} numberOfLines={1} className="max-w-40">
             {user.name}
           </Text>
         }
@@ -30,6 +31,7 @@ export function AccountSettingsList(props: SettingsSectionProps) {
         <>
           <SettingsListGroup.Separator />
           <SettingsListGroup.Item
+            icon={<SettingsListGroup.Icon Icon={KeyDuoIcon} />}
             label={t('titles.changePassword')}
             onPress={() => push('/settings/change-password')}
           />

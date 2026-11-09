@@ -1,7 +1,7 @@
 import { DeleteAccountForm } from '@src/features/identity/auth/components/delete-account-form';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, ReadableContent, Spacing, VStack, WordWrapText } from '@src/shared/ui';
+import { Box, InlineAlert, ReadableContent, Spacing } from '@src/shared/ui';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function DeleteAccountRoute() {
@@ -17,14 +17,11 @@ export default function DeleteAccountRoute() {
               entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
             >
               <Spacing size={16} />
-              <VStack gap={4} className="bg-warning-1 rounded-xl p-4">
-                <WordWrapText size="b3" shade={7}>
-                  {t('deleteAccount.restoreNotice')}
-                </WordWrapText>
-                <WordWrapText size="b3" shade={5}>
-                  {t('deleteAccount.purgeNotice')}
-                </WordWrapText>
-              </VStack>
+              <InlineAlert
+                status="warning"
+                title={t('deleteAccount.restoreNotice')}
+                description={t('deleteAccount.purgeNotice')}
+              />
             </Animated.View>
           }
         />
