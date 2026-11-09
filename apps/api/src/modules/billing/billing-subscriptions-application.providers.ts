@@ -22,7 +22,7 @@ import { BillingNoticeSweeper } from "./application/services/subscriptions/billi
 import { PremiumAccessProjector } from "./application/services/subscriptions/premium-access-projector.service.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
-import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle-webhook-event.use-case.js";
+import { ApplyStoreSubscriptionEvent } from "./application/use-cases/subscriptions/apply-store-subscription-event.use-case.js";
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
 import { NotifyEndingTrials } from "./application/use-cases/subscriptions/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewals } from "./application/use-cases/subscriptions/notify-upcoming-renewals.use-case.js";
@@ -198,8 +198,8 @@ export const notifyUpcomingRenewalsProvider: FactoryProvider<NotifyUpcomingRenew
   ) => new NotifyUpcomingRenewals({ sweeper, source, notifier }),
 };
 
-export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
-  provide: HandleWebhookEvent,
+export const applyStoreSubscriptionEventProvider: FactoryProvider<ApplyStoreSubscriptionEvent> = {
+  provide: ApplyStoreSubscriptionEvent,
   inject: [
     SUBSCRIPTION_REPOSITORY,
     SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,
@@ -213,20 +213,26 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
   ],
   useFactory: (
     subscriptionRepository: ConstructorParameters<
-      typeof HandleWebhookEvent
+      typeof ApplyStoreSubscriptionEvent
     >[0]["subscriptionRepository"],
-    receiptRepository: ConstructorParameters<typeof HandleWebhookEvent>[0]["receiptRepository"],
-    userMutationLock: ConstructorParameters<typeof HandleWebhookEvent>[0]["userMutationLock"],
-    unitOfWork: ConstructorParameters<typeof HandleWebhookEvent>[0]["unitOfWork"],
-    cache: ConstructorParameters<typeof HandleWebhookEvent>[0]["cache"],
-    notifier: ConstructorParameters<typeof HandleWebhookEvent>[0]["notifier"],
-    webhookLock: ConstructorParameters<typeof HandleWebhookEvent>[0]["webhookLock"],
+    receiptRepository: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["receiptRepository"],
+    userMutationLock: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["userMutationLock"],
+    unitOfWork: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["cache"],
+    notifier: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["notifier"],
+    webhookLock: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["webhookLock"],
     premiumAccessProjector: ConstructorParameters<
-      typeof HandleWebhookEvent
+      typeof ApplyStoreSubscriptionEvent
     >[0]["premiumAccessProjector"],
-    reconcileScheduler: ConstructorParameters<typeof HandleWebhookEvent>[0]["reconcileScheduler"],
+    reconcileScheduler: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["reconcileScheduler"],
   ) =>
-    new HandleWebhookEvent({
+    new ApplyStoreSubscriptionEvent({
       subscriptionRepository,
       receiptRepository,
       userMutationLock,
@@ -236,7 +242,7 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
       webhookLock,
       premiumAccessProjector,
       reconcileScheduler,
-      logger: new Logger(HandleWebhookEvent.name),
+      logger: new Logger(ApplyStoreSubscriptionEvent.name),
     }),
 };
 

@@ -1,67 +1,56 @@
 /**
- * 구독 이벤트 페이로드 정의
- *
- * RevenueCat 웹훅으로부터 수신되는 구독 관련 이벤트 페이로드.
- * SubscriptionService 및 AdminEventNotifier에서 사용됩니다.
+ * 구독 이벤트 알림 페이로드. 구독 상태를 바꾼 뒤 운영 알림(결제 채널)으로 넘긴다. 공급자 이름을 모른다.
  */
 
-import type {
-  RevenueCatEventType,
-  RevenueCatStore,
-  SubscriptionEnvironment,
-} from "@aido/api/vocabulary";
+import type { StorePeriodType, SubscriptionEnvironment } from "@aido/api/vocabulary";
 
 import type { SubscriptionLifecycle } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
+import type {
+  StoreSubscriptionEventKind,
+  SubscriptionEndReason,
+  SubscriptionStore,
+} from "../../../domain/types/subscriptions/store-subscription.types.js";
 
 export type { SubscriptionLifecycle };
 
-/**
- * 구독 이벤트 페이로드
- */
 export interface SubscriptionEventPayload {
-  /** 사용자 ID */
   userId: string;
-  /** 이메일 */
   email: string;
-  /** 이벤트 타입 (RevenueCat 원본 이벤트명) */
-  eventType: RevenueCatEventType;
-  /** 상품 ID */
+  /** 사용자 이름 (UserProfile.name) */
+  name?: string;
+  /** 처리한 이벤트 종류 */
+  kind: Exclude<StoreSubscriptionEventKind, "IGNORED">;
+  /** 기간 없는 일회성 구매(STARTED만) */
+  isOneTime?: boolean;
   productId: string;
-  /** 스토어 (APP_STORE / PLAY_STORE / STRIPE 등) */
-  store?: RevenueCatStore;
+  store: SubscriptionStore | null;
   /** 결제 환경. SANDBOX는 테스트 결제라 관리자 알림에 표시하고 매출로 보지 않는다. */
   environment?: SubscriptionEnvironment;
-  /** 트랜잭션 ID */
-  transactionId?: string;
+  /** 갱신 체인 ID(원 거래 ID) */
+  storeSubscriptionId?: string;
   /** 구매 시각 (ISO string) */
   purchasedAt?: string;
   /** 만료 시각 (ISO string) */
   expiresAt?: string;
-  /** 취소 사유 */
-  cancelReason?: string;
-  /** 사용자 이름 (UserProfile.name) */
-  name?: string;
-  /** USD 기준 가격 (RevenueCat event.price — 항상 USD) */
+  /** 해지·환불·만료 사유 */
+  endReason?: SubscriptionEndReason;
+  /** USD 기준 가격 */
   priceUsd?: number;
-  /** 구매 통화 기준 가격 (RevenueCat event.price_in_purchased_currency) */
+  /** 구매 통화 기준 가격 */
   priceInPurchasedCurrency?: number;
-  /** 구매 통화 코드 (RevenueCat event.currency, e.g. KRW) */
+  /** 구매 통화 코드 (e.g. KRW) */
   purchasedCurrency?: string;
-  /** RevenueCat app_user_id. 운영 알림의 고객 링크에 쓴다. */
+  /** 앱 사용자 ID. 운영 알림의 공급자 고객 화면 링크에 쓴다. */
   appUserId?: string;
-  /** RevenueCat 고객 화면 주소. REVENUECAT_PROJECT_ID가 있을 때만 알림 어댑터가 채운다. */
-  revenueCatCustomerUrl?: string;
-  /** RevenueCat 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
+  /** 공급자 고객 화면 주소. 알림 어댑터가 설정이 있을 때만 채운다. */
+  providerCustomerUrl?: string;
+  /** 공급자 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
   eventId?: string;
-  /** 구매 국가 (event.country_code) */
+  /** 구매 국가 (ISO 3166-1 alpha-2) */
   countryCode?: string;
-  /** 구독 유형 (event.period_type: NORMAL / TRIAL / INTRO / PROMOTIONAL / PREPAID) */
-  periodType?: string;
-  /** 만료 사유 (event.expiration_reason) */
-  expirationReason?: string;
-  /** 앱이 RevenueCat subscriber attribute(appVersion)로 남긴 앱 버전 */
+  /** 지금 기간의 유형 */
+  periodKind?: StorePeriodType;
   appVersion?: string;
-  /** 앱이 RevenueCat subscriber attribute(deviceModel)로 남긴 기기 모델 */
   deviceModel?: string;
   /** 무료 체험 단계(시작·해지·전환·종료). 체험과 관계없는 이벤트는 비운다. */
   lifecycle?: SubscriptionLifecycle;

@@ -38,7 +38,7 @@ import { PremiumAccessReader } from "./application/services/subscriptions/premiu
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
 import {
   billingNoticeSweeperProvider,
-  handleWebhookEventProvider,
+  applyStoreSubscriptionEventProvider,
   notifyEndingPremiumGrantsProvider,
   notifyEndingTrialsProvider,
   notifyUpcomingRenewalsProvider,
@@ -71,7 +71,8 @@ import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/pers
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-trial-ending-notice.source.js";
 import { DrizzleUpcomingRenewalNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-upcoming-renewal-notice.source.js";
-import { SubscriptionController } from "./presentation/controllers/subscriptions/v1/subscription.controller.js";
+import { RevenueCatWebhookReceiver } from "./infrastructure/revenuecat/revenuecat-webhook.receiver.js";
+import { RevenueCatWebhookController } from "./presentation/controllers/subscriptions/v1/revenuecat-webhook.controller.js";
 
 @Module({
   imports: [
@@ -86,9 +87,10 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
       timeout: REVENUECAT_TIMEOUT_MS,
     }),
   ],
-  controllers: [SubscriptionController],
+  controllers: [RevenueCatWebhookController],
   providers: [
-    handleWebhookEventProvider,
+    applyStoreSubscriptionEventProvider,
+    RevenueCatWebhookReceiver,
     { provide: SUBSCRIPTION_USER_MUTATION_LOCK, useExisting: USER_MUTATION_LOCK },
     {
       provide: SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,

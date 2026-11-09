@@ -1,6 +1,5 @@
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
 import {
   PREMIUM_ACCESS_READER,
@@ -8,6 +7,7 @@ import {
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { GetCurrentUser } from "#api/modules/identity/application/use-cases/auth/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
@@ -70,7 +70,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   function webhook(body: unknown) {
-    return context.module.get(HandleWebhookEvent).execute({ body });
+    return context.module.get(RevenueCatWebhookReceiver).receive({ body });
   }
 
   function storeEvent(builder: SubscriptionEventBuilder, eventId: string) {

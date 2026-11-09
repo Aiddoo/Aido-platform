@@ -16,15 +16,13 @@ import {
 } from "./provider-labels.js";
 import {
   AUTO_RENEW_LABELS,
-  DEFAULT_META,
   DEVICE_LABELS,
   EVENT_META,
   LIFECYCLE_EVENT_KEYS,
   PERIOD_TYPE_LABELS,
   PRODUCT_PERIOD_LABELS,
+  KIND_EVENT_KEYS,
   REASON_LABELS,
-  REFUND_CANCEL_REASON,
-  REVENUECAT_EVENT_TO_INTERNAL,
   SANDBOX_SEVERITY,
   STORE_LABELS,
   type SubscriptionEventKey,
@@ -106,7 +104,7 @@ function localeLabel(payload: UserRegisteredEventPayload): string {
  */
 export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): AdminNotification {
   const eventKey = resolveEventKey(payload);
-  const meta = eventKey ? EVENT_META[eventKey] : DEFAULT_META;
+  const meta = EVENT_META[eventKey];
   const isSandbox = payload.environment === "SANDBOX";
   const displayName = payload.name ?? emailLocalPart(payload.email);
 
@@ -114,7 +112,11 @@ export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): 
     { label: "이메일", value: text(payload.email), inline: true },
     { label: "이름", value: text(displayName), inline: true },
     { label: "상품", value: text(productLabel(payload.productId)), inline: true },
-    { label: "스토어", value: text(lookup(STORE_LABELS, payload.store)), inline: true },
+    {
+      label: "스토어",
+      value: text(payload.store == null ? EMPTY : STORE_LABELS[payload.store]),
+      inline: true,
+    },
     { label: "기기", value: text(deviceLabel(payload)), inline: true },
     // 체험 시작은 ₩0 결제가 아니라 끝나는 날이 중요하다
     eventKey === "subscription.trial_started"
@@ -123,12 +125,12 @@ export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): 
     { label: "환경", value: text(environmentLabel(payload.environment)), inline: true },
     {
       label: "구독 유형",
-      value: text(lookup(PERIOD_TYPE_LABELS, payload.periodType)),
+      value: text(payload.periodKind == null ? EMPTY : PERIOD_TYPE_LABELS[payload.periodKind]),
       inline: true,
     },
     {
       label: "자동 갱신",
-      value: text((eventKey ? AUTO_RENEW_LABELS[eventKey] : undefined) ?? EMPTY),
+      value: text(AUTO_RENEW_LABELS[eventKey] ?? EMPTY),
       inline: true,
     },
     { label: "국가", value: text(countryLabel(payload.countryCode)), inline: true },
@@ -136,50 +138,43 @@ export function buildSubscriptionEventMessage(payload: SubscriptionAlertInput): 
     { label: "만료일", value: dateValue(payload.expiresAt), inline: true },
   ];
 
-  if (payload.eventType === "CANCELLATION") {
-    fields.push({
-      label: "취소 사유",
-      value: text(reasonLabel(payload.cancelReason)),
-      inline: false,
-    });
+  if (payload.kind === "CANCELLED" || payload.kind === "REFUNDED") {
+    fields.push({ label: "취소 사유", value: text(reasonLabel(payload.endReason)), inline: false });
   }
-  if (payload.eventType === "EXPIRATION") {
-    fields.push({
-      label: "만료 사유",
-      value: text(reasonLabel(payload.expirationReason)),
-      inline: false,
-    });
+  if (payload.kind === "EXPIRED") {
+    fields.push({ label: "만료 사유", value: text(reasonLabel(payload.endReason)), inline: false });
   }
 
   fields.push(
-    { label: "트랜잭션", value: text(transactionLabel(payload.transactionId)), inline: false },
+    {
+      label: "트랜잭션",
+      value: text(transactionLabel(payload.storeSubscriptionId)),
+      inline: false,
+    },
     { label: "사용자 ID", value: text(payload.userId), inline: false },
   );
 
   return createAdminNotification({
     title: `${isSandbox ? "[샌드박스] " : ""}${meta.emoji} ${meta.title}`,
-    body: `**${displayName}** 님의 구독 이벤트 (${payload.eventType})`,
+    body: `**${displayName}** 님의 구독 이벤트 (${payload.kind})`,
     severity: isSandbox ? SANDBOX_SEVERITY : meta.severity,
     fields,
-    link: payload.revenueCatCustomerUrl,
+    link: payload.providerCustomerUrl,
   });
 }
 
-function resolveEventKey(payload: SubscriptionAlertInput): SubscriptionEventKey | undefined {
-  if (payload.eventType === "CANCELLATION" && payload.cancelReason === REFUND_CANCEL_REASON) {
+// 환불은 체험 중 해지와 같은 체험 단계로 분류돼도 환불로 알린다
+function resolveEventKey(payload: SubscriptionAlertInput): SubscriptionEventKey {
+  if (payload.kind === "REFUNDED") {
     return "subscription.refunded";
   }
   if (payload.lifecycle != null) {
     return LIFECYCLE_EVENT_KEYS[payload.lifecycle];
   }
-  return REVENUECAT_EVENT_TO_INTERNAL[payload.eventType];
-}
-
-function lookup(labels: Partial<Record<string, string>>, key: string | undefined): string {
-  if (key == null || key === "") {
-    return EMPTY;
+  if (payload.kind === "STARTED" && payload.isOneTime === true) {
+    return "subscription.one_time_purchased";
   }
-  return labels[key] ?? key;
+  return KIND_EVENT_KEYS[payload.kind];
 }
 
 function emailLocalPart(email: string): string {
@@ -193,7 +188,7 @@ function productLabel(productId: string): string {
 }
 
 function deviceLabel(payload: SubscriptionAlertInput): string {
-  const platform = payload.store ? (DEVICE_LABELS[payload.store] ?? payload.store) : undefined;
+  const platform = payload.store == null ? undefined : DEVICE_LABELS[payload.store];
   const appVersion = payload.appVersion ? `v${payload.appVersion}` : undefined;
   return [platform, payload.deviceModel, appVersion].filter(Boolean).join(" · ") || EMPTY;
 }
@@ -241,12 +236,8 @@ function dateValue(isoString: string | undefined): AdminNotificationFieldValue {
   return isoString ? datetime(isoString) : text(EMPTY);
 }
 
-function reasonLabel(reason: string | undefined): string {
-  if (reason == null || reason === "") {
-    return EMPTY;
-  }
-  const label = REASON_LABELS[reason];
-  return label ? `${label} (${reason})` : reason;
+function reasonLabel(reason: SubscriptionAlertInput["endReason"]): string {
+  return reason == null ? EMPTY : `${REASON_LABELS[reason]} (${reason})`;
 }
 
 function transactionLabel(transactionId: string | undefined): string {

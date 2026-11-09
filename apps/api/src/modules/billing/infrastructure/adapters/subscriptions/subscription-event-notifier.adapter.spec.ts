@@ -9,22 +9,22 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { SUBSCRIPTION_TIME } from "#test/fixtures/subscription.fixture";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import type { WebhookFailureContext } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
+import type { StoreSubscriptionEventFailureContext } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   let adapter: SubscriptionEventNotifierAdapter;
   let alerts: RecordingOperationalAlert;
-  let context: WebhookFailureContext;
+  let context: StoreSubscriptionEventFailureContext;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(SUBSCRIPTION_TIME);
     alerts = new RecordingOperationalAlert();
     context = {
-      eventType: "INITIAL_PURCHASE",
-      eventId: "evt-1",
+      kind: "STARTED",
+      providerEventId: "evt-1",
       store: "APP_STORE",
       productId: "premium_monthly",
     };
@@ -54,7 +54,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
         key: "billing.subscription.webhook.processing-failed",
         severity: "error",
         message: "RevenueCat 웹훅 처리에 실패했습니다",
-        tags: { eventType: "INITIAL_PURCHASE", store: "APP_STORE" },
+        tags: { eventKind: "STARTED", store: "APP_STORE" },
         details: {
           eventId: "evt-1",
           productId: "premium_monthly",
@@ -81,14 +81,14 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 
   it("스토어·이벤트 id가 없는 웹훅도 경보를 올린다", () => {
     // Given
-    const transfer: WebhookFailureContext = { eventType: "TRANSFER" };
+    const transfer: StoreSubscriptionEventFailureContext = { kind: "TRANSFERRED" };
 
     // When
     adapter.reportWebhookFailure(new Error("x"), transfer);
 
     // Then
     expect(alerts.alerts[0]).toMatchObject({
-      tags: { eventType: "TRANSFER", store: "unknown" },
+      tags: { eventKind: "TRANSFERRED", store: "unknown" },
       details: { eventId: null, productId: null },
     });
   });
@@ -102,7 +102,14 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
           notifySubscriptionEvent: (event: SubscriptionEventPayload) => forwarded.push(event),
         }))
         .mock(TypedConfigService)
-        .final({ revenuecat: { secretApiKey: undefined, webhookSecret: undefined, projectId } })
+        .final({
+          revenuecat: {
+            secretApiKey: undefined,
+            webhookSecret: undefined,
+            projectId,
+            apiV2SecretKey: undefined,
+          },
+        })
         .compile();
       return { unit, forwarded };
     }
@@ -110,8 +117,9 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     const event: SubscriptionEventPayload = {
       userId: "user-1",
       email: "user@example.com",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
       productId: "premium_monthly",
+      store: "APP_STORE",
       appUserId: "app user/1",
     };
 
@@ -123,7 +131,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
       unit.notifySubscriptionEvent(event);
 
       // Then
-      expect(forwarded[0]?.revenueCatCustomerUrl).toBe(
+      expect(forwarded[0]?.providerCustomerUrl).toBe(
         "https://app.revenuecat.com/projects/6a6ea506/customers/app%20user%2F1",
       );
     });

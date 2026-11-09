@@ -13,7 +13,7 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import { BillingAlertKey } from "../../../application/observability/subscriptions/billing-alerts.js";
 import type {
   SubscriptionEventNotifierPort,
-  WebhookFailureContext,
+  StoreSubscriptionEventFailureContext,
 } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
 
@@ -40,7 +40,7 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
         ? payload
         : {
             ...payload,
-            revenueCatCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
+            providerCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
           },
     );
   }
@@ -49,14 +49,14 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     this.notificationQueueService.enqueueBillingIssue({ userId });
   }
 
-  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
+  reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.alert.raise({
       key: BillingAlertKey.WEBHOOK_PROCESSING_FAILED,
       severity: "error",
       message: "RevenueCat 웹훅 처리에 실패했습니다",
-      tags: { eventType: context.eventType, store: context.store ?? "unknown" },
+      tags: { eventKind: context.kind, store: context.store ?? "unknown" },
       details: {
-        eventId: context.eventId ?? null,
+        eventId: context.providerEventId ?? null,
         productId: context.productId ?? null,
         errorType: toErrorType(error),
         errorCode: error instanceof ErrorCodedException ? error.errorCode : null,

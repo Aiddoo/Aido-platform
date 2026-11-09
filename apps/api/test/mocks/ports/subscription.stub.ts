@@ -7,7 +7,7 @@ import type { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/app
 import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
 import type {
   SubscriptionEventNotifierPort,
-  WebhookFailureContext,
+  StoreSubscriptionEventFailureContext,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import type {
   ClaimSubscriptionEventReceiptInput,
@@ -198,7 +198,7 @@ export class StubSubscriptionCache implements SubscriptionCachePort {
 export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   readonly events: SubscriptionEventPayload[] = [];
   readonly billingIssueUserIds: string[] = [];
-  readonly failures: Array<{ error: unknown; context: WebhookFailureContext }> = [];
+  readonly failures: Array<{ error: unknown; context: StoreSubscriptionEventFailureContext }> = [];
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.events.push(payload);
@@ -206,7 +206,7 @@ export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   notifyBillingIssue(userId: string): void {
     this.billingIssueUserIds.push(userId);
   }
-  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
+  reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.failures.push({ error, context });
   }
 }

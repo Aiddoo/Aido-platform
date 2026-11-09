@@ -5,12 +5,12 @@ import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/billing-subscriptions-jobs.public";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/index";
@@ -50,7 +50,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let webhook: HandleWebhookEvent;
+  let webhook: RevenueCatWebhookReceiver;
   let jobs: FakeJobRuntime;
   let premiumAccess: PremiumAccessReaderPort;
   const statusReader = new StubStoreSubscriptionStatusReader();
@@ -67,7 +67,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
           .overrideProvider(STORE_SUBSCRIPTION_STATUS_READER)
           .useValue(statusReader),
     });
-    webhook = context.module.get(HandleWebhookEvent);
+    webhook = context.module.get(RevenueCatWebhookReceiver);
     jobs = context.module.get(JOB_RUNTIME);
     premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
   });
@@ -109,10 +109,10 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     // Given
     const user = UserFixture.create({ id: createEntityId(), createdAt: startedAt });
     await client.insert(userTable).values(user);
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
     });
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(user.id, SubscriptionEventBuilder.cancellation(), "cancel"),
     });
     statusReader.states.set(CHAIN, {

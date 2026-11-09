@@ -1,12 +1,12 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import {
   PREMIUM_ACCESS_READER,
   PREMIUM_GRANTER,
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
@@ -69,7 +69,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   });
 
   function webhook(body: RevenueCatWebhookPayload) {
-    return context.module.get(HandleWebhookEvent).execute({ body });
+    return context.module.get(RevenueCatWebhookReceiver).receive({ body });
   }
 
   function chainEvent(

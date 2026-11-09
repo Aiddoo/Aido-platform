@@ -131,25 +131,25 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     userId: "user-1",
     email: "matthew@example.com",
     name: "매튜",
-    eventType: "INITIAL_PURCHASE",
+    kind: "STARTED",
     productId: "aido_premium_monthly",
     store: "APP_STORE",
     environment: "PRODUCTION",
-    transactionId: "2000000123456789",
+    storeSubscriptionId: "2000000123456789",
     purchasedAt: "2026-11-01T00:00:00.000Z",
     expiresAt: "2026-12-01T00:00:00.000Z",
     priceUsd: 2.99,
     priceInPurchasedCurrency: 3900,
     purchasedCurrency: "KRW",
     countryCode: "KR",
-    periodType: "NORMAL",
+    periodKind: "NORMAL",
   };
 
   it("운영 iOS 신규 구매는 모든 공통 필드를 정해진 순서로 표시한다", () => {
     const message = buildSubscriptionEventMessage(purchase);
 
     expect(message.title).toBe("🎉 새로운 구독 구매");
-    expect(message.body).toBe("**매튜** 님의 구독 이벤트 (INITIAL_PURCHASE)");
+    expect(message.body).toBe("**매튜** 님의 구독 이벤트 (STARTED)");
     expect(message.severity).toBe("success");
     expect(message.fields).toEqual([
       { label: "이메일", value: { kind: "text", text: "matthew@example.com" }, inline: true },
@@ -189,11 +189,12 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     const message = buildSubscriptionEventMessage({
       userId: "user-2",
       email: "renewer@example.com",
-      eventType: "EXPIRATION",
+      kind: "EXPIRED",
       productId: "custom_product",
+      store: null,
     });
 
-    expect(message.body).toBe("**renewer** 님의 구독 이벤트 (EXPIRATION)");
+    expect(message.body).toBe("**renewer** 님의 구독 이벤트 (EXPIRED)");
     expect(message.fields?.map((field) => field.label)).toEqual([
       "이메일",
       "이름",
@@ -222,11 +223,11 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
   it("Android 갱신은 Play Store·Android와 USD 결제 금액을 표시한다", () => {
     const message = buildSubscriptionEventMessage({
       ...purchase,
-      eventType: "RENEWAL",
+      kind: "RENEWED",
       store: "PLAY_STORE",
       priceInPurchasedCurrency: 2.99,
       purchasedCurrency: "USD",
-      transactionId: "GPA.3345-1122-9988-12345..0",
+      storeSubscriptionId: "GPA.3345-1122-9988-12345..0",
       deviceModel: "Pixel 9",
       appVersion: "1.4.0",
     });
@@ -238,11 +239,11 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     expect(fieldText(message, "트랜잭션")).toBe("`GPA.3345…345..0`");
   });
 
-  it("CUSTOMER_SUPPORT 취소는 환불로 표시하고 사유를 한국어와 원문으로 함께 적는다", () => {
+  it("환불은 환불로 표시하고 사유를 한국어와 원문으로 함께 적는다", () => {
     const message = buildSubscriptionEventMessage({
       ...purchase,
-      eventType: "CANCELLATION",
-      cancelReason: "CUSTOMER_SUPPORT",
+      kind: "REFUNDED",
+      endReason: "CUSTOMER_SUPPORT",
     });
 
     expect(message.title).toBe("↩️ 구독 환불");
@@ -254,8 +255,8 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
   it("일반 해지는 구독 취소로 표시한다", () => {
     const message = buildSubscriptionEventMessage({
       ...purchase,
-      eventType: "CANCELLATION",
-      cancelReason: "UNSUBSCRIBE",
+      kind: "CANCELLED",
+      endReason: "UNSUBSCRIBE",
     });
 
     expect(message.title).toBe("❌ 구독 취소");
@@ -263,7 +264,7 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
   });
 
   it("결제 문제는 warning 등급과 재시도 중인 자동 갱신 상태를 표시한다", () => {
-    const message = buildSubscriptionEventMessage({ ...purchase, eventType: "BILLING_ISSUE" });
+    const message = buildSubscriptionEventMessage({ ...purchase, kind: "BILLING_ISSUE" });
 
     expect(message.title).toBe("⚠️ 결제 문제 감지");
     expect(message.severity).toBe("warning");
@@ -272,35 +273,34 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
   });
 
   it.each([
-    ["UNCANCELLATION", "✅ 구독 취소 철회"],
-    ["PRODUCT_CHANGE", "🔀 구독 상품 변경"],
-    ["TRANSFER", "🔁 구독 이전"],
-    ["SUBSCRIPTION_EXTENDED", "⏳ 구독 연장"],
-    ["NON_RENEWING_PURCHASE", "🛒 일회성 구매"],
-    ["SUBSCRIPTION_PAUSED", "📋 구독 이벤트"],
-  ])("%s 이벤트 제목은 %s 이다", (eventType, title) => {
-    expect(buildSubscriptionEventMessage({ ...purchase, eventType }).title).toBe(title);
+    { kind: "UNCANCELLED", isOneTime: false, title: "✅ 구독 취소 철회" },
+    { kind: "PRODUCT_CHANGE_SCHEDULED", isOneTime: false, title: "🔀 구독 상품 변경" },
+    { kind: "TRANSFERRED", isOneTime: false, title: "🔁 구독 이전" },
+    { kind: "EXTENDED", isOneTime: false, title: "⏳ 구독 연장" },
+    { kind: "STARTED", isOneTime: true, title: "🛒 일회성 구매" },
+  ] as const)("$kind 이벤트 제목은 $title 이다", ({ kind, isOneTime, title }) => {
+    expect(buildSubscriptionEventMessage({ ...purchase, kind, isOneTime }).title).toBe(title);
   });
 
   it("체험 구독과 연간 상품을 한국어 라벨로 표시한다", () => {
     const message = buildSubscriptionEventMessage({
       ...purchase,
       productId: "aido_premium_yearly",
-      periodType: "TRIAL",
+      periodKind: "TRIAL",
     });
 
     expect(fieldText(message, "상품")).toBe("연간 · aido_premium_yearly");
     expect(fieldText(message, "구독 유형")).toBe("무료 체험");
   });
 
-  it("RevenueCat 고객 화면 주소가 있으면 알림 링크로 싣는다", () => {
+  it("공급자 고객 화면 주소가 있으면 알림 링크로 싣는다", () => {
     // Given
     const customerUrl = "https://app.revenuecat.com/projects/p1/customers/c1";
 
     // When
     const message = buildSubscriptionEventMessage({
       ...purchase,
-      revenueCatCustomerUrl: customerUrl,
+      providerCustomerUrl: customerUrl,
     });
 
     // Then
@@ -312,7 +312,7 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     const trialStart: SubscriptionAlertInput = {
       ...purchase,
       productId: "aido_premium_yearly",
-      periodType: "TRIAL",
+      periodKind: "TRIAL",
       priceUsd: 0,
       priceInPurchasedCurrency: 0,
       expiresAt: "2026-12-09T00:00:00.000Z",
@@ -340,18 +340,22 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     it.each([
       {
         lifecycle: "trial_cancelled" as const,
-        eventType: "CANCELLATION",
+        kind: "CANCELLED" as const,
         title: "⏸️ 체험 해지 (체험 끝까지 이용)",
       },
-      { lifecycle: "trial_converted" as const, eventType: "RENEWAL", title: "💰 체험 → 유료 전환" },
+      {
+        lifecycle: "trial_converted" as const,
+        kind: "RENEWED" as const,
+        title: "💰 체험 → 유료 전환",
+      },
       {
         lifecycle: "trial_expired" as const,
-        eventType: "EXPIRATION",
+        kind: "EXPIRED" as const,
         title: "📉 체험 종료 (전환 안 됨)",
       },
-    ])("$lifecycle은 같은 양식에 $title 제목을 쓴다", ({ lifecycle, eventType, title }) => {
+    ])("$lifecycle은 같은 양식에 $title 제목을 쓴다", ({ lifecycle, kind, title }) => {
       // Given
-      const payload = { ...trialStart, eventType, lifecycle, priceInPurchasedCurrency: 29_900 };
+      const payload = { ...trialStart, kind, lifecycle, priceInPurchasedCurrency: 29_900 };
 
       // When
       const message = buildSubscriptionEventMessage(payload);
@@ -365,8 +369,8 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
       // Given
       const payload = {
         ...trialStart,
-        eventType: "CANCELLATION",
-        cancelReason: "CUSTOMER_SUPPORT",
+        kind: "REFUNDED" as const,
+        endReason: "CUSTOMER_SUPPORT" as const,
         lifecycle: "trial_cancelled" as const,
       };
 

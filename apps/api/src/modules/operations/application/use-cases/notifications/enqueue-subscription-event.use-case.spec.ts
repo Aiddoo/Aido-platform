@@ -28,7 +28,7 @@ describe("EnqueueSubscriptionEvent", () => {
     const payload: SubscriptionEventPayload = {
       userId: "user-1",
       email: "test@example.com",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
       productId: "aido_premium_monthly",
       store: "APP_STORE",
     };
@@ -42,7 +42,8 @@ describe("EnqueueSubscriptionEvent", () => {
     const payload: SubscriptionEventPayload = {
       userId: "user-1",
       email: "test@example.com",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
+      store: null,
       productId: "aido_premium_monthly",
       priceUsd: 2.99,
       priceInPurchasedCurrency: 3900,
@@ -65,7 +66,8 @@ describe("EnqueueSubscriptionEvent", () => {
     const payload: SubscriptionEventPayload = {
       userId: "user-1",
       email: "test@example.com",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
+      store: null,
       productId: "aido_premium_monthly",
       priceUsd: 2.99,
     };
@@ -88,7 +90,8 @@ describe("EnqueueSubscriptionEvent", () => {
       userId: "user-1",
       email: "test@example.com",
       name: "매튜",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
+      store: null,
       productId: "aido_premium_monthly",
     };
 
@@ -108,7 +111,8 @@ describe("EnqueueSubscriptionEvent", () => {
     const payload: SubscriptionAlertInput = {
       userId: "user-1",
       email: "test@example.com",
-      eventType: "RENEWAL",
+      kind: "RENEWED",
+      store: null,
       productId: "aido_premium_monthly",
       eventId: "rc-event-1",
     };
@@ -128,7 +132,8 @@ describe("EnqueueSubscriptionEvent", () => {
     const payload: SubscriptionEventPayload = {
       userId: "user-1",
       email: "test@example.com",
-      eventType: "INITIAL_PURCHASE",
+      kind: "STARTED",
+      store: null,
       productId: "aido_premium_monthly",
     };
 

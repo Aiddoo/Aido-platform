@@ -3,11 +3,11 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
 import {
   INVITE_NOTIFIER,
@@ -402,13 +402,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     for (const suffix of ["A", "B", "C"]) {
       scenarios.push(await qualified(`RACEIVR${suffix}`, `RACEIVE${suffix}`));
     }
-    const webhook = context.module.get(HandleWebhookEvent);
+    const webhook = context.module.get(RevenueCatWebhookReceiver);
 
     // When
     await Promise.all(
       scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
-        webhook.execute({
+        webhook.receive({
           body: SubscriptionEventBuilder.initialPurchase()
             .withAppUserId(inviterId)
             .withOriginalTransactionId(`race-${inviterId}`)

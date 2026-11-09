@@ -5,12 +5,12 @@ import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { NotifyUpcomingRenewals } from "#api/modules/billing/application/use-cases/subscriptions/notify-upcoming-renewals.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -49,7 +49,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let webhook: HandleWebhookEvent;
+  let webhook: RevenueCatWebhookReceiver;
   let notifyUpcomingRenewals: NotifyUpcomingRenewals;
   let premiumAccess: PremiumAccessReaderPort;
 
@@ -61,7 +61,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       customizeBuilder: (builder) =>
         builder.overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER).useValue(subscriptionEventNotifier),
     });
-    webhook = context.module.get(HandleWebhookEvent);
+    webhook = context.module.get(RevenueCatWebhookReceiver);
     notifyUpcomingRenewals = context.module.get(NotifyUpcomingRenewals);
     premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
   });
@@ -117,7 +117,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     productId: string,
     { chain = `chain-${userId}`, startedAt = periodStartedAt, expiresAt = periodEndsAt } = {},
   ): Promise<void> {
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(
         userId,
         SubscriptionEventBuilder.initialPurchase().withPurchasedAtMs(startedAt.getTime()),
@@ -153,7 +153,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       notifyUpcomingRenewals.execute({ now: at }),
     ]);
     const repeated = await notifyUpcomingRenewals.execute({ now: at });
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.renewal(), {
         chain: `chain-${userId}`,
         eventId: "renew-2027",
@@ -200,7 +200,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     const chain = `chain-${userId}`;
 
     // When
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(MONTHLY), {
         chain,
         eventId: "change-to-monthly",
@@ -212,7 +212,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     const notified = await notifyUpcomingRenewals.execute({ now: at });
     const monthlyEndsAt = new Date(periodEndsAt.getTime() + 31 * DAY_MS);
     vi.setSystemTime(periodEndsAt);
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.renewal(), {
         chain,
         eventId: "renew-monthly",
@@ -239,7 +239,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     const chain = `chain-${userId}`;
 
     // When
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(YEARLY), {
         chain,
         eventId: "change-to-yearly",
@@ -250,7 +250,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     const notified = await notifyUpcomingRenewals.execute({ now: at });
     const beforeRenewal = await premiumAccess.getPremiumAccess(userId);
     vi.setSystemTime(periodEndsAt);
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.renewal(), {
         chain,
         eventId: "renew-yearly",
@@ -316,7 +316,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     const userId = await givenUser("RENEW006");
     await givenPurchase(userId, YEARLY);
     const chain = `chain-${userId}`;
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.renewal(), {
         chain,
         eventId: "renew-before-late-change",
@@ -326,7 +326,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     });
 
     // When
-    await webhook.execute({
+    await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(MONTHLY), {
         chain,
         eventId: "late-change",

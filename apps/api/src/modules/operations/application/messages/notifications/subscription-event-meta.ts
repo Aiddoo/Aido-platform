@@ -1,6 +1,11 @@
-import type { RevenueCatEventType, RevenueCatStore } from "@aido/api/vocabulary";
+import type { StorePeriodType } from "@aido/api/vocabulary";
 
-import type { SubscriptionLifecycle } from "#api/modules/billing/billing-subscriptions.public";
+import type {
+  StoreSubscriptionEventKind,
+  SubscriptionEndReason,
+  SubscriptionLifecycle,
+  SubscriptionStore,
+} from "#api/modules/billing/billing-subscriptions.public";
 
 import type { AdminNotificationSeverity } from "../../read-models/notifications/admin-notification.read-model.js";
 
@@ -22,24 +27,19 @@ export type SubscriptionEventKey =
   | "subscription.trial_converted"
   | "subscription.trial_expired";
 
-/** RevenueCat 이벤트 타입 → 내부 이벤트 키 매핑 */
-export const REVENUECAT_EVENT_TO_INTERNAL: Partial<
-  Record<RevenueCatEventType, SubscriptionEventKey>
-> = {
-  INITIAL_PURCHASE: "subscription.purchased",
-  RENEWAL: "subscription.renewed",
-  CANCELLATION: "subscription.cancelled",
-  EXPIRATION: "subscription.expired",
+/** 이벤트 종류 → 내부 이벤트 키. 일회성 구매와 체험 단계는 알림 조립이 먼저 고른다. */
+export const KIND_EVENT_KEYS = {
+  STARTED: "subscription.purchased",
+  RENEWED: "subscription.renewed",
+  CANCELLED: "subscription.cancelled",
+  REFUNDED: "subscription.refunded",
+  UNCANCELLED: "subscription.uncancelled",
+  EXPIRED: "subscription.expired",
   BILLING_ISSUE: "subscription.billing_issue",
-  UNCANCELLATION: "subscription.uncancelled",
-  PRODUCT_CHANGE: "subscription.product_changed",
-  NON_RENEWING_PURCHASE: "subscription.one_time_purchased",
-  SUBSCRIPTION_EXTENDED: "subscription.extended",
-  TRANSFER: "subscription.transferred",
-};
-
-/** RevenueCat은 환불을 CANCELLATION + cancel_reason=CUSTOMER_SUPPORT로 보낸다. */
-export const REFUND_CANCEL_REASON = "CUSTOMER_SUPPORT";
+  PRODUCT_CHANGE_SCHEDULED: "subscription.product_changed",
+  EXTENDED: "subscription.extended",
+  TRANSFERRED: "subscription.transferred",
+} as const satisfies Record<Exclude<StoreSubscriptionEventKind, "IGNORED">, SubscriptionEventKey>;
 
 interface EventMeta {
   title: string;
@@ -133,12 +133,6 @@ export const LIFECYCLE_EVENT_KEYS = {
   trial_expired: "subscription.trial_expired",
 } as const satisfies Record<SubscriptionLifecycle, SubscriptionEventKey>;
 
-export const DEFAULT_META: EventMeta = {
-  title: "구독 이벤트",
-  severity: "info",
-  emoji: "📋",
-};
-
 /** 샌드박스(테스트 결제)는 이벤트 종류와 무관하게 info로 낮춘다. */
 export const SANDBOX_SEVERITY: AdminNotificationSeverity = "info";
 
@@ -160,28 +154,27 @@ export const AUTO_RENEW_LABELS: Partial<Record<SubscriptionEventKey, string>> = 
   "subscription.trial_expired": "꺼짐",
 };
 
-export const STORE_LABELS: Partial<Record<RevenueCatStore, string>> = {
+export const STORE_LABELS: Record<SubscriptionStore, string> = {
   APP_STORE: "Apple App Store",
   MAC_APP_STORE: "Mac App Store",
   PLAY_STORE: "Google Play Store",
   STRIPE: "Stripe",
-  RC_BILLING: "RevenueCat Web Billing",
+  WEB_BILLING: "RevenueCat Web Billing",
   AMAZON: "Amazon",
   PROMOTIONAL: "Promotional",
 };
 
-export const DEVICE_LABELS: Partial<Record<RevenueCatStore, string>> = {
+export const DEVICE_LABELS: Record<SubscriptionStore, string> = {
   APP_STORE: "🍎 iOS",
   MAC_APP_STORE: "🍎 macOS",
   PLAY_STORE: "🤖 Android",
   STRIPE: "🌐 Web",
-  RC_BILLING: "🌐 Web",
+  WEB_BILLING: "🌐 Web",
   AMAZON: "📦 Amazon",
   PROMOTIONAL: "🎁 프로모션",
 };
 
-/** RevenueCat period_type → 구독 유형 */
-export const PERIOD_TYPE_LABELS: Record<string, string> = {
+export const PERIOD_TYPE_LABELS: Record<StorePeriodType, string> = {
   NORMAL: "일반",
   TRIAL: "무료 체험",
   INTRO: "첫 구매 할인",
@@ -189,8 +182,7 @@ export const PERIOD_TYPE_LABELS: Record<string, string> = {
   PREPAID: "선불",
 };
 
-/** RevenueCat cancel_reason / expiration_reason → 사유 */
-export const REASON_LABELS: Record<string, string> = {
+export const REASON_LABELS: Record<SubscriptionEndReason, string> = {
   UNSUBSCRIBE: "사용자 해지",
   BILLING_ERROR: "결제 실패",
   DEVELOPER_INITIATED: "개발자 취소",

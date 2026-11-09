@@ -17,7 +17,7 @@ import {
   type SubscriptionRepositoryPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscriptionEventReceipt, user as userTable } from "#api/platform/database/schema/index";
@@ -57,7 +57,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let repository: SubscriptionRepositoryPort;
-  let useCase: HandleWebhookEvent;
+  let useCase: RevenueCatWebhookReceiver;
   let entitlement: EntitlementReaderPort;
   let receipts: SubscriptionEventReceiptRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
@@ -73,7 +73,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         builder.overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER).useValue(notifier),
     });
     repository = context.module.get(SUBSCRIPTION_REPOSITORY);
-    useCase = context.module.get(HandleWebhookEvent);
+    useCase = context.module.get(RevenueCatWebhookReceiver);
     entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     receipts = context.module.get(SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY);
     unitOfWork = context.module.get(UNIT_OF_WORK);
@@ -168,7 +168,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       .build();
 
     // When
-    await useCase.execute({ body });
+    await useCase.receive({ body });
 
     // Then
     const stored = await client.query.subscription.findFirst({
@@ -188,14 +188,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   it("A 만료→B 갱신→동일 A 재전송은 최신 프리미엄 권한을 유지해야 한다", async () => {
     // Given
     const oldEvent = expiration("A-previous-expiration");
-    await useCase.execute({ body: oldEvent });
-    await useCase.execute({ body: renewal() });
+    await useCase.receive({ body: oldEvent });
+    await useCase.receive({ body: renewal() });
     const beforeReplay = await snapshot();
     expect(beforeReplay.premiumAccess).toBe(true);
     expect(beforeReplay.userStatus).toBe("ACTIVE");
 
     // When
-    const response = await useCase.execute({ body: oldEvent });
+    const response = await useCase.receive({ body: oldEvent });
     const afterReplay = await snapshot();
 
     // Then
@@ -210,13 +210,13 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
   it("최신 갱신 뒤 도착한 별도 id의 과거 만료는 최신 프리미엄 권한을 유지해야 한다", async () => {
     // Given
-    await useCase.execute({ body: renewal() });
+    await useCase.receive({ body: renewal() });
     const beforeDelayedEvent = await snapshot();
     expect(beforeDelayedEvent.premiumAccess).toBe(true);
     expect(beforeDelayedEvent.userStatus).toBe("ACTIVE");
 
     // When
-    const response = await useCase.execute({ body: expiration("C-delayed-previous-expiration") });
+    const response = await useCase.receive({ body: expiration("C-delayed-previous-expiration") });
     const afterDelayedEvent = await snapshot();
 
     // Then
@@ -270,8 +270,8 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Given
     const lock = await holdUserLock();
     const responses = Promise.allSettled([
-      useCase.execute({ body: initialPurchase() }),
-      useCase.execute({ body: initialPurchase("billing-owner-alias") }),
+      useCase.receive({ body: initialPurchase() }),
+      useCase.receive({ body: initialPurchase("billing-owner-alias") }),
     ]);
 
     // When
@@ -314,7 +314,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
     // When
     try {
-      await expect(useCase.execute({ body: initialPurchase() })).resolves.toEqual({
+      await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({
         received: true,
       });
     } finally {
@@ -327,7 +327,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(await repository.findByRevenueCatId("new-subscription-chain")).toBeNull();
     expect((await snapshot()).userExpiry).toBe(previousExpiry.toISOString());
     expect(events).toEqual([]);
-    await expect(useCase.execute({ body: initialPurchase() })).resolves.toEqual({ received: true });
+    await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({ received: true });
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
     expect(await repository.findByRevenueCatId("new-subscription-chain")).toMatchObject({
       status: "ACTIVE",
@@ -344,7 +344,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
     // When
     try {
-      await expect(useCase.execute({ body: initialPurchase() })).resolves.toEqual({
+      await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({
         received: true,
       });
     } finally {
@@ -357,7 +357,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(await client.select().from(subscriptionEventReceipt)).toEqual([]);
     expect((await snapshot()).userExpiry).toBe(previousExpiry.toISOString());
     expect(events).toEqual([]);
-    await useCase.execute({ body: initialPurchase() });
+    await useCase.receive({ body: initialPurchase() });
     expect(await repository.findByRevenueCatId("new-subscription-chain")).toMatchObject({
       status: "ACTIVE",
     });
@@ -391,7 +391,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     payload.event.id = "seed-existing-subscription";
 
     // When
-    await useCase.execute({ body: payload });
+    await useCase.receive({ body: payload });
 
     // Then
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
@@ -405,14 +405,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     "id와 생성 시각이 없는 legacy 만료 %s는 기존 동작을 유지한다",
     async (period) => {
       // Given
-      await useCase.execute({ body: renewal() });
+      await useCase.receive({ body: renewal() });
       const payload = expiration("unused-id");
       payload.event.id = undefined;
       payload.event.event_timestamp_ms = undefined;
       payload.event.expiration_at_ms = period === "same-period" ? nextExpiry.getTime() : undefined;
 
       // When
-      await useCase.execute({ body: payload });
+      await useCase.receive({ body: payload });
 
       // Then
       expect(await snapshot()).toMatchObject({
@@ -465,7 +465,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       .build();
 
     // When
-    await useCase.execute({ body });
+    await useCase.receive({ body });
 
     // Then
     expect(await repository.findByRevenueCatId(transactionId)).toMatchObject({ status: "EXPIRED" });
@@ -489,7 +489,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     await givenOtherSubscription({ expiresAt: shorterExpiry });
 
     // When
-    await useCase.execute({ body: expiration("shorter-other-chain-expiration") });
+    await useCase.receive({ body: expiration("shorter-other-chain-expiration") });
 
     // Then
     expect(await snapshot()).toMatchObject({
@@ -506,7 +506,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     await givenOtherSubscription({ status: "CANCELLED" });
 
     // When
-    await useCase.execute({ body: expiration("other-cancelled-chain-expiration") });
+    await useCase.receive({ body: expiration("other-cancelled-chain-expiration") });
 
     // Then
     expect(await snapshot()).toMatchObject({
@@ -555,7 +555,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     body.event.expiration_at_ms = distantExpiry.getTime();
 
     // When
-    await useCase.execute({ body });
+    await useCase.receive({ body });
 
     // Then
     expect(await snapshot()).toMatchObject({
@@ -626,7 +626,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       await repository.claimChain(transactionId, userId);
 
       // When
-      await useCase.execute({ body: expiration("no-automatic-reactivation") });
+      await useCase.receive({ body: expiration("no-automatic-reactivation") });
 
       // Then
       expect(await snapshot()).toMatchObject({
