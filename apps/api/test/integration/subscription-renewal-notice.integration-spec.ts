@@ -41,7 +41,7 @@ const MONTHLY = "com.aido.pro.monthly";
 
 const subscriptionEventNotifier: SubscriptionEventNotifierPort = {
   notifySubscriptionEvent: () => {},
-  notifyBillingIssue: () => {},
+  recordBillingIssue: async () => {},
   reportWebhookFailure: () => {},
 };
 

@@ -422,6 +422,28 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
     expect(fixture.notifier.events).toHaveLength(1);
   });
 
+  it("결제 문제 푸시는 구독 변경과 같은 트랜잭션에 기록해, 커밋 전에 남고 롤백되면 함께 사라진다", async () => {
+    // Given
+    givenSubscription();
+    const recordedInTransaction: string[][] = [];
+    fixture.unitOfWork.run = async (work) => {
+      const result = await work();
+      recordedInTransaction.push([...fixture.notifier.billingIssueUserIds]);
+      return result;
+    };
+
+    // When
+    await useCase.execute({
+      ...chain("billing-issue"),
+      kind: "BILLING_ISSUE",
+      gracePeriodEndsAt: NEXT_EXPIRY,
+    });
+
+    // Then
+    expect(recordedInTransaction).toEqual([[fixture.user.id]]);
+    expect(fixture.notifier.billingIssueUserIds).toEqual([fixture.user.id]);
+  });
+
   it("DB 실패는 보고하고 커밋 뒤 효과를 실행하지 않으며 원문 오류를 로그에 남기지 않는다", async () => {
     // Given
     fixture.unitOfWork.run = async () => {

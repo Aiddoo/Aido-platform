@@ -210,7 +210,7 @@ export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.events.push(payload);
   }
-  notifyBillingIssue(userId: string): void {
+  async recordBillingIssue(userId: string): Promise<void> {
     this.billingIssueUserIds.push(userId);
   }
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {

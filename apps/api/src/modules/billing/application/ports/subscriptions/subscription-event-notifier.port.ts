@@ -14,9 +14,13 @@ export interface StoreSubscriptionEventFailureContext {
 
 export const SUBSCRIPTION_EVENT_NOTIFIER = Symbol("SUBSCRIPTION_EVENT_NOTIFIER");
 
-/** 커밋 뒤 관리자 알림·결제 문제 푸시를 등록하고, 처리 실패를 운영 경보로 올린다. 모두 던지지 않는다. */
 export interface SubscriptionEventNotifierPort {
+  /** 커밋 뒤 운영 알림을 넘긴다. 알림 실패가 구독 반영을 되돌리지 않도록 기다리지 않고 던지지 않는다. */
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void;
-  notifyBillingIssue(userId: string): void;
+  /**
+   * 사용자에게 갈 결제 문제 푸시를 활성 UoW 안에서 기록한다. 처리 원장과 함께 커밋돼야 커밋 뒤 실패로
+   * 알림을 잃어도 공급자 재전송이 원장에 막혀 복구되지 않는 일이 없다.
+   */
+  recordBillingIssue(userId: string, at: Date): Promise<void>;
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void;
 }

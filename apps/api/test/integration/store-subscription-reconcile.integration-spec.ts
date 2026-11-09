@@ -42,7 +42,7 @@ const CHAIN = "reconcile-chain";
 
 const subscriptionEventNotifier: SubscriptionEventNotifierPort = {
   notifySubscriptionEvent: () => {},
-  notifyBillingIssue: () => {},
+  recordBillingIssue: async () => {},
   reportWebhookFailure: () => {},
 };
 

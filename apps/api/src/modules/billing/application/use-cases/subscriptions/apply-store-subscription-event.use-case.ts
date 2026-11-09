@@ -275,7 +275,11 @@ export class ApplyStoreSubscriptionEvent {
         ) {
           return null;
         }
-        return this.#applyEvent(user, event, subscription);
+        const payload = await this.#applyEvent(user, event, subscription);
+        if (payload != null && event.kind === "BILLING_ISSUE") {
+          await this.#dependencies.notifier.recordBillingIssue(user.id, now());
+        }
+        return payload;
       });
 
       if (eventPayload == null) {
@@ -288,9 +292,6 @@ export class ApplyStoreSubscriptionEvent {
       }
       await this.#dependencies.cache.invalidate(user.id);
       this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
-      if (event.kind === "BILLING_ISSUE") {
-        this.#dependencies.notifier.notifyBillingIssue(user.id);
-      }
       this.#logCompleted(event, user.id);
     } finally {
       await release();

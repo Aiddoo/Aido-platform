@@ -47,7 +47,7 @@ const notifier: SubscriptionEventNotifierPort = {
   notifySubscriptionEvent: (payload) => {
     events.push(payload);
   },
-  notifyBillingIssue: () => {},
+  recordBillingIssue: async () => {},
   reportWebhookFailure: () => {},
 };
 

@@ -52,8 +52,9 @@ export class NotificationQueueService implements OnModuleDestroy {
     this.#enqueueDetached({ name: NotificationJobName.CHEER_SENT, data });
   }
 
-  enqueueBillingIssue(data: BillingIssueJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.BILLING_ISSUE, data });
+  /** 활성 트랜잭션이 있으면 호출자의 변경과 함께 커밋된다. 실패는 호출자에게 던진다. */
+  enqueueBillingIssue(data: BillingIssueJobData, occurredAt: Date): Promise<void> {
+    return this.#enqueue({ name: NotificationJobName.BILLING_ISSUE, data }, occurredAt);
   }
 
   enqueueFriendCompleted(data: FriendCompletedJobData): void {

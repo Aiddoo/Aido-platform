@@ -45,8 +45,8 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     );
   }
 
-  notifyBillingIssue(userId: string): void {
-    this.notificationQueueService.enqueueBillingIssue({ userId });
+  recordBillingIssue(userId: string, at: Date): Promise<void> {
+    return this.notificationQueueService.enqueueBillingIssue({ userId }, at);
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
