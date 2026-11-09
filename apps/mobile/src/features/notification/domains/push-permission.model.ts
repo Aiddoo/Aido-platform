@@ -1,6 +1,13 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
-import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import {
+  diffMs,
+  fromEpochMs,
+  hasInstantPassed,
+  type Instant,
+  instantSchema,
+  toEpochMs,
+} from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -76,9 +83,15 @@ function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
   return diffMs(now, dismissedAt) < PUSH_PROMPT_SNOOZE_DAYS * DAY_MS;
 }
 
+/** 가입 직후 알림 화면을 보여 줄 수 있는 마지막 순간. 이 시각부터는 할 일 시간을 정할 때 묻는다 */
+function getOnboardingWindowEndsAt(signedUpAt: Instant): Instant {
+  return fromEpochMs(toEpochMs(signedUpAt) + PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS);
+}
+
 function isRecentSignup(signedUpAt: Instant, now: Instant): boolean {
-  const elapsed = diffMs(now, signedUpAt);
-  return 0 <= elapsed && elapsed < PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS;
+  return (
+    0 <= diffMs(now, signedUpAt) && !hasInstantPassed(getOnboardingWindowEndsAt(signedUpAt), now)
+  );
 }
 
 function isDenied(permission: PushPermission): boolean {
@@ -138,5 +151,6 @@ export const PushPermissionPolicy = {
   canRequestSystemDialog,
   canReceivePush,
   getAskMoment,
+  getOnboardingWindowEndsAt,
   getNextStep,
 } as const;
