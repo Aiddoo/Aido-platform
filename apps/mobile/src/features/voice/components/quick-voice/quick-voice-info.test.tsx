@@ -93,7 +93,7 @@ describe('QuickVoiceInfo', () => {
     );
 
     // When
-    await fireEvent.press(await screen.findByText('이번 달 모두 사용'));
+    await fireEvent.press(await screen.findByRole('button', { name: /이번 달 모두 사용/ }));
 
     // Then
     await waitFor(() =>

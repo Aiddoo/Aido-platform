@@ -100,14 +100,13 @@ function UsedUpQuotaChip() {
   const { t } = useTranslation('voice');
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
+  // Chip이 Pressable이라 바깥에서 감싸면 터치를 받지 못한다. Chip의 onPress를 쓴다
   return (
-    <PressableFeedback
+    <QuotaChip
+      feature="AI_PARSE"
       onPress={() => gate.promptLimit()}
       accessibilityRole="button"
       accessibilityHint={t('info.usedUpChipHint')}
-      className="rounded-full"
-    >
-      <QuotaChip feature="AI_PARSE" />
-    </PressableFeedback>
+    />
   );
 }

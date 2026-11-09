@@ -49,7 +49,12 @@ ReportList.Free = function Free() {
         <ReportRow report={sampleReport} isSample isLast />
       </Box>
 
-      <Button size="medium" onPress={() => push('/settings/subscription')}>
+      <Button
+        size="medium"
+        onPress={() =>
+          push({ pathname: '/settings/subscription', params: { feature: 'AI_REPORT' } })
+        }
+      >
         {t('report.list.subscribeCta')}
       </Button>
     </VStack>

@@ -270,7 +270,12 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 
         <Spacing size={16} />
 
-        <Button size="medium" onPress={() => push('/settings/subscription')}>
+        <Button
+          size="medium"
+          onPress={() =>
+            push({ pathname: '/settings/subscription', params: { feature: 'AI_SUGGESTION' } })
+          }
+        >
           {t('suggestions.paywall.subscribeCta')}
         </Button>
       </Box>
