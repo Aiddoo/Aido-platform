@@ -93,6 +93,19 @@ function withPremiumGrantImpact(
   return premiumGrantImpact == null ? payload : { ...payload, premiumGrantImpact };
 }
 
+/**
+ * 다시 보내도 결과가 같아 공급자 재전송이 의미 없는 실패: 사용자·체인·필수 시각이 없는 이벤트다. 그 밖의 실패
+ * (DB·외부 호출)는 처리 원장도 함께 롤백되므로 non-2xx로 공급자 재전송에 맡긴다.
+ */
+const PERMANENT_FAILURE_CODES: ReadonlySet<string> = new Set([
+  ErrorCode.SUBSCRIPTION_1602,
+  ErrorCode.SUBSCRIPTION_1604,
+]);
+
+function isPermanentFailure(error: unknown): boolean {
+  return error instanceof ApplicationException && PERMANENT_FAILURE_CODES.has(error.errorCode);
+}
+
 function requireDate(value: Date | undefined, kind: string, reason: string): Date {
   if (value == null) {
     throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, { reason, eventType: kind });
@@ -123,7 +136,7 @@ export class ApplyStoreSubscriptionEvent {
     );
   }
 
-  // 처리 실패는 보고하고 받은 것으로 닫는다. 잠금 경합만 공급자가 다시 보내게 한다
+  // 영구 실패는 보고하고 받은 것으로 닫고, 잠금 경합(429)과 일시 실패(5xx)는 던져 공급자가 다시 보내게 한다
   async #guard(
     context: StoreSubscriptionEventFailureContext,
     run: () => Promise<void>,
@@ -138,11 +151,49 @@ export class ApplyStoreSubscriptionEvent {
         this.#dependencies.logger.warn({ event: BillingLogEvent.WEBHOOK_LOCK_CONTENDED });
         throw error;
       }
-      this.#dependencies.notifier.reportWebhookFailure(error, context);
+      const isRetryable = !isPermanentFailure(error);
       this.#dependencies.logger.error({
         event: BillingLogEvent.WEBHOOK_FAILED,
         eventKind: context.kind,
+        isRetryable,
         errorCode: error instanceof ApplicationException ? error.errorCode : undefined,
+        errorType: toErrorType(error),
+      });
+      if (isRetryable) {
+        throw error;
+      }
+      this.#dependencies.notifier.reportWebhookFailure(error, context);
+    }
+  }
+
+  // 반영은 이미 커밋됐다. 다시 받아도 처리 원장이 막아 효과를 되풀이하지 못하므로 보고하고 받은 것으로 닫는다
+  async #settleAfterCommit(
+    event: StoreSubscriptionEvent,
+    userIds: readonly string[],
+  ): Promise<boolean> {
+    try {
+      await Promise.all(userIds.map((userId) => this.#dependencies.cache.invalidate(userId)));
+      return true;
+    } catch (error) {
+      this.#dependencies.notifier.reportWebhookFailure(error, failureContextOf(event));
+      this.#dependencies.logger.error({
+        event: BillingLogEvent.WEBHOOK_FAILED,
+        eventKind: event.kind,
+        isRetryable: false,
+        errorType: toErrorType(error),
+      });
+      return false;
+    }
+  }
+
+  // 영구 실패는 공급자가 다시 보내지 않으므로 스토어 상태를 다시 읽어 스스로 맞춘다
+  async #scheduleRecovery(userId: string): Promise<void> {
+    try {
+      await this.#dependencies.reconcileScheduler.schedule(userId, now());
+    } catch (error) {
+      this.#dependencies.logger.warn({
+        event: BillingLogEvent.RECONCILE_FAILED,
+        userId,
         errorType: toErrorType(error),
       });
     }
@@ -204,9 +255,14 @@ export class ApplyStoreSubscriptionEvent {
         this.#logDuplicate(event, receiver.id);
         return;
       }
-      await Promise.all(
-        [receiver, ...previousOwners].map((user) => this.#dependencies.cache.invalidate(user.id)),
-      );
+      if (
+        !(await this.#settleAfterCommit(
+          event,
+          [receiver, ...previousOwners].map((user) => user.id),
+        ))
+      ) {
+        return;
+      }
       this.#dependencies.notifier.notifySubscriptionEvent(result);
       this.#logCompleted(event, receiver.id);
     } finally {
@@ -225,8 +281,7 @@ export class ApplyStoreSubscriptionEvent {
   }
 
   async #process(event: StoreSubscriptionChainEvent): Promise<void> {
-    const { subscriptionRepository, webhookLock, unitOfWork, userMutationLock } =
-      this.#dependencies;
+    const { subscriptionRepository, webhookLock } = this.#dependencies;
     this.#logStarted(event);
     const release = await webhookLock.acquire(event.appUserId);
     if (release == null) {
@@ -249,38 +304,14 @@ export class ApplyStoreSubscriptionEvent {
         return;
       }
 
-      const eventPayload = await unitOfWork.run(async () => {
-        if (!(await userMutationLock.lockById(user.id))) {
-          throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
-            appUserId: event.appUserId,
-          });
-        }
-        // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다
-        if (!(await this.#claimReceipt(event))) {
-          this.#logDuplicate(event, user.id);
-          return null;
-        }
-        // 이벤트는 신호다. 늦거나 빠진 이벤트로 어긋난 상태를 스토어에서 다시 읽어 맞추도록 함께 커밋한다
-        await this.#dependencies.reconcileScheduler.schedule(user.id, now());
-        const subscription =
-          event.storeSubscriptionId != null && event.storeSubscriptionId !== ""
-            ? await subscriptionRepository.findByStoreSubscriptionId(
-                StoreSubscriptionId.from(event.storeSubscriptionId),
-              )
-            : null;
-        // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다
-        if (
-          event.providerEventId != null &&
-          subscription?.wasProcessedWith(event.providerEventId)
-        ) {
-          return null;
-        }
-        const payload = await this.#applyEvent(user, event, subscription);
-        if (payload != null && event.kind === "BILLING_ISSUE") {
-          await this.#dependencies.notifier.recordBillingIssue(user.id, now());
-        }
-        return payload;
-      });
+      const eventPayload = await this.#applyInTransaction(user, event).catch(
+        async (error: unknown) => {
+          if (isPermanentFailure(error)) {
+            await this.#scheduleRecovery(user.id);
+          }
+          throw error;
+        },
+      );
 
       if (eventPayload == null) {
         this.#dependencies.logger.debug({
@@ -290,12 +321,50 @@ export class ApplyStoreSubscriptionEvent {
         });
         return;
       }
-      await this.#dependencies.cache.invalidate(user.id);
+      if (!(await this.#settleAfterCommit(event, [user.id]))) {
+        return;
+      }
       this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
       this.#logCompleted(event, user.id);
     } finally {
       await release();
     }
+  }
+
+  async #applyInTransaction(
+    user: SubscriptionUser,
+    event: ProcessedChainEvent,
+  ): Promise<SubscriptionEventPayload | null> {
+    const { subscriptionRepository, userMutationLock } = this.#dependencies;
+    return this.#dependencies.unitOfWork.run(async () => {
+      if (!(await userMutationLock.lockById(user.id))) {
+        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
+          appUserId: event.appUserId,
+        });
+      }
+      // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다
+      if (!(await this.#claimReceipt(event))) {
+        this.#logDuplicate(event, user.id);
+        return null;
+      }
+      // 이벤트는 신호다. 늦거나 빠진 이벤트로 어긋난 상태를 스토어에서 다시 읽어 맞추도록 함께 커밋한다
+      await this.#dependencies.reconcileScheduler.schedule(user.id, now());
+      const subscription =
+        event.storeSubscriptionId != null && event.storeSubscriptionId !== ""
+          ? await subscriptionRepository.findByStoreSubscriptionId(
+              StoreSubscriptionId.from(event.storeSubscriptionId),
+            )
+          : null;
+      // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다
+      if (event.providerEventId != null && subscription?.wasProcessedWith(event.providerEventId)) {
+        return null;
+      }
+      const payload = await this.#applyEvent(user, event, subscription);
+      if (payload != null && event.kind === "BILLING_ISSUE") {
+        await this.#dependencies.notifier.recordBillingIssue(user.id, now());
+      }
+      return payload;
+    });
   }
 
   async #claimReceipt(event: StoreSubscriptionEvent): Promise<boolean> {

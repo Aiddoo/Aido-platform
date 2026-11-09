@@ -444,19 +444,45 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
     expect(fixture.notifier.billingIssueUserIds).toEqual([fixture.user.id]);
   });
 
-  it("DB 실패는 보고하고 커밋 뒤 효과를 실행하지 않으며 원문 오류를 로그에 남기지 않는다", async () => {
+  it("DB 같은 일시 실패는 보고하지 않고 던져 공급자가 다시 보내게 하며 원문 오류를 로그에 남기지 않는다", async () => {
     // Given
     fixture.unitOfWork.run = async () => {
       throw new Error("민감한 DB 원문");
     };
 
     // When
+    const applying = useCase.execute(started());
+
+    // Then
+    await expect(applying).rejects.toThrow("민감한 DB 원문");
+    expect(fixture.notifier.failures).toEqual([]);
+    expect(fixture.notifier.events).toEqual([]);
+    expect(fixture.webhookLock.heldKeys.size).toBe(0);
+    expect(JSON.stringify(fixture.logger.error.mock.calls)).not.toContain("민감한 DB 원문");
+  });
+
+  it("처리 대상이 없는 영구 실패도 사용자가 확인되면 스토어 상태 대조를 예약해 스스로 맞춘다", async () => {
+    // Given
+    const event = renewed({ storeSubscriptionId: undefined });
+
+    // When
+    await useCase.execute(event);
+
+    // Then
+    expect(fixture.notifier.failures[0]?.error).toMatchObject({ errorCode: "SUBSCRIPTION_1604" });
+    expect(fixture.reconcileScheduler.scheduledUserIds.at(-1)).toBe(fixture.user.id);
+  });
+
+  it("커밋 뒤 캐시 무효화 실패는 반영을 되돌릴 수 없어 보고하고 받은 것으로 닫는다", async () => {
+    // Given
+    vi.spyOn(fixture.cache, "invalidate").mockRejectedValueOnce(new Error("캐시 장애"));
+
+    // When
     await useCase.execute(started());
 
     // Then
+    expect(stored()?.status).toBe("ACTIVE");
     expect(fixture.notifier.failures).toHaveLength(1);
-    expect(fixture.notifier.events).toEqual([]);
-    expect(fixture.cache.profiles.has(fixture.user.id)).toBe(true);
-    expect(JSON.stringify(fixture.logger.error.mock.calls)).not.toContain("민감한 DB 원문");
+    expect(fixture.webhookLock.heldKeys.size).toBe(0);
   });
 });

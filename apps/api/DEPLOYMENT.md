@@ -236,7 +236,7 @@ WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
 - `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다(1.15.0).
 - `FEATURE_DISCOVERY_LAUNCHED_AT`: 끝이 `Z`인 UTC ISO로 쓴 그 릴리스의 배포 시각이다. 이후 가입자는 소개 대신 활성화 흐름을 본다.
 
-운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)·`planning.todo-timezone-rebase-failed`(시간대 재계산 실패)·`social.invite-reward.*`(초대 보상 재시도 소진)·`billing.subscription.reconcile.failed`(스토어 상태 대조 재시도 소진)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
+운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`billing.subscription.webhook.invalid`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)·`planning.todo-timezone-rebase-failed`(시간대 재계산 실패)·`social.invite-reward.*`(초대 보상 재시도 소진)·`billing.subscription.reconcile.failed`(스토어 상태 대조 재시도 소진)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 

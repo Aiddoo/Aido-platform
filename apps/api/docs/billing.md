@@ -46,6 +46,20 @@ RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_f
 
 RevenueCat `PRODUCT_CHANGE`는 정보성 안내다. `product_id`는 바꾸기 전 상품, `new_product_id`는 바꾼 대상이고 `expiration_at_ms`는 바꾸기 전 상품의 만료다. 실제 적용 신호는 App Store·Stripe가 `RENEWAL`, Google Play가 `INITIAL_PURCHASE`(새 체인)다([이벤트 필드](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields), [구독 관리](https://www.revenuecat.com/docs/subscription-guidance/managing-subscriptions)). 그래서 서버는 `PRODUCT_CHANGE`에서 상품·만료·상태를 바꾸지 않고 `Subscription.nextProductId = new_product_id ?? null`만 남기고(갱신 뒤 늦게 온 지난 기간의 안내는 무시), `RENEWAL`·`INITIAL_PURCHASE`가 `productId`를 이벤트 상품으로 맞추고 `nextProductId`를 비운다. `/me`의 `premiumPlanType`은 지금 기간 상품(`planType()`), 연간 갱신 안내는 다음 결제 상품(`renewingPlanType()` = `nextProductId ?? productId`)으로 판단한다.
 
+## 웹훅 실패 응답
+
+RevenueCat은 non-2xx 응답이면 웹훅을 다시 보낸다([웹훅](https://www.revenuecat.com/docs/integrations/webhooks): 5·10·20·40·80분 간격 최대 5회). 처리 원장(`SubscriptionEventReceipt`)은 구독 변경·결제 문제 푸시 잡과 같은 트랜잭션이라, 실패하면 함께 롤백돼 다시 받은 웹훅이 한 번만 반영된다.
+
+| 실패                                                             | 응답 | 처리                                                                                         |
+| ---------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------- |
+| 계약과 다른 원문                                                 | 200  | 로그 + 운영 경보 `billing.subscription.webhook.invalid`                                      |
+| 처리 대상 없음(`SUBSCRIPTION_1602` 사용자·`1604` 체인·필수 시각) | 200  | 운영 경보 `billing.subscription.webhook.processing-failed`, 사용자가 확인되면 상태 대조 예약 |
+| 사용자 웹훅 잠금 경합(`SUBSCRIPTION_1605`)                       | 429  | RevenueCat 재전송                                                                            |
+| DB·잠금 대기 등 일시 실패                                        | 5xx  | 로그만 남기고 RevenueCat 재전송에 맡긴다                                                     |
+| 커밋 뒤 캐시 무효화 실패                                         | 200  | 이미 반영돼 재전송이 원장에 막히므로 운영 경보로 올린다                                      |
+
+처리하지 않는 이벤트(`TEST`·`SUBSCRIBER_ALIAS` 등)는 실패가 아니라 200과 로그만 남긴다.
+
 ## 웹훅 뒤 스토어 상태 대조
 
 RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기를 권한다([웹훅](https://www.revenuecat.com/docs/integrations/webhooks): "we recommend calling the GET /subscribers REST API endpoint after receiving any webhook"). 서버는 웹훅을 신호로 보고, 처리 원장에 새로 기록된 이벤트마다 같은 트랜잭션에 `store-subscription-reconcile.v1` 잡을 넣는다. 1분 구간마다 사용자당 잡 하나로 묶고(idempotency key `store-subscription-reconcile_<userId>_<구간 시작>`, 구간이 끝난 뒤 시작), 재시도 3회·backoff·만료 5분이다.

@@ -312,7 +312,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
   });
 
-  it("구독 INSERT의 실제 FK 오류는 처리 원장도 rollback하며 같은 이벤트를 다시 처리할 수 있다", async () => {
+  it("구독 INSERT의 실제 FK 오류는 처리 원장도 rollback하고 던져, 다시 보낸 같은 이벤트를 처리할 수 있다", async () => {
     // Given
     const createSubscription = repository.create.bind(repository);
     const failure = vi
@@ -320,16 +320,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       .mockImplementationOnce((data) => createSubscription({ ...data, userId: createEntityId() }));
 
     // When
-    try {
-      await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({
-        received: true,
-      });
-    } finally {
-      failure.mockRestore();
-    }
+    const firstAttempt = await useCase
+      .receive({ body: initialPurchase() })
+      .catch((error: unknown) => error)
+      .finally(() => failure.mockRestore());
 
     // Then
-    expect(failures.map(databaseSqlState)).toEqual(["23503"]);
+    expect(databaseSqlState(firstAttempt)).toBe("23503");
+    expect(failures).toEqual([]);
     expect(await client.select().from(subscriptionEventReceipt)).toEqual([]);
     expect(
       await repository.findByStoreSubscriptionId(
@@ -350,7 +348,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(events).toHaveLength(1);
   });
 
-  it("사용자 projection 갱신 실패는 먼저 생성한 구독과 처리 원장도 rollback한다", async () => {
+  it("사용자 projection 갱신 실패는 먼저 생성한 구독과 처리 원장도 rollback하고 던진다", async () => {
     // Given
     const updateUser = repository.updateUserSubscriptionStatus.bind(repository);
     const failure = vi
@@ -358,16 +356,13 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       .mockImplementationOnce((_userId, data) => updateUser(createEntityId(), data));
 
     // When
-    try {
-      await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({
-        received: true,
-      });
-    } finally {
-      failure.mockRestore();
-    }
+    const firstAttempt = useCase
+      .receive({ body: initialPurchase() })
+      .finally(() => failure.mockRestore());
 
     // Then
-    expect(failures).toHaveLength(1);
+    await expect(firstAttempt).rejects.toBeInstanceOf(Error);
+    expect(failures).toEqual([]);
     expect(
       await repository.findByStoreSubscriptionId(
         StoreSubscriptionId.from("new-subscription-chain"),
