@@ -35,11 +35,13 @@ export function FeatureMedia({
   className,
   ...props
 }: FeatureMediaProps) {
-  const [status, setStatus] = useState<MediaStatus>('loading');
+  // 앱에 묶인 그림(require)은 곧바로 그려져 카드 위에 회색 스켈레톤·바탕이 번쩍이지 않게 처음부터 그린 것으로 본다
+  const isBundled = typeof source === 'number';
+  const [status, setStatus] = useState<MediaStatus>(isBundled ? 'loaded' : 'loading');
   const isReducedMotion = useIsReduceMotionEnabled();
 
   return (
-    <AspectRatio className={cn('overflow-hidden bg-gray-2', className)} {...props}>
+    <AspectRatio className={cn('overflow-hidden', !isBundled && 'bg-gray-2', className)} {...props}>
       <Image
         source={source}
         alt={alt}
@@ -48,9 +50,13 @@ export function FeatureMedia({
         contentFit={contentFit}
         cachePolicy="memory-disk"
         recyclingKey={recyclingKey}
-        transition={isReducedMotion ? 0 : ANIMATION.duration.normal}
+        transition={isReducedMotion || isBundled ? 0 : ANIMATION.duration.normal}
         style={StyleSheet.absoluteFill}
-        onLoadStart={() => setStatus('loading')}
+        onLoadStart={() => {
+          if (!isBundled) {
+            setStatus('loading');
+          }
+        }}
         onLoad={() => setStatus('loaded')}
         onError={() => setStatus('failed')}
       />

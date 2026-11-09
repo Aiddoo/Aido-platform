@@ -15,14 +15,16 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
 import { Chip, Skeleton } from 'heroui-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   FlatList,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 import { BENEFIT_SLIDES, type BenefitSlideTone } from '../constants/subscription.constants';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
@@ -43,31 +45,34 @@ const SLIDE_TONE_CLASS_NAMES = {
   dark: 'bg-gray-9 dark:bg-gray-2',
 } as const satisfies Record<BenefitSlideTone, string>;
 
+/** 결제 화면 좌우 여백(16)과 영수증 카드 안 여백(20). 첫 프레임 예상 폭에만 쓰고 실제 폭은 재서 맞춘다 */
+const ESTIMATED_PAGE_GUTTER = (16 + 20) * 2;
+
+/** 첫 프레임부터 넘기기 목록을 그려 폭을 잰 뒤 단일 카드에서 목록으로 바뀌며 그림이 다시 붙지 않게 한다 */
+function useEstimatedPageWidth() {
+  const { width: frameWidth } = useSafeAreaFrame();
+  const { left, right } = useSafeAreaInsets();
+
+  return Math.max(0, frameWidth - left - right - ESTIMATED_PAGE_GUTTER);
+}
+
 /** 페이월 맨 위 AI 혜택 넘기기. 막혀서 들어온 기능의 장부터 보여 주고 저절로 넘기지 않는다 */
 export function BenefitCarousel() {
   const [{ feature }] = useSubscriptionParams();
   const [index, setIndex] = useState(() => getInitialBenefitIndex(BENEFIT_SLIDES, feature));
-  const [pageWidth, setPageWidth] = useState<number | null>(null);
+  const estimatedPageWidth = useEstimatedPageWidth();
+  const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
+  const pageWidth = measuredPageWidth ?? estimatedPageWidth;
   useTrackBenefitViewed(index);
 
   const handleLayout = (event: LayoutChangeEvent) => {
-    setPageWidth(event.nativeEvent.layout.width);
+    setMeasuredPageWidth(event.nativeEvent.layout.width);
   };
 
   return (
     <VStack gap={12}>
       <Box onLayout={handleLayout}>
-        {pageWidth == null ? (
-          // 폭을 재기 전에도 같은 장을 그려 넘기기 목록이 들어와도 높이가 밀리지 않는다
-          <BenefitSlideCard slide={BENEFIT_SLIDES[index] ?? BENEFIT_SLIDES[0]} number={index + 1} />
-        ) : (
-          <BenefitPager
-            key={pageWidth}
-            pageWidth={pageWidth}
-            index={index}
-            onIndexChange={setIndex}
-          />
-        )}
+        <BenefitPager pageWidth={pageWidth} index={index} onIndexChange={setIndex} />
       </Box>
 
       <HStack justify="center">
@@ -85,16 +90,28 @@ interface BenefitPagerProps {
 
 /** calendar-pager와 같은 넘기기. 카드 높이는 내용으로 정하고, 글 길이가 장마다 달라 가장 긴 글 높이에 맞춘다 */
 function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
-  // 폭이 바뀌어 새 목록을 만들 때만 지금 장을 시작 위치로 읽는다
-  const [initialContentOffset] = useState(() => ({ x: index * pageWidth, y: 0 }));
+  const listRef = useRef<FlatList<BenefitSlideEntry>>(null);
   const [initialIndex] = useState(index);
-  const [copyHeights, setCopyHeights] = useState<Partial<Record<BenefitFeature, number>>>({});
-  const copyMinHeight = Math.max(0, ...Object.values(copyHeights));
+  const copyHeightsRef = useRef(new Map<BenefitFeature, number>());
+  const [copyMinHeight, setCopyMinHeight] = useState(0);
 
+  // 폭이 바뀌어도(예상 폭 → 잰 폭, 접기·회전) 목록을 다시 만들지 않고 보던 장에 맞춘다
+  const keepIndexOnResize = useEffectEvent(() => {
+    listRef.current?.scrollToOffset({ offset: index * pageWidth, animated: false });
+  });
+  useEffect(() => {
+    keepIndexOnResize();
+  }, [pageWidth]);
+
+  // 네 장을 다 잰 뒤 한 번에 맞춰 장마다 목록 전체를 다시 그리지 않는다
   const handleCopyLayout = (feature: BenefitFeature, height: number) => {
-    setCopyHeights((current) =>
-      current[feature] === height ? current : { ...current, [feature]: height },
-    );
+    const heights = copyHeightsRef.current;
+    heights.set(feature, height);
+    if (heights.size < BENEFIT_SLIDES.length) {
+      return;
+    }
+    const maxHeight = Math.max(...heights.values());
+    setCopyMinHeight((current) => (current === maxHeight ? current : maxHeight));
   };
 
   const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -106,11 +123,12 @@ function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
 
   return (
     <FlatList
+      ref={listRef}
       horizontal
       pagingEnabled
       data={BENEFIT_SLIDES}
       keyExtractor={(slide) => slide.feature}
-      extraData={copyMinHeight}
+      extraData={`${copyMinHeight}:${pageWidth}`}
       renderItem={({ item: slide, index: slideIndex }) => (
         <Box style={{ width: pageWidth }}>
           <BenefitSlideCard
@@ -127,7 +145,6 @@ function BenefitPager({ pageWidth, index, onIndexChange }: BenefitPagerProps) {
         index: itemIndex,
       })}
       initialScrollIndex={initialIndex}
-      contentOffset={initialContentOffset}
       initialNumToRender={BENEFIT_SLIDES.length}
       showsHorizontalScrollIndicator={false}
       onMomentumScrollEnd={handleScrollEnd}
@@ -249,14 +266,18 @@ function useTrackBenefitViewed(index: number) {
 }
 
 BenefitCarousel.Loading = function Loading() {
+  // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
+  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
+  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+
   return (
     <VStack gap={12} accessibilityState={{ busy: true }}>
       <VStack className="overflow-hidden rounded-3xl bg-gray-2">
         <VStack gap={8} className="px-5 pt-5">
-          <TextSkeleton size="e1" className="w-14" />
-          <TextSkeleton size="t3" className="w-48" />
-          <TextSkeleton size="b4" className="w-56" />
-          <TextSkeleton size="b4" className="w-40" />
+          <TextSkeleton size="e1" color={color} className="w-14" />
+          <TextSkeleton size="t3" color={color} className="w-48" />
+          <TextSkeleton size="b4" color={color} className="w-56" />
+          <TextSkeleton size="b4" color={color} className="w-40" />
         </VStack>
         <Skeleton className="w-full" style={{ aspectRatio: BENEFIT_ART_RATIO }} />
       </VStack>

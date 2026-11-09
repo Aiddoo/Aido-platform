@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
+import Svg, { Path } from 'react-native-svg';
+import { useResolveClassNames } from 'uniwind';
 
-import { Box } from '../box';
 import { HStack } from '../h-stack/h-stack';
 
 // 실제 코드를 담지 않는 장식이라 막대 굵기 배열을 고정한다
@@ -10,6 +11,17 @@ const BARCODE_BAR_WIDTHS = [
 ] as const;
 
 const BAR_UNIT_WIDTH = 1.8;
+const BAR_GAP = 1.5;
+
+/** 막대마다 뷰를 두지 않고 높이 1짜리 경로 하나로 그려 높이는 viewBox로 늘린다 */
+const BARCODE = BARCODE_BAR_WIDTHS.reduce(
+  ({ pathData, x }, barWidth) => {
+    const width = barWidth * BAR_UNIT_WIDTH;
+    return { pathData: `${pathData}M${x} 0h${width}v1h-${width}z`, x: x + width + BAR_GAP };
+  },
+  { pathData: '', x: 0 },
+);
+const BARCODE_WIDTH = BARCODE.x - BAR_GAP;
 
 export interface BarcodeProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
   /** 막대 높이(pt) */
@@ -18,23 +30,23 @@ export interface BarcodeProps extends Omit<ComponentProps<typeof HStack>, 'child
 
 /** 영수증 카드 아래쪽 바코드 장식. 스크린 리더에서는 읽지 않는다. */
 export function Barcode({ height = 32, ...props }: BarcodeProps) {
+  const { backgroundColor: fill } = useResolveClassNames('bg-gray-7');
+
   return (
     <HStack
-      align="end"
       justify="center"
-      gap={1.5}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       {...props}
     >
-      {BARCODE_BAR_WIDTHS.map((barWidth, index) => (
-        <Box
-          // 순서와 개수가 고정된 장식이라 index가 안정적인 key다
-          key={index}
-          className="bg-gray-7 rounded-[0.5px]"
-          style={{ width: barWidth * BAR_UNIT_WIDTH, height }}
-        />
-      ))}
+      <Svg
+        width={BARCODE_WIDTH}
+        height={height}
+        viewBox={`0 0 ${BARCODE_WIDTH} 1`}
+        preserveAspectRatio="none"
+      >
+        <Path d={BARCODE.pathData} fill={fill} />
+      </Svg>
     </HStack>
   );
 }

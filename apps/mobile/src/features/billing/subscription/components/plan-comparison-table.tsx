@@ -17,6 +17,7 @@ import { range } from 'es-toolkit';
 import { Popover, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 import type { EntitlementFeature } from '../domains/entitlement.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
@@ -206,9 +207,13 @@ function Cell({ value, isPremium = false }: { value: PlanValue; isPremium?: bool
     .exhaustive();
 }
 
-const LOADING_ROW_COUNT = 9;
+const LOADING_ROW_COUNT = 4;
 
 PlanComparisonTable.Loading = function Loading() {
+  // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
+  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
+  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+
   return (
     <VStack
       accessibilityState={{ busy: true }}
@@ -216,9 +221,9 @@ PlanComparisonTable.Loading = function Loading() {
     >
       {range(LOADING_ROW_COUNT).map((row) => (
         <HStack key={row} align="center" gap={12} className="min-h-11 border-t border-gray-3 px-3">
-          <TextSkeleton size="b4" className="flex-[1.4]" />
-          <TextSkeleton size="b4" className="flex-[0.8]" />
-          <TextSkeleton size="b4" className="flex-[0.9]" />
+          <TextSkeleton size="b4" color={color} className="flex-[1.4]" />
+          <TextSkeleton size="b4" color={color} className="flex-[0.8]" />
+          <TextSkeleton size="b4" color={color} className="flex-[0.9]" />
         </HStack>
       ))}
     </VStack>
