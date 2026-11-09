@@ -22,6 +22,7 @@ import { Steps } from '@src/shared/ui';
 
 - 점 뒤 막대는 현재 단계까지 `withSpring`으로 늘어납니다. 지난 점은 `bg-white dark:bg-gray-9`, 남은 점은 `bg-gray-4`로 `withTiming` 200ms 동안 바뀝니다.
 - 넘기는 목록과 함께 쓰면 `progress`(장 위치 SharedValue, 소수)를 넘깁니다. 막대 폭과 점 색이 스프링 없이 손가락을 바로 따라옵니다(혜택 넘기기). `index`는 접근성·처음 값용으로 그대로 넘깁니다.
+- 색 카드·그림 위에 얹을 때는 `tone="onMedia"`로 흰 막대(`bg-on-sky`), main 점, 반투명 흰 점(`bg-on-sky/60`)으로 그립니다(혜택 넘기기).
 - 첫 단계는 다음 버튼이 전체 폭입니다. 둘째 단계부터 뒤로 버튼이 측정 폭의 25%(간격 10 제외)로 나타납니다(`duration 250`, `dampingRatio 1.5`).
 - 마지막 단계(`isLast`)에서는 다음 버튼에 체크 아이콘이 펴지고, 글자는 `nextLabel`이 정합니다.
 - 모든 움직임은 UI 스레드 worklet이라 프레임마다 React가 다시 그리지 않습니다. 단계가 바뀔 때만 props가 바뀝니다.

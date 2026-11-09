@@ -20,7 +20,16 @@ interface StepsDotsProps {
   count: number;
   /** 손가락을 따라 움직이는 장 위치(0부터, 소수). 주면 넘기는 동안 막대·점이 UI 스레드에서 바로 따라온다 */
   progress?: SharedValue<number>;
+  /** `onMedia`는 색 카드·그림 위에 얹을 때 흰 막대와 반투명 흰 점으로 그린다 */
+  tone?: StepsDotsTone;
 }
+
+type StepsDotsTone = 'default' | 'onMedia';
+
+const STEPS_DOTS_TONE_CLASS_NAMES = {
+  default: { passed: 'bg-white dark:bg-gray-9', upcoming: 'bg-gray-4', bar: 'bg-main' },
+  onMedia: { passed: 'bg-main', upcoming: 'bg-on-sky/60', bar: 'bg-on-sky' },
+} as const satisfies Record<StepsDotsTone, { passed: string; upcoming: string; bar: string }>;
 
 function getBarWidth(position: number) {
   'worklet';
@@ -64,11 +73,12 @@ function StepsDot({
 }
 
 /** 점 뒤 막대가 현재 단계까지 늘어나고, 지난 점은 막대 위에서 밝아진다 */
-export function StepsDots({ index, count, progress }: StepsDotsProps) {
+export function StepsDots({ index, count, progress, tone = 'default' }: StepsDotsProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
-  const passedColor = useBackgroundColor('bg-white dark:bg-gray-9');
-  const upcomingColor = useBackgroundColor('bg-gray-4');
-  const barColor = useBackgroundColor('bg-main');
+  const toneClassNames = STEPS_DOTS_TONE_CLASS_NAMES[tone];
+  const passedColor = useBackgroundColor(toneClassNames.passed);
+  const upcomingColor = useBackgroundColor(toneClassNames.upcoming);
+  const barColor = useBackgroundColor(toneClassNames.bar);
 
   const barStyle = useAnimatedStyle(() => {
     if (progress != null) {

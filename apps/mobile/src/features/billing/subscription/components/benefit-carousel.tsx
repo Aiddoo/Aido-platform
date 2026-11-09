@@ -76,20 +76,23 @@ export function BenefitCarousel() {
   };
 
   return (
-    <VStack gap={12}>
-      <Box onLayout={handleLayout}>
-        <BenefitPager
-          pageWidth={pageWidth}
+    <Box onLayout={handleLayout}>
+      <BenefitPager
+        pageWidth={pageWidth}
+        index={index}
+        progress={progress}
+        onIndexChange={setIndex}
+      />
+      {/* 작은 화면에서도 첫 화면에 넘길 장이 더 있다는 것이 보이게 카드 아래쪽 그림 위에 얹는다 */}
+      <HStack justify="center" pointerEvents="none" className="absolute inset-x-0 bottom-3">
+        <Steps.Dots
           index={index}
+          count={BENEFIT_SLIDES.length}
           progress={progress}
-          onIndexChange={setIndex}
+          tone="onMedia"
         />
-      </Box>
-
-      <HStack justify="center">
-        <Steps.Dots index={index} count={BENEFIT_SLIDES.length} progress={progress} />
       </HStack>
-    </VStack>
+    </Box>
   );
 }
 
@@ -294,20 +297,14 @@ BenefitCarousel.Loading = function Loading() {
   const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
 
   return (
-    <VStack gap={12} accessibilityState={{ busy: true }}>
-      <VStack className="overflow-hidden rounded-3xl bg-gray-2">
-        <VStack gap={8} className="px-5 pt-5">
-          <TextSkeleton size="e1" color={color} className="w-14" />
-          <TextSkeleton size="t3" color={color} className="w-48" />
-          <TextSkeleton size="b4" color={color} className="w-56" />
-          <TextSkeleton size="b4" color={color} className="w-40" />
-        </VStack>
-        <Skeleton className="w-full" style={{ aspectRatio: BENEFIT_ART_RATIO }} />
+    <VStack accessibilityState={{ busy: true }} className="overflow-hidden rounded-3xl bg-gray-2">
+      <VStack gap={8} className="px-5 pt-5">
+        <TextSkeleton size="e1" color={color} className="w-14" />
+        <TextSkeleton size="t3" color={color} className="w-48" />
+        <TextSkeleton size="b4" color={color} className="w-56" />
+        <TextSkeleton size="b4" color={color} className="w-40" />
       </VStack>
-
-      <HStack justify="center">
-        <Steps.Dots index={0} count={BENEFIT_SLIDES.length} />
-      </HStack>
+      <Skeleton className="w-full" style={{ aspectRatio: BENEFIT_ART_RATIO }} />
     </VStack>
   );
 };
