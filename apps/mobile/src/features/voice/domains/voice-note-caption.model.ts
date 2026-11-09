@@ -1,7 +1,7 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
 import type { Instant } from '@src/shared/date/instant';
 import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
-import { clamp, sumBy } from 'es-toolkit';
+import { clamp, isEqual, range, sumBy } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
 import { type VoiceNote, type VoiceNoteSentence, VoiceNotePolicy } from './voice-note.model';
@@ -163,15 +163,25 @@ function applyInterim(
   };
 }
 
+// iOS 18은 멈출 때 마지막 말을 통째로 한 번 더 준다
+function countRepeatedPieces(sentences: readonly VoiceNoteSentence[], pieces: readonly string[]) {
+  const tail = sentences.slice(-pieces.length).map(({ text }) => removeSpaces(text));
+  const heads = pieces.map(removeSpaces);
+
+  return (
+    range(Math.min(tail.length, heads.length), 0, -1).find((size) =>
+      isEqual(tail.slice(-size), heads.slice(0, size)),
+    ) ?? 0
+  );
+}
+
 function applyFinal(
   captions: VoiceNoteCaptions,
   { transcript, segments }: SpeechResultInput,
   { nowMs, segmentStartMs }: CaptionClock,
 ): VoiceNoteCaptions {
   const pieces = splitIntoCaptionSentences(transcript);
-  const lastCommitted = captions.sentences.at(-1)?.text;
-  // 끝난 뒤 같은 문장을 한 번 더 주는 기기가 있다
-  const fresh = pieces[0] === lastCommitted ? pieces.slice(1) : pieces;
+  const fresh = pieces.slice(countRepeatedPieces(captions.sentences, pieces));
 
   return {
     ...captions,

@@ -138,6 +138,48 @@ describe('applyCaptionResult', () => {
     expect(next.sentences).toHaveLength(1);
   });
 
+  it('iOS처럼 끝난 뒤 여러 문장을 통째로 다시 줘도 한 번만 남긴다', () => {
+    // Given
+    const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      VoiceNoteCaptionPolicy.createVoiceNoteCaptions(),
+      final('안녕하세요. 저는 바보입니다.'),
+      clock(1_000),
+    );
+
+    // When
+    const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      heard,
+      final(' 안녕하세요. 저는 바보입니다.'),
+      clock(2_000),
+    );
+
+    // Then
+    expect(next.sentences.map(({ text }) => text)).toEqual(['안녕하세요.', '저는 바보입니다.']);
+  });
+
+  it('다시 준 문장 뒤에 새 문장이 이어지면 새 문장만 더한다', () => {
+    // Given
+    const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      VoiceNoteCaptionPolicy.createVoiceNoteCaptions(),
+      final('안녕하세요. 저는 바보입니다.'),
+      clock(1_000),
+    );
+
+    // When
+    const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      heard,
+      final('저는 바보입니다. 오늘 장 보기.'),
+      clock(2_000),
+    );
+
+    // Then
+    expect(next.sentences.map(({ text }) => text)).toEqual([
+      '안녕하세요.',
+      '저는 바보입니다.',
+      '오늘 장 보기.',
+    ]);
+  });
+
   it('final의 단어 신뢰도가 낮으면 그 단어가 속한 문장에만 표시한다', () => {
     // Given
     const segments = [
