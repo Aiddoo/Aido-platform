@@ -1,3 +1,4 @@
+import { MyPageStack } from '@src/bootstrap/navigation/my-page-stack';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
@@ -10,6 +11,7 @@ import {
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
+  stubWindowDimensions,
   TestUiProvider,
 } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -17,11 +19,14 @@ import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useEffect } from 'react';
 import { Text } from 'react-native';
 
+import { unstable_settings as myPageTabSettings } from '../../../../app/(app)/(tabs)/(mypage)/_layout';
+import * as TabsLayoutRoute from '../../../../app/(app)/(tabs)/_layout';
 import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import NotificationOnboardingScreen from '../../../../app/(app)/onboarding/notifications';
+import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { useOpenPushOnboarding } from './use-open-push-onboarding';
 
@@ -59,16 +64,46 @@ const APP_STACK_SCREENS = [
   'suggestions/[suggestionId]/category',
 ] as const;
 
+const UNDETERMINED = createPushPermissionResponse({ status: 'undetermined', canAskAgain: true });
+
+const WINDOW_WIDTHS = [
+  ['좁은 화면', 390],
+  ['넓은 화면', 900],
+] as const;
+
+const feedMounted = jest.fn();
+
 function EmptyScreen() {
   return null;
 }
 
 function FeedScreen() {
   useOpenPushOnboarding({ isStable: true });
+  useEffect(() => feedMounted(), []);
   return <Text testID="feed">Feed</Text>;
 }
 
-async function renderAppRoutes(permission: PushPermissionResponse) {
+function MemoScreen() {
+  return <Text testID="memo">Memo</Text>;
+}
+
+function MyPageScreen() {
+  return <Text testID="mypage">MyPage</Text>;
+}
+
+function TabStackLayout() {
+  return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
+}
+
+async function renderAppRoutes({
+  permission,
+  requestedPermission = permission,
+  initialUrl = '/feed',
+}: {
+  permission: PushPermissionResponse;
+  requestedPermission?: PushPermissionResponse;
+  initialUrl?: string;
+}) {
   const queryClient = createTestQueryClient();
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async () =>
@@ -76,6 +111,7 @@ async function renderAppRoutes(permission: PushPermissionResponse) {
   );
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockResolvedValue(permission);
+  pushNotification.requestPermission.mockResolvedValue(requestedPermission);
   const container = createTestDi({
     queryClient,
     httpClient,
@@ -101,12 +137,21 @@ async function renderAppRoutes(permission: PushPermissionResponse) {
     {
       _layout: () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/_layout': AppLayoutRoute,
-      '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
+      '(app)/(tabs)/_layout': TabsLayoutRoute,
+      '(app)/(tabs)/feed/_layout': TabStackLayout,
       '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/(tabs)/memo/_layout': TabStackLayout,
+      '(app)/(tabs)/memo/index': MemoScreen,
+      // 메뉴 칸은 이 테스트의 관심이 아니라 글자로 대신한다. 넓은 화면의 칸 나누기는 그대로 탄다
+      '(app)/(tabs)/(mypage)/_layout': {
+        default: () => <MyPageStack menu={<Text>menu</Text>} />,
+        unstable_settings: myPageTabSettings,
+      },
+      '(app)/(tabs)/(mypage)/mypage/index': MyPageScreen,
       '(app)/onboarding/notifications': NotificationOnboardingScreen,
       ...Object.fromEntries(APP_STACK_SCREENS.map((name) => [`(app)/${name}`, EmptyScreen])),
     },
-    { initialUrl: '/feed', wrapper: AppFixture },
+    { initialUrl, wrapper: AppFixture },
   );
   return { route, queryClient };
 }
@@ -136,23 +181,62 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
     jest.restoreAllMocks();
   });
 
-  it('아직 묻지 않은 새 가입자는 피드 위에 알림 화면이 열리고, [나중에]를 누르면 피드로 돌아온다', async () => {
-    // Given
-    const consoleError = jest.spyOn(console, 'error');
-    const { route } = await renderAppRoutes({
-      status: 'undetermined',
-      canAskAgain: true,
-      iosStatus: null,
+  describe.each(WINDOW_WIDTHS)('%s', (_label, width) => {
+    beforeEach(() => {
+      stubWindowDimensions(width);
     });
+
+    it.each([
+      ['[알림 받기] 뒤 OS에서 허용', '알림 받기', 'granted'],
+      ['[알림 받기] 뒤 OS에서 거부', '알림 받기', 'denied'],
+      ['[나중에]', '나중에', 'undetermined'],
+    ] as const)(
+      '새 가입자가 피드 위에 열린 알림 화면에서 %s하면, 마이 탭이 아니라 원래 있던 피드로 돌아온다',
+      async (_case, buttonLabel, requestedStatus) => {
+        // Given
+        const consoleError = jest.spyOn(console, 'error');
+        const { route } = await renderAppRoutes({
+          permission: UNDETERMINED,
+          requestedPermission: createPushPermissionResponse({
+            status: requestedStatus,
+            canAskAgain: requestedStatus === 'undetermined',
+          }),
+        });
+        await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+
+        // When
+        await fireEvent.press(screen.getByText(buttonLabel));
+
+        // Then
+        await waitFor(() => expect(screen.queryByText('나중에')).toBeNull());
+        expect(route.getPathname()).toBe('/feed');
+        expect(screen.getByTestId('feed')).toBeTruthy();
+        expect(feedMounted).toHaveBeenCalledTimes(1);
+        expect(router.canGoBack()).toBe(false);
+        expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
+      },
+    );
+  });
+
+  it('다른 탭에서 링크로 열린 알림 화면은 답한 뒤 그 탭으로 돌아온다', async () => {
+    // Given
+    const { route } = await renderAppRoutes({ permission: UNDETERMINED, initialUrl: '/memo' });
+    await act(() => router.push('/onboarding/notifications'));
     await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
 
     // When
     await fireEvent.press(screen.getByText('나중에'));
 
     // Then
-    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    expect(screen.queryByText('나중에')).toBeNull();
-    expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
+    await waitFor(() => expect(route.getPathname()).toBe('/memo'));
+    expect(screen.getByTestId('memo')).toBeTruthy();
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(route.getPathname()).toBe('/feed');
+    expect(router.canGoBack()).toBe(false);
   });
 
   it.each(['granted', 'denied'] as const)(
@@ -161,9 +245,7 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
       // Given
       const consoleError = jest.spyOn(console, 'error');
       const { route, queryClient } = await renderAppRoutes({
-        status,
-        canAskAgain: false,
-        iosStatus: null,
+        permission: createPushPermissionResponse({ status }),
       });
       await waitFor(() => {
         expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
@@ -177,7 +259,21 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
       await waitFor(() => expect(route.getPathname()).toBe('/feed'));
       expect(screen.getByTestId('feed')).toBeTruthy();
       expect(screen.queryByText('나중에')).toBeNull();
+      expect(router.canGoBack()).toBe(false);
       expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
     },
   );
+
+  it('이미 답한 사용자가 앱을 새로 열며 알림 화면 링크로 들어와도 피드가 열린다', async () => {
+    // Given
+    const { route } = await renderAppRoutes({
+      permission: createPushPermissionResponse({ status: 'granted' }),
+      initialUrl: '/onboarding/notifications',
+    });
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    expect(screen.getByTestId('feed')).toBeTruthy();
+    expect(screen.queryByText('나중에')).toBeNull();
+  });
 });

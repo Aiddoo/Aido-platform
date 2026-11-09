@@ -56,7 +56,8 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"       |
 | 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기)  |
 
-- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()}` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 [나중에]가 남으면 조건이 풀려 화면이 빠진다. Android 뒤로 가기는 [나중에]다.
+- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={useIsPushOnboardingDue()} redirectTo=".."` 안에 있다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) 열고, 권한이 정해지거나 [나중에]가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다. Android 뒤로 가기는 [나중에]다.
+  - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
 - [나중에]와 안내 닫기는 `PushPermissionPromptRepository`가 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
 - 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
 - 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
