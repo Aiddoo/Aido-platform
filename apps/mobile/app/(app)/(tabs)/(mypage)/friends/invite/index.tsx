@@ -169,7 +169,7 @@ function RewardLine({ label, value }: { label: string; value: string }) {
 
   return (
     <VStack gap={6} accessible accessibilityLabel={t('myInvite.rewardLineLabel', { label, value })}>
-      <Chip variant="soft" className="rounded-full bg-main/10 px-2.5 py-0.5">
+      <Chip size="sm" variant="soft" className="bg-main/10">
         <Text size="e1" weight="bold" tone="brand">
           {label}
         </Text>

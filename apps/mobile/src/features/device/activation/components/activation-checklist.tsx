@@ -206,10 +206,9 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
             <Text
               size="e1"
               weight="semibold"
-              tone="brand"
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
-              className="shrink"
+              className="shrink text-accent-soft-foreground"
             >
               {reward}
             </Text>

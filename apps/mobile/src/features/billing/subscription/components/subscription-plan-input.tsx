@@ -131,8 +131,9 @@ function PlanChip({
 }: Omit<ComponentProps<typeof Chip>, 'variant' | 'className' | 'pointerEvents'>) {
   return (
     <Chip
+      size="sm"
       variant="soft"
-      className="self-center rounded-full bg-main/10 px-2 py-0.5"
+      className="self-center bg-main/10"
       pointerEvents="none"
       {...props}
     >

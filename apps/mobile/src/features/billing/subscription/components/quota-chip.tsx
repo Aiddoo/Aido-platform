@@ -26,9 +26,8 @@ export function QuotaChip({
       <Text
         size="e1"
         weight="semibold"
-        tone="brand"
         numberOfLines={1}
-        className="shrink tabular-nums"
+        className="shrink text-accent-soft-foreground tabular-nums"
       >
         {label}
       </Text>

@@ -17,14 +17,14 @@ export function ReportTypeChip({ type, ...props }: ReportTypeChipProps) {
   return match(type)
     .with('WEEKLY', () => (
       <Chip size="sm" variant="soft" color="accent" {...props}>
-        <Text size="e1" weight="medium" className="text-accent">
+        <Text size="e1" weight="medium" className="text-accent-soft-foreground">
           {t(REPORT_TYPE_LABEL_KEYS.WEEKLY)}
         </Text>
       </Chip>
     ))
     .with('MONTHLY', () => (
       <Chip size="sm" variant="soft" color="success" {...props}>
-        <Text size="e1" weight="medium" className="text-success">
+        <Text size="e1" weight="medium" className="text-success-soft-foreground">
           {t(REPORT_TYPE_LABEL_KEYS.MONTHLY)}
         </Text>
       </Chip>
