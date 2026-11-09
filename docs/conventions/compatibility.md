@@ -18,6 +18,7 @@
 | 푸시 payload      | 의미 데이터만 보낸다. 새 앱은 `navigation`(kind별 화면·id)을, 구 앱은 함께 싣는 type·action·context·routing을 읽는다. 앱이 경로를 정하므로 라우트를 바꿔도 payload는 그대로다([Push](../../apps/api/docs/push-notifications.md))                                     |
 | 위젯 snapshot·URI | `aido_widget_snapshot_v1` key와 저장 JSON 버전 해석, `aido://feed?…`·`aido://todo/{id}` 형식([위젯](../../apps/mobile/.claude/widgets.md))                                                                                                                           |
 | 기기 저장 key     | SecureStore 토큰 key, MMKV key, 초안 key 형식. 바꾸면 기존 설치의 로그인·설정·초안을 잃는다. 1.15.0에 SecureStore `pendingRevocation`(`{ refreshToken, expiresAt }`)을 더했다([오프라인 로그아웃](../../apps/mobile/docs/authentication_guide.md#오프라인-로그아웃)) |
+| 공급자 웹훅       | RevenueCat 웹훅 경로(`POST /v1/webhooks/revenuecat`)·200 응답·`@aido/api` 웹훅 스키마. 처리하지 않는 이벤트도 200으로 받아 재전송을 막는다. 운영은 Test Store 이벤트를 받기만 하고 반영하지 않는다([결제](../../apps/api/docs/billing.md#sandbox-결제))              |
 | DB·queue·cache    | 마이그레이션은 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/DEPLOYMENT.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다                                                      |
 
 새 기능은 추가 API로 낸다. 서버를 먼저 배포하고 안정화를 확인한 뒤 앱을 낸다. 옛 앱 호환은 서버가 맡는다.

@@ -18,13 +18,25 @@ import {
 import {
   revenueCatEventDetailsSchema,
   revenueCatEventTypeSchema,
+  revenueCatTestStoreEventSchema,
 } from "./revenuecat-event.schema.js";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
 export type RevenueCatTranslation =
   | { readonly status: "translated"; readonly event: StoreSubscriptionEvent }
+  | {
+      readonly status: "skipped";
+      readonly reason: "TEST_STORE";
+      readonly eventType?: string;
+      readonly eventId?: string;
+    }
   | { readonly status: "invalid"; readonly eventType?: string; readonly issueCount: number };
+
+export interface RevenueCatTranslationOptions {
+  /** RevenueCat Test Store 구매(실제 결제 없음)를 구독 이벤트로 받을지. 받지 않으면 skipped다. */
+  readonly acceptsTestStore: boolean;
+}
 
 const PROVIDER = "REVENUECAT";
 
@@ -150,7 +162,22 @@ function chainEventOf(event: RevenueCatEvent): StoreSubscriptionEvent {
  * RevenueCat 웹훅 원문을 공급자를 모르는 스토어 구독 이벤트로 바꾼다.
  * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
  */
-export function translateRevenueCatWebhook(body: unknown): RevenueCatTranslation {
+export function translateRevenueCatWebhook(
+  body: unknown,
+  { acceptsTestStore }: RevenueCatTranslationOptions,
+): RevenueCatTranslation {
+  if (!acceptsTestStore) {
+    const testStore = revenueCatTestStoreEventSchema.safeParse(body);
+    if (testStore.success) {
+      const { type, id } = testStore.data.event;
+      return {
+        status: "skipped",
+        reason: "TEST_STORE",
+        ...(type != null && { eventType: type }),
+        ...(id != null && { eventId: id }),
+      };
+    }
+  }
   // TRANSFER에는 app_user_id·product_id가 없어 전용 스키마로 먼저 받는다
   const transfer = revenueCatTransferWebhookPayloadSchema.safeParse(body);
   if (transfer.success) {

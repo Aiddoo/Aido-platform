@@ -1,4 +1,7 @@
-import { translateRevenueCatWebhook } from "./revenuecat-event.translator.js";
+import {
+  type RevenueCatTranslationOptions,
+  translateRevenueCatWebhook,
+} from "./revenuecat-event.translator.js";
 
 const PURCHASED_AT_MS = 1_591_121_853_000;
 const EXPIRES_AT_MS = 1_591_726_653_000;
@@ -36,8 +39,11 @@ function sampleEvent(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function translated(body: unknown) {
-  const result = translateRevenueCatWebhook(body);
+const PRODUCTION: RevenueCatTranslationOptions = { acceptsTestStore: false };
+const LOCAL: RevenueCatTranslationOptions = { acceptsTestStore: true };
+
+function translated(body: unknown, options = PRODUCTION) {
+  const result = translateRevenueCatWebhook(body, options);
   if (result.status !== "translated") {
     throw new Error("번역되지 않았다");
   }
@@ -209,10 +215,59 @@ describe("translateRevenueCatWebhook — RevenueCat 웹훅을 스토어 구독 �
     const raw = body;
 
     // When
-    const result = translateRevenueCatWebhook(raw);
+    const result = translateRevenueCatWebhook(raw, PRODUCTION);
 
     // Then
     expect(result.status).toBe("invalid");
     expect(result.status === "invalid" ? result.eventType : null).toBe(eventType);
+  });
+
+  it.each([
+    {
+      name: "구매",
+      body: sampleEvent({ store: "TEST_STORE", environment: "SANDBOX" }),
+      expected: {
+        status: "skipped",
+        reason: "TEST_STORE",
+        eventType: "INITIAL_PURCHASE",
+        eventId: "CD489E0E-5D52-4F24-A6CA-5C8A14A2B1E6",
+      },
+    },
+    {
+      name: "형식이 틀린 원문",
+      body: { event: { type: "INITIAL_PURCHASE", store: "TEST_STORE" } },
+      expected: { status: "skipped", reason: "TEST_STORE", eventType: "INITIAL_PURCHASE" },
+    },
+  ])("Test Store를 받지 않으면 $name도 구독 이벤트로 바꾸지 않는다", ({ body, expected }) => {
+    // Given
+    const raw = body;
+
+    // When
+    const result = translateRevenueCatWebhook(raw, PRODUCTION);
+
+    // Then
+    expect(result).toEqual(expected);
+  });
+
+  it("Test Store를 받지 않아도 App Store SANDBOX 구매는 그대로 시작 이벤트다", () => {
+    // Given
+    const body = sampleEvent({ store: "APP_STORE", environment: "SANDBOX" });
+
+    // When
+    const event = translated(body, PRODUCTION);
+
+    // Then
+    expect(event).toMatchObject({ kind: "STARTED", store: "APP_STORE", environment: "SANDBOX" });
+  });
+
+  it("Test Store를 받으면 Test Store 구매도 시작 이벤트로 옮긴다", () => {
+    // Given
+    const body = sampleEvent({ store: "TEST_STORE", environment: "SANDBOX" });
+
+    // When
+    const event = translated(body, LOCAL);
+
+    // Then
+    expect(event).toMatchObject({ kind: "STARTED", store: null, environment: "SANDBOX" });
   });
 });

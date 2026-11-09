@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   OPERATIONAL_ALERT,
   type OperationalAlertPort,
@@ -24,10 +25,23 @@ export class RevenueCatWebhookReceiver {
     @Inject(ApplyStoreSubscriptionEvent)
     private readonly applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEvent, "execute">,
     @Inject(OPERATIONAL_ALERT) private readonly alert: OperationalAlertPort,
+    @Inject(TypedConfigService) private readonly config: Pick<TypedConfigService, "appEnv">,
   ) {}
 
   async receive({ body }: RevenueCatWebhookInput): Promise<{ received: true }> {
-    const translation = translateRevenueCatWebhook(body);
+    // 웹훅 연동이 하나라 Test Store 구매도 운영으로 온다. 운영은 결제 없는 구매에 프리미엄을 주지 않는다
+    const translation = translateRevenueCatWebhook(body, {
+      acceptsTestStore: this.config.appEnv !== "production",
+    });
+    if (translation.status === "skipped") {
+      this.#logger.log({
+        event: BillingLogEvent.WEBHOOK_SKIPPED,
+        reason: translation.reason,
+        eventType: translation.eventType,
+        eventId: translation.eventId,
+      });
+      return { received: true };
+    }
     if (translation.status === "invalid") {
       this.#logger.warn({
         event: BillingLogEvent.WEBHOOK_INVALID,

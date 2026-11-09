@@ -20,3 +20,12 @@ export const revenueCatEventDetailsSchema = z.looseObject({
     .optional()
     .catch(undefined),
 });
+
+/** Test Store 구매는 실제 결제가 없다. 형식이 틀려도 Test Store면 처리하지 않을 수 있게 store만 먼저 본다. */
+export const revenueCatTestStoreEventSchema = z.looseObject({
+  event: z.looseObject({
+    store: z.literal("TEST_STORE"),
+    type: optionalText,
+    id: optionalText,
+  }),
+});
