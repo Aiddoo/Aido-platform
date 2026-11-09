@@ -17,7 +17,7 @@ import {
   ScallopedContainer,
   SegmentTabTrigger,
   Spacing,
-  StyledSafeAreaView,
+  SafeAreaScrollView,
   Text,
   TextSkeleton,
   ViewTabs,
@@ -27,7 +27,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
-import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 export default function ReportsScreen() {
@@ -36,27 +35,21 @@ export default function ReportsScreen() {
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateReports(queryClient));
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <ScrollView
-        className="flex-1 px-4"
-        refreshControl={
-          <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-        }
-      >
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={16} />
+    <SafeAreaScrollView
+      className="flex-1 bg-white px-4"
+      refreshControl={<TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+    >
+      <Spacing size={16} />
 
-          {match(featureAccess.status)
-            .with('premium', () => <ReportsPanel.Premium />)
-            .with('free', () => <ReportsPanel.Free />)
-            .with('loading', () => <ReportsPanel.Loading />)
-            .with('error', () => <ReportsPanel.Error />)
-            .exhaustive()}
+      {match(featureAccess.status)
+        .with('premium', () => <ReportsPanel.Premium />)
+        .with('free', () => <ReportsPanel.Free />)
+        .with('loading', () => <ReportsPanel.Loading />)
+        .with('error', () => <ReportsPanel.Error />)
+        .exhaustive()}
 
-          <Spacing size={32} />
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+      <Spacing size={32} />
+    </SafeAreaScrollView>
   );
 }
 

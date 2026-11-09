@@ -3,7 +3,7 @@ import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { ControlField, ListGroup, RadioGroup, Separator, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { ScrollView } from 'react-native';
+import type { ScrollView } from 'react-native';
 
 import { Box } from '../box';
 import { ChoiceRadio } from '../choice-radio';
@@ -12,7 +12,7 @@ import { ArrowRightIcon, type StyledIcon } from '../icon';
 import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
 import { ReadableContent } from '../readable-content';
 import { Result } from '../result';
-import { StyledSafeAreaView } from '../styled-safe-area-view';
+import { SafeAreaScrollView } from '../safe-area-scroll-view';
 import { Text, TextSkeleton } from '../text';
 import { VStack } from '../v-stack';
 
@@ -325,14 +325,10 @@ export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollV
 
 export function SettingsScreenLayout({ gap = 12, children, ...props }: SettingsScreenLayoutProps) {
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <ScrollView className="flex-1" contentInsetAdjustmentBehavior="automatic" {...props}>
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <ReadableContent gap={gap} className="px-4 pb-4 pt-5">
-            {children}
-          </ReadableContent>
-        </StyledSafeAreaView>
-      </ScrollView>
-    </StyledSafeAreaView>
+    <SafeAreaScrollView className="flex-1 bg-white" {...props}>
+      <ReadableContent gap={gap} className="px-4 pb-4 pt-5">
+        {children}
+      </ReadableContent>
+    </SafeAreaScrollView>
   );
 }

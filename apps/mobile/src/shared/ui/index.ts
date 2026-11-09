@@ -147,6 +147,7 @@ export {
 export { READABLE_CONTENT_MAX_WIDTH, ReadableContent } from './readable-content';
 export { Result } from './result';
 export { ScreenScrollShadow } from './screen-scroll-shadow';
+export { SafeAreaScrollView } from './safe-area-scroll-view';
 export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer } from './scalloped-container';
 export { SettingsListGroup, SettingsScreenLayout } from './settings-list-group';

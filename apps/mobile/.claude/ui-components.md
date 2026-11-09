@@ -71,6 +71,7 @@ interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
 | `HStack`                                                                                                         | 수평 레이아웃                                                                                                                              | `src/shared/ui/h-stack/h-stack.md`                                |
 | `AdaptivePane`, `useAdaptivePaneLayoutKey`                                                                       | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)                                                                    | `src/shared/ui/adaptive-pane/adaptive-pane.md`                    |
 | `ReadableContent`                                                                                                | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                                                                                         | `src/shared/ui/readable-content/readable-content.md`              |
+| `SafeAreaScrollView`                                                                                             | 내용만 가로·아래 inset을 피하고 배경·스크롤바는 칸 끝까지 가는 ScrollView (context inset)                                                  | `src/shared/ui/safe-area-scroll-view/safe-area-scroll-view.md`    |
 | `ScreenScrollShadow`                                                                                             | 화면 배경 위 스크롤의 잘리는 쪽을 흐리게 덮음 (시트는 `SheetScrollShadow`)                                                                 | `src/shared/ui/screen-scroll-shadow/screen-scroll-shadow.md`      |
 | `WordWrapText`                                                                                                   | 한글이 음절 사이에서 끊기지 않는 긴 글 (Android는 단어마다, iOS는 Text 하나)                                                               | `src/shared/ui/word-wrap-text/word-wrap-text.md`                  |
 | `MenuActionItem`                                                                                                 | ⋯ 메뉴 항목. 주황 아이콘, 위험한 항목은 빨간색                                                                                             | `src/shared/ui/menu-action-item/menu-action-item.md`              |
@@ -113,11 +114,11 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 화면을 SafeAreaView로 감싸지 않고, ScrollView의 `contentInsetAdjustmentBehavior`는 세로축만 처리한다
 ([Expo SDK 58](https://expo.dev/changelog/sdk-58), [react-native#59194](https://github.com/react/react-native/pull/59194)).
 
-- 페이지 ScrollView는 안쪽 내용을 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싼다. 스크롤바와 배경은 가장자리까지 간다.
+- 탭 안 Stack 화면의 페이지 ScrollView는 `SafeAreaScrollView`를 쓴다(네이티브 시트·모달은 그 안의 native inset을 따르도록 `StyledSafeAreaView`). 가로·아래 inset을 `contentContainerStyle`에 줘 스크롤바와 배경은 가장자리까지, 내용은 홈 인디케이터 밑까지 간다. 가상화 목록처럼 직접 스크롤을 둘 때는 안쪽 내용을 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싼다.
 - 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
 - `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. 네이티브 Stack 헤더, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
 - `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
-- 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다.
+- 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다. 이 값은 JS context라 네이티브 `SafeAreaView`에는 닿지 않는다. 칸 안에서는 `SafeAreaScrollView`·`useSafeAreaInsets`로 피한다([adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md#칸-안의-safe-area)).
 - Stack 화면 헤더는 네이티브 헤더와 `Stack.Toolbar` 네이티브 버튼을 쓴다. iOS가 레일·가로 바·Split View 바깥쪽으로 배치하고, 커스텀 뷰 버튼은 레일에서 빠진다([stack-header.md](../src/shared/ui/stack-header/stack-header.md)).
 
 ## Wrapper Props 계약

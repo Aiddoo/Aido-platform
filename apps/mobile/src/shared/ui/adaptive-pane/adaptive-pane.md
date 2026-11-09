@@ -17,7 +17,7 @@ import { AdaptivePane } from '@src/shared/ui';
 - Mac(Designed for iPad)은 창 폭과 관계없이 `compact`다(`IS_IOS_APP_ON_MAC`). Expo 권장이 아니라 데스크톱에서도 모바일과 같은 경험을 주려는 제품 결정이다. 시작할 때 정해지는 상수라 첫 프레임부터 1열이다.
 - 각 pane을 `SafeAreaProvider`로 감싼다. pane 안의 `SafeAreaView`·`useSafeAreaInsets`는 창이 아닌 그 pane이 실제로 겹치는 safe area만 받는다. iPhone Duo는 접혀도 펼쳐도 탭 바·상태 표시를 좌우 세로 레일로 옮기는데, 펼친 2-pane에서는 레일에 닿는 pane만 inset을 받는다.
 - 첫 프레임에는 그 pane이 닿는 가장자리의 창 inset만 `initialMetrics`로 준다(`getPaneEdgeInsets`, RTL이면 좌우를 바꾼다). 네이티브 측정 전에 레일 반대쪽 pane이 84pt 들여 그려졌다가 튀는 시프트를 막는다.
-- 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩).
+- 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 네이티브 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩). JS `SafeAreaInsetsContext`로 바꾼 값은 보지 않는다([칸 안의 safe area](#칸-안의-safe-area)).
 - pane 폭은 size class별 최소 목록 폭(320/400)이고 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 창 폭 기준이다.
 - 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `ReservedRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다.
 - 펼친 화면에서 고른 항목은 URL param으로 상세 pane에 보여 준다. 접히면 항상 렌더링되는 목록 pane에서 `useOpenDetailWhenCompact(selectedId, openDetail)`로 상세 라우트에 넘긴다. 훅은 `useIsFocused`로 앞에 보이는 화면에서만 동작하므로, 뒤에 남아 있는 다른 탭은 push하지 않는다.
@@ -32,7 +32,8 @@ import { AdaptivePane } from '@src/shared/ui';
 - 마이 탭 하위 화면은 탭 안 그룹 `app/(app)/(tabs)/(mypage)`에 둔다. 그룹 이름은 URL에 들어가지 않아 `/mypage`·`/settings/…`·`/friends…`·`/achievements…`·`/reports…`·`/whats-new/releases`가 그대로다. 탭 안 Stack이라 하위 화면에서도 탭 바(넓은 iPad·iOS 27 큰 iPhone에서는 사이드바)가 남는다.
 - `(mypage)/_layout`은 라우트 목록과 제목만 두고, 조립은 `bootstrap/navigation/my-page-stack.tsx`의 `MyPageStack`이 한다. `menu` slot에 `MyPageMenuPane`을 받는다.
   - Stack `screenLayout`이 모든 화면을 같은 두 칸 틀로 감싼다. 좁은 화면은 화면만, 넓은 화면은 메뉴 칸(320/400, 접힘선이 있으면 그 위치)과 상세 칸이다. 화면은 size class와 무관하게 같은 트리 슬롯이라 접고 펴도 다시 마운트되지 않는다.
-  - Stack 바깥 `SafeAreaProvider`가 탭 안 영역의 inset을 한 번 재고, 넓은 화면의 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다(`getPaneEdgeInsets`, RTL 포함). 칸마다 네이티브로 다시 재지 않아 헤더 아래 화면에서도 위 inset이 예전과 같다.
+  - Stack 바깥 `SafeAreaProvider`가 탭 안 영역의 inset을 한 번 재고, 넓은 화면의 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다(`getPaneEdgeInsets`, RTL 포함). 칸마다 네이티브로 다시 재지 않아 헤더 아래 화면에서도 위 inset이 예전과 같다. 이 값은 JS context뿐이라 칸 안은 [칸 안의 safe area](#칸-안의-safe-area) 규칙으로 피한다.
+  - 메뉴 칸(`MyPagePaneLayout`)은 `SafeAreaScrollView`로 칸 폭을 다 쓰고 내용이 홈 인디케이터 밑까지 스크롤된다. 위 inset은 좁은 화면 첫 화면만 지금 모양대로 주고, 넓은 화면은 전체 폭 헤더 바로 아래에서 상세 칸과 같은 높이로 시작한다.
 - 좁은 화면은 Stack 첫 화면(`mypage/index`)이 메뉴를 그리고 하위 화면은 일반 push + 네이티브 뒤로 가기다. 넓은 화면의 첫 화면은 빈 안내이고, 헤더 제목(`내 정보`)을 둔다. 모든 화면의 헤더 높이가 같아야 메뉴 칸이 같은 자리에 있다.
 - `unstable_settings.anchor = 'mypage/index'`라 푸시·링크로 하위 화면을 바로 열어도 아래에 메뉴가 깔려 뒤로 가면 메뉴다. 탭 레이아웃은 `anchor = 'feed'`로 탭을 정하지 않은 링크가 할 일 탭에 열리게 한다.
 - 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
@@ -41,6 +42,19 @@ import { AdaptivePane } from '@src/shared/ui';
 - 메뉴 이동은 메뉴 칸의 `MyPageMenuNavigationProvider`가 정한다(`useMyPageMenuNavigate`·`useIsMyPageMenuItemSelected`). 좁은 화면은 push, 넓은 화면은 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다. 메뉴 칸이 그리는 항목이 `router.push` 등으로 직접 이동하면 `check:conventions`가 거부한다.
 - 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다.
 - 메뉴는 쌓인 화면마다 그려지고 `useMyPagePaneLayout`이 스크롤 위치를 넘긴다. 앞에 보이는 화면의 메뉴만 위치를 저장하고, 새로 그린 메뉴는 내용·보이는 높이가 바뀔 때마다 저장된 위치로 다시 맞춘다. 그래서 화면을 쌓거나 접고 펴도 메뉴가 같은 자리다.
+
+## 칸 안의 safe area
+
+react-native-safe-area-context의 네이티브 `SafeAreaView`(`StyledSafeAreaView`)는 JS `SafeAreaInsetsContext`를 읽지 않는다. 뷰 계층에서 가장 가까운 네이티브 `SafeAreaProvider`의 `safeAreaInsets`를 쓴다(5.11.1 iOS `RNCSafeAreaViewComponentView findNearestProvider`, Android `SafeAreaView.findProvider`). 그래서 칸에 inset을 넘기는 방식에 따라 칸 안에서 쓰는 도구가 다르다.
+
+| 칸                       | inset을 넘기는 방식                                   | 칸 안에서 쓰는 것                                                                                 |
+| ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `AdaptivePane` 목록·상세 | pane마다 네이티브 `SafeAreaProvider`                  | `StyledSafeAreaView`·`SafeAreaScrollView`·`useSafeAreaInsets` 모두 그 pane 값이다                 |
+| 마이 탭 메뉴·상세 칸     | Stack 바깥 provider 하나 + JS `SafeAreaInsetsContext` | `SafeAreaScrollView`·`useSafeAreaInsets`. 네이티브 `SafeAreaView`는 탭 영역 전체의 inset을 읽는다 |
+
+- 페이지 스크롤은 `SafeAreaScrollView`를 쓴다. 스크롤바와 배경은 칸 끝까지 가고, 가로 inset과 아래 inset(+여백)은 `contentContainerStyle`에 들어가 내용이 홈 인디케이터 밑까지 스크롤된다. 바깥을 `edges={['bottom']}`로 감싸 스크롤 영역을 홈 인디케이터 위에서 자르지 않는다.
+- 칸은 불투명 네이티브 헤더 아래에서 시작하므로 칸 안에서 위 inset을 다시 주지 않는다.
+- 마이 탭 상세 화면 중 목록·고정 버튼 화면(`achievements/index`, `friends`, `settings/blocked-users`, `settings/category-settings`, `settings/voice-storage`, 구독 결제)은 아직 네이티브 `StyledSafeAreaView`다. 레일이 상세 칸 쪽(오른쪽, LTR)이면 탭 영역 inset과 상세 칸 inset이 같아 맞는다. 레일이 메뉴 칸 쪽이면 상세에 레일 inset이 한 번 더 붙는다. 구독 결제(`SubscriptionCheckout`)는 업셀 모달(`/paywall`)과 같이 그려 모달 안 inset을 따르도록 네이티브로 둔다.
 
 ## `SplitView`·`ArrangementView`를 쓰지 않는 이유
 
