@@ -123,6 +123,7 @@ export {
   CommentIllustration,
   ErrorIllustration,
   FriendIllustration,
+  LocationIllustration,
   MemoIllustration,
   NotificationIllustration,
   OfflineIllustration,

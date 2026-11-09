@@ -16,7 +16,7 @@ import {
   type QueryErrorFallbackProps,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
@@ -35,7 +35,12 @@ import {
 } from '../domains/weather.error';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
+import {
+  useGetWeatherLocationQueryOptions,
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/weather.queries';
 import { findForeignCountryName } from '../utils/find-foreign-country-name';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import {
@@ -45,7 +50,6 @@ import {
   toTemperatureReading,
 } from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
-import { WeatherLocationPrompt } from './weather-location-prompt';
 import { WeatherResult } from './weather-result';
 
 const HERO_TEXT_SHADOW = {
@@ -348,9 +352,7 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
   }, [trackEvent, cause, isWaitingForLocation]);
 
   const retryButton = (
-    <WeatherResult.Action tone="light" onPress={reset}>
-      {t('common:actions.retry')}
-    </WeatherResult.Action>
+    <WeatherResult.Action onPress={reset}>{t('common:actions.retry')}</WeatherResult.Action>
   );
 
   return match(error)
@@ -358,7 +360,7 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
       location.status === 'checking' ? (
         <WeatherHero.Loading />
       ) : (
-        <WeatherLocationPrompt onRecovered={reset} />
+        <WeatherHero.LocationUnavailable onRecovered={reset} />
       ),
     )
     .with(P.when(isWeatherProviderUnavailableError), () => (
@@ -397,4 +399,40 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
         {retryButton}
       </WeatherResult>
     ));
+};
+
+interface LocationUnavailableProps {
+  onRecovered: () => void;
+}
+
+/** 서버 저장 위치가 있으면 그 위치를 다시 등록하고, 없으면 기기 위치를 다시 읽은 뒤 리포트 경계를 푼다 */
+WeatherHero.LocationUnavailable = function LocationUnavailable({
+  onRecovered,
+}: LocationUnavailableProps) {
+  const { t } = useTranslation(['weather', 'common']);
+  const location = useWeatherLocation();
+  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
+  const updateLocation = useMutation(useUpdateWeatherLocationMutationOptions());
+
+  const handleRetry = async () => {
+    if (reading?.status === 'located') {
+      const { latitude, longitude } = reading.registered;
+      await updateLocation.mutateAsync({ latitude, longitude }).catch(() => undefined);
+    } else if (location.status === 'unavailable') {
+      await location.retry();
+    }
+    onRecovered();
+  };
+
+  return (
+    <WeatherResult
+      image={catAnchorImage}
+      title={t('weather:locationPrompt.unavailableTitle')}
+      description={t('weather:locationPrompt.unavailableDescription')}
+    >
+      <WeatherResult.Action isLoading={updateLocation.isPending} onPress={handleRetry}>
+        {t('common:actions.retry')}
+      </WeatherResult.Action>
+    </WeatherResult>
+  );
 };

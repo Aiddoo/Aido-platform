@@ -27,6 +27,7 @@
 | `CommentIllustration`      | 할 일 댓글 목록                                                |
 | `OfflineIllustration`      | 연결 없이 연 화면                                              |
 | `ErrorIllustration`        | 조회 오류(`QueryErrorFallback`, `.Error`)                      |
+| `LocationIllustration`     | 날씨 위치 권한 안내, 위치 권한을 끈 상태                       |
 
 | Props  | 타입                  | 기본       | 설명                |
 | ------ | --------------------- | ---------- | ------------------- |

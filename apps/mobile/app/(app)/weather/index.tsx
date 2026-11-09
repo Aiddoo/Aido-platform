@@ -9,6 +9,7 @@ import { WeatherBackground } from '@src/features/weather/components/weather-back
 import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
 import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
+import { WeatherLocationNotice } from '@src/features/weather/components/weather-location-notice';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
 import { WeatherReportGate } from '@src/features/weather/components/weather-report-gate';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
@@ -53,65 +54,68 @@ export default function WeatherScreen() {
 
   return (
     <>
-      <WeatherBackground />
       {match(location)
-        .with({ status: 'needsPermission' }, { status: 'denied' }, () => (
-          <WeatherScrollView.Status>
-            <WeatherLocationPrompt />
-          </WeatherScrollView.Status>
+        .with({ status: 'needsPermission' }, ({ request }) => (
+          <WeatherLocationPrompt.Ask onContinue={request} />
+        ))
+        .with({ status: 'denied' }, ({ openSettings }) => (
+          <WeatherLocationPrompt.Denied onOpenSettings={openSettings} />
         ))
         .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
-          <QueryErrorBoundary fallback={WeatherScreen.Error} resetKeys={[locationRevision]}>
-            <WeatherReportGate fallback={WeatherScreen.Error}>
-              <AdaptivePane
-                primary={
-                  <WeatherScrollView>
-                    <ReadableContent style={COLUMN_STYLE}>
-                      <Box px={SCREEN_GUTTER}>
-                        <WeatherLocationPrompt.SavedLocationNotice />
-                      </Box>
-                      <Box pt={HERO_TOP} px={HERO_GUTTER}>
-                        <WeatherReportGate.Suspense fallback={<WeatherHero.Loading />}>
-                          <WeatherHero />
-                        </WeatherReportGate.Suspense>
-                      </Box>
-                      <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
-                        {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
-                        <WeatherReportGate.Suspense fallback={null}>
-                          <WeatherAlerts />
-                        </WeatherReportGate.Suspense>
-                        <QueryErrorBoundary fallback={WeatherBriefing.Error}>
-                          <Suspense fallback={<WeatherBriefing.Loading />}>
-                            <WeatherBriefing />
-                          </Suspense>
-                        </QueryErrorBoundary>
-                        {/* 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
-                        <WeatherReportGate.Suspense fallback={null}>
-                          <NextHourPrecipitation />
-                        </WeatherReportGate.Suspense>
-                        <WeatherReportGate.Suspense fallback={<HourlyForecast.Loading />}>
-                          <HourlyForecast />
-                        </WeatherReportGate.Suspense>
-                      </VStack>
-                      {isCompact && (
-                        <>
-                          <Spacing size={CARD_GAP} />
-                          <ForecastCards />
-                        </>
-                      )}
-                    </ReadableContent>
-                  </WeatherScrollView>
-                }
-                secondary={
-                  <WeatherScrollView>
-                    <ReadableContent style={COLUMN_STYLE}>
-                      <ForecastCards />
-                    </ReadableContent>
-                  </WeatherScrollView>
-                }
-              />
-            </WeatherReportGate>
-          </QueryErrorBoundary>
+          <>
+            <WeatherBackground />
+            <QueryErrorBoundary fallback={WeatherScreen.Error} resetKeys={[locationRevision]}>
+              <WeatherReportGate fallback={WeatherScreen.Error}>
+                <AdaptivePane
+                  primary={
+                    <WeatherScrollView>
+                      <ReadableContent style={COLUMN_STYLE}>
+                        <Box px={SCREEN_GUTTER}>
+                          <WeatherLocationNotice />
+                        </Box>
+                        <Box pt={HERO_TOP} px={HERO_GUTTER}>
+                          <WeatherReportGate.Suspense fallback={<WeatherHero.Loading />}>
+                            <WeatherHero />
+                          </WeatherReportGate.Suspense>
+                        </Box>
+                        <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
+                          {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                          <WeatherReportGate.Suspense fallback={null}>
+                            <WeatherAlerts />
+                          </WeatherReportGate.Suspense>
+                          <QueryErrorBoundary fallback={WeatherBriefing.Error}>
+                            <Suspense fallback={<WeatherBriefing.Loading />}>
+                              <WeatherBriefing />
+                            </Suspense>
+                          </QueryErrorBoundary>
+                          {/* 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                          <WeatherReportGate.Suspense fallback={null}>
+                            <NextHourPrecipitation />
+                          </WeatherReportGate.Suspense>
+                          <WeatherReportGate.Suspense fallback={<HourlyForecast.Loading />}>
+                            <HourlyForecast />
+                          </WeatherReportGate.Suspense>
+                        </VStack>
+                        {isCompact && (
+                          <>
+                            <Spacing size={CARD_GAP} />
+                            <ForecastCards />
+                          </>
+                        )}
+                      </ReadableContent>
+                    </WeatherScrollView>
+                  }
+                  secondary={
+                    <WeatherScrollView>
+                      <ReadableContent style={COLUMN_STYLE}>
+                        <ForecastCards />
+                      </ReadableContent>
+                    </WeatherScrollView>
+                  }
+                />
+              </WeatherReportGate>
+            </QueryErrorBoundary>
+          </>
         ))
         .exhaustive()}
       <DevOverrideBadge />

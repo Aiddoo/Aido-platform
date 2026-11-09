@@ -1,6 +1,7 @@
 import CommentIllustrationSvg from '@assets/illustrations/il_comment.svg';
 import ErrorIllustrationSvg from '@assets/illustrations/il_error.svg';
 import FriendIllustrationSvg from '@assets/illustrations/il_friend.svg';
+import LocationIllustrationSvg from '@assets/illustrations/il_location.svg';
 import MemoIllustrationSvg from '@assets/illustrations/il_memo.svg';
 import NotificationIllustrationSvg from '@assets/illustrations/il_notification.svg';
 import OfflineIllustrationSvg from '@assets/illustrations/il_offline.svg';
@@ -42,3 +43,4 @@ export const SearchIllustration = createIllustration(SearchIllustrationSvg);
 export const CommentIllustration = createIllustration(CommentIllustrationSvg);
 export const OfflineIllustration = createIllustration(OfflineIllustrationSvg);
 export const ErrorIllustration = createIllustration(ErrorIllustrationSvg);
+export const LocationIllustration = createIllustration(LocationIllustrationSvg);

@@ -267,18 +267,17 @@
     "entry": "날씨"
   },
   "locationPrompt": {
-    "title": "위치 권한을 허용하면\n날씨를 볼 수 있어요",
-    "subtitle": "지금 있는 곳 날씨와\n비 피할 시간을 알려드려요",
-    "permissionDenied": "설정에서 위치 권한을\n켜주세요",
+    "title": "지금 있는 곳 날씨를 보여드릴게요",
+    "description": "비와 겹치는 할 일도 미리 알려드려요",
     "continue": "계속",
-    "permissionDeniedDescription": "권한을 켜고 돌아오면\n바로 날씨를 보여드려요",
+    "deniedTitle": "설정에서 위치를 켜주세요",
+    "deniedDescription": "켜고 돌아오면 바로 날씨를 보여드려요",
     "openSettings": "설정 열기",
     "unavailableTitle": "위치를 찾지 못했어요",
     "unavailableDescription": "위치 서비스가 켜져 있는지\n확인해주세요",
     "lastLocationNotice": "위치 권한을 확인하지 못해 마지막 위치의 날씨를 보여드려요",
     "allow": "허용하기",
-    "savedLocationNotice": "현재 위치를 찾지 못해 저장된 위치의 날씨를 보여드려요",
-    "footnote": "할 일과 알림은 위치 없이도 그대로 쓸 수 있어요"
+    "savedLocationNotice": "현재 위치를 찾지 못해 저장된 위치의 날씨를 보여드려요"
   },
   "screen": {
     "loadFailed": "날씨 정보를\n불러올 수 없어요",

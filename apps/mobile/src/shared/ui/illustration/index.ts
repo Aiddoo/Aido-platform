@@ -3,6 +3,7 @@ export {
   ErrorIllustration,
   FriendIllustration,
   type IllustrationSize,
+  LocationIllustration,
   MemoIllustration,
   NotificationIllustration,
   OfflineIllustration,

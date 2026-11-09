@@ -271,18 +271,17 @@
     "entry": "Weather"
   },
   "locationPrompt": {
-    "title": "Allow location access to see the weather",
-    "subtitle": "See your local weather and when to dodge the rain",
-    "permissionDenied": "Turn on location access in Settings",
+    "title": "See your local weather",
+    "description": "We'll also flag to-dos that overlap with rain",
     "continue": "Continue",
-    "permissionDeniedDescription": "Come back after turning it on and we'll show the weather right away",
+    "deniedTitle": "Turn on location in Settings",
+    "deniedDescription": "Come back and we'll show the weather right away",
     "openSettings": "Open Settings",
     "unavailableTitle": "Couldn't find your location",
     "unavailableDescription": "Check that Location Services is on",
     "lastLocationNotice": "Couldn't confirm location access. Showing weather for your last known location",
     "allow": "Allow",
-    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location",
-    "footnote": "Your to-dos and reminders work without location"
+    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location"
   },
   "screen": {
     "loadFailed": "Couldn't load the weather",

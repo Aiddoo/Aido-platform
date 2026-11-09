@@ -1,106 +1,89 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
-import catSuggestionImage from '@assets/images/ido_cat_suggestion.webp';
-import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextButton } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { match } from 'ts-pattern';
-
-import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
-import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
-import { WeatherResult } from './weather-result';
+import {
+  Box,
+  Button,
+  H3,
+  LocationIllustration,
+  ReadableContent,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 
 interface WeatherLocationPromptProps {
-  /** 리포트 오류 경계 안에서 열렸을 때, 다시 등록한 뒤 경계를 풀어 리포트를 다시 받는다. */
-  onRecovered?: () => void;
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
 }
 
-export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProps) {
-  const { t } = useTranslation(['weather', 'common']);
-  const location = useWeatherLocation();
-  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
-  const updateLocation = useMutation(useUpdateWeatherLocationMutationOptions());
+/** 시스템 위치 창 앞 화면이라 창을 건너뛰는 버튼을 두지 않는다(App Store 5.1.1). 나가는 길은 헤더 뒤로 가기다 */
+export function WeatherLocationPrompt({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: WeatherLocationPromptProps) {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-white">
+      <ReadableContent flex={1}>
+        <VStack flex={1} align="center" justify="center" className="px-6">
+          <LocationIllustration />
 
-  const handleRetry = async () => {
-    if (reading?.status === 'located') {
-      const { latitude, longitude } = reading.registered;
-      await updateLocation.mutateAsync({ latitude, longitude }).catch(() => undefined);
-    } else if (location.status === 'unavailable') {
-      await location.retry();
-    }
-    onRecovered?.();
-  };
+          <Spacing size={20} />
 
-  return match(location)
-    .with({ status: 'needsPermission' }, ({ request }) => (
-      <WeatherResult
-        image={catHiImage}
-        title={t('weather:locationPrompt.title')}
-        description={t('weather:locationPrompt.subtitle')}
-        footnote={t('weather:locationPrompt.footnote')}
-      >
-        <WeatherResult.Action tone="primary" onPress={request}>
-          {t('weather:locationPrompt.continue')}
-        </WeatherResult.Action>
-      </WeatherResult>
-    ))
-    .with({ status: 'denied' }, ({ openSettings }) => (
-      <WeatherResult
-        image={catSuggestionImage}
-        title={t('weather:locationPrompt.permissionDenied')}
-        description={t('weather:locationPrompt.permissionDeniedDescription')}
-        footnote={t('weather:locationPrompt.footnote')}
-      >
-        <WeatherResult.Action tone="primary" onPress={openSettings}>
-          {t('weather:locationPrompt.openSettings')}
-        </WeatherResult.Action>
-      </WeatherResult>
-    ))
-    .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
-      <WeatherResult
-        image={catAnchorImage}
-        title={t('weather:locationPrompt.unavailableTitle')}
-        description={t('weather:locationPrompt.unavailableDescription')}
-        footnote={t('weather:locationPrompt.footnote')}
-      >
-        <WeatherResult.Action
-          tone="light"
-          isLoading={updateLocation.isPending}
-          onPress={handleRetry}
-        >
-          {t('common:actions.retry')}
-        </WeatherResult.Action>
-      </WeatherResult>
-    ))
-    .exhaustive();
+          <H3 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+            {title}
+          </H3>
+
+          <Spacing size={8} />
+
+          <Text size="b3" shade={6} align="center">
+            {description}
+          </Text>
+        </VStack>
+
+        <Box className="px-4 pb-4">
+          <Button size="large" onPress={onAction}>
+            {actionLabel}
+          </Button>
+        </Box>
+      </ReadableContent>
+    </StyledSafeAreaView>
+  );
 }
 
-/** 저장된 위치나 마지막 위치로 보여 주는 동안은 화면을 막지 않고 한 줄로 알린다 */
-WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
-  const { t } = useTranslation(['weather', 'common']);
-  const location = useWeatherLocation();
+interface AskProps {
+  onContinue: () => void;
+}
 
-  return match(location)
-    .with({ status: 'unavailable' }, ({ retry }) => (
-      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
-        <Text size="b4" align="center" className="shrink text-on-sky/85">
-          {t('weather:locationPrompt.savedLocationNotice')}
-        </Text>
-        <TextButton size="small" onPress={retry}>
-          {t('common:actions.retry')}
-        </TextButton>
-      </HStack>
-    ))
-    .with({ status: 'ready', isLastKnown: true }, ({ request }) => (
-      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
-        <Text size="b4" align="center" className="shrink text-on-sky/85">
-          {t('weather:locationPrompt.lastLocationNotice')}
-        </Text>
-        <TextButton size="small" onPress={request}>
-          {t('weather:locationPrompt.allow')}
-        </TextButton>
-      </HStack>
-    ))
-    .otherwise(() => null);
+WeatherLocationPrompt.Ask = function Ask({ onContinue }: AskProps) {
+  const { t } = useTranslation('weather');
+
+  return (
+    <WeatherLocationPrompt
+      title={t('locationPrompt.title')}
+      description={t('locationPrompt.description')}
+      actionLabel={t('locationPrompt.continue')}
+      onAction={onContinue}
+    />
+  );
+};
+
+interface DeniedProps {
+  onOpenSettings: () => void;
+}
+
+WeatherLocationPrompt.Denied = function Denied({ onOpenSettings }: DeniedProps) {
+  const { t } = useTranslation('weather');
+
+  return (
+    <WeatherLocationPrompt
+      title={t('locationPrompt.deniedTitle')}
+      description={t('locationPrompt.deniedDescription')}
+      actionLabel={t('locationPrompt.openSettings')}
+      onAction={onOpenSettings}
+    />
+  );
 };

@@ -9,6 +9,7 @@ import {
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { useTheme } from '@src/shared/providers/theme-provider';
 import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
@@ -19,8 +20,12 @@ const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh
 
 export default function WeatherLayout() {
   const { t } = useTranslation('weather');
+  const location = useWeatherLocation();
+  // 리포트가 없으면 하늘 장면 대신 흰 면의 위치 권한 안내라 기본 헤더 색을 쓴다
+  const isSkyScene = WeatherLocationPolicy.shouldFetchReport(location);
   /** 하늘 장면 위 헤더 버튼의 둥근 유리 면. iOS는 네이티브 유리 버튼이 그린다. */
-  const headerButtonContainerColor = useResolvedColor('text-on-sky/16');
+  const skyButtonContainerColor = useResolvedColor('text-on-sky/16');
+  const headerButtonContainerColor = isSkyScene ? skyButtonContainerColor : undefined;
   const backToolbar = useStackBackToolbar({
     fallbackHref: '/feed',
     buttonContainerColor: headerButtonContainerColor,
@@ -28,9 +33,9 @@ export default function WeatherLayout() {
   const push = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
-  const location = useWeatherLocation();
-  const canRefresh = WeatherLocationPolicy.shouldFetchReport(location);
-  const tintColor = useResolvedColor('text-on-sky');
+  const skyTintColor = useResolvedColor('text-on-sky');
+  const surfaceTintColor = useResolvedColor('text-gray-9');
+  const { resolvedTheme } = useTheme();
   const { backgroundColor } = useResolveClassNames('bg-gray-10');
 
   return (
@@ -38,9 +43,9 @@ export default function WeatherLayout() {
       screenOptions={{
         headerTransparent: true,
         headerShadowVisible: false,
-        headerTintColor: tintColor,
+        headerTintColor: isSkyScene ? skyTintColor : surfaceTintColor,
         title: '',
-        statusBarStyle: 'light',
+        statusBarStyle: isSkyScene || resolvedTheme === 'dark' ? 'light' : 'dark',
         contentStyle: { backgroundColor },
       }}
     >
@@ -50,7 +55,7 @@ export default function WeatherLayout() {
           <Stack.Toolbar.Button
             icon={REFRESH_ICON}
             accessibilityLabel={t('attribution.refresh')}
-            hidden={!canRefresh}
+            hidden={!isSkyScene}
             disabled={isRefreshing}
             onPress={() => refetchWeather(queryClient)}
           >
