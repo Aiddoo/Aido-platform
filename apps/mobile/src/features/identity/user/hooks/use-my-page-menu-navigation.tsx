@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { Keyboard } from 'react-native';
 
 import { isMyPageMenuItemSelected } from '../utils/my-page-menu-navigation';
 
@@ -59,6 +60,8 @@ export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
     if (pathname === (typeof target === 'string' ? target : target.pathname)) {
       return;
     }
+    // 오른쪽 칸 입력의 키보드가 새 화면 위에 남지 않게 내린다
+    Keyboard.dismiss();
     // 넓은 화면은 오른쪽 칸을 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
     if (!isCompact && router.canDismiss()) {
       requestSplitDetailRoot(typeof target === 'string' ? target : target.pathname);

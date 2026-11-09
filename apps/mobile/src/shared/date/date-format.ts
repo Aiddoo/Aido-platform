@@ -154,6 +154,11 @@ export function formatDateKeyCompactRange(
   return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
 }
 
+/** 오전/오후와 시각이 줄바꿈으로 갈라지지 않게 사이를 줄바꿈 없는 공백으로 잇는다 */
+function keepTimeTogether(label: string): string {
+  return label.replace(/ /g, '\u00A0');
+}
+
 export function formatClockTime(
   value: Date | Instant,
   timeFormat: TimeFormat,
@@ -163,11 +168,13 @@ export function formatClockTime(
   if (!isValidDate(date)) {
     return '';
   }
-  return getFormatter(context, {
-    hour: 'numeric',
-    minute: '2-digit',
-    ...getHourCycleOptions(timeFormat),
-  }).format(date);
+  return keepTimeTogether(
+    getFormatter(context, {
+      hour: 'numeric',
+      minute: '2-digit',
+      ...getHourCycleOptions(timeFormat),
+    }).format(date),
+  );
 }
 
 export function formatTimeOfDay(
@@ -187,10 +194,12 @@ export function formatHourLabel(
   if (!isValidDate(date)) {
     return '';
   }
-  return getFormatter(toUtcContext(context), {
-    hour: 'numeric',
-    ...getHourCycleOptions(timeFormat),
-  }).format(date);
+  return keepTimeTogether(
+    getFormatter(toUtcContext(context), {
+      hour: 'numeric',
+      ...getHourCycleOptions(timeFormat),
+    }).format(date),
+  );
 }
 
 /** 순간이 놓인 시각을 정시로 표시한다. 시는 context 시간대로 읽는다 (서울 15:20 → "오후 3시"). */

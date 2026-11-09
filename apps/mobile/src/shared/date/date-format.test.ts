@@ -54,7 +54,7 @@ describe('formatClockTime', () => {
     const result = formatClockTime(afternoon, 'TWELVE_HOUR', KO_SEOUL);
 
     // Then
-    expect(result).toBe('오후 2:30');
+    expect(result).toBe('오후\u00A02:30');
   });
 
   it('ko 24시간제는 두 자리 시와 분만 표시한다', () => {
@@ -68,6 +68,15 @@ describe('formatClockTime', () => {
     expect(result).toBe('09:05');
   });
 
+  it('오전/오후와 시각 사이는 줄바꿈 없는 공백이라 큰 글꼴에서도 함께 줄을 바꾼다', () => {
+    // When
+    const result = formatClockTime(new Date('2026-01-01T10:00:00.000Z'), 'TWELVE_HOUR', KO_SEOUL);
+
+    // Then
+    expect(result).toBe('오후\u00A07:00');
+    expect(result).not.toContain(' ');
+  });
+
   it('en 12시간제는 AM/PM을 시각 뒤에 둔다', () => {
     // Given
     const afternoon = new Date('2026-10-01T05:30:00Z');
@@ -76,7 +85,7 @@ describe('formatClockTime', () => {
     const result = formatClockTime(afternoon, 'TWELVE_HOUR', EN_SEOUL);
 
     // Then
-    expect(result).toBe('2:30 PM');
+    expect(result).toBe('2:30\u00A0PM');
   });
 
   it('24시간제 자정을 24:00이 아닌 00:05로 표시한다', () => {
@@ -99,8 +108,8 @@ describe('formatTimeOfDay', () => {
     const twentyFour = formatTimeOfDay(time, 'TWENTY_FOUR_HOUR', KO_SEOUL);
 
     // Then
-    expect(ko).toBe('오후 6:30');
-    expect(en).toBe('6:30 PM');
+    expect(ko).toBe('오후\u00A06:30');
+    expect(en).toBe('6:30\u00A0PM');
     expect(twentyFour).toBe('18:30');
   });
 });
@@ -114,10 +123,10 @@ describe('formatHourLabel', () => {
     const en = formatHourLabel(15, 'TWELVE_HOUR', EN_SEOUL);
 
     // Then
-    expect(midnight).toBe('오전 12시');
-    expect(afternoon).toBe('오후 3시');
+    expect(midnight).toBe('오전\u00A012시');
+    expect(afternoon).toBe('오후\u00A03시');
     expect(twentyFour).toBe('15시');
-    expect(en).toBe('3 PM');
+    expect(en).toBe('3\u00A0PM');
   });
 });
 
@@ -136,8 +145,8 @@ describe('formatInstantHour', () => {
     });
 
     // Then
-    expect(ko).toBe('오후 3시');
-    expect(en).toBe('3 PM');
+    expect(ko).toBe('오후\u00A03시');
+    expect(en).toBe('3\u00A0PM');
     expect(losAngeles).toBe('23시');
   });
 });
@@ -408,7 +417,7 @@ describe('formatHHmmTime', () => {
 
     // Then
     expect(twentyFour).toBe('14:30');
-    expect(twelve).toBe('오후 2:30');
+    expect(twelve).toBe('오후\u00A02:30');
   });
 
   it('유효하지 않은 시간 문자열은 원본 그대로 돌려준다', () => {

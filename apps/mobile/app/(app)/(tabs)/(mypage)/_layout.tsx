@@ -25,7 +25,7 @@ export default function MyPageTabLayout() {
 
   return (
     <AdaptivePane
-      primary={<MyPageMenuPane />}
+      primary={<MyPageMenuPane placement="pane" />}
       compactPane="secondary"
       secondary={
         <Stack

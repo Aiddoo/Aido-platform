@@ -6,7 +6,10 @@ import { PlanTypeValue } from '@src/features/billing/subscription/components/pla
 import { AppIconValue } from '@src/features/device/app-icon/components/app-icon-value';
 import { AccountActionButtons } from '@src/features/identity/auth/components/account-action-buttons';
 import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
-import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
+import {
+  type MyPageMenuPlacement,
+  MyPagePaneLayout,
+} from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { PushStatusValue } from '@src/features/notification/components/push-status-value';
@@ -45,15 +48,13 @@ import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 /** 좁은 화면은 마이 탭 첫 화면이, 넓은 화면은 마이 탭 왼쪽 칸이 그린다. 한 번에 하나만 그려 접고 펼 때 스크롤을 넘겨받는다 */
-export function MyPageMenuPane() {
+export function MyPageMenuPane({ placement }: { placement: MyPageMenuPlacement }) {
   const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
     <MyPageMenuNavigationProvider>
-      <MyPagePaneLayout>
-        <H3>{t('mypage.header')}</H3>
-
+      <MyPagePaneLayout placement={placement} title={<H3>{t('mypage.header')}</H3>}>
         <Spacing size={20} />
 
         <VStack gap={12}>

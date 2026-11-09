@@ -13,7 +13,7 @@ export default function MyPageScreen() {
     <>
       <NotificationBellToolbar />
       {isCompact ? (
-        <MyPageMenuPane />
+        <MyPageMenuPane placement="screen" />
       ) : (
         <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
           <Result
