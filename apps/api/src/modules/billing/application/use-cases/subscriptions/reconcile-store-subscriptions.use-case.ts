@@ -57,7 +57,9 @@ export class ReconcileStoreSubscriptions {
     const states =
       candidates.length === 0
         ? []
-        : await statusReader.read(candidates.map((subscription) => subscription.revenueCatId));
+        : await statusReader.read(
+            candidates.map((subscription) => subscription.storeSubscriptionId.value),
+          );
     if (states == null || states.length === 0) {
       this.#logUnchanged(userId);
       return UNCHANGED;
@@ -72,13 +74,13 @@ export class ReconcileStoreSubscriptions {
       const subscriptions = await subscriptionRepository.findReconcilableByUserId(userId);
       const corrected: SubscriptionReconcileField[][] = [];
       for (const subscription of subscriptions) {
-        const state = stateByChain.get(subscription.revenueCatId);
+        const state = stateByChain.get(subscription.storeSubscriptionId.value);
         const fields = state == null ? [] : subscription.reconcileWithStore(state, now);
         if (fields.length === 0) {
           continue;
         }
         await subscriptionRepository.updateStatus(
-          subscription.revenueCatId,
+          subscription.storeSubscriptionId,
           subscription.persistenceState,
         );
         corrected.push(fields);

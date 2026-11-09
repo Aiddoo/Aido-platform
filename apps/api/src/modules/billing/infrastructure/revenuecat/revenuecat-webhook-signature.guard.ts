@@ -17,8 +17,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
  * - timing-safe comparison으로 타이밍 공격 방지
  */
 @Injectable()
-export class WebhookSignatureGuard implements CanActivate {
-  readonly #logger = new Logger(WebhookSignatureGuard.name);
+export class RevenueCatWebhookSignatureGuard implements CanActivate {
+  readonly #logger = new Logger(RevenueCatWebhookSignatureGuard.name);
 
   constructor(private readonly config: TypedConfigService) {}
 

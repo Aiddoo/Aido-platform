@@ -1,8 +1,8 @@
 /**
- * WebhookSignatureGuard 가드 단위 테스트
+ * RevenueCatWebhookSignatureGuard 가드 단위 테스트
  *
  * @description
- * WebhookSignatureGuard의 인가 로직을 격리 테스트합니다.
+ * RevenueCatWebhookSignatureGuard의 인가 로직을 격리 테스트합니다.
  *
  * 실행 명령:
  * ```bash
@@ -16,7 +16,7 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { createMockExecutionContext } from "#test/mocks/index";
 
-import { WebhookSignatureGuard } from "./webhook-signature.guard.js";
+import { RevenueCatWebhookSignatureGuard } from "./revenuecat-webhook-signature.guard.js";
 
 /** 가드가 참조하는 config 필드만 담은 스텁 형태 */
 interface GuardConfigStub {
@@ -30,15 +30,15 @@ interface GuardConfigStub {
  */
 let moduleRef: TestingModule | undefined;
 
-async function createGuard(config: GuardConfigStub): Promise<WebhookSignatureGuard> {
+async function createGuard(config: GuardConfigStub): Promise<RevenueCatWebhookSignatureGuard> {
   moduleRef = await Test.createTestingModule({
-    providers: [WebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
+    providers: [RevenueCatWebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
   }).compile();
 
-  return moduleRef.get(WebhookSignatureGuard);
+  return moduleRef.get(RevenueCatWebhookSignatureGuard);
 }
 
-describe("WebhookSignatureGuard — 가드", () => {
+describe("RevenueCatWebhookSignatureGuard — 가드", () => {
   beforeEach(() => {
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
@@ -48,7 +48,7 @@ describe("WebhookSignatureGuard — 가드", () => {
     moduleRef = undefined;
   });
   describe("webhook secret이 설정된 경우", () => {
-    let guard: WebhookSignatureGuard;
+    let guard: RevenueCatWebhookSignatureGuard;
 
     beforeEach(async () => {
       guard = await createGuard({

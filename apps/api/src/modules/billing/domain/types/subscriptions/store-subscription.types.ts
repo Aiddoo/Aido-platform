@@ -3,7 +3,6 @@ export const SUBSCRIPTION_PROVIDERS = ["REVENUECAT"] as const;
 
 export type SubscriptionProvider = (typeof SUBSCRIPTION_PROVIDERS)[number];
 
-/** 구독을 결제한 스토어 */
 export const SUBSCRIPTION_STORES = [
   "APP_STORE",
   "MAC_APP_STORE",
@@ -16,7 +15,6 @@ export const SUBSCRIPTION_STORES = [
 
 export type SubscriptionStore = (typeof SUBSCRIPTION_STORES)[number];
 
-/** 해지·만료 사유 */
 export const SUBSCRIPTION_END_REASONS = [
   "UNSUBSCRIBE",
   "BILLING_ERROR",

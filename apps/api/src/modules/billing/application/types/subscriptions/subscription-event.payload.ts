@@ -16,9 +16,7 @@ export type { SubscriptionLifecycle };
 export interface SubscriptionEventPayload {
   userId: string;
   email: string;
-  /** 사용자 이름 (UserProfile.name) */
   name?: string;
-  /** 처리한 이벤트 종류 */
   kind: Exclude<StoreSubscriptionEventKind, "IGNORED">;
   /** 기간 없는 일회성 구매(STARTED만) */
   isOneTime?: boolean;
@@ -26,19 +24,12 @@ export interface SubscriptionEventPayload {
   store: SubscriptionStore | null;
   /** 결제 환경. SANDBOX는 테스트 결제라 관리자 알림에 표시하고 매출로 보지 않는다. */
   environment?: SubscriptionEnvironment;
-  /** 갱신 체인 ID(원 거래 ID) */
   storeSubscriptionId?: string;
-  /** 구매 시각 (ISO string) */
   purchasedAt?: string;
-  /** 만료 시각 (ISO string) */
   expiresAt?: string;
-  /** 해지·환불·만료 사유 */
   endReason?: SubscriptionEndReason;
-  /** USD 기준 가격 */
   priceUsd?: number;
-  /** 구매 통화 기준 가격 */
   priceInPurchasedCurrency?: number;
-  /** 구매 통화 코드 (e.g. KRW) */
   purchasedCurrency?: string;
   /** 앱 사용자 ID. 운영 알림의 공급자 고객 화면 링크에 쓴다. */
   appUserId?: string;
@@ -46,9 +37,7 @@ export interface SubscriptionEventPayload {
   providerCustomerUrl?: string;
   /** 공급자 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
   eventId?: string;
-  /** 구매 국가 (ISO 3166-1 alpha-2) */
   countryCode?: string;
-  /** 지금 기간의 유형 */
   periodKind?: StorePeriodType;
   appVersion?: string;
   deviceModel?: string;

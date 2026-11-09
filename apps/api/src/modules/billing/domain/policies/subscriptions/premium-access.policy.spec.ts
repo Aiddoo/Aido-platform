@@ -162,7 +162,7 @@ describe("PremiumAccessPolicy", () => {
 
   describe("applyStoreEventChain", () => {
     const stored = {
-      revenueCatId: "chain-1",
+      storeSubscriptionId: "chain-1",
       productId: "com.aido.pro.yearly",
       startedAt: new Date("2027-03-10T00:00:00.000Z"),
       status: "CANCELLED" as const,
@@ -172,7 +172,7 @@ describe("PremiumAccessPolicy", () => {
 
     it("만료 시각이 없는 이벤트는 저장된 만료 시각과 결제 유예를 유지한다", () => {
       // Given
-      const eventChain = { revenueCatId: "chain-1", status: "ACTIVE" as const };
+      const eventChain = { storeSubscriptionId: "chain-1", status: "ACTIVE" as const };
 
       // When
       const applied = applyStoreEventChain([stored], eventChain);
@@ -180,7 +180,7 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(applied).toEqual([
         {
-          revenueCatId: "chain-1",
+          storeSubscriptionId: "chain-1",
           productId: "com.aido.pro.yearly",
           startedAt: stored.startedAt,
           status: "ACTIVE",
@@ -193,7 +193,11 @@ describe("PremiumAccessPolicy", () => {
 
     it("만료 시각이 null이면 체인의 엔타이틀먼트가 없다", () => {
       // Given
-      const eventChain = { revenueCatId: "chain-1", status: "FREE" as const, expiresAt: null };
+      const eventChain = {
+        storeSubscriptionId: "chain-1",
+        status: "FREE" as const,
+        expiresAt: null,
+      };
 
       // When
       const applied = applyStoreEventChain([stored], eventChain);

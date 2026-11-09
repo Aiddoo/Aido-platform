@@ -7,6 +7,7 @@ import {
 } from "#test/fixtures/subscription.fixture";
 import { StubStoreSubscriptionStatusReader } from "#test/mocks/ports/subscription.stub";
 
+import { StoreSubscriptionId } from "../../../domain/value-objects/subscriptions/store-subscription-id.vo.js";
 import { ReconcileStoreSubscriptions } from "./reconcile-store-subscriptions.use-case.js";
 
 const NOW = new Date("2026-02-20T12:00:00.000Z");
@@ -28,8 +29,8 @@ function createReconcile(subscription: Parameters<typeof createSubscriptionRecor
   const fixture = createSubscriptionFixture({ existing: true, subscription });
   const statusReader = new StubStoreSubscriptionStatusReader();
   const useCase = new ReconcileStoreSubscriptions({ ...fixture, statusReader });
-  const stored = (revenueCatId = SUBSCRIPTION_TRANSACTION_ID) =>
-    fixture.subscriptionRepository.subscriptions.get(revenueCatId);
+  const stored = (storeSubscriptionId = SUBSCRIPTION_TRANSACTION_ID) =>
+    fixture.subscriptionRepository.subscriptions.get(storeSubscriptionId);
   const userState = () => fixture.subscriptionRepository.users.get(fixture.user.id);
   return { fixture, statusReader, useCase, stored, userState };
 }
@@ -77,7 +78,7 @@ describe("ReconcileStoreSubscriptions — 웹훅 뒤 스토어 상태 대조", (
       "play-monthly",
       createSubscriptionRecord(fixture.user.id, {
         id: 2,
-        revenueCatId: "play-monthly",
+        storeSubscriptionId: StoreSubscriptionId.from("play-monthly"),
         productId: "com.aido.pro.monthly:monthly-base",
         startedAt: NOW,
         expiresAt: NEXT_EXPIRY,

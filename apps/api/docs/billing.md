@@ -60,10 +60,16 @@ RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기
 
 바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비우며 `billing.subscription.reconcile.corrected`(`userId`·`correctedCount`·`fields`)를 남긴다. 같으면 `…unchanged`다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
 
-API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscription)(`GET /projects/{project_id}/subscriptions?store_subscription_identifier=`)을 쓴다. 이 검색은 App Store 체인의 어떤 거래 ID나 Play의 어떤 주문 ID도 받으므로, 우리 체인 키 `Subscription.revenueCatId`(웹훅의 `original_transaction_id`)로 행과 1:1로 맞는다. 응답의 [Subscription](https://www.revenuecat.com/docs/api-v2/subscription-data-model)은 `gives_access`·`auto_renewal_status`·`status`(`trialing` 등)·`current_period_ends_at`을 주므로 교체된 Play 체인·환불·체험을 웹훅 없이 판별한다. 상품 ID는 RevenueCat 내부 ID라 [상품 조회](https://www.revenuecat.com/docs/api-v2/product)의 `store_identifier`(Play는 `상품:기본요금제`)로 바꾸고 프로세스 안에서 한 번만 읽는다.
+API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscription)(`GET /projects/{project_id}/subscriptions?store_subscription_identifier=`)을 쓴다. 이 검색은 App Store 체인의 어떤 거래 ID나 Play의 어떤 주문 ID도 받으므로, 우리 체인 키 `Subscription.storeSubscriptionId`(DB 칼럼 `revenueCatId`, 웹훅의 `original_transaction_id`)로 행과 1:1로 맞는다. 응답의 [Subscription](https://www.revenuecat.com/docs/api-v2/subscription-data-model)은 `gives_access`·`auto_renewal_status`·`status`(`trialing` 등)·`current_period_ends_at`을 주므로 교체된 Play 체인·환불·체험을 웹훅 없이 판별한다. 상품 ID는 RevenueCat 내부 ID라 [상품 조회](https://www.revenuecat.com/docs/api-v2/product)의 `store_identifier`(Play는 `상품:기본요금제`)로 바꾸고 프로세스 안에서 한 번만 읽는다.
 
 - 고객 단위 목록(`/customers/{id}/subscriptions`)은 `store_subscription_identifier`가 최신 거래·주문 ID라 우리 행과 바로 맞지 않아 쓰지 않는다.
 - v1 `GET /subscribers`는 상품 ID로 묶여 같은 상품의 여러 체인을 구분하지 못하고, 없는 고객을 만드는 부작용이 있어 쓰지 않는다.
 - 레이트 리밋([API v2](https://www.revenuecat.com/docs/api-v2)): Customer Information 480회/분, Project Configuration 60회/분. 대조는 체인마다 한 번, 상품은 프로세스당 한 번이다. 호출은 `revenuecat` 외부 호출 정책(bulkhead 2, 연속 5회 공급자 장애에 회로) 안에서 하고 재시도는 pg-boss 한 층이다.
 - 설정: `REVENUECAT_API_V2_SECRET_KEY`와 `REVENUECAT_PROJECT_ID`가 모두 있어야 켜진다. 없으면 시작할 때 `billing.subscription.reconcile.disabled`를 한 번 남기고 잡을 넣지 않는다(기존 웹훅 처리만). 키는 RevenueCat 대시보드 Project settings → API keys에서 **V2**로 만들고 권한은 읽기 둘(`customer_information:subscriptions:read`, `project_configuration:products:read`)만 준다. v1 키는 v2에서 동작하지 않는다.
 - Google Play는 요금제를 바꾸면 새 구매 토큰(새 체인)이 생기고 옛 토큰은 `linkedPurchaseToken`으로 무효화해야 한다([Play 구독](https://developer.android.com/google/play/billing/subscriptions)). 옛 체인의 EXPIRATION은 만료 시각이 저장값보다 일러 무시되지만, 대조가 스토어의 `gives_access=false`를 보고 옛 체인을 끝낸다.
+
+## 공급자 경계
+
+RevenueCat이 보내는 모양은 `infrastructure/revenuecat`에만 있다. 웹훅 원문은 `translateRevenueCatWebhook`이 검증해 공급자를 모르는 `StoreSubscriptionEvent`(kind: `STARTED`·`RENEWED`·`CANCELLED`·`REFUNDED`·`UNCANCELLED`·`EXPIRED`·`BILLING_ISSUE`·`PRODUCT_CHANGE_SCHEDULED`·`EXTENDED`·`TRANSFERRED`·`IGNORED`)로 바꾸고, `ApplyStoreSubscriptionEvent`가 구독 행과 프리미엄에 반영한다. 환불(`CANCELLATION` + `CUSTOMER_SUPPORT`)·`RC_BILLING`→`WEB_BILLING`·빠진 시각(0)·원 거래 ID 대체 같은 공급자 규칙은 번역기 한 곳이다. 같은 폴더에 서명 Guard와 상태 대조 REST 어댑터가 있다. 웹훅 경로·응답·DB 칼럼 `revenueCatId`·`@aido/api`의 웹훅 스키마는 운영 계약이라 그대로 둔다.
+
+두 번째 공급자(예: 토스 웹 정기결제)를 붙일 때는 그 공급자의 번역기·컨트롤러가 같은 `StoreSubscriptionEvent`를 만들면 도메인·`/me`·알림은 그대로다. `SUBSCRIPTION_PROVIDERS`에 값을 더하고, 행마다 공급자를 저장해야 하면 그때 칼럼을 추가한다. 스토어가 갱신을 대신해 주지 않는 정기결제는 결제를 우리가 일으키므로 `RecurringPaymentGateway` 포트(빌링키 결제·취소)와 자체 갱신 스케줄러가 필요하고, 결제 결과를 같은 이벤트(`RENEWED`·`BILLING_ISSUE`·`EXPIRED`)로 넣는다. 공급자가 둘이 되어 고르는 규칙이 생기기 전에는 레지스트리·전략을 만들지 않는다.

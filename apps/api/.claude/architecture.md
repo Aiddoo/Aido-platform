@@ -117,6 +117,19 @@ commit
 - 누적 사용량은 `USAGE_METER`(`UsageMeterPort`: `add`·`tryReserve`·`release`·`read`·`prune`, `OutboundUsage` 원자적 upsert)로 센다. 기간은 `usagePeriod`의 UTC 일·월이고 기준선 경보는 `crossedThresholds`로 기간당 한 번이다. 90일 지난 행은 `UsageRetentionJob`이 지운다.
 - 사람이 확인할 상황은 `OPERATIONAL_ALERT`(`OperationalAlertPort.raise({ key, severity, message, tags, details })`, 절대 throw하지 않음) 하나로 올린다. 어댑터는 Sentry(fingerprint = key)이고 key 상수는 각 Context의 `application/observability/<slice>/*-alerts.ts`에 둔다. 업무 코드에서 Sentry를 직접 부르지 않는다(5xx는 `GlobalExceptionFilter`가 보낸다). 새 key는 [배포 문서](../DEPLOYMENT.md#환경-설정과-공개-버전)의 알림 규칙 태그에도 더한다.
 
+## 구독 결제(Billing)
+
+결제 공급자(RevenueCat)는 Anti-Corruption Layer 뒤에 둔다. 웹훅 원문과 REST 응답은 `billing/infrastructure/revenuecat`의 번역기·어댑터만 알고, Application은 공급자를 모르는 `StoreSubscriptionEvent`(kind 판별 유니온)와 `StoreSubscriptionStatusReaderPort`만 쓴다. 도메인의 체인 ID는 `StoreSubscriptionId` VO이고 DB 칼럼은 운영 계약인 `revenueCatId` 그대로다.
+
+| 위치                                                | 책임                                                                                                     |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `presentation/.../revenuecat-webhook.controller.ts` | 경로 `POST /v1/webhooks/revenuecat`·서명 Guard·응답 계약. 원문을 receiver로 넘긴다                       |
+| `infrastructure/revenuecat`                         | 웹훅 번역기(원문 → `StoreSubscriptionEvent`)·receiver·서명 Guard·REST v2 상태 읽기·외부 호출 정책        |
+| `application/use-cases/subscriptions`               | `ApplyStoreSubscriptionEvent`(이벤트 반영), `ReconcileStoreSubscriptions`(웹훅 뒤 스토어 상태 대조)      |
+| `domain`                                            | `Subscription`·`StoreSubscriptionId`, 체험 단계·프리미엄·요금제·안내 기간 정책, kind·store·provider 어휘 |
+
+두 번째 공급자를 붙이는 방법은 [billing.md](../docs/billing.md#공급자-경계)에 있다.
+
 ## 유료 기능과 권한
 
 권한 주체는 FREE·PREMIUM(유효한 스토어 구독 또는 보상 기간)·ADMIN(모든 기능 무제한) 셋이다. 플랜 숫자는 `@aido/api/vocabulary`의 `PLAN_CATALOG` 한 곳에만 두고(출시 앱이 읽는 `PREMIUM_FEATURES`는 그 부분집합), 무료·프리미엄 판단은 [paid-access.policy](../src/modules/access/domain/policies/entitlement/paid-access.policy.ts)의 `hasPaidAccess`, 한도 판단은 [entitlement.policy](../src/modules/access/domain/policies/entitlement/entitlement.policy.ts) 하나다. ADMIN은 정책이 처리한다. 무제한으로 보이는 프리미엄 quota에 `fairUse.premium`이 있으면 서버는 그 상한으로 막고(`resolveQuotaLimit`), 출시 앱 응답은 표시 한도(null)를 그대로 보여 준다.

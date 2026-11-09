@@ -17,6 +17,7 @@ import {
   type SubscriptionRepositoryPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -99,7 +100,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     userId = user.id;
     await repository.create({
       userId,
-      revenueCatId: transactionId,
+      storeSubscriptionId: StoreSubscriptionId.from(transactionId),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: new Date("2026-12-03T12:00:00.000Z"),
@@ -142,7 +143,9 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   }
 
   async function snapshot() {
-    const subscription = await repository.findByRevenueCatId(transactionId);
+    const subscription = await repository.findByStoreSubscriptionId(
+      StoreSubscriptionId.from(transactionId),
+    );
     const user = await client.query.user.findFirst({ where: { id: userId } });
     return {
       subscriptionStatus: subscription?.status,
@@ -295,7 +298,11 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Then
     expect((await responses).map((result) => result.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(failures).toEqual([]);
-    expect(await repository.findByRevenueCatId("new-subscription-chain")).toMatchObject({
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("new-subscription-chain"),
+      ),
+    ).toMatchObject({
       status: "ACTIVE",
       lastProcessedEventId: "initial-purchase-event",
       expiresAt: nextExpiry,
@@ -324,12 +331,20 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Then
     expect(failures.map(databaseSqlState)).toEqual(["23503"]);
     expect(await client.select().from(subscriptionEventReceipt)).toEqual([]);
-    expect(await repository.findByRevenueCatId("new-subscription-chain")).toBeNull();
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("new-subscription-chain"),
+      ),
+    ).toBeNull();
     expect((await snapshot()).userExpiry).toBe(previousExpiry.toISOString());
     expect(events).toEqual([]);
     await expect(useCase.receive({ body: initialPurchase() })).resolves.toEqual({ received: true });
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
-    expect(await repository.findByRevenueCatId("new-subscription-chain")).toMatchObject({
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("new-subscription-chain"),
+      ),
+    ).toMatchObject({
       status: "ACTIVE",
     });
     expect(events).toHaveLength(1);
@@ -353,12 +368,20 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
     // Then
     expect(failures).toHaveLength(1);
-    expect(await repository.findByRevenueCatId("new-subscription-chain")).toBeNull();
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("new-subscription-chain"),
+      ),
+    ).toBeNull();
     expect(await client.select().from(subscriptionEventReceipt)).toEqual([]);
     expect((await snapshot()).userExpiry).toBe(previousExpiry.toISOString());
     expect(events).toEqual([]);
     await useCase.receive({ body: initialPurchase() });
-    expect(await repository.findByRevenueCatId("new-subscription-chain")).toMatchObject({
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("new-subscription-chain"),
+      ),
+    ).toMatchObject({
       status: "ACTIVE",
     });
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
@@ -432,7 +455,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   ) {
     await repository.create({
       userId,
-      revenueCatId: "other-subscription-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("other-subscription-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: at,
@@ -468,8 +491,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     await useCase.receive({ body });
 
     // Then
-    expect(await repository.findByRevenueCatId(transactionId)).toMatchObject({ status: "EXPIRED" });
-    expect(await repository.findByRevenueCatId("other-subscription-chain")).toMatchObject({
+    expect(
+      await repository.findByStoreSubscriptionId(StoreSubscriptionId.from(transactionId)),
+    ).toMatchObject({ status: "EXPIRED" });
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("other-subscription-chain"),
+      ),
+    ).toMatchObject({
       status: "ACTIVE",
       expiresAt: nextExpiry,
     });
@@ -514,7 +543,11 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       userExpiry: nextExpiry.toISOString(),
       premiumAccess: true,
     });
-    expect(await repository.findByRevenueCatId("other-subscription-chain")).toMatchObject({
+    expect(
+      await repository.findByStoreSubscriptionId(
+        StoreSubscriptionId.from("other-subscription-chain"),
+      ),
+    ).toMatchObject({
       status: "CANCELLED",
     });
     expect(failures).toEqual([]);
@@ -524,19 +557,21 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Given
     await givenActiveUserProjection();
     const distantExpiry = new Date("2028-01-04T12:00:00.000Z");
-    await repository.updateStatus(transactionId, { expiresAt: distantExpiry });
+    await repository.updateStatus(StoreSubscriptionId.from(transactionId), {
+      expiresAt: distantExpiry,
+    });
     await givenOtherSubscription({
-      revenueCatId: "refunded-other",
+      storeSubscriptionId: StoreSubscriptionId.from("refunded-other"),
       status: "EXPIRED",
       expiresAt: distantExpiry,
     });
     await givenOtherSubscription({
-      revenueCatId: "free-other",
+      storeSubscriptionId: StoreSubscriptionId.from("free-other"),
       status: "FREE",
       expiresAt: distantExpiry,
     });
     await givenOtherSubscription({
-      revenueCatId: "expired-boundary-other",
+      storeSubscriptionId: StoreSubscriptionId.from("expired-boundary-other"),
       status: "ACTIVE",
       expiresAt: new Date(at.getTime() - STORE_RENEWAL_GRACE_MS),
     });
@@ -547,7 +582,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     });
     await client.insert(userTable).values(foreignUser);
     await givenOtherSubscription({
-      revenueCatId: "foreign-other",
+      storeSubscriptionId: StoreSubscriptionId.from("foreign-other"),
       userId: foreignUser.id,
       expiresAt: distantExpiry,
     });
@@ -569,16 +604,19 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   it("스토어 엔타이틀먼트 조회는 한 사용자의 체인 전체를 한 번에 읽는다", async () => {
     // Given
     const shorterExpiry = new Date("2027-01-05T12:00:00.000Z");
-    await givenOtherSubscription({ revenueCatId: "shorter-other", expiresAt: shorterExpiry });
+    await givenOtherSubscription({
+      storeSubscriptionId: StoreSubscriptionId.from("shorter-other"),
+      expiresAt: shorterExpiry,
+    });
     await givenOtherSubscription({ status: "CANCELLED", expiresAt: nextExpiry });
 
     // When
     const entitlements = await repository.findStoreEntitlements(userId);
 
     // Then
-    expect(sortBy(entitlements, [(entitlement) => entitlement.revenueCatId])).toEqual([
+    expect(sortBy(entitlements, [(entitlement) => entitlement.storeSubscriptionId])).toEqual([
       {
-        revenueCatId: transactionId,
+        storeSubscriptionId: transactionId,
         productId: "premium_monthly",
         startedAt: new Date("2026-12-03T12:00:00.000Z"),
         status: "ACTIVE",
@@ -587,7 +625,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         periodType: null,
       },
       {
-        revenueCatId: "other-subscription-chain",
+        storeSubscriptionId: "other-subscription-chain",
         productId: "premium_monthly",
         startedAt: new Date("2027-01-04T12:00:00.000Z"),
         status: "CANCELLED",
@@ -596,7 +634,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         periodType: null,
       },
       {
-        revenueCatId: "shorter-other",
+        storeSubscriptionId: "shorter-other",
         productId: "premium_monthly",
         startedAt: new Date("2027-01-04T12:00:00.000Z"),
         status: "ACTIVE",
@@ -623,7 +661,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       });
       await client.insert(userTable).values(receiver);
       await repository.takeOverChains(userId, receiver.id);
-      await repository.claimChain(transactionId, userId);
+      await repository.claimChain(StoreSubscriptionId.from(transactionId), userId);
 
       // When
       await useCase.receive({ body: expiration("no-automatic-reactivation") });

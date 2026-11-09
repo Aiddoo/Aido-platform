@@ -38,7 +38,7 @@ export interface StoreEntitlement {
 
 /** 스토어 구독 행과 그 거래 체인 ID */
 export interface StoreSubscriptionEntitlement extends StoreEntitlement {
-  readonly revenueCatId: string;
+  readonly storeSubscriptionId: string;
 }
 
 /** 프리미엄 보상 기간 중 판단에 필요한 값 */
@@ -128,7 +128,7 @@ export function premiumGrantDaysOf(durationMs: number): number {
  * 엔타이틀먼트가 없다.
  */
 export interface StoreEventChainState {
-  readonly revenueCatId: string;
+  readonly storeSubscriptionId: string;
   readonly status: SubscriptionStatus;
   readonly expiresAt?: Date | null;
   readonly gracePeriodEndsAt?: Date | null;
@@ -144,7 +144,7 @@ export function applyStoreEventChain(
   eventChain: StoreEventChainState | undefined,
 ): StoreSubscriptionEntitlement[] {
   return subscriptions.flatMap((subscription) => {
-    if (subscription.revenueCatId !== eventChain?.revenueCatId) {
+    if (subscription.storeSubscriptionId !== eventChain?.storeSubscriptionId) {
       return [subscription];
     }
     // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLATION·PRODUCT_CHANGE·SUBSCRIPTION_EXTENDED)은 행의 만료 시각 유지
@@ -158,7 +158,7 @@ export function applyStoreEventChain(
         : eventChain.gracePeriodEndsAt;
     return [
       {
-        revenueCatId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.storeSubscriptionId,
         productId: subscription.productId,
         startedAt: subscription.startedAt,
         status: eventChain.status,

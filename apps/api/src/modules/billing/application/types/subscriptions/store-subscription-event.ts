@@ -14,11 +14,8 @@ export interface StoreSubscriptionEventDetails {
 }
 
 export interface StoreSubscriptionPrice {
-  /** USD 기준 금액 */
   readonly usd?: number;
-  /** 구매 통화 기준 금액 */
   readonly amountInPurchasedCurrency?: number;
-  /** 구매 통화 코드(예: KRW) */
   readonly purchasedCurrency?: string;
 }
 

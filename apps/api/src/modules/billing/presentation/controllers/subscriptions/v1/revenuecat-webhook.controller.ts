@@ -4,7 +4,7 @@ import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 
-import { WebhookSignatureGuard } from "../../../../infrastructure/guards/subscriptions/webhook-signature.guard.js";
+import { RevenueCatWebhookSignatureGuard } from "../../../../infrastructure/revenuecat/revenuecat-webhook-signature.guard.js";
 import { RevenueCatWebhookReceiver } from "../../../../infrastructure/revenuecat/revenuecat-webhook.receiver.js";
 
 // RevenueCat 대시보드에 등록된 운영 URL이라 경로를 바꾸지 않는다. non-2xx면 RevenueCat이 다시 보낸다
@@ -17,7 +17,7 @@ export class RevenueCatWebhookController {
   @HttpCode(HttpStatus.OK)
   @Public()
   @ApiExcludeEndpoint()
-  @UseGuards(WebhookSignatureGuard)
+  @UseGuards(RevenueCatWebhookSignatureGuard)
   receive(@Body() body: unknown): Promise<{ received: true }> {
     return this.receiver.receive({ body });
   }

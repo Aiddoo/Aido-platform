@@ -17,6 +17,7 @@ import {
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
@@ -83,7 +84,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   async function givenStoreSubscription(): Promise<void> {
     await subscriptions.create({
       userId,
-      revenueCatId: TRANSACTION_ID,
+      storeSubscriptionId: StoreSubscriptionId.from(TRANSACTION_ID),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: AT,
@@ -262,7 +263,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await client.insert(userTable).values(coveredUser);
     await subscriptions.create({
       userId: coveredUser.id,
-      revenueCatId: "premium-grant-covered-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("premium-grant-covered-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: AT,
@@ -366,7 +367,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const receiverId = await createUser("PGRANT03");
     await subscriptions.create({
       userId,
-      revenueCatId: "transferred-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("transferred-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: AT,
@@ -413,7 +414,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const giverId = await createUser("PGRANT06");
     await subscriptions.create({
       userId: giverId,
-      revenueCatId: "received-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("received-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: AT,

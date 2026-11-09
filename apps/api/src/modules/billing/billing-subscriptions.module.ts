@@ -50,17 +50,11 @@ import {
   revokePremiumGrantProvider,
 } from "./billing-subscriptions-application.providers.js";
 import { PremiumGrantNotifierAdapter } from "./infrastructure/adapters/subscriptions/premium-grant-notifier.adapter.js";
-import {
-  REVENUECAT_HTTP_CLIENT,
-  REVENUECAT_TIMEOUT_MS,
-  RevenueCatStoreSubscriptionStatusReader,
-} from "./infrastructure/adapters/subscriptions/revenuecat-store-subscription-status.reader.js";
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscriptions/subscription-event-notifier.adapter.js";
 import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter.js";
 import { TrialEndingNotifierAdapter } from "./infrastructure/adapters/subscriptions/trial-ending-notifier.adapter.js";
 import { UpcomingRenewalNotifierAdapter } from "./infrastructure/adapters/subscriptions/upcoming-renewal-notifier.adapter.js";
-import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
 import { PremiumGrantSweepJob } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.job.js";
 import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.processor.js";
 import { StoreSubscriptionReconcileProcessor } from "./infrastructure/jobs/subscriptions/store-subscription-reconcile.processor.js";
@@ -71,6 +65,12 @@ import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/pers
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-trial-ending-notice.source.js";
 import { DrizzleUpcomingRenewalNoticeSource } from "./infrastructure/persistence/subscriptions/drizzle-upcoming-renewal-notice.source.js";
+import {
+  REVENUECAT_HTTP_CLIENT,
+  REVENUECAT_TIMEOUT_MS,
+  RevenueCatStoreSubscriptionStatusReader,
+} from "./infrastructure/revenuecat/revenuecat-store-subscription-status.reader.js";
+import { RevenueCatWebhookSignatureGuard } from "./infrastructure/revenuecat/revenuecat-webhook-signature.guard.js";
 import { RevenueCatWebhookReceiver } from "./infrastructure/revenuecat/revenuecat-webhook.receiver.js";
 import { RevenueCatWebhookController } from "./presentation/controllers/subscriptions/v1/revenuecat-webhook.controller.js";
 
@@ -96,7 +96,7 @@ import { RevenueCatWebhookController } from "./presentation/controllers/subscrip
       provide: SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,
       useClass: DrizzleSubscriptionEventReceiptRepository,
     },
-    WebhookSignatureGuard,
+    RevenueCatWebhookSignatureGuard,
     {
       provide: SUBSCRIPTION_REPOSITORY,
       useClass: DrizzleSubscriptionRepository,

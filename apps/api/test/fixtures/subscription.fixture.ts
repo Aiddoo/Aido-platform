@@ -3,6 +3,7 @@ import { mock } from "vitest-mock-extended";
 import type { SubscriptionUser } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { PremiumAccessProjector } from "#api/modules/billing/application/services/subscriptions/premium-access-projector.service";
 import type { SubscriptionProps } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {
@@ -28,7 +29,8 @@ export function createSubscriptionRecord(
   const record = {
     id: 1,
     userId,
-    revenueCatId: SUBSCRIPTION_TRANSACTION_ID,
+    provider: "REVENUECAT",
+    storeSubscriptionId: StoreSubscriptionId.from(SUBSCRIPTION_TRANSACTION_ID),
     productId: "premium_monthly",
     status: "ACTIVE",
     startedAt: SUBSCRIPTION_TIME,

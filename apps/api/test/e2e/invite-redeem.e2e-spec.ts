@@ -12,6 +12,7 @@ import {
   SUBSCRIPTION_REPOSITORY,
   type SubscriptionRepositoryPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import {
   follow,
@@ -212,7 +213,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const subscriptions = ctx.module.get<SubscriptionRepositoryPort>(SUBSCRIPTION_REPOSITORY);
     await subscriptions.create({
       userId: invitee.userId,
-      revenueCatId: "store-invitee-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("store-invitee-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: new Date(),

@@ -15,6 +15,7 @@ import type {
   StoreEventChainState,
 } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 import { resolveCancellationUserStatus } from "../../../domain/services/subscriptions/cancellation-user-status.js";
+import { StoreSubscriptionId } from "../../../domain/value-objects/subscriptions/store-subscription-id.vo.js";
 import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
 import type { StoreSubscriptionReconcileSchedulerPort } from "../../ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
@@ -73,7 +74,9 @@ interface SubscriptionTransition {
  * 보상 기간 판단에 넘길 체인 상태는 이벤트를 적용한 행 그대로다. 만료는 행을 지우지 않고 스토어가 끝난 시각을
  * 남겨 쌓아 둔 보상이 이벤트 도착 시각이 아니라 그 시각부터 이어지게 한다.
  */
-function chainStateOf(subscription: Subscription): Omit<StoreEventChainState, "revenueCatId"> {
+function chainStateOf(
+  subscription: Subscription,
+): Omit<StoreEventChainState, "storeSubscriptionId"> {
   return {
     status: subscription.status,
     expiresAt: subscription.expiresAt,
@@ -261,7 +264,9 @@ export class ApplyStoreSubscriptionEvent {
         await this.#dependencies.reconcileScheduler.schedule(user.id, now());
         const subscription =
           event.storeSubscriptionId != null && event.storeSubscriptionId !== ""
-            ? await subscriptionRepository.findByRevenueCatId(event.storeSubscriptionId)
+            ? await subscriptionRepository.findByStoreSubscriptionId(
+                StoreSubscriptionId.from(event.storeSubscriptionId),
+              )
             : null;
         // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다
         if (
@@ -310,13 +315,7 @@ export class ApplyStoreSubscriptionEvent {
     subscription: Subscription | null,
   ): Promise<SubscriptionEventPayload | null> {
     const { subscriptionRepository } = this.#dependencies;
-    const storeSubscriptionId = event.storeSubscriptionId;
-    if (storeSubscriptionId == null || storeSubscriptionId === "") {
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-        reason: "Missing store subscription id",
-        eventType: event.kind,
-      });
-    }
+    const storeSubscriptionId = StoreSubscriptionId.from(event.storeSubscriptionId);
     if (event.kind === "BILLING_ISSUE") {
       return this.#enterBillingGrace(user, event, storeSubscriptionId, subscription);
     }
@@ -337,10 +336,10 @@ export class ApplyStoreSubscriptionEvent {
         ErrorCode.SUBSCRIPTION_1604,
         event.kind === "RENEWED"
           ? {
-              reason: `Subscription not found for renewal: ${storeSubscriptionId}`,
+              reason: `Subscription not found for renewal: ${storeSubscriptionId.value}`,
               eventType: event.kind,
             }
-          : { reason: `Subscription not found: ${storeSubscriptionId}` },
+          : { reason: `Subscription not found: ${storeSubscriptionId.value}` },
       );
     }
 
@@ -372,10 +371,10 @@ export class ApplyStoreSubscriptionEvent {
   async #enterBillingGrace(
     user: SubscriptionUser,
     event: SubscriptionBillingIssueEvent,
-    storeSubscriptionId: string,
+    storeSubscriptionId: StoreSubscriptionId,
     subscription: Subscription | null,
   ): Promise<SubscriptionEventPayload> {
-    const payload = baseEventPayload(user, event, storeSubscriptionId);
+    const payload = baseEventPayload(user, event, storeSubscriptionId.value);
     if (
       subscription == null ||
       !subscription.enterBillingGrace({
@@ -405,13 +404,13 @@ export class ApplyStoreSubscriptionEvent {
   async #adoptRenewedChain(
     user: SubscriptionUser,
     event: SubscriptionRenewedEvent,
-    storeSubscriptionId: string,
+    storeSubscriptionId: StoreSubscriptionId,
     expiresAt: Date,
   ): Promise<SubscriptionEventPayload> {
     const startedAt = event.startedAt ?? now();
     await this.#dependencies.subscriptionRepository.create({
       userId: user.id,
-      revenueCatId: storeSubscriptionId,
+      storeSubscriptionId,
       productId: event.productId,
       status: "ACTIVE",
       startedAt,
@@ -431,7 +430,7 @@ export class ApplyStoreSubscriptionEvent {
     });
     return withPremiumGrantImpact(
       {
-        ...baseEventPayload(user, event, storeSubscriptionId),
+        ...baseEventPayload(user, event, storeSubscriptionId.value),
         expiresAt: toISOString(expiresAt),
         priceUsd: event.price.usd,
         priceInPurchasedCurrency: event.price.amountInPurchasedCurrency,
@@ -444,9 +443,9 @@ export class ApplyStoreSubscriptionEvent {
   // 스토어 상태가 바뀌면 보상 기간을 함께 보고 User의 구독 projection을 다시 계산한다
   async #projectUser(
     userId: string,
-    eventChainId: string,
+    eventChainId: StoreSubscriptionId,
     requested: UpdateUserSubscriptionStatusData,
-    chainState: Omit<StoreEventChainState, "revenueCatId"> = {
+    chainState: Omit<StoreEventChainState, "storeSubscriptionId"> = {
       status: requested.subscriptionStatus,
       expiresAt: requested.subscriptionExpiresAt,
     },
@@ -454,7 +453,7 @@ export class ApplyStoreSubscriptionEvent {
     const { access } = await this.#dependencies.premiumAccessProjector.project({
       userId,
       now: now(),
-      eventChain: { revenueCatId: eventChainId, ...chainState },
+      eventChain: { storeSubscriptionId: eventChainId.value, ...chainState },
       fallback: requested,
     });
     return access;
@@ -463,7 +462,7 @@ export class ApplyStoreSubscriptionEvent {
   async #createSubscription(
     user: SubscriptionUser,
     event: SubscriptionStartedEvent,
-    storeSubscriptionId: string,
+    storeSubscriptionId: StoreSubscriptionId,
     existing: Subscription | null,
   ): Promise<SubscriptionEventPayload | null> {
     const startedAt = requireDate(event.startedAt, event.kind, "Missing start time for purchase");
@@ -480,7 +479,7 @@ export class ApplyStoreSubscriptionEvent {
       (await subscriptionRepository.findStoreEntitlements(user.id)).length === 0;
     await subscriptionRepository.create({
       userId: user.id,
-      revenueCatId: storeSubscriptionId,
+      storeSubscriptionId,
       productId: event.productId,
       status: "ACTIVE",
       startedAt,
@@ -495,7 +494,7 @@ export class ApplyStoreSubscriptionEvent {
       subscriptionExpiresAt: expiresAt,
     });
     return {
-      ...withPremiumGrantImpact(baseEventPayload(user, event, storeSubscriptionId), access),
+      ...withPremiumGrantImpact(baseEventPayload(user, event, storeSubscriptionId.value), access),
       isFirstPurchase,
       purchasedAt: toISOString(startedAt),
       expiresAt: toISOString(expiresAt),
@@ -508,11 +507,11 @@ export class ApplyStoreSubscriptionEvent {
   #planTransition(
     user: SubscriptionUser,
     event: Exclude<ProcessedChainEvent, { kind: "STARTED" | "BILLING_ISSUE" }>,
-    storeSubscriptionId: string,
+    storeSubscriptionId: StoreSubscriptionId,
     subscription: Subscription,
     renewalExpiresAt: Date | undefined,
   ): SubscriptionTransition | null {
-    const payload = baseEventPayload(user, event, storeSubscriptionId);
+    const payload = baseEventPayload(user, event, storeSubscriptionId.value);
     const expiresAt = event.periodEndsAt;
     const eventId = event.providerEventId;
     const activeUserState: UpdateUserSubscriptionStatusData = {

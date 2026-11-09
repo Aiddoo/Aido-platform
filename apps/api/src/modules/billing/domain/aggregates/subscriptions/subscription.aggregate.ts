@@ -11,11 +11,15 @@ import { AggregateRoot } from "#api/shared/domain/index";
 import { storeEntitlementEndsAt } from "#api/shared/domain/store-renewal-grace";
 
 import { SubscriptionPlanPolicy } from "../../policies/subscriptions/subscription-plan.policy.js";
+import type { SubscriptionProvider } from "../../types/subscriptions/store-subscription.types.js";
+import type { StoreSubscriptionId } from "../../value-objects/subscriptions/store-subscription-id.vo.js";
 
 export interface SubscriptionProps {
   id: number;
   userId: string;
-  revenueCatId: string;
+  /** 결제를 알려 주는 공급자. 지금은 하나라 저장하지 않고 복원할 때 정한다. */
+  provider: SubscriptionProvider;
+  storeSubscriptionId: StoreSubscriptionId;
   productId: string;
   status: SubscriptionStatus;
   startedAt: Date;
@@ -44,7 +48,7 @@ export type SubscriptionPersistenceState = Pick<
 
 /** 스토어가 지금 알려 주는 한 체인의 상태. 웹훅이 늦거나 빠져도 이 값이 진실이다. */
 export interface StoreSubscriptionState {
-  /** 우리 체인 키(Subscription.revenueCatId)로 찾은 체인 */
+  /** 우리 체인 키(Subscription.storeSubscriptionId)로 찾은 체인 */
   readonly storeSubscriptionId: string;
   /** 지금 기간의 스토어 상품 ID. 스토어가 알려 주지 않으면 null이다. */
   readonly productId: string | null;
@@ -68,7 +72,8 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return new Subscription({
       id: props.id,
       userId: props.userId,
-      revenueCatId: props.revenueCatId,
+      provider: props.provider,
+      storeSubscriptionId: props.storeSubscriptionId,
       productId: props.productId,
       status: props.status,
       startedAt: new Date(props.startedAt),
@@ -87,8 +92,11 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   get userId(): string {
     return this.props.userId;
   }
-  get revenueCatId(): string {
-    return this.props.revenueCatId;
+  get provider(): SubscriptionProvider {
+    return this.props.provider;
+  }
+  get storeSubscriptionId(): StoreSubscriptionId {
+    return this.props.storeSubscriptionId;
   }
   get productId(): string {
     return this.props.productId;

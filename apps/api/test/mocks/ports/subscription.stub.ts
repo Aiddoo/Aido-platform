@@ -35,6 +35,7 @@ import {
   type SubscriptionProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
 import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/policies/subscriptions/premium-access.policy";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
@@ -53,7 +54,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     return [...this.subscriptions.values()]
       .filter((record) => record.userId === userId)
       .map((record) => ({
-        revenueCatId: record.revenueCatId,
+        storeSubscriptionId: record.storeSubscriptionId.value,
         productId: record.productId,
         startedAt: new Date(record.startedAt),
         status: record.status,
@@ -62,15 +63,15 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       }));
   }
 
-  async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
-    const record = this.subscriptions.get(revenueCatId);
+  async claimChain(storeSubscriptionId: StoreSubscriptionId, userId: string): Promise<boolean> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     if (record == null) {
       return false;
     }
     if (record.userId === userId) {
       return false;
     }
-    this.subscriptions.set(revenueCatId, { ...record, userId });
+    this.subscriptions.set(storeSubscriptionId.value, { ...record, userId });
     return true;
   }
 
@@ -79,7 +80,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       (record) => record.userId === fromUserId,
     );
     for (const record of records) {
-      this.subscriptions.set(record.revenueCatId, { ...record, userId: toUserId });
+      this.subscriptions.set(record.storeSubscriptionId.value, { ...record, userId: toUserId });
     }
     return records.length;
   }
@@ -101,14 +102,17 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       .map((record) => Subscription.reconstitute(record));
   }
 
-  async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
-    const record = this.subscriptions.get(revenueCatId);
+  async findByStoreSubscriptionId(
+    storeSubscriptionId: StoreSubscriptionId,
+  ): Promise<Subscription | null> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     return record ? Subscription.reconstitute(record) : null;
   }
 
   async create(data: CreateSubscriptionData): Promise<void> {
-    this.subscriptions.set(data.revenueCatId, {
+    this.subscriptions.set(data.storeSubscriptionId.value, {
       ...data,
+      provider: "REVENUECAT",
       id: this.subscriptions.size + 1,
       startedAt: new Date(data.startedAt),
       expiresAt: new Date(data.expiresAt),
@@ -120,15 +124,18 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     });
   }
 
-  async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
-    const record = this.subscriptions.get(revenueCatId);
+  async updateStatus(
+    storeSubscriptionId: StoreSubscriptionId,
+    data: UpdateSubscriptionStatusData,
+  ): Promise<void> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     if (!record) {
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-        reason: `Subscription not found: ${revenueCatId}`,
+        reason: `Subscription not found: ${storeSubscriptionId.value}`,
       });
     }
     const cancelledAt = data.cancelledAt === undefined ? record.cancelledAt : data.cancelledAt;
-    this.subscriptions.set(revenueCatId, {
+    this.subscriptions.set(storeSubscriptionId.value, {
       ...record,
       ...pickBy(data, (value) => value !== undefined),
       expiresAt: new Date(data.expiresAt ?? record.expiresAt),

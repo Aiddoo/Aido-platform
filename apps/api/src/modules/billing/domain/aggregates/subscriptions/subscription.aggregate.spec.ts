@@ -1,3 +1,4 @@
+import { StoreSubscriptionId } from "../../value-objects/subscriptions/store-subscription-id.vo.js";
 import { Subscription, type SubscriptionProps } from "./subscription.aggregate.js";
 
 const startedAt = new Date("2026-12-03T12:00:00.000Z");
@@ -9,7 +10,8 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
   return Subscription.reconstitute({
     id: 1,
     userId: "user-1",
-    revenueCatId: "chain-1",
+    provider: "REVENUECAT",
+    storeSubscriptionId: StoreSubscriptionId.from("chain-1"),
     productId: "monthly",
     status: "ACTIVE",
     startedAt,

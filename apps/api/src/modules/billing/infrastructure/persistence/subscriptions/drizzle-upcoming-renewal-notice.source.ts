@@ -29,7 +29,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
     const rows = await this.db
       .select({
         subscriptionId: subscription.id,
-        revenueCatId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.revenueCatId,
         userId: subscription.userId,
         expiresAt: subscription.expiresAt,
       })
@@ -58,9 +58,9 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
       rows.map((row) => row.userId),
       params.now,
     );
-    return rows.map(({ revenueCatId, ...row }) => ({
+    return rows.map(({ storeSubscriptionId, ...row }) => ({
       ...row,
-      isCurrentChain: currentChains.get(row.userId) === revenueCatId,
+      isCurrentChain: currentChains.get(row.userId) === storeSubscriptionId,
     }));
   }
 
@@ -72,7 +72,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
     const rows = await this.db
       .select({
         userId: subscription.userId,
-        revenueCatId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.revenueCatId,
         productId: subscription.productId,
         startedAt: subscription.startedAt,
         status: subscription.status,
@@ -91,7 +91,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
     return new Map(
       Object.entries(chainsByUser).flatMap(([userId, chains]) => {
         const current = currentStoreChainOf(chains, now);
-        return current == null ? [] : [[userId, current.revenueCatId] as const];
+        return current == null ? [] : [[userId, current.storeSubscriptionId] as const];
       }),
     );
   }
