@@ -30,6 +30,8 @@ import { Popover, PressableFeedback } from 'heroui-native';
 | children      | `ReactNode`             | 설명 아래에 더 보일 내용                                                                      |
 | placement 외  | `Popover.Content` props | 원본 이름 그대로. 기본은 `placement="top"`, `align="end"`, 폭 300(좌우 안전 영역 안으로 줄임) |
 
+제목과 설명은 `WordWrapText`로 그린다. 좁은 폰(Galaxy Flip 360dp 등)은 말풍선 폭이 좁아 Android에서도 한글이 단어 사이에서 꺾인다.
+
 닫기는 세 가지다: X, 바깥 탭(`Popover.Overlay`, `isPassThrough`면 없음), 대상 다시 누르기(`Popover.Trigger`).
 
 자동으로 뜨는 안내가 눌러야 할 대상을 가리키면 `isPassThrough`를 써서 첫 탭이 안내만 닫지 않게 한다. iOS에서 말풍선은 키보드 창 아래에 그려지므로 키보드가 떠 있으면 잘린다. 시트의 첫 안내는 키보드 없이 연다(`todo-create-bottom-sheet.tsx`는 안내가 떠 있을 때 제목 입력의 자동 포커스를 끈다).

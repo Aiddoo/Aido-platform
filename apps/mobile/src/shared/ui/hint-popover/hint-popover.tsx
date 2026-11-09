@@ -9,8 +9,8 @@ import { match } from 'ts-pattern';
 
 import { HStack } from '../h-stack';
 import { CloseIcon, type StyledIcon } from '../icon';
-import { Text } from '../text';
 import { VStack } from '../v-stack';
+import { WordWrapText } from '../word-wrap-text';
 
 const HINT_MAX_WIDTH = 300;
 const HINT_SCREEN_INSET = 12;
@@ -142,15 +142,11 @@ export function HintPopoverContent({
     offset,
   });
   const closeSize = fontScaledSize(CLOSE_BUTTON_SIZE);
+  // 좁은 폰은 말풍선 폭이 좁아 Android에서도 단어 단위로 꺾는다
   const descriptionText = description != null && (
-    <Text
-      size="b4"
-      shade={6}
-      lineBreakStrategyIOS="hangul-word"
-      className={title == null ? 'flex-1' : undefined}
-    >
+    <WordWrapText size="b4" shade={6} className={title == null ? 'flex-1' : undefined}>
       {description}
-    </Text>
+    </WordWrapText>
   );
   const closeButton = (
     <Popover.Close
@@ -210,14 +206,9 @@ export function HintPopoverContent({
                     colorClassName="text-main"
                   />
                 )}
-                <Text
-                  size="b3"
-                  weight="semibold"
-                  className="flex-1"
-                  lineBreakStrategyIOS="hangul-word"
-                >
+                <WordWrapText size="b3" weight="semibold" className="flex-1">
                   {title}
-                </Text>
+                </WordWrapText>
                 {closeButton}
               </HStack>
               {descriptionText}
