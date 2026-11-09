@@ -151,6 +151,7 @@ export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer } from './scalloped-container';
 export { SettingsListGroup, SettingsScreenLayout } from './settings-list-group';
 export { Spacing } from './spacing';
+export { StampPress } from './stamp-press';
 export { Steps } from './steps';
 export { LineTabTrigger, SegmentTabTrigger } from './tab-trigger';
 export { TintedRefreshControl } from './tinted-refresh-control';

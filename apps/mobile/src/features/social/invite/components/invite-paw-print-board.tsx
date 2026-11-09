@@ -15,6 +15,7 @@ import {
   PawIcon,
   READABLE_CONTENT_MAX_WIDTH,
   Result,
+  StampPress,
   Text,
   TextSkeleton,
   VStack,
@@ -29,14 +30,12 @@ import { type ComponentProps, useEffect, useId, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
-  Easing,
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,27 +60,12 @@ import {
   pawPrintVariants,
 } from './invite-paw-print-board.variants';
 
-const PAW_PRINT_PRESS_SPRING = {
-  duration: 400,
-  dampingRatio: 0.55,
-  reduceMotion: ReduceMotion.System,
-};
 const NEW_PAW_PRINT_STAGGER_MS = 160;
 /** 기다리는 발자국이 흔들리기까지 쉬는 시간과 한 번 꺾는 데 걸리는 시간 */
 const WAITING_WIGGLE_REST_MS = 1700;
 const WAITING_WIGGLE_STEP_MS = 190;
 /** 기다리는 발자국이 차례로 꺾이는 각도 */
 const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
-/** 새 발자국이 찍히기 전에 떠 있는 모양. 눌리면서 크기는 1로, 기울기는 rotateTravelDeg만큼 돌아온다 */
-const PAW_PRINT_LIFTED = { scale: 1.7, rotateDeg: -20, rotateTravelDeg: 14 } as const;
-/** 눌린 뒤 delayMs 만에 테두리가 퍼지기 시작해 durationMs 동안 커지며 사라진다 */
-const PAW_PRINT_BURST = {
-  delayMs: 120,
-  durationMs: 480,
-  startScale: 0.7,
-  growScale: 0.85,
-  peakOpacity: 0.55,
-} as const;
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
@@ -229,7 +213,9 @@ InvitePawPrintBoard.PawPrint = function PawPrint({ cell, size, newPawPrintOrder 
     >
       {match({ state: cell.state, isNew: cell.isNew })
         .with({ state: 'stamped', isNew: true }, () => (
-          <PressedPawPrint delay={newPawPrintOrder * NEW_PAW_PRINT_STAGGER_MS} />
+          <StampPress delay={newPawPrintOrder * NEW_PAW_PRINT_STAGGER_MS} className="flex-1">
+            <StaticPawPrint state="stamped" />
+          </StampPress>
         ))
         .with({ state: 'stamped', isNew: false }, () => <StaticPawPrint state="stamped" />)
         .with({ state: 'waiting' }, () => <WaitingPawPrint />)
@@ -414,61 +400,6 @@ function StaticPawPrint({ state, isNext = false }: { state: PawPrintState; isNex
         <Box className="absolute inset-[5px] rounded-full border border-dashed border-white/90 dark:border-gray-1/90" />
       )}
       <PawIcon width={26} height={26} colorClassName={pawPrintIconVariants({ state, isNext })} />
-    </Box>
-  );
-}
-
-/** 새 발자국: 크게 떠 있다가 쿵 찍히고 테두리가 퍼진다. transform·opacity만 바꾼다 */
-function PressedPawPrint({ delay }: { delay: number }) {
-  const isReducedMotion = useIsReduceMotionEnabled();
-  const press = useSharedValue(isReducedMotion ? 1 : 0);
-  const burst = useSharedValue(isReducedMotion ? 1 : 0);
-
-  useEffect(() => {
-    if (isReducedMotion) {
-      return;
-    }
-
-    press.set(withDelay(delay, withSpring(1, PAW_PRINT_PRESS_SPRING)));
-    burst.set(
-      withDelay(
-        delay + PAW_PRINT_BURST.delayMs,
-        withTiming(1, {
-          duration: PAW_PRINT_BURST.durationMs,
-          easing: Easing.bezier(0.23, 1, 0.32, 1),
-          reduceMotion: ReduceMotion.System,
-        }),
-      ),
-    );
-
-    return () => {
-      cancelAnimation(press);
-      cancelAnimation(burst);
-    };
-  }, [burst, delay, isReducedMotion, press]);
-
-  const pawPrintStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(press.get() * 2, 1),
-    transform: [
-      { scale: PAW_PRINT_LIFTED.scale - press.get() * (PAW_PRINT_LIFTED.scale - 1) },
-      {
-        rotate: `${PAW_PRINT_LIFTED.rotateDeg + press.get() * PAW_PRINT_LIFTED.rotateTravelDeg}deg`,
-      },
-    ],
-  }));
-  const burstStyle = useAnimatedStyle(() => ({
-    opacity: burst.get() === 0 ? 0 : PAW_PRINT_BURST.peakOpacity * (1 - burst.get()),
-    transform: [{ scale: PAW_PRINT_BURST.startScale + burst.get() * PAW_PRINT_BURST.growScale }],
-  }));
-
-  return (
-    <Box className="flex-1">
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, burstStyle]}>
-        <Box className="flex-1 rounded-full border-2 border-main" />
-      </Animated.View>
-      <Animated.View style={[styles.fill, pawPrintStyle]}>
-        <StaticPawPrint state="stamped" />
-      </Animated.View>
     </Box>
   );
 }

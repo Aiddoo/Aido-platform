@@ -1,5 +1,5 @@
 import { createSubscriptionPlan } from '../__tests__/subscription.fixtures';
-import { toTrialScheduleSteps } from './trial-schedule.view-model';
+import { shouldBuzzOnTrialStamp, toTrialScheduleSteps } from './trial-schedule.view-model';
 
 const ONE_MONTH_TRIAL = { periodUnit: 'month', periodNumberOfUnits: 1 } as const;
 
@@ -62,5 +62,20 @@ describe('toTrialScheduleSteps', () => {
       { kind: 'start', stamp: 'stamped' },
       { kind: 'charge', dateKey: '2026-11-12', stamp: 'empty' },
     ]);
+  });
+});
+
+describe('shouldBuzzOnTrialStamp', () => {
+  it.each([
+    ['페이월을 처음 그릴 때 체험 일정이 보이면 울리지 않는다', null, true, false],
+    ['체험 없는 요금제에서 체험 요금제로 바꿔 일정이 나타나면 울린다', false, true, true],
+    ['체험 요금제끼리 바꿔 일정이 그대로 보이면 울리지 않는다', true, true, false],
+    ['체험 없는 요금제로 바꿔 일정이 사라지면 울리지 않는다', true, false, false],
+  ])('%s', (_, wasVisible, isVisible, expected) => {
+    // When
+    const shouldBuzz = shouldBuzzOnTrialStamp(wasVisible, isVisible);
+
+    // Then
+    expect(shouldBuzz).toBe(expected);
   });
 });
