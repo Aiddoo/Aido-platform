@@ -348,6 +348,29 @@ describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", ()
     expect(fixture.cache.profiles.has(fixture.user.id)).toBe(true);
   });
 
+  it("처리하지 않는 이벤트는 사용자를 찾지 못해도 잠금·경보 없이 받은 것으로 닫는다", async () => {
+    // Given
+    const event = {
+      ...chain("dashboard-test"),
+      providerEventType: "TEST",
+      appUserId: "unknown-app-user",
+      kind: "IGNORED",
+    } as const;
+
+    // When
+    await useCase.execute(event);
+
+    // Then
+    expect(fixture.notifier.failures).toEqual([]);
+    expect(fixture.receiptRepository.receipts.size).toBe(0);
+    expect(fixture.webhookLock.heldKeys.size).toBe(0);
+    expect(fixture.logger.log).toHaveBeenCalledExactlyOnceWith({
+      event: "billing.subscription.webhook.ignored",
+      eventType: "TEST",
+      eventId: "dashboard-test",
+    });
+  });
+
   it("사용자 잠금 경합은 1605를 전파해 공급자가 다시 보내게 하고 아무것도 남기지 않는다", async () => {
     // Given
     fixture.webhookLock.heldKeys.add(fixture.user.id);

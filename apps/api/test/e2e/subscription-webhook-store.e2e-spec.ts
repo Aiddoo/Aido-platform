@@ -165,6 +165,23 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
     expect(await storedRows()).toEqual({ subscriptions: [], receipts: [] });
   });
 
+  it("대시보드 TEST 이벤트는 우리 사용자가 아니어도 200으로 받고 원장·경보 없이 로그 한 건만 남긴다", async () => {
+    // Given
+    const body = SubscriptionEventBuilder.test()
+      .withAppUserId("dashboard-test-user")
+      .withEventId("dashboard-test-event")
+      .build();
+
+    // When
+    const response = await webhook(body).expect(200);
+
+    // Then
+    expect(response.body.data).toEqual({ received: true });
+    expect(await storedRows()).toEqual({ subscriptions: [], receipts: [] });
+    expect(alert.alerts).toEqual([]);
+    expect(webhookLogEvents()).toEqual(["billing.subscription.webhook.ignored"]);
+  });
+
   it("같은 이벤트 ID를 다시 받으면 한 번만 반영한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("duplicate@example.com", "Test1234!");

@@ -131,6 +131,15 @@ export class ApplyStoreSubscriptionEvent {
   }
 
   async execute(event: StoreSubscriptionEvent): Promise<void> {
+    // 처리하지 않는 이벤트(대시보드 TEST 등)는 우리 사용자가 아닐 수 있어 사용자를 찾기 전에 닫는다
+    if (event.kind === "IGNORED") {
+      this.#dependencies.logger.log({
+        event: BillingLogEvent.WEBHOOK_IGNORED,
+        eventType: event.providerEventType,
+        eventId: event.providerEventId,
+      });
+      return;
+    }
     await this.#guard(failureContextOf(event), () =>
       event.kind === "TRANSFERRED" ? this.#processTransfer(event) : this.#process(event),
     );
@@ -280,7 +289,7 @@ export class ApplyStoreSubscriptionEvent {
     return null;
   }
 
-  async #process(event: StoreSubscriptionChainEvent): Promise<void> {
+  async #process(event: ProcessedChainEvent): Promise<void> {
     const { subscriptionRepository, webhookLock } = this.#dependencies;
     this.#logStarted(event);
     const release = await webhookLock.acquire(event.appUserId);
@@ -295,15 +304,6 @@ export class ApplyStoreSubscriptionEvent {
           appUserId: event.appUserId,
         });
       }
-      if (event.kind === "IGNORED") {
-        this.#dependencies.logger.log({
-          event: BillingLogEvent.WEBHOOK_IGNORED,
-          eventKind: event.kind,
-          userId: user.id,
-        });
-        return;
-      }
-
       const eventPayload = await this.#applyInTransaction(user, event).catch(
         async (error: unknown) => {
           if (isPermanentFailure(error)) {
