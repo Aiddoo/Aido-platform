@@ -1,0 +1,88 @@
+import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTranslation } from '@src/shared/i18n';
+import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
+import { Spinner } from 'heroui-native';
+import { match } from 'ts-pattern';
+
+import { AppVersionPolicy } from '../domains/app-version.model';
+import { useOpenStoreListingMutationOptions } from '../queries/app-version.mutations';
+import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
+
+export function AppVersionCheck() {
+  const { t } = useTranslation('appVersion');
+  const applicationMetadata = useApplicationMetadata();
+  const reportUnexpectedError = useReportUnexpectedError('app_version');
+  const toast = useAppToast();
+  const confirmDialog = useConfirmDialog();
+  const installation = applicationMetadata.getInstallation();
+  const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
+  const openStoreListing = useMutation(useOpenStoreListingMutationOptions());
+
+  const handlePress = useSingleTap(async () => {
+    // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌지도 않는다. 연결된 뒤 뒤늦게 스토어가 열리지 않도록 바로 알린다
+    if (!onlineManager.isOnline()) {
+      toast.warning(t('checkOffline'));
+      return;
+    }
+
+    const result = await query.refetch();
+    if (result.isError || !result.data || !installation) {
+      if (result.error) {
+        reportUnexpectedError(result.error);
+      }
+      toast.error(t('checkFailed'));
+      return;
+    }
+
+    if (!result.data.enabled) {
+      toast.toast(t('noUpdateInfo'));
+      return;
+    }
+
+    await match(AppVersionPolicy.getUpdateStatus({ config: result.data, ...installation }))
+      .with('unknown', () => {
+        toast.error(t('checkFailed'));
+      })
+      .with('outdated', () => {
+        openStoreListing.mutate();
+      })
+      .with('up-to-date', () =>
+        confirmDialog.openAsync({
+          title: t('latestTitle'),
+          description: t('latestDescription'),
+          confirmLabel: t('confirm'),
+        }),
+      )
+      .exhaustive();
+  });
+
+  if (!installation) {
+    return null;
+  }
+
+  return (
+    <SettingsListGroup label={t('section')}>
+      <SettingsListGroup.Item
+        label={t('item')}
+        onPress={handlePress}
+        isDisabled={query.isFetching}
+        right={
+          <HStack align="center" gap={8}>
+            <Text size="b3" shade={6} numberOfLines={1}>
+              {installation.currentVersion}
+            </Text>
+            {query.isFetching ? (
+              <Spinner size="sm" />
+            ) : (
+              <ArrowRightIcon colorClassName="text-gray-6" />
+            )}
+          </HStack>
+        }
+      />
+    </SettingsListGroup>
+  );
+}

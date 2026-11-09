@@ -13,7 +13,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
@@ -38,7 +38,7 @@ const LEAF_LANES = [0.1, 1] as const;
 const LEAF_OPACITY = 0.85;
 const EDGE_MARGIN = 20;
 
-export type GustTone = 'air' | 'icy';
+type GustTone = 'air' | 'icy';
 
 type StreakStyle = {
   count: number;
@@ -129,7 +129,7 @@ export function GustLayer({ width, height, isLowEndDevice, time }: GustLayerProp
 
 GustLayer.Leaves = function Leaves({ width, height, isLowEndDevice, time }: GustLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('leaf', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('leaf', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, LEAF_SEED);
   const { leaf } = PARTICLE_SPRITES;
   const sprites = range(count).map(() => Skia.XYWHRect(leaf.x, leaf.y, leaf.width, leaf.height));

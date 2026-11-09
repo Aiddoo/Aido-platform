@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  marketingPushOptOutResponseSchema,
   notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
@@ -23,6 +24,10 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
+  UPCOMING_RENEWAL_NOTIFIER,
+  type UpcomingRenewalNotifierPort,
+} from "#api/modules/billing/application/ports/subscriptions/upcoming-renewal-notifier.port";
+import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
@@ -34,6 +39,7 @@ import {
   pushToken,
   userConsent,
 } from "#api/platform/database/schema/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -1037,7 +1043,10 @@ describe("알림 E2E", () => {
         .send({ token: tokenPort.issue(user.userId) })
         .expect(200);
 
-      expect(response.body.data.optedOut).toBe(true);
+      expect(marketingPushOptOutResponseSchema.parse(response.body.data)).toMatchObject({
+        optedOut: true,
+        marketingPushWithdrawnAt: expect.any(String),
+      });
       const consent = requireRecord(
         await client.query.userConsent.findFirst({ where: { userId: user.userId } }),
       );
@@ -1050,7 +1059,10 @@ describe("알림 E2E", () => {
         .send({ token: "invalid.token" })
         .expect(200);
 
-      expect(response.body.data.optedOut).toBe(true);
+      // 처리 시각도 유효한 토큰과 같은 모양이라 응답만으로 구별할 수 없다
+      expect(
+        Object.keys(marketingPushOptOutResponseSchema.parse(response.body.data)).sort(),
+      ).toEqual(["marketingPushWithdrawnAt", "optedOut"]);
     });
   });
 
@@ -1193,6 +1205,52 @@ describe("알림 E2E", () => {
         action: { type: "DEEP_LINK", url: "/settings/subscription" },
       });
     });
+
+    it.each([undefined, "1.13.0"])(
+      "연간 갱신 안내는 앱 버전 %s 알림함에 SYSTEM_NOTICE·구독 화면 DEEP_LINK로 보이고 공지 카테고리에 든다",
+      async (version) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("notif-renewal@test.com", password);
+        const now = new Date();
+        await ctx.module.get<UnitOfWorkPort>(UNIT_OF_WORK).run(() =>
+          ctx.module.get<UpcomingRenewalNotifierPort>(UPCOMING_RENEWAL_NOTIFIER).notify(
+            [
+              {
+                subscriptionId: 1,
+                userId: user.userId,
+                expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000),
+                isCurrentChain: true,
+              },
+            ],
+            now,
+          ),
+        );
+        const get = (path: string) => {
+          const call = request(ctx.app.getHttpServer())
+            .get(path)
+            .set("Authorization", `Bearer ${user.accessToken}`);
+          return (version == null ? call : call.set("X-App-Version", version)).expect(200);
+        };
+
+        // When
+        const [inbox, notices] = await Promise.all([
+          get("/v1/notifications/inbox"),
+          get("/v1/notifications?category=NOTICE"),
+        ]);
+
+        // Then
+        const [notice] = notificationInboxResponseSchema.parse(inbox.body.data).notifications;
+        expect(notice).toMatchObject({
+          type: "SYSTEM_NOTICE",
+          action: { type: "DEEP_LINK", url: "/settings/subscription" },
+        });
+        expect(
+          notificationListResponseSchema
+            .parse(notices.body.data)
+            .notifications.map((item) => item.type),
+        ).toEqual(["SYSTEM_NOTICE"]);
+      },
+    );
   });
 
   describe("할 일 알림의 이동 재료", () => {

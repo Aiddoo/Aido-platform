@@ -1,56 +1,40 @@
-import * as Application from 'expo-application';
-import * as Crypto from 'expo-crypto';
-import { Platform } from 'react-native';
+import type { DeviceIdStore } from '@src/core/ports/device-id-store';
+import type { IdGenerator } from '@src/core/ports/id-generator';
+import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 
-import type { DeviceIdRepository } from './device-id.repository';
-
-interface DeviceIdComponents {
-  iosId: string | null;
-  androidId: string | null;
-  installId: string;
+interface DeviceIdServicePorts {
+  store: DeviceIdStore;
+  vendorIdGateway: VendorIdGateway;
+  idGenerator: IdGenerator;
+  /** 저장하는 기기 id의 접두사다. 이미 저장된 id와 같은 `ios`, `android` 값을 쓴다 */
+  platform: string;
 }
 
 export class DeviceIdService {
-  readonly #deviceIdRepository: DeviceIdRepository;
+  readonly #store: DeviceIdStore;
+  readonly #vendorIdGateway: VendorIdGateway;
+  readonly #idGenerator: IdGenerator;
+  readonly #platform: string;
 
-  constructor(deviceIdRepository: DeviceIdRepository) {
-    this.#deviceIdRepository = deviceIdRepository;
+  constructor({ store, vendorIdGateway, idGenerator, platform }: DeviceIdServicePorts) {
+    this.#store = store;
+    this.#vendorIdGateway = vendorIdGateway;
+    this.#idGenerator = idGenerator;
+    this.#platform = platform;
   }
 
   get = async (): Promise<string> => {
-    const storedId = await this.#deviceIdRepository.get();
+    const storedId = await this.#store.get();
     if (storedId) {
       return storedId;
     }
 
-    const components = await this.#getDeviceComponents();
-    const deviceId = this.#generateDeviceId(components);
-    await this.#deviceIdRepository.save(deviceId);
+    const platformId = (await this.#vendorIdGateway.get()) ?? this.#idGenerator.create();
+    const deviceId = `${this.#platform}_${platformId}`;
+    await this.#store.save(deviceId);
 
     return deviceId;
   };
 
-  clear = async (): Promise<void> => {
-    await this.#deviceIdRepository.remove();
-  };
-
-  async #getDeviceComponents(): Promise<DeviceIdComponents> {
-    const [iosId, androidId, installId] = await Promise.all([
-      Platform.OS === 'ios' ? Application.getIosIdForVendorAsync() : Promise.resolve(null),
-      Platform.OS === 'android'
-        ? Promise.resolve(Application.getAndroidId())
-        : Promise.resolve(null),
-      Crypto.randomUUID(),
-    ]);
-
-    return { iosId, androidId, installId };
-  }
-
-  // 우선순위: iOS Vendor ID > Android ID > Random UUID
-  #generateDeviceId(components: DeviceIdComponents): string {
-    const { iosId, androidId, installId } = components;
-    const platformId = iosId ?? androidId ?? installId;
-
-    return `${Platform.OS}_${platformId}`;
-  }
+  clear = (): Promise<void> => this.#store.clear();
 }

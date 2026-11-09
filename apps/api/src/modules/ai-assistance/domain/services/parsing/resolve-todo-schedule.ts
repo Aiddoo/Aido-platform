@@ -1,3 +1,4 @@
+import type { TodoRepeat, TodoRepeatEnd } from "@aido/api";
 import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 import { range, uniq } from "es-toolkit";
@@ -6,6 +7,8 @@ import { match } from "ts-pattern";
 import type {
   DateRef,
   PartOfDay,
+  PlanRepeatRef,
+  RepeatPattern,
   RepeatRef,
   ResolvedSchedule,
   ScheduleDraft,
@@ -21,6 +24,10 @@ export interface ScheduleClock {
 /** 반복 종료를 말하지 않은 반복 일정의 기본 기간 */
 const DEFAULT_RECURRENCE_WEEKS = 4;
 const HALF_DAY_MINUTES = 12 * 60;
+/** "이번 달 초"로 보는 마지막 날(초순) */
+const MONTH_EARLY_LAST_DAY = 10;
+/** "올해 초"로 보는 달(1월)의 dayjs 월 번호 */
+const YEAR_EARLY_MONTH_INDEX = 0;
 
 /** 때만 말한 경우의 기본 시각(분). 자정은 대상 날짜 다음 날 00:00으로 따로 다룬다. */
 const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, number>> = {
@@ -31,6 +38,13 @@ const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, numbe
   EVENING: 19 * 60,
   NIGHT: 21 * 60,
 };
+
+/** 요일 + 종료일 recurrence로 나타낼 수 없는 반복 */
+const LEGACY_UNSUPPORTED_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+  "UNSUPPORTED",
+  "BIWEEKLY_DAYS",
+  "MONTHLY_DAY",
+]);
 
 const WEEKDAYS: readonly DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI"];
 const WEEKEND: readonly DayOfWeek[] = ["SAT", "SUN"];
@@ -52,7 +66,10 @@ interface TimeResolution {
  * LLM이 읽은 일정 표현을 사용자 시간대 기준 날짜·시각·반복으로 결정적으로 바꾼다.
  * 같은 draft·now·timeZone이면 항상 같은 결과를 낸다.
  */
-export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock): ResolvedSchedule {
+export function resolveTodoSchedule(
+  draft: ScheduleDraft<RepeatRef | PlanRepeatRef>,
+  clock: ScheduleClock,
+): ResolvedSchedule {
   const local = dayjs(clock.now).tz(clock.timeZone);
   const today = dayjs.utc(local.format("YYYY-MM-DD"));
   const nowMinutes = local.hour() * 60 + local.minute();
@@ -97,7 +114,7 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
 
   let endDate: string | null = null;
   if (draft.endDate != null && draft.endDate.kind !== "NONE") {
-    const end = resolveDateRef(draft.endDate, today);
+    const end = resolveEndDateRef(draft.endDate, today, startDay);
     if (end.warning != null) {
       warnings.push(end.warning);
     }
@@ -109,7 +126,7 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
-  if (draft.repeat.pattern === "UNSUPPORTED") {
+  if (LEGACY_UNSUPPORTED_PATTERNS.has(draft.repeat.pattern)) {
     warnings.push("UNSUPPORTED_RECURRENCE");
   }
   if (recurrenceBase != null) {
@@ -124,6 +141,16 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
     }
   }
 
+  const repeat = resolveRepeat(draft.repeat, recurrenceBase, startDay, today);
+  if (
+    repeat != null &&
+    recurrenceBase?.end == null &&
+    hasSpokenRepeatEnd(draft.repeat) &&
+    resolveSpokenRepeatEnd(draft.repeat, startDay, today) == null
+  ) {
+    warnings.push("REPEAT_END_NOT_AFTER_START");
+  }
+
   const scheduledTime = scheduledMinutes == null ? null : formatMinutes(scheduledMinutes);
   return {
     startDate: formatDay(startDay),
@@ -132,11 +159,107 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
     isAllDay: scheduledTime == null,
     isRecurring: recurrence != null,
     recurrence,
+    repeat,
     warnings,
   };
 }
 
+const ONCE_ON_WEEKEND_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+  "THIS_WEEKEND",
+  "NEXT_WEEKEND",
+]);
+
+/**
+ * 계획(빠른 계획·녹음 정리)의 일정. "주말에 장보기", "this weekend"는 그 주말 토요일 한 번이고
+ * (일요일에 말한 이번 주말은 오늘) 되풀이는 "주말마다"(`WEEKENDS`)일 때만이다.
+ * 출시 parse 응답의 `recurrence`는 요일 + 종료일 그대로라 `resolveTodoSchedule`을 바꾸지 않는다.
+ */
+export function resolvePlanSchedule(
+  draft: ScheduleDraft<PlanRepeatRef>,
+  clock: ScheduleClock,
+): ResolvedSchedule {
+  const schedule = resolveTodoSchedule(draft, clock);
+  return ONCE_ON_WEEKEND_PATTERNS.has(draft.repeat.pattern)
+    ? { ...schedule, isRecurring: false, recurrence: null, repeat: null }
+    : schedule;
+}
+
+function resolveRepeat(
+  repeat: RepeatRef | PlanRepeatRef,
+  window: RecurrenceWindow | null,
+  start: CalendarDay,
+  today: CalendarDay,
+): TodoRepeat | null {
+  const end = resolveRepeatEnd(repeat, window, start, today);
+  return match(repeat.pattern)
+    .returnType<TodoRepeat | null>()
+    .with("NONE", "UNSUPPORTED", () => null)
+    .with("DAILY", () => ({ frequency: "DAILY", end }))
+    .with("MONTHLY_DAY", () => ({
+      frequency: "MONTHLY",
+      monthDay: readMonthDay(repeat, start),
+      end,
+    }))
+    .with("BIWEEKLY_DAYS", () => {
+      const days = sortDays(repeat.daysOfWeek ?? []);
+      return days.length === 0 ? null : { frequency: "WEEKLY", interval: 2, weekdays: days, end };
+    })
+    .with(
+      "WEEKLY_DAYS",
+      "WEEKDAYS",
+      "WEEKENDS",
+      "THIS_WEEK",
+      "NEXT_WEEK",
+      "WEEK_AFTER_NEXT",
+      "THIS_WEEKEND",
+      "NEXT_WEEKEND",
+      "THIS_WEEKDAYS",
+      () => {
+        const days = sortDays(window?.days ?? []);
+        return days.length === 0 ? null : { frequency: "WEEKLY", interval: 1, weekdays: days, end };
+      },
+    )
+    .exhaustive();
+}
+
+function readMonthDay(repeat: RepeatRef | PlanRepeatRef, start: CalendarDay): number {
+  const monthDay = "monthDay" in repeat ? repeat.monthDay : null;
+  return monthDay != null && monthDay >= 1 && monthDay <= 31 ? monthDay : start.date();
+}
+
+function resolveRepeatEnd(
+  repeat: RepeatRef,
+  window: RecurrenceWindow | null,
+  start: CalendarDay,
+  today: CalendarDay,
+): TodoRepeatEnd {
+  const end = window?.end ?? resolveSpokenRepeatEnd(repeat, start, today);
+  if (end == null) {
+    return { type: "NEVER" };
+  }
+  return { type: "UNTIL", date: formatDay(end.isBefore(start) ? start : end) };
+}
+
 function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {
+  return clampPastToToday(resolveStatedDay(ref, today), today);
+}
+
+/** 여기까지 온 지난 값은 음수나 지난 날을 집어 말한 값이라 다음 시기로 넘기면 말한 시기와 달라진다. */
+function clampPastToToday(stated: DayResolution, today: CalendarDay): DayResolution {
+  return stated.day.isBefore(today) ? { day: today, warning: "INVALID_DATE" } : stated;
+}
+
+/** "이번 달 초"가 지났으면 할 일로 쓸 수 있는 다음 달 초로 넘긴다. */
+function findUpcomingMonthStart(today: CalendarDay): CalendarDay {
+  return today.date() <= MONTH_EARLY_LAST_DAY ? today : today.add(1, "month").startOf("month");
+}
+
+/** "올해 초"가 지났으면 할 일로 쓸 수 있는 내년 초로 넘긴다. */
+function findUpcomingYearStart(today: CalendarDay): CalendarDay {
+  return today.month() === YEAR_EARLY_MONTH_INDEX ? today : today.add(1, "year").startOf("year");
+}
+
+function resolveStatedDay(ref: DateRef, today: CalendarDay): DayResolution {
   const amount = ref.amount ?? 0;
   return (
     match(ref.kind)
@@ -147,29 +270,55 @@ function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {
       .with("OFFSET_MONTHS", () => ({ day: today.add(amount, "month") }))
       .with("WEEKDAY", () => resolveWeekday(ref, today))
       .with("CALENDAR_DATE", () => resolveCalendarDate(ref, today))
-      .with("MONTH_START", () => ({ day: today.add(amount, "month").startOf("month") }))
+      .with("MONTH_START", () => ({
+        day:
+          amount === 0
+            ? findUpcomingMonthStart(today)
+            : today.add(amount, "month").startOf("month"),
+      }))
       .with("MONTH_END", () => ({ day: today.add(amount, "month").endOf("month").startOf("day") }))
-      .with("YEAR_START", () => ({ day: dayjs.utc(`${today.year() + amount}-01-01`) }))
+      .with("YEAR_START", () => ({
+        day:
+          amount === 0 ? findUpcomingYearStart(today) : dayjs.utc(`${today.year() + amount}-01-01`),
+      }))
       .with("YEAR_END", () => ({ day: dayjs.utc(`${today.year() + amount}-12-31`) }))
       .exhaustive()
   );
+}
+
+/** "금요일부터 일요일까지"의 끝 요일은 오늘이 아니라 시작일에서 가장 가까운 그 요일이다. */
+function resolveEndDateRef(ref: DateRef, today: CalendarDay, start: CalendarDay): DayResolution {
+  const end = resolveDateRef(ref, today);
+  return ref.kind === "WEEKDAY" && ref.weekday != null && end.day.isBefore(start)
+    ? { day: findUpcomingWeekday(ref.weekday, start) }
+    : end;
 }
 
 function isoIndex(day: DayOfWeek): number {
   return DAY_OF_WEEK_ORDER.indexOf(day);
 }
 
+function getWeekdayThisWeek(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
+  return baseDay.isoWeekday(isoIndex(weekday) + 1);
+}
+
+/** 기준일을 포함해 가장 가까운 그 요일 */
+function findUpcomingWeekday(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
+  const weekdayThisWeek = getWeekdayThisWeek(weekday, baseDay);
+  return weekdayThisWeek.isBefore(baseDay) ? weekdayThisWeek.add(1, "week") : weekdayThisWeek;
+}
+
 function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
   if (ref.weekday == null) {
     return { day: today, warning: "INVALID_DATE" };
   }
-  const target = isoIndex(ref.weekday);
+  const upcomingWeekday = findUpcomingWeekday(ref.weekday, today);
   if (ref.weekOffset == null) {
-    // 요일만 말하면 오늘을 포함해 가장 가까운 그 요일이다.
-    const diff = (target - (today.isoWeekday() - 1) + 7) % 7;
-    return { day: today.add(diff, "day") };
+    return { day: upcomingWeekday };
   }
-  return { day: today.startOf("isoWeek").add(ref.weekOffset * 7 + target, "day") };
+  const statedWeekday = getWeekdayThisWeek(ref.weekday, today).add(ref.weekOffset, "week");
+  // 할 일에 지난 날짜는 쓸 수 없어 다음 그 요일로 넘긴다.
+  return { day: statedWeekday.isBefore(today) ? upcomingWeekday : statedWeekday };
 }
 
 function calendarDay(year: number, month: number, day: number): CalendarDay | null {
@@ -264,7 +413,7 @@ function resolveTime(
 function resolveAmbiguousHour(
   hour: number,
   minute: number,
-  partOfDay: PartOfDay | undefined,
+  partOfDay: PartOfDay | null,
   targetDay: CalendarDay,
   nowMinutes: number,
   today: CalendarDay,
@@ -325,7 +474,7 @@ function resolveRecurrenceWindow(
   const sunday = monday.add(6, "day");
   const everyDay = [...DAY_OF_WEEK_ORDER];
   return match(repeat.pattern)
-    .with("NONE", "UNSUPPORTED", () => null)
+    .with("NONE", "UNSUPPORTED", "BIWEEKLY_DAYS", "MONTHLY_DAY", () => null)
     .with("WEEKLY_DAYS", () => ({
       start: resolvedDay,
       end: null,
@@ -365,24 +514,47 @@ function resolveRecurrenceWindow(
     .exhaustive();
 }
 
+function hasSpokenRepeatEnd(repeat: RepeatRef): boolean {
+  return (
+    (repeat.until != null && repeat.until.kind !== "NONE") ||
+    (repeat.forDuration != null && repeat.forDuration.amount > 0)
+  );
+}
+
+/** 말한 반복의 끝. 시작일보다 뒤가 아니면 반복이 되지 않으므로 말하지 않은 것으로 본다(모델이 지어낸 경우가 있다). */
+function resolveSpokenRepeatEnd(
+  repeat: RepeatRef,
+  start: CalendarDay,
+  today: CalendarDay,
+): CalendarDay | null {
+  if (!hasSpokenRepeatEnd(repeat)) {
+    return null;
+  }
+  const end =
+    repeat.until != null && repeat.until.kind !== "NONE"
+      ? resolveDateRef(repeat.until, today).day
+      : resolveDurationEnd(repeat, start);
+  return end.isAfter(start) ? end : null;
+}
+
+function resolveDurationEnd({ forDuration }: RepeatRef, start: CalendarDay): CalendarDay {
+  const amount = forDuration?.amount ?? 0;
+  const end = match(forDuration?.unit ?? "DAY")
+    .with("DAY", () => start.add(amount, "day"))
+    .with("WEEK", () => start.add(amount, "week"))
+    .with("MONTH", () => start.add(amount, "month"))
+    .exhaustive();
+  return end.subtract(1, "day");
+}
+
 function resolveRecurrenceEnd(
   repeat: RepeatRef,
   start: CalendarDay,
   today: CalendarDay,
 ): CalendarDay {
-  if (repeat.until != null && repeat.until.kind !== "NONE") {
-    return resolveDateRef(repeat.until, today).day;
-  }
-  if (repeat.forDuration != null && repeat.forDuration.amount > 0) {
-    const { unit, amount } = repeat.forDuration;
-    const end = match(unit)
-      .with("DAY", () => start.add(amount, "day"))
-      .with("WEEK", () => start.add(amount, "week"))
-      .with("MONTH", () => start.add(amount, "month"))
-      .exhaustive();
-    return end.subtract(1, "day");
-  }
-  return today.add(DEFAULT_RECURRENCE_WEEKS, "week");
+  return (
+    resolveSpokenRepeatEnd(repeat, start, today) ?? today.add(DEFAULT_RECURRENCE_WEEKS, "week")
+  );
 }
 
 function formatDay(day: CalendarDay): string {

@@ -1,12 +1,14 @@
 {
   "titles": {
-    "create": "New Memo",
-    "aiReview": "AI Parsing"
+    "create": "New memo",
+    "aiReview": "Turn memo into to-dos"
   },
   "tab": {
-    "addMemo": "Add Memo"
+    "title": "Memos"
   },
   "list": {
+    "scrollToTop": "Scroll to top",
+    "savedTitle": "Saved memos",
     "emptyTitle": "No memos yet",
     "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",
     "loadFailed": "Couldn't load your memos",
@@ -17,49 +19,32 @@
     "placeholder": "Write down your ideas freely..."
   },
   "detail": {
+    "unavailableTitle": "This memo isn't available right now",
+    "unavailableDescription": "It may have been deleted",
     "emptyTitle": "No memo selected",
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",
+    "aiParse": "Split into to-dos with AI",
     "convertToTodo": "Convert to to-do",
+    "more": "More",
+    "aiParsing": "Turning into to-dos",
     "deleteConfirmTitle": "Delete this memo?",
-    "deleteConfirmDescription": "Deleted memos can't be recovered"
+    "deleteConfirmDescription": "This can't be undone"
   },
   "toasts": {
-    "convertedOne": "Converted the memo into a to-do",
-    "convertedMany_one": "Converted the memo into {{count}} to-do",
-    "convertedMany_other": "Converted the memo into {{count}} to-dos",
+    "convertedOne": "Converted your memo to a to-do",
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
-    "reorderFailed": "Failed to change the order",
     "deleteRetry": "Please try deleting again later",
-    "limitReached": "You've reached the memo limit",
+    "limitReached": "You can keep up to {{max}} memos",
+    "limitReachedDescription": "Delete memos you no longer need to add new ones",
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
-  "aiDialog": {
-    "limitTitle": "You've used all your AI parses this month",
-    "subscribeUnlimited": "Subscribe for unlimited use",
-    "confirmTitle": "Let AI turn this memo into to-dos",
-    "usageRemaining": "{{remaining}} of {{limit}} uses left this month",
-    "warnWithDeduction": "If you leave during parsing, you won't get the result and a use will be deducted.",
-    "warnNoDeduction": "If you leave during parsing, you won't get the result.",
-    "start": "Start"
-  },
   "aiReview": {
-    "titleLabel": "To-do title",
-    "analyzing": "Analyzing your memo...",
-    "limitTitle": "You've used all your AI credits this month",
-    "parseFailed": "Parsing failed",
-    "retryLater": "Please try again later",
+    "draftLost": "We couldn't load the split to-dos. Please split the memo again",
     "goBack": "Go back",
-    "noTodosTitle": "No to-dos to create",
-    "createCount_one": "Create {{count}} to-do",
-    "createCount_other": "Create {{count}} to-dos",
-    "omittedTodos_one": "We made up to {{max}} to-dos. The other {{count}} stays in your memo.",
-    "omittedTodos_other": "We made up to {{max}} to-dos. The other {{count}} stay in your memo.",
-    "allDay": "All day",
-    "categoryFallback": "Category",
-    "weeklyRepeat": "Weekly on {{days}}",
-    "select": "Select"
+    "noCategory": "Couldn't find a category",
+    "loadFailed": "Couldn't load the split to-dos"
   }
 }

@@ -1,5 +1,4 @@
 import "./shared/domain/date/dayjs.setup.js";
-import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
@@ -7,7 +6,8 @@ import { Logger } from "nestjs-pino";
 
 import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
 import { SocialReportsAdminModule } from "#api/modules/social/social-reports.public";
-import type { EnvConfig } from "#api/platform/config/index";
+import { processEnv } from "#api/platform/config/env";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
@@ -19,10 +19,8 @@ import { convertStandardSchema } from "./platform/http/swagger/standard-schema.c
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  const configService = app.get(ConfigService<EnvConfig, true>);
-  const port = configService.get("PORT", { infer: true });
-  const nodeEnv = configService.get("NODE_ENV", { infer: true });
-  const corsOrigins = configService.get("CORS_ORIGINS", { infer: true });
+  const config = app.get(TypedConfigService);
+  const { port, nodeEnv, corsOrigins } = config;
 
   app.useLogger(app.get(Logger));
 
@@ -33,7 +31,7 @@ async function bootstrap() {
   });
 
   if (nodeEnv === "development") {
-    const apiVersion = process.env.npm_package_version ?? "development";
+    const apiVersion = processEnv.npm_package_version ?? "development";
     const config = new DocumentBuilder()
       .setTitle("Aido API")
       .setDescription(`AI TodoList 앱을 위한 백엔드 API
@@ -90,6 +88,7 @@ async function bootstrap() {
         SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_COMMENTS_V2],
       )
       .addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
+      .addTag(SWAGGER_TAGS.ENTITLEMENTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ENTITLEMENTS])
       .addTag(SWAGGER_TAGS.FOLLOWS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS])
       .addTag(SWAGGER_TAGS.CHEERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS])
       .addTag(SWAGGER_TAGS.NUDGES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES])

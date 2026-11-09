@@ -1,15 +1,13 @@
+import { toDateKey, toEpochMs } from '@src/shared/date/instant';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 
-import {
-  type HourlyForecastEntry,
-  toUnitPosition,
-  WeatherReportPolicy,
-} from '../../domains/weather-report.model';
+import { WeatherReportPolicy } from '../../domains/weather-report.model';
+import type { HourlyForecastEntry } from '../../domains/weather-report.model';
+import { toUnitPosition } from '../../utils/weather-bar.geometry';
 
 const CHART_HEIGHT = 40;
 const MIN_BAR_HEIGHT = 2;
@@ -18,9 +16,8 @@ const MIN_BAR_HEIGHT = 2;
 export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntry[] }) {
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
-  const todayHours = hours.filter(
-    (hour) => formatDateKey(hour.startsAt, getDeviceTimezone()) === todayKey,
-  );
+  const { timeZone } = useDateFormatContext();
+  const todayHours = hours.filter((hour) => toDateKey(hour.startsAt, timeZone) === todayKey);
 
   if (todayHours.length === 0) {
     return null;
@@ -36,7 +33,7 @@ export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntr
     >
       {todayHours.map((hour) => (
         <Box
-          key={hour.startsAt.getTime()}
+          key={toEpochMs(hour.startsAt)}
           flex={1}
           className={cn(
             'rounded-sm',

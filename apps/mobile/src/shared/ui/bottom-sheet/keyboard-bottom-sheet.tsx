@@ -1,13 +1,17 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
-  BottomSheetFooter,
-  type BottomSheetFooterProps,
+  type BottomSheetBackgroundProps,
   BottomSheetScrollView,
+  useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { useTranslation } from '@src/shared/i18n';
+import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import {
   type ComponentRef,
+  createContext,
   type ReactNode,
+  use,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -19,20 +23,41 @@ import {
   AppState,
   type AppStateStatus,
   Keyboard,
-  Platform,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
-import { HANDLE_HEIGHT, SHEET_INDEX } from './constants';
-import { getSheetMaxHeight } from './get-sheet-layout';
+import { FocusedFieldContext } from '../input/focused-field';
+import { FieldMaxHeightContext } from '../text-area/field-max-height';
+import {
+  HANDLE_HEIGHT,
+  SHARED_SHEET_STYLES,
+  SHEET_ANIMATION_DURATION,
+  SHEET_CONTENT_PADDING,
+  SHEET_FOOTER_PADDING_TOP,
+  SHEET_INDEX,
+  SHEET_OVERLAY_OPACITY,
+  SHEET_RADIUS,
+} from './bottom-sheet.constants';
+import {
+  getBodyHeightAboveKeyboard,
+  getKeyboardHiddenHeight,
+  getKeyboardSheetMaxHeight,
+} from './keyboard-bottom-sheet.geometry';
+import { usePortalTarget } from './portal-target';
+import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
 import { useSheetLayout } from './use-sheet-layout';
@@ -43,57 +68,117 @@ interface KeyboardBottomSheetProps {
   /** 시트 닫기 애니메이션 시작 시 호출 (backdrop 탭, 스와이프 등) */
   onCloseStart?: () => void;
   children: ReactNode;
-  /** 내용이 길어 스크롤돼도 시트 아래(키보드 위)에 고정되는 영역. 주 동작 버튼을 둔다. */
+  /** 키보드에 가려도 보여야 하는 주 동작 버튼. 칩 줄 등 나머지는 children 흐름에 둔다 */
   footer?: ReactNode;
+  backgroundDecoration?: ReactNode;
+  enableContentPanningGesture?: boolean;
+  /** 손잡이·내용 끌어내리기는 gorhom이 닫아 여기로 오지 않는다 */
+  onDismissRequest?: () => void;
 }
 
-/**
- * 키보드 연동 BottomSheet.
- *
- * 내용은 스크롤된다. 내용이 짧으면 시트가 그 높이에 맞춰 줄어들지만(enableDynamicSizing),
- * 키보드가 올라온 채로 내용이 길어지면 시트만으로는 아래쪽에 손이 닿지 않기 때문이다.
- * keyboardShouldPersistTaps가 'always'인 것도 같은 이유다 — 없으면 키보드가 떠 있을 때
- * 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 한다.
- */
-export const KeyboardBottomSheet = ({
+/** 키보드 컨트롤러는 전역이라 마지막으로 닫히는 시트만 다시 켠다 */
+let openSheetCount = 0;
+
+// `BottomSheet.Content`는 내용을 `BottomSheetView`로 한 번 더 감싸 키보드로 시트가 줄어도 안쪽 스크롤 높이가 줄지 않으므로 gorhom을 직접 쓴다
+// keyboardShouldPersistTaps가 'always'인 것은 키보드가 떠 있을 때 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 하기 때문이다
+export function KeyboardBottomSheet({
   isOpen,
   onOpenChange,
   onCloseStart,
   children,
   footer,
-}: KeyboardBottomSheetProps) => {
+  backgroundDecoration,
+  enableContentPanningGesture = true,
+  onDismissRequest,
+}: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
+  const portalTarget = usePortalTarget();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
-  const lastContentHeightRef = useRef(0);
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
   const { margins, topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-  const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
-  const bottomPadding = (insets.bottom || 20) + 4;
-  // 키보드가 홈 인디케이터 영역을 덮는 동안에는 footer 아래 safe area 여백을 줄여 작은 화면(접은 Duo·SE)에서도
-  // 입력 칸이 들어갈 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
-  const isKeyboardShown = useSharedValue(false);
-  const footerPaddingStyle = useAnimatedStyle(() => ({
-    paddingBottom: isKeyboardShown.get() ? FOOTER_KEYBOARD_GAP : bottomPadding,
+  const maxDynamicContentSize = getKeyboardSheetMaxHeight(windowHeight, topInset);
+  const bottomPadding = getContentBottomPadding(insets.bottom);
+  const contentHeight = useSharedValue(0);
+  const keyboardHeight = useSharedValue(0);
+  // 시트가 위쪽 한계에 닿으면 바닥이 키보드에 가린다(gorhom은 내용 영역을 줄이지 않는다). 다 올라간 위치로 정해 프레임마다 다시 붙지 않는다
+  const keyboardHiddenHeight = useDerivedValue(() =>
+    getKeyboardHiddenHeight({
+      contentHeight: contentHeight.get(),
+      keyboardHeight: keyboardHeight.get(),
+      maxSheetHeight: maxDynamicContentSize,
+      windowHeight,
+      topInset,
+    }),
+  );
+  // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
+  const scrollAnimatedStyle = useAnimatedStyle(() => ({
+    marginBottom: withTiming(keyboardHiddenHeight.get() ?? 0, {
+      duration: SHEET_ANIMATION_DURATION,
+    }),
   }));
-  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다.
-  // 키보드가 오르내릴 때 내용 높이가 바뀌어 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다.
-  const [footerContentHeight, setFooterContentHeight] = useState(0);
-  const footerChromeHeight = FOOTER_PADDING_TOP + footerContentHeight;
-  const { scrollViewRef, handleScrollBeginDrag } = useScrollFocusedInputIntoView({
-    isOpen,
-    animatedPosition,
-    bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
-    viewportTopLimit: topInset + HANDLE_HEIGHT,
+  const footerAnimatedStyle = useAnimatedStyle(() => {
+    const hiddenHeight = keyboardHiddenHeight.get();
+    const isSheetAtTop = hiddenHeight != null;
+
+    return {
+      // 키보드 위로 시트가 끝까지 올라가는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄인다
+      paddingBottom: withTiming(isSheetAtTop ? FOOTER_KEYBOARD_GAP : bottomPadding, {
+        duration: SHEET_ANIMATION_DURATION,
+      }),
+      transform: [
+        {
+          translateY: withTiming(-(hiddenHeight ?? 0), {
+            duration: SHEET_ANIMATION_DURATION,
+          }),
+        },
+      ],
+    };
   });
+  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비운다. 키보드가 오르내릴 때 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다
+  const [footerContentHeight, setFooterContentHeight] = useState(0);
+  const footerChromeHeight = SHEET_FOOTER_PADDING_TOP + footerContentHeight;
+  const footerSpace = footer == null ? 0 : footerChromeHeight + FOOTER_CONTENT_GAP;
+  const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
+  const bodyContentRef = useRef<ComponentRef<typeof View>>(null);
+  const visibleBodyHeight =
+    !isOpen || keyboardTop == null
+      ? null
+      : getBodyHeightAboveKeyboard({
+          keyboardTop,
+          topInset,
+          maxSheetHeight: maxDynamicContentSize,
+          reservedHeight: CONTENT_PADDING_TOP + footerSpace,
+        });
+  // 칸을 뺀 나머지 내용이 키보드 위에 남도록 칸 상한을 준다. 내용 높이는 칸과 같은 배치에서 동기로 잰다
+  const getMaxFieldHeight = useCallback(
+    (fieldHeight: number) => {
+      let maxFieldHeight: number | null = null;
+      if (visibleBodyHeight != null) {
+        bodyContentRef.current?.measure((_x, _y, _width, bodyHeight) => {
+          maxFieldHeight = visibleBodyHeight - (bodyHeight - fieldHeight);
+        });
+      }
+      return maxFieldHeight;
+    },
+    [visibleBodyHeight],
+  );
+  const { scrollViewRef, handleScrollBeginDrag, reportFocusedField } =
+    useScrollFocusedInputIntoView({
+      isOpen,
+      animatedPosition,
+      bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
+      viewportTopLimit: topInset + HANDLE_HEIGHT,
+    });
 
   const closeSheet = useCallback(() => {
     isClosingRef.current = true;
@@ -107,10 +192,19 @@ export const KeyboardBottomSheet = ({
       if (isClosingRef.current) {
         sheetRef.current?.forceClose();
       }
-    }, 500);
+    }, FORCE_CLOSE_RETRY_DELAY_MS);
   }, []);
 
-  useAndroidSheetBackHandler(isOpen, closeSheet);
+  // 핸들러가 렌더마다 바뀌어도 backdrop 제스처가 다시 만들어지면 backdrop이 다시 마운트되어 누르던 탭을 놓친다
+  const onDismissRequestRef = useRef(onDismissRequest);
+  useLayoutEffect(() => {
+    onDismissRequestRef.current = onDismissRequest;
+  }, [onDismissRequest]);
+  const requestDismiss = useCallback(() => {
+    (onDismissRequestRef.current ?? closeSheet)();
+  }, [closeSheet]);
+
+  useAndroidSheetBackHandler(isOpen, requestDismiss);
 
   const resizeSheet = useCallback(() => {
     if (isClosingRef.current) {
@@ -140,8 +234,17 @@ export const KeyboardBottomSheet = ({
   );
 
   useLayoutEffect(() => {
-    setEnabled(!isOpen);
-    return () => setEnabled(true);
+    if (!isOpen) {
+      return;
+    }
+    openSheetCount += 1;
+    setEnabled(false);
+    return () => {
+      openSheetCount -= 1;
+      if (openSheetCount === 0) {
+        setEnabled(true);
+      }
+    };
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
@@ -149,13 +252,19 @@ export const KeyboardBottomSheet = ({
       return;
     }
 
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSubscription = Keyboard.addListener(showEvent, () => {
-      isKeyboardShown.set(true);
+    const showEvent = process.env.EXPO_OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = process.env.EXPO_OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      keyboardHeight.set(event.endCoordinates.height);
+      setKeyboardTop(event.endCoordinates.screenY);
+    });
+    // 키보드에 가려 스크롤이 생긴 내용(카테고리 색)이 있다는 것을 스크롤 막대로 잠깐 알린다
+    const didShowSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      scrollViewRef.current?.flashScrollIndicators();
     });
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
-      isKeyboardShown.set(false);
+      keyboardHeight.set(0);
+      setKeyboardTop(null);
       resizeSheet();
     });
 
@@ -170,10 +279,11 @@ export const KeyboardBottomSheet = ({
 
     return () => {
       showSubscription.remove();
+      didShowSubscription.remove();
       hideSubscription.remove();
       appStateSubscription.remove();
     };
-  }, [isOpen, resizeSheet]);
+  }, [isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -181,11 +291,11 @@ export const KeyboardBottomSheet = ({
         cancelAnimationFrame(resizeFrameRef.current);
       }
       resizeFrameRef.current = undefined;
-      lastContentHeightRef.current = 0;
-      isKeyboardShown.set(false);
+      contentHeight.set(0);
+      keyboardHeight.set(0);
       isClosingRef.current = false;
     }
-  }, [isOpen]);
+  }, [contentHeight, isOpen, keyboardHeight]);
 
   useEffect(() => {
     const wasOpen = prevIsOpenRef.current;
@@ -221,17 +331,22 @@ export const KeyboardBottomSheet = ({
     }
   };
 
+  // 열리는 도중에 닫히면 gorhom은 index가 -1 그대로라 onChange를 부르지 않고 onClose만 부른다.
+  // 닫힘을 onClose로 받아야 route 시트가 투명한 모달로 남아 터치를 막는 일이 없다
+  const handleSheetClose = () => {
+    if (closeRetryTimerRef.current) {
+      clearTimeout(closeRetryTimerRef.current);
+      closeRetryTimerRef.current = null;
+    }
+    if (!hasNotifiedCloseRef.current) {
+      hasNotifiedCloseRef.current = true;
+      onOpenChange(false);
+    }
+    isClosingRef.current = false;
+  };
+
   const handleSheetChange = (index: number) => {
     if (index === SHEET_INDEX.CLOSED) {
-      if (closeRetryTimerRef.current) {
-        clearTimeout(closeRetryTimerRef.current);
-        closeRetryTimerRef.current = null;
-      }
-      if (!hasNotifiedCloseRef.current) {
-        hasNotifiedCloseRef.current = true;
-        onOpenChange(false);
-      }
-      isClosingRef.current = false;
       return;
     }
 
@@ -239,13 +354,14 @@ export const KeyboardBottomSheet = ({
     isClosingRef.current = false;
   };
 
-  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 closeSheet만 실행한다.
+  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 requestDismiss만 실행한다.
   const backdropTapGesture = useMemo(
     () =>
+      // oxlint-disable-next-line react/refs -- 탭 제스처가 끝날 때만 불리고 렌더 중에는 실행되지 않는다
       Gesture.Tap().onEnd(() => {
-        scheduleOnRN(closeSheet);
+        scheduleOnRN(requestDismiss);
       }),
-    [closeSheet],
+    [requestDismiss],
   );
 
   const renderBackdrop = useCallback(
@@ -256,7 +372,7 @@ export const KeyboardBottomSheet = ({
             {...props}
             disappearsOnIndex={SHEET_INDEX.CLOSED}
             appearsOnIndex={SHEET_INDEX.OPEN}
-            opacity={0.5}
+            opacity={SHEET_OVERLAY_OPACITY}
             pressBehavior="none"
           />
         </View>
@@ -265,88 +381,150 @@ export const KeyboardBottomSheet = ({
     [backdropTapGesture],
   );
 
-  const renderFooter = useCallback(
-    (props: BottomSheetFooterProps) => (
-      <BottomSheetFooter {...props}>
-        <Animated.View style={[styles.footer, backgroundStyle, footerPaddingStyle]}>
-          <View onLayout={(event) => setFooterContentHeight(event.nativeEvent.layout.height)}>
-            {footer}
-          </View>
-        </Animated.View>
-      </BottomSheetFooter>
-    ),
-    [backgroundStyle, footerPaddingStyle, footer],
-  );
-
   const handleContentSizeChange = (_width: number, height: number) => {
     if (!isOpen || isClosingRef.current) {
       return;
     }
 
     const nextHeight = Math.round(height);
-    const prevHeight = lastContentHeightRef.current;
+    const prevHeight = contentHeight.get();
 
-    if (Math.abs(nextHeight - prevHeight) < 2) {
+    if (Math.abs(nextHeight - prevHeight) < MIN_CONTENT_HEIGHT_CHANGE) {
       return;
     }
 
-    lastContentHeightRef.current = nextHeight;
+    contentHeight.set(nextHeight);
     resizeSheet();
   };
 
   return (
-    <GorhomBottomSheet
-      ref={sheetRef}
-      animatedPosition={animatedPosition}
-      accessible={false}
-      index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
-      enableDynamicSizing
-      maxDynamicContentSize={maxDynamicContentSize}
-      enablePanDownToClose
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      enableBlurKeyboardOnGesture
-      android_keyboardInputMode="adjustPan"
-      topInset={topInset}
-      style={{ marginLeft: margins.left, marginRight: margins.right }}
-      backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
-      handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-      backdropComponent={renderBackdrop}
-      onAnimate={handleAnimate}
-      onChange={handleSheetChange}
-      footerComponent={footer == null ? undefined : renderFooter}
-    >
-      <BottomSheetScrollView
-        ref={scrollViewRef}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onContentSizeChange={handleContentSizeChange}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
-        ]}
-        keyboardShouldPersistTaps="always"
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {children}
-      </BottomSheetScrollView>
-    </GorhomBottomSheet>
+    <HeroBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <HeroBottomSheet.Portal {...portalTarget}>
+        <SheetDecorationContext value={backgroundDecoration}>
+          <SheetFooterContext value={footer}>
+            <GorhomBottomSheet
+              ref={sheetRef}
+              animatedPosition={animatedPosition}
+              accessible={false}
+              animationConfigs={animationConfigs}
+              index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
+              enableDynamicSizing
+              maxDynamicContentSize={maxDynamicContentSize}
+              enablePanDownToClose
+              enableContentPanningGesture={enableContentPanningGesture}
+              activeOffsetY={PAN_ACTIVE_OFFSET_Y}
+              failOffsetX={PAN_FAIL_OFFSET_X}
+              keyboardBehavior="interactive"
+              keyboardBlurBehavior="restore"
+              android_keyboardInputMode="adjustPan"
+              topInset={topInset}
+              style={{ marginLeft: margins.left, marginRight: margins.right }}
+              backgroundComponent={DecoratedSheetBackground}
+              backgroundStyle={[backgroundStyle, { borderRadius: SHEET_RADIUS }]}
+              handleIndicatorStyle={[SHARED_SHEET_STYLES.handleIndicator, handleIndicatorStyle]}
+              backdropComponent={renderBackdrop}
+              onAnimate={handleAnimate}
+              onChange={handleSheetChange}
+              onClose={handleSheetClose}
+            >
+              {/* gorhom footerComponent는 매 프레임 키보드 바로 위에 붙어 시트가 올라오는 동안 내용을 덮으므로, 시트 바닥에 두어 시트와 함께 움직인다 */}
+              <View style={styles.body}>
+                <BottomSheetScrollView
+                  ref={scrollViewRef}
+                  style={scrollAnimatedStyle}
+                  onScrollBeginDrag={handleScrollBeginDrag}
+                  onContentSizeChange={handleContentSizeChange}
+                  contentContainerStyle={[
+                    styles.content,
+                    { paddingBottom: bottomPadding + footerSpace },
+                  ]}
+                  keyboardShouldPersistTaps="always"
+                  scrollIndicatorInsets={{ bottom: footer == null ? 0 : footerChromeHeight }}
+                  automaticallyAdjustsScrollIndicatorInsets={false}
+                  bounces={false}
+                >
+                  <FocusedFieldContext value={reportFocusedField}>
+                    <FieldMaxHeightContext value={getMaxFieldHeight}>
+                      <View ref={bodyContentRef}>{children}</View>
+                    </FieldMaxHeightContext>
+                  </FocusedFieldContext>
+                </BottomSheetScrollView>
+                {footer != null && (
+                  <Animated.View style={[styles.footer, backgroundStyle, footerAnimatedStyle]}>
+                    <SheetFooterSlot onHeightChange={setFooterContentHeight} />
+                  </Animated.View>
+                )}
+              </View>
+            </GorhomBottomSheet>
+          </SheetFooterContext>
+        </SheetDecorationContext>
+      </HeroBottomSheet.Portal>
+    </HeroBottomSheet>
   );
-};
+}
 
-const FOOTER_PADDING_TOP = 12;
+export function useKeyboardSheetBodyMaxHeight(): number {
+  const insets = useSafeAreaInsets();
+  const { topInset } = useSheetLayout({ minMargin: 0 });
+  const { height: windowHeight } = useWindowDimensions();
+
+  // gorhom의 maxDynamicContentSize는 손잡이까지 포함한 시트 높이라, 내용 높이에서는 손잡이를 한 번 더 뺀다
+  return (
+    getKeyboardSheetMaxHeight(windowHeight, topInset) -
+    HANDLE_HEIGHT -
+    CONTENT_PADDING_TOP -
+    getContentBottomPadding(insets.bottom)
+  );
+}
+
+function getContentBottomPadding(bottomInset: number) {
+  return (bottomInset || NO_SAFE_AREA_BOTTOM_PADDING) + SAFE_AREA_CONTENT_GAP;
+}
+
+const SheetDecorationContext = createContext<ReactNode>(null);
+
+// 컴포넌트를 고정하고 장식만 Context로 넘겨 다시 마운트를 막는다
+// gorhom의 pointerEvents="none"을 쓰지 않는다: Android Gesture Handler가 제스처도 배경색도 없는 뷰를 지나쳐 아래 backdrop의 탭까지 불려 시트가 닫혔다(QA: 듣기 X)
+function DecoratedSheetBackground({ style }: BottomSheetBackgroundProps) {
+  const { t } = useTranslation('common');
+  const decoration = use(SheetDecorationContext);
+
+  return (
+    <>
+      {decoration}
+      <View
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={t('bottomSheet.label')}
+        style={style}
+      />
+    </>
+  );
+}
+
+const CONTENT_PADDING_TOP = 20;
+const NO_SAFE_AREA_BOTTOM_PADDING = 20;
+const SAFE_AREA_CONTENT_GAP = 4;
+const FOOTER_CONTENT_GAP = 4;
 const FOOTER_KEYBOARD_GAP = 8;
+const FORCE_CLOSE_RETRY_DELAY_MS = 500;
+const MIN_CONTENT_HEIGHT_CHANGE = 2;
+// 시트 끌기는 세로로 움직일 때만 잡아, 손가락이 조금 흔들려도 칩 줄 같은 가로 스크롤이 제스처를 가져가게 한다
+const PAN_ACTIVE_OFFSET_Y: [number, number] = [-15, 15];
+const PAN_FAIL_OFFSET_X: [number, number] = [-10, 10];
 
 const styles = StyleSheet.create({
-  handleIndicator: {
-    width: 36,
-  },
   content: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
+    paddingTop: CONTENT_PADDING_TOP,
+    paddingHorizontal: SHEET_CONTENT_PADDING,
   },
+  body: { flex: 1 },
   footer: {
-    paddingTop: FOOTER_PADDING_TOP,
-    paddingHorizontal: 20,
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    paddingTop: SHEET_FOOTER_PADDING_TOP,
+    paddingHorizontal: SHEET_CONTENT_PADDING,
   },
 });

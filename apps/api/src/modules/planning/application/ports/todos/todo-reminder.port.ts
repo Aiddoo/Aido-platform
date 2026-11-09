@@ -1,8 +1,10 @@
 export const TODO_REMINDER = Symbol("TODO_REMINDER");
 
-export type TodoReminderCancellationResult =
-  | { readonly status: "cancelled" }
-  | { readonly status: "missing" };
+export interface TodoReminderSchedule {
+  readonly todoId: number;
+  readonly scheduledTime: Date;
+  readonly userId: string;
+}
 
 /**
  * Todo 리마인더 스케줄링 포트 (scheduler 컨텍스트 경계)
@@ -17,10 +19,9 @@ export interface TodoReminderPort {
    */
   scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void>;
 
-  /**
-   * 리마인더 취소.
-   *
-   * 이미 처리됐거나 없는 작업만 `missing`이며, 인프라 실패는 reject됩니다.
-   */
-  cancelReminder(todoId: number): Promise<TodoReminderCancellationResult>;
+  /** 새로 만든 회차의 리마인더를 한 번에 등록한다. 이미 지난 시각은 등록하지 않는다. */
+  scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void>;
+
+  /** 예약을 한 번에 지운다. 없는 작업은 무시하고 인프라 실패만 reject된다. */
+  cancelReminders(todoIds: readonly number[]): Promise<void>;
 }

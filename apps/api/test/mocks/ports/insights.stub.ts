@@ -7,6 +7,7 @@ import type {
 import type { WeeklyAchievementRepositoryPort } from "#api/modules/insights/application/ports/weekly-achievements/weekly-achievement.repository.port";
 import type {
   DailyCompletionsRange,
+  MultiDayTodoSpan,
   TodoAggregateByDate,
 } from "#api/modules/insights/domain/records/daily-completions/daily-completion.record";
 import type {
@@ -17,6 +18,8 @@ import type {
 export class StubTodoCompletionRepository implements TodoCompletionRepositoryPort {
   readonly ownAggregates = new Map<string, readonly TodoAggregateByDate[]>();
   readonly publicAggregates = new Map<string, readonly TodoAggregateByDate[]>();
+  readonly ownMultiDayTodos = new Map<string, readonly MultiDayTodoSpan[]>();
+  readonly publicMultiDayTodos = new Map<string, readonly MultiDayTodoSpan[]>();
 
   async aggregateByDateRange(input: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]> {
     return structuredClone([...(this.ownAggregates.get(input.userId) ?? [])]);
@@ -25,6 +28,12 @@ export class StubTodoCompletionRepository implements TodoCompletionRepositoryPor
     input: AggregateByDateRangeParams,
   ): Promise<TodoAggregateByDate[]> {
     return structuredClone([...(this.publicAggregates.get(input.userId) ?? [])]);
+  }
+  async findMultiDayTodos(input: AggregateByDateRangeParams): Promise<MultiDayTodoSpan[]> {
+    return structuredClone([...(this.ownMultiDayTodos.get(input.userId) ?? [])]);
+  }
+  async findPublicMultiDayTodos(input: AggregateByDateRangeParams): Promise<MultiDayTodoSpan[]> {
+    return structuredClone([...(this.publicMultiDayTodos.get(input.userId) ?? [])]);
   }
 }
 

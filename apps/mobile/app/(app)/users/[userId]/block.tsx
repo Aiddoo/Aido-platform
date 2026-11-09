@@ -1,10 +1,10 @@
-import { BlockUserConfirmDialog } from '@src/features/moderation/components/block-user-confirm-dialog';
-import { blockUserRouteParamsSchema } from '@src/features/moderation/hooks/use-block-user-route-params';
+import { BlockUserConfirmDialog } from '@src/features/social/moderation/components/block-user-confirm-dialog';
+import { blockUserParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function BlockUserConfirmRoute() {
-  const params = blockUserRouteParamsSchema.safeParse(useLocalSearchParams());
+  const params = blockUserParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/feed" />;

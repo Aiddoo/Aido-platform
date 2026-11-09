@@ -1,9 +1,13 @@
+import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { renderHook } from '@testing-library/react-native';
 
 import { useSingleTap } from './use-single-tap';
 
 /** 가드 간격(600ms)보다 확실히 긴 시간 */
 const AFTER_GUARD_MS = 700;
+
+/** 가드 간격보다 짧고 렌더가 건 타이머는 끝나는 시간 */
+const RENDER_SETTLE_MS = 10;
 
 /**
  * 시간은 렌더가 끝난 뒤에만 조작한다 — 렌더 도중 Date.now를 고정하면
@@ -24,7 +28,8 @@ describe('useSingleTap', () => {
     const { result } = await renderHook(() => useSingleTap(onTap));
     freezeTimeAt(1_000);
 
-    // When - 같은 프레임에 세 번 들어온 탭
+    // When
+    // 같은 프레임에 세 번 들어온 탭
     result.current();
     result.current();
     result.current();
@@ -48,33 +53,6 @@ describe('useSingleTap', () => {
     expect(onTap).toHaveBeenCalledTimes(2);
   });
 
-  it('탭에 넘긴 인자를 그대로 전달한다', async () => {
-    // Given
-    const onTap = jest.fn<void, [string, number]>();
-    const { result } = await renderHook(() => useSingleTap(onTap));
-
-    // When
-    result.current('/settings/profile', 1);
-
-    // Then
-    expect(onTap).toHaveBeenCalledWith('/settings/profile', 1);
-  });
-
-  it('다시 렌더되어도 함수 정체성이 유지된다 (memo된 자식이 다시 그려지지 않도록)', async () => {
-    // Given
-    const { result, rerender } = await renderHook(
-      (props: { onTap: () => void }) => useSingleTap(props.onTap),
-      { initialProps: { onTap: jest.fn() } },
-    );
-    const firstTap = result.current;
-
-    // When - 부모가 매 렌더 새 핸들러를 넘기는 흔한 상황
-    await rerender({ onTap: jest.fn() });
-
-    // Then
-    expect(result.current).toBe(firstTap);
-  });
-
   it('가장 최근에 넘긴 핸들러를 실행한다', async () => {
     // Given
     const staleTap = jest.fn();
@@ -94,7 +72,8 @@ describe('useSingleTap', () => {
   });
 
   it('서로 다른 동작은 각자의 가드를 가져 연달아 실행된다', async () => {
-    // Given - 예: 모달을 닫고 곧바로 다른 화면으로 이동하는 흐름
+    // Given
+    // 예: 모달을 닫고 곧바로 다른 화면으로 이동하는 흐름
     const dismiss = jest.fn();
     const navigate = jest.fn();
     const { result } = await renderHook(() => ({
@@ -110,5 +89,26 @@ describe('useSingleTap', () => {
     // Then
     expect(dismiss).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  describe('언마운트', () => {
+    setupFakeTimersPerTest();
+
+    it('화면이 내려가면 남은 가드 타이머를 지운다', async () => {
+      // Given
+      const { result, unmount } = await renderHook(() => useSingleTap(jest.fn()));
+      // 마운트가 건 React 타이머를 먼저 흘려 가드 타이머만 남긴다
+      await jest.advanceTimersByTimeAsync(RENDER_SETTLE_MS);
+      result.current();
+      const guardTimerCount = jest.getTimerCount();
+
+      // When
+      await unmount();
+      await jest.advanceTimersByTimeAsync(RENDER_SETTLE_MS);
+
+      // Then
+      expect(guardTimerCount).toBe(1);
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 });

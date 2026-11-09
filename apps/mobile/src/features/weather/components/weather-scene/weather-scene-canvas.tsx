@@ -1,8 +1,10 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
+import { SECOND_MS } from '@src/shared/constants/time-units';
+import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
+import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
-import * as Device from 'expo-device';
 import { useCallback, useEffect, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   cancelAnimation,
   Easing,
@@ -16,8 +18,9 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import type { WeatherScene } from '../../domains/weather-scene.model';
-import { useWeatherSceneClock } from '../../hooks/use-weather-scene-clock';
+import { useIsWeatherSceneRunning } from '../../hooks/use-is-weather-scene-running';
+import { getCelestialCenter } from '../../utils/weather-scene-particles';
+import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';
 import { FogLayer } from './fog-layer';
@@ -35,10 +38,10 @@ import { BelowHeader, HeroScrimLayer, ScrimLayer } from './scrim-layer';
 import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
-import { getCelestialCenter } from './weather-scene-particles';
 
 const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;
-const IS_LOW_END_DEVICE = Device.totalMemory != null && Device.totalMemory < LOW_END_MEMORY_BYTES;
+const IS_LOW_END_DEVICE =
+  DEVICE_TOTAL_MEMORY_BYTES != null && DEVICE_TOTAL_MEMORY_BYTES < LOW_END_MEMORY_BYTES;
 const STATIC_SCENE_SECONDS = 12;
 const MAX_FRAME_STEP_MS = 100;
 const SCENE_FADE = { duration: 900, easing: Easing.inOut(Easing.quad) };
@@ -51,7 +54,7 @@ type SceneEntry = { id: number; scene: WeatherScene };
 
 type SceneSize = { width: number; height: number };
 
-/** 장면이 바뀌면 이전 장면을 지우지 않고 남겨 두었다가 새 장면과 교차해 사라지게 한다. */
+/** 사라지는 도중 또 바뀌면 사라지던 장면은 끊는다. 드문 일이라 장면을 쌓지 않는다 */
 function useSceneCrossFade(scene: WeatherScene) {
   const [current, setCurrent] = useState<SceneEntry>({ id: 0, scene });
   const [outgoing, setOutgoing] = useState<SceneEntry | null>(null);
@@ -84,13 +87,13 @@ export function WeatherSceneCanvas({
   const [layoutSize, setLayoutSize] = useState<SceneSize | null>(null);
   const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();
-  const isAnimating = useWeatherSceneClock();
+  const isAnimating = useIsWeatherSceneRunning();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
   const advanceTime = useCallback(
     (frame: FrameInfo) => {
       'worklet';
       const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
-      time.set(time.get() + step / 1000);
+      time.set(time.get() + step / SECOND_MS);
     },
     [time],
   );
@@ -113,7 +116,7 @@ export function WeatherSceneCanvas({
 
   // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (
-    <View
+    <Box
       style={StyleSheet.absoluteFill}
       onLayout={handleLayout}
       pointerEvents="none"
@@ -146,22 +149,26 @@ export function WeatherSceneCanvas({
         <HeroScrimLayer
           isDaylight={current.scene.isDaylight}
           contentTop={contentTop}
+          heroLeft={heroLeft}
           heroWidth={heroWidth}
           width={width}
           height={height}
         />
         <ScrimLayer isDaylight={current.scene.isDaylight} width={width} height={height} />
       </Canvas>
-    </View>
+    </Box>
   );
 }
 
 /** 해·달이 떠 있으면 그 자리와 빛 색을 구름에 알려 가장자리가 빛나고 가린 정도를 잴 수 있게 한다. */
-function getCloudLight(scene: WeatherScene, position: { x: number; y: number }): CloudLight | null {
+function findCloudLight(
+  scene: WeatherScene,
+  position: { x: number; y: number },
+): CloudLight | null {
   if (scene.sun !== 'hidden') {
     return { ...position, rgb: SUN_LIGHT_RGB };
   }
-  return scene.moon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
+  return scene.hasMoon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
 }
 
 type SceneLayersProps = {
@@ -227,7 +234,7 @@ function SceneLayers({
             {...area}
             sun={scene.sun}
             center={celestialCenter}
-            lensFlare={scene.lensFlare}
+            hasLensFlare={scene.hasLensFlare}
             clouds={scene.clouds}
             isDark={isDark}
             occlusion={occlusion}
@@ -235,14 +242,14 @@ function SceneLayers({
         )}
         <NightSkyLayer
           {...area}
-          moon={scene.moon}
+          hasMoon={scene.hasMoon}
           celestialCenter={celestialCenter}
           moonPhase={scene.moonPhase}
           isDark={isDark}
           occlusion={occlusion}
           isSouthernHemisphere={scene.isSouthernHemisphere}
-          stars={scene.stars}
-          shootingStars={scene.shootingStars && isAnimating}
+          hasStars={scene.hasStars}
+          hasShootingStars={scene.hasShootingStars && isAnimating}
           clouds={scene.clouds}
         />
       </BelowHeader>
@@ -252,7 +259,7 @@ function SceneLayers({
         wind={scene.wind}
         sky={scene.sky}
         isDaylight={scene.isDaylight}
-        light={getCloudLight(scene, celestialCenter)}
+        light={findCloudLight(scene, celestialCenter)}
         occlusion={occlusion}
       />
       {match(scene.atmosphere)
@@ -290,7 +297,7 @@ function SceneLayers({
         .with('heat', () => <HeatLayer {...particles} />)
         .with('calm', 'fogBands', 'haze', 'gusts', () => null)
         .exhaustive()}
-      {scene.lightning && isAnimating && <LightningLayer {...area} />}
+      {scene.hasLightning && isAnimating && <LightningLayer {...area} />}
     </Group>
   );
 }

@@ -4,6 +4,7 @@ import { PaginationService } from "#api/shared/application/pagination/index";
 import { AFTER_COMMIT_TASK_REGISTRY, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/delivery/active-push-token.reader.port.js";
+import { MARKETING_CONSENT_RECONFIRM_ACCESS } from "./application/ports/delivery/marketing-consent-reconfirm.port.js";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/delivery/marketing-push-opt-out-token.port.js";
 import { NOTIFICATION_CACHE } from "./application/ports/delivery/notification-cache.port.js";
 import {
@@ -14,6 +15,7 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_RECIPIENT_TIMEZONE_READER } from "./application/ports/delivery/notification-recipient-timezone.reader.port.js";
 import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
@@ -45,6 +47,7 @@ import { OptOutMarketingPush } from "./application/use-cases/delivery/opt-out-ma
 import { PersistBatchNotification } from "./application/use-cases/delivery/persist-batch-notification.use-case.js";
 import { PublishPushDeliveryOutbox } from "./application/use-cases/delivery/publish-push-delivery-outbox.use-case.js";
 import { ReconcilePushReceipts } from "./application/use-cases/delivery/reconcile-push-receipts.use-case.js";
+import { ReconfirmMarketingConsents } from "./application/use-cases/delivery/reconfirm-marketing-consents.use-case.js";
 import { RecoverFailedPushDeliveries } from "./application/use-cases/delivery/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutbox } from "./application/use-cases/delivery/relay-push-delivery-outbox.use-case.js";
 import { ReleaseSessionPushDevices } from "./application/use-cases/delivery/release-session-push-devices.use-case.js";
@@ -498,6 +501,39 @@ export const sendBatchNotificationProvider: FactoryProvider<SendBatchNotificatio
       finalizeBatchNotificationUseCase,
       unitOfWork,
       afterCommitTasks,
+    }),
+};
+
+export const reconfirmMarketingConsentsProvider: FactoryProvider<ReconfirmMarketingConsents> = {
+  provide: ReconfirmMarketingConsents,
+  inject: [
+    MARKETING_CONSENT_RECONFIRM_ACCESS,
+    NOTIFICATION_RECIPIENT_LOCALE_READER,
+    NOTIFICATION_RECIPIENT_TIMEZONE_READER,
+    PushQuietHoursReader,
+    NotificationPublisher,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    reconfirmAccess: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["reconfirmAccess"],
+    localeReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["localeReader"],
+    timezoneReader: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["timezoneReader"],
+    quietHoursReader: ConstructorParameters<
+      typeof ReconfirmMarketingConsents
+    >[0]["quietHoursReader"],
+    notificationPublisher: ConstructorParameters<
+      typeof ReconfirmMarketingConsents
+    >[0]["notificationPublisher"],
+    unitOfWork: ConstructorParameters<typeof ReconfirmMarketingConsents>[0]["unitOfWork"],
+  ) =>
+    new ReconfirmMarketingConsents({
+      reconfirmAccess,
+      localeReader,
+      timezoneReader,
+      quietHoursReader,
+      notificationPublisher,
+      unitOfWork,
+      logger: new Logger(ReconfirmMarketingConsents.name),
     }),
 };
 

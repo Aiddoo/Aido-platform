@@ -5,10 +5,10 @@
 ## 사용법
 
 ```tsx
-import { TextArea } from '@src/shared/ui/text-area';
+import { TextArea } from '@src/shared/ui';
 
 // 기본
-<TextArea placeholder="내용을 입력하세요" />
+<TextArea value={message} onChange={setMessage} placeholder="내용을 입력하세요" />
 
 // 라벨
 <TextArea
@@ -37,13 +37,16 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 | Prop                 | 타입                                      | 기본값     | 설명                                                                                  |
 | -------------------- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `value`              | `string`                                  | -          | 입력값 (필수)                                                                         |
+| `onChange`           | `(value: string) => void`                 | -          | 값 변경 콜백 (필수)                                                                   |
 | `variant`            | `'filled' \| 'line' \| 'plain' \| 'bare'` | `'filled'` | 입력 필드 스타일                                                                      |
 | `label`              | `string`                                  | -          | 라벨 텍스트                                                                           |
 | `isDisabled`         | `boolean`                                 | `false`    | 비활성화 상태                                                                         |
 | `isInvalid`          | `boolean`                                 | `false`    | 에러 상태                                                                             |
 | `errorMessage`       | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
+| `counter`            | `ReactNode`                               | -          | 오류 문구 줄 오른쪽(글자 수). 칸에 함께 있어야 키보드가 올라올 때 같이 보입니다.      |
 | `preserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
-| `textSize`           | `TextSize`                                | -          | 앱 글꼴 크기 설정을 따르는 입력 글자 토큰입니다.                                      |
+| `textSize`           | `TextSize`                                | -          | 줄 간격과 자간 토큰입니다. 글자 크기는 `variant`가 정합니다.                          |
 | `growsWithContent`   | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
 | `className`          | `string`                                  | -          | 컨테이너 추가 스타일                                                                  |
 | `...TextInputProps`  | -                                         | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
@@ -87,11 +90,16 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 `growsWithContent`는 입력 내용과 표면의 세로 padding을 측정해 컨테이너 높이를 조절합니다. 기존 폼의
 높이 동작을 바꾸지 않도록 opt-in이며, `className`에 최소 높이와 최대 높이를 함께 지정합니다. 최대
-높이를 넘은 내용은 TextInput 내부에서 스크롤합니다.
+높이를 넘은 내용은 TextInput 내부에서 스크롤합니다. `KeyboardBottomSheet` 안에서는 칸 전체가 키보드 위에 남은 높이에서
+나머지 내용(칩·보내기 줄)을 뺀 만큼까지만 자란다(`FieldMaxHeightContext`). 접은 Duo에서 칸이 자라 버튼 줄을 키보드 뒤로 밀지 않게 하려는 것이다.
 
 ```tsx
 <TextArea growsWithContent className="min-h-11 max-h-28" />
 ```
+
+## 글자 크기
+
+입력 글자는 앱 글자 크기 설정을 따릅니다. OS 글꼴 배율은 `Text`처럼 끕니다(`allowFontScaling={false}`). 글자 크기 토큰은 `filled`·`line`·`bare`가 `b2`, `plain`이 `b3`이고, 글자 크기만 가진 `text-input-{토큰}` 유틸리티(`INPUT_FONT_SIZE_CLASSES`)를 고릅니다. `textSize`는 `text-{토큰}`을 더해 줄 간격과 자간을 정합니다. `text-input-*`가 CSS에서 뒤에 있어 글자 크기는 그대로 `variant`를 따릅니다. 호출부가 `style`을 넘기면 그 값이 먼저입니다.
 
 ## 상태
 
@@ -122,9 +130,10 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 ## 파일 구조
 
-| 파일                   | 역할                                                   |
-| ---------------------- | ------------------------------------------------------ |
-| `TextArea.tsx`         | 여러 줄 입력 컴포넌트                                  |
-| `TextArea.types.ts`    | 타입 정의 (`TextAreaProps`, `TextAreaVariant`)         |
-| `TextArea.variants.ts` | Tailwind 스타일 (variant/상태)                         |
-| `index.ts`             | Export: `TextArea`, `TextAreaProps`, `TextAreaVariant` |
+| 파일                         | 역할                                           |
+| ---------------------------- | ---------------------------------------------- |
+| `text-area.tsx`              | 여러 줄 입력 컴포넌트                          |
+| `text-area.types.ts`         | 타입 정의 (`TextAreaProps`, `TextAreaVariant`) |
+| `text-area.variants.ts`      | Tailwind 스타일 (variant/상태)                 |
+| `bottom-sheet-text-area.tsx` | BottomSheet용 TextArea 래퍼                    |
+| `index.ts`                   | Export: `TextArea`, `BottomSheetTextArea`      |

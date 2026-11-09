@@ -1,6 +1,4 @@
 export const AI_PARSE_LIMITS = {
-  /** 무료 사용자 월간 AI 파싱 제한 (KST 기준 매월 1일 00:00 리셋) */
-  FREE_MONTHLY_LIMIT: 5,
   /** parse-todo 입력 최대 길이. 요청 검증과 프롬프트 입력이 같은 값을 쓴다. */
   TODO_TEXT_MAX_LENGTH: 500,
   /** parse-memo가 만드는 할 일 최대 수. 넘친 수는 meta.omittedTodoCount로 알린다. */
@@ -9,15 +7,29 @@ export const AI_PARSE_LIMITS = {
   MEMO_MAX_ITEMS: 5,
 } as const;
 
-// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤 사용하지 않는 AI_REPORT_LIMITS를 제거한다
 /**
- * @deprecated 어디에서도 쓰지 않고 실제 디스패치(매시, 사용자 로컬 월요일·1일)와도 다르다.
- * 외부 소비 확인 뒤 제거한다.
+ * 말·글로 만드는 실행 계획(빠른 계획·녹음 정리) 상한. 요청 검증·프롬프트·정규화가 같은 값을 쓴다.
+ * 할 일 하위 항목·제목·메모 길이는 손으로 만든 할 일·메모와 같은 상한(TODO_ITEM_LIMITS·MEMO_LIMITS)을 쓴다.
  */
-export const AI_REPORT_LIMITS = {
-  WEEKLY_CRON_HOUR_UTC: 22,
-  WEEKLY_CRON_DAY: 0,
-  MONTHLY_CRON_HOUR_UTC: 22,
+export const ACTION_PLAN_LIMITS = {
+  /** 빠른 계획 입력 최대 길이 */
+  QUICK_PLAN_TEXT_MAX_LENGTH: 1000,
+  /** 계획 하나의 할 일 최대 수 */
+  MAX_TODOS: 10,
+  /** 계획 하나의 메모 최대 수 */
+  MAX_MEMOS: 1,
+  /** 계획의 할 일·하위 할 일·메모 제목 최대 길이 */
+  ACTION_TITLE_MAX_LENGTH: 200,
+  /** 녹음 정리에 보내는 문장(segments) 최대 수 */
+  DIGEST_MAX_SEGMENTS: 600,
+  /** 녹음 정리 핵심 포인트 최대 수 */
+  DIGEST_MAX_KEY_POINTS: 5,
+  /** 녹음 정리 제목 최대 길이 */
+  DIGEST_TITLE_MAX_LENGTH: 100,
+  /** 녹음 정리 요약 최대 길이 */
+  DIGEST_SUMMARY_MAX_LENGTH: 1000,
+  /** 핵심 포인트 하나의 최대 길이 */
+  DIGEST_KEY_POINT_MAX_LENGTH: 200,
 } as const;
 
 export const AI_SUGGESTION_LIMITS = {

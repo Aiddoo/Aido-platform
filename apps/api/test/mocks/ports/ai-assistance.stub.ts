@@ -1,8 +1,15 @@
 import type { PremiumFeature } from "@aido/api/vocabulary";
-import type { AiDataSharingDecision } from "@aido/api/vocabulary";
+import {
+  AI_DATA_SHARING_CONSENT,
+  type AiDataSharingConsentVersion,
+  type AiDataSharingDecision,
+} from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { AiDataSharingConsentDecisionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/ai-data-sharing-consent.reader.port";
+import type {
+  AiDataSharingConsent,
+  AiDataSharingConsentDecisionReaderPort,
+} from "#api/modules/ai-assistance/application/ports/parsing/ai-data-sharing-consent.reader.port";
 import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/client-app-version.reader.port";
 import type {
   AiReportRepositoryPort,
@@ -244,9 +251,14 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
 /** 사용자의 AI 데이터 처리 동의 상태를 테스트에서 바꿀 수 있는 reader */
 export class StubAiDataSharingConsent implements AiDataSharingConsentDecisionReaderPort {
   decision: AiDataSharingDecision = "UNDECIDED";
+  /** AGREED일 때 동의한 안내 버전 */
+  agreedVersion: AiDataSharingConsentVersion = AI_DATA_SHARING_CONSENT.VERSION;
 
-  async findAiDataSharingDecision(): Promise<AiDataSharingDecision> {
-    return this.decision;
+  async findAiDataSharingConsent(): Promise<AiDataSharingConsent> {
+    return {
+      decision: this.decision,
+      agreedVersion: this.decision === "AGREED" ? this.agreedVersion : null,
+    };
   }
 }
 

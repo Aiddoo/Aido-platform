@@ -45,7 +45,7 @@ import {
       provide: NUDGE_INTERACTION_CONFIG,
       inject: [TypedConfigService],
       useFactory: (config: TypedConfigService): NudgeInteractionConfigPort => ({
-        isEnabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
+        isEnabled: config.nudge.interactionsEnabled,
       }),
     },
     { provide: NUDGE_REPOSITORY, useClass: DrizzleNudgeRepository },

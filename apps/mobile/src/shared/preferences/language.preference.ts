@@ -1,29 +1,17 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
-
-export const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
+const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
 
 export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
 export type ResolvedLanguage = 'ko' | 'en';
 
-const KEY = 'aido_language';
+export const LANGUAGE_MODE_STORAGE_KEY = 'aido_language';
 
 export function isLanguageMode(value: unknown): value is LanguageMode {
   return LANGUAGE_MODES.some((candidate) => candidate === value);
 }
 
-export function readLanguageMode(storage: SyncStorage): LanguageMode {
-  const saved = storage.getString(KEY);
-
-  if (isLanguageMode(saved)) {
-    return saved;
-  }
-
-  return 'system';
-}
-
-export function writeLanguageMode(storage: SyncStorage, mode: LanguageMode): void {
-  storage.set(KEY, mode);
+export function toLanguageMode(saved: string | undefined): LanguageMode {
+  return isLanguageMode(saved) ? saved : 'system';
 }
 
 /**
@@ -41,7 +29,7 @@ export function resolveLanguage(
   return toResolvedLanguage(deviceLanguage);
 }
 
-/** 임의 언어 코드 → 지원 언어 내로잉 (ko 외 전부 en) — 폴백 규칙의 단일 소스 */
+/** ko 외에는 모두 en이다 (폴백 규칙의 단일 소스) */
 export function toResolvedLanguage(value: string | null | undefined): ResolvedLanguage {
   return value === 'ko' ? 'ko' : 'en';
 }

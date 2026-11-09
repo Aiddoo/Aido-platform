@@ -3,7 +3,7 @@ import { useStackBackToolbar, useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 export default function MemoLayout() {
-  const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
+  const screenOptions = useStackScreenOptions({ hasContentBackground: true });
   const backToolbar = useStackBackToolbar();
   const { t } = useTranslation('memo');
 
@@ -11,8 +11,7 @@ export default function MemoLayout() {
     <Stack
       screenOptions={{
         ...screenOptions,
-        animation: 'fade_from_bottom',
-        animationDuration: 200,
+        animation: 'slide_from_bottom',
       }}
     >
       <Stack.Screen name="create" options={{ title: t('titles.create') }} />

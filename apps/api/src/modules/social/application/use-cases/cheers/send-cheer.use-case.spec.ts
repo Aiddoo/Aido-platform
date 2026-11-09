@@ -1,3 +1,5 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
@@ -43,9 +45,44 @@ describe("친구에게 응원 보내기", () => {
         notifier: fixture.cheerNotifier,
         limitReader: fixture.cheerLimitReader,
       }).execute({ senderId: "sender", receiverId: "receiver", timezone: "UTC" }),
-    ).rejects.toMatchObject({ errorCode: "CHEER_1201", details: { limit: 3 } });
+    ).rejects.toMatchObject({
+      errorCode: "CHEER_1201",
+      details: {
+        charged: false,
+        featureQuota: {
+          feature: "CHEER",
+          limit: PLAN_CATALOG.CHEER.free,
+          used: PLAN_CATALOG.CHEER.free,
+          remaining: 0,
+          period: "day",
+          resetsAt: "2026-07-27T00:00:00.000Z",
+        },
+      },
+    });
     expect(fixture.cheerRepository.records.size).toBe(3);
     expect(fixture.cheerNotifier.notifications).toEqual([]);
+  });
+  it("일일 한도 오류의 resetsAt은 요청 시간대의 다음 자정이다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    for (let index = 0; index < PLAN_CATALOG.CHEER.free; index += 1) {
+      fixture.cheerRepository.seed({
+        senderId: "sender",
+        receiverId: `previous-${index}`,
+        createdAt: SOCIAL_TIME,
+      });
+    }
+    // When
+    const result = new SendCheer({
+      ...fixture,
+      notifier: fixture.cheerNotifier,
+      limitReader: fixture.cheerLimitReader,
+    }).execute({ senderId: "sender", receiverId: "receiver", timezone: "Asia/Seoul" });
+    // Then
+    await expect(result).rejects.toMatchObject({
+      errorCode: "CHEER_1201",
+      details: { featureQuota: { resetsAt: "2026-07-26T15:00:00.000Z" } },
+    });
   });
   it("같은 친구의 24시간 쿨다운 동안은 구체적인 오류와 남은 시간을 반환한다", async () => {
     // Given

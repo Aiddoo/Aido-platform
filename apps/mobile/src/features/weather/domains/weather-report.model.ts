@@ -1,119 +1,194 @@
 import {
-  weatherAirQualitySchema,
-  weatherAlertSchema,
-  weatherAttributionSchema,
-  weatherCurrentConditionsSchema,
-  weatherDailyForecastSchema,
-  weatherHourlyForecastSchema,
-  weatherLocationSchema,
-  weatherMinuteForecastSchema,
-  weatherNextHourPeriodSchema,
+  WEATHER_AIR_QUALITY_SOURCES,
+  WEATHER_ALERT_SEVERITIES,
   WEATHER_BRIEFING_RULES,
+  WEATHER_CONDITIONS,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
-  type WeatherCondition,
+  WEATHER_MOON_PHASES,
+  WEATHER_NEXT_HOUR_CONDITIONS,
+  WEATHER_PRECIPITATION_TYPES,
+  WEATHER_PRESSURE_TRENDS,
+  WEATHER_PROVIDERS,
   type WeatherPrecipitationType,
-} from '@aido/api';
-import { formatDateKey, hasSameWallClock } from '@src/shared/utils/date-format';
-import { clamp, maxBy, minBy } from 'es-toolkit';
-import { match } from 'ts-pattern';
+} from '@aido/api/vocabulary';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import {
+  type Instant,
+  fromEpochMs,
+  instantSchema,
+  toDateKey,
+  toEpochMs,
+} from '@src/shared/date/instant';
 import { z } from 'zod';
 
-import type { WeatherSceneInput } from './weather-scene.model';
+const weatherConditionSchema = z.enum(WEATHER_CONDITIONS);
+const precipitationTypeSchema = z.enum(WEATHER_PRECIPITATION_TYPES);
 
-const currentWeatherSchema = weatherCurrentConditionsSchema.extend({
-  observedAt: z.date(),
+export const registeredLocationSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  timezone: z.string(),
+});
+export type RegisteredLocation = z.infer<typeof registeredLocationSchema>;
+
+const currentWeatherSchema = z.object({
+  observedAt: instantSchema,
+  condition: weatherConditionSchema,
+  isDaylight: z.boolean(),
+  temperature: z.number(),
+  apparentTemperature: z.number(),
+  dewPoint: z.number(),
+  humidity: z.number(),
+  cloudCover: z.number(),
+  uvIndex: z.number(),
+  windSpeed: z.number(),
+  windGust: z.number().nullable(),
+  windDirection: z.number().nullable(),
+  visibility: z.number(),
+  pressure: z.number(),
+  pressureTrend: z.enum(WEATHER_PRESSURE_TRENDS),
+  precipitationIntensity: z.number(),
 });
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
 
-const minuteForecastSchema = weatherMinuteForecastSchema.extend({ startsAt: z.date() });
+const minuteForecastSchema = z.object({
+  startsAt: instantSchema,
+  precipitationChance: z.number(),
+  precipitationIntensity: z.number(),
+});
 export type MinuteForecast = z.infer<typeof minuteForecastSchema>;
 
-const nextHourPeriodSchema = weatherNextHourPeriodSchema.extend({
-  startsAt: z.date(),
-  endsAt: z.date().nullable(),
+const nextHourPeriodSchema = z.object({
+  condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS),
+  precipitationType: precipitationTypeSchema.nullable(),
+  startsAt: instantSchema,
+  endsAt: instantSchema.nullable(),
+  precipitationChance: z.number(),
+  precipitationIntensity: z.number(),
 });
 
 const nextHourForecastSchema = z.object({
   periods: z.array(nextHourPeriodSchema),
   minutes: z.array(minuteForecastSchema),
 });
-export type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
+type NextHourForecast = z.infer<typeof nextHourForecastSchema>;
 
-const hourlyForecastSchema = weatherHourlyForecastSchema.extend({ startsAt: z.date() });
+const hourlyForecastSchema = z.object({
+  startsAt: instantSchema,
+  condition: weatherConditionSchema,
+  isDaylight: z.boolean(),
+  temperature: z.number(),
+  apparentTemperature: z.number(),
+  humidity: z.number(),
+  uvIndex: z.number(),
+  windSpeed: z.number(),
+  windDirection: z.number().nullable(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+});
 export type HourlyForecastEntry = z.infer<typeof hourlyForecastSchema>;
 
-const dailyForecastSchema = weatherDailyForecastSchema.extend({
-  sunrise: z.date().nullable(),
-  sunset: z.date().nullable(),
-  moonrise: z.date().nullable(),
-  moonset: z.date().nullable(),
+const dayPartForecastSchema = z.object({
+  condition: weatherConditionSchema,
+  temperatureMin: z.number().nullable(),
+  temperatureMax: z.number().nullable(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+});
+
+const dailyForecastSchema = z.object({
+  date: z.string(),
+  condition: weatherConditionSchema,
+  temperatureMin: z.number(),
+  temperatureMax: z.number(),
+  precipitationChance: z.number(),
+  precipitationAmount: z.number(),
+  precipitationType: precipitationTypeSchema,
+  snowfallAmount: z.number(),
+  uvIndexMax: z.number(),
+  windSpeedMax: z.number().nullable(),
+  windGustMax: z.number().nullable(),
+  sunrise: instantSchema.nullable(),
+  sunset: instantSchema.nullable(),
+  moonPhase: z.enum(WEATHER_MOON_PHASES),
+  moonrise: instantSchema.nullable(),
+  moonset: instantSchema.nullable(),
+  restOfDay: dayPartForecastSchema.nullable(),
+  daytime: dayPartForecastSchema.nullable(),
+  overnight: dayPartForecastSchema.nullable(),
 });
 export type DailyForecastEntry = z.infer<typeof dailyForecastSchema>;
 
-const weatherAlertModelSchema = weatherAlertSchema.extend({
-  effectiveAt: z.date(),
-  expiresAt: z.date(),
+const weatherAlertSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  severity: z.enum(WEATHER_ALERT_SEVERITIES),
+  source: z.string(),
+  areaName: z.string().nullable(),
+  effectiveAt: instantSchema,
+  expiresAt: instantSchema,
+  detailsUrl: z.string(),
 });
-export type WeatherAlert = z.infer<typeof weatherAlertModelSchema>;
+export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
 
-const airQualitySchema = weatherAirQualitySchema;
+const airQualitySchema = z.object({
+  pm10: z.number().nullable(),
+  pm25: z.number().nullable(),
+  source: z.enum(WEATHER_AIR_QUALITY_SOURCES),
+});
 export type AirQuality = z.infer<typeof airQualitySchema>;
 
-const weatherReportModelSchema = z.object({
-  location: weatherLocationSchema,
+const attributionLogoSchema = z.object({ '1x': z.string(), '2x': z.string(), '3x': z.string() });
+
+const attributionSchema = z.object({
+  provider: z.enum(WEATHER_PROVIDERS),
+  serviceName: z.string(),
+  legalPageUrl: z.string(),
+  logo: z.object({ light: attributionLogoSchema, dark: attributionLogoSchema }).nullable(),
+});
+export type AttributionInfo = z.infer<typeof attributionSchema>;
+
+export const weatherReportSchema = z.object({
+  location: registeredLocationSchema,
   current: currentWeatherSchema,
   nextHour: nextHourForecastSchema.nullable(),
   hourly: z.array(hourlyForecastSchema),
   daily: z.array(dailyForecastSchema),
-  alerts: z.array(weatherAlertModelSchema),
+  alerts: z.array(weatherAlertSchema),
   airQuality: airQualitySchema.nullable(),
-  attribution: weatherAttributionSchema,
-  fetchedAt: z.date(),
+  attribution: attributionSchema,
+  fetchedAt: instantSchema,
 });
-export type WeatherReport = z.infer<typeof weatherReportModelSchema>;
-export type AttributionInfo = WeatherReport['attribution'];
+export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
-const HOUR_MS = 60 * 60_000;
-const MINUTE_MS = 60_000;
 const NEXT_HOUR_RANGE_MS = HOUR_MS;
 const STALE_AFTER_MS = 30 * MINUTE_MS;
 const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;
 /** 시간별 예보에서 이 확률 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림과 같은 기준이다. */
 const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 
-/** 0~1 막대·궤적 위 자리. 범위를 벗어나면 양 끝에 두고, 폭이 1보다 좁으면 1로 본다. */
-export function toUnitPosition(value: number, min: number, max: number): number {
-  return clamp((value - min) / Math.max(max - min, 1), 0, 1);
-}
-
-export function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
+function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
   return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
 }
 
-/** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
-function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
-  return match(type)
-    .with('SNOW', 'SLEET', 'HAIL', () => 'SNOW' as const)
-    .with('RAIN', 'MIXED', 'NONE', () => 'RAIN' as const)
-    .exhaustive();
-}
-
-export function isWetHour(hour: HourlyForecastEntry): boolean {
+function isWetHour(hour: HourlyForecastEntry): boolean {
   return hour.precipitationChance >= WET_HOUR_CHANCE;
 }
 
-function hourEndsAt(hour: HourlyForecastEntry): number {
-  return hour.startsAt.getTime() + HOUR_MS;
+function getHourEndsAt(hour: HourlyForecastEntry): number {
+  return toEpochMs(hour.startsAt) + HOUR_MS;
 }
 
-export function selectUpcomingHours(
+function getUpcomingHours(
   hourly: readonly HourlyForecastEntry[],
-  now: Date,
+  now: Instant,
 ): HourlyForecastEntry[] {
-  return hourly.filter((hour) => hourEndsAt(hour) > now.getTime());
+  return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
 }
 
-export type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
+type PrecipitationSource = Pick<WeatherReport, 'location' | 'nextHour' | 'hourly'>;
 
 /** 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 안내한다. */
 export type PrecipitationPrecision = 'minute' | 'hour';
@@ -123,73 +198,73 @@ export type PrecipitationWindow =
   | {
       kind: 'ongoing';
       precipitationType: WeatherPrecipitationType | null;
-      endsAt: Date | null;
+      endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
-      endsOnLaterDay: boolean;
+      isEndingOnLaterDay: boolean;
     }
   | {
       kind: 'upcoming';
       precision: PrecipitationPrecision;
       precipitationType: WeatherPrecipitationType | null;
-      startsAt: Date;
-      endsAt: Date | null;
+      startsAt: Instant;
+      endsAt: Instant | null;
       endPrecision: PrecipitationPrecision;
-      endsOnLaterDay: boolean;
+      isEndingOnLaterDay: boolean;
     };
 
-function getNextHourHorizon(nextHour: NextHourForecast, now: Date): number {
+function getNextHourHorizon(nextHour: NextHourForecast, now: Instant): number {
   const lastMinute = nextHour.minutes.at(-1);
   return lastMinute == null
-    ? now.getTime() + NEXT_HOUR_RANGE_MS
-    : lastMinute.startsAt.getTime() + MINUTE_MS;
+    ? toEpochMs(now) + NEXT_HOUR_RANGE_MS
+    : toEpochMs(lastMinute.startsAt) + MINUTE_MS;
 }
 
-function findFirstDryHourStart(hourly: readonly HourlyForecastEntry[], after: number): Date | null {
-  const dryHour = hourly.find((hour) => hour.startsAt.getTime() >= after && !isWetHour(hour));
+function findFirstDryHourStart(
+  hourly: readonly HourlyForecastEntry[],
+  after: number,
+): Instant | null {
+  const dryHour = hourly.find((hour) => toEpochMs(hour.startsAt) >= after && !isWetHour(hour));
   return dryHour?.startsAt ?? null;
 }
 
-function isLaterDay(endsAt: Date | null, now: Date, timeZone: string): boolean {
-  return endsAt != null && formatDateKey(endsAt, timeZone) !== formatDateKey(now, timeZone);
+function isLaterDay(endsAt: Instant | null, now: Instant, timeZone: string): boolean {
+  return endsAt != null && toDateKey(endsAt, timeZone) !== toDateKey(now, timeZone);
 }
 
 function toWindow(
   report: PrecipitationSource,
-  now: Date,
+  now: Instant,
   wet: {
-    startsAt: Date;
-    endsAt: Date | null;
+    startsAt: Instant;
+    endsAt: Instant | null;
     precision: PrecipitationPrecision;
     endPrecision: PrecipitationPrecision;
     precipitationType: WeatherPrecipitationType | null;
   },
 ): PrecipitationWindow {
-  const endsOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
-  if (wet.startsAt.getTime() <= now.getTime()) {
+  const isEndingOnLaterDay = isLaterDay(wet.endsAt, now, report.location.timezone);
+  if (toEpochMs(wet.startsAt) <= toEpochMs(now)) {
     return {
       kind: 'ongoing',
       precipitationType: wet.precipitationType,
       endsAt: wet.endsAt,
       endPrecision: wet.endPrecision,
-      endsOnLaterDay,
+      isEndingOnLaterDay,
     };
   }
-  return { kind: 'upcoming', ...wet, endsOnLaterDay };
+  return { kind: 'upcoming', ...wet, isEndingOnLaterDay };
 }
 
-/**
- * 분 단위 예보가 있으면 그 구간을 먼저 믿고, 예보 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다.
- * 분 단위 예보가 없는 지역(nextHour == null)은 시간별 예보만으로 시작·그침을 정한다.
- */
-function getPrecipitationWindow(report: PrecipitationSource, now: Date): PrecipitationWindow {
-  const nowMs = now.getTime();
+/** 분 단위 예보를 먼저 믿고, 그 범위 끝까지 이어지는 비는 시간별 예보에서 그치는 시각을 찾는다 */
+function getPrecipitationWindow(report: PrecipitationSource, now: Instant): PrecipitationWindow {
+  const nowMs = toEpochMs(now);
   const { nextHour, hourly } = report;
 
   if (nextHour != null) {
     const period = nextHour.periods.find(
       (candidate) =>
         candidate.condition === 'PRECIPITATION' &&
-        (candidate.endsAt == null || candidate.endsAt.getTime() > nowMs),
+        (candidate.endsAt == null || toEpochMs(candidate.endsAt) > nowMs),
     );
     if (period != null) {
       return toWindow(report, now, {
@@ -203,264 +278,101 @@ function getPrecipitationWindow(report: PrecipitationSource, now: Date): Precipi
   }
 
   const searchFrom = nextHour == null ? nowMs : getNextHourHorizon(nextHour, now);
-  const wetHour = hourly.find((hour) => hourEndsAt(hour) > searchFrom && isWetHour(hour));
+  const wetHour = hourly.find((hour) => getHourEndsAt(hour) > searchFrom && isWetHour(hour));
   if (wetHour == null) {
     return { kind: 'dry' };
   }
   return toWindow(report, now, {
-    startsAt: new Date(Math.max(wetHour.startsAt.getTime(), searchFrom)),
-    endsAt: findFirstDryHourStart(hourly, hourEndsAt(wetHour)),
+    startsAt: fromEpochMs(Math.max(toEpochMs(wetHour.startsAt), searchFrom)),
+    endsAt: findFirstDryHourStart(hourly, getHourEndsAt(wetHour)),
     precision: 'hour',
     endPrecision: 'hour',
     precipitationType: wetHour.precipitationType,
   });
 }
 
-function getMinutesUntil(target: Date, now: Date): number {
-  return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / MINUTE_MS));
+/** 분 단위 예보가 없는 지역은 이 시간 안의 시간별 예보로만 곧 올 비를 알린다. */
+const HOURLY_OUTLOOK_RANGE_HOURS = 6;
+
+export interface HourlyPrecipitationOutlook {
+  hour: HourlyForecastEntry;
+  isOngoing: boolean;
 }
 
-function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - report.fetchedAt.getTime() > STALE_AFTER_MS;
+/** 지금 시간부터 6시간 안에서 비가 오는 첫 시간을 고른다. 없으면 빈 카드를 만들지 않도록 null이다. */
+function findHourlyPrecipitationOutlook(
+  hourly: readonly HourlyForecastEntry[],
+  now: Instant,
+): HourlyPrecipitationOutlook | null {
+  const until = toEpochMs(now) + HOURLY_OUTLOOK_RANGE_HOURS * HOUR_MS;
+  const hour = hourly.find(
+    (candidate) =>
+      getHourEndsAt(candidate) > toEpochMs(now) &&
+      toEpochMs(candidate.startsAt) < until &&
+      isWetHour(candidate),
+  );
+  if (hour == null) {
+    return null;
+  }
+  return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
+}
+
+function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+  return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */
-export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
-  return now.getTime() - report.fetchedAt.getTime() > NOWCAST_EXPIRES_AFTER_MS;
+function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
+  return toEpochMs(now) - toEpochMs(report.fetchedAt) > NOWCAST_EXPIRES_AFTER_MS;
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
-function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Date): string {
-  return formatDateKey(now, report.location.timezone);
+function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
+  return toDateKey(now, report.location.timezone);
 }
 
-function findTodayForecast(
+/** 오늘 예보. 일별 예보에 오늘이 없으면(날짜 경계의 지연) 첫 예보를 오늘처럼 쓴다. */
+function findTodayOrFirstForecast(
   report: Pick<WeatherReport, 'location' | 'daily'>,
-  now: Date,
+  now: Instant,
 ): DailyForecastEntry | null {
   const todayKey = getTodayKey(report, now);
   return report.daily.find((day) => day.date === todayKey) ?? report.daily[0] ?? null;
 }
 
-/**
- * 서버가 심각도 순으로 정렬해 보내므로 순서는 그대로 두고, 화면을 켜 둔 사이 만료된 특보만 뺀다.
- * 아직 발효 전인 특보는 미리 알 수 있도록 남긴다.
- */
-function selectActiveAlerts(alerts: readonly WeatherAlert[], now: Date): WeatherAlert[] {
-  return alerts.filter((alert) => alert.expiresAt.getTime() > now.getTime());
+/** 서버가 심각도 순으로 보내므로 순서는 두고 만료된 특보만 뺀다. 발효 전 특보는 미리 알도록 남긴다 */
+function getActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
+  return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
 }
 
-export function isAlertInEffect(alert: WeatherAlert, now: Date): boolean {
-  return alert.effectiveAt.getTime() <= now.getTime();
+function isAlertInEffect(alert: WeatherAlert, now: Instant): boolean {
+  return toEpochMs(alert.effectiveAt) <= toEpochMs(now);
 }
 
-export type AirQualityGrade = 'good' | 'moderate' | 'bad' | 'veryBad';
-
-const AIR_QUALITY_GRADES = [
-  'good',
-  'moderate',
-  'bad',
-  'veryBad',
-] as const satisfies readonly AirQualityGrade[];
-/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다. */
-export const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
-export const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
-
-function gradeIndex(value: number, upperBounds: readonly number[]): number {
-  const index = upperBounds.findIndex((bound) => value <= bound);
-  return index === -1 ? upperBounds.length : index;
-}
-
-/** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
-function getAirQualityGrade(airQuality: Pick<AirQuality, 'pm10' | 'pm25'>): AirQualityGrade | null {
-  const indexes = [
-    airQuality.pm10 == null ? null : gradeIndex(airQuality.pm10, PM10_UPPER_BOUNDS),
-    airQuality.pm25 == null ? null : gradeIndex(airQuality.pm25, PM25_UPPER_BOUNDS),
-  ].filter((index) => index != null);
-  if (indexes.length === 0) {
-    return null;
-  }
-  return AIR_QUALITY_GRADES[Math.max(...indexes)] ?? null;
-}
-
-export type UvLevel = 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme';
-
-const UV_LEVELS = [
-  'low',
-  'moderate',
-  'high',
-  'veryHigh',
-  'extreme',
-] as const satisfies readonly UvLevel[];
-/** WHO 자외선 지수 기준. 각 값 이하가 해당 단계다. */
-const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
-
-function getUvLevel(uvIndex: number): UvLevel {
-  return UV_LEVELS[gradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
-}
-
-export type TemperatureUnit = 'celsius' | 'fahrenheit';
-
-/** 서버 값은 섭씨다. 반올림한 -0은 "-0°"로 보이지 않게 0으로 바꾼다. */
-function toDisplayTemperature(celsius: number, unit: TemperatureUnit): number {
-  const value = unit === 'fahrenheit' ? (celsius * 9) / 5 + 32 : celsius;
-  return Math.round(value) + 0;
-}
-
-const MINUS_SIGN = '−';
-
-/** 큰 기온은 영하 기호와 숫자를 따로 그린다. */
-export type TemperatureReading = { isBelowZero: boolean; magnitude: number };
-
-function toTemperatureReading(displayValue: number): TemperatureReading {
-  return { isBelowZero: displayValue < 0, magnitude: Math.abs(displayValue) };
-}
-
-/** 영하는 하이픈 대신 마이너스 기호(−)로 써서 숫자 폭과 읽기를 맞춘다. */
-function formatDegrees(displayValue: number): string {
-  const { isBelowZero, magnitude } = toTemperatureReading(displayValue);
-  return `${isBelowZero ? MINUS_SIGN : ''}${magnitude}°`;
-}
-
-function toSceneInput(
-  report: Pick<WeatherReport, 'current' | 'location' | 'fetchedAt'>,
-): WeatherSceneInput {
-  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = report.current;
-  return {
-    condition,
-    isDaylight,
-    precipitationIntensity,
-    cloudCover,
-    windSpeed,
-    observedAt: report.fetchedAt,
-    latitude: report.location.latitude,
-  };
-}
-
-export interface TemperatureBar {
-  start: number;
-  end: number;
-}
-
-/** 예보 기간 전체의 최저~최고를 0~1로 두고 하루의 최저·최고가 놓일 위치를 구한다. */
-function toTemperatureBars(daily: readonly DailyForecastEntry[]): TemperatureBar[] {
-  const lowest = minBy(daily, (day) => day.temperatureMin)?.temperatureMin;
-  const highest = maxBy(daily, (day) => day.temperatureMax)?.temperatureMax;
-  if (lowest == null || highest == null) {
-    return [];
-  }
-  return daily.map((day) => ({
-    start: toUnitPosition(day.temperatureMin, lowest, highest),
-    end: toUnitPosition(day.temperatureMax, lowest, highest),
-  }));
-}
-
-export type SunEvents =
-  | { kind: 'regular'; sunrise: Date | null; sunset: Date | null }
+type SunEvents =
+  | { kind: 'regular'; sunrise: Instant | null; sunset: Instant | null }
   | { kind: 'polarDay' }
   | { kind: 'polarNight' };
 
-/**
- * 일출·일몰이 모두 없으면 극지의 백야·극야다. 둘을 가르는 값은 계약에 없으므로 지금 낮인지로 정한다.
- * 하나만 없으면(해가 뜨기만 하거나 지기만 하는 날) 있는 쪽만 보여 준다.
- */
-function getSunEvents(day: DailyForecastEntry, isDaylight: boolean): SunEvents {
+/** 일출·일몰이 모두 없으면 백야·극야인데, 둘을 가르는 값이 계약에 없어 지금 낮인지로 정한다 */
+function getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boolean }): SunEvents {
   if (day.sunrise == null && day.sunset == null) {
     return { kind: isDaylight ? 'polarDay' : 'polarNight' };
   }
   return { kind: 'regular', sunrise: day.sunrise, sunset: day.sunset };
 }
 
-const COMPASS_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
-export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
-
-/** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
-function toCompassDirection(degrees: number | null): CompassDirection | null {
-  if (degrees == null) {
-    return null;
-  }
-  const index = Math.round((((degrees % 360) + 360) % 360) / 45) % COMPASS_DIRECTIONS.length;
-  return COMPASS_DIRECTIONS[index] ?? null;
-}
-
-export type FeelsLikeComparison = 'colder' | 'similar' | 'warmer';
-/** 체감 온도와 실제 기온의 차이가 이 값(°C) 미만이면 비슷하다고 본다. */
-const FEELS_LIKE_SIMILAR_RANGE = 2;
-
-function compareFeelsLike(current: CurrentWeather): FeelsLikeComparison {
-  const difference = current.apparentTemperature - current.temperature;
-  if (Math.abs(difference) < FEELS_LIKE_SIMILAR_RANGE) {
-    return 'similar';
-  }
-  return difference < 0 ? 'colder' : 'warmer';
-}
-
-/**
- * 날씨 시각은 위치 시간대로 보여 준다. 지금 그 벽시계가 기기와 다를 때만 '현지' 시각임을 밝힌다.
- * 서울·도쿄처럼 이름만 다르고 오프셋이 같으면 다르지 않다.
- */
-export function isDifferentWallClock(
-  report: { location: Pick<WeatherReport['location'], 'timezone'> },
-  deviceTimeZone: string,
-  now: Date,
-): boolean {
-  return !hasSameWallClock(now, report.location.timezone, deviceTimeZone);
-}
-
-export type AttributionBackground = 'light' | 'dark';
-
-export type AttributionMark = { kind: 'logo'; uri: string } | { kind: 'text'; serviceName: string };
-
-/**
- * 어두운 바탕(하늘 장면·다크 테마)에는 흰 글자 로고(dark), 밝은 바탕에는 검은 글자 로고(light)를 쓴다.
- * 화면 밀도에 맞는 해상도 하나를 골라 1x 크기로 그려야 늘어나 흐려지지 않는다.
- * 로고를 받지 못하면 서비스 이름을 글자로 표기해 출처 표기가 빠지지 않게 한다.
- */
-function getAttributionMark(
-  attribution: AttributionInfo,
-  background: AttributionBackground,
-  pixelRatio: number,
-): AttributionMark {
-  if (attribution.logo == null) {
-    return { kind: 'text', serviceName: attribution.serviceName };
-  }
-  return { kind: 'logo', uri: attribution.logo[background][toLogoDensity(pixelRatio)] };
-}
-
-/** 화면 밀도보다 낮은 해상도를 고르면 늘어나 흐려지므로 같거나 한 단계 높은 해상도를 고른다. */
-function toLogoDensity(pixelRatio: number): '1x' | '2x' | '3x' {
-  if (pixelRatio > 2) {
-    return '3x';
-  }
-  if (pixelRatio > 1) {
-    return '2x';
-  }
-  return '1x';
-}
-
 export const WeatherReportPolicy = {
-  attributionMark: getAttributionMark,
-  isDifferentWallClock,
   isWetHour,
   isFrozenPrecipitation,
-  precipitationCondition: toPrecipitationCondition,
-  upcomingHours: selectUpcomingHours,
-  precipitationWindow: getPrecipitationWindow,
-  minutesUntil: getMinutesUntil,
-  isStale: isReportStale,
+  getUpcomingHours,
+  getPrecipitationWindow,
+  findHourlyPrecipitationOutlook,
+  isReportStale,
   isNowcastExpired,
-  todayKey: getTodayKey,
-  todayForecast: findTodayForecast,
-  activeAlerts: selectActiveAlerts,
+  getTodayKey,
+  findTodayOrFirstForecast,
+  getActiveAlerts,
   isAlertInEffect,
-  temperatureBars: toTemperatureBars,
-  sunEvents: getSunEvents,
-  compassDirection: toCompassDirection,
-  feelsLike: compareFeelsLike,
-  airQualityGrade: getAirQualityGrade,
-  uvLevel: getUvLevel,
-  displayTemperature: toDisplayTemperature,
-  temperatureReading: toTemperatureReading,
-  degrees: formatDegrees,
-  sceneInput: toSceneInput,
+  getSunEvents,
 } as const;

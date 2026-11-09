@@ -1,5 +1,6 @@
 import type { RegisterInput as RegisterBody } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { TERMS_VERSION } from "@aido/api/vocabulary";
 
 import type {
   RegisterResult,
@@ -84,9 +85,11 @@ export class Register {
           consent: {
             termsAgreedAt: termsAgreed ? currentTime : undefined,
             privacyAgreedAt: privacyAgreed ? currentTime : undefined,
+            agreedTermsVersion: termsAgreed ? TERMS_VERSION.CURRENT : undefined,
             marketingAgreedAt: marketingAgreed ? currentTime : undefined,
             marketingPushAgreedAt: marketingPushAgreed ? currentTime : undefined,
           },
+          locale: metadata?.locale,
         });
 
         const verificationResult =
@@ -111,14 +114,13 @@ export class Register {
       throw error;
     }
 
-    let emailSent = true;
+    let emailSent = false;
     try {
-      await this.#dependencies.verificationService.sendVerificationEmail(
+      emailSent = await this.#dependencies.verificationService.sendVerificationEmail(
         email,
         result.verificationCode,
       );
     } catch (error) {
-      emailSent = false;
       this.#dependencies.logger.error({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         userId: result.user.id,

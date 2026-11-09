@@ -8,7 +8,11 @@ import type { NotificationType } from "../../types/delivery/notification-type.js
  * 애플리케이션 서비스가 이 정책을 사용해 수행한다.
  */
 
-/** 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림 */
+/**
+ * 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림.
+ * 보상·체험 종료와 연간 갱신 안내(PREMIUM_GRANT_ENDING·PREMIUM_TRIAL_ENDING·PREMIUM_RENEWAL_UPCOMING)는
+ * 이용 중인 혜택의 거래 정보라 넣지 않는다.
+ */
 export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
   new Set<NotificationType>([
     "AI_SUGGESTION",
@@ -17,7 +21,6 @@ export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
     "NUDGE_SUGGEST",
     "LUNCH_NUDGE",
     "STREAK_AT_RISK",
-    "PREMIUM_GRANT_ENDING",
     // 초대받은 사람이 직접 한 행동의 결과가 아니라 사용 시작을 권하는 자동 알림이다
     "INVITE_QUALIFY_REMINDER",
   ]);

@@ -1,5 +1,5 @@
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback, Spinner } from 'heroui-native';
+import { Button as HeroButton, PressableFeedback, Spinner } from 'heroui-native';
 
 import { Text } from '../text/text';
 import type { ButtonProps } from './button.types';
@@ -12,6 +12,28 @@ const TEXT_SIZE_MAP = {
   xlarge: 'b3',
 } as const;
 
+const HERO_VARIANT_MAP = {
+  fill: { primary: 'primary', danger: 'danger', dark: 'primary' },
+  weak: { primary: 'secondary', danger: 'danger-soft', dark: 'secondary' },
+} as const;
+
+const TEXT_COLOR_MAP = {
+  fill: {
+    primary: 'text-white dark:text-gray-9',
+    danger: 'text-white dark:text-gray-9',
+    dark: 'text-white dark:text-gray-9',
+  },
+  weak: {
+    primary: 'text-main',
+    danger: 'text-error',
+    dark: 'text-gray-9',
+  },
+} as const;
+
+/**
+ * 글자는 폭이 정해진 버튼(`block`·`full`)에서 버튼 폭을 모두 쓰고 가운데 맞춘다. 글자 폭에 꼭 맞춘 칸은 Android가 큰 글꼴에서
+ * 마지막 글자를 다음 줄로 넘기고, 고정 높이가 그 줄을 가려 글자가 잘려 보인다("할 일 3개 추가" → "할 일 3개 추").
+ * Uniwind는 같은 우선순위면 뒤에 온 클래스가 이겨 `className`이 heroui 기본 클래스를 덮는다. 비활성은 회색 면 + 글자 흐림이라 heroui의 비활성 투명도는 `disabled:opacity-100`으로 끈다 */
 export function Button({
   children,
   size = 'xlarge',
@@ -24,24 +46,9 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
-  const disabled = isDisabled || isLoading;
+  const isInactive = isDisabled || isLoading;
   const isTextChild = typeof children === 'string';
-
-  const textColorMap = {
-    fill: {
-      primary: 'text-white dark:text-gray-9',
-      danger: 'text-white dark:text-gray-9',
-      dark: 'text-white dark:text-gray-9',
-    },
-    weak: {
-      primary: 'text-main',
-      danger: 'text-error',
-      dark: 'text-gray-9',
-    },
-  } as const;
-
-  const baseTextColor = variant === 'fill' ? textColorMap.fill[color] : textColorMap.weak[color];
-  const textColor = disabled ? `${baseTextColor} opacity-40` : baseTextColor;
+  const textColor = cn(TEXT_COLOR_MAP[variant][color], isInactive && 'opacity-40');
 
   const renderContent = () => {
     if (isLoading) {
@@ -49,7 +56,12 @@ export function Button({
     }
     if (isTextChild) {
       return (
-        <Text size={TEXT_SIZE_MAP[size]} weight="semibold" className={textColor}>
+        <Text
+          size={TEXT_SIZE_MAP[size]}
+          weight="semibold"
+          align="center"
+          className={cn(textColor, display !== 'inline' && 'flex-1')}
+        >
           {children}
         </Text>
       );
@@ -58,16 +70,18 @@ export function Button({
   };
 
   return (
-    <PressableFeedback
-      isDisabled={disabled}
+    <HeroButton
+      variant={HERO_VARIANT_MAP[variant][color]}
+      feedbackVariant="scale"
+      isDisabled={isInactive}
       className={cn(
-        buttonVariants({ size, variant, color, display, radius, isDisabled: disabled }),
+        buttonVariants({ size, variant, color, display, radius, isDisabled: isInactive }),
         className,
       )}
       {...props}
     >
       <PressableFeedback.Highlight className={highlightVariants({ radius })} />
       {renderContent()}
-    </PressableFeedback>
+    </HeroButton>
   );
 }

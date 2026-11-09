@@ -12,7 +12,7 @@ jest.mock('expo-crypto', () => ({
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** ky는 fetch에 항상 Request를 넘긴다. 다른 입력이면 테스트 전제가 깨진 것이다. */
-const requestOf = (input: Parameters<typeof fetch>[0]): Request => {
+const toRequest = (input: Parameters<typeof fetch>[0]): Request => {
   if (!(input instanceof Request)) {
     throw new Error('ky가 Request가 아닌 fetch 입력을 넘겼다');
   }
@@ -25,7 +25,7 @@ describe('요청마다 정하는 헤더 (beforeRequest)', () => {
   beforeEach(() => {
     sent = [];
     global.fetch = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>(async (input) => {
-      sent.push(requestOf(input));
+      sent.push(toRequest(input));
       return new Response('{}', { status: 200 });
     });
   });

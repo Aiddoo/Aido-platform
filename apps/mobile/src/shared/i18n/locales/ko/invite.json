@@ -4,7 +4,6 @@
     "headline": "친구에게 받은\n초대 코드를 입력해주세요",
     "description": "영문과 숫자 6자리예요. 헷갈리는 0·O·1·I·L은 없어요",
     "inputLabel": "초대 코드",
-    "paste": "복사한 코드 붙여넣기",
     "submit": "확인",
     "retry": "다시 확인",
     "invalidCharacter": {
@@ -21,7 +20,7 @@
       "title": "가입하면 프리미엄 {{count}}일",
       "description": "AI 할 일 만들기와 친구 추가를 마음껏 누려보세요",
       "benefitFriend": "{{name}}님과 바로 친구가 돼요",
-      "benefitAi": "AI 할 일 만들기 무제한",
+      "benefitAi": "AI 할 일 만들기 넉넉하게",
       "benefitFriends": "친구 추가·콕 찌르기 무제한",
       "codeLabel": "초대 코드",
       "inviterReward": "내가 {{activeDays}}일 동안 할 일을 끝내면 {{name}}님도 프리미엄 {{days}}일을 받아요"
@@ -54,13 +53,15 @@
     "enterCode": "코드 직접 입력하기"
   },
   "errors": {
-    "invalidCode": "초대 코드는 영문과 숫자 6자리예요"
+    "invalidCode": "초대 코드는 영문과 숫자 6자리예요",
+    "offline": "인터넷에 연결되면 초대 코드를 확인할 수 있어요"
   },
   "myInvite": {
     "title": "친구 초대",
     "rewardInviteeLabel": "친구",
     "rewardInvitee": "가입하면 바로 프리미엄 {{days}}일",
     "rewardInviterLabel": "나",
+    "rewardLineLabel": "{{label}}, {{value}}",
     "rewardInviter": "친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구\u00a01\u2060명\u00a0더",
     "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
     "codeLabel": "내 초대 코드",

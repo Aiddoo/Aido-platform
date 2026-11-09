@@ -1,53 +1,37 @@
-import type { Consent } from '@src/features/auth/domains/auth.model';
-import { DAY_MS } from '@src/shared/utils/date-format';
+import { type Consent } from '@src/features/identity/consent/domains/consent.model';
+import { DAY_MS } from '@src/shared/constants/time-units';
+import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import { z } from 'zod';
 
-/** 마케팅 푸시 옵트인 배너의 도배 방지 상태 */
-export interface MarketingPushPromptState {
-  /** 마지막으로 노출한 시각 (ISO 8601, 노출 전이면 null) */
-  lastPromptedAt: string | null;
-  /** 누적 노출 횟수 */
-  count: number;
+/** 계정마다 혜택·소식 제안을 마지막으로 닫은 시각 */
+export const marketingPushPromptStateSchema = z.object({
+  dismissedAt: instantSchema.nullable(),
+});
+export type MarketingPushPromptState = z.infer<typeof marketingPushPromptStateSchema>;
+
+/** 거절하면 이 날수 동안 다시 제안하지 않는다 */
+const DECLINE_COOLDOWN_DAYS = 90;
+
+function hasAgreedToMarketingPush(consent: Pick<Consent, 'marketingPushAgreedAt'>): boolean {
+  return consent.marketingPushAgreedAt != null;
 }
 
-const COOLDOWN_DAYS = 14;
-/** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */
-const MAX_PROMPT_COUNT = 3;
-
-export function isNotAgreedToMarketingPush(consent: Consent): boolean {
-  return consent.marketingPushAgreedAt == null;
-}
-
-export function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
-  return promptState.count < MAX_PROMPT_COUNT;
-}
-
-/** 마지막 닫기 이후 쿨다운이 경과했는가 (닫은 적 없으면 즉시 true) */
-export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Date): boolean {
-  if (promptState.lastPromptedAt == null) {
+function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant): boolean {
+  if (promptState.dismissedAt == null) {
     return true;
   }
-
-  const elapsedMs = now.getTime() - new Date(promptState.lastPromptedAt).getTime();
-  return elapsedMs >= COOLDOWN_DAYS * DAY_MS;
+  return diffMs(now, promptState.dismissedAt) >= DECLINE_COOLDOWN_DAYS * DAY_MS;
 }
 
-/** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
-export function shouldPromptMarketingPush(
-  consent: Consent | undefined,
+/** 이미 동의했거나 거절한 지 90일이 안 됐으면 제안하지 않는다 */
+function shouldPrompt(
+  consent: Pick<Consent, 'marketingPushAgreedAt'>,
   promptState: MarketingPushPromptState,
-  now: Date,
+  now: Instant,
 ): boolean {
-  if (consent == null) {
-    return false;
-  }
-
-  return (
-    isNotAgreedToMarketingPush(consent) &&
-    isUnderPromptLimit(promptState) &&
-    hasCooldownElapsed(promptState, now)
-  );
+  return !hasAgreedToMarketingPush(consent) && hasCooldownElapsed(promptState, now);
 }
 
 export const MarketingPushPromptPolicy = {
-  shouldPrompt: shouldPromptMarketingPush,
+  shouldPrompt,
 } as const;

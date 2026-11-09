@@ -3,11 +3,13 @@ import { mock } from "vitest-mock-extended";
 import type { SubscriptionUser } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { PremiumAccessProjector } from "#api/modules/billing/application/services/subscriptions/premium-access-projector.service";
 import type { SubscriptionProps } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {
   StubPremiumGrantRepository,
   StubSubscriptionCache,
+  StubStoreSubscriptionReconcileScheduler,
   StubSubscriptionNotifier,
   StubSubscriptionReceiptRepository,
   StubSubscriptionRepository,
@@ -27,7 +29,8 @@ export function createSubscriptionRecord(
   const record = {
     id: 1,
     userId,
-    revenueCatId: SUBSCRIPTION_TRANSACTION_ID,
+    provider: "REVENUECAT",
+    storeSubscriptionId: StoreSubscriptionId.from(SUBSCRIPTION_TRANSACTION_ID),
     productId: "premium_monthly",
     status: "ACTIVE",
     startedAt: SUBSCRIPTION_TIME,
@@ -35,6 +38,8 @@ export function createSubscriptionRecord(
     gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: null,
+    nextProductId: null,
+    periodType: null,
     ...overrides,
   } satisfies SubscriptionProps;
   return {
@@ -72,7 +77,7 @@ export function createSubscriptionFixture(
         : input.userSubscription.subscriptionExpiresAt === null
           ? null
           : new Date(input.userSubscription.subscriptionExpiresAt),
-    revenueCatUserId: user.revenueCatUserId,
+    appUserAlias: user.revenueCatUserId,
     profile: input.profile === undefined ? { name: "구독 사용자" } : input.profile,
   });
   if (input.existing) {
@@ -98,6 +103,7 @@ export function createSubscriptionFixture(
       subscriptionRepository,
       premiumGrantRepository,
     }),
+    reconcileScheduler: new StubStoreSubscriptionReconcileScheduler(),
     unitOfWork: createUnitOfWorkMock(),
     logger: mock<ApplicationLogger>(),
   };

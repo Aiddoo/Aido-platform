@@ -5,10 +5,12 @@ import {
   USER_PREFERENCE_READER,
   type UserPreferenceReaderPort,
 } from "#api/modules/identity/identity-settings.public";
+import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
 
 import { type NotificationRecipientLocaleReaderPort } from "../../../application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { type NotificationRecipientPreferenceReaderPort } from "../../../application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { type NotificationRecipientTimezoneReaderPort } from "../../../application/ports/delivery/notification-recipient-timezone.reader.port.js";
 import {
   USER_NOTIFICATION_SETTINGS,
   type NotificationDeliveryPreference,
@@ -17,7 +19,10 @@ import {
 
 @Injectable()
 export class CachedNotificationRecipientPreferenceAdapter
-  implements NotificationRecipientPreferenceReaderPort, NotificationRecipientLocaleReaderPort
+  implements
+    NotificationRecipientPreferenceReaderPort,
+    NotificationRecipientLocaleReaderPort,
+    NotificationRecipientTimezoneReaderPort
 {
   constructor(
     @Inject(USER_NOTIFICATION_SETTINGS)
@@ -49,5 +54,19 @@ export class CachedNotificationRecipientPreferenceAdapter
       preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
     );
     return new Map(uniqueUserIds.map((userId) => [userId, locales.get(userId) ?? DEFAULT_LOCALE]));
+  }
+
+  async getTimezones(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    const uniqueUserIds = uniq(userIds);
+    if (uniqueUserIds.length === 0) {
+      return new Map();
+    }
+    const preferences = await this.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+    const timezones = new Map(
+      preferences.map((preference) => [preference.userId, preference.timezone]),
+    );
+    return new Map(
+      uniqueUserIds.map((userId) => [userId, resolveDeliveryTimezone(timezones.get(userId))]),
+    );
   }
 }

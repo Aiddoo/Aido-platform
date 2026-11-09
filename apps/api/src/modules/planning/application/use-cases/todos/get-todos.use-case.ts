@@ -8,12 +8,14 @@ import { ApplicationException } from "#api/shared/domain/index";
 
 import type { FindTodosParams, GetTodosParams } from "../../models/todos/todo.types.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import type { TodoSeriesCatchUp } from "../../services/series/todo-series-catch-up.service.js";
 
 export type GetTodosInput = GetTodosParams;
 
 interface GetTodosDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyByUserId">;
   readonly paginationService: PaginationService;
+  readonly seriesCatchUp: Pick<TodoSeriesCatchUp, "ensureCaughtUp">;
 }
 
 export class GetTodos {
@@ -35,6 +37,8 @@ export class GetTodos {
         endDate: input.endDate,
       });
     }
+
+    await this.#dependencies.seriesCatchUp.ensureCaughtUp(input.userId);
 
     const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<number>(
       {

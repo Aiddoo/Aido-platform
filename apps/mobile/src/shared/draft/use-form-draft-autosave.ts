@@ -11,11 +11,7 @@ interface FormDraftAutosaveOptions<TValues extends FieldValues> {
   clearDraft: () => void;
 }
 
-/**
- * react-hook-form 값 변경을 초안 저장소에 디바운스해 옮긴다.
- * 언마운트(폴더블 전환 등) 직전에 대기 중인 저장을 즉시 반영한다.
- * 반환하는 함수는 제출 성공·명시적 취소 때 대기 중인 저장까지 취소하고 초안을 지운다.
- */
+/** 언마운트 직전에 대기 중인 저장을 즉시 반영한다 */
 export function useFormDraftAutosave<TValues extends FieldValues>(
   subscribe: UseFormSubscribe<TValues>,
   { initialValues, saveDraft, clearDraft }: FormDraftAutosaveOptions<TValues>,

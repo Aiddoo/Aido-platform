@@ -2,7 +2,8 @@ import { z } from "zod";
 
 import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { AI_PARSE_LIMITS } from "../../../vocabulary/ai.constants.js";
-import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
+import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
+import { dayOfWeekSchema, todoRepeatSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
 // ============================================================================
@@ -35,13 +36,24 @@ export const parsedMemoTodoSchema = z.object({
     })
     .nullable()
     .default(null)
-    .describe("반복 설정 (비반복 일정은 null)"),
+    .describe("반복 설정 (비반복 일정은 null, 출시 앱용 요일+종료일)"),
+  repeat: todoRepeatSchema
+    .nullable()
+    .optional()
+    .describe("반복 규칙 (반복이 아니면 null). 1.15.0 이전 서버 응답에는 없다"),
   categoryId: z.number().int().positive().describe("카테고리 ID"),
   items: z
     .array(parsedMemoTodoItemSchema)
     .max(AI_PARSE_LIMITS.MEMO_MAX_ITEMS)
     .default([])
     .describe(`서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개)`),
+  duplicateOfTodoId: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .optional()
+    .describe("이미 있는 같은 할 일의 ID (없으면 null). 1.15.0 이전 서버 응답에는 없다"),
 });
 
 export type ParsedMemoTodo = z.infer<typeof parsedMemoTodoSchema>;
@@ -63,7 +75,7 @@ export const parseMemoMetaSchema = z.object({
   promptVersion: z
     .string()
     .optional()
-    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
+    .describe('응답을 만든 프롬프트 버전 (예: "parse-memo@3"). 구 서버 응답에는 없을 수 있다'),
   omittedTodoCount: z
     .number()
     .int()
@@ -80,20 +92,9 @@ export const parseMemoResponseSchema = z.object({
   success: z.literal(true).describe("파싱 성공 여부 (항상 true)"),
   data: parsedMemoDataSchema.describe("파싱된 할 일 데이터"),
   meta: parseMemoMetaSchema.describe("AI 처리 메타데이터"),
+  featureQuota: featureQuotaSchema
+    .optional()
+    .describe("이 요청을 반영한 AI_PARSE 한도·사용량. 1.15.0 이전 서버 응답에는 없다"),
 });
 
 export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;
-
-// ============================================================================
-// LLM 내부용 스키마
-// ============================================================================
-
-// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
-// 공급자 요청 schema로 전송되므로 meta를 붙이지 않는다.
-/**
- * @deprecated parse-memo v1 롤백 경로에서만 쓰는 LLM schema다. v2는 서버 내부 draft schema를 쓴다.
- */
-export const llmParsedMemoResultSchema = parsedMemoDataSchema;
-
-/** @deprecated llmParsedMemoResultSchema와 함께 제거한다. */
-export type LlmParsedMemoResult = z.infer<typeof llmParsedMemoResultSchema>;

@@ -12,25 +12,32 @@
     "changePassword": "비밀번호 변경",
     "deleteAccount": "회원 탈퇴",
     "subscription": "구독 관리",
-    "categorySettings": "카테고리",
-    "blockedUsers": "차단한 사용자"
+    "categorySettings": "카테고리 관리",
+    "blockedUsers": "차단한 사용자",
+    "voiceStorage": "녹음 저장 공간"
   },
   "language": {
+    "label": "앱 언어",
     "system": "시스템 설정",
     "systemDescription": "기기 언어를 따라요"
   },
   "theme": {
+    "label": "화면 모드",
     "light": "라이트 모드",
     "dark": "다크 모드",
-    "system": "시스템 설정"
+    "system": "시스템 설정",
+    "systemDescription": "기기 설정에 맞춰 바뀌어요"
   },
   "fontSize": {
+    "label": "크기",
+    "previewLabel": "미리 보기",
+    "previewTitle": "오늘 할 일을 하나씩 끝내 볼까요?",
+    "previewDescription": "고른 크기가 앱 전체에 바로 적용돼요",
     "xsmall": "아주 작게",
     "small": "작게",
     "medium": "보통",
     "large": "크게",
-    "xlarge": "아주 크게",
-    "sample": "가나다라마바사 ABC 123"
+    "xlarge": "아주 크게"
   },
   "terms": {
     "termsOfService": "서비스 이용약관",
@@ -38,26 +45,45 @@
     "agreedAt": "동의일: {{date}}",
     "version": "버전: {{version}}",
     "notAgreed": "미동의",
-    "marketing": "마케팅 수신 동의",
-    "marketingDescription": "이벤트와 프로모션 소식을 받아요",
-    "marketingPush": "광고성 앱 푸시 수신 동의",
-    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받아요",
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
-      "description": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
+      "description": "입력하거나 말한 내용을 Anthropic·Google·OpenAI로 보내 처리해요. 음성은 Apple·Google 음성 인식이 글자로 바꿀 수 있고, 녹음 파일은 아이두 서버로 보내지 않아요.",
+      "descriptionGoogleOnly": "AI 기능을 쓰면 입력한 내용을 Google Gemini로 보내 처리해요.",
       "agreedOn": "{{date}} 동의",
       "withdrawTitle": "동의를 철회할까요?",
-      "withdrawDescription": "AI로 할 일 정리·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
+      "withdrawDescription": "AI 기능을 쓸 수 없어요. 만든 할 일은 그대로 남아요.",
       "withdrawConfirm": "철회하기",
-      "declinedStatus": "사용 안 함으로 설정했어요. 켜면 AI 기능을 다시 쓸 수 있어요.",
-      "undecidedStatus": "아직 선택하지 않았어요. AI 기능을 처음 쓸 때 물어봐요.",
+      "declinedStatus": "꺼져 있어요. 켜면 다시 쓸 수 있어요.",
+      "undecidedStatus": "AI 기능을 처음 쓸 때 물어봐요.",
       "decline": "사용 안 함"
     }
   },
   "categorySettings": {
-    "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",
+    "listLabel": "내 카테고리",
     "editTab": "카테고리 편집",
     "reorderTab": "순서 바꾸기",
-    "add": "카테고리 추가"
+    "add": "카테고리 추가",
+    "todoCount": "할 일 {{count}}개"
+  },
+  "voiceStorage": {
+    "totalLabel": "기기에 저장된 녹음",
+    "description": "녹음 파일은 아이두 서버로 보내지 않아요. 말로 남긴 메모는 30일이 지나면 녹음과 함께 자동으로 삭제돼요.",
+    "listLabel": "메모별 녹음",
+    "empty": "저장된 녹음이 없어요",
+    "emptyDescription": "말로 남긴 메모의 녹음이 여기에 쌓이고, 용량을 보고 지울 수 있어요",
+    "removeOneTitle": "이 녹음을 삭제할까요?",
+    "removeAllTitle": "녹음을 모두 삭제할까요?",
+    "removeDescription": "들은 내용과 요약은 남고 녹음만 삭제돼요. 다시 들을 수 없고 되돌릴 수도 없어요.",
+    "removeConfirm": "삭제",
+    "removeCancel": "취소",
+    "removeAll": "녹음 모두 삭제"
+  },
+  "sections": {
+    "timeDisplay": "시간 표시",
+    "notifications": "알림",
+    "agreements": "약관 동의",
+    "dataUse": "데이터 활용",
+    "account": "계정",
+    "signIn": "로그인"
   }
 }

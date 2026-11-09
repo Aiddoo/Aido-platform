@@ -19,8 +19,10 @@ import {
 } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import {
   AUTH_ACCOUNT_REPOSITORY,
@@ -46,6 +48,7 @@ import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verificatio
 import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
+  accountUsageCleanupProvider,
 } from "./identity-auth-account-cleanup.providers.js";
 import {
   changePasswordProvider,
@@ -53,17 +56,20 @@ import {
   deleteAccountProvider,
   exchangeOAuthCodeProvider,
   getCurrentUserProvider,
+  getEntitlementSnapshotProvider,
   getOAuthRedirectUriProvider,
   issueLoginProvider,
   linkOAuthAccountProvider,
   linkOAuthAccountWithCodeProvider,
   listActiveSessionsProvider,
   listLinkedAccountsProvider,
+  loginWithMobileOAuthTokenProvider,
   loginWithOAuthTokenProvider,
   loginWithPasswordProvider,
   logoutAllProvider,
   logoutProvider,
   linkOAuthIdentityProvider,
+  oauthSignupNotifierProvider,
   provisionUserProvider,
   purgeDeletedAccountsProvider,
   restoreAccountProvider,
@@ -110,6 +116,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies/aut
 import {
   AccountController,
   AuthController,
+  EntitlementController,
   OAuthController,
   SessionController,
 } from "./presentation/controllers/auth/v1/index.js";
@@ -132,7 +139,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     JwtModule.registerAsync({
       inject: [TypedConfigService],
       useFactory: (configService: TypedConfigService) => ({
-        secret: configService.get("JWT_SECRET"),
+        secret: configService.jwtSecret,
       }),
     }),
     OperationsNotificationsModule,
@@ -146,9 +153,16 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     BillingSubscriptionsModule,
     AccessModule,
     SocialCheersModule,
+    SocialFriendsModule,
     SocialNudgesModule,
   ],
-  controllers: [AuthController, OAuthController, SessionController, AccountController],
+  controllers: [
+    AuthController,
+    OAuthController,
+    SessionController,
+    AccountController,
+    EntitlementController,
+  ],
   providers: [
     DrizzleUserRepository,
     DrizzleAccountRepository,
@@ -192,6 +206,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     },
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
+    accountUsageCleanupProvider,
     PasswordService,
     sessionServiceProvider,
     TokenService,
@@ -212,6 +227,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     },
     OAuthTokenVerifierService,
     linkOAuthIdentityProvider,
+    oauthSignupNotifierProvider,
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,
     restoreAccountProvider,
@@ -230,6 +246,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     setPasswordProvider,
     changePasswordProvider,
     getCurrentUserProvider,
+    getEntitlementSnapshotProvider,
     updateProfileProvider,
     deleteAccountProvider,
     listLinkedAccountsProvider,
@@ -239,6 +256,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     getOAuthRedirectUriProvider,
     startOAuthAuthorizationProvider,
     completeOAuthAuthorizationProvider,
+    loginWithMobileOAuthTokenProvider,
     loginWithOAuthTokenProvider,
     linkOAuthAccountProvider,
     linkOAuthAccountWithCodeProvider,
@@ -246,12 +264,18 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     // OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
     {
       provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
-      inject: [TypedConfigService, OAuthTokenVerifierService, getHttpClientToken("oauth")],
+      inject: [
+        TypedConfigService,
+        OAuthTokenVerifierService,
+        getHttpClientToken("oauth"),
+        OutboundPolicyRegistry,
+      ],
       useFactory: (
         configService: TypedConfigService,
         tokenVerifier: OAuthTokenVerifierService,
         http: HttpClient,
-      ) => createOAuthProviderRegistry(configService, tokenVerifier, http),
+        policies: OutboundPolicyRegistry,
+      ) => createOAuthProviderRegistry(configService, tokenVerifier, http, policies),
     },
     JwtStrategy,
     JwtRefreshStrategy,

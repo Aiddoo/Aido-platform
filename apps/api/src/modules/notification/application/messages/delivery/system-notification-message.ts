@@ -1,3 +1,10 @@
+import type { SubscriptionPlanType } from "@aido/api/vocabulary";
+
+import {
+  calendarDaysBetween,
+  localDateInTimezone,
+  resolveTimezone,
+} from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
@@ -81,6 +88,106 @@ export function createPremiumGrantEndingNotificationMessage({
   return renderLocalizedNotification({
     template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.PREMIUM_GRANT_ENDING,
     variables: undefined,
+  });
+}
+
+export interface PremiumTrialEndingNotificationInput {
+  readonly locale: SupportedLocale;
+  /** 받는 사람 시간대. 남은 일수와 날짜를 이 달력으로 센다. */
+  readonly timezone: string;
+  /** 스토어가 알려 준 체험 끝(expiration_at_ms) */
+  readonly endsAt: Date;
+  readonly now: Date;
+  /** 해지하지 않아 체험이 끝나면 결제가 이어지는지 */
+  readonly willRenew: boolean;
+  /** 체험 뒤 이어질 요금제. 모르는 상품이면 null이다. */
+  readonly planType: SubscriptionPlanType | null;
+  readonly variantContext?: NotificationVariantContext;
+}
+
+const BILLING_DATE_FORMAT = {
+  ko: { month: "long", day: "numeric" },
+  en: { month: "short", day: "numeric" },
+} as const satisfies Record<SupportedLocale, Intl.DateTimeFormatOptions>;
+
+/** 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). 날짜도 그 달력으로 쓴다. */
+function billingDayVariables(input: {
+  readonly locale: SupportedLocale;
+  readonly timezone: string;
+  readonly at: Date;
+  readonly now: Date;
+}) {
+  const timeZone = resolveTimezone(input.timezone);
+  return {
+    days: calendarDaysBetween(input.now, input.at, timeZone),
+    date: new Intl.DateTimeFormat(input.locale, {
+      ...BILLING_DATE_FORMAT[input.locale],
+      timeZone,
+    }).format(input.at),
+  };
+}
+
+/** 체험 종료 안내 */
+export function createPremiumTrialEndingNotificationMessage(
+  input: PremiumTrialEndingNotificationInput,
+): NotificationMessage {
+  const templates = LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES;
+  const variables = billingDayVariables({ ...input, at: input.endsAt });
+  return input.willRenew
+    ? renderLocalizedNotification({
+        template: templates.PREMIUM_TRIAL_ENDING_RENEWING,
+        variables: { ...variables, planType: input.planType },
+        variantContext: input.variantContext,
+        templateKey: "premium_trial_ending.renewing",
+      })
+    : renderLocalizedNotification({
+        template: templates.PREMIUM_TRIAL_ENDING_CANCELLED,
+        variables,
+        variantContext: input.variantContext,
+        templateKey: "premium_trial_ending.cancelled",
+      });
+}
+
+export interface PremiumRenewalUpcomingNotificationInput {
+  readonly locale: SupportedLocale;
+  /** 받는 사람 시간대. 남은 일수와 날짜를 이 달력으로 센다. */
+  readonly timezone: string;
+  /** 스토어가 알려 준 지금 기간의 끝(다음 결제 예정 시각) */
+  readonly renewsAt: Date;
+  readonly now: Date;
+  readonly variantContext?: NotificationVariantContext;
+}
+
+/** 연간 구독 자동 갱신 안내. 금액은 국가별 스토어 가격이라 서버가 모르므로 싣지 않는다. */
+export function createPremiumRenewalUpcomingNotificationMessage(
+  input: PremiumRenewalUpcomingNotificationInput,
+): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.PREMIUM_RENEWAL_UPCOMING,
+    variables: billingDayVariables({ ...input, at: input.renewsAt }),
+    variantContext: input.variantContext,
+  });
+}
+
+/** 2년 재확인 안내. 날짜는 받는 사람 시간대로 ko "2024.11.09", en "Nov 9, 2024"다. */
+export function createMarketingConsentReconfirmNotificationMessage(input: {
+  readonly locale: SupportedLocale;
+  readonly timezone: string;
+  readonly agreedAt: Date;
+}): NotificationMessage {
+  const timeZone = resolveTimezone(input.timezone);
+  const agreedOn =
+    input.locale === "ko"
+      ? localDateInTimezone(input.agreedAt, timeZone).replaceAll("-", ".")
+      : new Intl.DateTimeFormat("en", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone,
+        }).format(input.agreedAt);
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.MARKETING_CONSENT_RECONFIRM,
+    variables: { agreedOn },
   });
 }
 

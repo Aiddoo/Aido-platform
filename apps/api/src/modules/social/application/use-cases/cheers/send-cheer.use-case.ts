@@ -80,7 +80,11 @@ export class SendCheer {
       );
       if (dailyLimit != null && used >= dailyLimit) {
         throw new ApplicationException(ErrorCode.CHEER_1201, {
-          limit: dailyLimit,
+          charged: false,
+          featureQuota: await this.#dependencies.limitReader.readDailyQuotaInTx(senderId, {
+            used,
+            resetsAt: quotaWindow.endsAt,
+          }),
         });
       }
 

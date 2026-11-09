@@ -1,17 +1,18 @@
 import { z } from "zod";
 
-/** Gemini API 키 형식. 기존 `AIza…`와 새 `AQ.…` 키를 모두 받도록 접두사 없이 문자 집합과 길이만 본다. */
-const GOOGLE_GENERATIVE_AI_API_KEY_PATTERN = /^[A-Za-z0-9._-]{30,}$/;
-
 /**
  * 외부 서비스 연동 설정 스키마
  * 향후 확장용 - 현재는 선택적
  */
 export const externalSchema = z.object({
-  REVENUECAT_SECRET_API_KEY: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */
   REVENUECAT_PROJECT_ID: z.string().min(1).optional(),
+  /**
+   * RevenueCat REST API v2 비밀 키(읽기 전용: customer_information:subscriptions:read,
+   * project_configuration:products:read). REVENUECAT_PROJECT_ID와 함께 있어야 웹훅 뒤 스토어 상태 대조가 켜진다.
+   */
+  REVENUECAT_API_V2_SECRET_KEY: z.string().min(1).optional(),
 
   // Redis 캐시/세션 (선택) - 빈 문자열 허용
   REDIS_URL: z
@@ -33,16 +34,6 @@ export const externalSchema = z.object({
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
 
   // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (SENTRY_RELEASE: z.string().optional())
-
-  // Google Generative AI (Gemini) 서비스 (선택) - 빈 문자열은 미설정으로 본다.
-  // Google이 키 형식을 바꾼 적이 있어(AIza… → AQ.…) 접두사는 검사하지 않는다.
-  GOOGLE_GENERATIVE_AI_API_KEY: z
-    .string()
-    .optional()
-    .refine((val) => !val || GOOGLE_GENERATIVE_AI_API_KEY_PATTERN.test(val), {
-      message:
-        "GOOGLE_GENERATIVE_AI_API_KEY must be at least 30 characters of [A-Za-z0-9._-] without whitespace",
-    }),
 
   // 공공데이터포털 서비스키 (기상청 단기예보, 생활기상지수, 천문연구원 출몰시각, 에어코리아 공용)
   KMA_API_KEY: z.string().optional(),

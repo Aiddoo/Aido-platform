@@ -6,7 +6,7 @@
  */
 export const TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY = {
   FOLLOW_REQUEST: "follow_request_v2",
-  FOLLOW_ACCEPTED: "follow_accepted_v2",
+  FOLLOW_ACCEPTED: "follow_accepted_v3",
   NUDGE_RECEIVED: "nudge_received_v2",
   NUDGE_REPLIED: "nudge_replied_v2",
   NUDGE_THANKED: "nudge_thanked_v2",

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 429,
+    "message": "Your billing account has exceeded its monthly spending cap. Please go to AI Studio at https://ai.studio/billing to manage your billing.",
+    "status": "RESOURCE_EXHAUSTED"
+  }
+}

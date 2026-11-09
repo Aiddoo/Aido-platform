@@ -4,12 +4,11 @@ import type {
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
 } from "@aido/api";
-import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { UserConsentRecord } from "../../../domain/records/settings/user-consent.record.js";
-import { resolveAiDataSharingDecision } from "../../../domain/services/settings/ai-data-sharing-consent-policy.js";
+import { resolveAiDataSharingConsent } from "../../../domain/services/settings/ai-data-sharing-consent-policy.js";
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
 export function buildConsentView(consent: UserConsentRecord | null): ConsentResponse {
@@ -32,7 +31,7 @@ export function buildConsentView(consent: UserConsentRecord | null): ConsentResp
     agreedTermsVersion: consent.agreedTermsVersion,
     marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
     marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
-    aiDataSharingDecision: resolveAiDataSharingDecision(consent, AI_DATA_SHARING_CONSENT.VERSION),
+    aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
     aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: consent.aiDataSharingVersion,
   };
@@ -44,25 +43,31 @@ export function buildAiDataSharingConsentView(
   answeredVersion: string,
 ): UpdateAiDataSharingConsentResponse {
   return {
-    aiDataSharingDecision: resolveAiDataSharingDecision(consent, AI_DATA_SHARING_CONSENT.VERSION),
+    aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
     aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: answeredVersion,
   };
 }
 
+/** 광고성 앱 푸시 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingPushConsentView(
   consent: UserConsentRecord,
+  processedAt: Date,
 ): UpdateMarketingPushConsentResponse {
   return {
     marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
+    marketingPushWithdrawnAt:
+      consent.marketingPushAgreedAt == null ? toISOStringOrNull(processedAt) : null,
   };
 }
 
-/** 마케팅 동의 변경 응답 뷰. */
+/** 마케팅 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingConsentView(
   consent: UserConsentRecord,
+  processedAt: Date,
 ): UpdateMarketingConsentResponse {
   return {
     marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
+    marketingWithdrawnAt: consent.marketingAgreedAt == null ? toISOStringOrNull(processedAt) : null,
   };
 }

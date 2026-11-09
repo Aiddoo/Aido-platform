@@ -1,114 +1,71 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
-import * as Sentry from "@sentry/nestjs";
+import { Inject, Injectable } from "@nestjs/common";
 
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import {
-  AdminEventNotifier,
-  type AdminNotifier,
-  PAYMENT_NOTIFIER,
-} from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { SENTRY_DOMAIN, SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
+import {
+  OPERATIONAL_ALERT,
+  type OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { maskUserId } from "#api/shared/domain/utils/mask.util";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
+import { BillingAlertKey } from "../../../application/observability/subscriptions/billing-alerts.js";
 import type {
   SubscriptionEventNotifierPort,
-  WebhookFailureContext,
+  StoreSubscriptionEventFailureContext,
 } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
  *
- * 관리자 알림(Discord)은 admin-notification 큐로, 결제 이슈 푸시는 notification 큐로
- * fire-and-forget 위임한다. 트랜잭션 커밋 후 use-case가 호출한다.
- * 웹훅 처리 실패는 Sentry(에러 관측)·Discord(관리자 알림)로 보고한다 — 벤더 SDK는
- * infrastructure에 격리한다.
+ * 관리자 알림은 커밋 뒤 admin-notification 큐로 기다리지 않고 넘긴다. 결제 문제 푸시는 활성 UoW 안에서
+ * notification 큐에 기록해 처리 원장과 함께 커밋한다. 웹훅 처리 실패는 운영 경보로 올린다.
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
-  readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
-
   constructor(
     private readonly adminEventNotifier: AdminEventNotifier,
     private readonly notificationQueueService: NotificationQueueService,
-    @Inject(PAYMENT_NOTIFIER)
-    private readonly paymentNotifier: AdminNotifier,
+    @Inject(OPERATIONAL_ALERT) private readonly alert: OperationalAlertPort,
     private readonly config: TypedConfigService,
   ) {}
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-    const projectId = this.config.get("REVENUECAT_PROJECT_ID");
+    const projectId = this.config.revenuecat.projectId;
     this.adminEventNotifier.notifySubscriptionEvent(
       projectId == null || payload.appUserId == null
         ? payload
         : {
             ...payload,
-            revenueCatCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
+            providerCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
           },
     );
   }
 
-  notifyBillingIssue(userId: string): void {
-    this.notificationQueueService.enqueueBillingIssue({ userId });
+  recordBillingIssue(userId: string, at: Date): Promise<void> {
+    return this.notificationQueueService.enqueueBillingIssue({ userId }, at);
   }
 
-  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
-    Sentry.withScope((scope) => {
-      scope.setTag(SENTRY_TAG.DOMAIN, SENTRY_DOMAIN.PAYMENT);
-      scope.setTag(SENTRY_TAG.WEBHOOK_EVENT_TYPE, context.eventType);
-      scope.setTag(SENTRY_TAG.WEBHOOK_STORE, context.store ?? "unknown");
-      if (context.appUserId != null) {
-        scope.setExtra(SENTRY_EXTRA.WEBHOOK_APP_USER_ID, maskUserId(context.appUserId));
-      }
-      if (context.productId != null) {
-        scope.setExtra(SENTRY_EXTRA.WEBHOOK_PRODUCT_ID, context.productId);
-      }
-      scope.setExtra(SENTRY_EXTRA.WEBHOOK_EVENT_ID, context.eventId);
-      Sentry.captureException(error);
-    });
-
-    // 2. Discord 관리자 알림 (fire-and-forget)
-    this.#notifyWebhookError(error, context).catch((alertError: unknown) =>
-      this.#logger.warn({
-        event: BillingLogEvent.WEBHOOK_ALERT_FAILED,
-        eventId: context.eventId,
-        errorType: toErrorType(alertError),
-      }),
-    );
-  }
-
-  async #notifyWebhookError(error: unknown, context: WebhookFailureContext): Promise<void> {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    await this.paymentNotifier.send({
-      title: "Webhook 처리 에러",
-      body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
-      color: 0xff0000,
-      fields: [
-        {
-          name: "에러",
-          value: errorMessage.slice(0, 1024),
-          inline: false,
-        },
-        {
-          name: "이벤트 타입",
-          value: context.eventType,
-          inline: true,
-        },
-        {
-          name: "사용자 ID",
-          value: context.appUserId ?? "-",
-          inline: true,
-        },
-        {
-          name: "상품",
-          value: context.productId ?? "-",
-          inline: true,
-        },
-      ],
+  reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
+    this.alert.raise({
+      key: BillingAlertKey.WEBHOOK_PROCESSING_FAILED,
+      severity: "error",
+      message: "RevenueCat 웹훅 처리에 실패했습니다",
+      // Sentry 이벤트의 environment는 배포 환경(APP_ENV)이라 스토어 결제 환경은 다른 이름으로 싣는다
+      tags: {
+        eventKind: context.kind,
+        store: context.store ?? "unknown",
+        storeEnvironment: context.environment ?? "unknown",
+      },
+      details: {
+        eventId: context.providerEventId ?? null,
+        productId: context.productId ?? null,
+        errorType: toErrorType(error),
+        errorCode: error instanceof ErrorCodedException ? error.errorCode : null,
+      },
+      cause: error,
     });
   }
 }

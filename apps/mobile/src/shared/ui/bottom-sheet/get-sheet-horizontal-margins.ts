@@ -1,4 +1,4 @@
-import { SHEET_MAX_WIDTH } from './constants';
+import { SHEET_MAX_WIDTH } from './bottom-sheet.constants';
 
 export interface SheetHorizontalMargins {
   left: number;
@@ -10,11 +10,11 @@ export interface SheetHorizontalMargins {
  * 콘텐츠 영역이 최대 폭보다 좁으면 safe area 바깥에 `minMargin`만 둔다.
  */
 export function getSheetHorizontalMargins(
-  windowWidth: number,
+  areaWidth: number,
   safeAreaInsets: SheetHorizontalMargins,
   minMargin: number,
 ): SheetHorizontalMargins {
-  const contentWidth = windowWidth - safeAreaInsets.left - safeAreaInsets.right;
+  const contentWidth = areaWidth - safeAreaInsets.left - safeAreaInsets.right;
   const sideMargin = Math.max(minMargin, (contentWidth - SHEET_MAX_WIDTH) / 2);
 
   return { left: safeAreaInsets.left + sideMargin, right: safeAreaInsets.right + sideMargin };

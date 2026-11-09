@@ -1,238 +1,38 @@
-import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import Animated, {
-  cancelAnimation,
-  runOnJS,
-  ReduceMotion,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useResolveClassNames } from 'uniwind';
+import { type ComponentProps, useEffect } from 'react';
+import { Keyboard } from 'react-native';
 
-import { Box } from '../box';
-import { SHEET_DETACHED_MARGIN, SHARED_SHEET_STYLES } from './constants';
-import { getSheetMaxHeight } from './get-sheet-layout';
-import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
-import { useSheetLayout } from './use-sheet-layout';
+import { BottomSheet } from './bottom-sheet';
 
-const DISMISS_DISPLACEMENT = 100;
-const DISMISS_VELOCITY = 500;
-
-interface ModalBottomSheetProps {
-  isOpen: boolean;
+interface ModalBottomSheetProps extends Omit<ComponentProps<typeof BottomSheet>, 'onOpenChange'> {
+  /** 닫기가 시작되는 순간 불린다. overlay는 여기서 값을 돌려준다 */
   onOpenChange: (isOpen: boolean) => void;
-  /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
+  /** 닫기 애니메이션이 끝난 뒤 불린다. overlay는 여기서 내용을 지운다 */
   onExit: () => void;
-  children: ReactNode;
-  /** 내용이 길어 스크롤돼도 시트 아래에 고정되는 영역. 주 동작 버튼을 둔다. */
-  footer?: ReactNode;
 }
 
-/**
- * OverlayProvider 내에서 렌더되는 바텀시트.
- * Modal 대신 절대 위치 뷰를 사용하여 Android nav bar 이슈를 회피.
- * OverlayProvider가 BottomSheetModalProvider 안에 있으므로
- * gorhom 시트 위에 자연스럽게 렌더됨.
- */
-export const ModalBottomSheet = ({
+/** 키보드는 아래 시트의 것이라 열릴 때 내린다 */
+export function ModalBottomSheet({
   isOpen,
   onOpenChange,
+  onCloseStart,
   onExit,
-  children,
-  footer,
-}: ModalBottomSheetProps) => {
-  const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
-  const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
-  const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
-  const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-
-  const bottomInset = insets.bottom || 16;
-  const maxHeight = getSheetMaxHeight(windowHeight, topInset, bottomInset);
-  const enterDuration = ANIMATION.duration.slow;
-  const snapDuration = ANIMATION.duration.normal;
-
-  // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
-  const onOpenChangeRef = useRef(onOpenChange);
-  const onExitRef = useRef(onExit);
-  useLayoutEffect(() => {
-    onOpenChangeRef.current = onOpenChange;
-    onExitRef.current = onExit;
-  }, [onOpenChange, onExit]);
-
-  // Animation shared values
-  const translateY = useSharedValue(windowHeight);
-  const backdropOpacity = useSharedValue(0);
-  const dragY = useSharedValue(0);
-  const isAnimatingOut = useSharedValue(false);
-
-  // Ref 기반 콜백 래퍼 — deps 안정화 (빈 deps로 참조 안정)
-  const callOnExit = useCallback(() => {
-    onExitRef.current();
-  }, []);
-
-  const callOnClose = useCallback(() => {
-    onOpenChangeRef.current(false);
-  }, []);
-
-  useAndroidSheetBackHandler(true, () => {
-    if (isOpen) {
-      callOnClose();
-    }
-  });
-
-  useEffect(
-    () => () => {
-      cancelAnimation(translateY);
-      cancelAnimation(backdropOpacity);
-      cancelAnimation(dragY);
-    },
-    [translateY, backdropOpacity, dragY],
-  );
-
-  // isOpen 전환 처리
+  ...sheetProps
+}: ModalBottomSheetProps) {
   useEffect(() => {
     if (isOpen) {
-      // Animate in
-      isAnimatingOut.value = false;
-      dragY.value = 0;
-      translateY.value = withTiming(0, {
-        duration: enterDuration,
-        reduceMotion: ReduceMotion.System,
-      });
-      backdropOpacity.value = withTiming(0.5, {
-        duration: enterDuration,
-        reduceMotion: ReduceMotion.System,
-      });
-    } else {
-      // Animate out (한 번만 실행)
-      if (!isAnimatingOut.value) {
-        isAnimatingOut.value = true;
-        translateY.value = withTiming(
-          windowHeight,
-          { duration: enterDuration, reduceMotion: ReduceMotion.System },
-          (finished) => {
-            // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
-            if (finished) {
-              runOnJS(callOnExit)();
-            }
-          },
-        );
-        backdropOpacity.value = withTiming(0, {
-          duration: enterDuration,
-          reduceMotion: ReduceMotion.System,
-        });
-      }
+      Keyboard.dismiss();
     }
-    // 콜백은 ref로 안정화하며 windowHeight는 열림 애니메이션의 초기값만 사용한다.
-  }, [
-    isOpen,
-    ReduceMotion.System,
-    backdropOpacity,
-    callOnExit,
-    dragY,
-    enterDuration,
-    isAnimatingOut,
-    translateY,
-    windowHeight,
-  ]);
-
-  // Pan gesture for swipe-to-dismiss (UI thread)
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      if (event.translationY > 0) {
-        dragY.value = event.translationY;
-      }
-    })
-    .onEnd((event) => {
-      if (event.translationY > DISMISS_DISPLACEMENT || event.velocityY > DISMISS_VELOCITY) {
-        // dismiss — dragY를 유지한 채로 닫기 (올라갔다 내려가는 현상 방지)
-        runOnJS(callOnClose)();
-      } else {
-        // snap back
-        dragY.value = withTiming(0, {
-          duration: snapDuration,
-          reduceMotion: ReduceMotion.System,
-        });
-      }
-    });
-
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value + dragY.value }],
-  }));
-
-  const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
+  }, [isOpen]);
 
   return (
-    <Box
-      testID="modal-bottom-sheet"
-      style={StyleSheet.absoluteFill}
-      accessibilityViewIsModal
-      importantForAccessibility="yes"
-    >
-      {/* Backdrop */}
-      <Pressable
-        testID="modal-bottom-sheet-backdrop"
-        style={StyleSheet.absoluteFill}
-        onPress={callOnClose}
-        accessible={false}
-        importantForAccessibility="no"
-      >
-        <Animated.View className="absolute inset-0 bg-black" style={backdropAnimatedStyle} />
-      </Pressable>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[
-          {
-            position: 'absolute',
-            left: margins.left,
-            right: margins.right,
-            bottom: bottomInset,
-            maxHeight,
-          },
-          sheetAnimatedStyle,
-        ]}
-      >
-        <Box style={[SHARED_SHEET_STYLES.detachedBackground, backgroundStyle, styles.surface]}>
-          {/* Handle */}
-          <GestureDetector gesture={panGesture}>
-            <View className="items-center justify-center h-11" collapsable={false}>
-              <View
-                style={[
-                  SHARED_SHEET_STYLES.handleIndicator,
-                  handleIndicatorStyle,
-                  { height: 4, borderRadius: 2 },
-                ]}
-              />
-            </View>
-          </GestureDetector>
-
-          {/* Content */}
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={SHARED_SHEET_STYLES.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
-
-          {footer != null && <Box style={styles.footer}>{footer}</Box>}
-        </Box>
-      </Animated.View>
-    </Box>
+    <BottomSheet
+      {...sheetProps}
+      isOpen={isOpen}
+      onCloseStart={() => {
+        onCloseStart?.();
+        onOpenChange(false);
+      }}
+      onOpenChange={onExit}
+    />
   );
-};
-
-const styles = StyleSheet.create({
-  surface: { overflow: 'hidden', flexShrink: 1 },
-  scroll: { flexGrow: 0, flexShrink: 1 },
-  footer: { paddingHorizontal: 20, paddingBottom: 20 },
-});
+}

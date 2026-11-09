@@ -1,17 +1,23 @@
-import { Children, createContext, isValidElement, useContext } from 'react';
+import { Children, createContext, isValidElement, use } from 'react';
 
-import { Flex } from '../flex/flex';
-import { gridStartColumns } from './grid-layout';
+import { HStack } from '../h-stack/h-stack';
+import { getGridStartColumns } from './grid-layout';
 import type { GridProps } from './grid.types';
 
 const GridContext = createContext(1);
-export const useGridColumns = () => useContext(GridContext);
+
+export function useGridColumns() {
+  return use(GridContext);
+}
 
 /** 열 간격과 이 칸의 시작 열. GridItem이 좌우 padding으로 간격을 만든다 */
 const GridCellContext = createContext({ columnGap: 0, startColumn: 0 });
-export const useGridCell = () => useContext(GridCellContext);
 
-function readColSpan(child: unknown) {
+export function useGridCell() {
+  return use(GridCellContext);
+}
+
+function getColSpan(child: unknown) {
   return isValidElement<{ colSpan?: number }>(child) ? (child.props.colSpan ?? 1) : 1;
 }
 
@@ -28,12 +34,11 @@ export function Grid({
   const resolvedColumnGap = columnGap ?? gap ?? 0;
   const resolvedRowGap = rowGap ?? gap;
   const cells = Children.toArray(children);
-  const startColumns = gridStartColumns(cells.map(readColSpan), columns);
+  const startColumns = getGridStartColumns(cells.map(getColSpan), columns);
 
   return (
     <GridContext.Provider value={columns}>
-      <Flex
-        direction="row"
+      <HStack
         wrap="wrap"
         style={[resolvedRowGap != null && { rowGap: resolvedRowGap }, style]}
         {...props}
@@ -46,7 +51,7 @@ export function Grid({
             {cell}
           </GridCellContext.Provider>
         ))}
-      </Flex>
+      </HStack>
     </GridContext.Provider>
   );
 }

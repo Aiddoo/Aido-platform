@@ -1,58 +1,110 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
+import type { AdminNoticeUserReaderPort } from "../../ports/notifications/admin-notice-user.reader.port.js";
+import type {
+  AdminNotificationQueuePort,
+  NotificationChannel,
+} from "../../ports/notifications/admin-notification-queue.port.js";
+import type {
+  AdminNotice,
+  AdminNoticeUser,
+} from "../../read-models/notifications/admin-notice.read-model.js";
+import { AdminNoticeUserResolver } from "../../services/notifications/admin-notice-user.resolver.js";
 import type { UserRegisteredEventPayload } from "../../types/notifications/user-registered.payload.js";
 import { EnqueueUserRegistered } from "./enqueue-user-registered.use-case.js";
 
-describe("EnqueueUserRegistered", () => {
-  let useCase: EnqueueUserRegistered;
-  let queue: Mocked<ConstructorParameters<typeof EnqueueUserRegistered>[0]["queue"]>;
+class RecordingQueue implements AdminNotificationQueuePort {
+  readonly sent: { channel: NotificationChannel; notice: AdminNotice }[] = [];
+  failure: Error | null = null;
 
-  const payload: UserRegisteredEventPayload = {
-    userId: "user-1",
-    email: "test@example.com",
-    provider: "apple",
-    registeredAt: "2026-03-07T12:00:00.000Z",
-  };
+  async enqueueSend(channel: NotificationChannel, notice: AdminNotice) {
+    if (this.failure != null) {
+      throw this.failure;
+    }
+    this.sent.push({ channel, notice });
+  }
+}
 
-  beforeEach(async () => {
-    const enqueueUserRegisteredDependencies = mockDeep<
-      ConstructorParameters<typeof EnqueueUserRegistered>[0]
-    >({});
-    const unit = new EnqueueUserRegistered(enqueueUserRegisteredDependencies);
-    useCase = unit;
-    queue = enqueueUserRegisteredDependencies.queue;
+class StubUserReader implements AdminNoticeUserReaderPort {
+  constructor(private readonly user: AdminNoticeUser | null) {}
+
+  async findById(): Promise<AdminNoticeUser | null> {
+    return this.user;
+  }
+}
+
+const payload: UserRegisteredEventPayload = {
+  userId: "user-1",
+  email: "test@example.com",
+  provider: "apple",
+  registeredAt: "2026-03-07T12:00:00.000Z",
+  devicePlatform: "IOS",
+  deviceModel: "iPhone 15 Pro",
+};
+
+function setup(user: AdminNoticeUser | null) {
+  const queue = new RecordingQueue();
+  const useCase = new EnqueueUserRegistered({
+    queue,
+    users: new AdminNoticeUserResolver({
+      reader: new StubUserReader(user),
+      logger: { warn: () => {} },
+    }),
   });
+  return { useCase, queue };
+}
 
-  it("admin 채널로 회원가입 알림을 등록한다", async () => {
+describe("EnqueueUserRegistered — 가입 알림 등록", () => {
+  it("결제 알림과 같은 사용자 블록(태그 포함)과 가입 기기 정보를 admin 채널에 등록한다", async () => {
+    // Given
+    const stored: AdminNoticeUser = {
+      userId: "user-1",
+      email: "test@example.com",
+      nickname: "아이도",
+      userTag: "AIDO2026",
+      joinedAt: "2026-03-07T12:00:00.000Z",
+      signupMethod: "APPLE",
+    };
+    const { useCase, queue } = setup(stored);
+
+    // When
     await useCase.execute(payload);
 
-    expect(queue.enqueueSend).toHaveBeenCalledWith(
-      "admin",
-      expect.objectContaining({
-        title: "👋 새로운 회원가입",
-        body: "**test** 님이 가입했습니다.",
-      }),
-    );
+    // Then
+    expect(queue.sent).toEqual([
+      {
+        channel: "admin",
+        notice: {
+          type: "user_registered",
+          user: stored,
+          signup: { devicePlatform: "IOS", deviceModel: "iPhone 15 Pro" },
+        },
+      },
+    ]);
   });
 
-  it("확인된 기기 정보를 포함한다", async () => {
-    await useCase.execute({ ...payload, devicePlatform: "IOS", deviceModel: "iPhone 15 Pro" });
+  it("사용자를 찾지 못하면 가입 요청 값으로 가입일·가입 방식을 채운다", async () => {
+    // Given
+    const { useCase, queue } = setup(null);
 
-    const notification = queue.enqueueSend.mock.calls[0]?.[1];
-    expect(notification?.fields).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: "기기",
-          value: "🍎 iOS · iPhone 15 Pro",
-        }),
-      ]),
-    );
+    // When
+    await useCase.execute(payload);
+
+    // Then
+    expect(queue.sent[0]?.notice).toMatchObject({
+      user: {
+        userId: "user-1",
+        email: "test@example.com",
+        joinedAt: "2026-03-07T12:00:00.000Z",
+        signupMethod: "APPLE",
+      },
+    });
   });
 
-  it("큐 등록 실패 시 에러를 전파한다", async () => {
-    queue.enqueueSend.mockRejectedValue(new Error("Redis connection error"));
+  it("큐 등록 실패는 호출자(AdminEventNotifier)가 격리하도록 그대로 전파한다", async () => {
+    // Given
+    const { useCase, queue } = setup(null);
+    queue.failure = new Error("queue unavailable");
 
-    await expect(useCase.execute(payload)).rejects.toThrow("Redis connection error");
+    // When / Then
+    await expect(useCase.execute(payload)).rejects.toThrow("queue unavailable");
   });
 });

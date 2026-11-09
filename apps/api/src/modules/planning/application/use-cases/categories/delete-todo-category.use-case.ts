@@ -29,7 +29,12 @@ export interface DeleteTodoCategoryInput {
 interface DeleteTodoCategoryDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
-    "findByIdAndUserId" | "countByUserId" | "getTodoCount" | "moveTodosToCategory" | "delete"
+    | "findByIdAndUserId"
+    | "countByUserId"
+    | "getTodoCount"
+    | "countActiveSeries"
+    | "moveTodosToCategory"
+    | "delete"
   >;
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
@@ -67,7 +72,9 @@ export class DeleteTodoCategory {
       }
 
       const todoCount = await this.#dependencies.repository.getTodoCount(categoryId);
-      if (todoCount > 0) {
+      // 회차가 아직 없어도 진행 중 규칙이 있으면 옮길 곳을 받아야 한다.
+      const activeSeries = await this.#dependencies.repository.countActiveSeries(categoryId);
+      if (todoCount + activeSeries > 0) {
         if (moveToCategoryId == null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
             categoryId,

@@ -1,7 +1,10 @@
+import type { SupportedLocale } from "#api/shared/domain/locale";
+
 /** 회원가입 시딩할 초기 약관 동의 값. */
 export interface ProvisioningConsent {
   termsAgreedAt?: Date;
   privacyAgreedAt?: Date;
+  agreedTermsVersion?: string;
   marketingAgreedAt?: Date;
   marketingPushAgreedAt?: Date;
 }
@@ -14,7 +17,7 @@ export interface ProvisioningConsent {
  */
 export interface UserProvisioningSeederPort {
   seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
-  seedDefaultCategories(userId: string): Promise<void>;
+  seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void>;
 }
 
 export const USER_PROVISIONING_SEEDER = Symbol("USER_PROVISIONING_SEEDER");

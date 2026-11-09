@@ -16,7 +16,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const DUST_SEED = 0xd057;
@@ -40,7 +40,7 @@ type HazeLayerProps = {
 /** 누런 막이 하늘을 덮고, 공기 중의 미세한 먼지가 반짝이며 옆으로 떠다닌다. */
 export function HazeLayer({ width, height, isLowEndDevice, time }: HazeLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('dust', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('dust', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, DUST_SEED);
   const { warm } = PARTICLE_SPRITES;
   const sprites = range(count).map(() => Skia.XYWHRect(warm.x, warm.y, warm.width, warm.height));

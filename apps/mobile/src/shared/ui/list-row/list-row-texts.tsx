@@ -58,7 +58,7 @@ export function ListRowTexts(props: ListRowTextsProps) {
   );
 }
 
-export interface ListRowTextsLoadingProps {
+interface ListRowTextsLoadingProps {
   type: ListRowTextsProps['type'];
   topProps?: TextSkeletonProps;
   middleProps?: TextSkeletonProps;

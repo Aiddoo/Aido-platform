@@ -1,73 +1,61 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
-
-import { isFontScale, readFontScale, writeFontScale } from './font-scale.preference';
+import { FONT_SCALE_STORAGE_KEY, isFontScale, toFontScale } from './font-scale.preference';
 
 describe('isFontScale', () => {
   it.each(['xsmall', 'small', 'medium', 'large', 'xlarge'] as const)(
     '%s는 유효한 FontScale이다',
     (value) => {
-      expect(isFontScale(value)).toBe(true);
+      // When
+      const result = isFontScale(value);
+
+      // Then
+      expect(result).toBe(true);
     },
   );
 
   it.each([undefined, null, '', 'invalid', 123, true])(
     '%s는 유효한 FontScale이 아니다',
     (value) => {
-      expect(isFontScale(value)).toBe(false);
+      // When
+      const result = isFontScale(value);
+
+      // Then
+      expect(result).toBe(false);
     },
   );
 });
 
-describe('readFontScale', () => {
+describe('toFontScale', () => {
   it('저장된 값이 없으면 medium을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
-
     // When
-    const result = readFontScale(storage);
+    const result = toFontScale(undefined);
 
     // Then
     expect(result).toBe('medium');
   });
 
   it.each(['xsmall', 'small', 'medium', 'large', 'xlarge'] as const)(
-    '%s가 저장되어 있으면 %s를 반환한다',
-    (value) => {
-      // Given
-      const storage = createMockSyncStorage();
-      storage.getString.mockReturnValue(value);
-
+    '%s가 저장되어 있으면 그대로 반환한다',
+    (saved) => {
       // When
-      const result = readFontScale(storage);
+      const result = toFontScale(saved);
 
       // Then
-      expect(result).toBe(value);
+      expect(result).toBe(saved);
     },
   );
 
   it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('invalid');
-
     // When
-    const result = readFontScale(storage);
+    const result = toFontScale('invalid');
 
     // Then
     expect(result).toBe('medium');
   });
 });
 
-describe('writeFontScale', () => {
-  it('올바른 key와 value로 storage.set을 호출한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-
-    // When
-    writeFontScale(storage, 'xlarge');
-
-    // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_font_scale', 'xlarge');
+describe('저장 키', () => {
+  it('이미 설치된 앱의 저장 값을 읽도록 키를 바꾸지 않는다', () => {
+    // When·Then
+    expect(FONT_SCALE_STORAGE_KEY).toBe('aido_font_scale');
   });
 });

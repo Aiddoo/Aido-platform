@@ -3,12 +3,11 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { Resource } from "#api/modules/access/access-entitlement.public";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
 import {
   INVITE_NOTIFIER,
@@ -155,8 +154,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       },
       notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
       alert: {
-        reportRetryExhausted: (failure) => {
-          overrides.exhausted?.push(failure.grantId);
+        raise: (alert) => {
+          overrides.exhausted?.push(String(alert.details?.grantId));
         },
       },
       inviteConfig: { isEnabled: overrides.isEnabled ?? true },
@@ -263,9 +262,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(
-      (await entitlement.getResourceLimitInTx(inviterId, Resource.FRIEND)).maxCount,
-    ).toBeNull();
+    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
     const repository = context.module.get<InviteRedemptionRepositoryPort>(
       INVITE_REDEMPTION_REPOSITORY,
     );
@@ -308,7 +305,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         },
       },
       notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
-      alert: { reportRetryExhausted: () => {} },
+      alert: { raise: () => {} },
       inviteConfig: { isEnabled: true },
       unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
       logger: new Logger("GrantInviteRewardsTest"),
@@ -405,13 +402,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     for (const suffix of ["A", "B", "C"]) {
       scenarios.push(await qualified(`RACEIVR${suffix}`, `RACEIVE${suffix}`));
     }
-    const webhook = context.module.get(HandleWebhookEvent);
+    const webhook = context.module.get(RevenueCatWebhookReceiver);
 
     // When
     await Promise.all(
       scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
-        webhook.execute({
+        webhook.receive({
           body: SubscriptionEventBuilder.initialPurchase()
             .withAppUserId(inviterId)
             .withOriginalTransactionId(`race-${inviterId}`)
@@ -501,9 +498,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         ?.role,
     ).toBe("ADMIN");
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(
-      (await entitlement.getResourceLimitInTx(inviterId, Resource.FRIEND)).maxCount,
-    ).toBeNull();
+    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
   });
 
   it("정비 작업은 마감이 지난 수락만 거절하고 남은 지급이 있는 수락의 작업을 다시 만든다", async () => {

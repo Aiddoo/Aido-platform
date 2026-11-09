@@ -111,8 +111,8 @@ describe("PushNotificationPayloadFactory", () => {
       userId: "user-1",
       dispatchId: 20,
       requiresFeatureCapability: true,
-      title: "새 기능",
-      body: "본문",
+      title: "(광고) 새 기능",
+      body: "본문\n수신 거부: 설정 > 알림",
       data: {
         notificationId: 10,
         dispatchId: 20,
@@ -196,4 +196,92 @@ describe("PushNotificationPayloadFactory", () => {
       });
     },
   );
+  describe("광고성 푸시 표기", () => {
+    it.each([
+      {
+        locale: "ko" as const,
+        title: "(광고) 오늘 점심 전에 하나 끝내볼까요",
+        body: "아직 0개예요\n수신 거부: 설정 > 알림",
+      },
+      {
+        locale: "en" as const,
+        title: "(Ad) 오늘 점심 전에 하나 끝내볼까요",
+        body: "아직 0개예요\nOpt out: Settings > Notifications",
+      },
+    ])(
+      "$locale 광고성 푸시는 제목 앞 표기와 본문 끝 수신 거부 방법을 붙인다",
+      ({ locale, title, body }) => {
+        // Given
+        const data = {
+          userId: "user-1",
+          type: "LUNCH_NUDGE" as const,
+          title: "오늘 점심 전에 하나 끝내볼까요",
+          body: "아직 0개예요",
+        };
+
+        // When
+        const payload = factory.createSingle({ data, notificationId: 1, dispatchId: 2, locale });
+
+        // Then
+        expect(payload).toMatchObject({ title, body, categoryId: "MARKETING" });
+      },
+    );
+
+    it.each([
+      {
+        name: "서비스 알림(온보딩 안내)",
+        type: "SYSTEM_NOTICE" as const,
+        purpose: "SCHEDULED_SERVICE" as const,
+      },
+      {
+        name: "거래 알림(체험 종료)",
+        type: "PREMIUM_TRIAL_ENDING" as const,
+        purpose: "TRANSACTIONAL" as const,
+      },
+      {
+        name: "거래 알림(보상 종료)",
+        type: "PREMIUM_GRANT_ENDING" as const,
+        purpose: "TRANSACTIONAL" as const,
+      },
+    ])("$name은 표기·광고 카테고리·수신 거부 토큰이 없다", ({ type, purpose }) => {
+      // Given
+      const data = { userId: "user-1", type, purpose, title: "제목", body: "본문" };
+
+      // When
+      const payload = factory.createSingle({
+        data,
+        notificationId: 1,
+        dispatchId: 2,
+        locale: "ko",
+      });
+
+      // Then
+      expect(payload).toMatchObject({ title: "제목", body: "본문" });
+      expect(payload.categoryId).toBeUndefined();
+      expect(payload.data).not.toHaveProperty("marketingOptOutToken");
+    });
+
+    it("체험 종료 알림은 앱에 SYSTEM_NOTICE 타입과 구독 화면 navigation으로 보낸다", () => {
+      // Given
+      const data = {
+        userId: "user-1",
+        type: "PREMIUM_TRIAL_ENDING" as const,
+        purpose: "TRANSACTIONAL" as const,
+        title: "3일 뒤 연간 구독이 시작돼요",
+        body: "12월 9일 결제 예정 · 해지는 스토어에서",
+        action: { type: "DEEP_LINK" as const, url: "/settings/subscription" },
+      };
+
+      // When
+      const payload = factory.createSingle({ data, notificationId: 1, dispatchId: 2 });
+
+      // Then
+      expect(pushNotificationDataSchema.parse(payload.data)).toMatchObject({
+        type: "SYSTEM_NOTICE",
+        action: { type: "DEEP_LINK", url: "/settings/subscription" },
+        navigation: { kind: "SUBSCRIPTION" },
+        purpose: "TRANSACTIONAL",
+      });
+    });
+  });
 });

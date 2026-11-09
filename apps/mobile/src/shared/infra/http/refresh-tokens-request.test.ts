@@ -1,11 +1,9 @@
 import type * as NodeCrypto from 'node:crypto';
 
+import { ENV } from '@src/shared/config/env';
+
 import { createRefreshTokensRequest } from './refresh-tokens-request';
 import { REQUEST_ID_HEADER } from './request-headers';
-
-jest.mock('@src/shared/config/env', () => ({
-  ENV: { API_URL: 'https://api.test' },
-}));
 
 // 네이티브 expo-crypto는 Jest에 없으므로 같은 계약(UUID v4)의 Node 구현으로 바꾼다.
 jest.mock('expo-crypto', () => ({
@@ -38,7 +36,7 @@ describe('토큰 갱신 요청', () => {
     // Then
     const [request] = sent;
     expect(response.status).toBe(401);
-    expect(request?.url).toBe('https://api.test/v1/auth/refresh');
+    expect(request?.url).toBe(`${ENV.API_URL}/v1/auth/refresh`);
     expect(request?.method).toBe('POST');
     expect(request?.headers.get('Authorization')).toBe('Bearer refresh-1');
     expect(request?.headers.get('X-App-Version')).toBe('1.14.2');

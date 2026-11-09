@@ -20,11 +20,15 @@ export function createSocialInteractionFixture() {
   const nudgeNotifier = new StubNudgeNotifier();
   const cheerLimitReader: CheerLimitReaderPort = {
     getDailyLimitInTx: async (userId) =>
-      (await fixture.entitlementReader.getFeatureLimitInTx(userId, "CHEER")).dailyLimit,
+      await fixture.entitlementReader.getLimitInTx(userId, "CHEER"),
+    readDailyQuotaInTx: async (userId, usage) =>
+      await fixture.entitlementReader.readFeatureQuotaInTx(userId, "CHEER", usage),
   };
   const nudgeLimitReader: NudgeLimitReaderPort = {
     getDailyLimitInTx: async (userId) =>
-      (await fixture.entitlementReader.getFeatureLimitInTx(userId, "NUDGE")).dailyLimit,
+      await fixture.entitlementReader.getLimitInTx(userId, "NUDGE"),
+    readDailyQuotaInTx: async (userId, usage) =>
+      await fixture.entitlementReader.readFeatureQuotaInTx(userId, "NUDGE", usage),
   };
   const nudgeInteractionConfig = { isEnabled: true };
   function addTodo(

@@ -1,34 +1,31 @@
-import { WEATHER_CONDITIONS } from '@aido/api';
 import { useLocalSearchParams } from 'expo-router';
-import { z } from 'zod';
 
 import type { WeatherReport } from '../domains/weather-report.model';
-
-const devSceneParamsSchema = z.object({
-  devScene: z.enum(WEATHER_CONDITIONS),
-  devNight: z.enum(['0', '1']).default('0'),
-});
+import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
 
 export type DevWeatherOverride = Pick<WeatherReport['current'], 'condition' | 'isDaylight'>;
 
 /** 개발 빌드 QA용: `/weather?devScene=HAIL&devNight=1`로 연 날씨 화면에서만 지금 날씨를 바꿔 보여 준다. */
-function useOverrideFromParams(): DevWeatherOverride | null {
-  const parsed = devSceneParamsSchema.safeParse(useLocalSearchParams());
-  if (!parsed.success) {
-    return null;
-  }
-  return { condition: parsed.data.devScene, isDaylight: parsed.data.devNight === '0' };
+function useRouteOverride() {
+  const parsed = weatherDevParamsSchema.safeParse(useLocalSearchParams());
+  const override: DevWeatherOverride | null = parsed.success
+    ? { condition: parsed.data.devScene, isDaylight: parsed.data.devNight === '0' }
+    : null;
+
+  return [override] as const;
 }
 
-function useNoOverride(): DevWeatherOverride | null {
-  return null;
+function useNoOverride() {
+  const override: DevWeatherOverride | null = null;
+
+  return [override] as const;
 }
 
 /** 운영 번들에서는 `__DEV__`가 false로 치환되어 파라미터를 읽는 코드가 빠진다. */
-export const useDevWeatherOverride = __DEV__ ? useOverrideFromParams : useNoOverride;
+export const useDevWeatherOverride = __DEV__ ? useRouteOverride : useNoOverride;
 
 /** 지금 날씨·시간별 예보(낮밤 포함)·오늘 예보가 모두 같은 날씨로 보이게 바꾼다. 다른 날과 수치는 실제 값을 둔다. */
-export function applyDevWeatherOverride(
+export function withDevWeatherOverride(
   report: WeatherReport,
   override: DevWeatherOverride,
 ): WeatherReport {

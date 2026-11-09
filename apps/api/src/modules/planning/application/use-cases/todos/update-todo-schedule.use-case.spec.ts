@@ -31,18 +31,24 @@ describe("할 일 일정 수정", () => {
     const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
+      timezone: "Asia/Seoul",
       schedule: {
         startDate: new Date("2026-05-16T00:00:00Z"),
         endDate: null,
-        scheduledTime,
+        scheduledTime: "12:30",
         isAllDay: false,
       },
     });
     // Then
-    expect(fixture.records.get(1)).toMatchObject({ scheduledTime, isAllDay: false });
+    expect(fixture.records.get(1)).toMatchObject({
+      scheduledLocalTime: "12:30",
+      scheduledTime,
+      isAllDay: false,
+    });
     expect(result).toMatchObject({
       startDate: "2026-05-16",
       scheduledTime: "2026-05-16T03:30:00.000Z",
+      scheduledLocalTime: "12:30",
     });
     expect(fixture.eventPublisher.events).toEqual([
       new TodoRescheduledEvent(1, fixture.userId, scheduledTime),
@@ -53,6 +59,7 @@ describe("할 일 일정 수정", () => {
     const input = {
       id: 1,
       userId: fixture.userId,
+      timezone: "Asia/Seoul",
       schedule: {
         startDate: new Date("2026-05-16T00:00:00Z"),
         endDate: null,
@@ -93,6 +100,7 @@ describe("할 일 일정 수정", () => {
     const execution = useCase.execute({
       id: 1,
       userId: fixture.userId,
+      timezone: "Asia/Seoul",
       schedule: { startDate: PLANNING_TIME, endDate: null, scheduledTime: null, isAllDay: true },
     });
     try {

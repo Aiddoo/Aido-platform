@@ -20,7 +20,8 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
   beforeEach(async () => {
     todoReminder = {
       scheduleReminder: vi.fn().mockResolvedValue(undefined),
-      cancelReminder: vi.fn(),
+      scheduleReminders: vi.fn(),
+      cancelReminders: vi.fn(),
     };
 
     const { unit } = await TestBed.solitary(TodoCreatedHandler)
@@ -48,7 +49,7 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 
     // Then
     expect(todoReminder.scheduleReminder).not.toHaveBeenCalled();
-    expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
+    expect(todoReminder.cancelReminders).not.toHaveBeenCalled();
   });
 
   it("리마인더 스케줄 실패를 이벤트 publisher까지 전파한다", async () => {

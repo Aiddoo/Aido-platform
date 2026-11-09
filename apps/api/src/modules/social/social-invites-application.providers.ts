@@ -3,13 +3,16 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 import { PREMIUM_GRANTER } from "#api/modules/billing/billing-subscriptions.public";
 import { USER_BLOCK_READER } from "#api/modules/social/social-blocks.public";
 import { FOLLOW_READER, FRIENDSHIP_ESTABLISHER } from "#api/modules/social/social-friends.public";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import {
+  MUTATION_LOCK,
+  OPERATIONAL_ALERT,
+  UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
 
 import { CLAIM_HASHER } from "./application/ports/invites/claim-hasher.port.js";
 import { INVITE_NOTIFIER } from "./application/ports/invites/invite-notifier.port.js";
 import { INVITE_QUALIFY_REMINDER_SCHEDULER } from "./application/ports/invites/invite-qualify-reminder.scheduler.port.js";
 import { INVITE_REDEMPTION_REPOSITORY } from "./application/ports/invites/invite-redemption.repository.port.js";
-import { INVITE_REWARD_ALERT } from "./application/ports/invites/invite-reward-alert.port.js";
 import { INVITE_REWARD_SCHEDULER } from "./application/ports/invites/invite-reward.scheduler.port.js";
 import { INVITE_CONFIG } from "./application/ports/invites/invite.config.port.js";
 import { INVITE_REPOSITORY } from "./application/ports/invites/invite.repository.port.js";
@@ -212,7 +215,7 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_APPLIERS,
     INVITE_NOTIFIER,
-    INVITE_REWARD_ALERT,
+    OPERATIONAL_ALERT,
     INVITE_CONFIG,
     UNIT_OF_WORK,
   ],

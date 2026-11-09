@@ -1,11 +1,5 @@
-import { todoCommentIdSchema } from '@aido/api';
-import { createTodoCommentHref } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
-import { todoScreenParamsSchema } from '@src/features/todo/hooks/use-todo-screen-params';
+import { legacyTodoCommentThreadParamsSchema } from '@src/features/engagement/comment/schemas/todo-comment-params.schema';
 import { Redirect, useLocalSearchParams } from 'expo-router';
-
-const legacyTodoCommentThreadParamsSchema = todoScreenParamsSchema.extend({
-  commentId: todoCommentIdSchema,
-});
 
 /** 1.14.0 이하 대화 링크. 할 일 상세 한 화면의 그 댓글 위치로 옮긴다 */
 export default function LegacyTodoCommentThreadRoute() {
@@ -15,5 +9,12 @@ export default function LegacyTodoCommentThreadRoute() {
     return <Redirect href="/feed" />;
   }
 
-  return <Redirect href={createTodoCommentHref(params.data)} />;
+  return (
+    <Redirect
+      href={{
+        pathname: '/todo/[todoId]',
+        params: { todoId: params.data.todoId, comment: params.data.commentId },
+      }}
+    />
+  );
 }

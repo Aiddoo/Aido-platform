@@ -1,38 +1,44 @@
 import {
   PREMIUM_GRANT_ENDED_WINDOW_DAYS,
-  PREMIUM_GRANT_ENDING_NOTICE_DAYS,
   PREMIUM_SOURCE,
   type PremiumSource,
+  STORE_PERIOD_TYPE,
+  type StorePeriodType,
+  type SubscriptionPlanType,
+  type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
 
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { storeEntitlementEndsAt, storePeriodEndsAt } from "#api/shared/domain/store-renewal-grace";
 
-import type { SubscriptionStatusValue } from "../../aggregates/subscriptions/subscription.aggregate.js";
+import { SubscriptionPlanPolicy } from "./subscription-plan.policy.js";
 
 export type PremiumGrantStatusValue = "BANKED" | "ACTIVE" | "ENDED" | "REVOKED";
 
 /** 보상 기간 계산은 UTC 달력 기준이라 하루는 항상 24시간이다. */
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
-/** 보상 기간이 끝나기 이만큼 전에 한 번 안내한다. */
-const PREMIUM_GRANT_ENDING_NOTICE_MS = PREMIUM_GRANT_ENDING_NOTICE_DAYS * DAY_MS;
-
 /** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간 */
 const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 
 /** 스토어 구독 행 중 프리미엄 판단에 필요한 값 */
 export interface StoreEntitlement {
-  readonly status: SubscriptionStatusValue;
+  /** 저장한 스토어 상품 ID. Play 구독은 "상품:기본요금제"다. */
+  readonly productId: string;
+  /** 체인을 처음 산 시각. 요금제를 바꿔 새 체인이 생기면 새 체인이 더 늦다. */
+  readonly startedAt: Date;
+  readonly status: SubscriptionStatus;
   readonly expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
   readonly gracePeriodEndsAt?: Date | null;
+  /** 지금 기간의 스토어 기간 유형. 비우거나 null이면 NORMAL이다. */
+  readonly periodType?: StorePeriodType | null;
 }
 
 /** 스토어 구독 행과 그 거래 체인 ID */
 export interface StoreSubscriptionEntitlement extends StoreEntitlement {
-  readonly revenueCatId: string;
+  readonly storeSubscriptionId: string;
 }
 
 /** 프리미엄 보상 기간 중 판단에 필요한 값 */
@@ -63,6 +69,10 @@ export interface PremiumAccess {
   /** 지금 출처의 기간이 끝나는 시각. STORE면 스토어 만료, GRANT면 진행 중인 보상 기간의 끝이다. */
   readonly periodEndsAt: Date | null;
   readonly willRenew: boolean;
+  /** 지금 기간이 스토어 무료 체험인지. 체험은 새 출처가 아니라 STORE + periodType TRIAL이다. */
+  readonly isTrial: boolean;
+  /** 지금 기간을 정하는 스토어 구독의 요금제. STORE가 아니거나 모르는 상품이면 null이다. */
+  readonly planType: SubscriptionPlanType | null;
   /** 지금 기간이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 합계 */
   readonly bankedDays: number;
   /** 프리미엄이 아닐 때만, 최근 7일 안에 끝난 마지막 보상 기간의 끝 시각 */
@@ -118,14 +128,15 @@ export function premiumGrantDaysOf(durationMs: number): number {
  * 엔타이틀먼트가 없다.
  */
 export interface StoreEventChainState {
-  readonly revenueCatId: string;
-  readonly status: SubscriptionStatusValue;
+  readonly storeSubscriptionId: string;
+  readonly status: SubscriptionStatus;
   readonly expiresAt?: Date | null;
   readonly gracePeriodEndsAt?: Date | null;
+  readonly periodType?: StorePeriodType | null;
 }
 
 /**
- * TRANSFER·다른 사용자의 체인 이벤트로 옮겨 간 행은 소유자가 바뀌어 읽히지 않으므로 남은 행을 그대로 믿는다.
+ * TRANSFERRED·다른 사용자의 체인 이벤트로 옮겨 간 행은 소유자가 바뀌어 읽히지 않으므로 남은 행을 그대로 믿는다.
  * 이번 이벤트의 체인은 행 대신 이벤트가 정한 상태로 본다(일반 취소는 만료 시각까지·환불은 즉시 종료).
  */
 export function applyStoreEventChain(
@@ -133,10 +144,10 @@ export function applyStoreEventChain(
   eventChain: StoreEventChainState | undefined,
 ): StoreSubscriptionEntitlement[] {
   return subscriptions.flatMap((subscription) => {
-    if (subscription.revenueCatId !== eventChain?.revenueCatId) {
+    if (subscription.storeSubscriptionId !== eventChain?.storeSubscriptionId) {
       return [subscription];
     }
-    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLATION·PRODUCT_CHANGE·SUBSCRIPTION_EXTENDED)은 행의 만료 시각 유지
+    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLED·PRODUCT_CHANGE_SCHEDULED·EXTENDED)은 행의 만료 시각 유지
     if (eventChain.expiresAt === null) {
       return [];
     }
@@ -147,10 +158,13 @@ export function applyStoreEventChain(
         : eventChain.gracePeriodEndsAt;
     return [
       {
-        revenueCatId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.storeSubscriptionId,
+        productId: subscription.productId,
+        startedAt: subscription.startedAt,
         status: eventChain.status,
         expiresAt: eventChain.expiresAt ?? subscription.expiresAt,
         gracePeriodEndsAt,
+        periodType: eventChain.periodType ?? subscription.periodType ?? null,
       },
     ];
   });
@@ -213,9 +227,21 @@ function storeHandoffAt(subscription: StoreEntitlement): Date {
   return storeEntitlementEndsAt(subscription) ?? new Date(subscription.expiresAt);
 }
 
-/** 이 시각 이전에 끝나는 마지막 보상 기간을 지금 안내한다. */
-export function premiumGrantEndingNoticeUntil(now: Date): Date {
-  return addMilliseconds(PREMIUM_GRANT_ENDING_NOTICE_MS, now);
+/**
+ * 지금 결제를 정하는 체인. Play는 요금제를 바꾸면 새 체인을 만들고 옛 체인이 원래 만료까지 ACTIVE로 남으므로
+ * 유효한 체인 중 가장 늦게 시작한 체인이다(같으면 늦게 끝나는 쪽). /me 표시와 갱신 안내가 이 규칙 하나를 쓴다.
+ */
+export function currentStoreChainOf<TSubscription extends StoreEntitlement>(
+  subscriptions: readonly TSubscription[],
+  now: Date,
+): TSubscription | undefined {
+  return sortBy(
+    subscriptions.filter((subscription) => isStoreEntitlementValid(subscription, now)),
+    [
+      (subscription) => subscription.startedAt.getTime(),
+      (subscription) => storePeriodEndsAt(subscription).getTime(),
+    ],
+  ).at(-1);
 }
 
 function hasStoreEntitlement(entitlements: PremiumEntitlements, now: Date): boolean {
@@ -307,25 +333,22 @@ export const PremiumAccessPolicy = {
     const banked = bankedInReceivedOrder(entitlements.premiumGrants);
     const bankedDays = premiumGrantDaysOf(sumBy(banked, premiumGrantDurationMs));
 
-    const storeEndsAt = latestOf(validStores.map(storePeriodEndsAt));
-    if (storeEndsAt != null) {
-      // 예전에 스토어와 겹쳐 시작한 기간이 남아 있으면 그 끝까지 프리미엄이다
-      const periodEndsAt = latestOf([
-        storeEndsAt,
-        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
-      ]);
-      const handoffAt = latestOf([
-        ...validStores.map(storeHandoffAt),
-        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
-      ]);
+    const currentStore = currentStoreChainOf(validStores, now);
+    if (currentStore != null) {
+      const activeGrantEnds = activeGrantEndsAt == null ? [] : [activeGrantEndsAt];
+      // 지금 기간·갱신·요금제는 현재 체인으로 보여 주고, 프리미엄 끝과 보상 이어 붙이기는 아직 유효한 모든
+      // 체인의 끝까지 본다(결제한 기간을 앞당겨 빼앗지 않는다). 겹쳐 시작한 보상 기간이 남으면 그 끝까지다
+      const periodEndsAt = latestOf([storePeriodEndsAt(currentStore), ...activeGrantEnds]);
+      const premiumEndsAt = latestOf([...validStores.map(storePeriodEndsAt), ...activeGrantEnds]);
+      const handoffAt = latestOf([...validStores.map(storeHandoffAt), ...activeGrantEnds]);
       return {
         source: PREMIUM_SOURCE.STORE,
         endsAt:
-          banked.length === 0 || handoffAt == null ? periodEndsAt : chainBanked(handoffAt, banked),
+          banked.length === 0 || handoffAt == null ? premiumEndsAt : chainBanked(handoffAt, banked),
         periodEndsAt,
-        willRenew: validStores.some((subscription) =>
-          isStoreSubscriptionRenewing(subscription, now),
-        ),
+        willRenew: isStoreSubscriptionRenewing(currentStore, now),
+        isTrial: currentStore.periodType === STORE_PERIOD_TYPE.TRIAL,
+        planType: SubscriptionPlanPolicy.planTypeOf(currentStore.productId),
         bankedDays,
         recentGrantEndedAt: null,
       };
@@ -337,6 +360,8 @@ export const PremiumAccessPolicy = {
         endsAt: null,
         periodEndsAt: null,
         willRenew: false,
+        isTrial: false,
+        planType: null,
         bankedDays,
         recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
       };
@@ -346,6 +371,8 @@ export const PremiumAccessPolicy = {
       endsAt: chainBanked(activeGrantEndsAt, banked),
       periodEndsAt: activeGrantEndsAt,
       willRenew: false,
+      isTrial: false,
+      planType: null,
       bankedDays,
       recentGrantEndedAt: null,
     };

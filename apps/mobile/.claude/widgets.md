@@ -1,14 +1,20 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 3.2.0 · **Last Updated**: 2026-10-26 · **Owner**: Aido Mobile Team
+**Version**: 3.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
 
 iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo config plugin과
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
 두 플랫폼은 `WidgetSnapshot` v2(오늘·내일 day), mapper, Policy, `WidgetSyncService`, `WidgetBridge`를 공유한다.
 
-Android를 `expo-widgets`로 옮기지 않는 이유: SDK 58 `expo-widgets`의 Android 구현에는 timeline이 없어
-자정 전환을 미리 예약할 수 없고, AppWidget provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이
-사라진다. 그래서 기존 provider 이름을 유지하는 `react-native-android-widget`을 계속 사용한다.
+Android를 `expo-widgets`로 옮기지 않는 이유(SDK 58 기준 확인):
+
+- 주기 갱신이 없다. timeline이 없어 자정 전환을 미리 예약할 수 없다.
+- 위젯을 탭해 앱을 여는 방법을 찾지 못했다.
+- AppWidget provider class(제공자) 이름이 바뀌면 사용자가 홈 화면에 둔 위젯이 사라진다. 기존 이름을 유지해야 한다.
+- 쓸 수 있는 부품이 제한적이라 지금 위젯의 카드 구성을 그리기 어렵다.
+
+그래서 기존 provider 이름을 유지하는 `react-native-android-widget`을 쓰고, `app.config.ts`의 `expo-widgets`에는
+`enableAndroid: false`를 명시한다.
 
 ## 데이터 흐름과 소유권
 
@@ -26,15 +32,17 @@ useWidgetSnapshotSync(authState)
 - 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다.
 - 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 추가하지 않는다.
 - 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다(통계·스트릭). 서버 날짜가 요청과 다르거나
-  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다.
+  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`todo.queries.ts`의 `useGetTodoSummaryQueryOptions`).
 - 렌더러는 전달받은 props만 사용한다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
+- 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 `aido_widget_headless_failure_v1`에
+  남겼다가, 다음 앱 시작 때 `WidgetSyncService.reportHeadlessFailure`가 `ErrorReporter`로 보낸다.
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다.
   실제 화면의 갱신은 native QA에서 확인한다.
 
 ## 플랫폼 경계와 identity
 
-`create-widget-bridge.ios.ts` / `.android.ts`, `widget-navigation-storage.android.ts`와 noop
+`create-widget-bridge.ios.ts` / `.android.ts`, `widget-storage.android.ts`와 noop
 fallback, `register-widget-task-handler.android.ts`와 noop fallback을 사용한다. iOS Metro graph에
 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 분리한다.
 
@@ -64,11 +72,9 @@ ko 기기는 한국어, 그 밖의 언어는 영어로 표시한다. 영어는 �
 - 첫 동기화 전 로그인 안내의 iOS 번역도 같은 `Localizable.strings`에 둔다(아래 「디자인과 렌더링」).
 
 기존 `widget-storage`의 `aido_widget_snapshot_v1` key를 그대로 쓴다. 값은 v2 JSON이며, 이미 저장된
-v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. 기존 Expo
-SharedPreferences만 있고 MMKV snapshot이 없거나 현재 소유자를 알 수 없으면 개인 목록을
-추측하지 않고 앱 열기 안내를 표시한다. 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
-이 범위는 로그인·계정·할 일 데이터 호환성과 다르며, 업그레이드 전 위젯 표시 내용을 앱 실행
-전에 완전히 복원한다고 주장하지 않는다.
+v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. MMKV snapshot이 없거나 현재
+소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 표시한다. 앱이 현재 계정 요약을
+동기화한 뒤 정상 표시한다. 업그레이드 전 위젯 표시 내용을 앱 실행 전에 복원하지는 않는다.
 
 ## 날짜와 OS 갱신
 
@@ -78,7 +84,7 @@ LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·signi
 
 - iOS: `toWidgetTimelineEntries`가 [지금: 오늘] → [다음 자정: 내일] → [그다음 자정: stale]을
   `updateTimeline`에 넣는다. 내일 day가 없으면 다음 자정부터 stale이다.
-- Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다(`WidgetSnapshotPolicy.selectDay`).
+- Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다(`WidgetSnapshotPolicy.getDay`).
   세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 사용한다. Doze·launcher 갱신 정책 때문에
   정확한 자정 또는 최대 30분 이내의 갱신을 보장하지 않는다.
 
@@ -92,7 +98,8 @@ LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·signi
 - Android는 공식 FlexWidget / TextWidget / SvgWidget을 사용한다. 기존 paw SVG path를 재사용한다.
 - 완성된 카드 한 개를 공식 ListWidget의 단일 항목으로 감싼다. 모든 날짜·할 일·생성 버튼은
   collection의 안정적인 PendingIntent template / fill-in 경로로 전달한다. 라이브러리의 clock 기반
-  direct 클릭 충돌을 피하기 위해 native source나 vendor patch를 수정하지 않는다.
+  direct 클릭 충돌을 피하기 위해서이고, native source나 vendor patch는 수정하지 않는다.
+  ListWidget을 걷어내는 일은 기기 비교 뒤로 미뤘다.
 - Android renderer는 hooks 없이 props로만 tree를 만든다. library의 tree collector와 맞추기 위해
   `use no memo`를 선언한다.
 - 실제 WidgetInfo.width/height로 카드 비율 small 1, medium 2.05, large .97을 맞추고 launcher의
@@ -140,7 +147,7 @@ URI가 유실되는 경우를 실제 재현했다. launchMode 변경이나 OTA �
 renderer·timeline에서 손상 JSON, 이전 v1, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 검증한다.
 
 ```sh
-pnpm --filter @aido/mobile exec jest --runInBand src/features/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx
+pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx
 pnpm lint && pnpm format:check && pnpm typecheck
 ```
 
@@ -148,7 +155,7 @@ pnpm lint && pnpm format:check && pnpm typecheck
 force-stop/fresh task와 따로 확인하며 실제 launcher tap 뒤 Activity/목적 화면과 뒤로가기를 검증한다.
 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher,
 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다.
-관측은 기존 ErrorReporter 포트를 사용하고 feature widget breadcrumb/error로 응집한다.
+관측은 `ErrorReporter` 포트의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb로 모은다.
 
 ## 공식 근거
 

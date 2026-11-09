@@ -22,10 +22,12 @@ import {
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -68,11 +70,12 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     });
     const logger = new Logger("OAuthIdentityProvider");
     const http = new HttpClient({ retry: false, throwOnHttpError: false });
+    const policies = new OutboundPolicyRegistry(new RecordingOperationalAlert());
     const registry = new Map<AccountProvider, OAuthIdentityProvider>([
       ["APPLE", new AppleOAuthProvider(fakeTokenVerifier)],
-      ["GOOGLE", new GoogleOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
-      ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
-      ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
+      ["GOOGLE", new GoogleOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
+      ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
+      ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http, policies)],
     ]);
     module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
       oauthProviderRegistry: registry,

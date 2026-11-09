@@ -1,8 +1,11 @@
-import type { Mocked } from "vitest";
+import { vi, type Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { TodoBuilder } from "#test/builders/todo.builder";
+import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
@@ -12,6 +15,7 @@ import {
 import { HandleSuggestionAction } from "./handle-suggestion-action.use-case.js";
 
 const mockUserId = "user-123";
+const todoResponse = createTodoResponseFixture(TodoBuilder.create(mockUserId).withId(1).build());
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
   return Suggestion.reconstitute({
@@ -38,9 +42,11 @@ describe("HandleSuggestionAction", () => {
     ConstructorParameters<typeof HandleSuggestionAction>[0]["localePreferenceReader"]
   >;
   let repo: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"]>;
-  let creator: Mocked<
-    ConstructorParameters<typeof HandleSuggestionAction>[0]["recurringTodoCreator"]
+  let creator: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["todoCreator"]>;
+  let afterCommitRegistry: Mocked<
+    ConstructorParameters<typeof HandleSuggestionAction>[0]["afterCommit"]
   >;
+  const afterCommit = vi.fn(async () => undefined);
   let entitlement: Mocked<
     ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"]
   >;
@@ -53,8 +59,9 @@ describe("HandleSuggestionAction", () => {
 
     useCase = unit;
     repo = handleSuggestionActionDependencies.repository;
-    creator = handleSuggestionActionDependencies.recurringTodoCreator;
+    creator = handleSuggestionActionDependencies.todoCreator;
     entitlement = handleSuggestionActionDependencies.entitlementReader;
+    afterCommitRegistry = handleSuggestionActionDependencies.afterCommit;
     localePreferenceReader = handleSuggestionActionDependencies.localePreferenceReader;
 
     entitlement.canInTx.mockResolvedValue(true);
@@ -133,7 +140,7 @@ describe("HandleSuggestionAction", () => {
     expect(result.suggestion.status).toBe("DISMISSED");
     expect(result.message).toContain("거절");
     expect(result.createdTodosCount).toBeUndefined();
-    expect(creator.createRecurring).not.toHaveBeenCalled();
+    expect(creator.stage).not.toHaveBeenCalled();
   });
 
   it("수락 시 categoryId가 없으면 SYS_0002 예외를 던져야 한다", async () => {
@@ -147,13 +154,16 @@ describe("HandleSuggestionAction", () => {
         timezone: "Asia/Seoul",
       }),
     ).rejects.toBeInstanceOf(ApplicationException);
-    expect(creator.createRecurring).not.toHaveBeenCalled();
+    expect(creator.stage).not.toHaveBeenCalled();
   });
 
   it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 반복 할 일을 생성해야 한다", async () => {
     repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
     repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-    creator.createRecurring.mockResolvedValue({ count: 12 });
+    creator.stage.mockResolvedValue({
+      todos: Array.from({ length: 12 }, () => todoResponse),
+      afterCommit,
+    });
 
     const result = await useCase.execute({
       userId: mockUserId,
@@ -165,20 +175,26 @@ describe("HandleSuggestionAction", () => {
 
     // 상태 변경이 반복 생성보다 먼저 호출되어야 한다
     const updateStatusOrder = repo.updateStatus.mock.invocationCallOrder[0] ?? 0;
-    const createRecurringOrder = creator.createRecurring.mock.invocationCallOrder[0] ?? 0;
-    expect(updateStatusOrder).toBeLessThan(createRecurringOrder);
+    const stageOrder = creator.stage.mock.invocationCallOrder[0] ?? 0;
+    expect(updateStatusOrder).toBeLessThan(stageOrder);
 
     expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
-    expect(creator.createRecurring).toHaveBeenCalledWith(
+    expect(creator.stage).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: mockUserId,
         title: "팀 미팅",
         categoryId: 5,
-        daysOfWeek: ["MON", "WED", "FRI"],
         scheduledTime: "10:00",
+        timezone: "Asia/Seoul",
+        repeat: expect.objectContaining({
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: ["MON", "WED", "FRI"],
+        }),
       }),
-      "Asia/Seoul",
     );
+    expect(afterCommitRegistry.register).toHaveBeenCalledWith(afterCommit);
+    expect(afterCommit).not.toHaveBeenCalled();
     expect(result.suggestion.status).toBe("ACCEPTED");
     expect(result.createdTodosCount).toBe(12);
   });
@@ -188,7 +204,7 @@ describe("HandleSuggestionAction", () => {
     repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
     repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
     const failure = new Error("투두 생성 실패");
-    creator.createRecurring.mockRejectedValue(failure);
+    creator.stage.mockRejectedValue(failure);
     // When - 실제 action use-case 실행
     const execution = useCase.execute({
       userId: mockUserId,
@@ -294,7 +310,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.createRecurring.mockResolvedValue({ count: 4 });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,
@@ -304,9 +320,12 @@ describe("HandleSuggestionAction", () => {
         timezone,
       });
       // Then
-      expect(creator.createRecurring).toHaveBeenCalledWith(
-        expect.objectContaining({ startDate, endDate }),
-        timezone,
+      expect(creator.stage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: parseDateOnly(startDate),
+          timezone,
+          repeat: expect.objectContaining({ end: { type: "UNTIL", date: endDate } }),
+        }),
       );
       expect(localePreferenceReader.read).not.toHaveBeenCalled();
     });
@@ -320,7 +339,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.createRecurring.mockResolvedValue({ count: 4 });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,
@@ -330,9 +349,11 @@ describe("HandleSuggestionAction", () => {
         timezone: undefined,
       });
       // Then
-      expect(creator.createRecurring).toHaveBeenCalledWith(
-        expect.objectContaining({ startDate: "2026-10-28" }),
-        "Asia/Seoul",
+      expect(creator.stage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: parseDateOnly("2026-10-28"),
+          timezone: "Asia/Seoul",
+        }),
       );
     });
   });

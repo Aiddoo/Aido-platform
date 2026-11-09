@@ -5,9 +5,9 @@ import { createConsoleLogger } from './console-logger';
 const fallback = createConsoleLogger({ minLevel: 'debug' });
 let instance: Logger = fallback;
 
-export const setGlobalLogger = (logger: Logger): void => {
+export function setGlobalLogger(logger: Logger): void {
   instance = logger;
-};
+}
 
 export const logger: Logger = {
   debug: (...args) => instance.debug(...args),

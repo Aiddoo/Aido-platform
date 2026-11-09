@@ -1,0 +1,793 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c22a067a-2b31-4d96-bec1-ca20ba0f05eb",
+  "prevIds": [
+    "6201daa9-8aa5-4e4f-a298-dafd814f150f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoRepeatFrequency"
+      ],
+      "writes": [
+        "s|enum|public.TodoRepeatFrequency",
+        "n|enum|public.TodoRepeatFrequency",
+        "e|enum|public.TodoRepeatFrequency",
+        "n|type|public.TodoRepeatFrequency"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoSeries"
+      ],
+      "writes": [
+        "s|tbl|public.TodoSeries",
+        "n|tbl|public.TodoSeries",
+        "e|tbl|public.TodoSeries",
+        "n|rel|public.TodoSeries",
+        "n|type|public.TodoSeries",
+        "n|rel|public.TodoSeries_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.TodoRepeatFrequency",
+        "n|enum|public.TodoVisibility"
+      ]
+    },
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_recurrenceGroupId_idx"
+      ],
+      "writes": [
+        "s|idx|public.Todo_recurrenceGroupId_idx",
+        "n|idx|public.Todo_recurrenceGroupId_idx",
+        "e|idx|public.Todo_recurrenceGroupId_idx",
+        "n|rel|public.Todo_recurrenceGroupId_idx"
+      ],
+      "reads": [
+        "e|tbl|public.Todo",
+        "n|sch|public",
+        "e|col|public.Todo.recurrenceGroupId"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Todo",
+        "occurrenceDate"
+      ],
+      "writes": [
+        "s|col|public.Todo.occurrenceDate",
+        "n|col|public.Todo.occurrenceDate",
+        "e|col|public.Todo.occurrenceDate"
+      ],
+      "reads": [
+        "n|tbl|public.Todo",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_recurrenceGroupId_occurrenceDate_key"
+      ],
+      "writes": [
+        "s|idx|public.Todo_recurrenceGroupId_occurrenceDate_key",
+        "n|idx|public.Todo_recurrenceGroupId_occurrenceDate_key",
+        "e|idx|public.Todo_recurrenceGroupId_occurrenceDate_key",
+        "n|rel|public.Todo_recurrenceGroupId_occurrenceDate_key"
+      ],
+      "reads": [
+        "n|tbl|public.Todo",
+        "n|sch|public",
+        "n|col|public.Todo.recurrenceGroupId",
+        "n|col|public.Todo.occurrenceDate"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoSeries",
+        "TodoSeries_nextOccurrenceDate_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoSeries_nextOccurrenceDate_idx",
+        "n|idx|public.TodoSeries_nextOccurrenceDate_idx",
+        "e|idx|public.TodoSeries_nextOccurrenceDate_idx",
+        "n|rel|public.TodoSeries_nextOccurrenceDate_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|col|public.TodoSeries.nextOccurrenceDate"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoSeries",
+        "TodoSeries_userId_nextOccurrenceDate_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoSeries_userId_nextOccurrenceDate_idx",
+        "n|idx|public.TodoSeries_userId_nextOccurrenceDate_idx",
+        "e|idx|public.TodoSeries_userId_nextOccurrenceDate_idx",
+        "n|rel|public.TodoSeries_userId_nextOccurrenceDate_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|col|public.TodoSeries.userId",
+        "n|col|public.TodoSeries.nextOccurrenceDate"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoSeries",
+        "TodoSeries_categoryId_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoSeries_categoryId_idx",
+        "n|idx|public.TodoSeries_categoryId_idx",
+        "e|idx|public.TodoSeries_categoryId_idx",
+        "n|rel|public.TodoSeries_categoryId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|col|public.TodoSeries.categoryId"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoSeries"
+      ],
+      "writes": [
+        "s|fk|public.TodoSeries.TodoSeries_categoryId_fkey",
+        "n|fk|public.TodoSeries.TodoSeries_categoryId_fkey",
+        "e|fk|public.TodoSeries.TodoSeries_categoryId_fkey",
+        "n|con|public.TodoSeries.TodoSeries_categoryId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|tbl|public.TodoCategory",
+        "n|sch|public",
+        "n|col|public.TodoSeries.categoryId",
+        "n|col|public.TodoCategory.id",
+        "e|uniqueness|public.TodoCategory.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoSeries"
+      ],
+      "writes": [
+        "s|fk|public.TodoSeries.TodoSeries_userId_fkey",
+        "n|fk|public.TodoSeries.TodoSeries_userId_fkey",
+        "e|fk|public.TodoSeries.TodoSeries_userId_fkey",
+        "n|con|public.TodoSeries.TodoSeries_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.TodoSeries.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoSeries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoRepeatFrequency",
+        "values": [
+          "DAILY",
+          "WEEKLY",
+          "MONTHLY"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Todo",
+        "name": "occurrenceDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "categoryId",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "checklistTemplate",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'[]'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "createdAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "generatedCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "id",
+        "type": "varchar(36)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "nextOccurrenceDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatCount",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatFrequency",
+        "type": "TodoRepeatFrequency",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatInterval",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatMonthDay",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatUntil",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "repeatWeekdays",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "scheduledLocalTime",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "sortOrder",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "startDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "timezone",
+        "type": "varchar(50)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "title",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "visibility",
+        "type": "TodoVisibility",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'PUBLIC'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Todo",
+        "name": "Todo_recurrenceGroupId_occurrenceDate_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "recurrenceGroupId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "occurrenceDate",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"occurrenceDate\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_nextOccurrenceDate_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "nextOccurrenceDate",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"nextOccurrenceDate\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_userId_nextOccurrenceDate_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "nextOccurrenceDate",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_categoryId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "categoryId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_categoryId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "categoryId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "TodoCategory",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_repeatInterval_check",
+        "value": "\"repeatInterval\" IN (1, 2)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_repeatWeekdays_check",
+        "value": "(\"repeatFrequency\" = 'WEEKLY') = (\"repeatWeekdays\" IS NOT NULL AND cardinality(\"repeatWeekdays\") > 0) AND (\"repeatWeekdays\" IS NULL OR \"repeatWeekdays\" <@ ARRAY['MON','TUE','WED','THU','FRI','SAT','SUN']::text[])",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_repeatMonthDay_check",
+        "value": "(\"repeatFrequency\" = 'MONTHLY') = (\"repeatMonthDay\" IS NOT NULL) AND (\"repeatMonthDay\" IS NULL OR \"repeatMonthDay\" BETWEEN 1 AND 31)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_repeatCount_check",
+        "value": "\"repeatCount\" IS NULL OR \"repeatCount\" BETWEEN 1 AND 365",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_repeatEnd_check",
+        "value": "\"repeatUntil\" IS NULL OR \"repeatCount\" IS NULL",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"Todo_recurrenceGroupId_idx\"]"
+    }
+  ]
+}

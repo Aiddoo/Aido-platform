@@ -1,11 +1,20 @@
-import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { ActivationPushPermissionDialog } from '@src/features/activation/components/activation-push-permission-dialog';
+import { useRecordTodoCompletion } from '@src/features/device/activation/hooks/use-record-todo-completion';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
+import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push';
+import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
-import { useQueryErrorResetBoundary } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import {
+  HStack,
+  Result,
+  SHEET_ROUTE_SCREEN_OPTIONS,
+  StyledSafeAreaView,
+  useStackScreenOptions,
+} from '@src/shared/ui';
+import { useMutation, useQueryErrorResetBoundary } from '@tanstack/react-query';
+import { type ErrorBoundaryProps, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
@@ -28,6 +37,7 @@ const SHEET_ROUTES = [
   'users/[userId]/block',
   'users/[userId]/report',
   'users/[userId]/nudge',
+  'suggestions/[suggestionId]/category',
 ] as const;
 
 export const unstable_settings = {
@@ -36,48 +46,87 @@ export const unstable_settings = {
 
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
+  const headerOptions = useStackScreenOptions();
+  const { t } = useTranslation(['notification', 'todo', 'ai']);
+  const isPushOnboardingDue = usePushOnboardingGuard();
+  useRecordTodoCompletion();
+  useOfferMarketingPushAfterCompletion();
 
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor },
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationTypeForReplace: 'push',
+        contentStyle: { backgroundColor },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="notifications/index"
+        options={{ ...headerOptions, title: t('notification:titles.notifications') }}
+      />
+      <Stack.Screen
+        name="nudges/[nudgeId]"
+        options={{ ...headerOptions, title: t('todo:interaction.detailTitle') }}
+      />
+      <Stack.Screen
+        name="suggestions/index"
+        options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
+      />
+      <Stack.Screen name="weather" />
+      {/* 닫기가 헤더 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
+      <Stack.Screen
+        name="whats-new/index"
+        options={{
+          ...headerOptions,
+          title: '',
+          headerBackVisible: false,
+          animation: 'slide_from_bottom',
         }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="friends" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="nudges" />
-        <Stack.Screen name="achievements" />
-        <Stack.Screen name="reports" />
-        <Stack.Screen name="suggestions" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="weather" />
+      />
+      {/* 업셀 결제는 지금 맥락 위에 올리는 흐름이라 닫기만 둔다(오른쪽) */}
+      <Stack.Screen
+        name="paywall"
+        options={{
+          ...headerOptions,
+          title: '',
+          headerBackVisible: false,
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
+      {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
+      <Stack.Screen
+        name="voice-notes"
+        options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+      />
+      {SHEET_ROUTES.map((name) => (
+        <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
+      ))}
+      {/* 답하면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다. 이미 답한 뒤에는 링크로도 열리지 않는다.
+          기본 redirect는 anchor 그룹 경로 `/(app)/(tabs)`로 replace해 탭 묶음을 새로 만들고, 탭이 없는 경로라 글자 순 첫 탭 `(mypage)`가 열린다. 뒤로 가기(`..`)는 있던 탭 묶음을 그대로 둔다 */}
+      <Stack.Protected guard={isPushOnboardingDue} redirectTo="..">
         <Stack.Screen
-          name="memo"
-          options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
+          name="onboarding/notifications"
+          options={{
+            ...headerOptions,
+            title: '',
+            headerBackVisible: false,
+            animation: 'fade',
+            gestureEnabled: false,
+          }}
         />
-        {SHEET_ROUTES.map((name) => (
-          <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
-        ))}
-      </Stack>
-      <ActivationPushPermissionDialog />
-    </>
+      </Stack.Protected>
+    </Stack>
   );
 }
 
 export default AppLayout;
 
-interface ErrorBoundaryProps {
-  error: Error;
-  retry: () => void;
-}
-
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  const { status, setStatus } = useAuth();
+  const status = useAuthStatus();
+  const logout = useMutation(useLogoutMutationOptions());
   const errorReporter = useErrorReporter();
   const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
   const { t } = useTranslation();
@@ -87,7 +136,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const isAuthTransition =
     status !== 'authenticated' && classifyBoundaryError(error) === 'auth-transition';
 
-  // 렌더 중 부수효과 금지 — 리렌더마다 중복 캡처된다.
   useEffect(() => {
     if (isAuthTransition) {
       return;
@@ -99,9 +147,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   if (isAuthTransition) {
     return null;
   }
-
-  // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
-  const handleLogout = () => setStatus('unauthenticated');
 
   // 실패한 Suspense 조회는 리셋 없이 다시 마운트하면 재요청 없이 같은 오류를 다시 던진다
   const handleRetry = () => {
@@ -116,8 +161,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button onPress={handleRetry}>{t('appError.retry')}</Result.Button>
-            <Result.Button color="primary" onPress={handleLogout}>
+            <Result.Button isDisabled={logout.isPending} onPress={handleRetry}>
+              {t('appError.retry')}
+            </Result.Button>
+            <Result.Button
+              color="primary"
+              isLoading={logout.isPending}
+              onPress={() => logout.mutate()}
+            >
               {t('appError.logout')}
             </Result.Button>
           </HStack>

@@ -1,3 +1,6 @@
+import type { currentUserSchema } from "@aido/api";
+import type { z } from "zod";
+
 import type {
   CurrentUserResult,
   ExchangeCodeResult,
@@ -96,7 +99,10 @@ export abstract class AuthMapper {
    * return AuthMapper.toCurrentUserResponse(result);
    * ```
    */
-  static toCurrentUserResponse(result: CurrentUserResult, appVersion?: string) {
+  static toCurrentUserResponse(
+    result: CurrentUserResult,
+    appVersion?: string,
+  ): z.input<typeof currentUserSchema> {
     return {
       userId: result.userId,
       email: result.email,
@@ -117,6 +123,8 @@ export abstract class AuthMapper {
       willRenew: result.willRenew,
       bankedPremiumDays: result.bankedPremiumDays,
       premiumGrantEndedAt: result.premiumGrantEndedAt,
+      premiumIsTrial: result.premiumIsTrial,
+      premiumPlanType: result.premiumPlanType,
       isPremium: result.isPremium,
       entitlements: result.entitlements,
     };

@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
@@ -13,6 +15,7 @@ import type {
 import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { getRegionCode } from "./region-code.js";
+import { KMA_LIFESTYLE_POLICY } from "./weather-outbound.policies.js";
 
 const uvIndexResponseSchema = z.object({
   response: z
@@ -34,10 +37,15 @@ const uvIndexResponseSchema = z.object({
 export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
   readonly #logger = new Logger(KmaLifestyleIndexProvider.name);
 
+  readonly #policy: OutboundPolicy;
+
   constructor(
     private readonly configService: TypedConfigService,
     @InjectHttpClient("weather") private readonly http: HttpClient,
-  ) {}
+    policies: OutboundPolicyRegistry,
+  ) {
+    this.#policy = policies.get(KMA_LIFESTYLE_POLICY);
+  }
 
   async getIndex(
     lat: number,
@@ -82,16 +90,19 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     const hour = toLocalTimeString(date, KMA_TIMEZONE).slice(0, 2);
     const time = `${localDate}${hour}`;
 
-    const outcome = await requestVendorJson(
-      this.http,
-      "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
-      {
-        serviceKey: apiKey,
-        numOfRows: 10,
-        dataType: "JSON",
-        areaNo: getRegionCode(lat, lon),
-        time,
-      },
+    const outcome = await this.#policy.execute((signal) =>
+      requestVendorJson(
+        this.http,
+        "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
+        {
+          serviceKey: apiKey,
+          numOfRows: 10,
+          dataType: "JSON",
+          areaNo: getRegionCode(lat, lon),
+          time,
+        },
+        { signal },
+      ),
     );
 
     if (outcome.kind === "http_failure") {

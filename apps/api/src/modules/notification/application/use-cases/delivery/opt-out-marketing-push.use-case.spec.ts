@@ -31,7 +31,8 @@ describe("OptOutMarketingPush", () => {
 
     const result = await useCase.execute("valid-token");
 
-    expect(result).toBe(true);
+    expect(result.isOptedOut).toBe(true);
+    expect(result.processedAt).toBeInstanceOf(Date);
     expect(tokens.verify).toHaveBeenCalledWith("valid-token");
     expect(settings.updateMarketingPushConsent).toHaveBeenCalledWith("user-1", false);
   });
@@ -41,7 +42,8 @@ describe("OptOutMarketingPush", () => {
 
     const result = await useCase.execute("invalid-token");
 
-    expect(result).toBe(false);
+    expect(result.isOptedOut).toBe(false);
+    expect(result.processedAt).toBeInstanceOf(Date);
     expect(settings.updateMarketingPushConsent).not.toHaveBeenCalled();
   });
 });

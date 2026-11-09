@@ -10,7 +10,7 @@ export type TextTone =
   | 'white'
   | 'onSky';
 export type TextShade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-export type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
+type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 export type TextSize =
   | 'display'
   | 'h1'
@@ -23,7 +23,7 @@ export type TextSize =
   | 'b4'
   | 'e1'
   | 'e2';
-export type TextAlign = 'left' | 'center' | 'right';
+type TextAlign = 'left' | 'center' | 'right';
 
 export interface TextProps extends Omit<RNTextProps, 'style'> {
   tone?: TextTone;
@@ -31,7 +31,6 @@ export interface TextProps extends Omit<RNTextProps, 'style'> {
   weight?: TextWeight;
   size?: TextSize;
   align?: TextAlign;
-  maxLines?: number;
   strikethrough?: boolean;
   underline?: boolean;
   className?: string;

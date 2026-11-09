@@ -1,9 +1,9 @@
+import type { FeatureQuota } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import {
+  ENTITLEMENT_READER,
   type EntitlementReaderPort,
-  Resource,
 } from "#api/modules/access/access-entitlement.public";
 
 import type { TodoCategoryLimitReaderPort } from "../../../application/ports/categories/todo-category-limit-reader.port.js";
@@ -16,15 +16,18 @@ export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPo
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "getResourceLimitInTx"
+      "getLimitInTx" | "readFeatureQuotaInTx"
     >,
   ) {}
 
   async getMaxCountInTx(userId: string): Promise<number | null> {
-    const { maxCount } = await this.entitlementReader.getResourceLimitInTx(
-      userId,
-      Resource.CATEGORY,
-    );
-    return maxCount;
+    return this.entitlementReader.getLimitInTx(userId, "TODO_CATEGORY");
+  }
+
+  async readQuotaInTx(userId: string, count: number): Promise<FeatureQuota> {
+    return this.entitlementReader.readFeatureQuotaInTx(userId, "TODO_CATEGORY", {
+      used: count,
+      resetsAt: null,
+    });
   }
 }

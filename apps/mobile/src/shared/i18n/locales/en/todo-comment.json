@@ -5,10 +5,9 @@
     "deleted": "This comment was deleted",
     "blockedAuthor": "This comment is from a blocked user",
     "unknownUser": "Unknown",
-    "emptyTitle": "No comments yet",
+    "heading": "Comments",
     "emptyDescription": "Be the first to comment",
     "loadFailed": "Couldn't load comments",
-    "loadingMore": "Loading more comments",
     "loadPrevious": "View earlier comments"
   },
   "replies": {
@@ -17,7 +16,6 @@
     "viewMore_one": "View {{formatted}} more reply",
     "viewMore_other": "View {{formatted}} more replies",
     "hide": "Hide replies",
-    "loading": "Loading replies",
     "retry": "Couldn't load replies. Tap to retry"
   },
   "sort": {

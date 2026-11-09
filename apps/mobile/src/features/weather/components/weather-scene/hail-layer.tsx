@@ -13,10 +13,18 @@ import {
   hideSprite,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const HAIL_SEED = 0x4a11;
+/** hashCycle의 salt. 같은 알의 값끼리 겹치면 입자 모양이 같아지므로 서로 다른 번호를 쓴다. */
+const SALT_START_X = 0;
+const SALT_BOUNCE_SPEED = 1;
+/** 튀는 횟수(bounce)를 더해 옆으로 튀는 값마다 따로 정한다. */
+const SALT_SIDEWAYS = 2;
+/** 파편은 SALT_SIDEWAYS 뒤 번호부터 파편마다 세 값(옆, 높이, 크기)씩 쓴다. */
+const SALT_SHARD_BASE = 4;
+const SALTS_PER_SHARD = 3;
 const DEPTH = [0.35, 1] as const;
 const RADIUS = { base: 1.8, depth: 3.4 } as const;
 const FALL = { base: 300, depth: 700 } as const;
@@ -80,7 +88,7 @@ function createHailstones(count: number, wind: number, height: number): Hailston
     const floor = height * GROUND - (1 - depth) * FAR_GROUND_LIFT;
     const fallDuration = (floor + SPAWN_ABOVE) / speed;
     const bounces = BOUNCE_SPEEDS.map(([min, max], bounce) => ({
-      velocity: (min + hashCycle(index, bounce, 1) * (max - min)) * depth,
+      velocity: (min + hashCycle(index, bounce, SALT_BOUNCE_SPEED) * (max - min)) * depth,
       gravity: GRAVITY,
     }));
     const rest = minRest + (seeds[base + 2] ?? 0) * (maxRest - minRest);
@@ -103,7 +111,7 @@ function createHailstones(count: number, wind: number, height: number): Hailston
 /** 크기가 다른 얼음 알이 빛을 받으며 돌며 떨어지고, 바닥에서 두 번 튀며 작은 파편이 흩어진다. */
 export function HailLayer({ density, wind, width, height, isLowEndDevice, time }: HailLayerProps) {
   const texture = useParticleTexture();
-  const count = getParticleCount('hail', density, { width, height }, isLowEndDevice);
+  const count = getParticleCount('hail', { density, screen: { width, height }, isLowEndDevice });
   const stones = createHailstones(count, wind, height);
   const shardCount = count * SHARDS_PER_STONE;
   const { ice, streak, dot } = PARTICLE_SPRITES;
@@ -119,9 +127,9 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
   );
   const shardColor = Skia.Color(SHARD_COLOR);
   const shardColors = range(shardCount).map(() => shardColor);
-  const sidewaysOf = (index: number, cycle: number, bounce: number) => {
+  const getSideways = (index: number, cycle: number, bounce: number) => {
     'worklet';
-    return (hashCycle(index, cycle, 2 + bounce) * 2 - 1) * BOUNCE_SIDEWAYS;
+    return (hashCycle(index, cycle, SALT_SIDEWAYS + bounce) * 2 - 1) * BOUNCE_SIDEWAYS;
   };
   const iceAnchor = { x: ice.width / 2, y: ice.height / 2 };
   const trailAnchor = { x: streak.width / 2, y: streak.height };
@@ -132,7 +140,7 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
     const elapsed = t + stone.offset;
     const cycle = Math.floor(elapsed / stone.period);
     const local = elapsed - cycle * stone.period;
-    const startX = width * hashCycle(index, cycle, 0);
+    const startX = width * hashCycle(index, cycle, SALT_START_X);
     const landX = startX + stone.drift * stone.fallDuration;
     return {
       cycle,
@@ -179,13 +187,13 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
     const reboundX =
       phase.bounce === 0 || firstBounce == null
         ? landX
-        : landX + sidewaysOf(index, cycle, 0) * ((2 * firstBounce.velocity) / firstBounce.gravity);
+        : landX + getSideways(index, cycle, 0) * ((2 * firstBounce.velocity) / firstBounce.gravity);
     placeSprite(
       transform,
       cos,
       sin,
       iceAnchor,
-      reboundX + sidewaysOf(index, cycle, phase.bounce) * phase.elapsed,
+      reboundX + getSideways(index, cycle, phase.bounce) * phase.elapsed,
       stone.floor - getBounceHeight(bounce, phase.elapsed),
     );
   });
@@ -228,7 +236,7 @@ export function HailLayer({ density, wind, width, height, isLowEndDevice, time }
     const s = phase.elapsed;
     const [minLift, maxLift] = SHARD.lift;
     const [minRadius, maxRadius] = SHARD.radius;
-    const salt = 4 + shard * 3;
+    const salt = SALT_SHARD_BASE + shard * SALTS_PER_SHARD;
     const vx = (hashCycle(index, cycle, salt) * 2 - 1) * SHARD.sideways;
     const lift = minLift + hashCycle(index, cycle, salt + 1) * (maxLift - minLift);
     const radius = minRadius + hashCycle(index, cycle, salt + 2) * (maxRadius - minRadius);

@@ -125,7 +125,7 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
 
     if (!validateEmailForProduction(validatedConfig)) {
       throw new Error(
-        "Production environment requires RESEND_API_KEY to be configured for email verification",
+        "Production environment requires EMAIL_PROVIDER=resend and RESEND_API_KEY for email verification",
       );
     }
   }

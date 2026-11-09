@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { type Todo as TodoResponse, todoSchema } from "@aido/api";
+import { type FriendTodo, friendTodoSchema } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
@@ -19,13 +19,13 @@ import {
 } from "../../cache/todos/todo-cache.keyspace.js";
 
 const FRIEND_TODOS_PAGE_SCHEMA = z.object({
-  items: z.array(todoSchema),
+  items: z.array(friendTodoSchema),
   pagination: z.object({
     nextCursor: z.number().nullable(),
     hasNext: z.boolean(),
     size: z.number(),
   }),
-}) satisfies z.ZodType<CursorPaginatedResponse<TodoResponse, number>>;
+}) satisfies z.ZodType<CursorPaginatedResponse<FriendTodo, number>>;
 
 /**
  * Todo 캐시 포트 어댑터 — CacheService에 위임
@@ -66,7 +66,7 @@ export class TodoCacheAdapter implements TodoCachePort {
     endDate: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<TodoResponse, number>,
+    page: CursorPaginatedResponse<FriendTodo, number>,
   ): Promise<void> {
     const currentGeneration = await this.getFriendTodosGeneration(ownerUserId);
     if (currentGeneration !== generation) {

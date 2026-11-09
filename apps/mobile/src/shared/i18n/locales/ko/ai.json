@@ -24,17 +24,12 @@
       "aiTips": "AI 팁"
     },
     "dday": {
-      "today": "오늘 생성!",
+      "today": "오늘 도착!",
       "inDays": "D-{{count}}"
     },
     "statusBanner": {
       "nextWeekly": "다음 주간 리포트",
       "nextMonthly": "다음 월간 리포트"
-    },
-    "premiumBanner": {
-      "title": "AI가 분석한 나만의 리포트",
-      "description": "프리미엄 구독으로 매주/매월\nAI 리포트를 받아보세요",
-      "subscribe": "구독하기"
     },
     "list": {
       "premiumTitle": "AI 리포트",
@@ -48,12 +43,11 @@
     "lockedDetail": {
       "title": "나만의 리포트를 받아보세요",
       "description": "프리미엄 구독으로 매주/매월\nAI가 분석한 리포트를 보내드려요",
-      "premiumDialogDescription": "AI 리포트는 프리미엄 구독자만 이용할 수 있어요.",
       "subscribe": "프리미엄 구독하기"
     },
     "unavailable": {
       "title": "리포트를 찾을 수 없어요",
-      "description": "지워졌거나 더는 볼 수 없는 리포트예요",
+      "description": "삭제됐거나 더는 볼 수 없는 리포트예요",
       "backToList": "리포트 목록으로"
     }
   },
@@ -72,21 +66,20 @@
       "accept": "수락"
     },
     "paywall": {
-      "title": "AI가 투두를 제안해드려요",
-      "description": "반복 패턴을 분석해서 맞춤 투두를 추천받을 수 있어요",
+      "title": "AI가 할 일을 제안해드려요",
+      "description": "반복 패턴을 분석해서 맞춤 할 일을 추천받을 수 있어요",
       "sampleTitle": "매일 아침 스트레칭",
       "sampleConfidence": "신뢰도 92%",
       "sampleSchedule": "월, 화, 수, 목, 금 · 07:30",
-      "sampleReason": "최근 2주간 아침 운동 패턴이 감지되었어요",
+      "sampleReason": "최근 2주간 아침 운동 패턴이 보여요",
       "subscribeCta": "구독하고 제안 받기"
     },
     "category": {
-      "submit": "생성하기"
+      "submit": "만들기"
     },
     "toasts": {
       "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
-      "retryLater": "잠시 후 다시 시도해 주세요",
-      "quotaExceeded": "이번 달 AI 사용 횟수를 모두 사용했어요",
+      "retryLater": "잠시 후 다시 시도해주세요",
       "accepted": "제안을 수락해서 반복 할 일을 만들었어요.",
       "rejected": "제안을 거절했어요."
     }
@@ -118,31 +111,32 @@
   },
   "consent": {
     "title": "AI로 정리하기 전에 확인해주세요",
-    "subtitle": "한 번 동의하면 다음부터는 바로 정리해요.",
+    "subtitle": "한 번만 동의하면 돼요.",
     "items": {
       "sentData": {
         "title": "보내는 내용",
-        "description": "입력한 문장이나 메모 내용, 카테고리 이름, 오늘 날짜와 시간대. 리포트·제안은 그 기간의 할 일 제목과 완료 기록이에요. 이름·이메일·친구 정보는 보내지 않아요."
+        "description": "입력하거나 말한 글, 할 일 기록, 날짜·시간대예요. 이름·이메일·친구 정보·녹음 파일은 보내지 않아요."
       },
       "processor": {
         "title": "받는 곳",
-        "description": "Google Gemini(Google LLC)가 할 일 형태로 정리해요."
+        "description": "글자는 Anthropic·Google·OpenAI(미국)가, 음성은 Apple·Google 음성 인식이 처리해요."
       },
       "usage": {
         "title": "쓰는 곳",
-        "description": "할 일 정리·리포트·제안에만 써요. 광고에는 쓰지 않아요."
-      },
-      "retention": {
-        "title": "보관",
-        "description": "개인정보처리방침에 따라 보관하고 삭제해요."
+        "description": "AI 기능에만 써요. AI 학습·광고에는 쓰지 않고, 업체는 최대 30일 안에 지워요."
       }
     },
     "privacyLink": "개인정보처리방침 보기",
-    "declineNotice": "동의하지 않으면 AI 기능만 꺼지고, 할 일은 직접 입력할 수 있어요.",
+    "declineNotice": "동의하지 않아도 할 일은 직접 입력할 수 있어요.",
+    "renewal": {
+      "subtitle": "AI 처리 업체가 늘어 다시 안내해요.",
+      "declineNotice": "지금 답하지 않아도 전처럼 쓸 수 있어요."
+    },
     "later": "나중에",
     "agree": "동의하고 계속",
     "saveFailed": "동의 상태를 저장하지 못했어요. 다시 시도해주세요.",
     "notice": {
+      "voice": "말로 정리하려면 동의가 필요해요",
       "reports": "AI 리포트를 받으려면 동의가 필요해요",
       "suggestions": "AI 제안을 받으려면 동의가 필요해요",
       "action": "내용 확인하기"

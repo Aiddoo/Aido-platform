@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/application/ports/settings/preference-entitlement.port";
 import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/application/ports/settings/reminder-schedule.enqueuer.port";
+import { TODO_TIMEZONE_REBASE_ENQUEUER } from "#api/modules/identity/application/ports/settings/todo-timezone-rebase.enqueuer.port";
 import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/application/ports/settings/user-preference.repository.port";
 import { USER_SETTINGS_CACHE } from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
 import { UpsertPushTimezone } from "#api/modules/identity/application/use-cases/settings/upsert-push-timezone.use-case";
@@ -19,6 +20,7 @@ import {
 } from "#api/modules/notification/notification-reminders-cache.public";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
@@ -61,6 +63,8 @@ async function createFixture() {
         { provide: USER_SETTINGS_CACHE, useValue: settings.cache },
         { provide: PREFERENCE_ENTITLEMENT, useValue: settings.entitlement },
         { provide: REMINDER_SCHEDULE_ENQUEUER, useValue: settings.reminderEnqueuer },
+        { provide: TODO_TIMEZONE_REBASE_ENQUEUER, useValue: settings.todoTimezoneRebase },
+        { provide: UNIT_OF_WORK, useValue: settings.unitOfWork },
       ],
     }).compile();
     return {

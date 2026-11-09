@@ -1,31 +1,23 @@
-import type { EnumerableSyncStorage, ObservableSyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 
-export const createMemorySyncStorage = (): EnumerableSyncStorage & ObservableSyncStorage => {
+/**
+ * 메모리에 저장하는 동기 저장소 fake. 실패나 정해진 값을 재현할 때만
+ * `storage.get.mockReturnValue`처럼 메서드를 덮어쓴다.
+ */
+export function createMemorySyncStorage(): jest.Mocked<EnumerableSyncStorage> {
   const values = new Map<string, string>();
-  const listeners = new Map<string, Set<() => void>>();
-  const notify = (key: string) => listeners.get(key)?.forEach((listener) => listener());
 
   return {
-    getString: (key) => values.get(key),
-    set: (key, value) => {
+    get: jest.fn((key: string) => values.get(key)),
+    set: jest.fn((key: string, value: string) => {
       values.set(key, value);
-      notify(key);
-    },
-    delete: (key) => {
+    }),
+    remove: jest.fn((key: string) => {
       values.delete(key);
-      notify(key);
-    },
-    getAllKeys: () => [...values.keys()],
-    clearAll: () => {
-      const keys = [...values.keys()];
+    }),
+    keys: jest.fn(() => [...values.keys()]),
+    clear: jest.fn(() => {
       values.clear();
-      keys.forEach(notify);
-    },
-    subscribe: (key, listener) => {
-      const keyListeners = listeners.get(key) ?? new Set();
-      keyListeners.add(listener);
-      listeners.set(key, keyListeners);
-      return () => keyListeners.delete(listener);
-    },
+    }),
   };
-};
+}

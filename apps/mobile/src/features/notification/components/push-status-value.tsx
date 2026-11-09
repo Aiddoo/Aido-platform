@@ -1,0 +1,33 @@
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useTranslation } from '@src/shared/i18n';
+import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { Suspense } from 'react';
+
+import { PUSH_SUMMARY_LABEL_KEYS } from '../constants/notification-labels';
+import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { toPushSummary } from '../utils/push-permission.view-model';
+
+/** 알림 설정 행의 현재 값. 알림 설정 화면의 푸시 값과 같은 말을 쓴다. 못 읽으면 값 없이 둔다 */
+export function PushStatusValue() {
+  return (
+    <QueryErrorBoundary fallback={() => null}>
+      <Suspense fallback={null}>
+        <PushStatus />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}
+
+function PushStatus() {
+  const { t } = useTranslation('notification');
+  const [{ data: permission }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],
+  });
+
+  return (
+    <Text size="b3" shade={7} testID="push-status-value">
+      {t(PUSH_SUMMARY_LABEL_KEYS[toPushSummary(permission, preference)])}
+    </Text>
+  );
+}

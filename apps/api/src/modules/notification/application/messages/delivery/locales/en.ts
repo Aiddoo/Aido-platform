@@ -1,4 +1,5 @@
-import type { WeatherCondition } from "@aido/api/vocabulary";
+import type { SubscriptionPlanType, WeatherCondition } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
@@ -51,12 +52,8 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("Almost time 🐾", `“${todoTitle}” starts in 10 minutes`),
     ],
   },
-  TODO_REMINDER_IMMEDIATE: {
-    variants: [
-      ({ todoTitle }) => copy("It’s go time 🐾", `Ready to start “${todoTitle}”?`),
-      ({ todoTitle }) => copy("Your reminder is here", `Time to check off “${todoTitle}”`),
-      ({ todoTitle }) => copy("Starting is half the work", `Take step one on “${todoTitle}”`),
-    ],
+  TODO_SERIES_PAUSED: {
+    variants: [staticCopy("Repeating to-do reminders paused", "Open the app to start them again")],
   },
   MORNING_REMINDER: {
     variants: [
@@ -455,6 +452,19 @@ export const SOCIAL_TEMPLATES = {
   },
 } satisfies SocialNotificationCopyCatalog;
 
+/** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
+function dayPhrase(days: number): string {
+  return days <= 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
+}
+
+function planPhrase(planType: SubscriptionPlanType | null): string {
+  return match(planType)
+    .with("ANNUAL", () => "annual plan")
+    .with("MONTHLY", () => "monthly plan")
+    .with(null, () => "subscription")
+    .exhaustive();
+}
+
 export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
@@ -537,7 +547,36 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
   },
   PREMIUM_GRANT_ENDING: {
-    copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going"),
+    copy: staticCopy("Your Premium ends tomorrow", "See details on the Subscription screen"),
+  },
+  PREMIUM_TRIAL_ENDING_RENEWING: {
+    copy: ({ days, date, planType }) =>
+      copy(
+        `Your ${planPhrase(planType)} starts ${dayPhrase(days)}`,
+        `Billing on ${date} · Cancel in your store`,
+      ),
+  },
+  PREMIUM_TRIAL_ENDING_CANCELLED: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "Your free trial ends today"
+          : days === 1
+            ? "Your free trial ends tomorrow"
+            : `Your free trial ends in ${days} days`,
+        `Use it until ${date} · No charge`,
+      ),
+  },
+  PREMIUM_RENEWAL_UPCOMING: {
+    copy: ({ days, date }) =>
+      copy(
+        `Your annual plan renews ${dayPhrase(days)}`,
+        `Billing on ${date} · Cancel in your store`,
+      ),
+  },
+  MARKETING_CONSENT_RECONFIRM: {
+    copy: ({ agreedOn }) =>
+      copy("You’re opted in to marketing alerts", `Agreed ${agreedOn} · Change in Settings`),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("Let’s add your first to-do 🌱", "One small thing is all it takes"),

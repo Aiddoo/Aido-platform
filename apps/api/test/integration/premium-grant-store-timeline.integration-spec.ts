@@ -1,6 +1,5 @@
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
 import {
   PREMIUM_ACCESS_READER,
@@ -8,6 +7,7 @@ import {
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
 import { GetCurrentUser } from "#api/modules/identity/application/use-cases/auth/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
@@ -70,7 +70,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   function webhook(body: unknown) {
-    return context.module.get(HandleWebhookEvent).execute({ body });
+    return context.module.get(RevenueCatWebhookReceiver).receive({ body });
   }
 
   function storeEvent(builder: SubscriptionEventBuilder, eventId: string) {
@@ -131,6 +131,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: true,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
+      planType: null,
     });
     expect((await grantsOf())[0]).toMatchObject({ status: "BANKED" });
   });
@@ -152,6 +154,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
+      planType: null,
     });
     expect(await userProjection()).toEqual({
       subscriptionStatus: "ACTIVE",
@@ -188,6 +192,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 0,
       recentGrantEndedAt: null,
+      isTrial: false,
+      planType: null,
     });
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
   });
@@ -250,6 +256,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       willRenew: false,
       bankedDays: 7,
       recentGrantEndedAt: null,
+      isTrial: false,
+      planType: null,
     });
     expect(premiumInsideGrace).toBe(true);
     expect(grantsInsideGrace).toEqual([
@@ -470,7 +478,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     });
   });
 
-  it("월간에서 연간으로 바꾸면 만료 시각만 늘고 쌓아 둔 보상은 유지된다", async () => {
+  it("월간에서 연간으로 바꾸면 상품 변경 안내는 기간을 두고, 연간 갱신이 만료만 늘리며 쌓아 둔 보상은 유지된다", async () => {
     // Given
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "p-purchase"));
     await granter.grant({ userId, source: "INVITE", sourceKey: "p:invite", durationDays: 7 });
@@ -478,17 +486,25 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
     // When
     await webhook(
-      SubscriptionEventBuilder.productChange()
+      storeEvent(
+        SubscriptionEventBuilder.productChange().withNewProductId("premium_annual"),
+        "p-change",
+      ),
+    );
+    const afterChange = await premiumAccess();
+    await webhook(
+      SubscriptionEventBuilder.renewal()
         .withAppUserId(userId)
         .withOriginalTransactionId(CHAIN)
         .withTransactionId(`${CHAIN}-annual`)
         .withProductId("premium_annual")
-        .withEventId("p-change")
+        .withEventId("p-renew-annual")
         .withExpirationAtMs(annualExpiry.getTime())
         .build(),
     );
 
     // Then
+    expect(afterChange).toMatchObject({ periodEndsAt: STORE_EXPIRY, bankedDays: 7 });
     expect(await premiumAccess()).toMatchObject({
       source: "STORE",
       periodEndsAt: annualExpiry,

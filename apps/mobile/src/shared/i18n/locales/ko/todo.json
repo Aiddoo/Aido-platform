@@ -3,34 +3,62 @@
     "todoAdded": "할 일을 추가했어요!",
     "todoUpdated": "할 일을 수정했어요",
     "todoDeleted": "할 일을 삭제했어요",
-    "scheduleChanged": "일정을 변경했어요",
+    "dateChanged": "날짜를 변경했어요",
+    "timeChanged": "시간을 변경했어요",
     "categoryChanged": "카테고리를 변경했어요",
     "categoryAdded": "카테고리를 추가했어요",
     "categoryUpdated": "카테고리를 수정했어요",
     "categoryDeleted": "카테고리를 삭제했어요",
     "recurringAdded": "반복 할 일을 추가했어요!",
-    "recurringCategoryLimit": "반복 할 일을 생성하면 카테고리 한도를 초과해요. 날짜 범위를 줄여주세요.",
-    "categoryLimitReached": "이 카테고리의 할 일이 최대 한도에 도달했어요. 완료하거나 다른 카테고리로 이동해 주세요.",
-    "subTodoAddFailed": "항목 추가에 실패했어요",
-    "subTodoUpdateFailed": "항목 수정에 실패했어요",
-    "subTodoDeleteFailed": "항목 삭제에 실패했어요",
-    "parseFailed": "할 일을 제대로 이해하지 못했어요. 다시 시도해주세요.",
+    "recurringCategoryLimit": "반복 할 일을 만들면 카테고리 한도를 넘어요. 기간을 줄여주세요.",
+    "categoryLimitReached": "이 카테고리에 할 일을 더 추가할 수 없어요. 완료하거나 다른 카테고리로 옮겨주세요.",
+    "subTodoAddFailed": "하위 할 일을 추가하지 못했어요",
+    "subTodoUpdateFailed": "하위 할 일을 수정하지 못했어요",
+    "subTodoDeleteFailed": "하위 할 일을 삭제하지 못했어요",
     "nudgeSent": "콕 찔렀어요!",
     "remindNudgeSent": "함께 시작하자고 콕 찔렀어요!",
-    "addFailedRetry": "잠시 후 다시 추가해 보세요",
-    "updateFailedRetry": "잠시 후 다시 수정해 보세요",
-    "deleteFailedRetry": "잠시 후 다시 삭제해 보세요",
-    "changeFailedRetry": "잠시 후 다시 변경해 보세요",
-    "retryLater": "잠시 후 다시 시도해 주세요"
-  },
-  "errors": {
-    "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
+    "addFailedRetry": "잠시 후 다시 추가해보세요",
+    "updateFailedRetry": "잠시 후 다시 수정해보세요",
+    "deleteFailedRetry": "잠시 후 다시 삭제해보세요",
+    "changeFailedRetry": "잠시 후 다시 변경해보세요",
+    "retryLater": "잠시 후 다시 시도해주세요",
+    "seriesStopped": "반복을 끝냈어요",
+    "series": {
+      "not-found": {
+        "title": "반복 할 일을 찾을 수 없어요",
+        "description": "목록을 새로 불러왔어요."
+      },
+      "limit": {
+        "title": "반복 할 일은 최대 {{limit}}개까지 만들 수 있어요",
+        "description": "쓰지 않는 반복을 끝내거나 삭제한 뒤 다시 추가해주세요."
+      },
+      "no-dates": {
+        "title": "선택한 반복에 맞는 날짜가 없어요",
+        "description": "반복 설정을 다시 골라주세요."
+      },
+      "not-repeating": {
+        "title": "반복 할 일이 아니에요",
+        "description": "목록을 새로 불러왔어요."
+      },
+      "invalid": {
+        "title": "반복 설정이 올바르지 않아요",
+        "description": "반복 설정을 다시 골라주세요."
+      },
+      "too-many-past": {
+        "title": "시작일이 너무 오래전이에요",
+        "description": "지난 날짜가 너무 많아요. 시작일을 더 가까운 날로 골라주세요."
+      },
+      "category-full": {
+        "title": "이 카테고리에 할 일을 더 추가할 수 없어요",
+        "description": "할 일을 완료하거나 다른 카테고리를 골라주세요. 고친 내용은 저장되지 않았어요."
+      },
+      "ended": {
+        "title": "이미 끝난 반복이에요",
+        "description": "목록을 새로 불러왔어요."
+      }
+    }
   },
   "form": {
-    "titleRequired": "제목을 입력해 주세요",
-    "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
-    "repeatEndDateRequired": "반복 종료일을 선택해 주세요",
-    "repeatDaysRequired": "반복할 요일을 선택해 주세요",
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
   },
   "picker": {
@@ -43,39 +71,81 @@
     "time": "시간",
     "selectTime": "시간 선택",
     "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
+    "reminderInfoAllDay": "ⓘ 종일 할 일은 알림을 보내지 않아요",
     "repeatPeriod": "반복 기간",
     "selectPeriod": "기간을 선택해주세요",
+    "periodNever": "{{date}}부터 계속",
+    "periodCount": "{{date}}부터 {{count}}회",
     "repeatDaily": "매일 반복",
     "repeatWeekdays": "주중 반복",
     "repeatWeekends": "주말 반복",
     "repeatWeekly": "매주 {{days}} 반복",
+    "repeatBiweekly": "격주 {{days}} 반복",
+    "repeatMonthly": "매월 {{day}}일 반복",
     "presetDaily": "매일",
     "presetWeekdays": "주중",
     "presetWeekends": "주말",
-    "selectDays": "요일을 선택해주세요"
+    "presetBiweekly": "격주",
+    "presetMonthly": "매월 {{day}}일",
+    "repeatForever": "계속 반복",
+    "selectDays": "요일을 선택해주세요",
+    "noOccurrence": "기간 안에 반복되는 날이 없어요"
+  },
+  "repeat": {
+    "summary": {
+      "DAILY": "매일",
+      "WEEKDAYS": "주중",
+      "WEEKENDS": "주말",
+      "WEEKLY": "매주 {{days}}",
+      "BIWEEKLY": "격주 {{days}}",
+      "MONTHLY": "매월 {{day}}일",
+      "untilSuffix": "{{date}}까지",
+      "countSuffix": "{{count}}회"
+    },
+    "spokenRule": "{{rule}} 반복",
+    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
+    "horizonHint": "반복 할 일은 3개월 앞까지 보여요",
+    "horizonInfo": {
+      "title": "3개월 뒤 할 일은 아직 안 보여요",
+      "description": "반복이 끝난 건 아니에요. 날짜가 가까워지면 자동으로 생겨요.",
+      "label": "반복 할 일 안내 자세히 보기"
+    }
+  },
+  "scope": {
+    "editTitle": "반복 할 일 수정",
+    "deleteTitle": "반복 할 일 삭제",
+    "thisOnly": "이 할 일만",
+    "thisAndFollowing": "이 할 일과 이후 할 일",
+    "allRepeats": "이 반복 전체",
+    "editThisOnlyHint": "{{date}} 할 일만 바뀌어요",
+    "editFollowingHint": "{{date}}부터 쭉 바뀌어요",
+    "deleteThisOnlyHint": "{{date}} 할 일만 삭제돼요",
+    "deleteFollowingHint": "{{date}}부터 쭉 삭제돼요",
+    "deleteAllHint": "지난 할 일과 완료한 기록까지 모두 삭제돼요"
+  },
+  "multiDayDelete": {
+    "title": "이 할 일을 모두 삭제할까요?",
+    "description": "{{period}} 전체가 삭제돼요",
+    "confirm": "모두 삭제"
   },
   "chip": {
     "repeat": "반복",
-    "daily": "매일",
-    "weeklyDays": "매주 {{days}}",
     "allDay": "종일",
     "private": "비공개",
     "public": "공개",
     "category": "카테고리"
   },
   "add": {
-    "placeholder": "무엇을 하고 싶으신가요?",
+    "placeholder": "무엇을 하고 싶나요?",
     "submit": "선택하기",
-    "aiFeature": "AI로 할 일 만들기",
-    "voiceAddTitle": "말로 할 일을 추가해요",
-    "voiceAddHint": "\"이번 주 금요일 저녁 7시 약속\"처럼\n말하면 날짜·시간을 채워줘요"
+    "save": "저장하기"
   },
   "subTodo": {
-    "addItem": "항목 추가",
-    "placeholder": "항목을 입력하세요",
-    "voiceInput": "음성 입력",
-    "voiceTitle": "음성으로 입력해요",
-    "voiceHint": "마이크 버튼을 누르고 말하면\n음성이 텍스트로 입력돼요"
+    "addItem": "하위 할 일 추가",
+    "placeholder": "하위 할 일을 입력해주세요",
+    "voiceInput": "말로 입력",
+    "voiceTitle": "말로 입력해요",
+    "voiceHint": "마이크 버튼을 누르고 말하면\n글자로 입력돼요"
   },
   "actions": {
     "edit": "수정하기",
@@ -84,57 +154,50 @@
     "changeDate": "날짜 변경",
     "changeTime": "시간 변경",
     "changeCategory": "카테고리 변경",
-    "doToday": "오늘하기",
-    "doTomorrow": "내일하기",
+    "doToday": "오늘 하기",
+    "doTomorrow": "내일 하기",
     "changeSubmit": "변경하기",
     "more": "더보기",
     "complete": "완료하기",
-    "uncomplete": "완료 취소"
+    "uncomplete": "완료 취소",
+    "stopRepeat": "반복 끝내기"
   },
   "list": {
-    "loadError": "할 일을 불러오지 못했어요."
+    "loadError": "할 일을 불러오지 못했어요.",
+    "reminderOff": "알림 꺼짐"
   },
   "friendTodo": {
     "emptyTitle": "친구가 아직 할 일을 만들지 않았어요",
-    "emptyDescription": "콕 눌러 오늘의 시작을 응원해 보세요",
+    "emptyDescription": "콕 눌러 오늘의 시작을 응원해보세요",
     "nudge": "콕 찌르기",
     "alreadyNudged": "이미 콕 찔렀어요"
   },
   "nudge": {
-    "limitTitle": "오늘 콕 찌르기를 다 했어요",
     "limitSpentTitle": "오늘 콕 찌르기를 다 썼어요",
-    "subscribeUnlimited": "구독하면 무제한으로 찌를 수 있어요",
     "promptPrefix": "친구에게",
     "promptHighlight": "콕",
     "promptSuffix": "응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
-    "hintHighlight": "콕",
-    "hintSuffix": "을 눌러 마음을 전해 보세요",
-    "remaining": "오늘 {{count}}회 남았어요 (구독하면 무제한)",
+    "hintSuffix": "을 눌러 마음을 전해보세요",
+    "remaining": "오늘 {{count}}회 남았어요",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
     "placeholder": "(선택) 네 속도로 해도 괜찮아. 응원할게!",
     "send": "응원 보내기",
-    "dialogTarget": "{{name}}님에게 응원을 보내요",
-    "dialogPlaceholder": "(선택) {{title}} 응원할게!",
     "remindTitle": "오늘 할 일, 함께 시작해볼까요?",
     "remindPlaceholder": "(선택) 작은 할 일 하나부터 같이 시작해보자!",
     "statusUnavailable": "콕 찌르기 상태를 불러오지 못했어요",
     "to": "to. {{name}}"
   },
   "category": {
+    "colorOption": "색상 {{index}}/{{total}}",
     "nameLabel": "카테고리 이름",
-    "namePlaceholder": "카테고리 이름을 입력해 주세요",
-    "premiumMore": "프리미엄 구독으로 더 많은 카테고리를 만들 수 있어요",
+    "namePlaceholder": "카테고리 이름을 입력해주세요",
     "deleteTitle": "{{name}} 카테고리를 삭제할까요?",
     "deleteDescription": "삭제하면 되돌릴 수 없어요",
     "todoCount": "할 일 {{count}}개가 포함되어 있어요",
     "moveSelect": "이동할 카테고리를 선택해주세요",
-    "select": "카테고리 선택",
-    "fallback": "카테고리"
-  },
-  "premium": {
-    "unlimitedParse": "프리미엄 구독으로 무제한 AI 파싱을 사용할 수 있어요"
+    "select": "카테고리 선택"
   },
   "calendar": {
     "week": "주",
@@ -144,22 +207,10 @@
   "feed": {
     "loading": "불러오는 중...",
     "suggestionsLoading": "제안을 불러오는 중...",
-    "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
-    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
+    "routineSuggestion": "딱 맞는 루틴을 제안해드려요!",
+    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요!",
     "preparing": "이번 주 제안을 준비 중이에요",
-    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해 주세요"
-  },
-  "friendStrip": {
-    "me": "나",
-    "meLabel": "내 할 일 보기",
-    "friendLabel": "{{name}}님의 할 일 보기",
-    "findFriends": "친구 찾기",
-    "loadMoreFailed": "다시 시도",
-    "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
-    "emptyInvite": "초대하기",
-    "emptyInviteHint": "친구를 초대하면 서로의 할 일을 보고 응원할 수 있어요",
-    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해 보세요",
-    "hintDismiss": "친구 안내 닫기"
+    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요"
   },
   "activation": {
     "title": "첫 할 일을 만들고 완료해보세요",
@@ -180,38 +231,10 @@
     "emptyTitle": "선택한 할 일이 없어요",
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
     "unavailableTitle": "지금은 볼 수 없는 할 일이에요",
-    "unavailableDescription": "할 일이 지워졌거나 친구 관계가 바뀌었을 수 있어요",
-    "title": "할 일",
+    "unavailableDescription": "할 일이 삭제됐거나 친구 관계가 바뀌었을 수 있어요",
     "open": "댓글",
     "pageTitle": "할 일 상세",
-    "views": "조회 {{count}}회",
-    "unknownOwner": "사용자",
-    "metrics": "조회 {{views}} · 댓글 {{comments}}"
-  },
-  "comments": {
-    "title": "댓글",
-    "popular": "인기순",
-    "latest": "최신순",
-    "empty": "첫 댓글을 남겨보세요.",
-    "placeholder": "댓글 달기...",
-    "replyPlaceholder": "답글 달기...",
-    "replyingTo": "{{name}}님에게 답글 남기는 중",
-    "more": "댓글 더 보기",
-    "viewReplies": "답글 {{count}}개 보기",
-    "moreReplies": "답글 더 보기",
-    "viewAllComments": "전체 댓글 보기",
-    "edited": "수정됨",
-    "loadRepliesError": "답글을 불러오지 못했어요. 다시 시도",
-    "reply": "답글",
-    "edit": "수정",
-    "delete": "삭제",
-    "cancel": "취소",
-    "save": "저장",
-    "deleted": "삭제된 댓글이에요.",
-    "deletedUser": "삭제된 댓글",
-    "unknownUser": "사용자",
-    "authorBadge": "작성자",
-    "loadError": "댓글을 불러오지 못했어요. 다시 시도"
+    "unknownOwner": "사용자"
   },
   "interaction": {
     "detailTitle": "친구의 응원",
@@ -233,24 +256,24 @@
     "replyStatus": "답장: {{reply}}",
     "waiting": "답장을 기다리고 있어요",
     "thanked": "완료 소식과 고마운 마음을 전했어요",
-    "thanksPendingTitle": "콕 찔러 준 친구 {{count}}명",
+    "thanksPendingTitle": "콕 찔러준 친구 {{count}}명",
     "thanksPendingDescription": "완료 소식과 함께 고마움을 전해요",
     "thanksLoadFailed": "고마움 현황을 불러오지 못했어요",
-    "thanksNewPendingDescription": "새로 콕 찔러 준 친구 {{count}}명이 있어요",
+    "thanksNewPendingDescription": "새로 콕 찔러준 친구 {{count}}명이 있어요",
     "thanksSentTitle": "친구 {{count}}명에게 고마움을 전했어요",
     "thanksQuickAction": "고마워요",
     "thanksSendMore": "더 전하기",
-    "thanksQuickActionLabel": "콕 찔러 준 친구 {{count}}명에게 고마움 전하기",
+    "thanksQuickActionLabel": "콕 찔러준 친구 {{count}}명에게 고마움 전하기",
     "thanksTitle": "친구에게 고마움을 전해요",
-    "thanksDescription": "응원해 준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
+    "thanksDescription": "응원해준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
     "thanksEmpty": "지금은 고마움을 전할 친구가 없어요",
     "thanksEmptyDescription": "이미 고마움을 전했거나 친구 관계가 바뀌었을 수 있어요",
     "thanksSent": "친구에게 고마운 마음을 전했어요",
     "alreadyThanked": "이미 고마운 마음을 전했어요",
-    "thanksLoadError": "응원해 준 친구들을 불러오지 못했어요",
+    "thanksLoadError": "응원해준 친구들을 불러오지 못했어요",
     "encouragementTitle": "오늘도 네 속도로, 응원할게!",
     "replyCompletionHint": "답장으로 할 일이 완료되지는 않아요",
-    "completedThanksHint": "해냈네요! 응원해 준 친구에게 고마움을 전해볼까요?",
+    "completedThanksHint": "해냈네요! 응원해준 친구에게 고마움을 전해볼까요?",
     "thanksSelectionHint": "이 목록의 친구 모두에게 전해요. 이후 받은 콕에는 따로 고마움을 전할 수 있어요",
     "thanksSendCount": "{{count}}명에게 고마움 전하기"
   }

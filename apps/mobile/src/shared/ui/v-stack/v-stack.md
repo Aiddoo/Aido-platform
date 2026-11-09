@@ -7,7 +7,7 @@
 이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
 
 ```tsx
-import { VStack } from '@src/shared/ui/v-stack/v-stack';
+import { VStack } from '@src/shared/ui';
 ```
 
 ## 기본 사용법

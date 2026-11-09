@@ -20,7 +20,7 @@ export function TextSkeleton({ size = 'b3', className, color }: TextSkeletonProp
   return (
     <Box className={cn('justify-center', className)} style={{ height: lineHeight }}>
       <Skeleton
-        className="rounded"
+        className="rounded dark:bg-gray-2"
         style={color == null ? { height: fontSize } : { height: fontSize, backgroundColor: color }}
       />
     </Box>

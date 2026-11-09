@@ -1,48 +1,50 @@
 import type { WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
+import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type { RegisteredLocation } from '../domains/weather-location.model';
+import type { RegisteredLocation } from '../domains/weather-report.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 
-export const toRegisteredLocation = (dto: WeatherLocationResponse): RegisteredLocation => ({
-  latitude: dto.latitude,
-  longitude: dto.longitude,
-  timezone: dto.timezone,
-});
+export function toRegisteredLocation(dto: WeatherLocationResponse): RegisteredLocation {
+  return {
+    latitude: dto.latitude,
+    longitude: dto.longitude,
+    timezone: dto.timezone,
+  };
+}
 
-const toNullableDate = (value: string | null): Date | null =>
-  value == null ? null : new Date(value);
-
-export const toWeatherReport = (dto: WeatherReportResponse): WeatherReport => ({
-  location: toRegisteredLocation(dto.location),
-  current: { ...dto.current, observedAt: new Date(dto.current.observedAt) },
-  nextHour:
-    dto.nextHour == null
-      ? null
-      : {
-          periods: dto.nextHour.periods.map((period) => ({
-            ...period,
-            startsAt: new Date(period.startsAt),
-            endsAt: toNullableDate(period.endsAt),
-          })),
-          minutes: dto.nextHour.minutes.map((minute) => ({
-            ...minute,
-            startsAt: new Date(minute.startsAt),
-          })),
-        },
-  hourly: dto.hourly.map((hour) => ({ ...hour, startsAt: new Date(hour.startsAt) })),
-  daily: dto.daily.map((day) => ({
-    ...day,
-    sunrise: toNullableDate(day.sunrise),
-    sunset: toNullableDate(day.sunset),
-    moonrise: toNullableDate(day.moonrise),
-    moonset: toNullableDate(day.moonset),
-  })),
-  alerts: dto.alerts.map((alert) => ({
-    ...alert,
-    effectiveAt: new Date(alert.effectiveAt),
-    expiresAt: new Date(alert.expiresAt),
-  })),
-  airQuality: dto.airQuality,
-  attribution: dto.attribution,
-  fetchedAt: new Date(dto.fetchedAt),
-});
+export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
+  return {
+    location: toRegisteredLocation(dto.location),
+    current: { ...dto.current, observedAt: toInstant(dto.current.observedAt) },
+    nextHour:
+      dto.nextHour == null
+        ? null
+        : {
+            periods: dto.nextHour.periods.map((period) => ({
+              ...period,
+              startsAt: toInstant(period.startsAt),
+              endsAt: toNullableInstant(period.endsAt),
+            })),
+            minutes: dto.nextHour.minutes.map((minute) => ({
+              ...minute,
+              startsAt: toInstant(minute.startsAt),
+            })),
+          },
+    hourly: dto.hourly.map((hour) => ({ ...hour, startsAt: toInstant(hour.startsAt) })),
+    daily: dto.daily.map((day) => ({
+      ...day,
+      sunrise: toNullableInstant(day.sunrise),
+      sunset: toNullableInstant(day.sunset),
+      moonrise: toNullableInstant(day.moonrise),
+      moonset: toNullableInstant(day.moonset),
+    })),
+    alerts: dto.alerts.map((alert) => ({
+      ...alert,
+      effectiveAt: toInstant(alert.effectiveAt),
+      expiresAt: toInstant(alert.expiresAt),
+    })),
+    airQuality: dto.airQuality,
+    attribution: dto.attribution,
+    fetchedAt: toInstant(dto.fetchedAt),
+  };
+}

@@ -5,7 +5,6 @@ import enAppVersion from './locales/en/app-version.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
-import enFeatureDiscovery from './locales/en/feature-discovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enInvite from './locales/en/invite.json';
@@ -18,7 +17,11 @@ import enTodoComment from './locales/en/todo-comment.json';
 import enTodo from './locales/en/todo.json';
 import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
+import enVoiceNote from './locales/en/voice-note.json';
+import enVoicePlan from './locales/en/voice-plan.json';
+import enVoice from './locales/en/voice.json';
 import enWeather from './locales/en/weather.json';
+import enWhatsNew from './locales/en/whats-new.json';
 import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
 import koAi from './locales/ko/ai.json';
@@ -27,7 +30,6 @@ import koAppVersion from './locales/ko/app-version.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
-import koFeatureDiscovery from './locales/ko/feature-discovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koInvite from './locales/ko/invite.json';
@@ -40,7 +42,11 @@ import koTodoComment from './locales/ko/todo-comment.json';
 import koTodo from './locales/ko/todo.json';
 import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
+import koVoiceNote from './locales/ko/voice-note.json';
+import koVoicePlan from './locales/ko/voice-plan.json';
+import koVoice from './locales/ko/voice.json';
 import koWeather from './locales/ko/weather.json';
+import koWhatsNew from './locales/ko/whats-new.json';
 import koWidget from './locales/ko/widget.json';
 
 // ko 카탈로그가 원문(소스 오브 트루스) — i18next.d.ts의 타입 소스로 사용된다
@@ -54,6 +60,7 @@ export const resources = {
     todoComment: koTodoComment,
     auth: koAuth,
     memo: koMemo,
+    voicePlan: koVoicePlan,
     moderation: koModeration,
     friend: koFriend,
     invite: koInvite,
@@ -67,7 +74,9 @@ export const resources = {
     appIcon: koAppIcon,
     appVersion: koAppVersion,
     widget: koWidget,
-    featureDiscovery: koFeatureDiscovery,
+    whatsNew: koWhatsNew,
+    voice: koVoice,
+    voiceNote: koVoiceNote,
   },
   en: {
     common: enCommon,
@@ -78,6 +87,7 @@ export const resources = {
     todoComment: enTodoComment,
     auth: enAuth,
     memo: enMemo,
+    voicePlan: enVoicePlan,
     moderation: enModeration,
     friend: enFriend,
     invite: enInvite,
@@ -91,7 +101,9 @@ export const resources = {
     appIcon: enAppIcon,
     appVersion: enAppVersion,
     widget: enWidget,
-    featureDiscovery: enFeatureDiscovery,
+    whatsNew: enWhatsNew,
+    voice: enVoice,
+    voiceNote: enVoiceNote,
   },
 } as const;
 

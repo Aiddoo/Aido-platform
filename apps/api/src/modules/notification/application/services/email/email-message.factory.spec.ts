@@ -23,18 +23,28 @@ describe("EmailMessage 값 객체", () => {
       expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
       expect(message.idempotencyKey).toBeUndefined();
     });
-
-    it("idempotencyKey를 보존한다", () => {
-      const message = createVerificationCodeEmail(
-        "user@test.com",
-        { code: "123456", expiryMinutes: 10 },
-        "idem-1",
-      );
-      expect(message.idempotencyKey).toBe("idem-1");
-    });
   });
 
   describe("inquiry", () => {
+    const inquiry = {
+      userEmail: "user@test.com",
+      category: "BUG_REPORT" as const,
+      categoryLabel: "버그",
+      content: "앱이 멈춰요",
+      submittedAt: "2026-11-05",
+    };
+
+    it("같은 내용은 같은 멱등 키라 재전송이 운영자에게 두 번 가지 않는다", () => {
+      // When
+      const first = createInquiryEmail("ops@test.com", inquiry);
+      const retry = createInquiryEmail("ops@test.com", { ...inquiry, submittedAt: "2026-11-06" });
+      const other = createInquiryEmail("ops@test.com", { ...inquiry, content: "다른 문의" });
+      // Then
+      expect(first.idempotencyKey).toBe(retry.idempotencyKey);
+      expect(first.idempotencyKey).not.toBe(other.idempotencyKey);
+      expect(first.idempotencyKey).not.toContain("앱이 멈춰요");
+    });
+
     it("type·category 태그를 함께 붙인다", () => {
       const message = createInquiryEmail("support@test.com", {
         userEmail: "user@test.com",

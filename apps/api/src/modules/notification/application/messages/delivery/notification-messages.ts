@@ -8,6 +8,7 @@ export {
   createSocialDigestNotificationMessage,
   createStreakAtRiskNotificationMessage,
   createTodoReminderNotificationMessage,
+  createTodoSeriesPausedNotificationMessage,
   createWeeklyAchievementNotificationMessage,
 } from "./scheduler-notification-message.js";
 export {
@@ -28,10 +29,13 @@ export {
 export {
   createAiSuggestionNotificationMessage,
   createBillingIssueNotificationMessage,
+  createMarketingConsentReconfirmNotificationMessage,
   createMilestoneNotificationMessage,
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,
   createPremiumGrantEndingNotificationMessage,
+  createPremiumRenewalUpcomingNotificationMessage,
+  createPremiumTrialEndingNotificationMessage,
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,
 } from "./system-notification-message.js";

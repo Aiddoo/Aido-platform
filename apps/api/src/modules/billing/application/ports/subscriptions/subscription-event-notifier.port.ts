@@ -1,31 +1,30 @@
+import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
+
+import type {
+  StoreSubscriptionEventKind,
+  SubscriptionStore,
+} from "../../../domain/types/subscriptions/store-subscription.types.js";
 import type { SubscriptionEventPayload } from "../../types/subscriptions/subscription-event.payload.js";
 
-/** 실패를 보고할 웹훅 이벤트. TRANSFER는 구독자·상품 필드가 없다. */
-export interface WebhookFailureContext {
-  readonly eventType: string;
-  readonly eventId?: string;
-  readonly store?: string;
-  readonly appUserId?: string;
+/** 처리에 실패한 이벤트. 이전 이벤트는 상품이 없다. */
+export interface StoreSubscriptionEventFailureContext {
+  readonly kind: StoreSubscriptionEventKind;
+  readonly providerEventId?: string;
+  readonly store?: SubscriptionStore;
+  /** SANDBOX면 App Review·TestFlight 또는 개발 빌드 구매다. 심각도는 같고 경보에서 구분만 한다. */
+  readonly environment?: SubscriptionEnvironment;
   readonly productId?: string;
 }
 
 export const SUBSCRIPTION_EVENT_NOTIFIER = Symbol("SUBSCRIPTION_EVENT_NOTIFIER");
 
-/**
- * 구독 이벤트 알림 포트.
- *
- * DB 반영 후(커밋 후) 관리자 알림(Discord) 및 결제 이슈 푸시 알림 잡을 fire-and-forget으로
- * 등록한다. 어댑터가 admin-notification·notification 큐 서비스로 위임한다.
- * 웹훅 처리 실패 보고(에러 관측 + 관리자 알림)도 벤더(Sentry·Discord) 추상화로 노출한다.
- */
 export interface SubscriptionEventNotifierPort {
+  /** 커밋 뒤 운영 알림을 넘긴다. 알림 실패가 구독 반영을 되돌리지 않도록 기다리지 않고 던지지 않는다. */
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void;
-  notifyBillingIssue(userId: string): void;
-
   /**
-   * 웹훅 처리 실패를 보고한다 (fire-and-forget).
-   * 에러 관측(Sentry 태깅 캡처)과 관리자 알림(Discord)을 어댑터가 수행한다.
-   * RevenueCat 무한 재시도 방지를 위해 호출자는 이후 200으로 응답한다.
+   * 사용자에게 갈 결제 문제 푸시를 활성 UoW 안에서 기록한다. 처리 원장과 함께 커밋돼야 커밋 뒤 실패로
+   * 알림을 잃어도 공급자 재전송이 원장에 막혀 복구되지 않는 일이 없다.
    */
-  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void;
+  recordBillingIssue(userId: string, at: Date): Promise<void>;
+  reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void;
 }

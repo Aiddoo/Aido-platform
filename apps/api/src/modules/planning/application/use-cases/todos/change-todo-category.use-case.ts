@@ -26,7 +26,7 @@ export interface ChangeTodoCategoryInput {
 interface ChangeTodoCategoryDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
-    "findByIdAndUserId" | "countActiveByCategory" | "updateCategory"
+    "findByIdAndUserId" | "countCategoryUsage" | "updateCategory"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -62,8 +62,9 @@ export class ChangeTodoCategory {
       todo.changeCategory(categoryId);
       const targetCategoryId = todo.toPersistence().categoryId;
 
-      if (!todo.isCompleted()) {
-        const activeInTarget = await this.#dependencies.todoRepository.countActiveByCategory(
+      // 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
+      if (!todo.isCompleted() && todo.getSeriesId() == null) {
+        const activeInTarget = await this.#dependencies.todoRepository.countCategoryUsage(
           userId,
           categoryId,
         );

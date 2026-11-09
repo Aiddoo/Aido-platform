@@ -1,5 +1,10 @@
-import { type ExecutionContext, Injectable, SetMetadata } from "@nestjs/common";
-import { ThrottlerGuard, type ThrottlerRequest } from "@nestjs/throttler";
+import { applyDecorators, type ExecutionContext, Injectable, SetMetadata } from "@nestjs/common";
+import {
+  Throttle,
+  ThrottlerGuard,
+  type ThrottlerOptions,
+  type ThrottlerRequest,
+} from "@nestjs/throttler";
 
 const THROTTLE_BY_USER_KEY = "aido:throttle-by-user";
 
@@ -9,6 +14,25 @@ const THROTTLE_BY_USER_KEY = "aido:throttle-by-user";
  */
 export const ThrottleByUser = (): MethodDecorator & ClassDecorator =>
   SetMetadata(THROTTLE_BY_USER_KEY, true);
+
+const DAILY_THROTTLER = "daily";
+const DAILY_THROTTLED_KEY = "aido:throttle-daily";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 분당 한도와 함께 하루 한도도 세는 라우트. 붙이지 않은 라우트는 하루 한도를 세지 않는다. */
+export const ThrottleDaily = (limit: number): MethodDecorator & ClassDecorator =>
+  applyDecorators(
+    SetMetadata(DAILY_THROTTLED_KEY, true),
+    Throttle({ [DAILY_THROTTLER]: { ttl: DAY_MS, limit } }),
+  );
+
+/** ThrottlerModule에 등록하는 하루 한도 throttler. 한도는 ThrottleDaily가 라우트마다 정한다. */
+export const DAILY_THROTTLER_OPTIONS: ThrottlerOptions = {
+  name: DAILY_THROTTLER,
+  ttl: DAY_MS,
+  limit: Number.MAX_SAFE_INTEGER,
+  skipIf: (context) => Reflect.getMetadata(DAILY_THROTTLED_KEY, context.getHandler()) !== true,
+};
 
 function authenticatedUserId(request: Record<string, unknown>): string | null {
   const { user } = request;

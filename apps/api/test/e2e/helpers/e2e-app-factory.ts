@@ -18,7 +18,7 @@ import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 
 import { AppModule } from "#api/app.module";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/jobs/reports/report-generation.job";
 import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
@@ -32,6 +32,7 @@ import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
 import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
@@ -40,7 +41,10 @@ import { TransactionalEmailSender } from "#api/modules/notification/notification
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
-import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
+import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
+import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.processor";
+import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.processor";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
@@ -52,11 +56,12 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
-import { FakeAiProvider } from "../../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
 import { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
@@ -76,7 +81,9 @@ import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.
 /* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
 const BACKGROUND_PROCESSORS = [
+  TodoSeriesMaterializationProcessor,
   AdminNotificationProcessor,
+  EmailDeliveryQueueProcessor,
   TimezoneReminderProcessor,
   TodoReminderQueueProcessor,
   SuggestionAnalysisProcessor,
@@ -84,6 +91,7 @@ const BACKGROUND_PROCESSORS = [
   AccountPurgeProcessor,
   NotificationQueueProcessor,
   RetentionQueueProcessor,
+  PlanApplicationCleanupProcessor,
 ];
 
 const BACKGROUND_JOBS = [
@@ -92,6 +100,8 @@ const BACKGROUND_JOBS = [
   SuggestionAnalysisJob,
   ReportGenerationJob,
   AccountPurgeJob,
+  TodoSeriesMaterializationJob,
+  PlanApplicationCleanupJob,
   RetentionQueueService,
 ];
 
@@ -131,9 +141,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeEmailService = new FakeEmailService();
   const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
   const fakeAdminNotifier = new FakeAdminNotifier();
-  const fakePaymentNotifier = new FakeAdminNotifier();
   const fakePushProvider = new FakePushProvider();
-  const fakeAiProvider = new FakeAiProvider();
+  const fakeAiGenerator = new FakeAiGenerator();
   const fakeWeatherProvider = new FakeWeatherProvider();
   const stubWeatherReportProvider = new StubWeatherReportProvider();
   const fakeAirQualityProvider = new FakeAirQualityProvider();
@@ -213,12 +222,13 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeOAuthTokenVerifierService)
     .overrideProvider(OAUTH_IDENTITY_PROVIDER_REGISTRY)
     .useFactory({
-      inject: [TypedConfigService],
-      factory: (configService: TypedConfigService) => {
+      inject: [TypedConfigService, OutboundPolicyRegistry],
+      factory: (configService: TypedConfigService, policies: OutboundPolicyRegistry) => {
         const delegates = createOAuthProviderRegistry(
           configService,
           fakeOAuthTokenVerifierService,
           new HttpClient({ retry: false, throwOnHttpError: false }),
+          policies,
         );
         fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
         return fakeOAuthProviderRegistry.registry;
@@ -226,12 +236,10 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(ADMIN_NOTIFIER)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PAYMENT_NOTIFIER)
-    .useValue(fakePaymentNotifier)
     .overrideProvider(PUSH_PROVIDER)
     .useValue(fakePushProvider)
-    .overrideProvider(AI_PROVIDER)
-    .useValue(fakeAiProvider)
+    .overrideProvider(AI_GENERATOR)
+    .useValue(fakeAiGenerator)
     .overrideProvider(WEATHER_PROVIDER)
     .useValue(fakeWeatherProvider)
     .overrideProvider(WEATHER_REPORT_PROVIDER)
@@ -301,9 +309,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeOAuthTokenVerifierService.clear(),
         () => fakeOAuthProviderRegistry?.clear(),
         () => fakeAdminNotifier.clear(),
-        () => fakePaymentNotifier.clear(),
         () => fakePushProvider.clear(),
-        () => fakeAiProvider.clear(),
+        () => fakeAiGenerator.clear(),
         () => fakeWeatherProvider.clear(),
         () => stubWeatherReportProvider.clear(),
         () => fakeAirQualityProvider.clear(),

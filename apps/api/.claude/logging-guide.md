@@ -1,25 +1,22 @@
 # 서버 로깅
 
-업무 이벤트·외부 공급자·HTTP 로그를 바꿀 때 참고한다. 실행 연결은 `src/platform/logging`의 기존 Nest/Pino 구성을 사용한다. 새 Logger wrapper나 자체 마스킹 framework를 추가하지 않는다.
+업무 이벤트·외부 공급자·HTTP 로그를 바꿀 때 참고한다. 실행 연결은 `src/platform/logging`의 Nest/Pino 구성을 쓴다. 새 Logger wrapper나 자체 마스킹을 만들지 않는다.
 
-## 소유와 이벤트
+## 소유
 
-- Domain은 로그를 기록하지 않는다.
-- 순수 Application은 필요한 `Pick<ApplicationLogger, ...>`를 생성자로 받고 factory provider가 기존 Nest Logger를 연결한다.
-- Application 이벤트 상수는 Context의 `application/observability/<slice>/*.events.ts`, 공급자 이벤트는 `infrastructure/observability/<slice>`에 둔다. 예: [identity-log.events.ts](../src/modules/identity/application/observability/auth/identity-log.events.ts). HTTP 이벤트는 `platform/logging/http-log.ts`가 소유한다.
-- Infrastructure는 공급자 결과·재시도·작업 실패를, HTTP middleware/filter는 요청·HTTP 오류를 기록한다. Controller·UseCase·Repository에 같은 시작/종료 로그를 반복하지 않는다.
+- Domain은 로그를 남기지 않는다.
+- 순수 Application은 `Pick<ApplicationLogger, ...>`를 생성자로 받고 factory provider가 Nest Logger를 연결한다.
+- Application 이벤트 상수는 `application/observability/<slice>/*.events.ts`(예: [identity-log.events.ts](../src/modules/identity/application/observability/auth/identity-log.events.ts)), 공급자 이벤트는 `infrastructure/observability/<slice>`, HTTP 이벤트는 `platform/logging/http-log.ts`, platform 이벤트는 [platform-log.events.ts](../src/platform/logging/platform-log.events.ts)다.
+- Infrastructure는 공급자 결과·재시도·작업 실패를, HTTP middleware/filter는 요청·HTTP 오류를 남긴다. Controller·UseCase·Repository에 같은 시작/종료 로그를 반복하지 않는다.
 
-`event`는 안정된 영어 key다. 식별자·channel·허용된 reason code·count·errorCode/errorType처럼 조회할 수 있는 필드를 구조화한다. 원문 message에 업무 상태를 의존시키지 않는다.
+## 이벤트 키와 필드 (서버·앱 공통)
 
-### 이벤트 키와 필드 (서버·앱 공통)
-
-- 형식 `<context>.<subject>[.<detail>].<outcome>` — 소문자, 단어는 하이픈, 마디는 점(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`). 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`, [platform-log.events.ts](../src/platform/logging/platform-log.events.ts)), 마지막은 결과(`failed`·`completed`·`skipped` …)다.
+- 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
+- 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
 - Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability.md](../../mobile/.claude/observability.md)와 같은 축).
-- `errorType` = 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode` = 공유 `ErrorCode` 값만. 공급자 기호는 `providerError`(OAuth `invalid_grant`·`KOE320`), 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`로 둔다. `errorName`·`errorKind`를 새로 쓰지 않는다.
+- `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다. `errorName`·`errorKind`를 새로 쓰지 않는다.
 - 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남긴다.
-- 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지하고 새 키만 이 형식을 따른다.
-
-[ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.ts)의 실제 로그 발췌:
+- 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지한다. 새 키만 이 형식을 따른다.
 
 ```ts
 this.#dependencies.logger.warn({
@@ -29,26 +26,32 @@ this.#dependencies.logger.warn({
 });
 ```
 
-log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 거부, error는 최종 실패, debug는 유용한 진단에 사용한다. 항목마다 큰 객체를 JSON으로 출력하거나 같은 오류를 여러 레이어에서 반복하지 않는다.
+레벨: log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 거부, error는 최종 실패, debug는 진단이다. 같은 오류를 여러 레이어에서 반복하지 않는다.
 
-## 원문과 오류 계약
+## 남기면 안 되는 값
 
-이메일·token·인증 code·OAuth state·authorization header·공급자 사용자 ID·user tag·할 일 제목·AI 입력/출력·이메일 본문·전체 webhook payload·공급자 오류 본문을 기록하지 않는다. 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다. 외부 error.message/stack/문자열도 같은 값을 포함할 수 있으므로 그대로 logger에 전달하지 않는다. 알려진 errorType/code와 필요한 내부 식별자만 남긴다. 무설정 mock 발송도 본문·code를 출력하지 않는다.
+이메일, 토큰, 인증 code, OAuth state, authorization header, 공급자 사용자 ID, user tag, 할 일 제목, 말한 내용·전사, AI 입력/출력, 이메일 본문, 전체 webhook payload, 공급자 오류 본문, env 값.
 
-로그 정리와 caller의 오류 계약은 구분한다. 기존 sender result.error, queue throw identity, retry 여부를 log 비노출만을 위해 임의로 바꾸지 않는다. 반대로 호출자가 실패를 격리해야 하는 흐름에 logging 변경 때문에 예외를 새로 전파하지 않는다.
+- 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다.
+- 외부 `error.message`·stack도 같은 값을 포함할 수 있으므로 logger에 그대로 넘기지 않는다.
+- 무설정 로그 발송 어댑터도 본문·code를 출력하지 않는다.
 
-전역 filter는 공개 오류 응답을 유지하면서 query와 예외 message 원문을 합치지 않는다. 기존 sanitized frame·errorCode/type 처리와 5xx Sentry 캡처를 확인한다. Sentry에는 사용자 ID만 싣고 IP(`ip_address`·`x-forwarded-for`·`x-real-ip`)는 보내지 않는다. 이 범위의 검증을 Sentry 전체 데이터 정제 완료로 확대하지 않는다. 모듈별 발송·문의 로그의 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에 남긴다.
+로그 정리와 호출자의 오류 계약은 별개다. 로그를 가리려고 sender result·queue throw·retry 여부를 바꾸지 않는다. 실패를 격리해야 하는 흐름에 로그 변경으로 예외를 새로 전파하지 않는다.
+
+## Sentry와 경보
+
+- 전역 filter가 5xx만 캡처한다. 공개 오류 응답을 유지하고 query와 예외 message 원문을 합치지 않는다.
+- Sentry에는 사용자 ID만 싣고 IP(`ip_address`·`x-forwarded-for`·`x-real-ip`)는 보내지 않는다.
+- 사람이 볼 상황은 [`OPERATIONAL_ALERT`](architecture.md#외부-호출-정책계량운영-경보)로 올린다. 업무 코드에서 Sentry를 직접 부르지 않는다.
 
 ## HTTP와 설정
 
-[logger.options.ts](../src/platform/logging/logger.options.ts)는 공식 nestjs-pino `pinoHttp` 옵션을 사용한다. query를 제외한 path/method/status/event와 요청 ID를 유지하고 req/res 원문 serializer를 비활성화한다. `quietReqLogger`·`quietResLogger`와 redaction 설정을 유지하며 4xx/5xx 자동 로그는 `customLogLevel`의 silent로 생략해 filter와 중복하지 않는다.
+[logger.options.ts](../src/platform/logging/logger.options.ts)는 공식 nestjs-pino `pinoHttp` 옵션을 쓴다. query를 뺀 path/method/status/event와 요청 ID를 남기고 req/res 원문 serializer를 끈다. 4xx/5xx 자동 로그는 `customLogLevel`의 silent로 생략해 filter와 중복하지 않는다.
 
 요청 ID(`reqId`)는 `genReqId`의 [assignRequestId](../src/platform/http/request-client/request-id.ts)가 정한다. 앱이 보낸 `X-Request-Id`가 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 `X-Request-Id`로 돌려준다. 같은 값이 `RequestClient.requestId`와 Sentry `request_id` 태그가 되므로 앱 breadcrumb·서버 로그·Sentry 이벤트를 한 ID로 찾는다.
 
-level 우선순위는 명시적인 module 옵션 → LOG_LEVEL → 환경 기본값이다. 현재 기본값은 test silent, production info, 나머지 debug다. 기본 pretty print는 production/test 밖에서 사용한다. 업무 코드가 개별 logger 설정으로 이 정책을 다시 만들지 않는다.
+레벨 우선순위는 module 옵션 → `LOG_LEVEL` → 환경 기본값(test silent, production info, 나머지 debug)이다. pretty print는 production/test 밖에서만 쓴다.
 
 ## 확인할 증거
 
-업무 로그 변경은 합성 민감값이 실제 logger 인자에 들어가지 않는지와 기존 성공/실패 격리·오류 결과를 함께 확인한다. HttpClient/SDK 경계는 실제 설치 API의 wire/throw 동작을 반영한 fixture가 필요하다. 전체 SDK mock은 native error/partial result 의미의 증거가 아니다.
-
-HTTP 설정 변경은 실제 Nest 요청을 공식 Pino stream으로 받아 reqId/event/query·header 비노출과 중복 기록을 확인한다. callback logger spy로 downstream Pino/Sentry/외부 유출까지 확인했다고 주장하지 않는다. 실행 범위는 [testing-guide.md](testing-guide.md)에서 선택한다.
+업무 로그 변경은 합성 민감값이 logger 인자에 들어가지 않는지와 기존 성공/실패 격리를 함께 본다. HTTP 설정 변경은 실제 Nest 요청을 Pino stream으로 받아 reqId/event/query·header 비노출을 본다. logger spy로 Sentry까지 확인했다고 주장하지 않는다.

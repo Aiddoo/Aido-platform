@@ -1,22 +1,31 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
+import { OperationsAlertKey } from "../../observability/notifications/operations-alerts.js";
 import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
 import type { NotificationChannel } from "../../ports/notifications/admin-notification-queue.port.js";
-import { type AdminNotifier } from "../../ports/notifications/admin-notifier.port.js";
-import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
+import { type AdminNotifierPort } from "../../ports/notifications/admin-notifier.port.js";
+import type { AdminNotice } from "../../read-models/notifications/admin-notice.read-model.js";
+
+export class AdminNotificationRetryableError extends Error {
+  constructor(readonly channel: NotificationChannel) {
+    super(`Admin notification delivery failed: ${channel}`);
+    this.name = AdminNotificationRetryableError.name;
+  }
+}
+
+interface SendAdminNotificationDependencies {
+  readonly notifier: Pick<AdminNotifierPort, "send">;
+  readonly alert: OperationalAlertPort;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
+}
 
 /**
  * 관리자 알림 발송 유스케이스.
  *
- * 채널에 따라 관리자/결제 Discord 프로바이더를 선택해 발송한다.
- * 발송 실패 시 예외를 던져 작업 재시도를 트리거한다.
+ * 일시 실패(재시도 가능)만 던져 큐 재시도를 맡기고, 채널 미설정은 건너뛰며,
+ * 재시도해도 안 되는 거절은 운영 경보로 올린다.
  */
-interface SendAdminNotificationDependencies {
-  readonly adminNotifier: Pick<AdminNotifier, "send">;
-  readonly paymentNotifier: Pick<AdminNotifier, "send">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
-}
-
 export class SendAdminNotification {
   readonly #dependencies: SendAdminNotificationDependencies;
 
@@ -24,24 +33,46 @@ export class SendAdminNotification {
     this.#dependencies = dependencies;
   }
 
-  async execute(channel: NotificationChannel, notification: AdminNotification): Promise<void> {
-    const notifier =
-      channel === "payment" ? this.#dependencies.paymentNotifier : this.#dependencies.adminNotifier;
-
+  async execute(channel: NotificationChannel, notice: AdminNotice): Promise<void> {
     this.#dependencies.logger.debug({
       event: OperationsNotificationsLogEvent.SEND_STARTED,
       channel,
+      noticeType: notice.type,
     });
 
-    const result = await notifier.send(notification);
+    const outcome = await this.#dependencies.notifier.send(channel, notice);
 
-    if (!result.success) {
-      throw new Error(`Discord webhook failed: ${result.error}`);
+    if (outcome.status === "sent") {
+      this.#dependencies.logger.log({
+        event: OperationsNotificationsLogEvent.SEND_COMPLETED,
+        channel,
+        noticeType: notice.type,
+      });
+      return;
+    }
+    if (outcome.status === "skipped") {
+      this.#dependencies.logger.debug({
+        event: OperationsNotificationsLogEvent.SEND_SKIPPED,
+        channel,
+        reason: outcome.reason,
+      });
+      return;
+    }
+    if (outcome.retryable) {
+      throw new AdminNotificationRetryableError(channel);
     }
 
-    this.#dependencies.logger.log({
-      event: OperationsNotificationsLogEvent.SEND_COMPLETED,
+    this.#dependencies.logger.warn({
+      event: OperationsNotificationsLogEvent.SEND_REJECTED,
       channel,
+      statusCode: outcome.statusCode,
+    });
+    this.#dependencies.alert.raise({
+      key: OperationsAlertKey.ADMIN_NOTIFICATION_REJECTED,
+      severity: "warning",
+      message: "관리자 알림이 채널에서 거절되었습니다",
+      tags: { channel },
+      details: { statusCode: outcome.statusCode ?? null },
     });
   }
 }

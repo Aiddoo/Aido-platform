@@ -1,0 +1,131 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  BottomSheet,
+  Button,
+  INQUIRY_SHEET_EXIT,
+  KeyboardBottomSheet,
+  QueryErrorBoundary,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
+  useSheetRoute,
+} from '@src/shared/ui';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { type ComponentProps, Suspense, useEffect } from 'react';
+import { useForm, useFormState } from 'react-hook-form';
+
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategory } from '../domains/todo-category.model';
+import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
+import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
+import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
+import { todoCategoryParamsSchema } from '../schemas/todo-category-params.schema';
+import { CategoryFormFields } from './category-form-fields';
+
+type CategoryEditBottomSheetProps = Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+>;
+
+/** 주 동작 버튼을 키보드 위 고정 영역(`footer`)에 두려면 폼이 시트를 가져야 하므로, 할 일 고치기 시트처럼 읽는 동안에는 시트를 띄우지 않는다 */
+export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
+  return (
+    <QueryErrorBoundary fallback={CategoryEditBottomSheet.Error}>
+      <Suspense fallback={null}>
+        <CategoryEditBottomSheet.Contents {...props} />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}
+
+CategoryEditBottomSheet.Contents = function Contents(props: CategoryEditBottomSheetProps) {
+  const sheet = useSheetRoute('/settings/category-settings');
+  const [{ categoryId }] = useRouteParams(todoCategoryParamsSchema);
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const category = useRetainedValue(
+    TodoCategoryPolicy.findCategory(categoriesResult.categories, categoryId),
+  );
+
+  useEffect(() => {
+    if (category == null) {
+      sheet.close();
+    }
+  }, [category, sheet]);
+
+  if (category == null) {
+    return null;
+  }
+
+  return (
+    <CategoryEditForm
+      {...props}
+      category={category}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      onClose={() => sheet.close()}
+    />
+  );
+};
+
+CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const sheet = useSheetRoute('/settings/category-settings');
+
+  return (
+    <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+    </BottomSheet>
+  );
+};
+
+interface CategoryEditFormProps extends Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children'
+> {
+  category: TodoCategory;
+  onClose: () => void;
+}
+
+function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps) {
+  const { t } = useTranslation('common');
+  const reportUnexpectedError = useReportUnexpectedError('todo');
+  const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
+
+  const form = useForm({
+    resolver: zodResolver(todoCategoryFormSchema),
+    defaultValues: { name: category.name, color: category.color },
+  });
+  const { isSubmitting } = useFormState({ control: form.control });
+
+  // 실패하면 토스트는 mutation이 한 번 알리고 시트와 입력값은 그대로 둔다
+  const submitCategory = form.handleSubmit(async (values) => {
+    if (!TodoCategoryPolicy.hasChanges(category, values)) {
+      onClose();
+
+      return;
+    }
+
+    try {
+      await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
+    } catch (error) {
+      reportUnexpectedError(error);
+    }
+  });
+  const handleSubmit = useSingleTap(() => submitCategory());
+
+  return (
+    <KeyboardBottomSheet
+      {...props}
+      footer={
+        <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
+          {t('actions.confirm')}
+        </Button>
+      }
+    >
+      <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
+    </KeyboardBottomSheet>
+  );
+}

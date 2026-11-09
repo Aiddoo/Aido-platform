@@ -1,13 +1,25 @@
-import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
-import { memoScreenParamsSchema } from '@src/features/memo/hooks/use-memo-screen-params';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { MemoEditor } from '@src/features/notes/memo/components/memo-editor';
+import { memoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Suspense } from 'react';
 
 export default function MemoDetailRoute() {
-  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = memoParamsSchema.safeParse(useLocalSearchParams());
+  const goBack = useSingleTap(router.back);
 
   if (!params.success) {
     return <Redirect href="/memo" />;
   }
 
-  return <MemoDetailPane presentation="screen" />;
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+      <QueryErrorBoundary resetKeys={[params.data.memoId]} fallback={MemoEditor.Error}>
+        <Suspense fallback={<MemoEditor.Loading />}>
+          <MemoEditor toolbar={MemoEditor.StackToolbar} onLeave={goBack} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
+  );
 }

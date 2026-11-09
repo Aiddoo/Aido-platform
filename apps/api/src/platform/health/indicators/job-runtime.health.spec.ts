@@ -46,6 +46,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "ai-suggestion-analysis.v1",
       "ai-report-generation.v1",
       "admin-notification.v1",
+      "email-delivery.v1",
       "todo-reminder.v1",
       "notification.v1",
       "notification-dead-letter.v1",
@@ -54,6 +55,10 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "retention.v1",
       "operations.broadcast-fan-out.v1",
       "operations.broadcast-fan-out-dead-letter.v1",
+      "todo-series-materialization.v1",
+      "todo-timezone-rebase.v1",
+      "quota-abandoned-refund.v1",
+      "store-subscription-reconcile.v1",
     ]);
   });
 

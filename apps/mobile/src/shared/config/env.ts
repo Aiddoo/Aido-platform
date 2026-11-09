@@ -1,29 +1,21 @@
+import { IS_PHYSICAL_DEVICE } from '@src/shared/infra/device/device-info';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import { getAppScheme } from './app-scheme';
 import { ENV_LOG_EVENT } from './env-log-events';
-import { resolveRevenueCatApiKey } from './revenuecat-api-key';
 
-// =============================================================================
-// Schema Definitions
-// =============================================================================
+const appEnvSchema = z.enum(['development', 'preview', 'production']);
+type AppEnv = z.infer<typeof appEnvSchema>;
 
-const AppEnvSchema = z.enum(['development', 'preview', 'production']);
-export type AppEnv = z.infer<typeof AppEnvSchema>;
-
-const ExtraSchema = z.object({
-  env: AppEnvSchema,
+const extraSchema = z.object({
+  env: appEnvSchema,
   apiUrl: z.string(),
   devMachineIp: z.string().optional(),
   isDevelopment: z.boolean(),
   isProduction: z.boolean(),
-  revenueCatAppleApiKey: z.string().optional(),
-  revenueCatGoogleApiKey: z.string().optional(),
-  revenueCatTestApiKey: z.string().optional(),
   sentryDsn: z.string().optional(),
   sentryDebug: z.boolean().optional(),
   // .env의 빈 값(EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=)은 키가 없는 빌드로 본다
@@ -34,11 +26,7 @@ const ExtraSchema = z.object({
     .transform((key) => (key == null || key.length === 0 ? undefined : key)),
 });
 
-// =============================================================================
-// Types
-// =============================================================================
-
-type PlatformType = typeof Platform.OS;
+type PlatformType = typeof process.env.EXPO_OS;
 
 type ApiUrlContext = {
   platform: PlatformType;
@@ -48,21 +36,14 @@ type ApiUrlContext = {
   devMachineIp?: string;
 };
 
-// =============================================================================
-// Environment Resolution
-// =============================================================================
-
-const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
+const extra = extraSchema.parse(Constants.expoConfig?.extra);
 
 /** 카카오톡 공유 버튼이 앱을 여는 스킴(kakao{네이티브 앱 키}). 키가 없는 빌드는 null */
-const resolveKakaoScheme = (kakaoNativeAppKey: string | undefined) =>
-  kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
+function resolveKakaoScheme(kakaoNativeAppKey: string | undefined) {
+  return kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
+}
 
-/**
- * Expo Metro 번들러의 hostUri에서 개발 머신 IP를 자동으로 추출
- * 예: "192.168.1.100:8081" → "192.168.1.100"
- */
-const getAutoDetectedDevMachineIp = (): string | undefined => {
+function getAutoDetectedDevMachineIp(): string | undefined {
   if (!__DEV__) {
     return undefined;
   }
@@ -74,13 +55,14 @@ const getAutoDetectedDevMachineIp = (): string | undefined => {
 
   const [ip] = hostUri.split(':');
   return ip;
-};
+}
 
-const toAndroidEmulatorUrl = (url: string): string => url.replace('localhost', '10.0.2.2');
+function toAndroidEmulatorUrl(url: string): string {
+  return url.replace('localhost', '10.0.2.2');
+}
 
-const toDeviceUrl = (url: string, devMachineIp?: string): string => {
-  // 1. 환경변수로 설정된 IP 우선 사용
-  // 2. 없으면 자동 감지된 IP 사용
+function toDeviceUrl(url: string, devMachineIp?: string): string {
+  // 환경변수로 설정한 IP가 자동 감지한 IP보다 우선한다
   const autoIp = getAutoDetectedDevMachineIp();
   const resolvedIp = devMachineIp || autoIp;
 
@@ -94,30 +76,26 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
   }
 
   return url.replace('localhost', resolvedIp);
-};
+}
 
-const resolveApiUrl = (): string => {
+function resolveApiUrl(): string {
   const context: ApiUrlContext = {
-    platform: Platform.OS,
+    platform: process.env.EXPO_OS,
     env: extra.env,
     apiUrl: extra.apiUrl,
-    isPhysicalDevice: Device.isDevice,
+    isPhysicalDevice: IS_PHYSICAL_DEVICE,
     devMachineIp: extra.devMachineIp,
   };
 
   const resolvedUrl = match(context)
-    // Android 에뮬레이터: localhost → 10.0.2.2
     .with({ platform: 'android', env: 'development', isPhysicalDevice: false }, ({ apiUrl }) =>
       toAndroidEmulatorUrl(apiUrl),
     )
-    // 실제 기기: localhost → DEV_MACHINE_IP
     .with({ env: 'development', isPhysicalDevice: true }, ({ apiUrl, devMachineIp }) =>
       toDeviceUrl(apiUrl, devMachineIp),
     )
-    // 그 외: 원본 URL 사용
     .otherwise(({ apiUrl }) => apiUrl);
 
-  // 개발 환경에서 디버깅 로그 출력
   if (extra.env === 'development' && __DEV__) {
     logger.debug(ENV_LOG_EVENT.API_URL_RESOLVED, {
       platform: context.platform,
@@ -129,16 +107,7 @@ const resolveApiUrl = (): string => {
   }
 
   return resolvedUrl;
-};
-
-const resolveScheme = (): string => {
-  const scheme = Constants.expoConfig?.scheme;
-  return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
-};
-
-// =============================================================================
-// Environment Configuration
-// =============================================================================
+}
 
 export const ENV = {
   APP_VERSION: Constants.expoConfig?.version,
@@ -146,28 +115,18 @@ export const ENV = {
   IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,
 
-  PLATFORM: Platform.OS,
-  IS_ANDROID: Platform.OS === 'android',
-  IS_IOS: Platform.OS === 'ios',
+  PLATFORM: process.env.EXPO_OS,
+  IS_ANDROID: process.env.EXPO_OS === 'android',
+  IS_IOS: process.env.EXPO_OS === 'ios',
 
   API_URL: resolveApiUrl(),
-  SCHEME: resolveScheme(),
-  REVENUECAT_API_KEY: resolveRevenueCatApiKey({
-    isDebugBuild: __DEV__,
-    isDevelopmentEnvironment: extra.isDevelopment,
-    platform: Platform.OS,
-    appleApiKey: extra.revenueCatAppleApiKey,
-    googleApiKey: extra.revenueCatGoogleApiKey,
-    testApiKey: extra.revenueCatTestApiKey,
-  }),
+  SCHEME: getAppScheme(),
 
   // 카카오톡 공유 SDK 키(publishable). 없으면 OS 공유로 대신한다
   KAKAO_NATIVE_APP_KEY: extra.kakaoNativeAppKey,
   KAKAO_SCHEME: resolveKakaoScheme(extra.kakaoNativeAppKey),
 
   SENTRY_DSN: extra.sentryDsn,
-  // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).
+  // 프로덕션은 항상 활성, 그 외는 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성
   SENTRY_ENABLED: extra.isProduction || extra.sentryDebug === true,
 } as const;
-
-export type Env = typeof ENV;

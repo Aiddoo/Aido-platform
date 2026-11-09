@@ -1,19 +1,20 @@
 import { WeatherForecastBadge } from '@src/features/weather/components/weather-forecast-badge';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 export default function MemoLayout() {
-  const indexScreenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
-  const bg = useResolveClassNames('bg-gray-1');
+  const indexScreenOptions = useStackScreenOptions({ hasContentBackground: true });
+  const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: bg.backgroundColor },
+        contentStyle: { backgroundColor },
         animation: 'fade',
-        animationDuration: 200,
+        animationDuration: ANIMATION.duration.normal,
       }}
     >
       <Stack.Screen name="index" options={{ ...indexScreenOptions, title: '' }}>

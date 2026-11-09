@@ -1,10 +1,11 @@
 import type { PremiumEntitlements, SubscriptionStatus, UserRole } from "@aido/api";
-import type { PremiumSource } from "@aido/api/vocabulary";
+import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type {
   AccountProvider,
   UserStatus,
 } from "#api/modules/identity/domain/types/auth/auth.types";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TokenPair } from "../../ports/auth/auth-crypto.port.js";
 
@@ -84,6 +85,8 @@ export interface RequestMetadata {
   deviceName?: string;
   deviceType?: string;
   device?: RequestDevice;
+  /** Accept-Language의 지원 언어. 보내지 않은 요청에는 없다. */
+  locale?: SupportedLocale;
 }
 
 /**
@@ -109,6 +112,8 @@ export interface CurrentUserResult {
   willRenew?: boolean;
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
+  premiumIsTrial?: boolean;
+  premiumPlanType?: SubscriptionPlanType | null;
   isPremium?: boolean;
   entitlements?: PremiumEntitlements;
 }

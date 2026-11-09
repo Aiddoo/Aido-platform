@@ -80,6 +80,8 @@ eas build --profile production --platform android
 - API: `https://api.aido.kr`
 - 자동 버전 증가
 
+**배포 순서**: 서버 배포 → 안정화 확인 → 앱 제출이다. 앱은 최신 서버 응답만 읽고 옛 서버를 위한 분기를 두지 않으므로, 앱 1.15.0이 나간 뒤에는 서버를 1.15 이전으로 되돌릴 수 없다. 서버 문제는 수정 배포로 대응한다([호환](../../docs/conventions/compatibility.md)).
+
 ---
 
 ## 로컬 production 파일 생성

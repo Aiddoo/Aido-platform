@@ -3,6 +3,10 @@ export {
   type TodoCategoryReaderPort,
 } from "./application/ports/categories/todo-category-reader.port.js";
 export {
+  TODO_CATEGORY_COUNT_READER,
+  type TodoCategoryCountReaderPort,
+} from "./application/ports/categories/todo-category-count-reader.port.js";
+export {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
 } from "./application/ports/categories/todo-category-provisioner.port.js";

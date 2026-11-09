@@ -22,6 +22,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
         userId: fixture.userId,
         memoId: memo.id,
         data: { categoryId: 1, startDate: NOTES_TIME },
+        timezone: "Asia/Seoul",
       }),
     ).rejects.toMatchObject({ errorCode: "MEMO_2001" });
     expect(fixture.todoCreator.stagedTodos.size).toBe(0);
@@ -32,7 +33,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
   it("제목을 200자로 제한하고 false·날짜·하위 항목을 전달한 뒤 원본 메모를 삭제한다", async () => {
     // Given
     const memo = fixture.addMemo("가".repeat(300));
-    const scheduledTime = new Date("2026-04-06T03:30:00.000Z");
+    const scheduledTime = "12:30";
     // When
     const result = await new ConvertMemoToTodo(fixture).execute({
       userId: fixture.userId,
@@ -46,6 +47,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
         visibility: "PRIVATE",
         items: [{ title: "준비" }],
       },
+      timezone: "Asia/Seoul",
     });
     // Then
     expect(result.message).toBe("메모가 할 일로 변환되었습니다.");
@@ -53,7 +55,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
       title: "가".repeat(200),
       startDate: "2026-04-06",
       endDate: null,
-      scheduledTime: scheduledTime.toISOString(),
+      scheduledTime: "2026-04-06T03:30:00.000Z",
       isAllDay: false,
       visibility: "PRIVATE",
     });
@@ -65,6 +67,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
         startDate: NOTES_TIME,
         endDate: null,
         scheduledTime,
+        timezone: "Asia/Seoul",
         isAllDay: false,
         visibility: "PRIVATE",
         items: [{ title: "준비" }],
@@ -85,6 +88,7 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
       userId: fixture.userId,
       memoId: memo.id,
       data: { categoryId: 1, startDate: NOTES_TIME },
+      timezone: "Asia/Seoul",
     });
     // Then
     expect(result.todo).toMatchObject({
@@ -99,13 +103,14 @@ describe("ConvertMemoToTodo — 메모 단건 변환", () => {
     // Given
     const memo = fixture.addMemo("실패 후 유지");
     const failure = new Error("Todo 저장 실패");
-    vi.spyOn(fixture.todoCreator, "stageTodo").mockRejectedValueOnce(failure);
+    vi.spyOn(fixture.todoCreator, "stage").mockRejectedValueOnce(failure);
     // When / Then
     await expect(
       new ConvertMemoToTodo(fixture).execute({
         userId: fixture.userId,
         memoId: memo.id,
         data: { categoryId: 1, startDate: NOTES_TIME },
+        timezone: "Asia/Seoul",
       }),
     ).rejects.toBe(failure);
     expect(fixture.repository.records.get(memo.id)).toEqual(memo);

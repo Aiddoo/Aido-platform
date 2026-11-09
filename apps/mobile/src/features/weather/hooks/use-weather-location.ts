@@ -1,63 +1,82 @@
-import { useLocationGateway, useLogger } from '@src/bootstrap/providers/di-context';
+import { useDeviceLocation, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Linking from 'expo-linking';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
-import { useGetWeatherLocationQueryOptions } from '../queries/get-weather-location-query-options';
+import {
+  type WeatherLocationStatus,
+  WeatherLocationPolicy,
+} from '../domains/weather-location.model';
+import type { PlaceName } from '../domains/weather-location.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
+import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
+import { toPermissionResult } from '../utils/weather-analytics';
 
 export type WeatherLocation =
   | { status: 'checking' }
   | { status: 'needsPermission'; request: () => Promise<void> }
   | { status: 'denied'; openSettings: () => Promise<void> }
   | { status: 'unavailable'; retry: () => Promise<void> }
-  | { status: 'ready'; place: PlaceName | null; countryCode: string | null };
+  | { status: 'ready'; place: PlaceName | null; countryCode: string | null; isLastKnown: false }
+  | {
+      status: 'ready';
+      place: PlaceName | null;
+      countryCode: string | null;
+      isLastKnown: true;
+      request: () => Promise<void>;
+    };
 
-/**
- * 위치 권한·위치 읽기·서버 등록을 화면이 그릴 상태 하나로 모은다.
- * 설정에서 권한을 켜고 돌아오면 위치 query가 포커스에서 다시 확인해 재시작 없이 ready로 바뀐다.
- */
+/** 설정에서 권한을 켜고 돌아오면 위치 query가 포커스에서 다시 확인해 재시작 없이 ready로 바뀐다 */
 export function useWeatherLocation(): WeatherLocation {
-  const gateway = useLocationGateway();
+  const gateway = useDeviceLocation();
+  const openSettings = useOpenAppSettings();
   const logger = useLogger();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
-  const location = WeatherLocationPolicy.status(data, { hasFailed: isError });
+  const location = match({ data, isError })
+    .returnType<WeatherLocationStatus>()
+    .with({ data: P.nonNullable }, ({ data: reading }) =>
+      WeatherLocationPolicy.getLocationStatus(reading),
+    )
+    .with({ isError: true }, () => ({ status: 'unavailable' }))
+    .otherwise(() => ({ status: 'checking' }));
+
+  const request = async () => {
+    const permission = await gateway.requestPermission().catch((error) => {
+      logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
+        error: getErrorMessage(error),
+      });
+      return null;
+    });
+    trackEvent('weather_location_permission_result', {
+      result: toPermissionResult(permission),
+    });
+    await refetchWeatherLocation(queryClient);
+  };
 
   return match(location)
-    .with({ status: 'needsPermission' }, () => ({
-      status: 'needsPermission' as const,
-      request: async () => {
-        const permission = await gateway.requestPermission().catch((error) => {
-          logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
-            error: errorMessageOf(error),
-          });
-          return null;
-        });
-        trackEvent('weather_location_permission_result', {
-          result: WeatherLocationPolicy.permissionResult(permission),
-        });
-        await refetchWeatherLocation(queryClient);
-      },
-    }))
+    .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const, request }))
     .with({ status: 'denied' }, () => ({
       status: 'denied' as const,
-      openSettings: () =>
-        Linking.openSettings().catch((error) => {
-          logger.warn(WEATHER_LOG_EVENT.LOCATION_SETTINGS_OPEN_FAILED, {
-            error: errorMessageOf(error),
-          });
-        }),
+      openSettings,
     }))
     .with({ status: 'unavailable' }, () => ({
       status: 'unavailable' as const,
       retry: () => refetchWeatherLocation(queryClient),
     }))
-    .with({ status: 'checking' }, { status: 'ready' }, (state) => state)
+    .with({ status: 'ready', isLastKnown: true }, (state) => ({
+      ...state,
+      isLastKnown: true as const,
+      request,
+    }))
+    .with({ status: 'ready', isLastKnown: false }, (state) => ({
+      ...state,
+      isLastKnown: false as const,
+    }))
+    .with({ status: 'checking' }, (state) => state)
     .exhaustive();
 }

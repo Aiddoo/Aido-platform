@@ -2,6 +2,7 @@ import type {
   AccountProvider,
   UserStatus,
 } from "#api/modules/identity/domain/types/auth/auth.types";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   type AuthAccountRepositoryPort,
@@ -30,9 +31,13 @@ export interface ProvisionUserInput {
   consent: {
     termsAgreedAt?: Date;
     privacyAgreedAt?: Date;
+    /** 동의한 약관 버전(TERMS_VERSION.CURRENT). 약관에 동의하지 않았으면 비운다. */
+    agreedTermsVersion?: string;
     marketingAgreedAt?: Date;
     marketingPushAgreedAt?: Date;
   };
+  /** 가입 요청의 앱 언어. 기본 카테고리 이름에 쓴다. */
+  locale?: SupportedLocale;
 }
 
 /** 프로비저닝 결과 — 호출측이 사용하는 최소 신원 정보 */
@@ -95,7 +100,7 @@ export class ProvisionUser {
 
     await this.#dependencies.seeder.seedDefaultSettings(user.id, input.consent);
 
-    await this.#dependencies.seeder.seedDefaultCategories(user.id);
+    await this.#dependencies.seeder.seedDefaultCategories(user.id, input.locale);
 
     // 신규 User 생성 경로에만 존재한다. 기존 로그인/인증 경로는 호출하지 않는다.
     await this.#dependencies.retentionEnroller.enrollNewUser(user.id, input.status === "ACTIVE");

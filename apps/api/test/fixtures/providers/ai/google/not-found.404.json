@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 404,
+    "message": "models/not-a-model is not found",
+    "status": "NOT_FOUND"
+  }
+}

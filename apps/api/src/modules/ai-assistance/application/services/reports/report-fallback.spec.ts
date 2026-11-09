@@ -68,11 +68,11 @@ describe("report fallback content", () => {
   it("활동 있는 폴백은 서버 통계로 요약하고 가장 많이 완료한 카테고리로 팁을 쓴다", () => {
     // Given / When
     const ko = buildFallbackContent(
-      { data: activeData, periodLabel: "2026년 43주차", type: "WEEKLY" },
+      { reportData: activeData, periodLabel: "2026년 43주차", type: "WEEKLY" },
       "ko",
     );
     const en = buildFallbackContent(
-      { data: activeData, periodLabel: "Week 43, 2026", type: "WEEKLY" },
+      { reportData: activeData, periodLabel: "Week 43, 2026", type: "WEEKLY" },
       "en",
     );
     // Then
@@ -95,8 +95,14 @@ describe("report fallback content", () => {
       categoryBreakdown: [{ name: "운동", color: "#000000", total: 3, completed: 0, rate: 0 }],
     };
     // When
-    const ko = buildFallbackContent({ data, periodLabel: "2026년 10월", type: "MONTHLY" }, "ko");
-    const en = buildFallbackContent({ data, periodLabel: "October 2026", type: "MONTHLY" }, "en");
+    const ko = buildFallbackContent(
+      { reportData: data, periodLabel: "2026년 10월", type: "MONTHLY" },
+      "ko",
+    );
+    const en = buildFallbackContent(
+      { reportData: data, periodLabel: "October 2026", type: "MONTHLY" },
+      "en",
+    );
     // Then
     expect(ko.aiTips).toEqual(["다음 달에 끝내고 싶은 할 일 하나를 미리 등록해보세요."]);
     expect(en.aiTips).toEqual(["Add one to-do you'd like to finish next month ahead of time."]);
@@ -105,7 +111,11 @@ describe("report fallback content", () => {
   it("활동 없는 기간의 폴백도 FALLBACK 출처로 남긴다", () => {
     // Given / When
     const result = buildFallbackContent(
-      { data: { ...activeData, hasActivity: false }, periodLabel: "2026년 10월", type: "MONTHLY" },
+      {
+        reportData: { ...activeData, hasActivity: false },
+        periodLabel: "2026년 10월",
+        type: "MONTHLY",
+      },
       "ko",
     );
     // Then

@@ -1,5 +1,7 @@
 {
   "actions": {
+    "back": "Back",
+    "continue": "Continue",
     "confirm": "OK",
     "cancel": "Cancel",
     "save": "Save",
@@ -7,8 +9,11 @@
     "close": "Close",
     "done": "Done",
     "edit": "Edit",
-    "retry": "Try Again",
+    "retry": "Try again",
     "goBack": "Go back"
+  },
+  "bottomSheet": {
+    "label": "Bottom sheet"
   },
   "daysOfWeek": {
     "MON": "Mon",
@@ -20,6 +25,8 @@
     "SUN": "Sun"
   },
   "calendar": {
+    "nextMonth": "Next month",
+    "previousMonth": "Previous month",
     "weekHeader": "Week {{week}} of {{month}}"
   },
   "dateSections": {
@@ -38,26 +45,23 @@
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago"
   },
-  "premiumDialog": {
-    "title": "Premium Feature",
-    "close": "Close",
-    "subscribe": "Subscribe",
-    "subscribeUnlimited": "Go unlimited with Premium",
-    "resetsToday": "You can use it again later today",
-    "resetsTomorrow": "You can use it again tomorrow",
-    "resetsOn": "You can use it again on {{date}}"
-  },
   "errorBoundary": {
     "title": "Something went wrong",
-    "retry": "Retry",
     "description": "Please try again. If it keeps happening, let us know.",
     "inquiry": "Contact us",
     "restart": "Restart app",
     "mailSubject": "[Aido] Error report ({{code}})",
     "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n"
   },
+  "infiniteList": {
+    "loadMoreFailed": "Try again",
+    "loadMoreFailedLabel": "Couldn't load more. Try again"
+  },
   "offlineBanner": {
     "message": "You're offline. We'll reload when you're back online."
+  },
+  "pushChannel": {
+    "default": "General notifications"
   },
   "toast": {
     "defaultError": "Something went wrong"
@@ -65,30 +69,40 @@
   "share": {
     "unsupported": "Sharing isn't available on this device",
     "prepareFailed": "Couldn't prepare the image to share",
-    "failed": "Failed to share"
+    "failed": "Couldn't share"
   },
   "permissions": {
     "cancel": "Cancel",
     "openSettings": "Open Settings",
     "microphone": {
-      "title": "Microphone Access Needed",
-      "message": "Voice input requires microphone access. Please allow it in Settings.",
+      "title": "Microphone access needed",
+      "message": "To use your voice, allow microphone access in Settings.",
       "denied": "Microphone access is required."
+    },
+    "speechRecognition": {
+      "title": "Speech recognition access needed",
+      "message": "To turn your voice into text, allow speech recognition access in Settings.",
+      "denied": "Speech recognition access is required."
+    },
+    "microphoneAndSpeechRecognition": {
+      "title": "Microphone and speech recognition access needed",
+      "message": "To use your voice, allow microphone and speech recognition access in Settings.",
+      "denied": "Microphone and speech recognition access are required."
     }
   },
   "speechErrors": {
     "no-speech": "We didn't catch that. Please try speaking again.",
-    "speech-timeout": "Voice input timed out. Please try again.",
-    "aborted": "Voice recognition was canceled.",
-    "not-allowed": "Microphone access is needed. Please allow it in Settings.",
-    "service-not-allowed": "Voice recognition isn't available.",
-    "busy": "Voice recognition is already running. Please try again shortly.",
+    "speech-timeout": "We stopped because we didn't hear anything. Please try again.",
+    "aborted": "Listening canceled.",
+    "not-allowed": "Microphone or speech recognition access is needed. Please allow it in Settings.",
+    "service-not-allowed": "Voice input isn't available right now.",
+    "busy": "Already listening. Please try again shortly.",
     "audio-capture": "Please check your microphone connection.",
     "network": "Please check your internet connection.",
     "interrupted": "Another app is using the microphone. Please try again shortly.",
     "language-not-supported": "This language isn't supported.",
-    "bad-grammar": "There's a problem with the voice recognition settings.",
-    "client": "Something went wrong during voice recognition. Please try again.",
+    "bad-grammar": "There's a problem with the voice input settings.",
+    "client": "Something went wrong while listening. Please try again.",
     "unknown": "Something went wrong. Please try again."
   },
   "notFound": {
@@ -98,7 +112,7 @@
   "appError": {
     "title": "Something went wrong",
     "description": "Please try again later",
-    "retry": "Retry",
+    "retry": "Try again",
     "logout": "Sign out"
   },
   "tabs": {
@@ -108,8 +122,8 @@
   },
   "infraErrors": {
     "network": "Please check your internet connection",
-    "timeout": "The request timed out",
+    "timeout": "This is taking too long. Please try again shortly",
     "server": "There's a problem with the server",
-    "invalidResponse": "The response format is invalid"
+    "invalidResponse": "Something went wrong. Please try again in a moment"
   }
 }

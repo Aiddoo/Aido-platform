@@ -1,18 +1,18 @@
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import {
-  RECURRING_TODO_CREATOR,
-  type RecurringTodoCreatorPort,
-} from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
  * @description
  * AI 반복 제안 API의 전체 HTTP 요청/응답 플로우 테스트.
- * FakeAiProvider를 사용하여 실제 Gemini API 호출을 모킹합니다.
+ * FakeAiGenerator를 사용하여 실제 Gemini API 호출을 모킹합니다.
  *
  * ### 테스트 범위
  * - GET /ai/suggestions: 대기 중인 제안 목록 조회
@@ -20,21 +20,27 @@ import {
  * - 인증 에러 (401)
  */
 import { CacheService } from "#api/platform/cache/cache.service";
-import { recurringSuggestion, user as userTable } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  recurringSuggestion,
+  todoSeries,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI 제안 E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
 
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
-      additionalResetters: [() => fakeAiProvider.clear()],
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 
@@ -136,6 +142,43 @@ describe("AI 제안 E2E", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.suggestion.status).toBe("ACCEPTED");
       expect(response.body.data.createdTodosCount).toBeGreaterThan(0);
+    });
+
+    it("403(accept): 옛 경로 상한까지 찬 사용자는 옛 앱이 아는 TODO_0813으로 거절한다", async () => {
+      // Given
+      const user = await createPremiumUser("ai-suggestion-cap@example.com", "Test1234!");
+      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const suggestionId = await seedPendingSuggestion(user.userId);
+      await ctx.testDatabase
+        .getClient()
+        .insert(todoSeries)
+        .values(
+          Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY }, () => {
+            const id = createEntityId();
+            return {
+              id,
+              originSeriesId: id,
+              userId: user.userId,
+              categoryId,
+              title: "시드",
+              timezone: "UTC",
+              repeatFrequency: "DAILY" as const,
+              startDate: new Date(),
+              nextOccurrenceDate: new Date(),
+            };
+          }),
+        );
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .patch(`/v1/ai/suggestions/${suggestionId}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send({ action: "accept", categoryId });
+
+      // Then
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe(ErrorCode.TODO_0813);
     });
 
     it("200(dismiss): 제안 거절 시 DISMISSED로 전이되고 할 일은 생성되지 않는다", async () => {
@@ -271,13 +314,11 @@ describe("AI 제안 E2E", () => {
     const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
-    const creator = ctx.module.get<RecurringTodoCreatorPort>(RECURRING_TODO_CREATOR);
+    const creator = ctx.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
-    const failure = vi
-      .spyOn(creator, "createRecurring")
-      .mockRejectedValueOnce(new Error("테스트 생성 실패"));
+    const failure = vi.spyOn(creator, "stage").mockRejectedValueOnce(new Error("테스트 생성 실패"));
     try {
       // When
       const response = await request(ctx.app.getHttpServer())

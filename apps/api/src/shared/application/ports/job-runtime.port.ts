@@ -74,10 +74,6 @@ export interface JobRuntimeHealth {
   readonly queues: Readonly<Record<string, JobQueueHealth>>;
 }
 
-export type JobCancellationResult =
-  | { readonly status: "cancelled" }
-  | { readonly status: "missing" };
-
 export interface JobRuntimePort {
   start(): Promise<void>;
   stop(): Promise<void>;
@@ -99,7 +95,8 @@ export interface JobRuntimePort {
     options: EnqueueJobOptions,
   ): Promise<void>;
   unschedule(scheduleKey: string, queue: string): Promise<void>;
-  cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult>;
+  /** 작업을 상태와 상관없이 지워 같은 key로 다시 등록할 수 있게 한다. 없는 key는 무시한다. */
+  cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void>;
   /** payload는 저장소에서 읽은 그대로라 handler가 자기 스키마로 검증한다. */
   work(
     queue: string,

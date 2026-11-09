@@ -1,36 +1,43 @@
 {
   "titles": {
     "theme": "Theme",
-    "fontSize": "Font Size",
+    "fontSize": "Font size",
     "language": "Language",
-    "terms": "Terms & Policies",
-    "inquiry": "Contact Us",
-    "linkedAccounts": "Linked Accounts",
-    "appIcon": "App Icon",
+    "terms": "Terms & policies",
+    "inquiry": "Contact us",
+    "linkedAccounts": "Linked accounts",
+    "appIcon": "App icon",
     "profile": "Profile",
-    "editName": "Edit Name",
-    "changePassword": "Change Password",
-    "deleteAccount": "Delete Account",
-    "subscription": "Manage Subscription",
-    "categorySettings": "Categories",
-    "blockedUsers": "Blocked users"
+    "editName": "Edit name",
+    "changePassword": "Change password",
+    "deleteAccount": "Delete account",
+    "subscription": "Manage subscription",
+    "categorySettings": "Manage categories",
+    "blockedUsers": "Blocked users",
+    "voiceStorage": "Recording storage"
   },
   "language": {
+    "label": "App language",
     "system": "System default",
     "systemDescription": "Follows your device language"
   },
   "theme": {
-    "light": "Light Mode",
-    "dark": "Dark Mode",
-    "system": "System default"
+    "label": "Appearance",
+    "light": "Light mode",
+    "dark": "Dark mode",
+    "system": "System default",
+    "systemDescription": "Matches your device setting"
   },
   "fontSize": {
-    "xsmall": "Extra Small",
+    "label": "Size",
+    "previewLabel": "Preview",
+    "previewTitle": "Ready to check off today's to-dos?",
+    "previewDescription": "The size you pick applies across the app right away",
+    "xsmall": "Extra small",
     "small": "Small",
     "medium": "Medium",
     "large": "Large",
-    "xlarge": "Extra Large",
-    "sample": "The quick brown fox 123"
+    "xlarge": "Extra large"
   },
   "terms": {
     "termsOfService": "Terms of Service",
@@ -38,26 +45,46 @@
     "agreedAt": "Agreed on: {{date}}",
     "version": "Version: {{version}}",
     "notAgreed": "Not agreed",
-    "marketing": "Marketing Emails",
-    "marketingDescription": "Receive events and promotional updates",
-    "marketingPush": "Promotional push notifications",
-    "marketingPushDescription": "Receive recommendations and return reminders by push",
     "aiDataSharing": {
       "label": "AI data sharing",
-      "description": "Sends what you type to Google Gemini to organize it into to-dos",
+      "description": "What you type or say goes to Anthropic, Google, and OpenAI for processing. Apple or Google speech recognition may turn speech into text. Audio files aren't sent to Aido's servers.",
+      "descriptionGoogleOnly": "AI features send what you enter to Google Gemini for processing.",
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
-      "withdrawDescription": "You won't be able to use AI to organize to-dos, reports, or suggestions. Existing to-dos stay.",
+      "withdrawDescription": "AI features will stop working. Your to-dos stay.",
       "withdrawConfirm": "Withdraw",
-      "declinedStatus": "Turned off. Turn it on to use AI features again.",
-      "undecidedStatus": "Not chosen yet. We'll ask the first time you use an AI feature.",
+      "declinedStatus": "Off. Turn it on to use it again.",
+      "undecidedStatus": "We'll ask the first time you use an AI feature.",
       "decline": "Don't use"
     }
   },
   "categorySettings": {
-    "header": "Edit your categories\nor change their order",
-    "editTab": "Edit Categories",
+    "listLabel": "My categories",
+    "editTab": "Edit categories",
     "reorderTab": "Reorder",
-    "add": "Add Category"
+    "add": "Add category",
+    "todoCount_one": "{{count}} to-do",
+    "todoCount_other": "{{count}} to-dos"
+  },
+  "voiceStorage": {
+    "totalLabel": "Recordings on this device",
+    "description": "Audio files aren't sent to Aido's servers. Voice notes and their audio are deleted automatically after 30 days.",
+    "listLabel": "Recordings by note",
+    "empty": "No saved recordings",
+    "emptyDescription": "Recordings from your voice notes appear here, so you can check their size and delete them.",
+    "removeOneTitle": "Delete this recording?",
+    "removeAllTitle": "Delete all recordings?",
+    "removeDescription": "The text and summary stay. Only the audio is deleted, so you can't play it back. This can't be undone.",
+    "removeConfirm": "Delete",
+    "removeCancel": "Cancel",
+    "removeAll": "Delete all recordings"
+  },
+  "sections": {
+    "timeDisplay": "Time display",
+    "notifications": "Notifications",
+    "agreements": "Agreements",
+    "dataUse": "Data use",
+    "account": "Account",
+    "signIn": "Sign-in"
   }
 }

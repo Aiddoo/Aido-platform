@@ -1,27 +1,23 @@
-import { loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
-import { createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { omit } from "es-toolkit";
+
+import { GOLDEN_VARIANTS, loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseTodo } from "./parse-todo.use-case.js";
 
-const cases = [...loadParseTodoGoldenCases("ko"), ...loadParseTodoGoldenCases("en")];
+const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseTodoGoldenCases(variant));
 
 describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("golden은 ko 19건·en 11건이다", () => {
-    // Given / When / Then
-    expect(cases.filter((golden) => golden.locale === "ko")).toHaveLength(19);
-    expect(cases.filter((golden) => golden.locale === "en")).toHaveLength(11);
-  });
-
   it.each(cases)("$id $input", async (golden) => {
     // Given
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(golden.now));
-    const fixture = createAiQuotaFixture();
-    fixture.aiProvider.setRawResponse(golden.draft);
+    const fixture = createAiParsingFixture();
+    fixture.generator.setRawResponse(golden.draft);
     const useCase = new ParseTodo(fixture);
     // When
     const result = await useCase.execute({
@@ -32,9 +28,10 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
       locale: golden.locale,
     });
     // Then
-    expect(result.data).toEqual(golden.expected);
-    expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(
+    // 출시 앱 필드가 그대로인지 본다. repeat는 resolve-todo-schedule.spec에서 따로 검증한다.
+    expect(omit(result.data, ["repeat"])).toEqual(golden.expected);
+    expect(result.meta.promptVersion).toBe("parse-todo@9");
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(
       golden.draft.intent === "TASK" ? 1 : 0,
     );
   });

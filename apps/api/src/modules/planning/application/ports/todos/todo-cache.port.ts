@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { FriendTodo } from "@aido/api";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 
@@ -10,7 +10,7 @@ export interface FriendTodosFirstPageCacheRead {
    * application은 값을 해석하지 않고 저장 시 그대로 돌려준다.
    */
   readonly generation: string;
-  readonly page: CursorPaginatedResponse<TodoResponse, number> | undefined;
+  readonly page: CursorPaginatedResponse<FriendTodo, number> | undefined;
 }
 
 /**
@@ -46,7 +46,7 @@ export interface TodoCachePort {
     endDate: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<TodoResponse, number>,
+    page: CursorPaginatedResponse<FriendTodo, number>,
   ): Promise<void>;
 
   /** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */

@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 /**
  * 인프라 에러 - ErrorBoundary에서 처리
  * - 5xx 서버 에러
@@ -9,12 +10,12 @@ import { t } from '@src/shared/i18n';
  * UI에서 개별 처리하지 않고 ErrorBoundary로 전파됨
  */
 export abstract class InfraError extends Error {
-  override readonly name = 'InfraError';
+  abstract override readonly name: string;
   abstract readonly statusCode: number | null;
 }
 
-/** 네트워크 연결 에러 */
 export class NetworkError extends InfraError {
+  override readonly name = 'NetworkError';
   readonly statusCode = null;
 
   constructor() {
@@ -22,8 +23,8 @@ export class NetworkError extends InfraError {
   }
 }
 
-/** 요청 타임아웃 */
 export class TimeoutError extends InfraError {
+  override readonly name = 'TimeoutError';
   readonly statusCode = 504;
 
   constructor() {
@@ -31,18 +32,21 @@ export class TimeoutError extends InfraError {
   }
 }
 
-/** 5xx 서버 에러 */
 export class ServerError extends InfraError {
+  override readonly name = 'ServerError';
   readonly statusCode: number;
+  /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
+  readonly requestId: string | null;
 
-  constructor(status: number) {
+  constructor(status: number, requestId: string | null = null) {
     super(t('common:infraErrors.server'));
     this.statusCode = status;
+    this.requestId = requestId;
   }
 }
 
-/** 응답 파싱/검증 에러 */
 export class ParseError extends InfraError {
+  override readonly name = 'ParseError';
   readonly statusCode = null;
 
   constructor(message = t('common:infraErrors.invalidResponse')) {
@@ -50,9 +54,11 @@ export class ParseError extends InfraError {
   }
 }
 
-/** InfraError 타입 가드 */
-export const isInfraError = (error: unknown): error is InfraError => error instanceof InfraError;
+export function isInfraError(error: unknown): error is InfraError {
+  return error instanceof InfraError;
+}
 
 /** 연결이 끊겼거나 응답이 오지 않은 오류. 기기 상태라 예외 리포트 대신 경고로 남긴다 */
-export const isConnectivityError = (error: unknown): error is NetworkError | TimeoutError =>
-  error instanceof NetworkError || error instanceof TimeoutError;
+export function isConnectivityError(error: unknown): error is NetworkError | TimeoutError {
+  return error instanceof NetworkError || error instanceof TimeoutError;
+}

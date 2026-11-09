@@ -10,19 +10,25 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import {
-  TodoSchedule,
-  type TodoScheduleProps,
-} from "../../../domain/value-objects/todos/todo-schedule.vo.js";
+import { TodoSchedule } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
+import type { TodoTimezoneResolver } from "../../services/todos/todo-timezone-resolver.service.js";
 
 export interface UpdateTodoScheduleInput {
   readonly id: number;
   readonly userId: string;
-  readonly schedule: TodoScheduleProps;
+  readonly schedule: {
+    readonly startDate: Date;
+    readonly endDate: Date | null;
+    /** HH:mm. null이면 종일이다. */
+    readonly scheduledTime: string | null;
+    readonly isAllDay: boolean;
+  };
+  /** 요청의 시간대. 없거나 잘못되면 저장된 사용자 시간대로 해석한다. */
+  readonly timezone: string | undefined;
 }
 
 interface UpdateTodoScheduleDependencies {
@@ -30,6 +36,7 @@ interface UpdateTodoScheduleDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
@@ -44,6 +51,7 @@ export class UpdateTodoSchedule {
 
   async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
     const { id, userId, schedule } = input;
+    const timezone = await this.#dependencies.timezoneResolver.resolve(userId, input.timezone);
 
     const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
@@ -52,12 +60,21 @@ export class UpdateTodoSchedule {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.reschedule(TodoSchedule.create(schedule));
+      todo.reschedule(
+        TodoSchedule.create({
+          startDate: schedule.startDate,
+          endDate: schedule.endDate,
+          scheduledLocalTime: schedule.scheduledTime,
+          isAllDay: schedule.isAllDay,
+          timezone,
+        }),
+      );
 
       const snapshot = todo.toPersistence();
       await this.#dependencies.todoRepository.updateSchedule(id, {
         startDate: snapshot.startDate,
         endDate: snapshot.endDate,
+        scheduledLocalTime: snapshot.scheduledLocalTime,
         scheduledTime: snapshot.scheduledTime,
         isAllDay: snapshot.isAllDay,
       });

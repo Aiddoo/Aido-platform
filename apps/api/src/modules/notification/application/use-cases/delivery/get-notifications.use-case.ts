@@ -1,10 +1,13 @@
-import { CATEGORY_TYPE_MAP, type NotificationCategory } from "@aido/api/vocabulary";
+import type { NotificationCategory } from "@aido/api/vocabulary";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
-import { visibleNotificationTypes } from "../../../domain/services/delivery/notification-client-capability.js";
+import {
+  notificationTypesOfCategory,
+  visibleNotificationTypes,
+} from "../../../domain/services/delivery/notification-client-capability.js";
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
@@ -52,7 +55,7 @@ export class GetNotifications {
 
     const types: NotificationType[] | undefined =
       input.category && input.category !== "ALL"
-        ? [...CATEGORY_TYPE_MAP[input.category]]
+        ? notificationTypesOfCategory(input.category)
         : undefined;
 
     const notifications = await this.#dependencies.notificationInboxReader.findNotificationsByUser({

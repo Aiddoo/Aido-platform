@@ -1,0 +1,158 @@
+{
+  "timer": {
+    "remaining": "{{time}} left",
+    "a11y": "Recorded {{elapsed}}, {{remaining}} left",
+    "a11yNoLimit": "Recorded {{elapsed}}"
+  },
+  "waveform": {
+    "a11y": "Recording waveform"
+  },
+  "keyPoints": {
+    "title": "Key points",
+    "playFrom": "Play from {{time}}",
+    "marked": "Marked sentence"
+  },
+  "player": {
+    "play": "Play",
+    "pause": "Pause",
+    "position": "Playback position",
+    "positionValue": "{{position}} of {{duration}}",
+    "unavailable": "This recording is no longer on this device"
+  },
+  "captions": {
+    "empty": "What you say shows up here",
+    "marked": "Marked sentence",
+    "playFrom": "Play from {{time}}",
+    "lowConfidenceHint": "Underlined words may have been misheard"
+  },
+  "digest": {
+    "steps": {
+      "transcript": "Speech to text",
+      "keyPoints": "Picking key points",
+      "todos": "Finding to-dos"
+    },
+    "state": {
+      "done": "Done",
+      "doing": "In progress"
+    },
+    "characters_one": "{{amount}} character",
+    "characters_other": "{{amount}} characters",
+    "marks": "{{count}} marked",
+    "hint": "Usually done within a minute. What we heard is kept if you leave.",
+    "title": "Summarizing",
+    "readyTitle": "What we heard",
+    "action": "Summarize",
+    "retry": "Try again",
+    "cost": "Uses 1 · {{amount}} left this month",
+    "usedUp": "Used up this month",
+    "notCharged": "This didn't count",
+    "tooLong": "It's over the length we can summarize at once.",
+    "offline": "You can try again once you're connected to the internet.",
+    "kept": "What we heard is still here."
+  },
+  "start": {
+    "label": "Make a voice note",
+    "shortLabel": "Voice note"
+  },
+  "coach": {
+    "noteStart": {
+      "title": "Try a voice note",
+      "description": "Let it hear a meeting or class. You'll get a summary and to-dos. Audio files aren't sent to Aido's servers."
+    },
+    "keyPoint": {
+      "title": "Tap a time to hear that part",
+      "description": "The flag shows a moment you marked while recording."
+    },
+    "mark": {
+      "title": "Tap when something matters",
+      "description": "Marks the sentence being said, or the last one if there's a pause. AI puts marked sentences first in your key points. Recording keeps going."
+    }
+  },
+  "record": {
+    "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
+    "title": "Voice note",
+    "close": "Close",
+    "pause": "Pause",
+    "finish": "Finish",
+    "mark": "Mark",
+    "markWithCount": "Mark {{amount}}",
+    "markA11y": "Mark, {{amount}} marked so far",
+    "markInfo": "About marking",
+    "privacy": "Audio files aren't sent to Aido's servers",
+    "pausedLabel": "Paused",
+    "pausedTitle": "Recording paused",
+    "pausedDescription": {
+      "app-background": "You switched apps, so we paused. Everything so far is saved.",
+      "interrupted": "A call or another screen paused recording. Everything so far is saved.",
+      "user": "Everything so far is saved.",
+      "limit": "You've reached the time limit for one recording. Everything so far is saved."
+    },
+    "pausedEmptyDescription": {
+      "app-background": "You switched apps, so we paused. We haven't heard anything yet.",
+      "interrupted": "A call or another screen paused recording. We haven't heard anything yet.",
+      "user": "We haven't heard anything yet.",
+      "limit": "You've reached the time limit for one recording. We didn't hear anything to summarize."
+    },
+    "resume": "Resume",
+    "summarize": "Summarize now",
+    "failedTitle": "Recording stopped",
+    "failedDescription": "Everything so far is saved. Resume recording or summarize what we have.",
+    "failedEmptyDescription": "We haven't heard anything yet. Resume recording or close this screen.",
+    "failedPermission": "We can't use the microphone or speech recognition. Check the permission in Settings.",
+    "leaveTitle": "Finish recording?",
+    "leaveDescription": "What we heard stays in the Memos tab.",
+    "leaveConfirm": "Finish",
+    "leaveCancel": "Keep recording",
+    "finishEmptyTitle": "We haven't heard anything yet",
+    "finishEmptyDescription": "We can only summarize once your words appear. If you finish now, this recording won't be kept.",
+    "empty": "We didn't hear anything"
+  },
+  "limit": {
+    "title": "Free recordings stop at {{minutes}} minutes",
+    "description": "We'll summarize what we have so far. With Premium, record up to {{premiumMinutes}} minutes at a time.",
+    "descriptionEmpty": "We didn't hear anything to summarize. With Premium, record up to {{premiumMinutes}} minutes at a time.",
+    "summarize": "Summarize now",
+    "premium": "You can record up to {{minutes}} minutes at a time. We've kept what we heard."
+  },
+  "offlineScreen": {
+    "title": "You can pick this up once you're online",
+    "description": "We'll load it automatically when you're connected"
+  },
+  "offlineModel": {
+    "title": "Download speech recognition?",
+    "description": "Turn speech into text without internet. If you skip this, it still works when you're online.",
+    "confirm": "Download",
+    "cancel": "Not now",
+    "scheduled": "You'll need internet until the download finishes"
+  },
+  "result": {
+    "defaultTitle": "Voice note",
+    "meta": "{{date}} · {{duration}}",
+    "metaMarks": "{{date}} · {{duration}} · {{amount}} marked",
+    "tabs": {
+      "summary": "Summary",
+      "todos": "To-dos {{amount}}",
+      "todosUncounted": "To-dos",
+      "transcript": "Transcript"
+    },
+    "planLost": "We couldn't load the to-do cards. Your summary and transcript are still here.",
+    "noTodos": "There was nothing to turn into to-dos. We kept the summary.",
+    "applied": "To-dos added",
+    "appliedMemo": "Memo saved",
+    "saveMemo": "Save as memo",
+    "memoSaved": "Saved as a memo",
+    "more": "More",
+    "delete": "Delete voice note",
+    "deleteTitle": "Delete this voice note?",
+    "deleteDescription": "Deletes the summary, what we heard, and the audio from this device. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "notFound": "We can't find this voice note"
+  },
+  "drafts": {
+    "title": "Voice notes",
+    "notDigested": "Not summarized",
+    "viewAll": "View all {{amount}}",
+    "empty": "No voice notes yet"
+  }
+}

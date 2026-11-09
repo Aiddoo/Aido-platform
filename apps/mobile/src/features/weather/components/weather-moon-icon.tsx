@@ -1,4 +1,5 @@
-import type { WeatherMoonPhase } from '@aido/api';
+import type { WeatherMoonPhase } from '@aido/api/vocabulary';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useId } from 'react';
 import Svg, {
   Circle,
@@ -11,19 +12,15 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import {
   MOON_CENTER,
   MOON_RADIUS,
   MOON_VIEWBOX,
   toMoonGeometry,
-} from '../utils/view-models/moon-phase.view-model';
+} from '../utils/moon-phase.geometry';
 
 const MOON_ICON_SIZE = 46;
-/**
- * 북반구에서 본 달의 바다(월면의 어두운 현무암 평원) 자리. 반지름 단위 비율이다.
- * 폭풍의 대양·비의 바다·맑음의 바다·고요의 바다·위난의 바다·풍요의 바다·구름의 바다 순서다.
- */
+/** 북반구에서 본 달의 바다 자리(반지름 비율): 폭풍의 대양·비·맑음·고요·위난·풍요·구름의 바다 순서 */
 const MOON_MARIA = [
   { cx: -0.5, cy: -0.02, rx: 0.26, ry: 0.42, opacity: 0.2 },
   { cx: -0.24, cy: -0.4, rx: 0.24, ry: 0.19, opacity: 0.26 },
@@ -36,10 +33,7 @@ const MOON_MARIA = [
 /** 티코 크레이터처럼 밝게 빛나는 자리 */
 const MOON_BRIGHT_CRATER = { cx: -0.1, cy: 0.72, r: 0.06 } as const;
 
-/**
- * 구 모양 달. 어두운 면은 지구 반사광으로 은은하게, 밝은 면은 가장자리가 살짝 어두워지는 빛으로 칠한다.
- * 명암 경계는 반타원이고 반그림자 면을 한 겹 더 깔아 부드럽게 넘어간다.
- */
+/** 어두운 면은 지구 반사광으로 칠하고, 반그림자 면을 한 겹 더 깔아 명암 경계를 부드럽게 넘긴다 */
 export function WeatherMoonIcon({
   phase,
   latitude,
@@ -57,8 +51,8 @@ export function WeatherMoonIcon({
     litClip: `${id}litClip`,
   };
   const toUnit = (ratio: number) => MOON_CENTER + ratio * MOON_RADIUS;
-  const outlineColor = useOnSkyColor('text-on-sky/10');
-  const craterColor = useOnSkyColor('text-on-sky');
+  const outlineColor = useResolvedColor('text-on-sky/10');
+  const craterColor = useResolvedColor('text-on-sky');
 
   return (
     <Svg

@@ -1,0 +1,27 @@
+import { REPORT_QUERY_KEYS } from '@src/features/insights/report/constants/report-query-keys';
+import { createTestQueryClient } from '@src/shared/__tests__';
+import type { QueryClient } from '@tanstack/react-query';
+
+import { SUGGESTION_QUERY_KEYS } from '../constants/suggestion-query-keys';
+import { invalidateAiSuggestions } from './suggestion-cache';
+
+describe('invalidateAiSuggestions', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = createTestQueryClient();
+  });
+
+  it('추천 목록만 다시 불러오고 리포트 상태는 그대로 둔다', async () => {
+    // Given
+    queryClient.setQueryData(SUGGESTION_QUERY_KEYS.all, []);
+    queryClient.setQueryData(REPORT_QUERY_KEYS.status(), { status: 'READY' });
+
+    // When
+    await invalidateAiSuggestions(queryClient);
+
+    // Then
+    expect(queryClient.getQueryState(SUGGESTION_QUERY_KEYS.all)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(REPORT_QUERY_KEYS.status())?.isInvalidated).toBe(false);
+  });
+});

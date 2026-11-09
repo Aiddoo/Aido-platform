@@ -196,7 +196,8 @@ describe("인증 E2E", () => {
       // Then
       expect(response.body.success).toBe(true);
       expect(response.body.data.email).toBe(emailFailureEmail);
-      expect(response.body.data.message).toContain("인증 코드");
+      expect(response.body.data.emailSent).toBe(false);
+      expect(response.body.data.message).toContain("재발송");
 
       // 정상 상태로 복구
       ctx.fakeEmailService.simulateFailures(0);

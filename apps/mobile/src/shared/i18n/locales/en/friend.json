@@ -1,23 +1,14 @@
 {
   "screenTitle": "Friends",
   "fallbackName": "Friend",
-  "errors": {
-    "invalidTag": "Invalid hashtag format",
-    "emptyTag": "Please enter a hashtag",
-    "searchQueryTooShort": "Please enter at least 2 characters"
-  },
   "toast": {
     "requestSent": "Friend request sent",
     "requestAccepted": "Friend request accepted",
     "requestRejected": "Friend request declined",
     "requestFailed": "Couldn't send the friend request"
   },
-  "premium": {
-    "unlimitedFriends": "Subscribe to Premium to add unlimited friends",
-    "friendLimitTitle": "You've reached your friend limit"
-  },
   "deleteDialog": {
-    "title": "Remove this friend?",
+    "title": "Remove {{name}} from friends?",
     "description": "You'll no longer see each other's to-dos"
   },
   "tabs": {
@@ -26,6 +17,7 @@
     "sent": "Sent"
   },
   "list": {
+    "editHintLabel": "Show friend list tip",
     "friendCount_one": "{{count}} friend total",
     "friendCount_other": "{{count}} friends total",
     "requestCount_one": "{{count}} request total",
@@ -38,21 +30,22 @@
     "accept": "Accept",
     "reject": "Decline",
     "edit": "Edit",
-    "loadFailed": "Couldn’t load friends"
+    "loadFailed": "Couldn’t load friends",
+    "countValue_one": "{{count}} friend",
+    "countValue_other": "{{count}} friends"
   },
   "add": {
     "title": "Add your friends",
     "description": "Share to-dos and nudge each other",
     "tagLabel": "Friend's hashtag",
-    "submit": "Add Friend"
+    "submit": "Add friend"
   },
   "search": {
     "title": "Find friends",
     "placeholder": "Search by name or hashtag",
     "action": {
       "add": "Add",
-      "cancel": "Cancel",
-      "friend": "Friends"
+      "cancel": "Cancel"
     },
     "empty": {
       "prompt": "Search for friends by name or hashtag",
@@ -61,5 +54,17 @@
       "noResults": "No results for '{{query}}'"
     },
     "loadError": "Could not load search results"
+  },
+  "friendStrip": {
+    "me": "Me",
+    "meLabel": "View my to-dos",
+    "friendLabel": "View {{name}}'s to-dos",
+    "findFriends": "Friends",
+    "findFriendsLabel": "Find friends",
+    "loadMoreFailed": "Try again",
+    "loadMoreFailedLabel": "Couldn't load more friends. Try again",
+    "emptyInvite": "Invite",
+    "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
+    "emptySearchHint": "Find friends to see and cheer on each other's to-dos"
   }
 }

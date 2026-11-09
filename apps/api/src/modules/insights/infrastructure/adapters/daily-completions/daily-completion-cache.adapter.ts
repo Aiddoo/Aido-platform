@@ -28,6 +28,16 @@ const DAILY_COMPLETIONS_RANGE_SCHEMA = z.object({
     }),
   ),
   totalCompleteDays: z.number(),
+  multiDayTodos: z
+    .array(
+      z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        completed: z.boolean(),
+        categoryColor: z.string(),
+      }),
+    )
+    .optional(),
   dateRange: z.object({ startDate: z.string(), endDate: z.string() }),
 }) satisfies z.ZodType<DailyCompletionsRange>;
 

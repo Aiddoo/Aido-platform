@@ -5,58 +5,63 @@
     "perYear": "/년",
     "perMonth": "/월",
     "discount": "{{percent}}% 할인",
-    "monthlyEquivalent": "월 {{price}} 상당"
+    "monthlyEquivalent": "월\u00a0{{price}} 상당",
+    "freeTrial": "{{period}} 무료",
+    "pricePerYear": "연\u00a0{{price}}",
+    "pricePerMonth": "월\u00a0{{price}}"
+  },
+  "trialPeriod": {
+    "day": "{{count}}일",
+    "week": "{{count}}주",
+    "month": "{{count}}개월",
+    "year": "{{count}}년"
   },
   "toast": {
-    "purchaseSuccess": "구독이 완료되었어요!",
     "purchaseSyncPending": "결제가 반영되기까지 잠시 걸릴 수 있어요",
     "paymentPending": "결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.",
-    "restoreSuccess": "구매가 복원되었어요!",
+    "restoreSuccess": "구매를 복원했어요!",
     "restoreEmpty": "복원할 구매 내역이 없어요",
-    "purchaseSuccessWithReward": "구독을 시작했어요. 남은 초대 보상은 구독이 끝나면 이어져요",
     "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
-  },
-  "errors": {
-    "storeUnavailable": "스토어를 사용할 수 없어요",
-    "storeProblem": "스토어가 잠시 응답하지 않아요",
-    "offeringsUnavailable": "구독 상품을 불러오지 못했어요",
-    "network": "스토어에 연결하지 못했어요",
-    "purchaseCancelled": "구매가 취소되었어요",
-    "paymentPending": "결제 승인 대기 중이에요",
-    "purchaseFailed": "구매에 실패했어요",
-    "restoreFailed": "구매 복원에 실패했어요"
   },
   "benefits": {
     "aiParsing": {
-      "title": "AI 할 일 만들기 무제한",
-      "description": "월 {{limit}}회 제한 없이, 자연어로 할 일을 마음껏 정리해요"
+      "title": "AI 할 일 만들기 넉넉하게",
+      "description": "무료는 월\u00a0{{free}}회, 프리미엄은 월\u00a0{{premium}}회까지"
+    },
+    "voiceNote": {
+      "title": "말로 메모하기 월\u00a0{{premium}}회·회당\u00a0{{premiumMinutes}}분",
+      "description": "무료는 월\u00a0{{free}}회·회당\u00a0{{freeMinutes}}분, 프리미엄은 월\u00a0{{premium}}회·회당\u00a0{{premiumMinutes}}분까지"
     },
     "nudge": {
       "title": "콕 찌르기 무제한",
-      "description": "하루 {{limit}}회 제한 없이, 친구에게 마음껏 찔러요"
+      "description": "무료는 하루\u00a0{{free}}회, 프리미엄은 무제한"
+    },
+    "cheer": {
+      "title": "응원 무제한",
+      "description": "무료는 하루\u00a0{{free}}회, 프리미엄은 무제한"
     },
     "reminder": {
-      "title": "리마인더 시간 자유 설정",
-      "description": "고정 시간 대신, 내가 원하는 시간에 알림을 받아요"
+      "title": "리마인드 시간 자유롭게",
+      "description": "무료는 정해진 시간에, 프리미엄은 원하는 시간에 알림을 받아요"
     },
     "appIcon": {
-      "title": "앱 아이콘 커스터마이징",
-      "description": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요"
+      "title": "앱 아이콘 바꾸기",
+      "description": "무료는 기본 아이콘, 프리미엄은 마음에 드는 아이콘으로 바꿔요"
     },
     "friends": {
-      "title": "친구 무제한 추가",
-      "description": "{{limit}}명 제한 없이, 친구를 자유롭게 추가해요"
+      "title": "친구 무제한",
+      "description": "무료는 {{free}}명, 프리미엄은 무제한"
     },
     "categories": {
       "title": "카테고리 최대 {{premium}}개",
-      "description": "{{free}}개 제한에서 최대 {{premium}}개까지 늘어나요"
+      "description": "무료는 {{free}}개, 프리미엄은 {{premium}}개까지"
     },
     "aiRepeat": {
       "title": "AI 반복 제안",
-      "description": "반복되는 할 일을 AI가 자동으로 제안해요"
+      "description": "반복되는 할 일을 AI가 알아서 제안해드려요"
     },
     "aiReport": {
-      "title": "AI 주간/월간 리포트",
+      "title": "AI 주간·월간 리포트",
       "description": "내 할 일 달성률과 패턴을 한눈에 확인해요"
     },
     "future": "향후 출시되는 모든 프리미엄 기능"
@@ -64,26 +69,43 @@
   "subscriber": {
     "benefitsTitle": "이용 중인 혜택",
     "manageButton": "구독 관리 (스토어 설정)",
-    "manageOpenFailed": "스토어 구독 관리를 열지 못했어요. 스토어 앱의 구독 메뉴에서 확인해 주세요",
+    "manageOpenFailed": "스토어 구독 관리를 열지 못했어요. 스토어 앱의 구독 메뉴에서 확인해주세요",
     "restoreButton": "이전 구매 복원",
     "subscribeAfterGrantButton": "구독하고 계속 쓰기"
   },
   "paywall": {
     "title": "프리미엄으로 업그레이드",
-    "subtitle": "모든 기능을 제한 없이 사용해보세요",
-    "futureIncluded": "향후 출시되는 모든 프리미엄 기능도 포함돼요",
+    "subtitle": "모든 기능을 넉넉하게 써보세요",
     "grantEnded": "초대 보상 프리미엄이 {{date}}에 끝났어요. 구독하면 다시 모든 기능을 쓸 수 있어요",
-    "moreBenefits": "더 많은 프리미엄 혜택",
+    "blockedLimit": "방금 다 쓴 기능",
+    "blockedLocked": "프리미엄 기능",
     "subscribeButton": "구독하기",
+    "startAnnual": "연간으로 시작하기",
+    "startMonthly": "월간으로 시작하기",
+    "startFreeTrial": "{{period}} 무료로 시작하기",
+    "trialDisclosure": "{{date}}부터 {{price}} 정기결제 · 언제든 해지할 수 있어요",
+    "renewalDisclosure": "{{price}} 정기결제 · 언제든 해지할 수 있어요",
     "renewalNotice": {
-      "appStore": "구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 가격으로 자동 갱신돼요. App Store 구독 설정에서 언제든 해지할 수 있어요.",
-      "googlePlay": "구독은 해지하지 않으면 기간이 끝날 때 같은 가격으로 자동 갱신돼요. Google Play 구독 설정에서 언제든 해지할 수 있어요."
+      "appStore": "구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 가격으로 자동 갱신돼요. App\u00a0Store 구독 설정에서 언제든 해지할 수 있어요.",
+      "googlePlay": "구독은 해지하지 않으면 기간이 끝날 때 같은 가격으로 자동 갱신돼요. Google\u00a0Play 구독 설정에서 언제든 해지할 수 있어요."
     },
     "termsPrefix": "구매 시 ",
     "termsLink": "이용약관",
     "termsAnd": " 및 ",
     "privacyLink": "개인정보처리방침",
-    "termsSuffix": "에 동의하게 돼요."
+    "termsSuffix": "에 동의하게 돼요.",
+    "amountDueToday": "오늘 결제 금액",
+    "benefitChip": "혜택 {{index}}",
+    "benefitQuota": "무료 {{free}} → 프리미엄 {{premium}}",
+    "premiumOnly": "프리미엄 전용"
+  },
+  "trialTimeline": {
+    "title": "무료 체험 일정",
+    "today": "오늘",
+    "start": "체험 시작",
+    "reminder": "{{days}}일 전 알림",
+    "charge": "첫 결제 {{price}}",
+    "cancelHint": "{{date}} 전에 해지하면 결제되지 않아요"
   },
   "endingNotice": {
     "badgeTomorrow": "D-1",
@@ -91,12 +113,31 @@
     "tomorrow": "내일 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
     "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
     "paidTomorrow": "내일 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요",
-    "paidToday": "오늘 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요"
+    "paidToday": "오늘 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요",
+    "badgeDaysLeft": "D-{{days}}",
+    "trialRenewing": "{{days}}일 뒤 {{plan}}이 시작돼요",
+    "trialRenewingTomorrow": "내일 {{plan}}이 시작돼요",
+    "trialRenewingToday": "오늘 {{plan}}이 시작돼요",
+    "trialCancelled": "무료 체험이 {{days}}일 뒤 끝나요",
+    "trialCancelledTomorrow": "내일 무료 체험이 끝나요",
+    "trialCancelledToday": "오늘 무료 체험이 끝나요",
+    "annualRenewing": "{{days}}일 뒤 연간 구독이 갱신돼요",
+    "annualRenewingTomorrow": "내일 연간 구독이 갱신돼요",
+    "annualRenewingToday": "오늘 연간 구독이 갱신돼요",
+    "plan": {
+      "annual": "연간 구독",
+      "monthly": "월간 구독",
+      "unknown": "구독"
+    }
   },
   "receipt": {
     "paid": {
       "title": "프리미엄 이용 중",
       "description": "모든 프리미엄 기능을 이용하고 있어요"
+    },
+    "trial": {
+      "title": "무료 체험 중",
+      "description": "체험 기간에도 모든 프리미엄 기능을 써요"
     },
     "reward": {
       "title": "초대 보상으로 프리미엄 이용 중",
@@ -107,12 +148,18 @@
       "description": "모든 기능을 쓸 수 있어요"
     },
     "rows": {
+      "plan": "요금제",
+      "planUnknown": "구독",
+      "planWithPrice": "{{plan}} · {{price}}",
       "account": "계정",
       "accountAdmin": "관리자",
       "rewardRecord": "초대 보상 기록",
       "until": "{{date}}까지",
       "nextBillingDate": "다음 결제일",
       "renewalPending": "갱신 확인 중",
+      "trialEndsOn": "체험 종료일",
+      "firstBillingDate": "첫 결제일",
+      "dateWithPrice": "{{date}} · {{price}}",
       "subscriptionEndsOn": "구독 종료일",
       "subscriptionStatus": "구독 상태",
       "autoRenewalOn": "자동 갱신",
@@ -127,7 +174,9 @@
     "footnote": {
       "returnsToFreePlan": "{{date}}이 지나면 무료 플랜으로 돌아가요",
       "rewardStartsAfterSubscription": "구독이 끝나면 보상 {{count}}일이 이어서 시작돼요",
-      "manageAutoRenewalInStore": "자동 갱신은 스토어 설정에서 바꿀 수 있어요"
+      "manageAutoRenewalInStore": "자동 갱신은 스토어 설정에서 바꿀 수 있어요",
+      "cancelTrialInStore": "체험이 끝나기 전에 스토어 구독 설정에서 해지하면 결제되지 않아요",
+      "rewardStartsOn": "{{date}}에 구독이 끝나면 보상 {{count}}일이 이어서 시작돼요"
     }
   },
   "failure": {
@@ -145,7 +194,7 @@
       "store": "스토어에 연결하지 못했어요. 잠시 후 다시 시도해주세요",
       "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
       "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
-      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주시면 빠르게 확인할게요",
+      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주세요. 빠르게 확인할게요",
       "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 후 다시 시도하거나 문의를 남겨주세요"
     },
     "contactSupport": "문의하기"
@@ -159,5 +208,156 @@
     "plansTitle": "인터넷에 연결되면 구독 상품을 보여드릴게요",
     "description": "연결되면 자동으로 다시 불러와요",
     "actionsDisabled": "인터넷에 연결되면 구독하거나 구매 내역을 복원할 수 있어요"
+  },
+  "gate": {
+    "aiParseTitle": "이번 달 AI 할 일 만들기를 다 썼어요",
+    "voiceNoteTitle": "이번 달 말로 메모하기를 다 썼어요",
+    "nudgeTitle": "오늘 콕 찌르기를 다 썼어요",
+    "cheerTitle": "오늘 응원을 다 썼어요",
+    "friendTitle": "친구를 더 추가할 수 없어요",
+    "categoryTitle": "카테고리를 더 만들 수 없어요",
+    "aiReportTitle": "AI 리포트는 프리미엄 기능이에요",
+    "aiReportDescription": "매주·매월 AI가 분석한 리포트를 받아볼 수 있어요.",
+    "aiSuggestionTitle": "AI 반복 제안은 프리미엄 기능이에요",
+    "aiSuggestionDescription": "반복되는 할 일을 AI가 알아서 제안해드려요.",
+    "reminderTimeTitle": "리마인드 시간 변경은 프리미엄 기능이에요",
+    "reminderTimeDescription": "원하는 시간에 리마인드를 받을 수 있어요. 기본 시간 알림은 계속 와요.",
+    "appIconTitle": "앱 아이콘 변경은 프리미엄 기능이에요",
+    "appIconDescription": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요.",
+    "refillToday": "오늘 중 {{amount}}회로 초기화돼요",
+    "refillTomorrow": "내일 {{amount}}회로 초기화돼요",
+    "refillOn": "{{date}}에 {{amount}}회로 초기화돼요",
+    "notCharged": "횟수는 차감되지 않았어요"
+  },
+  "quota": {
+    "summaryTitle": "이번 달 AI 사용량",
+    "aiParse": "AI 할 일 만들기",
+    "aiParseHint": "말로 할 일 만들기와 메모 나누기에 함께 써요",
+    "voiceNote": "말로 메모 정리",
+    "remaining": "{{amount}}회 남음",
+    "usedUpMonth": "이번 달 모두 사용",
+    "usedUpDay": "오늘 모두 사용"
+  },
+  "tier": {
+    "admin": "어드민",
+    "premium": "프리미엄",
+    "basic": "베이직"
+  },
+  "upsell": {
+    "viewPremium": "프리미엄 보기",
+    "later": "나중에",
+    "usage": "{{used}} / {{limit}}회 사용",
+    "free": "무료",
+    "premium": "프리미엄",
+    "unlimited": "무제한",
+    "amount": {
+      "perMonth": "월\u00a0{{amount}}회",
+      "perDay": "하루\u00a0{{amount}}회",
+      "people": "{{amount}}명",
+      "items": "{{amount}}개"
+    }
+  },
+  "benefitSlides": {
+    "aiParse": {
+      "title": "AI 할 일 만들기 넉넉하게",
+      "description": "말이나 글을 할 일 여러 개로 나눠 줘요"
+    },
+    "aiReport": {
+      "title": "AI 주간·월간 리포트",
+      "description": "달성률과 잘 되는 요일·시간을 정리해 줘요"
+    },
+    "aiSuggestion": {
+      "title": "AI 반복 제안",
+      "description": "자주 하는 일을 반복 할 일로 제안해 줘요"
+    },
+    "voiceNote": {
+      "title": "말로 메모 AI 요약",
+      "description": "녹음하면 요약과 해야 할 일을 찾아 줘요"
+    }
+  },
+  "planComparison": {
+    "title": "무료와 프리미엄 비교",
+    "hint": "이름을 누르면 설명이 나와요",
+    "benefit": "혜택",
+    "included": "포함",
+    "excluded": "없음",
+    "groups": {
+      "ai": "AI 기능",
+      "limits": "넉넉한 한도",
+      "reminderAndLooks": "알림·꾸미기"
+    },
+    "rows": {
+      "aiParse": {
+        "label": "AI 할 일 만들기",
+        "term": "말이나 글을 할 일 여러 개로 나눠 줘요. 날짜와 시간도 함께 넣어요."
+      },
+      "aiReport": {
+        "label": "AI 주간·월간 리포트",
+        "term": "달성률과 자주 끝내는 요일·시간을 정리해 줘요."
+      },
+      "aiSuggestion": {
+        "label": "AI 반복 제안",
+        "term": "자주 하는 일을 찾아 반복 할 일로 제안해 줘요."
+      },
+      "voiceNote": {
+        "label": "말로 메모 AI 요약",
+        "term": "녹음하면 요약과 해야 할 일을 찾아 줘요. 녹음 파일은 기기에만 남아요."
+      },
+      "friend": {
+        "label": "친구",
+        "term": "서로 공개한 할 일을 보고 응원할 수 있는 사람이에요."
+      },
+      "nudge": {
+        "label": "콕 찌르기·응원",
+        "term": "친구에게 보내는 알림이에요."
+      },
+      "category": {
+        "label": "카테고리",
+        "term": "할 일을 나누는 묶음이에요."
+      },
+      "reminderTime": {
+        "label": "원하는 시간 리마인드",
+        "term": "정해진 시간 대신 원하는 시각에 알림을 받아요."
+      },
+      "appIcon": {
+        "label": "고양이 앱 아이콘",
+        "term": "홈 화면 아이콘을 고양이 아이콘 중에서 골라요."
+      }
+    }
+  },
+  "welcome": {
+    "title": "프리미엄을 시작했어요",
+    "subtitle": "모든 기능을 넉넉하게 써 보세요",
+    "subtitleTrial": "{{date}} 전까지 모든 기능을 무료로 써요",
+    "done": "확인",
+    "rows": {
+      "plan": "요금제",
+      "reminder": "끝나기 전 알림",
+      "firstCharge": "첫 결제"
+    },
+    "quickstart": {
+      "title": "이것부터 해 보세요",
+      "voiceNote": {
+        "title": "말로 메모 남기기",
+        "description": "길게 말해도 요약과 할 일을 찾아 줘요"
+      },
+      "aiReport": {
+        "title": "AI 리포트 보기",
+        "description": "달성률과 잘 되는 요일·시간을 확인해요"
+      },
+      "appIcon": {
+        "title": "앱 아이콘 바꾸기",
+        "description": "고양이 아이콘 중에서 골라요"
+      }
+    },
+    "rewardContinues": "남은 초대 보상은 구독이 끝나면 이어져요"
+  },
+  "planSummary": {
+    "annual": "연간 구독 이용 중",
+    "monthly": "월간 구독 이용 중",
+    "unknown": "구독 이용 중",
+    "nextBilling": "{{date}}에 다음 결제",
+    "firstBilling": "{{date}}에 결제 시작",
+    "endsOn": "{{date}}에 끝나요"
   }
 }

@@ -1,7 +1,19 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, getTableColumns, gte, lte, max, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  getTableColumns,
+  gte,
+  isNotNull,
+  isNull,
+  lte,
+  max,
+  sql,
+} from "drizzle-orm";
 import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
@@ -9,7 +21,7 @@ import {
   isUniqueConstraintViolation,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type {
@@ -118,6 +130,10 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   }
 
   async delete(id: number): Promise<void> {
+    // 끝난 규칙은 사용자에게 보이지 않아 옮길 대상을 묻지 않는다. 카테고리와 함께 정리한다.
+    await this.db
+      .delete(todoSeries)
+      .where(and(eq(todoSeries.categoryId, id), isNull(todoSeries.nextOccurrenceDate)));
     const deleted = await this.db
       .delete(todoCategory)
       .where(eq(todoCategory.id, id))
@@ -186,12 +202,21 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return this.db.$count(todo, eq(todo.categoryId, categoryId));
   }
 
-  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number> {
-    const moved = await this.db
+  countActiveSeries(categoryId: number): Promise<number> {
+    return this.db.$count(
+      todoSeries,
+      and(eq(todoSeries.categoryId, categoryId), isNotNull(todoSeries.nextOccurrenceDate)),
+    );
+  }
+
+  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void> {
+    await this.db
       .update(todo)
       .set({ categoryId: toCategoryId })
-      .where(eq(todo.categoryId, fromCategoryId))
-      .returning({ id: todo.id });
-    return moved.length;
+      .where(eq(todo.categoryId, fromCategoryId));
+    await this.db
+      .update(todoSeries)
+      .set({ categoryId: toCategoryId })
+      .where(eq(todoSeries.categoryId, fromCategoryId));
   }
 }

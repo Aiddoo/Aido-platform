@@ -1,6 +1,7 @@
 export const NOTIFICATION_LOG_EVENT = {
   SESSION_RESPONSE_CLEANUP_FAILED: 'notification.session-response-cleanup.failed',
   RESPONSE_DEFERRED: 'notification.response.deferred',
+  RESPONSE_OPEN_FAILED: 'notification.response.open-failed',
   RESPONSE_PAYLOAD_INVALID: 'notification.response-payload.invalid',
   FOREGROUND_RECEIVED: 'notification.foreground.received',
   MARKETING_CATEGORY_REGISTRATION_FAILED: 'notification.marketing-category-registration.failed',
@@ -14,9 +15,10 @@ export const NOTIFICATION_LOG_EVENT = {
   FOREGROUND_HANDLER_FAILED: 'notification.foreground-handler.failed',
   PUSH_DEVICE_REPORTED: 'notification.push-device.reported',
   PUSH_DEVICE_REPORT_FAILED: 'notification.push-device.report-failed',
-  PUSH_CHANNEL_SETUP_FAILED: 'notification.push-channel.setup-failed',
   PUSH_TOKEN_ISSUE_FAILED: 'notification.push-token.issue-failed',
   PUSH_PERMISSION_REQUESTED: 'notification.push-permission.requested',
   PUSH_PERMISSION_REQUEST_FAILED: 'notification.push-permission.request-failed',
   PUSH_PERMISSION_SETTINGS_OPEN_FAILED: 'notification.push-permission.settings-open-failed',
+  TIMEZONE_NOTICE_SKIPPED: 'notification.timezone-notice.skipped',
+  MARKETING_PUSH_OFFER_SKIPPED: 'notification.marketing-push-offer.skipped',
 } as const;

@@ -1,4 +1,8 @@
 export {
+  USER_ACTIVITY_READER,
+  type UserActivityReaderPort,
+} from "./application/ports/auth/user-activity.reader.port.js";
+export {
   USER_APP_VERSION_READER,
   type UserAppVersionReaderPort,
 } from "./application/ports/auth/user-app-version.reader.port.js";

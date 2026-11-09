@@ -7,10 +7,12 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthOAuthStateRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
-import type { ExchangeCodeResult } from "../../types/auth/index.js";
+import type { OAuthSignupNotifier } from "../../services/auth/oauth-signup-notifier.service.js";
+import type { ExchangeCodeResult, RequestDevice } from "../../types/auth/index.js";
 
 export interface ExchangeOAuthCodeInput {
   readonly code: string;
+  readonly device?: RequestDevice;
 }
 
 interface ExchangeOAuthCodeDependencies {
@@ -18,6 +20,7 @@ interface ExchangeOAuthCodeDependencies {
     AuthOAuthStateRepositoryPort,
     "findByExchangeCode" | "consumeExchangeCode"
   >;
+  readonly oauthSignupNotifier: Pick<OAuthSignupNotifier, "notify">;
   readonly logger: ApplicationLogger;
 }
 
@@ -60,6 +63,14 @@ export class ExchangeOAuthCode {
     }
     authorization.consume(at);
     this.#dependencies.logger.debug({ event: IdentityLogEvent.OAUTH_EXCHANGE_CONSUMED, userId });
+    // 웹 콜백은 시스템 브라우저 요청이라 앱 버전·기기가 없다. 코드는 일회용이라 알림도 한 번만 나간다.
+    if (state.isNewUser === true) {
+      await this.#dependencies.oauthSignupNotifier.notify({
+        userId,
+        provider: state.provider,
+        device: input.device,
+      });
+    }
     return {
       accessToken,
       refreshToken,

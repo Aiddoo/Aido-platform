@@ -1,16 +1,19 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { AI_QUOTA } from "#api/modules/access/access-quota.public";
+import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/planning-categories.public";
 import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
+import { FRIEND_COUNT_READER } from "#api/modules/social/social-friends.public";
 import { NUDGE_USAGE_READER } from "#api/modules/social/social-nudges.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import {
   ACCOUNT_NOTIFICATION_CLEANUP,
   ACCOUNT_TODO_COMMENT_CLEANUP,
+  ACCOUNT_USAGE_CLEANUP,
 } from "./application/ports/auth/account-cleanup.port.js";
 import {
   AUTH_EMAIL_SENDER,
@@ -36,6 +39,7 @@ import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/auth/session-p
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import { LinkOAuthIdentity } from "./application/services/auth/link-oauth-identity.service.js";
+import { OAuthSignupNotifier } from "./application/services/auth/oauth-signup-notifier.service.js";
 import { SessionService } from "./application/services/auth/session.service.js";
 import { VerificationService } from "./application/services/auth/verification.service.js";
 import { ChangePassword } from "./application/use-cases/auth/change-password.use-case.js";
@@ -43,12 +47,14 @@ import { CompleteOAuthAuthorization } from "./application/use-cases/auth/complet
 import { DeleteAccount } from "./application/use-cases/auth/delete-account.use-case.js";
 import { ExchangeOAuthCode } from "./application/use-cases/auth/exchange-oauth-code.use-case.js";
 import { GetCurrentUser } from "./application/use-cases/auth/get-current-user.use-case.js";
+import { GetEntitlementSnapshot } from "./application/use-cases/auth/get-entitlement-snapshot.use-case.js";
 import { GetOAuthRedirectUri } from "./application/use-cases/auth/get-oauth-redirect-uri.use-case.js";
 import { IssueLogin } from "./application/use-cases/auth/issue-login.use-case.js";
 import { LinkOAuthAccountWithCode } from "./application/use-cases/auth/link-oauth-account-with-code.use-case.js";
 import { LinkOAuthAccount } from "./application/use-cases/auth/link-oauth-account.use-case.js";
 import { ListActiveSessions } from "./application/use-cases/auth/list-active-sessions.use-case.js";
 import { ListLinkedAccounts } from "./application/use-cases/auth/list-linked-accounts.use-case.js";
+import { LoginWithMobileOAuthToken } from "./application/use-cases/auth/login-with-mobile-oauth-token.use-case.js";
 import { LoginWithOAuthToken } from "./application/use-cases/auth/login-with-oauth-token.use-case.js";
 import { LoginWithPassword } from "./application/use-cases/auth/login-with-password.use-case.js";
 import { LogoutAll } from "./application/use-cases/auth/logout-all.use-case.js";
@@ -76,7 +82,7 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     AUTH_CACHE,
     PREMIUM_ACCESS_READER,
     ENTITLEMENT_READER,
-    AI_QUOTA,
+    QUOTA_LEDGER,
     CHEER_USAGE_READER,
     NUDGE_USAGE_READER,
   ],
@@ -85,7 +91,7 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
     premiumAccessReader: ConstructorParameters<typeof GetCurrentUser>[0]["premiumAccessReader"],
     entitlementReader: ConstructorParameters<typeof GetCurrentUser>[0]["entitlementReader"],
-    aiQuota: ConstructorParameters<typeof GetCurrentUser>[0]["aiQuota"],
+    quotaLedger: ConstructorParameters<typeof GetCurrentUser>[0]["quotaLedger"],
     cheerUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["cheerUsageReader"],
     nudgeUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["nudgeUsageReader"],
   ) =>
@@ -94,9 +100,36 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
       cacheService,
       premiumAccessReader,
       entitlementReader,
-      aiQuota,
+      quotaLedger,
       cheerUsageReader,
       nudgeUsageReader,
+    }),
+};
+
+export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshot> = {
+  provide: GetEntitlementSnapshot,
+  inject: [
+    QUOTA_LEDGER,
+    CHEER_USAGE_READER,
+    NUDGE_USAGE_READER,
+    FRIEND_COUNT_READER,
+    TODO_CATEGORY_COUNT_READER,
+  ],
+  useFactory: (
+    quotaLedger: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["quotaLedger"],
+    cheerUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["cheerUsageReader"],
+    nudgeUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["nudgeUsageReader"],
+    friendCountReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["friendCountReader"],
+    categoryCountReader: ConstructorParameters<
+      typeof GetEntitlementSnapshot
+    >[0]["categoryCountReader"],
+  ) =>
+    new GetEntitlementSnapshot({
+      quotaLedger,
+      cheerUsageReader,
+      nudgeUsageReader,
+      friendCountReader,
+      categoryCountReader,
     }),
 };
 
@@ -267,6 +300,7 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
     AUTH_SECURITY_LOG_REPOSITORY,
     ACCOUNT_NOTIFICATION_CLEANUP,
     ACCOUNT_TODO_COMMENT_CLEANUP,
+    ACCOUNT_USAGE_CLEANUP,
   ],
   useFactory: (
     userRepository: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["userRepository"],
@@ -278,6 +312,7 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
       typeof PurgeDeletedAccounts
     >[0]["notificationCleanup"],
     todoCommentCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["todoCommentCleanup"],
+    usageCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["usageCleanup"],
   ) =>
     new PurgeDeletedAccounts({
       userRepository,
@@ -285,21 +320,38 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
       securityLogRepository,
       notificationCleanup,
       todoCommentCleanup,
+      usageCleanup,
       logger: new Logger(PurgeDeletedAccounts.name),
     }),
 };
 
 export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
   provide: ExchangeOAuthCode,
-  inject: [AUTH_OAUTH_STATE_REPOSITORY],
+  inject: [AUTH_OAUTH_STATE_REPOSITORY, OAuthSignupNotifier],
   useFactory: (
     oauthStateRepository: ConstructorParameters<
       typeof ExchangeOAuthCode
     >[0]["oauthStateRepository"],
+    oauthSignupNotifier: ConstructorParameters<typeof ExchangeOAuthCode>[0]["oauthSignupNotifier"],
   ) =>
     new ExchangeOAuthCode({
       oauthStateRepository,
+      oauthSignupNotifier,
       logger: new Logger(ExchangeOAuthCode.name),
+    }),
+};
+
+export const oauthSignupNotifierProvider: FactoryProvider<OAuthSignupNotifier> = {
+  provide: OAuthSignupNotifier,
+  inject: [AUTH_USER_REPOSITORY, AUTH_REGISTRATION_NOTIFIER],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof OAuthSignupNotifier>[0]["userRepository"],
+    adminEventNotifier: ConstructorParameters<typeof OAuthSignupNotifier>[0]["adminEventNotifier"],
+  ) =>
+    new OAuthSignupNotifier({
+      userRepository,
+      adminEventNotifier,
+      logger: new Logger(OAuthSignupNotifier.name),
     }),
 };
 
@@ -406,7 +458,6 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
     UNIT_OF_WORK,
     AUTH_CACHE,
-    AUTH_REGISTRATION_NOTIFIER,
     IssueLogin,
     ProvisionUser,
     RestoreAccount,
@@ -423,7 +474,6 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
     >[0]["loginAttemptRepository"],
     unitOfWork: ConstructorParameters<typeof LoginWithOAuthToken>[0]["unitOfWork"],
     cacheService: ConstructorParameters<typeof LoginWithOAuthToken>[0]["cacheService"],
-    adminEventNotifier: ConstructorParameters<typeof LoginWithOAuthToken>[0]["adminEventNotifier"],
     issueLoginUseCase: ConstructorParameters<typeof LoginWithOAuthToken>[0]["issueLoginUseCase"],
     provisionUserUseCase: ConstructorParameters<
       typeof LoginWithOAuthToken
@@ -438,12 +488,24 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
       loginAttemptRepository,
       unitOfWork,
       cacheService,
-      adminEventNotifier,
       issueLoginUseCase,
       provisionUserUseCase,
       restoreAccount,
       logger: new Logger(LoginWithOAuthToken.name),
     }),
+};
+
+export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileOAuthToken> = {
+  provide: LoginWithMobileOAuthToken,
+  inject: [LoginWithOAuthToken, OAuthSignupNotifier],
+  useFactory: (
+    loginWithOAuthToken: ConstructorParameters<
+      typeof LoginWithMobileOAuthToken
+    >[0]["loginWithOAuthToken"],
+    oauthSignupNotifier: ConstructorParameters<
+      typeof LoginWithMobileOAuthToken
+    >[0]["oauthSignupNotifier"],
+  ) => new LoginWithMobileOAuthToken({ loginWithOAuthToken, oauthSignupNotifier }),
 };
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {

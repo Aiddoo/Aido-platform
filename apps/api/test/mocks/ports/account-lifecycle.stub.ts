@@ -3,6 +3,7 @@ import type {
   AccountNotificationCleanupResult,
   AccountTodoCommentCleanupPort,
   AccountTodoCommentCleanupResult,
+  AccountUsageCleanupPort,
 } from "#api/modules/identity/application/ports/auth/account-cleanup.port";
 import type { AuthCachePort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import type { AuthPasswordHasherPort } from "#api/modules/identity/application/ports/auth/auth-crypto.port";
@@ -211,6 +212,14 @@ export class StubAccountNotificationCleanup implements AccountNotificationCleanu
 
   async settleAfterCommit(result: AccountNotificationCleanupResult): Promise<void> {
     this.settlements.push(result);
+  }
+}
+
+export class StubAccountUsageCleanup implements AccountUsageCleanupPort {
+  readonly cleanedUserIds: string[] = [];
+
+  async cleanupInTransaction(userId: string): Promise<void> {
+    this.cleanedUserIds.push(userId);
   }
 }
 

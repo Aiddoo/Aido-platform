@@ -1,4 +1,4 @@
-import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { ReservedRegionFrame } from 'react-native-reserved-regions';
 import { match, P } from 'ts-pattern';
 

@@ -19,11 +19,12 @@ export interface ToggleTodoCompleteInput {
   readonly id: number;
   readonly userId: string;
   readonly completed: boolean;
+  /** 스트릭의 "오늘" 경계 */
   readonly timezone: string;
 }
 
 interface ToggleTodoCompleteDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateCompletion">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateDetails">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -54,11 +55,11 @@ export class ToggleTodoComplete {
         return [];
       }
 
-      await this.#dependencies.todoRepository.updateCompletion(
-        id,
-        todo.isCompleted(),
-        todo.getCompletedAt(),
-      );
+      const snapshot = todo.toPersistence();
+      await this.#dependencies.todoRepository.updateDetails(id, {
+        completed: snapshot.completed,
+        completedAt: snapshot.completedAt,
+      });
 
       this.#dependencies.logger.log({
         event: PlanningTodoLogEvent.COMPLETION_CHANGED,

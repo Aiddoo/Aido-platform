@@ -14,7 +14,10 @@ export interface GetDailyCompletionsInput {
 }
 
 interface GetDailyCompletionsDependencies {
-  readonly repository: Pick<TodoCompletionRepositoryPort, "aggregateByDateRange">;
+  readonly repository: Pick<
+    TodoCompletionRepositoryPort,
+    "aggregateByDateRange" | "findMultiDayTodos"
+  >;
   readonly cache: Pick<DailyCompletionCachePort, "readRange" | "storeRangeIfCurrent">;
 }
 
@@ -37,16 +40,17 @@ export class GetDailyCompletions {
       return cacheRead.value;
     }
 
-    const aggregates = await this.#dependencies.repository.aggregateByDateRange({
-      userId: input.userId,
-      startDate: start,
-      endDate: addDays(1, endInclusive),
-    });
+    const range = { userId: input.userId, startDate: start, endDate: addDays(1, endInclusive) };
+    const [aggregates, multiDayTodos] = await Promise.all([
+      this.#dependencies.repository.aggregateByDateRange(range),
+      this.#dependencies.repository.findMultiDayTodos(range),
+    ]);
 
-    const result = buildDailyCompletionsRange(aggregates, {
-      startDate: input.startDate,
-      endDate: input.endDate,
-    });
+    const result = buildDailyCompletionsRange(
+      aggregates,
+      { startDate: input.startDate, endDate: input.endDate },
+      multiDayTodos,
+    );
 
     await this.#dependencies.cache.storeRangeIfCurrent(
       input.userId,

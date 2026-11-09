@@ -2,26 +2,25 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
-import type { CreateTodoData, CreateRecurringTodoData } from "../../models/todos/todo.types.js";
+import type { CreateTodoData, ResolvedCreateTodoData } from "../../models/todos/todo.types.js";
 import type {
   StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "../../ports/todos/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import { toTodoSeriesResponse } from "../../read-models/series/todo-series.read-model.js";
 import type { TodoCreationEffects } from "./todo-creation-effects.service.js";
-import {
-  planRecurringTodoCreation,
-  type TodoCreationWriter,
-} from "./todo-creation-writer.service.js";
+import { planTodoCreation, type TodoCreationWriter } from "./todo-creation-writer.service.js";
+import type { TodoTimezoneResolver } from "./todo-timezone-resolver.service.js";
 
 interface StagedTodoCreatorDependencies {
-  readonly writer: Pick<TodoCreationWriter, "create" | "createRecurring">;
-  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishRecurring">;
+  readonly writer: Pick<TodoCreationWriter, "createSingle" | "startSeries">;
+  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishSeriesStarted">;
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
-    "findByIdAndUserId" | "findManyByRecurrenceGroupId"
+    "findByIdAndUserId" | "findManyBySeriesId"
   >;
+  readonly timezoneResolver: Pick<TodoTimezoneResolver, "resolve">;
 }
 
 export class StagedTodoCreator implements StagedTodoCreatorPort {
@@ -31,9 +30,22 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     this.#dependencies = dependencies;
   }
 
-  async stageTodo(input: CreateTodoData): Promise<StagedTodoCreation> {
-    const draft = Todo.planCreation(input);
-    const created = await this.#dependencies.writer.create(draft, input.items);
+  async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const timezone = await this.#dependencies.timezoneResolver.resolve(
+      input.userId,
+      input.timezone,
+    );
+    const resolved = { ...input, timezone };
+    return resolved.repeat == null
+      ? this.#stageSingle(resolved)
+      : this.#stageSeries(resolved, resolved.repeat);
+  }
+
+  async #stageSingle(input: ResolvedCreateTodoData): Promise<StagedTodoCreation> {
+    const created = await this.#dependencies.writer.createSingle(
+      planTodoCreation(input),
+      input.items,
+    );
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
       created.getId().getValue(),
       input.userId,
@@ -43,24 +55,24 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     }
     return {
       todos: [response],
+      series: null,
       afterCommit: () => this.#dependencies.effects.publishSingle(created, input.userId),
     };
   }
 
-  async stageRecurringTodos(
-    input: CreateRecurringTodoData,
-    timezone: string,
+  async #stageSeries(
+    input: ResolvedCreateTodoData,
+    repeat: NonNullable<CreateTodoData["repeat"]>,
   ): Promise<StagedTodoCreation> {
-    const plan = planRecurringTodoCreation(input, timezone);
-    const created = await this.#dependencies.writer.createRecurring(plan);
-    const todos = await this.#dependencies.todoReadRepository.findManyByRecurrenceGroupId(
+    const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
+    const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      plan.recurrenceGroupId,
+      series.getId(),
     );
     return {
       todos,
-      afterCommit: () =>
-        this.#dependencies.effects.publishRecurring(created, input.userId, plan.recurrenceGroupId),
+      series: toTodoSeriesResponse(series),
+      afterCommit: () => this.#dependencies.effects.publishSeriesStarted(series, occurrences),
     };
   }
 }

@@ -1,4 +1,5 @@
 import { currentUserSchema } from "@aido/api";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
@@ -7,6 +8,8 @@ import { subscription, user } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 const webhookSecret = "me-entitlements-webhook-secret";
 const AT = new Date("2027-01-04T12:00:00.000Z");
@@ -60,7 +63,7 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     expect(body.isPremium).toBe(false);
     expect(body.entitlements?.AI_PARSE).toEqual({
       allowed: true,
-      limit: 5,
+      limit: FREE_AI_LIMIT,
       used: 0,
       resetsAt: "2027-01-31T15:00:00.000Z",
     });
@@ -123,7 +126,7 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     // Then
     expect(body.subscriptionStatus).toBe("ACTIVE");
     expect(body.isPremium).toBe(false);
-    expect(body.entitlements?.AI_PARSE).toMatchObject({ allowed: true, limit: 5 });
+    expect(body.entitlements?.AI_PARSE).toMatchObject({ allowed: true, limit: FREE_AI_LIMIT });
     expect(body.entitlements?.CUSTOM_REMINDER_TIME).toEqual({ allowed: false, limit: null });
   });
 

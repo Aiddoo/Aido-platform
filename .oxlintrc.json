@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["import", "typescript", "unicorn"],
+  "plugins": ["import", "typescript", "unicorn", "node"],
   "categories": {
     "correctness": "off"
   },
@@ -8,15 +8,7 @@
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   },
-  "ignorePatterns": [
-    "**/*.generated.*",
-    "apps/mobile/assets/**",
-    "apps/mobile/.agents/**",
-    "apps/mobile/.claude/skills/**",
-    "**/dist/**",
-    "**/build/**",
-    "**/coverage/**"
-  ],
+  "ignorePatterns": ["**/*.generated.*", "**/dist/**", "**/build/**", "**/coverage/**"],
   "rules": {
     "eslint/eqeqeq": [
       "error",
@@ -49,13 +41,6 @@
   },
   "overrides": [
     {
-      "files": ["apps/mobile/**/*.{js,jsx,ts,tsx,mjs,cjs}"],
-      "rules": {
-        "eslint/curly": ["error", "all"],
-        "eslint/no-void": "error"
-      }
-    },
-    {
       "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
@@ -83,9 +68,10 @@
       }
     },
     {
-      "files": ["apps/mobile/index.ts"],
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": ["apps/api/src/platform/config/env.ts", "**/*.spec.ts"],
       "rules": {
-        "typescript/consistent-type-imports": "off"
+        "node/no-process-env": "error"
       }
     },
     {

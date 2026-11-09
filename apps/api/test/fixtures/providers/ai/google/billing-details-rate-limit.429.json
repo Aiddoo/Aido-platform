@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 429,
+    "message": "You exceeded your current quota, please check your plan and billing details.\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20\nPlease retry in 10h17m5.723541104s.",
+    "status": "RESOURCE_EXHAUSTED"
+  }
+}

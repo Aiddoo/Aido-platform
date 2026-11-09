@@ -9,9 +9,15 @@ import {
 } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type AfterCommitTaskRegistryPort,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -19,7 +25,7 @@ import type { Suggestion } from "../../../domain/aggregates/suggestions/suggesti
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
-import { type RecurringTodoCreatorPort } from "../../ports/suggestions/recurring-todo-creator.port.js";
+import type { SuggestionTodoCreatorPort } from "../../ports/suggestions/suggestion-todo-creator.port.js";
 
 export interface HandleSuggestionActionInput {
   readonly userId: string;
@@ -43,15 +49,18 @@ export interface SuggestionActionResult {
  * 제안 수락/거절 처리 use-case.
  *
  * 사용자 잠금과 최신 권한 확인 뒤 도메인 상태를 전이한다.
- * 상태 저장과 반복 할 일 생성은 한 transaction에서 성공하거나 함께 rollback된다.
+ * 상태 저장과 반복 할 일 생성은 한 transaction에서 성공하거나 함께 rollback되고,
+ * 할 일 알림·캐시 효과는 커밋 뒤에만 실행된다.
  */
 interface HandleSuggestionActionDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
-  readonly recurringTodoCreator: Pick<RecurringTodoCreatorPort, "createRecurring">;
+  readonly todoCreator: SuggestionTodoCreatorPort;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly mutationLock: MutationLockPort;
+  readonly afterCommit: AfterCommitTaskRegistryPort;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
 }
 
@@ -113,23 +122,31 @@ export class HandleSuggestionAction {
         input.suggestionId,
         suggestion.status,
       );
-      // 반복 생성은 같은 Required UoW에 참여하며 실패 시 상태 갱신도 함께 rollback된다.
-      const created = await this.#dependencies.recurringTodoCreator.createRecurring(
-        {
-          userId: input.userId,
-          title: suggestion.title,
-          categoryId: input.categoryId,
-          startDate,
-          endDate,
-          daysOfWeek: days.data,
-          scheduledTime: suggestion.scheduledTime,
-        },
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.todoCategory(input.userId),
+        MutationLockKeys.todoSortOrder(input.userId),
+      ]);
+      // 같은 UoW에 참여하므로 생성이 실패하면 상태 갱신도 함께 rollback된다.
+      const staged = await this.#dependencies.todoCreator.stage({
+        userId: input.userId,
+        title: suggestion.title,
+        categoryId: input.categoryId,
+        startDate: parseDateOnly(startDate),
+        scheduledTime: suggestion.scheduledTime,
         timezone,
-      );
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: days.data,
+          end: { type: "UNTIL", date: endDate },
+        },
+        usesLegacySeriesLimit: true,
+      });
+      this.#dependencies.afterCommit.register(staged.afterCommit);
       return {
         message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
         suggestion: updated,
-        createdTodosCount: created.count,
+        createdTodosCount: staged.todos.length,
       };
     });
     if (result.createdTodosCount != null) {

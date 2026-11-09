@@ -24,7 +24,7 @@ class FlakyJobRuntime extends FakeJobRuntime {
     queue: string,
     data: T,
     options: EnqueueJobOptions,
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.failuresLeft > 0) {
       this.failuresLeft -= 1;
       throw this.failure;
@@ -58,7 +58,6 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
 
     // Then
     expect(runtime.enqueueCalls.map(({ options }) => options.idempotencyKey)).toEqual([
-      "nudge-7",
       "nudge-7",
       "nudge-8",
     ]);
@@ -98,7 +97,7 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
     const service = new NotificationQueueService(runtime);
 
     // When
-    service.enqueueBillingIssue({ userId: "user-1" });
+    service.enqueueNudgeSent(nudge);
     await vi.runAllTimersAsync();
     await service.onModuleDestroy();
 
@@ -106,9 +105,21 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
     expect(runtime.enqueueCalls).toHaveLength(0);
     expect(error).toHaveBeenCalledWith({
       event: "notification.enqueue_failed",
-      jobName: NotificationJobName.BILLING_ISSUE,
+      jobName: NotificationJobName.NUDGE_SENT,
       errorType: "Error",
     });
     expect(JSON.stringify(error.mock.calls)).not.toContain(privateMessage);
+  });
+
+  it("결제 문제 알림은 호출자의 트랜잭션에 기록하고 실패를 호출자에게 던진다", async () => {
+    // Given
+    const runtime = new FlakyJobRuntime(Number.POSITIVE_INFINITY, new Error("db down"));
+    const service = new NotificationQueueService(runtime);
+
+    // When
+    const recording = service.enqueueBillingIssue({ userId: "user-1" }, new Date());
+
+    // Then
+    await expect(recording).rejects.toThrow("db down");
   });
 });

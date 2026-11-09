@@ -1,7 +1,6 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Module } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/throttler";
@@ -43,10 +42,10 @@ import {
   SocialReportsModule,
 } from "#api/modules/social/social-reports.public";
 import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
+import { VoiceModule } from "#api/modules/voice/voice.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
-import type { EnvConfig } from "#api/platform/config/index";
-import { AppConfigModule } from "#api/platform/config/index";
+import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
 import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";
 import { DedupModule } from "#api/platform/dedup/index";
 import { EncryptionModule } from "#api/platform/encryption/index";
@@ -59,10 +58,14 @@ import {
 import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
 import { LockModule } from "#api/platform/lock/index";
 import { LoggerModule } from "#api/platform/logging/index";
+import { MeteringModule } from "#api/platform/metering/index";
+import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
 import { RedisModule } from "#api/platform/redis/index";
+import { ResilienceModule } from "#api/platform/resilience/index";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
 import {
+  DAILY_THROTTLER_OPTIONS,
   THROTTLER_STORAGE,
   ThrottleModule,
   UserAwareThrottlerGuard,
@@ -100,19 +103,23 @@ import { AppService } from "./app.service.js";
     DedupModule.forRoot(),
     LockModule.forRoot(),
     JobRuntimeModule,
+    AlertingModule,
+    ResilienceModule,
+    MeteringModule,
     AccessModule,
     LoggerModule.forRootAsync(),
     SharedKernelModule,
     PaginationModule,
     ThrottlerModule.forRootAsync({
       imports: [ThrottleModule.forRoot()],
-      inject: [ConfigService, { token: THROTTLER_STORAGE, optional: true }],
-      useFactory: (config: ConfigService<EnvConfig, true>, storage?: ThrottlerStorage) => ({
+      inject: [TypedConfigService, { token: THROTTLER_STORAGE, optional: true }],
+      useFactory: (config: TypedConfigService, storage?: ThrottlerStorage) => ({
         throttlers: [
           {
-            ttl: config.get("THROTTLE_TTL", { infer: true }),
-            limit: config.get("THROTTLE_LIMIT", { infer: true }),
+            ttl: config.throttleTtl,
+            limit: config.throttleLimit,
           },
+          DAILY_THROTTLER_OPTIONS,
         ],
         ...(storage && { storage }),
       }),
@@ -124,6 +131,7 @@ import { AppService } from "./app.service.js";
     AiAssistanceParsingModule,
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
+    VoiceModule,
     IdentityAuthModule,
     SocialBlocksModule,
     SocialCheersModule,

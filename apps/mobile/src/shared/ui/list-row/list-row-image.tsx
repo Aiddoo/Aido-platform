@@ -1,20 +1,21 @@
-import type { ImageProps } from 'react-native';
-import { Image, StyleSheet } from 'react-native';
+import type { ComponentProps } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { Box } from '../box';
+import { Image } from '../image';
 
-export interface ListRowImageProps extends Omit<ImageProps, 'style'> {
+export interface ListRowImageProps extends Omit<ComponentProps<typeof Image>, 'style'> {
   size?: 'small' | 'medium' | 'large';
   rounded?: boolean;
 }
 
-export const ListRowImage = ({ size = 'medium', rounded = true, ...props }: ListRowImageProps) => {
+export function ListRowImage({ size = 'medium', rounded = true, ...props }: ListRowImageProps) {
   return (
     <Box style={[styles.container, styles[size], rounded && styles.rounded]} className="bg-gray-3">
-      <Image style={styles.image} resizeMode="cover" {...props} />
+      <Image style={styles.image} contentFit="cover" {...props} />
     </Box>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

@@ -2,20 +2,17 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import type {
-  AiProvider,
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
+  AiGenerationRequest,
+  AiGenerationResult,
+  AiGeneratorPort,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
+import type { SuggestionPick } from "#api/modules/ai-assistance/domain/services/suggestions/suggestion-candidates";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import {
-  TEST_AI_TASK_SETTINGS,
-  TEST_AI_TASK_SETTINGS_V1,
-} from "#test/fixtures/ai-task-settings.fixture";
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
   StubAiClientAppVersion,
@@ -28,7 +25,7 @@ import {
   StubAiWeeklyReportReader,
 } from "#test/mocks/ports/ai-assistance.stub";
 
-import { createDetectedPattern, createReportAiResponse } from "./ai-response.fixture.js";
+import { createReportAiResponse } from "./ai-response.fixture.js";
 
 export const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
 
@@ -46,19 +43,17 @@ export function createAnalysisTodo(
   };
 }
 
-class GatedFakeAiProvider extends FakeAiProvider implements AiProvider {
+class GatedFakeAiGenerator extends FakeAiGenerator implements AiGeneratorPort {
   beforeResult: (() => Promise<void>) | undefined;
-  override async generateStructured<T>(
-    options: GenerateStructuredOptions<T>,
-  ): Promise<GenerateStructuredResult<T>> {
-    const result = await super.generateStructured(options);
+  override async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+    const result = await super.generate(request);
     await this.beforeResult?.();
     return result;
   }
 }
 
 /** 실제 응답 대기 시점의 상태 변경을 Promise barrier로 고정한다. */
-export function pauseAiResponse(provider: GatedFakeAiProvider) {
+export function pauseAiResponse(provider: GatedFakeAiGenerator) {
   let markEntered!: () => void;
   let release!: () => void;
   const entered = new Promise<void>((resolve) => {
@@ -86,7 +81,7 @@ export function createAiAssistanceFixture() {
   const todoStatsReader = new StubAiTodoStatsReader();
   const weatherForecastReader = new StubAiWeatherForecastReader();
   const reportReader = new StubAiWeeklyReportReader();
-  const aiProvider = new GatedFakeAiProvider();
+  const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
   const logger = mock<ApplicationLogger>();
@@ -98,7 +93,7 @@ export function createAiAssistanceFixture() {
   });
   const analyze = new AnalyzeAndCreateSuggestions({
     repository,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     unitOfWork,
@@ -106,32 +101,17 @@ export function createAiAssistanceFixture() {
     logger,
     entitlementReader: access,
     userMutationLock: access,
-    // 기존 제안 시나리오는 v1 응답 모양이라 v1 롤백 경로로 검증한다.
-    settings: TEST_AI_TASK_SETTINGS_V1,
-  });
-  const analyzeV2 = new AnalyzeAndCreateSuggestions({
-    repository,
-    aiProvider,
-    aiDataSharingConsent,
-    clientAppVersion,
-    unitOfWork,
-    contextBuilder,
-    logger,
-    entitlementReader: access,
-    userMutationLock: access,
-    settings: TEST_AI_TASK_SETTINGS,
   });
   const generateReport = new GenerateReport({
     aiReportRepository: reportRepository,
     todoStatsReader,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     logger,
     entitlementReader: access,
     unitOfWork,
     userMutationLock: access,
-    settings: TEST_AI_TASK_SETTINGS,
   });
   return {
     userId,
@@ -142,22 +122,32 @@ export function createAiAssistanceFixture() {
     todoStatsReader,
     weatherForecastReader,
     reportReader,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     logger,
     contextBuilder,
     analyze,
-    analyzeV2,
     generateReport,
   };
 }
 
-export function usePatternResponse(
+/** 모델이 고른 제안 후보. 기본 기록의 후보 a1은 "책 읽기 10분"(월요일 3회 완료)이다. */
+export function createSuggestionPick(overrides: Partial<SuggestionPick> = {}): SuggestionPick {
+  return {
+    candidateId: "a1",
+    daysOfWeek: ["MON"],
+    useRecordedTime: false,
+    reason: "",
+    ...overrides,
+  };
+}
+
+export function usePickResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
-  patterns = [createDetectedPattern()],
+  picks: readonly SuggestionPick[] = [createSuggestionPick()],
 ) {
-  fixture.aiProvider.setRawResponse({ patterns });
+  fixture.generator.setRawResponse({ picks });
   return fixture;
 }
 
@@ -176,7 +166,7 @@ export function useReportResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   locale: "ko" | "en" = "ko",
 ) {
-  fixture.aiProvider.setRawResponse(createReportAiResponse(locale));
+  fixture.generator.setRawResponse(createReportAiResponse(locale));
   return useReportActivity(fixture);
 }
 

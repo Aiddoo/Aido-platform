@@ -1,12 +1,12 @@
-import type { WeatherCondition } from '@aido/api';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import type { WeatherCondition } from '@aido/api/vocabulary';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { createStyledIcon } from '@src/shared/ui/icon/create-styled-icon';
 import { round } from 'es-toolkit';
 import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 
-import { ALERT_GLYPH_COLORS } from '../constants/weather-colors';
+import { ALERT_GLYPH_COLORS } from '../constants/weather-colors.constants';
 
 const StyledSvg = createStyledIcon(Svg);
 
@@ -19,6 +19,7 @@ const SUNSET_ORANGE = '#FFB35C';
 const MONO_STROKE_WIDTH = 1.9;
 const CARD_STROKE_WIDTH = 2.2;
 const CARD_ICON_SIZE = 13;
+const GLYPH_ICON_SIZE = 24;
 
 const PATH_PRECISION = 2;
 
@@ -208,7 +209,13 @@ const CONDITION_ICONS = {
 } satisfies Record<WeatherCondition, ConditionIcon>;
 
 /** 밤에는 해 대신 달을 그린다. 구름 조금 낀 밤도 하늘이 대체로 열려 있어 달로 보여 준다. */
-function toGlyphName(condition: WeatherCondition, isDaylight: boolean): GlyphName {
+function toGlyphName({
+  condition,
+  isDaylight,
+}: {
+  condition: WeatherCondition;
+  isDaylight: boolean;
+}): GlyphName {
   return match([CONDITION_ICONS[condition], isDaylight] as const)
     .with(['clear', true], () => 'sun' as const)
     .with(['partlyCloudy', true], () => 'partlyCloudy' as const)
@@ -235,12 +242,9 @@ interface WeatherIconProps extends GlyphIconProps {
   isDaylight: boolean;
 }
 
-/**
- * 고양이 귀가 달린 날씨 아이콘. 상태 이름은 옆의 글자가 읽어 주므로 보조 기술에서 숨긴다.
- * 시안은 앱 안 아이콘을 움직이지 않으므로(움직임은 배경 장면이 맡는다) 정지 아이콘으로 그린다.
- */
+/** 상태 이름은 옆 글자가 읽어 주므로 보조 기술에서 숨기고, 움직임은 배경 장면이 맡아 정지 아이콘이다 */
 export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProps) {
-  return <GlyphIcon glyph={GLYPHS[toGlyphName(condition, isDaylight)]} {...props} />;
+  return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }
 
 WeatherIcon.Sunrise = function Sunrise(props: GlyphIconProps) {
@@ -299,8 +303,8 @@ WeatherIcon.Card = function Card({
 function GlyphIcon({
   glyph,
   variant = 'color',
-  width = 24,
-  height = 24,
+  width = GLYPH_ICON_SIZE,
+  height = GLYPH_ICON_SIZE,
   colorClassName = 'text-on-sky',
   ...props
 }: GlyphIconProps & { glyph: Glyph }) {

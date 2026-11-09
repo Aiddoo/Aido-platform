@@ -7,6 +7,7 @@ import {
   toISOStringOrNull,
   toIsoMonthId,
   toIsoWeekId,
+  toYearMonthString,
 } from "./format.js";
 
 const FROZEN_TIME = new Date("2026-03-04T12:00:00.000Z");
@@ -30,6 +31,16 @@ describe("format", () => {
   describe("toDateString", () => {
     it("Date를 YYYY-MM-DD 문자열로 변환한다", () => {
       expect(toDateString(FROZEN_TIME)).toBe("2026-03-04");
+    });
+  });
+
+  describe("toYearMonthString", () => {
+    it("Date를 UTC 기준 YYYY-MM 문자열로 변환한다", () => {
+      expect(toYearMonthString(FROZEN_TIME)).toBe("2026-03");
+    });
+
+    it("KST로는 다음 달이어도 UTC 달을 쓴다", () => {
+      expect(toYearMonthString(new Date("2026-03-31T16:00:00.000Z"))).toBe("2026-03");
     });
   });
 

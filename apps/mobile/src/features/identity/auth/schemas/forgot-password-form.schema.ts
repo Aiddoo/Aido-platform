@@ -1,0 +1,9 @@
+import { resetPasswordSchema, verifyEmailSchema } from '@aido/api';
+import type { z } from 'zod';
+
+/** 인증 코드는 이메일 인증과 같은 숫자 규칙으로 좁힌다 */
+export const forgotPasswordFormSchema = resetPasswordSchema.safeExtend({
+  code: verifyEmailSchema.shape.code,
+});
+
+export type ForgotPasswordFormValues = z.input<typeof forgotPasswordFormSchema>;

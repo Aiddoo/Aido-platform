@@ -160,6 +160,9 @@ export interface CreateNotificationData {
   campaignKey?: string | null;
   variantId?: string | null;
 
+  /** TODO_REMINDER의 회차(날짜 + 벽시계). 중복 방지 유니크 인덱스에만 쓰고 응답·푸시에 싣지 않는다. */
+  reminderOccurrenceKey?: string | null;
+
   /**
    * 할일 ID (context)
    *

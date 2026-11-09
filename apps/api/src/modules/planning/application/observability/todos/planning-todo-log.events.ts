@@ -1,6 +1,5 @@
 export const PlanningTodoLogEvent = {
   CREATED: "planning.todo.created",
-  RECURRING_CREATED: "planning.todo.recurring.created",
   DELETED: "planning.todo.deleted",
   CATEGORY_CHANGED: "planning.todo.category.changed",
   UPDATED: "planning.todo.updated",
@@ -17,4 +16,7 @@ export const PlanningTodoLogEvent = {
   FRIEND_COMPLETED_ENQUEUED: "planning.todo.friend-completed.enqueued",
   FRIEND_COMPLETED_FAILED: "planning.todo.friend-completed.failed",
   MILESTONE_CHECK_FAILED: "planning.todo.milestone-check.failed",
+  TIMEZONE_REBASED: "planning.todo.timezone-rebase.completed",
+  TIMEZONE_REBASE_INVALID: "planning.todo.timezone-rebase.invalid",
+  TIMEZONE_REBASE_FAILED: "planning.todo.timezone-rebase.failed",
 } as const;

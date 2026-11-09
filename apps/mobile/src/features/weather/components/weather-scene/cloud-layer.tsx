@@ -11,21 +11,20 @@ import { range } from 'es-toolkit';
 import { type SharedValue, useAnimatedReaction } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
-import type { WeatherSceneSky } from '../../domains/weather-scene.model';
 import {
-  CLOUD_DEPTH_LAYERS,
   createParticleSeeds,
   getCloudCountPerLayer,
   getSceneReferenceWidth,
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import {
   CLOUD_SPAN_RATIO,
   CLOUD_SPRITE,
   CLOUD_VARIANTS,
-  cloudSpriteRect,
+  createCloudSpriteRect,
   PARTICLE_SAMPLING,
   useCloudTexture,
 } from './weather-scene-textures';
@@ -79,9 +78,9 @@ export function CloudLayer({
 }: CloudLayerProps) {
   const texture = useCloudTexture();
   const perLayer = getCloudCountPerLayer(amount);
-  const count = perLayer * CLOUD_DEPTH_LAYERS;
+  const count = perLayer * DEPTH_LAYERS.length;
   const seeds = createParticleSeeds(count, CLOUD_SEED);
-  const sprites = range(count).map((index) => cloudSpriteRect(index % CLOUD_VARIANTS));
+  const sprites = range(count).map((index) => createCloudSpriteRect(index % CLOUD_VARIANTS));
   const rgb = WEATHER_SCENE_PALETTES[sky].cloud;
   const coverage =
     (COVERAGE_BASE + amount * (1 - COVERAGE_BASE)) * (isDaylight ? 1 : NIGHT_ALPHA_RATIO);

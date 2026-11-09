@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { Result } from '@src/shared/ui/result/result';
+import { Result } from '@src/shared/ui';
 
 // 기본 사용
 <Result
@@ -37,6 +37,7 @@ import { Result } from '@src/shared/ui/result/result';
 | `description` | `string`    | -      | 설명 (줄바꿈 `\n` 지원)          |
 | `button`      | `ReactNode` | -      | 하단 버튼 (`Result.Button` 사용) |
 | `className`   | `string`    | -      | 추가 스타일                      |
+| `testID`      | `string`    | -      | 바깥 `VStack`의 testID           |
 
 ## Result.Button
 

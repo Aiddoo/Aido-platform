@@ -1,0 +1,77 @@
+{
+  "plan": {
+    "title": "할 일 {{count}}개로 나눴어요",
+    "titleMemoOnly": "메모로 정리했어요",
+    "titleAlreadyAdded": "이미 있는 할 일이에요",
+    "guide": {
+      "label": "체크한 것만 추가돼요",
+      "title": "추가하기 전에 고를 수 있어요",
+      "description": "추가할 것만 체크해주세요. 할 일을 누르면 제목·날짜·시간·반복을 고칠 수 있어요.",
+      "note": "아래 버튼을 누르기 전에는 저장되지 않아요"
+    },
+    "omitted": "할 일 {{count}}개는 여기에 담지 못했어요.",
+    "empty": "할 일을 찾지 못했어요",
+    "duplicate": "이미 있어요",
+    "select": "{{title}} 추가하기",
+    "editHint": "이 할 일을 고쳐요",
+    "memoCaption": "메모로 저장해요",
+    "apply": "할 일 {{count}}개 추가",
+    "applyNothing": "할 일 추가",
+    "applyMemo": "메모 저장"
+  },
+  "applied": {
+    "todos": "할 일 {{count}}개를 추가했어요",
+    "todosAndMemo": "할 일 {{count}}개와 메모를 저장했어요",
+    "memo": "메모를 저장했어요"
+  },
+  "edit": {
+    "confirm": "확인",
+    "titleLabel": "할 일 제목"
+  },
+  "failure": {
+    "consent-required": {
+      "title": "정리하려면 AI 동의가 필요해요",
+      "description": "다시 정리를 누르면 안내를 볼 수 있어요."
+    },
+    "network": {
+      "title": "인터넷에 연결되지 않았어요",
+      "description": "연결을 확인하고 다시 시도해주세요."
+    },
+    "limit": {
+      "title": "이번 달 횟수를 다 썼어요",
+      "description": "다음 달 1일에 다시 생겨요."
+    },
+    "too-long": {
+      "title": "내용이 너무 길어요",
+      "description": "조금 줄여서 다시 시도해주세요."
+    },
+    "in-progress": {
+      "title": "아직 정리하고 있어요",
+      "description": "잠시 후 다시 시도해주세요."
+    },
+    "ai-unavailable": {
+      "title": "지금은 정리하지 못했어요",
+      "description": "잠시 후 다시 시도해주세요."
+    },
+    "unknown": {
+      "title": "문제가 생겼어요",
+      "description": "잠시 후 다시 시도해주세요."
+    },
+    "rejected": {
+      "title": "저장할 수 없는 내용이 있어요",
+      "description": "카드를 고쳐서 다시 시도해주세요."
+    },
+    "key-conflict": {
+      "title": "내용이 바뀌었어요",
+      "description": "한 번 더 누르면 지금 내용으로 저장해요."
+    },
+    "memo-limit": {
+      "title": "메모를 더 추가할 수 없어요",
+      "description": "안 쓰는 메모를 삭제하면 다시 저장할 수 있어요."
+    },
+    "source-memo-missing": {
+      "title": "메모를 찾을 수 없어요",
+      "description": "이미 삭제된 메모라 저장하지 않았어요."
+    }
+  }
+}

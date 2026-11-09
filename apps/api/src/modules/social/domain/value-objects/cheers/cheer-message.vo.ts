@@ -4,11 +4,11 @@ import { CHEER_LIMITS } from "@aido/api/vocabulary";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 export class CheerMessage {
-  private constructor(private readonly text: string | null) {}
+  private constructor(readonly raw: string | undefined) {}
 
-  static of(value?: string | null): CheerMessage {
+  static of(value?: string): CheerMessage {
     if (value == null) {
-      return new CheerMessage(null);
+      return new CheerMessage(undefined);
     }
     if (value.length > CHEER_LIMITS.MAX_MESSAGE_LENGTH) {
       throw new DomainException(ErrorCode.SYS_0002, {
@@ -16,13 +16,5 @@ export class CheerMessage {
       });
     }
     return new CheerMessage(value);
-  }
-
-  get raw(): string | undefined {
-    return this.text ?? undefined;
-  }
-
-  get value(): string | null {
-    return this.text;
   }
 }

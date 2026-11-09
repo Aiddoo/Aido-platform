@@ -13,7 +13,7 @@
 import {
   NO_RESOURCE_BONUSES,
   resolveAllFeatureAccess,
-} from "#api/modules/access/domain/policies/entitlement/entitlement-limits.policy";
+} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import type {
   CurrentUserResult,
   ExchangeCodeResult,
@@ -214,6 +214,8 @@ describe("AuthMapper — 인증 매퍼", () => {
         willRenew: false,
         bankedPremiumDays: 7,
         premiumGrantEndedAt: null,
+        premiumIsTrial: false,
+        premiumPlanType: null,
         isPremium: true,
         entitlements: resolveAllFeatureAccess("PREMIUM", NO_RESOURCE_BONUSES),
       };
@@ -223,7 +225,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(21);
+      expect(Object.keys(response)).toHaveLength(23);
     });
   });
 

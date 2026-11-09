@@ -1,68 +1,67 @@
-import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
-import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
-import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
-import { UserPolicy } from '@src/features/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
+import { invalidateAiSuggestions } from '@src/features/assistant/suggestion/queries/suggestion-cache';
+import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
+import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  QueryErrorBoundary,
+  ReadableContent,
+  Spacing,
+  StyledSafeAreaView,
+  VStack,
+  TintedRefreshControl,
+} from '@src/shared/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-function SuggestionsScreen() {
+export default function SuggestionsScreen() {
   const { t } = useTranslation('ai');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const queryClient = useQueryClient();
+  const featureAccess = useFeatureAccess('AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
-  const isPremiumUser = UserPolicy.isPremiumUser(user);
-
   return (
-    <ScrollView
-      className="flex-1 px-4"
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
-      refreshControl={
-        isPremiumUser ? (
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-        ) : undefined
-      }
-    >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        <Spacing size={16} />
-        {match(isPremiumUser)
-          .with(true, () => (
-            <VStack gap={12}>
-              <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
-              <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
-                <Suspense fallback={<SuggestionsList.Loading />}>
-                  <SuggestionsList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </VStack>
-          ))
-          .with(false, () => <SuggestionsList.PremiumPreview />)
-          .exhaustive()}
-      </StyledSafeAreaView>
-    </ScrollView>
-  );
-}
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="grow pb-8"
+        refreshControl={
+          featureAccess.status === 'premium' ? (
+            <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          ) : undefined
+        }
+      >
+        <StyledSafeAreaView edges={['left', 'right']} className="grow">
+          <ReadableContent className="grow px-4">
+            <Spacing size={16} />
 
-export default function SuggestionsRoute() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <Box className="px-4 pt-4">
-              <SuggestionsList.Loading />
-            </Box>
-          }
-        >
-          <SuggestionsScreen />
-        </Suspense>
-      </QueryErrorBoundary>
+            {match(featureAccess.status)
+              .with('premium', () => (
+                <VStack gap={12}>
+                  <AiConsentNotice title={t('consent.notice.suggestions')} />
+
+                  <QueryErrorBoundary fallback={SuggestionsList.Error}>
+                    <Suspense fallback={<SuggestionsList.Loading />}>
+                      <SuggestionsList />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                </VStack>
+              ))
+              .with('free', () => <SuggestionsList.PremiumPreview />)
+              .with('error', () => (
+                <SuggestionsList.Error
+                  error={featureAccess.error}
+                  reset={() => featureAccess.refetch()}
+                />
+              ))
+              .with('loading', () => <SuggestionsList.Loading />)
+              .exhaustive()}
+          </ReadableContent>
+        </StyledSafeAreaView>
+      </ScrollView>
     </StyledSafeAreaView>
   );
 }

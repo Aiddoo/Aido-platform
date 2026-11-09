@@ -23,7 +23,7 @@ import { type DependencyList, type ReactElement, useEffect, useMemo } from 'reac
 import { useAnimatedReaction } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 
-import { createSeededRandom } from './weather-scene-particles';
+import { createSeededRandom } from '../../utils/weather-scene-particles';
 
 /** 작은 입자 텍스처는 3배 크기로 구워 두고 1/3로 줄여 그린다. */
 export const PARTICLE_TEXTURE_SCALE = 3;
@@ -118,13 +118,13 @@ function useOwnedTexture(element: ReactElement, size: SkSize, deps: DependencyLi
   return texture;
 }
 
-function centerOf(sprite: ParticleSprite) {
+function getCenter(sprite: ParticleSprite) {
   return vec(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2);
 }
 
 function buildCrystalPath(): SkPath {
   const { crystal } = PARTICLE_SPRITES;
-  const center = centerOf(crystal);
+  const center = getCenter(crystal);
   const builder = Skia.PathBuilder.Make();
   for (const index of range(CRYSTAL.arms)) {
     const angle = (index / CRYSTAL.arms) * Math.PI * 2;
@@ -149,7 +149,7 @@ function buildCrystalPath(): SkPath {
 }
 
 function buildLeafVeinPath(): SkPath {
-  const center = centerOf(PARTICLE_SPRITES.leaf);
+  const center = getCenter(PARTICLE_SPRITES.leaf);
   const halfLength = PARTICLE_SPRITES.leaf.width * LEAF.veinHalfLength;
   return Skia.PathBuilder.Make()
     .moveTo(center.x - halfLength, center.y)
@@ -159,13 +159,13 @@ function buildLeafVeinPath(): SkPath {
 
 export function useParticleTexture() {
   const { streak, dot, soft, ice, warm, leaf } = PARTICLE_SPRITES;
-  const crystalPath = useMemo(buildCrystalPath, []);
-  const leafVeinPath = useMemo(buildLeafVeinPath, []);
-  const dotCenter = centerOf(dot);
-  const softCenter = centerOf(soft);
-  const iceCenter = centerOf(ice);
-  const warmCenter = centerOf(warm);
-  const leafCenter = centerOf(leaf);
+  const crystalPath = useMemo(() => buildCrystalPath(), []);
+  const leafVeinPath = useMemo(() => buildLeafVeinPath(), []);
+  const dotCenter = getCenter(dot);
+  const softCenter = getCenter(soft);
+  const iceCenter = getCenter(ice);
+  const warmCenter = getCenter(warm);
+  const leafCenter = getCenter(leaf);
   return useOwnedTexture(
     <Group>
       <RoundedRect
@@ -259,7 +259,7 @@ function createCloudClusters(): Puff[][] {
   );
 }
 
-export function cloudSpriteRect(variant: number) {
+export function createCloudSpriteRect(variant: number) {
   return Skia.XYWHRect(
     0,
     (variant % CLOUD_VARIANTS) * CLOUD_SPRITE.height,
@@ -268,9 +268,9 @@ export function cloudSpriteRect(variant: number) {
   );
 }
 
-/** 뭉게구름은 부드러운 구름 알갱이 일곱 개를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
+/** 뭉게구름은 부드러운 구름 알갱이를 겹친 덩이 세 종류를 한 장에 세로로 구워 쓴다. */
 export function useCloudTexture() {
-  const clusters = useMemo(createCloudClusters, []);
+  const clusters = useMemo(() => createCloudClusters(), []);
   return useOwnedTexture(
     <Group>
       {clusters.map((puffs, variant) => (
@@ -448,7 +448,7 @@ function createSunRays(): SunRay[] {
 
 /** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
 export function useSunRaysTexture() {
-  const rays = useMemo(createSunRays, []);
+  const rays = useMemo(() => createSunRays(), []);
   const center = SUN_RAYS_SIZE / 2;
   return useOwnedTexture(
     <Group
@@ -490,12 +490,9 @@ function SunRayShape({ ray, center }: { ray: SunRay; center: number }) {
   );
 }
 
-export const MOON_TEXTURE_SIZE = 384;
+const MOON_TEXTURE_SIZE = 384;
 
-/**
- * 달 표면: 여러 겹 값 잡음으로 만든 바다, 격자마다 하나씩 흩어 둔 크레이터와 테두리 밝은 면, 가장자리 어둡기.
- * 위상에 맞춰 명암 경계를 흐리게 칠하고, 어두운 면에는 지구 반사광을 남긴다. 위상이 바뀔 때만 다시 굽는다.
- */
+/** 달 표면(값 잡음 바다·크레이터·가장자리 어둡기·지구 반사광). 위상이 바뀔 때만 다시 굽는다 */
 const MOON_SURFACE = Skia.RuntimeEffect.Make(`
 uniform float size;
 uniform float phase;
@@ -574,11 +571,7 @@ const MOON_TERMINATOR_SOFTNESS = 0.036;
 const MOON_EARTHSHINE = 0.09;
 /** 어두운 면은 반쯤 비쳐 밤하늘 색이 스며들게 한다. */
 const MOON_SHADOW_OPACITY = 0.55;
-/** 위상은 1/200 단위로 맞춰 새로 받을 때마다 다시 굽지 않게 한다. */
-const MOON_PHASE_STEPS = 200;
-
 export function useMoonTexture(phase: number) {
-  const step = Math.round(phase * MOON_PHASE_STEPS) / MOON_PHASE_STEPS;
   return useOwnedTexture(
     MOON_SURFACE == null ? (
       <Group />
@@ -588,7 +581,7 @@ export function useMoonTexture(phase: number) {
           source={MOON_SURFACE}
           uniforms={{
             size: MOON_TEXTURE_SIZE,
-            phase: step,
+            phase,
             earthshine: MOON_EARTHSHINE,
             softness: MOON_TERMINATOR_SOFTNESS,
             shadowOpacity: MOON_SHADOW_OPACITY,
@@ -597,6 +590,6 @@ export function useMoonTexture(phase: number) {
       </Rect>
     ),
     { width: MOON_TEXTURE_SIZE, height: MOON_TEXTURE_SIZE },
-    [step],
+    [phase],
   );
 }

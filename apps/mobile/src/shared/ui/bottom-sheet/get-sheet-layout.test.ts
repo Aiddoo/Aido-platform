@@ -2,37 +2,18 @@ import type { ReservedRegion } from 'react-native-reserved-regions';
 
 import { getSheetLayout } from './get-sheet-layout';
 
-const FOLDED_DUO_INSETS = { top: 0, left: 0, right: 84 };
 const STATUS_OCCLUSION: ReservedRegion = {
   kind: 'occlusion',
   frame: { x: 378, y: 20, width: 88, height: 137 },
 };
 
 describe('getSheetLayout', () => {
-  it('화면 안 시트는 접은 iPhone Duo의 레일을 피한다', () => {
+  it('시트는 접은 iPhone Duo의 레일을 덮어 좌우 대칭으로 채우고 상태 표시 영역 아래에서 시작한다', () => {
     // Given
     const input = {
       windowWidth: 466,
-      safeAreaInsets: FOLDED_DUO_INSETS,
+      safeAreaTop: 0,
       minMargin: 16,
-      isFullWindowHost: false,
-      reservedRegions: [STATUS_OCCLUSION],
-    };
-
-    // When
-    const layout = getSheetLayout(input);
-
-    // Then
-    expect(layout).toEqual({ margins: { left: 16, right: 100 }, topInset: 0 });
-  });
-
-  it('전체 창 호스트의 시트는 레일을 덮어 좌우 대칭으로 채우고 상태 표시 영역 아래에서 시작한다', () => {
-    // Given
-    const input = {
-      windowWidth: 466,
-      safeAreaInsets: FOLDED_DUO_INSETS,
-      minMargin: 16,
-      isFullWindowHost: true,
       reservedRegions: [STATUS_OCCLUSION],
     };
 
@@ -52,9 +33,8 @@ describe('getSheetLayout', () => {
     };
     const input = {
       windowWidth: 900,
-      safeAreaInsets: { top: 24, left: 0, right: 0 },
+      safeAreaTop: 24,
       minMargin: 16,
-      isFullWindowHost: true,
       reservedRegions: [fold],
     };
 
@@ -69,9 +49,8 @@ describe('getSheetLayout', () => {
     // Given
     const input = {
       windowWidth: 1200,
-      safeAreaInsets: { top: 24, left: 0, right: 0 },
+      safeAreaTop: 24,
       minMargin: 16,
-      isFullWindowHost: true,
       reservedRegions: [{ ...STATUS_OCCLUSION, frame: { x: 1100, y: 20, width: 88, height: 137 } }],
     };
 

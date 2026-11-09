@@ -1,11 +1,23 @@
 import {
+  type MarketingPushOptOutResponse,
   type NotificationInboxResponse,
   type NotificationInboxItem as ServerNotification,
-  type NotificationRouting,
   notificationRoutingSchema,
 } from '@aido/api';
+import { type Instant, toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type { Notification, NotificationListResult } from '../domains/notification.model';
+import {
+  type Notification,
+  type NotificationListResult,
+  type NotificationRouting,
+} from '../domains/notification.model';
+
+/** 구 서버는 처리 시각을 주지 않아 null이다 */
+export function toMarketingPushOptOutResult(dto: MarketingPushOptOutResponse): {
+  withdrawnAt: Instant | null;
+} {
+  return { withdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt ?? null) };
+}
 
 export function toNotification(server: ServerNotification): Notification {
   const routing = toNotificationRouting(server.metadata);
@@ -20,8 +32,8 @@ export function toNotification(server: ServerNotification): Notification {
     ...(routing && { routing }),
     context: server.context,
     action: server.action,
-    createdAt: new Date(server.createdAt),
-    readAt: server.readAt ? new Date(server.readAt) : null,
+    createdAt: toInstant(server.createdAt),
+    readAt: toNullableInstant(server.readAt),
   };
 }
 
@@ -35,11 +47,12 @@ function toNotificationRouting(metadata: unknown): NotificationRouting | undefin
   return hasRoutingValue ? parsed.data : undefined;
 }
 
-export const toNotificationListResult = (
+export function toNotificationListResult(
   server: NotificationInboxResponse,
-): NotificationListResult => ({
-  notifications: server.notifications.map(toNotification),
-  unreadCount: server.unreadCount,
-  hasMore: server.hasMore,
-  nextCursor: server.nextCursor,
-});
+): NotificationListResult {
+  return {
+    notifications: server.notifications.map(toNotification),
+    hasMore: server.hasMore,
+    nextCursor: server.nextCursor,
+  };
+}

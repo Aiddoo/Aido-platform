@@ -1,4 +1,5 @@
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { createTestQueryClient } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
@@ -18,11 +19,10 @@ const makePage = (id: number): NotificationListResult => ({
       title: 'title',
       body: 'body',
       isRead: false,
-      createdAt: new Date('2026-07-14T00:00:00.000Z'),
+      createdAt: toInstant('2026-07-14T00:00:00.000Z'),
       readAt: null,
     },
   ],
-  unreadCount: 2,
   hasMore: false,
   nextCursor: null,
 });
@@ -34,56 +34,70 @@ const makeData = (...ids: number[]): InfiniteData<NotificationListResult> => ({
 
 describe('notification cache optimistic update', () => {
   let client: QueryClient;
+
   beforeEach(() => {
     client = createTestQueryClient();
   });
+
   afterEach(() => {
     jest.useRealTimers();
   });
-  test('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
+
+  it('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
+    // Given
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
-    const allKey = NOTIFICATION_QUERY_KEYS.list({});
-    const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
+    const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
+    const categoryKey = NOTIFICATION_QUERY_KEYS.list({ category: 'SOCIAL', limit: 20 });
     const data = makeData(1, 2);
     client.setQueryData(allKey, data);
-    client.setQueryData(unreadKey, data);
+    client.setQueryData(categoryKey, data);
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 2);
 
+    // When
     const snapshot = await optimisticallyMarkNotificationsRead(client);
-
     const updatedAll = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
-    const updatedUnread = client.getQueryData<InfiniteData<NotificationListResult>>(unreadKey);
+    const updatedCategory = client.getQueryData<InfiniteData<NotificationListResult>>(categoryKey);
+    const updatedCategoryCount = client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
+    restoreNotificationCache(client, snapshot);
+
+    // Then
     expect(
       updatedAll?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
     ).toBe(true);
-    expect(updatedUnread?.pages.flatMap((page) => page.notifications)).toEqual([]);
-    expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(0);
-
-    restoreNotificationCache(client, snapshot);
+    expect(
+      updatedCategory?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
+    ).toBe(true);
+    expect(updatedCategoryCount).toBe(0);
     expect(client.getQueryData<InfiniteData<NotificationListResult>>(allKey)).toEqual(data);
   });
 
-  test('단일 미읽음 알림은 모든 필터에서 한 번만 감소하고 unread 목록에서 제거한다', async () => {
+  it('단일 미읽음 알림은 모든 필터에서 한 번만 감소한다', async () => {
+    // Given
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
-    const allKey = NOTIFICATION_QUERY_KEYS.list({});
-    const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
+    const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
+    const categoryKey = NOTIFICATION_QUERY_KEYS.list({ category: 'SOCIAL', limit: 20 });
     client.setQueryData(allKey, makeData(1, 2));
-    client.setQueryData(unreadKey, makeData(1, 2));
+    client.setQueryData(categoryKey, makeData(1, 2));
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 2);
 
+    // When
     await optimisticallyMarkNotificationsRead(client, 1);
 
+    // Then
     const all = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
-    const unread = client.getQueryData<InfiniteData<NotificationListResult>>(unreadKey);
+    const category = client.getQueryData<InfiniteData<NotificationListResult>>(categoryKey);
     expect(
       all?.pages.flatMap((page) => page.notifications).find((item) => item.id === 1)?.isRead,
     ).toBe(true);
-    expect(unread?.pages.flatMap((page) => page.notifications).map((item) => item.id)).toEqual([2]);
+    expect(
+      category?.pages.flatMap((page) => page.notifications).find((item) => item.id === 1)?.isRead,
+    ).toBe(true);
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
 
-  test('캐시에 이미 읽은 알림을 다시 처리해도 unread count를 중복 감소시키지 않는다', async () => {
-    const allKey = NOTIFICATION_QUERY_KEYS.list({});
+  it('캐시에 이미 읽은 알림을 다시 처리해도 unread count를 중복 감소시키지 않는다', async () => {
+    // Given
+    const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const page = makePage(1);
     const data: InfiniteData<NotificationListResult> = {
       pages: [
@@ -92,7 +106,7 @@ describe('notification cache optimistic update', () => {
           notifications: page.notifications.map((notification) => ({
             ...notification,
             isRead: true,
-            readAt: new Date('2026-07-14T01:00:00.000Z'),
+            readAt: toInstant('2026-07-14T01:00:00.000Z'),
           })),
         },
       ],
@@ -101,26 +115,39 @@ describe('notification cache optimistic update', () => {
     client.setQueryData(allKey, data);
     client.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 1);
 
+    // When
     await optimisticallyMarkNotificationsRead(client, 1);
 
+    // Then
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
-  test('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
+
+  it('읽지 않은 수를 모르면 한 건을 읽어도 수를 0으로 만들지 않는다', async () => {
     // Given
-    const listKey = NOTIFICATION_QUERY_KEYS.list({});
+    client.setQueryData(NOTIFICATION_QUERY_KEYS.list({ limit: 20 }), makeData(1, 2));
+
+    // When
+    await optimisticallyMarkNotificationsRead(client, 1);
+
+    // Then
+    expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBeUndefined();
+  });
+
+  it('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
+    // Given
+    const listKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const data = makeData(1);
     client.setQueryData(listKey, data);
-    let canApply = true;
-    const cancel = jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
-      canApply = false;
+    const shouldApply = jest.fn(() => true);
+    jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
+      shouldApply.mockReturnValue(false);
     });
+
     // When
-    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, {
-      canApply: () => canApply,
-    });
+    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, { shouldApply });
+
     // Then
-    expect(snapshot).toEqual([]);
+    expect(snapshot).toBeNull();
     expect(client.getQueryData(listKey)).toBe(data);
-    cancel.mockRestore();
   });
 });

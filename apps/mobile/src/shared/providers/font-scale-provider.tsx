@@ -1,13 +1,14 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
+import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
+  FONT_SCALE_STORAGE_KEY,
   type FontScale,
-  readFontScale,
-  writeFontScale,
+  toFontScale,
 } from '@src/shared/preferences/font-scale.preference';
 import type { TextSize } from '@src/shared/ui/text/text.types';
 import { noop } from 'es-toolkit';
-import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
+import { createContext, type PropsWithChildren, use, useCallback, useMemo } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
 // display(날씨 큰 온도)는 이미 충분히 커서 앱 글자 크기 설정과 무관하게 유지함
@@ -75,22 +76,15 @@ interface FontScaleContextValue {
 const FontScaleContext = createContext<FontScaleContextValue | null>(null);
 
 interface FontScaleProviderProps extends PropsWithChildren {
-  syncStorage?: SyncStorage;
+  syncStorage?: ObservableSyncStorage;
 }
 
 export function FontScaleProvider({
   children,
-  syncStorage = mmkvSyncStorage,
+  syncStorage = deviceSyncStorage,
 }: FontScaleProviderProps) {
-  const [fontScale, setFontScaleState] = useState<FontScale>(() => readFontScale(syncStorage));
-
-  const persistScale = useCallback(
-    (newScale: FontScale) => {
-      setFontScaleState(newScale);
-      writeFontScale(syncStorage, newScale);
-    },
-    [syncStorage],
-  );
+  const [savedScale, setFontScale] = useSyncStorageString(syncStorage, FONT_SCALE_STORAGE_KEY);
+  const fontScale = toFontScale(savedScale);
 
   const resolveSize = useCallback(
     (size: TextSize): TextSize => {
@@ -103,22 +97,21 @@ export function FontScaleProvider({
   );
 
   const value = useMemo(
-    () => ({ fontScale, setFontScale: persistScale, resolveSize }),
-    [fontScale, persistScale, resolveSize],
+    () => ({ fontScale, setFontScale, resolveSize }),
+    [fontScale, setFontScale, resolveSize],
   );
 
-  return <FontScaleContext.Provider value={value}>{children}</FontScaleContext.Provider>;
+  return <FontScaleContext value={value}>{children}</FontScaleContext>;
 }
 
-// Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함
-// (useTheme과 다르게 — useTheme은 Text 내부에서 호출되지 않음)
+// Text 내부에서 호출되므로 Provider 없이도 안전해야 한다
 const DEFAULT_CONTEXT: FontScaleContextValue = {
   fontScale: 'medium',
   setFontScale: noop,
   resolveSize: (size: TextSize) => size,
 };
 
-export const useFontScale = (): FontScaleContextValue => {
+export function useFontScale(): FontScaleContextValue {
   const context = use(FontScaleContext);
   return context ?? DEFAULT_CONTEXT;
-};
+}

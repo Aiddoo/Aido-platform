@@ -2,19 +2,31 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { AFTER_COMMIT_TASK_REGISTRY, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
+import { PREMIUM_GRANT_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/premium-grant-ending-notice.source.port.js";
 import { PREMIUM_GRANT_NOTIFIER } from "./application/ports/subscriptions/premium-grant-notifier.port.js";
 import { PREMIUM_GRANT_REPOSITORY } from "./application/ports/subscriptions/premium-grant.repository.port.js";
+import { QUIET_HOURS_READER } from "./application/ports/subscriptions/quiet-hours.reader.port.js";
+import { STORE_SUBSCRIPTION_RECONCILE_SCHEDULER } from "./application/ports/subscriptions/store-subscription-reconcile.scheduler.port.js";
+import { STORE_SUBSCRIPTION_STATUS_READER } from "./application/ports/subscriptions/store-subscription-status.reader.port.js";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
 import { SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY } from "./application/ports/subscriptions/subscription-event-receipt.repository.port.js";
 import { SUBSCRIPTION_USER_MUTATION_LOCK } from "./application/ports/subscriptions/subscription-user-mutation-lock.port.js";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/subscription-webhook-lock.port.js";
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
+import { TRIAL_ENDING_NOTICE_SOURCE } from "./application/ports/subscriptions/trial-ending-notice.source.port.js";
+import { TRIAL_ENDING_NOTIFIER } from "./application/ports/subscriptions/trial-ending-notifier.port.js";
+import { UPCOMING_RENEWAL_NOTICE_SOURCE } from "./application/ports/subscriptions/upcoming-renewal-notice.source.port.js";
+import { UPCOMING_RENEWAL_NOTIFIER } from "./application/ports/subscriptions/upcoming-renewal-notifier.port.js";
+import { BillingNoticeSweeper } from "./application/services/subscriptions/billing-notice-sweeper.js";
 import { PremiumAccessProjector } from "./application/services/subscriptions/premium-access-projector.service.js";
 import { PremiumAccessReader } from "./application/services/subscriptions/premium-access-reader.service.js";
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
-import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle-webhook-event.use-case.js";
+import { ApplyStoreSubscriptionEvent } from "./application/use-cases/subscriptions/apply-store-subscription-event.use-case.js";
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
+import { NotifyEndingTrials } from "./application/use-cases/subscriptions/notify-ending-trials.use-case.js";
+import { NotifyUpcomingRenewals } from "./application/use-cases/subscriptions/notify-upcoming-renewals.use-case.js";
+import { ReconcileStoreSubscriptions } from "./application/use-cases/subscriptions/reconcile-store-subscriptions.use-case.js";
 import { RevokePremiumGrant } from "./application/use-cases/subscriptions/revoke-premium-grant.use-case.js";
 import { SweepPremiumGrants } from "./application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 
@@ -142,26 +154,52 @@ export const revokePremiumGrantProvider: FactoryProvider<RevokePremiumGrant> = {
     }),
 };
 
-export const notifyEndingPremiumGrantsProvider: FactoryProvider<NotifyEndingPremiumGrants> = {
-  provide: NotifyEndingPremiumGrants,
-  inject: [PREMIUM_GRANT_REPOSITORY, PREMIUM_GRANT_NOTIFIER, UNIT_OF_WORK],
+export const billingNoticeSweeperProvider: FactoryProvider<BillingNoticeSweeper> = {
+  provide: BillingNoticeSweeper,
+  inject: [QUIET_HOURS_READER, UNIT_OF_WORK],
   useFactory: (
-    premiumGrantRepository: ConstructorParameters<
-      typeof NotifyEndingPremiumGrants
-    >[0]["premiumGrantRepository"],
-    notifier: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["notifier"],
-    unitOfWork: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["unitOfWork"],
+    quietHoursReader: ConstructorParameters<typeof BillingNoticeSweeper>[0]["quietHoursReader"],
+    unitOfWork: ConstructorParameters<typeof BillingNoticeSweeper>[0]["unitOfWork"],
   ) =>
-    new NotifyEndingPremiumGrants({
-      premiumGrantRepository,
-      notifier,
+    new BillingNoticeSweeper({
+      quietHoursReader,
       unitOfWork,
-      logger: new Logger(NotifyEndingPremiumGrants.name),
+      logger: new Logger(BillingNoticeSweeper.name),
     }),
 };
 
-export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
-  provide: HandleWebhookEvent,
+export const notifyEndingPremiumGrantsProvider: FactoryProvider<NotifyEndingPremiumGrants> = {
+  provide: NotifyEndingPremiumGrants,
+  inject: [BillingNoticeSweeper, PREMIUM_GRANT_ENDING_NOTICE_SOURCE, PREMIUM_GRANT_NOTIFIER],
+  useFactory: (
+    sweeper: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["source"],
+    notifier: ConstructorParameters<typeof NotifyEndingPremiumGrants>[0]["notifier"],
+  ) => new NotifyEndingPremiumGrants({ sweeper, source, notifier }),
+};
+
+export const notifyEndingTrialsProvider: FactoryProvider<NotifyEndingTrials> = {
+  provide: NotifyEndingTrials,
+  inject: [BillingNoticeSweeper, TRIAL_ENDING_NOTICE_SOURCE, TRIAL_ENDING_NOTIFIER],
+  useFactory: (
+    sweeper: ConstructorParameters<typeof NotifyEndingTrials>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyEndingTrials>[0]["source"],
+    notifier: ConstructorParameters<typeof NotifyEndingTrials>[0]["notifier"],
+  ) => new NotifyEndingTrials({ sweeper, source, notifier }),
+};
+
+export const notifyUpcomingRenewalsProvider: FactoryProvider<NotifyUpcomingRenewals> = {
+  provide: NotifyUpcomingRenewals,
+  inject: [BillingNoticeSweeper, UPCOMING_RENEWAL_NOTICE_SOURCE, UPCOMING_RENEWAL_NOTIFIER],
+  useFactory: (
+    sweeper: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["sweeper"],
+    source: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["source"],
+    notifier: ConstructorParameters<typeof NotifyUpcomingRenewals>[0]["notifier"],
+  ) => new NotifyUpcomingRenewals({ sweeper, source, notifier }),
+};
+
+export const applyStoreSubscriptionEventProvider: FactoryProvider<ApplyStoreSubscriptionEvent> = {
+  provide: ApplyStoreSubscriptionEvent,
   inject: [
     SUBSCRIPTION_REPOSITORY,
     SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,
@@ -171,22 +209,30 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
     SUBSCRIPTION_EVENT_NOTIFIER,
     SUBSCRIPTION_WEBHOOK_LOCK,
     PremiumAccessProjector,
+    STORE_SUBSCRIPTION_RECONCILE_SCHEDULER,
   ],
   useFactory: (
     subscriptionRepository: ConstructorParameters<
-      typeof HandleWebhookEvent
+      typeof ApplyStoreSubscriptionEvent
     >[0]["subscriptionRepository"],
-    receiptRepository: ConstructorParameters<typeof HandleWebhookEvent>[0]["receiptRepository"],
-    userMutationLock: ConstructorParameters<typeof HandleWebhookEvent>[0]["userMutationLock"],
-    unitOfWork: ConstructorParameters<typeof HandleWebhookEvent>[0]["unitOfWork"],
-    cache: ConstructorParameters<typeof HandleWebhookEvent>[0]["cache"],
-    notifier: ConstructorParameters<typeof HandleWebhookEvent>[0]["notifier"],
-    webhookLock: ConstructorParameters<typeof HandleWebhookEvent>[0]["webhookLock"],
+    receiptRepository: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["receiptRepository"],
+    userMutationLock: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["userMutationLock"],
+    unitOfWork: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["cache"],
+    notifier: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["notifier"],
+    webhookLock: ConstructorParameters<typeof ApplyStoreSubscriptionEvent>[0]["webhookLock"],
     premiumAccessProjector: ConstructorParameters<
-      typeof HandleWebhookEvent
+      typeof ApplyStoreSubscriptionEvent
     >[0]["premiumAccessProjector"],
+    reconcileScheduler: ConstructorParameters<
+      typeof ApplyStoreSubscriptionEvent
+    >[0]["reconcileScheduler"],
   ) =>
-    new HandleWebhookEvent({
+    new ApplyStoreSubscriptionEvent({
       subscriptionRepository,
       receiptRepository,
       userMutationLock,
@@ -195,6 +241,41 @@ export const handleWebhookEventProvider: FactoryProvider<HandleWebhookEvent> = {
       notifier,
       webhookLock,
       premiumAccessProjector,
-      logger: new Logger(HandleWebhookEvent.name),
+      reconcileScheduler,
+      logger: new Logger(ApplyStoreSubscriptionEvent.name),
+    }),
+};
+
+export const reconcileStoreSubscriptionsProvider: FactoryProvider<ReconcileStoreSubscriptions> = {
+  provide: ReconcileStoreSubscriptions,
+  inject: [
+    SUBSCRIPTION_REPOSITORY,
+    STORE_SUBSCRIPTION_STATUS_READER,
+    SUBSCRIPTION_USER_MUTATION_LOCK,
+    UNIT_OF_WORK,
+    PremiumAccessProjector,
+    SUBSCRIPTION_CACHE,
+  ],
+  useFactory: (
+    subscriptionRepository: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["subscriptionRepository"],
+    statusReader: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["statusReader"],
+    userMutationLock: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["userMutationLock"],
+    unitOfWork: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["unitOfWork"],
+    premiumAccessProjector: ConstructorParameters<
+      typeof ReconcileStoreSubscriptions
+    >[0]["premiumAccessProjector"],
+    cache: ConstructorParameters<typeof ReconcileStoreSubscriptions>[0]["cache"],
+  ) =>
+    new ReconcileStoreSubscriptions({
+      subscriptionRepository,
+      statusReader,
+      userMutationLock,
+      unitOfWork,
+      premiumAccessProjector,
+      cache,
     }),
 };

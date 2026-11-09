@@ -1,5 +1,8 @@
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 
+import type { TodoTimezoneRebaseEnqueuerPort } from "../../ports/settings/todo-timezone-rebase.enqueuer.port.js";
 import type { UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
 
@@ -12,6 +15,8 @@ interface UpsertPushTimezoneDependencies {
   readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "upsertTimezone">;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
+  readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
+  readonly unitOfWork: UnitOfWorkPort;
 }
 
 export class UpsertPushTimezone {
@@ -22,10 +27,15 @@ export class UpsertPushTimezone {
   }
 
   async execute(input: UpsertPushTimezoneInput): Promise<void> {
-    await this.#dependencies.preferenceRepository.upsertTimezone(input.userId, input.timezone);
+    const { userId, timezone } = input;
+    await this.#dependencies.unitOfWork.run(async () => {
+      if (await this.#dependencies.preferenceRepository.upsertTimezone(userId, timezone)) {
+        await this.#dependencies.todoTimezoneRebase.enqueueRebase(userId, now());
+      }
+    });
     await Promise.all([
       this.#dependencies.reminderTimezoneCache.invalidateActiveTimezones(),
-      this.#dependencies.cache.invalidateUserPreference(input.userId),
+      this.#dependencies.cache.invalidateUserPreference(userId),
     ]);
   }
 }

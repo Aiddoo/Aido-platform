@@ -8,6 +8,7 @@ import {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
 } from "#api/modules/planning/planning-categories.public";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   ProvisioningConsent,
@@ -31,7 +32,7 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
     return this.userSettingsProvisioner.seedDefaults(userId, consent);
   }
 
-  async seedDefaultCategories(userId: string): Promise<void> {
-    await this.categoryProvisioner.seed(userId);
+  async seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void> {
+    await this.categoryProvisioner.seed(userId, locale);
   }
 }

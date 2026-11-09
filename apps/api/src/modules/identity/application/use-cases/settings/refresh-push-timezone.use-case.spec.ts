@@ -21,6 +21,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("Asia/Seoul");
     expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
     expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(1);
+    expect(fixture.todoTimezoneRebase.enqueued).toEqual([fixture.userId]);
   });
   it.each([true, false])(
     "설정 행 존재=%s: 변경이 없으면 행 생성과 캐시 무효화를 하지 않는다",
@@ -37,8 +38,22 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
       expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);
       expect([...fixture.reminderTimezoneCache.activeTimezones]).toEqual(["UTC"]);
       expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(0);
+      expect(fixture.todoTimezoneRebase.enqueued).toEqual([]);
     },
   );
+  it("재계산 작업을 등록하지 못하면 예외를 던져 다음 요청이 다시 시도하게 한다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture();
+    const failure = new Error("queue unavailable");
+    vi.spyOn(fixture.todoTimezoneRebase, "enqueueRebase").mockRejectedValueOnce(failure);
+    // When
+    const refresh = new RefreshPushTimezone(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+    });
+    // Then
+    await expect(refresh).rejects.toBe(failure);
+  });
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
     // Given: 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();

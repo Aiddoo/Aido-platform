@@ -5,7 +5,6 @@ import {
   isStoreSubscriptionRenewing,
   PremiumAccessPolicy,
   type PremiumGrantTerm,
-  premiumGrantEndingNoticeUntil,
   premiumGrantDaysOf,
   premiumGrantEndsAt,
   remainingPremiumGrantMs,
@@ -38,7 +37,13 @@ function banked(id: string, createdAt: string, durationDays = 7): PremiumGrantTe
 }
 
 function store(overrides: Partial<StoreEntitlement> = {}): StoreEntitlement {
-  return { status: "ACTIVE", expiresAt: new Date("2028-03-10T00:00:00.000Z"), ...overrides };
+  return {
+    productId: "com.aido.pro.yearly",
+    startedAt: new Date("2027-03-10T00:00:00.000Z"),
+    status: "ACTIVE",
+    expiresAt: new Date("2028-03-10T00:00:00.000Z"),
+    ...overrides,
+  };
 }
 
 describe("PremiumAccessPolicy", () => {
@@ -157,7 +162,9 @@ describe("PremiumAccessPolicy", () => {
 
   describe("applyStoreEventChain", () => {
     const stored = {
-      revenueCatId: "chain-1",
+      storeSubscriptionId: "chain-1",
+      productId: "com.aido.pro.yearly",
+      startedAt: new Date("2027-03-10T00:00:00.000Z"),
       status: "CANCELLED" as const,
       expiresAt: new Date("2028-03-10T00:00:00.000Z"),
       gracePeriodEndsAt: new Date("2028-03-20T00:00:00.000Z"),
@@ -165,7 +172,7 @@ describe("PremiumAccessPolicy", () => {
 
     it("만료 시각이 없는 이벤트는 저장된 만료 시각과 결제 유예를 유지한다", () => {
       // Given
-      const eventChain = { revenueCatId: "chain-1", status: "ACTIVE" as const };
+      const eventChain = { storeSubscriptionId: "chain-1", status: "ACTIVE" as const };
 
       // When
       const applied = applyStoreEventChain([stored], eventChain);
@@ -173,36 +180,30 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(applied).toEqual([
         {
-          revenueCatId: "chain-1",
+          storeSubscriptionId: "chain-1",
+          productId: "com.aido.pro.yearly",
+          startedAt: stored.startedAt,
           status: "ACTIVE",
           expiresAt: stored.expiresAt,
           gracePeriodEndsAt: stored.gracePeriodEndsAt,
+          periodType: null,
         },
       ]);
     });
 
     it("만료 시각이 null이면 체인의 엔타이틀먼트가 없다", () => {
       // Given
-      const eventChain = { revenueCatId: "chain-1", status: "FREE" as const, expiresAt: null };
+      const eventChain = {
+        storeSubscriptionId: "chain-1",
+        status: "FREE" as const,
+        expiresAt: null,
+      };
 
       // When
       const applied = applyStoreEventChain([stored], eventChain);
 
       // Then
       expect(applied).toEqual([]);
-    });
-  });
-
-  describe("premiumGrantEndingNoticeUntil", () => {
-    it("지금부터 정확히 24시간 뒤까지 끝나는 기간을 안내 대상으로 본다", () => {
-      // Given
-      const now = NOW;
-
-      // When
-      const until = premiumGrantEndingNoticeUntil(now);
-
-      // Then
-      expect(until).toEqual(new Date("2028-02-27T12:00:00.000Z"));
     });
   });
 
@@ -227,6 +228,42 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 0,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: "ANNUAL",
+      });
+    });
+
+    it("Play에서 연간→월간으로 바꿔 새 체인이 생기면 지금 기간·갱신·요금제는 새 체인, 프리미엄 끝은 옛 체인 만료까지다", () => {
+      // Given
+      const annualEndsAt = new Date("2028-12-01T00:00:00.000Z");
+      const monthlyEndsAt = new Date("2028-03-26T12:00:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [
+          store({
+            productId: "com.aido.pro.yearly:yearly-base",
+            startedAt: new Date("2027-12-01T00:00:00.000Z"),
+            expiresAt: annualEndsAt,
+          }),
+          store({
+            productId: "com.aido.pro.monthly:monthly-base",
+            startedAt: NOW,
+            status: "CANCELLED",
+            expiresAt: monthlyEndsAt,
+          }),
+        ],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        planType: "MONTHLY",
+        periodEndsAt: monthlyEndsAt,
+        willRenew: false,
+        endsAt: annualEndsAt,
       });
     });
 
@@ -250,6 +287,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 0,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: null,
       });
     });
 
@@ -271,6 +310,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: null,
       });
     });
 
@@ -292,6 +333,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: null,
       });
     });
 
@@ -316,6 +359,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: true,
         bankedDays: 21,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -337,6 +382,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: false,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -359,6 +406,8 @@ describe("PremiumAccessPolicy", () => {
         willRenew: true,
         bankedDays: 7,
         recentGrantEndedAt: null,
+        isTrial: false,
+        planType: "ANNUAL",
       });
     });
 
@@ -398,6 +447,138 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(access.source).toBe(source);
       expect(access.bankedDays).toBe(7);
+    });
+  });
+
+  describe("무료 체험 (STORE + periodType TRIAL)", () => {
+    const TRIAL_ENDS = new Date("2028-02-29T00:00:00.000Z");
+
+    it("체험 중이면 출처는 STORE이고 isTrial이며 기간 끝은 스토어 만료 시각 그대로다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: TRIAL_ENDS, periodType: "TRIAL" })],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        willRenew: true,
+        periodEndsAt: TRIAL_ENDS,
+      });
+    });
+
+    it.each([
+      // 체험 길이(2주·1주·이미 받은 1개월)는 스토어가 정하고 서버는 다시 계산하지 않는다
+      { name: "윤년 2/29", expiresAt: "2028-02-29T09:15:00.000Z" },
+      { name: "평년 월말 2/28", expiresAt: "2027-02-28T09:15:00.000Z" },
+    ])("$name: 체험 끝은 스토어 expiration_at_ms 그대로다", ({ expiresAt }) => {
+      // Given
+      const ends = new Date(expiresAt);
+      const now = new Date(ends.getTime() - 60_000);
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: ends, periodType: "TRIAL" })],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, now);
+
+      // Then
+      expect(access.periodEndsAt).toEqual(ends);
+      expect(access.endsAt).toEqual(ends);
+    });
+
+    it("체험 중 받은 보상은 쌓아 두고 체험(자동 갱신 대기 3시간)이 끝난 뒤부터 이어 붙인다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: TRIAL_ENDS, periodType: "TRIAL" })],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        bankedDays: 7,
+        periodEndsAt: TRIAL_ENDS,
+        endsAt: new Date("2028-03-07T03:00:00.000Z"),
+      });
+    });
+
+    it("체험을 해지하면 체험 끝에서 바로 쌓아 둔 보상이 이어진다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [
+          store({ status: "CANCELLED", expiresAt: TRIAL_ENDS, periodType: "TRIAL" }),
+        ],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        isTrial: true,
+        willRenew: false,
+        endsAt: new Date("2028-03-07T00:00:00.000Z"),
+      });
+    });
+
+    it("해지한 체험이 끝난 뒤 정리하면 보상은 체험이 끝난 시각부터 시작하고 체험이 아니다", () => {
+      // Given
+      const afterTrial = new Date("2028-02-29T00:10:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [
+          store({ status: "CANCELLED", expiresAt: TRIAL_ENDS, periodType: "TRIAL" }),
+        ],
+        premiumGrants: [banked("invite", "2028-02-20T00:00:00.000Z")],
+      };
+
+      // When
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, afterTrial);
+      const access = PremiumAccessPolicy.resolve(
+        {
+          ...entitlements,
+          premiumGrants: [
+            grant({
+              id: "invite",
+              startsAt: TRIAL_ENDS,
+              endsAt: new Date("2028-03-07T00:00:00.000Z"),
+            }),
+          ],
+        },
+        afterTrial,
+      );
+
+      // Then
+      expect(plan.activations).toEqual([{ grantId: "invite", startsAt: TRIAL_ENDS }]);
+      expect(access).toMatchObject({ source: "GRANT", isTrial: false });
+    });
+
+    it("체험이 결제로 넘어가 NORMAL이 되면 체험이 아니다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [
+          store({ expiresAt: new Date("2029-02-28T00:00:00.000Z"), periodType: "NORMAL" }),
+        ],
+        premiumGrants: [],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access.isTrial).toBe(false);
     });
   });
 

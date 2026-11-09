@@ -45,9 +45,13 @@ export class DispatchDailySignupSummary {
         reportDateStr,
       });
 
-      await this.#dependencies.queue.enqueueSend("admin", message, {
-        jobId: `signup-summary_${reportDateStr}`,
-      });
+      await this.#dependencies.queue.enqueueSend(
+        "admin",
+        { type: "message", message },
+        {
+          jobId: `signup-summary_${reportDateStr}`,
+        },
+      );
 
       const previousDayTotal = sumBy(signupsByProvider, (group) => group.count);
       this.#dependencies.logger.log({

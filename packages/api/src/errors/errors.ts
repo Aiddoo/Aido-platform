@@ -1,3 +1,6 @@
+import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
+import { TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
+import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../vocabulary/voice.constants.js";
 import { HttpStatus } from "./http-status.js";
 import type { ErrorDefinition } from "./types.js";
 
@@ -143,6 +146,12 @@ export const ErrorCode = {
   TODO_0831: "TODO_0831",
   TODO_0832: "TODO_0832",
   TODO_0833: "TODO_0833",
+  TODO_0841: "TODO_0841",
+  TODO_0842: "TODO_0842",
+  TODO_0843: "TODO_0843",
+  TODO_0844: "TODO_0844",
+  TODO_0845: "TODO_0845",
+  TODO_0846: "TODO_0846",
 
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
   TODO_CATEGORY_0851: "TODO_CATEGORY_0851",
@@ -207,6 +216,18 @@ export const ErrorCode = {
   AI_1310: "AI_1310",
   /** AI 데이터 처리 동의가 필요합니다 */
   AI_1311: "AI_1311",
+  /** 녹음이 한 번에 정리할 수 있는 길이를 넘었습니다 */
+  AI_1312: "AI_1312",
+  /** 이번 달 말로 메모하기를 다 썼습니다 */
+  AI_1313: "AI_1313",
+  /** 같은 요청을 아직 처리하고 있습니다 */
+  AI_1314: "AI_1314",
+  /** 저장할 계획이 올바르지 않습니다 */
+  AI_1315: "AI_1315",
+  /** Idempotency-Key 헤더가 필요합니다 */
+  AI_1316: "AI_1316",
+  /** 같은 Idempotency-Key로 다른 요청을 보냈습니다 */
+  AI_1318: "AI_1318",
 
   // 관리자 (ADMIN_1400-1499)
   /** 관리자 권한이 필요합니다 */
@@ -828,6 +849,42 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description: "삭제된 댓글은 수정하거나 답글 또는 좋아요를 추가할 수 없습니다.",
     httpStatus: HttpStatus.CONFLICT,
   },
+  [ErrorCode.TODO_0841]: {
+    code: "TODO_0841",
+    message: "반복 할 일을 찾을 수 없습니다.",
+    description: "해당 ID의 반복 할 일이 존재하지 않거나 현재 사용자의 것이 아닙니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_0842]: {
+    code: "TODO_0842",
+    message: `반복 할 일은 최대 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER}개까지 만들 수 있습니다.`,
+    description: "진행 중인 반복 할 일 수가 시스템 상한에 도달했습니다. 등급과 상관없이 같습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0843]: {
+    code: "TODO_0843",
+    message: "선택한 반복에 맞는 날짜가 없습니다.",
+    description: "시작일과 반복 설정으로 만들 수 있는 회차가 하나도 없습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0844]: {
+    code: "TODO_0844",
+    message: "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+    description: "반복 회차가 아닌 할 일에 수정·삭제 범위를 지정했습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0845]: {
+    code: "TODO_0845",
+    message: "반복 설정이 올바르지 않습니다.",
+    description: "요일·날짜·간격·종료 조합이 반복 규칙에 맞지 않습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0846]: {
+    code: "TODO_0846",
+    message: "이미 끝난 반복입니다.",
+    description: "더 만들 회차가 없는 반복 할 일은 끝내거나 이어서 수정할 수 없습니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
 
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
   [ErrorCode.TODO_CATEGORY_0851]: {
@@ -869,8 +926,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.TODO_CATEGORY_0857]: {
     code: "TODO_CATEGORY_0857",
     message: "카테고리 개수가 최대 한도에 도달했습니다.",
-    description:
-      "무료 사용자의 카테고리 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.",
+    description: `카테고리는 무료 ${PLAN_CATALOG.TODO_CATEGORY.free}개, 프리미엄 ${PLAN_CATALOG.TODO_CATEGORY.premium}개까지 만들 수 있습니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도와 개수가 있습니다.`,
     httpStatus: HttpStatus.FORBIDDEN,
   },
 
@@ -926,8 +982,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.FOLLOW_0909]: {
     code: "FOLLOW_0909",
     message: "친구 수가 최대 한도에 도달했습니다.",
-    description:
-      "무료 사용자의 친구 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.",
+    description: `친구는 무료 ${PLAN_CATALOG.FRIEND.free}명(초대 보상 자리 포함)까지, 프리미엄은 무제한입니다. details.current·limit(출시 앱)과 details.featureQuota에 현재 한도가 있고 차감은 없습니다(details.charged=false).`,
     httpStatus: HttpStatus.FORBIDDEN,
   },
   [ErrorCode.FOLLOW_0910]: {
@@ -990,8 +1045,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 콕 찌르기 (NUDGE_1100-1199)
   [ErrorCode.NUDGE_1101]: {
     code: "NUDGE_1101",
-    message: "일일 콕 찌르기 횟수를 초과했습니다.",
-    description: "FREE 사용자는 하루 3회까지만 콕 찌를 수 있습니다.",
+    message: "오늘 콕 찌르기를 다 썼습니다.",
+    description: `콕 찌르기는 무료 하루 ${PLAN_CATALOG.NUDGE.free}회, 프리미엄은 무제한이고 요청 X-Timezone 자정에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.NUDGE_1102]: {
@@ -1052,8 +1107,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 응원 (CHEER_1200-1299)
   [ErrorCode.CHEER_1201]: {
     code: "CHEER_1201",
-    message: "일일 응원 횟수를 초과했습니다.",
-    description: "FREE 사용자는 하루 3회까지만 응원을 보낼 수 있습니다.",
+    message: "오늘 응원을 다 썼습니다.",
+    description: `응원은 무료 하루 ${PLAN_CATALOG.CHEER.free}회, 프리미엄은 무제한이고 요청 X-Timezone 자정에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.CHEER_1202]: {
@@ -1084,21 +1139,22 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // AI 서비스 (AI_1300-1399)
   [ErrorCode.AI_1301]: {
     code: "AI_1301",
-    message: "AI 서비스를 사용할 수 없습니다.",
-    description: "AI 서비스가 일시적으로 사용 불가능하거나 API 키가 설정되지 않았습니다.",
+    message: "지금은 AI 기능을 쓸 수 없습니다.",
+    description:
+      "동의한 범위의 AI 업체가 모두 일시 장애·결제·인증 문제로 응답하지 못했거나 설정되지 않았습니다. 잠시 후 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
   },
   [ErrorCode.AI_1302]: {
     code: "AI_1302",
-    message: "자연어 파싱에 실패했습니다.",
-    description: "AI가 입력 텍스트를 투두 데이터로 변환하지 못했습니다.",
+    message: "입력한 내용으로 할 일을 만들지 못했습니다.",
+    description:
+      "AI 결과가 안전 정책으로 막혔거나, 길이 제한으로 잘렸거나, 형식이 맞지 않았습니다. 내용을 바꿔 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
   [ErrorCode.AI_1303]: {
     code: "AI_1303",
-    message: "월간 AI 사용 횟수를 초과했습니다.",
-    description:
-      "무료 사용자는 한 달에 5회까지만 AI 기능을 사용할 수 있습니다. (KST 매월 1일 00:00 리셋)",
+    message: "이번 달 AI 할 일 만들기를 다 썼습니다.",
+    description: `AI 할 일 만들기는 무료 월 ${PLAN_CATALOG.AI_PARSE.free}회, 프리미엄은 넉넉하게(월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지) 쓸 수 있습니다. KST 매월 1일 00:00에 다시 채워지며, 이 응답은 횟수를 차감하지 않았습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.AI_1304]: {
@@ -1139,16 +1195,56 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.AI_1310]: {
     code: "AI_1310",
-    message: "AI 요청이 너무 많습니다.",
-    description: "잠시 후 다시 시도해 주세요.",
+    message: "지금 AI 요청이 너무 많습니다.",
+    description:
+      "AI 업체의 요청 한도에 걸렸습니다. 잠시 후 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.AI_1311]: {
     code: "AI_1311",
     message: "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
     description:
-      "1.13.0 이상 앱에서 현재 안내 버전의 AI 데이터 처리(Google Gemini 전송)에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다.",
+      "1.13.0 이상 앱에서 지원하는 안내 버전의 AI 데이터 처리에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다. 동의한 안내 버전이 허용한 업체에만 글자를 보냅니다(2026-10-26: Google Gemini, 2026-11-04: Anthropic Claude·Google Gemini·OpenAI).",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.AI_1312]: {
+    code: "AI_1312",
+    message: "녹음이 한 번에 정리할 수 있는 길이를 넘었습니다.",
+    description: `말로 메모하기 한 번에 보낼 수 있는 글자 수는 무료 ${PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.free.toLocaleString("ko-KR")}자, 프리미엄 ${PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium.toLocaleString("ko-KR")}자입니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details에 보낸 글자 수(characterCount)·현재 등급의 상한(maxCharacters)·현재 한도(featureQuota)가 있습니다.`,
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  [ErrorCode.AI_1313]: {
+    code: "AI_1313",
+    message: "이번 달 말로 메모하기를 다 썼습니다.",
+    description: `말로 메모하기는 무료 월 ${PLAN_CATALOG.VOICE_NOTE.free}회, 프리미엄은 넉넉하게(월 ${PLAN_CATALOG.VOICE_NOTE.fairUse.premium}회까지) 쓸 수 있고 KST 매월 1일 00:00에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.AI_1314]: {
+    code: "AI_1314",
+    message: "같은 요청을 아직 처리하고 있습니다.",
+    description:
+      "같은 Idempotency-Key 요청이 아직 처리 중입니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 잠시 뒤 같은 키로 다시 보내면 처리 결과를 받습니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.AI_1315]: {
+    code: "AI_1315",
+    message: "저장할 계획이 올바르지 않습니다.",
+    description:
+      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것입니다.",
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  [ErrorCode.AI_1316]: {
+    code: "AI_1316",
+    message: "Idempotency-Key 헤더가 필요합니다.",
+    description: `사용자 행동 한 번마다 ${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하의 인쇄 가능한 ASCII 키를 만들어 Idempotency-Key 헤더로 보내고, 재시도할 때 같은 키를 다시 보냅니다. 이 요청은 처리하지 않았고 횟수를 차감하지 않았습니다.`,
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.AI_1318]: {
+    code: "AI_1318",
+    message: "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+    description:
+      "Idempotency-Key는 사용자 행동 한 번을 가리킵니다. 내용이 달라졌으면 새 키로 보냅니다. 이 요청은 처리하지 않았고 횟수를 차감하지 않았습니다(details.charged=false).",
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
 
   // 관리자 (ADMIN_1400-1499)

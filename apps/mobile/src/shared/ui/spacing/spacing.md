@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { Spacing } from '@src/shared/ui/spacing/spacing';
+import { Spacing } from '@src/shared/ui';
 
 // 세로 간격 (기본)
 <Spacing size={16} />

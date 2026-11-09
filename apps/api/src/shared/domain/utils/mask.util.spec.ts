@@ -1,4 +1,4 @@
-import { maskEmail, maskUserId } from "./mask.util.js";
+import { maskEmail } from "./mask.util.js";
 
 describe("mask.util — 로깅 마스킹 유틸", () => {
   describe("maskEmail", () => {
@@ -77,41 +77,6 @@ describe("mask.util — 로깅 마스킹 유틸", () => {
 
       // Then — 마지막 @ 기준 도메인은 corp.com 으로 정확히 분리, 첫 글자 `"` 노출
       expect(result).toBe('"***@corp.com');
-    });
-  });
-
-  describe("maskUserId", () => {
-    it("cuid 앞 6자만 남기고 말줄임표를 붙인다", () => {
-      // Given
-      const userId = "cmmxmf9tx000f1ysse29t7981";
-
-      // When
-      const result = maskUserId(userId);
-
-      // Then
-      expect(result).toBe("cmmxmf…");
-    });
-
-    it("6자 이하 ID 도 말줄임표로 마무리한다", () => {
-      // Given
-      const short = "abc";
-
-      // When
-      const result = maskUserId(short);
-
-      // Then
-      expect(result).toBe("abc…");
-    });
-
-    it("빈 문자열은 <empty> 로 표기한다", () => {
-      // Given
-      const empty = "";
-
-      // When
-      const result = maskUserId(empty);
-
-      // Then
-      expect(result).toBe("<empty>");
     });
   });
 });

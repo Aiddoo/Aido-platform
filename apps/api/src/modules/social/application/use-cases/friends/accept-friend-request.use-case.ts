@@ -33,7 +33,7 @@ interface AcceptFriendRequestDependencies {
   readonly mutationLock: MutationLockPort;
   readonly effects: Pick<
     FriendshipEffects,
-    "invalidateFriendshipCaches" | "notifyMutual" | "checkFirstFriendMilestone"
+    "invalidateFriendshipCaches" | "notifyFriendshipEstablished" | "checkFirstFriendMilestone"
   >;
   readonly logger: ApplicationLogger;
 }
@@ -114,18 +114,10 @@ export class AcceptFriendRequest {
 
     await this.#dependencies.effects.invalidateFriendshipCaches(userId, requesterUserId);
 
-    const userName = myFollow.follower.profile?.name ?? myFollow.follower.userTag;
-    const requesterName = myFollow.following.profile?.name ?? myFollow.following.userTag;
-
-    this.#dependencies.effects.notifyMutual({
-      userId,
-      friendId: requesterUserId,
-      friendName: requesterName,
-    });
-    this.#dependencies.effects.notifyMutual({
-      userId: requesterUserId,
-      friendId: userId,
-      friendName: userName,
+    this.#dependencies.effects.notifyFriendshipEstablished({
+      actorId: userId,
+      actorName: myFollow.follower.profile?.name ?? myFollow.follower.userTag,
+      counterpartId: requesterUserId,
     });
 
     await Promise.all([

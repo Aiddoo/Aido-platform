@@ -1,14 +1,31 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { userConsent } from "#api/platform/database/schema/index";
+import { user, userConsent } from "#api/platform/database/schema/index";
 
 import type {
   ConsentSeedInput,
+  FindMarketingReconfirmTargetsParams,
+  MarketingReconfirmTarget,
   UserConsentRepositoryPort,
 } from "../../../application/ports/settings/user-consent.repository.port.js";
+
+/** 광고성 동의가 있고, 마지막 재확인(없으면 처음 동의)이 cutoff 이전이다. LEAST는 NULL을 건너뛴다 */
+function marketingReconfirmDue(cutoff: Date): SQL | undefined {
+  return and(
+    or(isNotNull(userConsent.marketingAgreedAt), isNotNull(userConsent.marketingPushAgreedAt)),
+    sql`COALESCE(${userConsent.marketingReconfirmedAt}, LEAST(${userConsent.marketingAgreedAt}, ${userConsent.marketingPushAgreedAt})) <= ${sql.param(cutoff, userConsent.marketingReconfirmedAt)}`,
+  );
+}
+
+const reconfirmTargetColumns = {
+  userId: userConsent.userId,
+  marketingAgreedAt: userConsent.marketingAgreedAt,
+  marketingPushAgreedAt: userConsent.marketingPushAgreedAt,
+};
 
 type UserConsentRow = typeof userConsent.$inferSelect;
 type UserConsentPatch = Partial<Omit<typeof userConsent.$inferInsert, "id" | "userId">>;
@@ -60,6 +77,39 @@ export class DrizzleUserConsentRepository implements UserConsentRepositoryPort {
     data: { agreedAt: Date | null },
   ): Promise<UserConsentRow> {
     return this.upsert(userId, { marketingPushAgreedAt: data.agreedAt });
+  }
+
+  async findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.db
+      .select(reconfirmTargetColumns)
+      .from(userConsent)
+      .innerJoin(user, eq(user.id, userConsent.userId))
+      .where(
+        and(
+          marketingReconfirmDue(params.cutoff),
+          isNull(user.deletedAt),
+          eq(user.status, "ACTIVE"),
+          params.afterUserId == null ? undefined : gt(userConsent.userId, params.afterUserId),
+        ),
+      )
+      .orderBy(asc(userConsent.userId))
+      .limit(params.limit);
+  }
+
+  async claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    return this.db
+      .update(userConsent)
+      .set({ marketingReconfirmedAt: params.at })
+      .where(and(inArray(userConsent.userId, [...userIds]), marketingReconfirmDue(params.cutoff)))
+      .returning(reconfirmTargetColumns);
   }
 
   async upsertAiDataSharingConsent(

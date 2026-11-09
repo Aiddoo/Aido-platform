@@ -1,3 +1,6 @@
+import { TodoSeriesMaterializationJob } from "./infrastructure/jobs/series/todo-series-materialization.job.js";
+import { TodoSeriesMaterializationProcessor } from "./infrastructure/jobs/series/todo-series-materialization.processor.js";
+import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todos/todo-timezone-rebase.processor.js";
 import { TodoCreatedHandler } from "./infrastructure/subscribers/todos/todo-created.handler.js";
 import { TodoDeletedHandler } from "./infrastructure/subscribers/todos/todo-deleted.handler.js";
 import { TodoRescheduledHandler } from "./infrastructure/subscribers/todos/todo-rescheduled.handler.js";
@@ -6,8 +9,18 @@ import { TodoUpdatedHandler } from "./infrastructure/subscribers/todos/todo-upda
 import {
   addTodoItemProvider,
   changeTodoCategoryProvider,
-  createRecurringTodosProvider,
   createTodoProvider,
+  todoOccurrenceMaterializerProvider,
+  todoSeriesDueRunnerProvider,
+  todoSeriesCatchUpProvider,
+  materializeDueTodoSeriesProvider,
+  rebaseTodoTimezoneProvider,
+  todoTimezoneResolverProvider,
+  todoSeriesEditEffectsProvider,
+  getTodoSeriesProvider,
+  stopTodoSeriesProvider,
+  startSeriesFromTodoProvider,
+  updateFollowingTodosProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,
@@ -24,15 +37,29 @@ import {
   updateTodoItemProvider,
   updateTodoScheduleProvider,
   updateTodoTitleProvider,
+  editTodoProvider,
   updateTodoProvider,
   updateTodoVisibilityProvider,
 } from "./planning-todos-application.providers.js";
 
 export const TODO_PROVIDERS = [
+  todoTimezoneResolverProvider,
+  rebaseTodoTimezoneProvider,
+  TodoTimezoneRebaseProcessor,
   addTodoItemProvider,
   changeTodoCategoryProvider,
-  createRecurringTodosProvider,
   createTodoProvider,
+  todoOccurrenceMaterializerProvider,
+  todoSeriesDueRunnerProvider,
+  todoSeriesCatchUpProvider,
+  materializeDueTodoSeriesProvider,
+  rebaseTodoTimezoneProvider,
+  todoTimezoneResolverProvider,
+  todoSeriesEditEffectsProvider,
+  getTodoSeriesProvider,
+  stopTodoSeriesProvider,
+  startSeriesFromTodoProvider,
+  updateFollowingTodosProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,
@@ -41,6 +68,7 @@ export const TODO_PROVIDERS = [
   reorderTodoProvider,
   reorderTodoItemsProvider,
   toggleTodoCompleteProvider,
+  editTodoProvider,
   updateTodoProvider,
   updateTodoItemProvider,
   updateTodoScheduleProvider,
@@ -51,6 +79,8 @@ export const TODO_PROVIDERS = [
   getFriendTodosProvider,
   getTodoResourceLimitProvider,
   getTodoSummaryProvider,
+  TodoSeriesMaterializationJob,
+  TodoSeriesMaterializationProcessor,
   TodoCreatedHandler,
   TodoDeletedHandler,
   TodoRescheduledHandler,

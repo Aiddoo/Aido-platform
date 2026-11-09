@@ -109,6 +109,10 @@ export interface WeatherFallbackUser {
 export interface ActiveTodo {
   readonly id: number;
   readonly title: string;
+  /** 반복 회차면 규칙 ID, 단일 할 일이면 null */
+  readonly seriesId: string | null;
+  readonly startDate: string;
+  readonly scheduledLocalTime: string | null;
 }
 
 /** 유저 ID → 푸시 로케일 매핑 */

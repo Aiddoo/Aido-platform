@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
+import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
@@ -15,18 +15,16 @@ import { TodoVisibilityChangedEvent } from "../../events/todos/todo-visibility-c
 import type { TodoId } from "../../value-objects/todos/todo-id.vo.js";
 import {
   TodoSchedule,
-  type TodoScheduleProps,
+  type TodoSchedulePatch,
 } from "../../value-objects/todos/todo-schedule.vo.js";
 import { TodoTitle } from "../../value-objects/todos/todo-title.vo.js";
-
-export type TodoVisibility = "PUBLIC" | "PRIVATE";
 
 export interface TodoDetailsPatch {
   title?: string;
   categoryId?: number;
   startDate?: Date;
   endDate?: Date | null;
-  scheduledTime?: Date | null;
+  scheduledLocalTime?: string | null;
   isAllDay?: boolean;
   visibility?: TodoVisibility;
   completed?: boolean;
@@ -37,8 +35,9 @@ export interface TodoCreationDraft {
   categoryId: number;
   title: string;
   startDate: Date;
-  endDate?: Date | null;
-  scheduledTime?: Date | null;
+  endDate: Date | null;
+  scheduledLocalTime: string | null;
+  scheduledTime: Date | null;
   isAllDay: boolean;
   visibility: TodoVisibility;
 }
@@ -53,7 +52,8 @@ export interface TodoCreationInput {
   title: string;
   startDate: Date;
   endDate?: Date | null;
-  scheduledTime?: Date | null;
+  scheduledLocalTime?: string | null;
+  timezone: string;
   isAllDay?: boolean;
   visibility?: TodoVisibility;
 }
@@ -63,6 +63,7 @@ export interface TodoPersistenceSnapshot {
   categoryId: number;
   startDate: Date;
   endDate: Date | null;
+  scheduledLocalTime: string | null;
   scheduledTime: Date | null;
   isAllDay: boolean;
   visibility: TodoVisibility;
@@ -80,7 +81,8 @@ export interface TodoProps {
   completedAt: Date | null;
   schedule: TodoSchedule;
   visibility: TodoVisibility;
-  recurrenceGroupId: string | null;
+  seriesId: string | null;
+  occurrenceDate: Date | null;
   items: TodoItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -102,7 +104,8 @@ export class Todo extends AggregateRoot<TodoProps> {
       completedAt: props.completedAt == null ? null : new Date(props.completedAt),
       schedule: props.schedule,
       visibility: props.visibility,
-      recurrenceGroupId: props.recurrenceGroupId,
+      seriesId: props.seriesId,
+      occurrenceDate: props.occurrenceDate == null ? null : new Date(props.occurrenceDate),
       items: props.items.map((item) => item.clone()),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
@@ -111,23 +114,19 @@ export class Todo extends AggregateRoot<TodoProps> {
 
   static planCreation(input: TodoCreationInput): TodoCreationDraft {
     TodoTitle.create(input.title);
-    // 생성 시점에도 일정 불변식(endDate >= startDate) 강제 — 도메인 자기방어
-    TodoSchedule.create({
+    const schedule = TodoSchedule.create({
       startDate: input.startDate,
       endDate: input.endDate ?? null,
-      scheduledTime: input.scheduledTime ?? null,
+      scheduledLocalTime: input.scheduledLocalTime ?? null,
       isAllDay: input.isAllDay ?? true,
-    });
+      timezone: input.timezone,
+    }).getValue();
 
     return {
       userId: input.userId,
       categoryId: input.categoryId,
       title: input.title,
-      startDate: new Date(input.startDate),
-      endDate: input.endDate == null ? input.endDate : new Date(input.endDate),
-      scheduledTime:
-        input.scheduledTime == null ? input.scheduledTime : new Date(input.scheduledTime),
-      isAllDay: input.isAllDay ?? true,
+      ...schedule,
       visibility: input.visibility ?? "PUBLIC",
     };
   }
@@ -142,6 +141,7 @@ export class Todo extends AggregateRoot<TodoProps> {
     );
   }
 
+  /** timezone은 스트릭의 "오늘" 경계다. */
   toggleComplete(completed: boolean, timezone: string): boolean {
     if (this.props.completed === completed) {
       return false;
@@ -153,10 +153,31 @@ export class Todo extends AggregateRoot<TodoProps> {
     this.raise(
       new TodoToggledEvent(this.props.id.getValue(), this.props.userId, completed, timezone),
     );
+    if (!completed) {
+      this.#restoreReminders();
+    }
     return true;
   }
 
-  updateDetails(patch: TodoDetailsPatch): void {
+  /** 완료하면 예약이 지워지므로 되돌릴 때 다시 잡는다. 순간은 재계산이 늘 맞춰 둔다. */
+  #restoreReminders(): void {
+    const scheduledTime = this.props.schedule.getScheduledTime();
+    if (scheduledTime != null) {
+      this.raise(
+        new TodoRescheduledEvent(this.props.id.getValue(), this.props.userId, scheduledTime),
+      );
+    }
+  }
+
+  rename(title: string): void {
+    TodoTitle.create(title);
+    this.props.title = title;
+    this.raise(
+      new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
+    );
+  }
+
+  updateDetails(patch: TodoDetailsPatch, timezone: string): void {
     // nullish-strict: PATCH에서 null(비우기)도 변경이다
     if (Object.values(patch).every((value) => value === undefined)) {
       return;
@@ -166,7 +187,7 @@ export class Todo extends AggregateRoot<TodoProps> {
     if (patch.title != null) {
       TodoTitle.create(patch.title);
     }
-    const schedulePatch: Partial<TodoScheduleProps> = {};
+    const schedulePatch: TodoSchedulePatch = {};
     if (patch.startDate != null) {
       schedulePatch.startDate = patch.startDate;
     }
@@ -174,15 +195,18 @@ export class Todo extends AggregateRoot<TodoProps> {
     if (patch.endDate !== undefined) {
       schedulePatch.endDate = patch.endDate;
     }
-    // nullish-strict: scheduledTime null은 시간 지우기다
-    if (patch.scheduledTime !== undefined) {
-      schedulePatch.scheduledTime = patch.scheduledTime;
+    // nullish-strict: 벽시계 null은 시간 지우기다
+    if (patch.scheduledLocalTime !== undefined) {
+      schedulePatch.scheduledLocalTime = patch.scheduledLocalTime;
     }
     if (patch.isAllDay != null) {
       schedulePatch.isAllDay = patch.isAllDay;
     }
     const nextSchedule =
-      Object.keys(schedulePatch).length > 0 ? this.props.schedule.patch(schedulePatch) : null;
+      Object.keys(schedulePatch).length > 0
+        ? this.props.schedule.patch(schedulePatch, timezone)
+        : null;
+    const previousTimeMs = this.props.schedule.getScheduledTime()?.getTime();
 
     if (patch.title != null) {
       this.props.title = patch.title;
@@ -196,20 +220,37 @@ export class Todo extends AggregateRoot<TodoProps> {
     if (patch.visibility != null) {
       this.props.visibility = patch.visibility;
     }
-    this.applyCompletionPatch(patch.completed);
+    const reopened = this.applyCompletionPatch(patch.completed);
 
     this.raise(
       new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
     );
+    if (reopened) {
+      this.#restoreReminders();
+    } else if (
+      nextSchedule != null &&
+      nextSchedule.getScheduledTime()?.getTime() !== previousTimeMs
+    ) {
+      // 수정 화면의 일반 PATCH로 시각을 바꿔도 옛 시각의 예약이 남지 않게 한다.
+      this.raise(
+        new TodoRescheduledEvent(
+          this.props.id.getValue(),
+          this.props.userId,
+          nextSchedule.getScheduledTime(),
+        ),
+      );
+    }
   }
 
-  private applyCompletionPatch(requestedCompletion: boolean | undefined): void {
+  /** 완료를 되돌렸으면 true다. */
+  private applyCompletionPatch(requestedCompletion: boolean | undefined): boolean {
     if (requestedCompletion == null || requestedCompletion === this.props.completed) {
-      return;
+      return false;
     }
 
     this.props.completed = requestedCompletion;
     this.props.completedAt = requestedCompletion ? now() : null;
+    return !requestedCompletion;
   }
 
   reschedule(schedule: TodoSchedule): void {
@@ -257,6 +298,11 @@ export class Todo extends AggregateRoot<TodoProps> {
       -1,
     );
     return { title, sortOrder: maxSortOrder + 1 };
+  }
+
+  /** 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 완료를 유지하면 "완료 + 0/N"이 된다(QA #37). */
+  reopenForAddedItem(timezone: string): boolean {
+    return this.toggleComplete(false, timezone);
   }
 
   updateItem(itemId: number, patch: { title?: string; completed?: boolean }): TodoItem {
@@ -316,12 +362,18 @@ export class Todo extends AggregateRoot<TodoProps> {
       categoryId: this.props.categoryId,
       startDate: schedule.startDate,
       endDate: schedule.endDate,
+      scheduledLocalTime: schedule.scheduledLocalTime,
       scheduledTime: schedule.scheduledTime,
       isAllDay: schedule.isAllDay,
       visibility: this.props.visibility,
       completed: this.props.completed,
       completedAt: this.props.completedAt ? new Date(this.props.completedAt) : null,
     };
+  }
+
+  /** 칸이 빈 옛 행도 사용자가 보던 시각으로 읽는다. 반복으로 전환할 때 규칙의 시각이 된다. */
+  getLocalTimeIn(timezone: string): string | null {
+    return this.props.schedule.getLocalTimeIn(timezone);
   }
 
   getId(): TodoId {
@@ -332,8 +384,20 @@ export class Todo extends AggregateRoot<TodoProps> {
     return this.props.userId;
   }
 
+  getSeriesId(): string | null {
+    return this.props.seriesId;
+  }
+
+  getOccurrenceDate(): Date | null {
+    return this.props.occurrenceDate == null ? null : new Date(this.props.occurrenceDate);
+  }
+
   getSortOrder(): number {
     return this.props.sortOrder;
+  }
+
+  getItemTitles(): { title: string }[] {
+    return this.props.items.map((item) => ({ title: item.getTitle() }));
   }
 
   getItemIds(): number[] {

@@ -1,23 +1,14 @@
 {
   "screenTitle": "친구 관리",
   "fallbackName": "친구",
-  "errors": {
-    "invalidTag": "올바른 해시태그 형식이 아니에요",
-    "emptyTag": "해시태그를 입력해주세요",
-    "searchQueryTooShort": "두 글자 이상 입력해주세요"
-  },
   "toast": {
     "requestSent": "친구 요청을 보냈어요",
     "requestAccepted": "친구 요청을 수락했어요",
     "requestRejected": "친구 요청을 거절했어요",
     "requestFailed": "친구 요청에 실패했어요"
   },
-  "premium": {
-    "unlimitedFriends": "프리미엄 구독으로 무제한 친구를 추가할 수 있어요",
-    "friendLimitTitle": "친구를 더 추가할 수 없어요"
-  },
   "deleteDialog": {
-    "title": "친구를 삭제할까요?",
+    "title": "{{name}}님을 친구에서 삭제할까요?",
     "description": "삭제하면 서로의 할 일이 보이지 않아요"
   },
   "tabs": {
@@ -26,9 +17,10 @@
     "sent": "보낸 요청"
   },
   "list": {
+    "editHintLabel": "친구 목록 안내 보기",
     "friendCount": "총 {{count}}명",
     "requestCount": "총 {{count}}개 요청",
-    "emptyTitle": "친구를 추가해 보세요",
+    "emptyTitle": "친구를 추가해보세요",
     "emptyDescription": "검색 아이콘을 눌러 친구를 찾을 수 있어요",
     "emptyReceived": "아직 받은 요청이 없어요",
     "emptySent": "아직 보낸 요청이 없어요",
@@ -36,10 +28,11 @@
     "accept": "수락",
     "reject": "거절",
     "edit": "편집",
-    "loadFailed": "친구 목록을 불러오지 못했어요"
+    "loadFailed": "친구 목록을 불러오지 못했어요",
+    "countValue": "{{count}}명"
   },
   "add": {
-    "title": "친구를 추가해 보세요",
+    "title": "친구를 추가해보세요",
     "description": "친구와 할 일을 공유하고 콕 찔러줄 수 있어요",
     "tagLabel": "친구 해시태그",
     "submit": "친구 추가하기"
@@ -49,8 +42,7 @@
     "placeholder": "이름 또는 해시태그로 검색",
     "action": {
       "add": "추가",
-      "cancel": "요청 취소",
-      "friend": "친구"
+      "cancel": "요청 취소"
     },
     "empty": {
       "prompt": "이름이나 해시태그로 친구를 찾아보세요",
@@ -59,5 +51,17 @@
       "noResults": "'{{query}}' 검색 결과가 없어요"
     },
     "loadError": "검색 결과를 불러오지 못했어요"
+  },
+  "friendStrip": {
+    "me": "나",
+    "meLabel": "내 할 일 보기",
+    "friendLabel": "{{name}}님의 할 일 보기",
+    "findFriends": "친구 찾기",
+    "findFriendsLabel": "친구 찾기",
+    "loadMoreFailed": "다시 시도",
+    "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
+    "emptyInvite": "초대하기",
+    "emptyInviteHint": "친구를 초대하면 서로의 할 일을 보고 응원할 수 있어요",
+    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해보세요"
   }
 }

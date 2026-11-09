@@ -5,10 +5,10 @@ import type { flexVariants } from './flex.variants';
 
 type FlexVariantProps = VariantProps<typeof flexVariants>;
 
-export type FlexDirection = FlexVariantProps['direction'];
-export type FlexWrap = FlexVariantProps['wrap'];
-export type FlexJustify = FlexVariantProps['justify'];
-export type FlexAlign = FlexVariantProps['align'];
+type FlexDirection = FlexVariantProps['direction'];
+type FlexWrap = FlexVariantProps['wrap'];
+type FlexJustify = FlexVariantProps['justify'];
+type FlexAlign = FlexVariantProps['align'];
 
 export interface FlexProps extends BoxProps {
   direction?: FlexDirection;

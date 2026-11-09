@@ -1,50 +1,54 @@
 {
   "mypage": {
-    "header": "My Account",
+    "empty": {
+      "title": "Choose a menu",
+      "description": "The menu you choose appears here"
+    },
+    "header": "My account",
     "sections": {
-      "activity": "Activity",
+      "friends": "Friends",
+      "records": "Records",
       "subscription": "Subscription",
-      "settings": "Settings"
+      "settings": "Settings",
+      "support": "Help"
     },
     "items": {
-      "friends": "Manage Friends",
-      "categories": "Manage Categories",
-      "achievements": "Achievement Badges",
-      "aiReports": "AI Reports",
+      "friends": "Manage friends",
+      "categories": "Manage categories",
+      "achievements": "Achievement badges",
+      "aiReports": "AI reports",
       "notifications": "Notifications",
       "theme": "Theme",
-      "fontSize": "Font Size",
-      "appIcon": "App Icon",
-      "subscription": "Manage Subscription",
-      "inquiry": "Contact Us",
-      "terms": "Terms & Policies",
+      "fontSize": "Font size",
+      "appIcon": "App icon",
+      "subscription": "Manage subscription",
+      "inquiry": "Contact us",
+      "terms": "Terms & policies",
       "blockedUsers": "Blocked users"
     }
   },
   "logout": {
-    "action": "Sign Out",
-    "confirmTitle": "Sign Out",
+    "action": "Sign out",
+    "confirmTitle": "Sign out",
     "confirmDescription": "Are you sure you want to sign out?"
   },
   "withdraw": {
-    "action": "Delete Account",
-    "confirmTitle": "Delete Account",
+    "action": "Delete account",
+    "confirmTitle": "Delete account",
     "confirmDescription": "You can restore your account within 30 days.\nAre you sure you want to delete it?",
     "confirmAction": "Delete"
   },
   "profile": {
+    "copyTag": "Copy hashtag",
     "defaultName": "Motivated User",
     "avatarAlt": "{{name}}'s profile",
+    "changeImage": "Change profile image",
     "tagCopied": "Hashtag copied",
     "tagCopiedDescription": "Share your 8-character hashtag to receive friend requests",
+    "tagCopyFailed": "Could not copy the hashtag",
     "updateFailed": "Failed to update your profile",
-    "badges": {
-      "admin": "Admin",
-      "premium": "Premium",
-      "basic": "Basic"
-    },
     "imageSheet": {
-      "title": "Choose Profile Image",
+      "title": "Choose profile image",
       "selectedAlt": "Selected profile image",
       "clear": "Clear",
       "save": "Save"
@@ -54,7 +58,7 @@
     "header": "Enter your name",
     "label": "Name",
     "placeholder": "Enter your name",
-    "submit": "Change Name",
+    "submit": "Change name",
     "required": "Please enter your name",
     "maxLength": "Name must be 20 characters or fewer"
   }

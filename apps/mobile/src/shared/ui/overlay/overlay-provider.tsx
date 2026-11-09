@@ -1,15 +1,17 @@
+import { PortalHost } from 'heroui-native';
 import {
   createContext,
   Fragment,
   type ReactNode,
   useCallback,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 
-import { FullWindowHostContext } from '../bottom-sheet/full-window-host-context';
+import { PortalTargetContext } from '../bottom-sheet/portal-target';
 import { OverlayStateContext } from './overlay-state-context';
 
 export interface OverlayController {
@@ -21,32 +23,41 @@ export const OverlayContext = createContext<OverlayController | null>(null);
 
 type OverlayEntry = { element: ReactNode; version: number };
 
-export const OverlayProvider = ({
+export function OverlayProvider({
   children,
   resetKey,
+  disableFullWindowOverlay = false,
 }: {
   children: ReactNode;
   resetKey?: string;
-}) => {
+  /** 시트 route처럼 이미 네이티브 모달 안이면 켠다 */
+  disableFullWindowOverlay?: boolean;
+}) {
   const [overlays, setOverlays] = useState<Map<string, OverlayEntry>>(new Map());
   const versionRef = useRef(0);
+  const hostName = useId();
+  const portalTarget = useMemo(
+    () => ({ hostName, disableFullWindowOverlay }),
+    [hostName, disableFullWindowOverlay],
+  );
 
   useLayoutEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- resetKey가 바뀌면(로그아웃 등) 떠 있던 오버레이를 한 번에 걷는다
     setOverlays((previous) => (previous.size === 0 ? previous : new Map()));
   }, [resetKey]);
 
   const mount = useCallback((id: string, element: ReactNode) => {
     const version = ++versionRef.current;
-    setOverlays((prev) => {
-      const next = new Map(prev);
+    setOverlays((previous) => {
+      const next = new Map(previous);
       next.set(id, { element, version });
       return next;
     });
   }, []);
 
   const unmount = useCallback((id: string) => {
-    setOverlays((prev) => {
-      const next = new Map(prev);
+    setOverlays((previous) => {
+      const next = new Map(previous);
       next.delete(id);
       return next;
     });
@@ -58,13 +69,14 @@ export const OverlayProvider = ({
   return (
     <OverlayContext.Provider value={controller}>
       <OverlayStateContext.Provider value={state}>
-        {children}
-        <FullWindowHostContext value>
+        <PortalTargetContext value={portalTarget}>
+          {children}
           {[...overlays.entries()].map(([id, { element, version }]) => (
             <Fragment key={`${id}-${version}`}>{element}</Fragment>
           ))}
-        </FullWindowHostContext>
+          <PortalHost name={hostName} />
+        </PortalTargetContext>
       </OverlayStateContext.Provider>
     </OverlayContext.Provider>
   );
-};
+}

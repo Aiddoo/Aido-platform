@@ -9,5 +9,13 @@ export {
   type GrantPremiumResult,
   type PremiumGranterPort,
 } from "./application/ports/subscriptions/premium-granter.port.js";
-export type { SubscriptionEventPayload } from "./application/types/subscriptions/subscription-event.payload.js";
+export type {
+  SubscriptionEventPayload,
+  SubscriptionLifecycle,
+} from "./application/types/subscriptions/subscription-event.payload.js";
+export type {
+  StoreSubscriptionEventKind,
+  SubscriptionEndReason,
+  SubscriptionStore,
+} from "./domain/types/subscriptions/store-subscription.types.js";
 export { BillingSubscriptionsModule } from "./billing-subscriptions.module.js";

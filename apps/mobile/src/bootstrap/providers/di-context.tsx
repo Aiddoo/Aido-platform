@@ -1,126 +1,193 @@
-import type { Analytics } from '@src/core/ports/analytics';
-import type { ClipboardGateway } from '@src/core/ports/clipboard';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
+import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
+import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import type { Logger } from '@src/core/ports/logger';
-import type { NetworkStatusGateway } from '@src/core/ports/network-status';
+import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
+import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
+import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
+import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
+import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
+import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
+import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { SessionManager } from '@src/core/session/session-manager';
-import type { AchievementService } from '@src/features/achievement/apis/achievement.service';
-import type { ActivationService } from '@src/features/activation/apis/activation.service';
-import type { AiService } from '@src/features/ai/apis/ai.service';
-import type { AppIconService } from '@src/features/app-icon/apis/app-icon.service';
-import type { AppVersionService } from '@src/features/app-version/apis/app-version.service';
-import type { AuthService } from '@src/features/auth/apis/auth.service';
-import type { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
-import type { FeatureDiscoveryStateService } from '@src/features/feature-discovery/apis/feature-discovery-state.service';
-import type { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
-import type { FriendService } from '@src/features/friend/apis/friend.service';
-import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
-import type { InviteShareService } from '@src/features/invite/apis/invite-share.service';
-import type { InviteService } from '@src/features/invite/apis/invite.service';
-import type { MemoService } from '@src/features/memo/apis/memo.service';
-import type { ModerationService } from '@src/features/moderation/apis/moderation.service';
-import type { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
+import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
+import type { FeatureCampaignService } from '@src/features/app-config/feature-campaign/apis/feature-campaign.service';
+import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
+import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
+import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
+import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
+import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
+import type { UpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
+import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
+import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
+import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
+import type { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
+import type { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
+import type { WidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
+import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
+import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
+import type { AuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
+import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
+import type { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
+import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
+import type { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
+import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
+import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
+import type { UserService } from '@src/features/identity/user/apis/user.service';
+import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
+import type { ReportService } from '@src/features/insights/report/apis/report.service';
+import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import type { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
+import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import type { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
-import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
-import type { PreferenceService } from '@src/features/preference/apis/preference.service';
-import type { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
-import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
-import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
-import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
-import type { FriendStripHintService } from '@src/features/todo/apis/friend-strip-hint.service';
-import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
-import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
-import type { TodoService } from '@src/features/todo/apis/todo.service';
-import type { UserService } from '@src/features/user/apis/user.service';
-import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
+import type { PushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
+import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import type { CalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
+import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
+import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import type { FriendService } from '@src/features/social/friend/apis/friend.service';
+import type { AllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
+import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
+import type { InviteService } from '@src/features/social/invite/apis/invite.service';
+import type { PawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
+import type { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
+import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
+import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
+import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
+import type { OfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
+import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import type { VoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
+import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+import type { VoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
+import type { VoiceService } from '@src/features/voice/apis/voice.service';
+import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
-import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
-import type { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
-import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import type { DraftService } from '@src/shared/draft/draft.service';
-import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
 import { createContext, type PropsWithChildren, use } from 'react';
 
-import type { QueryCacheStorage } from './query-cache-persistence';
+import type { QueryCacheStorage } from '../query/query-cache-persistence';
 
-export interface DIContainer {
-  // Infrastructure
+export interface DIContainer extends SharedDependencies {
   storage: Storage;
-  locationGateway: LocationGateway;
+  deviceLocation: LocationGateway;
   clipboard: ClipboardGateway;
+  applicationMetadata: NativeApplicationMetadataGateway;
+  socialAuth: SocialAuthGateway;
+  appStoreListing: AppStoreListingGateway;
   networkStatus: NetworkStatusGateway;
-  logger: Logger;
-  analytics: Analytics;
-  errorReporter: ErrorReporter;
+  viewCapture: ViewCaptureGateway;
+  idGenerator: IdGenerator;
+  speechRecognizer: SpeechRecognizer;
+  /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
+  purchasesGateway: PurchasesGateway;
+  pushNotification: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
+  authSessionStore: AuthSessionStore;
+  /** 토큰이 지워질 때마다 올라가는 세션 세대 */
+  sessionEpoch: SessionEpoch;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
   sessionManager: SessionManager;
+  /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
+  sessionCleanupService: SessionCleanupService;
+  /** 오프라인 로그아웃 뒤 온라인이 되면 서버 세션과 푸시 기기를 푼다 */
+  sessionRevocationService: SessionRevocationService;
   /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
-  featureAttribution: FeatureAttributionStore;
-  /** 작성 중 초안(사용자 범위 로컬 상태) */
-  draftService: DraftService;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
+  recognitionLanguageRepository: RecognitionLanguageRepository;
+  offlineModelPromptRepository: OfflineModelPromptRepository;
 
-  // Services
   achievementService: AchievementService;
-  aiService: AiService;
+  reportService: ReportService;
+  suggestionService: SuggestionService;
+  consentService: ConsentService;
   authService: AuthService;
   preferenceService: PreferenceService;
   activationService: ActivationService;
+  activationProgressRepository: ActivationProgressRepository;
   appVersionService: AppVersionService;
   appIconService: AppIconService;
   friendService: FriendService;
   inviteService: InviteService;
+  pendingRedemptionService: PendingRedemptionService;
+  allDoneBannerRepository: AllDoneBannerRepository;
+  pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   inviteShareService: InviteShareService;
-  featureDiscoveryService: FeatureDiscoveryService;
-  featureDiscoveryStateService: FeatureDiscoveryStateService;
+  featureCampaignService: FeatureCampaignService;
+  whatsNewRepository: WhatsNewRepository;
   inquiryService: InquiryService;
   memoService: MemoService;
+  voiceService: VoiceService;
   moderationService: ModerationService;
   subTodoService: SubTodoService;
   todoService: TodoService;
+  calendarViewModeRepository: CalendarViewModeRepository;
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
+  notificationBadgeService: NotificationBadgeService;
+  /** 눌린 푸시 응답 슬롯 */
+  notificationEntryStore: NotificationEntryStore;
   pushDeviceService: PushDeviceService;
-  pushPromptService: PushPromptService;
-  marketingPushPromptService: MarketingPushPromptService;
+  deviceTimezoneService: DeviceTimezoneService;
+  pushPermissionPromptRepository: PushPermissionPromptRepository;
+  marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
-  friendStripHintService: FriendStripHintService;
   storeReviewService: StoreReviewService;
   userService: UserService;
-  revenueCatSdkManager: RevenueCatSdkManager;
+  purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
+  entitlementService: EntitlementService;
+  upsellDismissalRepository: UpsellDismissalRepository;
   weatherService: WeatherService;
-  weatherIntroductionService: WeatherIntroductionService;
+  weatherLocationService: WeatherLocationService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
+  logOutDeviceService: LogOutDeviceService;
+  voiceNoteStorageService: VoiceNoteStorageService;
+  voiceNoteDraftRepository: VoiceNoteDraftRepository;
+  voiceRecordingRepository: VoiceRecordingRepository;
 }
 
-export const DIContext = createContext<DIContainer | null>(null);
+const DIContext = createContext<DIContainer | null>(null);
 
 interface StaticDIProviderProps extends PropsWithChildren {
   container: DIContainer;
 }
 
-/**
- * 미리 구성된 컨테이너를 그대로 주입하는 Provider.
- * 구현체 모듈(vendor 초기화 포함)을 로드하지 않으므로 테스트에서 사용한다.
- */
-export const StaticDIProvider = ({ container, children }: StaticDIProviderProps) => (
-  <DIContext.Provider value={container}>{children}</DIContext.Provider>
-);
+export function StaticDIProvider({ container, children }: StaticDIProviderProps) {
+  return (
+    <DIContext.Provider value={container}>
+      <SharedDIContext.Provider value={container}>{children}</SharedDIContext.Provider>
+    </DIContext.Provider>
+  );
+}
 
-export const useDI = (): DIContainer => {
+export {
+  useAnalytics,
+  useAppLifecycle,
+  useDraftService,
+  useErrorReporter,
+  useExternalLink,
+  useFeatureAttribution,
+  useHaptics,
+  useIncomingLink,
+  useLogger,
+  /** @public */
+  useSyncStorage,
+} from '@src/shared/di/shared-di-context';
+
+function useDI(): DIContainer {
   const context = use(DIContext);
 
   if (!context) {
@@ -128,53 +195,211 @@ export const useDI = (): DIContainer => {
   }
 
   return context;
-};
+}
 
-// Infrastructure Hooks
-export const useLocationGateway = () => useDI().locationGateway;
-export const useClipboard = () => useDI().clipboard;
-export const useNetworkStatus = () => useDI().networkStatus;
-export const useTokenStore = () => useDI().tokenStore;
-export const useFeatureAttribution = () => useDI().featureAttribution;
-export const useLogger = () => useDI().logger;
-export const useAnalytics = () => useDI().analytics;
-export const useErrorReporter = () => useDI().errorReporter;
-export const useDraftService = () => useDI().draftService;
-export const useQueryCacheStorage = () => useDI().queryCacheStorage;
+export function useDeviceLocation() {
+  return useDI().deviceLocation;
+}
+export function useSocialAuth() {
+  return useDI().socialAuth;
+}
+export function useApplicationMetadata() {
+  return useDI().applicationMetadata;
+}
+export function useAppStoreListing() {
+  return useDI().appStoreListing;
+}
+export function useClipboard() {
+  return useDI().clipboard;
+}
+export function useViewCapture() {
+  return useDI().viewCapture;
+}
+export function useNetworkStatus() {
+  return useDI().networkStatus;
+}
+export function useTokenStore() {
+  return useDI().tokenStore;
+}
+export function useAuthSessionStore() {
+  return useDI().authSessionStore;
+}
+export function useSessionEpoch() {
+  return useDI().sessionEpoch;
+}
+export function useSessionCleanupService() {
+  return useDI().sessionCleanupService;
+}
+export function useSessionRevocationService() {
+  return useDI().sessionRevocationService;
+}
+export function useIdGenerator() {
+  return useDI().idGenerator;
+}
+export function useSpeechRecognizer() {
+  return useDI().speechRecognizer;
+}
+export function usePushNotification() {
+  return useDI().pushNotification;
+}
+export function useQueryCacheStorage() {
+  return useDI().queryCacheStorage;
+}
+export function useRecognitionLanguageRepository() {
+  return useDI().recognitionLanguageRepository;
+}
+export function useOfflineModelPromptRepository() {
+  return useDI().offlineModelPromptRepository;
+}
 
-// Service Hooks
-export const useAchievementService = () => useDI().achievementService;
-export const useAiService = () => useDI().aiService;
-export const useAuthService = () => useDI().authService;
-export const usePreferenceService = () => useDI().preferenceService;
-export const useActivationService = () => useDI().activationService;
-export const useAppVersionService = () => useDI().appVersionService;
-export const useFriendService = () => useDI().friendService;
-export const useInviteService = () => useDI().inviteService;
-export const useInviteShareService = () => useDI().inviteShareService;
-export const useFeatureDiscoveryService = () => useDI().featureDiscoveryService;
-export const useFeatureDiscoveryStateService = () => useDI().featureDiscoveryStateService;
-export const useInquiryService = () => useDI().inquiryService;
-export const useMemoService = () => useDI().memoService;
-export const useModerationService = () => useDI().moderationService;
-export const useSubTodoService = () => useDI().subTodoService;
-export const useTodoService = () => useDI().todoService;
-export const useTodoCommentService = () => useDI().todoCommentService;
-export const useTodoCategoryService = () => useDI().todoCategoryService;
-export const useNotificationService = () => useDI().notificationService;
-export const usePushDeviceService = () => useDI().pushDeviceService;
-export const usePushPromptService = () => useDI().pushPromptService;
-export const useMarketingPushPromptService = () => useDI().marketingPushPromptService;
-export const useTodoNudgeService = () => useDI().todoNudgeService;
-export const useCoachmarkService = () => useDI().coachmarkService;
-export const useFriendStripHintService = () => useDI().friendStripHintService;
-export const useStoreReviewService = () => useDI().storeReviewService;
-export const useUserService = () => useDI().userService;
-export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
-export const useSubscriptionService = () => useDI().subscriptionService;
-export const useWeatherIntroductionService = () => useDI().weatherIntroductionService;
-export const useWeatherService = () => useDI().weatherService;
-export const useWidgetSyncService = () => useDI().widgetSyncService;
-export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;
+export function useAchievementService() {
+  return useDI().achievementService;
+}
+export function useReportService() {
+  return useDI().reportService;
+}
+export function useSuggestionService() {
+  return useDI().suggestionService;
+}
+export function useConsentService() {
+  return useDI().consentService;
+}
+export function useAuthService() {
+  return useDI().authService;
+}
+export function usePreferenceService() {
+  return useDI().preferenceService;
+}
+export function useActivationService() {
+  return useDI().activationService;
+}
+export function useActivationProgressRepository() {
+  return useDI().activationProgressRepository;
+}
+export function useAppVersionService() {
+  return useDI().appVersionService;
+}
+export function useFriendService() {
+  return useDI().friendService;
+}
+export function useInviteService() {
+  return useDI().inviteService;
+}
+export function usePendingRedemptionService() {
+  return useDI().pendingRedemptionService;
+}
+export function useAllDoneBannerRepository() {
+  return useDI().allDoneBannerRepository;
+}
+export function usePawPrintCelebrationRepository() {
+  return useDI().pawPrintCelebrationRepository;
+}
+export function useInviteShareService() {
+  return useDI().inviteShareService;
+}
+export function useFeatureCampaignService() {
+  return useDI().featureCampaignService;
+}
+export function useWhatsNewRepository() {
+  return useDI().whatsNewRepository;
+}
+export function useInquiryService() {
+  return useDI().inquiryService;
+}
+export function useMemoService() {
+  return useDI().memoService;
+}
+export function useVoiceService() {
+  return useDI().voiceService;
+}
+export function useModerationService() {
+  return useDI().moderationService;
+}
+export function useSubTodoService() {
+  return useDI().subTodoService;
+}
+export function useTodoService() {
+  return useDI().todoService;
+}
+export function useTodoCommentService() {
+  return useDI().todoCommentService;
+}
+export function useTodoCategoryService() {
+  return useDI().todoCategoryService;
+}
+export function useNotificationBadgeService() {
+  return useDI().notificationBadgeService;
+}
+export function useNotificationService() {
+  return useDI().notificationService;
+}
+export function useNotificationEntryStore() {
+  return useDI().notificationEntryStore;
+}
+export function usePushDeviceService() {
+  return useDI().pushDeviceService;
+}
+export function useDeviceTimezoneService() {
+  return useDI().deviceTimezoneService;
+}
+export function useCalendarViewModeRepository() {
+  return useDI().calendarViewModeRepository;
+}
+export function usePushPermissionPromptRepository() {
+  return useDI().pushPermissionPromptRepository;
+}
+export function useMarketingPushPromptRepository() {
+  return useDI().marketingPushPromptRepository;
+}
+export function useTodoNudgeService() {
+  return useDI().todoNudgeService;
+}
+export function useCoachmarkService() {
+  return useDI().coachmarkService;
+}
+export function useStoreReviewService() {
+  return useDI().storeReviewService;
+}
+export function useUserService() {
+  return useDI().userService;
+}
+export function usePurchasesSession() {
+  return useDI().purchasesSession;
+}
+export function useSubscriptionService() {
+  return useDI().subscriptionService;
+}
+export function useEntitlementService() {
+  return useDI().entitlementService;
+}
+export function useUpsellDismissalRepository() {
+  return useDI().upsellDismissalRepository;
+}
+export function useWeatherLocationService() {
+  return useDI().weatherLocationService;
+}
+export function useWeatherService() {
+  return useDI().weatherService;
+}
+export function useWidgetSyncService() {
+  return useDI().widgetSyncService;
+}
+export function useWidgetNavigationRepository() {
+  return useDI().widgetNavigationRepository;
+}
+export function useLogOutDeviceService() {
+  return useDI().logOutDeviceService;
+}
+export function useVoiceNoteStorageService() {
+  return useDI().voiceNoteStorageService;
+}
+export function useVoiceNoteDraftRepository() {
+  return useDI().voiceNoteDraftRepository;
+}
+export function useVoiceRecordingRepository() {
+  return useDI().voiceRecordingRepository;
+}
 
-export const useAppIconService = () => useDI().appIconService;
+export function useAppIconService() {
+  return useDI().appIconService;
+}

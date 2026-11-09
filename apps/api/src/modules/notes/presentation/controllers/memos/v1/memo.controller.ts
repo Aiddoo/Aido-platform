@@ -30,7 +30,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
 import { ConvertMemoToTodo } from "../../../../application/use-cases/memos/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodos } from "../../../../application/use-cases/memos/convert-memo-to-todos.use-case.js";
@@ -286,7 +285,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ConvertMemoToTodoDto }) dto: ConvertMemoToTodoDto,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodoResponseDto> {
     return this.convertMemoToTodo.execute({
       userId: user.userId,
@@ -295,14 +294,12 @@ export class MemoController {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
         endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
-        scheduledTime:
-          dto.scheduledTime == null
-            ? undefined
-            : parseLocalDateTime(dto.startDate, dto.scheduledTime, tz),
+        scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
         items: dto.items,
       },
+      timezone: tz,
     });
   }
 
@@ -338,12 +335,12 @@ export class MemoController {
   @ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
-  @ApiForbiddenError(ErrorCode.TODO_0811)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.TODO_0811, ErrorCode.TODO_0813])
   async convertToTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ConvertMemoToTodosDto }) dto: ConvertMemoToTodosDto,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodosResponseDto> {
     return this.convertMemoToTodos.execute({
       userId: user.userId,
@@ -354,20 +351,21 @@ export class MemoController {
           categoryId: todo.categoryId,
           startDate: parseDateOnly(todo.startDate),
           endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
-          scheduledTime:
-            todo.scheduledTime == null
-              ? undefined
-              : parseLocalDateTime(todo.startDate, todo.scheduledTime, tz),
+          scheduledTime: todo.scheduledTime,
           isAllDay: todo.isAllDay,
           visibility: todo.visibility,
-          isRecurring: todo.isRecurring,
-          recurrence:
-            todo.recurrence != null
+          // 출시 앱(1.14.x까지)은 isRecurring + recurrence(요일 + 종료일)만 보낸다.
+          repeat:
+            todo.repeat ??
+            (todo.isRecurring && todo.recurrence != null
               ? {
-                  daysOfWeek: todo.recurrence.daysOfWeek,
-                  endDate: parseDateOnly(todo.recurrence.endDate),
+                  frequency: "WEEKLY",
+                  interval: 1,
+                  weekdays: todo.recurrence.daysOfWeek,
+                  end: { type: "UNTIL", date: todo.recurrence.endDate },
                 }
-              : undefined,
+              : undefined),
+          usesLegacySeriesLimit: todo.repeat == null,
           items: todo.items,
         })),
       },

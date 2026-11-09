@@ -1,22 +1,36 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { FriendTodo, Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "../../../application/models/todos/todo.types.js";
+import type {
+  TodoPlanReaderPort,
+  UpcomingTodoView,
+} from "../../../application/ports/todos/todo-plan.reader.port.js";
 import type { TodoReadRepositoryPort } from "../../../application/ports/todos/todo-read.repository.port.js";
 import { todoDateCondition } from "./todo-date.filter.js";
 import { TodoMapper } from "./todo-response.mapper.js";
 
-const todoWith = {
+const todoSeriesRuleColumns = {
+  repeatFrequency: true,
+  repeatInterval: true,
+  repeatWeekdays: true,
+  repeatMonthDay: true,
+  repeatUntil: true,
+  repeatCount: true,
+} as const;
+
+const friendTodoWith = {
   category: { columns: { id: true, name: true, color: true, sortOrder: true } },
   items: {
     columns: {
@@ -31,9 +45,22 @@ const todoWith = {
   },
 } as const;
 
+const todoWith = {
+  ...friendTodoWith,
+  series: { columns: todoSeriesRuleColumns },
+} as const;
+
+function orderByIds<Row extends { id: number }>(rows: Row[], ids: readonly number[]): Row[] {
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => {
+    const row = rowById.get(id);
+    return row == null ? [] : [row];
+  });
+}
+
 /** 조회 projection과 집계만 소유하며 활성 CLS transaction에 참여한다. */
 @Injectable()
-export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
+export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPlanReaderPort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   private get db() {
@@ -46,14 +73,30 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
   }
 
   async findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]> {
-    return this.findPage(params);
+    const ids = await this.findPageIds(params, false);
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { id: { in: ids } },
+      with: todoWith,
+    });
+    return TodoMapper.toManyResponse(orderByIds(rows, ids));
   }
 
-  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoResponse[]> {
-    return this.findPage({ ...params, userId: params.friendUserId }, true);
+  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]> {
+    const ids = await this.findPageIds({ ...params, userId: params.friendUserId }, true);
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { id: { in: ids } },
+      with: friendTodoWith,
+    });
+    return TodoMapper.toManyFriendResponse(orderByIds(rows, ids));
   }
 
-  private async findPage(params: FindTodosParams, publicOnly = false): Promise<TodoResponse[]> {
+  private async findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
     const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
     let anchorCondition;
     if (cursor != null) {
@@ -85,21 +128,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
       )
       .orderBy(asc(todoCategory.sortOrder), asc(todo.sortOrder), asc(todo.id))
       .limit(size + 1);
-    if (ids.length === 0) {
-      return [];
-    }
-
-    const rows = await this.db.query.todo.findMany({
-      where: { id: { in: ids.map((row) => row.id) } },
-      with: todoWith,
-    });
-    const rowById = new Map(rows.map((row) => [row.id, row]));
-    return TodoMapper.toManyResponse(
-      ids.flatMap(({ id }) => {
-        const row = rowById.get(id);
-        return row == null ? [] : [row];
-      }),
-    );
+    return ids.map((row) => row.id);
   }
 
   countCompletedByUser(userId: string): Promise<number> {
@@ -136,12 +165,9 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
       .limit(limit);
   }
 
-  async findManyByRecurrenceGroupId(
-    userId: string,
-    recurrenceGroupId: string,
-  ): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
     const rows = await this.db.query.todo.findMany({
-      where: { userId, recurrenceGroupId },
+      where: { userId, seriesId },
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });
@@ -153,10 +179,72 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
     return row == null ? null : TodoMapper.toResponse(row);
   }
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return this.db.$count(
+  async findManyByIds(userId: string, ids: readonly number[]): Promise<TodoResponse[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { userId, id: { in: [...ids] } },
+      with: todoWith,
+      orderBy: { sortOrder: "asc" },
+    });
+    return TodoMapper.toManyResponse(rows);
+  }
+
+  async findUpcoming(
+    userId: string,
+    input: { readonly fromDate: Date; readonly limit: number },
+  ): Promise<UpcomingTodoView[]> {
+    // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
+    const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
+    const upcoming = this.db
+      .selectDistinctOn([groupKey], {
+        id: todo.id,
+        title: todo.title,
+        startDate: todo.startDate,
+        seriesId: todo.seriesId,
+      })
+      .from(todo)
+      .where(
+        and(
+          eq(todo.userId, userId),
+          eq(todo.completed, false),
+          or(gte(todo.startDate, input.fromDate), gte(todo.endDate, input.fromDate)),
+        ),
+      )
+      .orderBy(groupKey, asc(todo.startDate), asc(todo.id))
+      .as("upcoming");
+    const rows = await this.db
+      .select()
+      .from(upcoming)
+      .orderBy(asc(upcoming.startDate), asc(upcoming.id))
+      .limit(input.limit);
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      startDate: toDateString(row.startDate),
+      isRepeating: row.seriesId != null,
+    }));
+  }
+
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const todos = await this.db.$count(
       todo,
-      and(eq(todo.userId, userId), eq(todo.categoryId, categoryId), eq(todo.completed, false)),
+      and(
+        eq(todo.userId, userId),
+        eq(todo.categoryId, categoryId),
+        eq(todo.completed, false),
+        isNull(todo.seriesId),
+      ),
     );
+    const series = await this.db.$count(
+      todoSeries,
+      and(
+        eq(todoSeries.userId, userId),
+        eq(todoSeries.categoryId, categoryId),
+        isNotNull(todoSeries.nextOccurrenceDate),
+      ),
+    );
+    return todos + series;
   }
 }

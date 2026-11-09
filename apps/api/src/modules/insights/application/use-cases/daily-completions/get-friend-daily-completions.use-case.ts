@@ -19,7 +19,10 @@ export interface GetFriendDailyCompletionsInput {
 }
 
 interface GetFriendDailyCompletionsDependencies {
-  readonly repository: Pick<TodoCompletionRepositoryPort, "aggregatePublicByDateRange">;
+  readonly repository: Pick<
+    TodoCompletionRepositoryPort,
+    "aggregatePublicByDateRange" | "findPublicMultiDayTodos"
+  >;
   readonly cache: Pick<DailyCompletionCachePort, "readPublicRange" | "storePublicRangeIfCurrent">;
   readonly followReader: Pick<DailyCompletionFollowReaderPort, "isMutualFriend">;
 }
@@ -59,16 +62,17 @@ export class GetFriendDailyCompletions {
       return cacheRead.value;
     }
 
-    const aggregates = await this.#dependencies.repository.aggregatePublicByDateRange({
-      userId: friendUserId,
-      startDate: start,
-      endDate: addDays(1, endInclusive),
-    });
+    const range = { userId: friendUserId, startDate: start, endDate: addDays(1, endInclusive) };
+    const [aggregates, multiDayTodos] = await Promise.all([
+      this.#dependencies.repository.aggregatePublicByDateRange(range),
+      this.#dependencies.repository.findPublicMultiDayTodos(range),
+    ]);
 
-    const result = buildDailyCompletionsRange(aggregates, {
-      startDate: input.startDate,
-      endDate: input.endDate,
-    });
+    const result = buildDailyCompletionsRange(
+      aggregates,
+      { startDate: input.startDate, endDate: input.endDate },
+      multiDayTodos,
+    );
 
     await this.#dependencies.cache.storePublicRangeIfCurrent(
       friendUserId,

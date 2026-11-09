@@ -9,7 +9,7 @@ import type {
 import {
   NO_RESOURCE_BONUSES,
   type ResourceBonuses,
-} from "#api/modules/access/domain/policies/entitlement/entitlement-limits.policy";
+} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 
 /** 기한을 생략하면 웹훅이 바꿀 때까지 유지하는 기존 projection으로 본다. */
 type StubEntitlementUserState = Omit<EntitlementUserState, "accessDeadline"> &

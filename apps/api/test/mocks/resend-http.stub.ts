@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 
-type HttpResponseStep = () => Response;
+export type HttpResponseStep = () => Response | Promise<Response>;
 
-export function resendResponseFixture(fileName: string, status = 200): HttpResponseStep {
+export function resendResponseFixture(fileName: string, status = 200): () => Response {
   const body = readFileSync(
     new URL(`../fixtures/providers/resend/${fileName}`, import.meta.url),
     "utf8",

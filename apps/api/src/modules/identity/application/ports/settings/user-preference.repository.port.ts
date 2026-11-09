@@ -37,7 +37,8 @@ export interface UserPreferenceRepositoryPort {
   findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]>;
   create(userId: string, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
   upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
-  upsertTimezone(userId: string, timezone: string): Promise<void>;
+  /** 시간대를 넣거나 바꾼다. 실제로 달라졌으면(행을 새로 만든 경우 포함) true다. */
+  upsertTimezone(userId: string, timezone: string): Promise<boolean>;
   /**
    * 저장된 타임존이 다를 때만 갱신하고, 실제 갱신된 행 수를 반환한다.
    *

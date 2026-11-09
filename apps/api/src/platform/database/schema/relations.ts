@@ -204,6 +204,7 @@ export const relations = defineRelations(schema, (r) => ({
     comments: r.many.todoComment(),
     items: r.many.todoItem(),
     views: r.many.todoView(),
+    series: r.one.todoSeries({ from: r.todo.seriesId, to: r.todoSeries.id }),
   },
   todoCategory: {
     user: r.one.user({ from: r.todoCategory.userId, to: r.user.id, optional: false }),

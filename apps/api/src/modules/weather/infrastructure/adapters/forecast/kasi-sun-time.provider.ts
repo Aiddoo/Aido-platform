@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
@@ -12,6 +14,7 @@ import type {
 } from "../../../application/ports/forecast/sun-time-provider.port.js";
 import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
+import { KASI_POLICY } from "./weather-outbound.policies.js";
 
 const sunTimeResponseSchema = z.object({
   response: z
@@ -37,10 +40,15 @@ const sunTimeResponseSchema = z.object({
 export class KasiSunTimeProvider implements SunTimeProvider {
   readonly #logger = new Logger(KasiSunTimeProvider.name);
 
+  readonly #policy: OutboundPolicy;
+
   constructor(
     private readonly configService: TypedConfigService,
     @InjectHttpClient("weather") private readonly http: HttpClient,
-  ) {}
+    policies: OutboundPolicyRegistry,
+  ) {
+    this.#policy = policies.get(KASI_POLICY);
+  }
 
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
     try {
@@ -56,17 +64,20 @@ export class KasiSunTimeProvider implements SunTimeProvider {
 
       const locdate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
 
-      const outcome = await requestVendorJson(
-        this.http,
-        "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
-        {
-          serviceKey: apiKey,
-          longitude: lon,
-          latitude: lat,
-          locdate,
-          dnYn: "Y",
-          _type: "json",
-        },
+      const outcome = await this.#policy.execute((signal) =>
+        requestVendorJson(
+          this.http,
+          "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
+          {
+            serviceKey: apiKey,
+            longitude: lon,
+            latitude: lat,
+            locdate,
+            dnYn: "Y",
+            _type: "json",
+          },
+          { signal },
+        ),
       );
 
       if (outcome.kind === "http_failure") {

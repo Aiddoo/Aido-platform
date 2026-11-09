@@ -1,16 +1,13 @@
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { useNotificationBadgeService } from '@src/bootstrap/providers/di-context';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useEffect } from 'react';
 
-import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
-import { syncNotificationBadge } from '../utils/sync-notification-badge';
-
-export function useNotificationBadgeSync(authStatus: NotificationAuthStatus) {
-  const notificationService = useNotificationService();
-  const logger = useLogger();
+export function useNotificationBadgeSync(authStatus: AuthStatus) {
+  const notificationBadgeService = useNotificationBadgeService();
   const isOnline = useIsOnline();
 
   useEffect(() => {
-    syncNotificationBadge({ authStatus, isOnline, notificationService, logger });
-  }, [authStatus, isOnline, logger, notificationService]);
+    notificationBadgeService.syncBadge({ authStatus, isOnline });
+  }, [authStatus, isOnline, notificationBadgeService]);
 }

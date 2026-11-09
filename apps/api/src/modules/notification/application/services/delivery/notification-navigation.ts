@@ -201,7 +201,9 @@ function navigationByType(source: NotificationNavigationSource): NotificationNav
     .with("INVITE_JOINED", "INVITE_REWARDED", "INVITE_PROGRESS", () =>
       screen(NOTIFICATION_NAVIGATION_KIND.INVITE),
     )
-    .with("PREMIUM_GRANT_ENDING", () => screen(NOTIFICATION_NAVIGATION_KIND.SUBSCRIPTION))
+    .with("PREMIUM_GRANT_ENDING", "PREMIUM_TRIAL_ENDING", "PREMIUM_RENEWAL_UPCOMING", () =>
+      screen(NOTIFICATION_NAVIGATION_KIND.SUBSCRIPTION),
+    )
     .with(
       "DAILY_COMPLETE",
       "MORNING_REMINDER",

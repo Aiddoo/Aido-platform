@@ -2,19 +2,15 @@
  * AI 데이터 처리 동의 E2E 테스트
  *
  * 동의 저장·철회 API와, 1.13.0 이상 앱만 동의 없이 AI를 쓸 수 없게 하는 X-App-Version 경계를
- * 실제 앱과 PostgreSQL로 확인한다. 공급자는 FakeAiProvider로 막는다.
+ * 실제 앱과 PostgreSQL로 확인한다. 공급자는 FakeAiGenerator로 막는다.
  */
 
 import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 import request from "supertest";
 
-import {
-  AI_PROVIDER,
-  AI_TASK_SETTINGS,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import {
   createE2eApp,
   destroyE2eApp,
@@ -24,19 +20,15 @@ import {
 
 describe("AI 데이터 처리 동의 E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
   let user: VerifiedUser;
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder
-          .overrideProvider(AI_PROVIDER)
-          .useValue(fakeAiProvider)
-          .overrideProvider(AI_TASK_SETTINGS)
-          .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
-      additionalResetters: [() => fakeAiProvider.clear()],
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 
@@ -47,11 +39,10 @@ describe("AI 데이터 처리 동의 E2E", () => {
   beforeEach(async () => {
     await ctx.reset();
     user = await ctx.helpers.createVerifiedUser("ai-consent@example.com", "Test1234!");
-    fakeAiProvider.setResponse({
+    fakeAiGenerator.setResponse({
       title: "팀 미팅",
-      startDate: "2025-01-26",
-      scheduledTime: "15:00",
-      isAllDay: false,
+      date: { kind: "OFFSET_DAYS", amount: 1 },
+      time: { hour: 3, minute: 0, meridiem: "PM" },
     });
   });
 
@@ -65,11 +56,11 @@ describe("AI 데이터 처리 동의 E2E", () => {
     });
   }
 
-  function answerConsent(agreed: boolean) {
+  function answerConsent(agreed: boolean, version: string = AI_DATA_SHARING_CONSENT.VERSION) {
     return request(ctx.app.getHttpServer())
       .patch("/v1/auth/consent/ai-data-sharing")
       .set("Authorization", `Bearer ${user.accessToken}`)
-      .send({ agreed, version: AI_DATA_SHARING_CONSENT.VERSION });
+      .send({ agreed, version });
   }
 
   it("1.13.0 앱은 동의하기 전 AI_1311을 받고 사용량도 차감하지 않으며 공급자를 부르지 않는다", async () => {
@@ -79,7 +70,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
     // Then
     expect(response.status).toBe(403);
     expect(response.body.error.code).toBe("AI_1311");
-    expect(fakeAiProvider.getCallCount()).toBe(0);
+    expect(fakeAiGenerator.getCallCount()).toBe(0);
     const usage = await request(ctx.app.getHttpServer())
       .get("/v1/ai/usage")
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -151,7 +142,36 @@ describe("AI 데이터 처리 동의 E2E", () => {
     }
   });
 
-  it("현재가 아닌 안내 버전으로 답하면 400으로 거부한다", async () => {
+  it("출시 앱(1.13·1.14)이 이전 안내 버전으로 동의해도 다시 묻지 않고 그 버전의 업체(Gemini)로만 처리한다", async () => {
+    // Given
+    const answered = await answerConsent(true, "2026-10-26").expect(200);
+
+    // When
+    const response = await parseTodo("1.14.2");
+
+    // Then
+    expect(answered.body.data).toMatchObject({
+      aiDataSharingDecision: "AGREED",
+      aiDataSharingConsentVersion: "2026-10-26",
+    });
+    expect(response.status).toBe(200);
+    expect(fakeAiGenerator.getLastRequest()?.agreedConsentVersion).toBe("2026-10-26");
+  });
+
+  it("새 안내에 동의하면 그 버전으로 생성기에 넘긴다", async () => {
+    // Given
+    await answerConsent(true).expect(200);
+
+    // When
+    await parseTodo("1.15.0").expect(200);
+
+    // Then
+    expect(fakeAiGenerator.getLastRequest()?.agreedConsentVersion).toBe(
+      AI_DATA_SHARING_CONSENT.VERSION,
+    );
+  });
+
+  it("지원하지 않는 안내 버전으로 답하면 400으로 거부한다", async () => {
     // When
     const response = await request(ctx.app.getHttpServer())
       .patch("/v1/auth/consent/ai-data-sharing")

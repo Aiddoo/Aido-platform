@@ -1,21 +1,26 @@
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 
 import { COMPASS_SHORT_LABEL_KEYS } from '../constants/weather-labels';
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
 import {
   type CompassDial,
+  DIAL_CENTER,
+  DIAL_VIEWBOX_SIZE,
   type DialTicks,
   PRESSURE_GAUGE_LABELS,
   type PressureGauge,
-} from '../utils/view-models/weather-dial.view-model';
+} from '../utils/weather-dial.geometry';
 
 const DIAL_FONT = { regular: 'WantedSans-Medium', label: 'WantedSans-SemiBold' } as const;
-const DIAL_VIEWBOX = '0 0 120 120';
+const DIAL_VIEWBOX = `0 0 ${DIAL_VIEWBOX_SIZE} ${DIAL_VIEWBOX_SIZE}`;
+/** 가운데 값은 중심보다 조금 위, 단위는 조금 아래에 둔다. */
+const VALUE_OFFSET_Y = -4;
+const UNIT_OFFSET_Y = 14;
 
 function DialTicksPaths({ minorTicks, majorTicks }: DialTicks) {
-  const minorColor = useOnSkyColor('text-on-sky/32');
-  const majorColor = useOnSkyColor('text-on-sky/85');
+  const minorColor = useResolvedColor('text-on-sky/32');
+  const majorColor = useResolvedColor('text-on-sky/85');
   return (
     <>
       <Path
@@ -37,7 +42,7 @@ function DialTicksPaths({ minorTicks, majorTicks }: DialTicks) {
 }
 
 function DialLabel({ x, y, children }: { x: number; y: number; children: string }) {
-  const color = useOnSkyColor('text-on-sky/[0.62]');
+  const color = useResolvedColor('text-on-sky/[0.62]');
   return (
     <SvgText
       x={x}
@@ -54,13 +59,13 @@ function DialLabel({ x, y, children }: { x: number; y: number; children: string 
 }
 
 function DialCenter({ value, unit }: { value: string; unit: string }) {
-  const valueColor = useOnSkyColor('text-on-sky');
-  const unitColor = useOnSkyColor('text-on-sky/70');
+  const valueColor = useResolvedColor('text-on-sky');
+  const unitColor = useResolvedColor('text-on-sky/70');
   return (
     <>
       <SvgText
-        x={60}
-        y={56}
+        x={DIAL_CENTER}
+        y={DIAL_CENTER + VALUE_OFFSET_Y}
         textAnchor="middle"
         alignmentBaseline="central"
         fill={valueColor}
@@ -71,8 +76,8 @@ function DialCenter({ value, unit }: { value: string; unit: string }) {
         {value}
       </SvgText>
       <SvgText
-        x={60}
-        y={74}
+        x={DIAL_CENTER}
+        y={DIAL_CENTER + UNIT_OFFSET_Y}
         textAnchor="middle"
         alignmentBaseline="central"
         fill={unitColor}
@@ -95,7 +100,7 @@ interface WeatherCompassProps {
 /** 풍향 나침반. 꼬리는 바람이 불어오는 쪽, 화살촉은 불어 가는 쪽이다. */
 export function WeatherCompass({ size, dial, value, unit }: WeatherCompassProps) {
   const { t } = useTranslation('weather');
-  const needleColor = useOnSkyColor('text-on-sky');
+  const needleColor = useResolvedColor('text-on-sky');
 
   return (
     <Svg width={size} height={size} viewBox={DIAL_VIEWBOX} accessible={false}>
@@ -141,7 +146,7 @@ export function WeatherPressureGauge({
   lowLabel,
   highLabel,
 }: WeatherPressureGaugeProps) {
-  const needleColor = useOnSkyColor('text-on-sky');
+  const needleColor = useResolvedColor('text-on-sky');
 
   return (
     <Svg width={size} height={size} viewBox={DIAL_VIEWBOX} accessible={false}>

@@ -1,25 +1,24 @@
 import type { ParsedTodoData } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
-  generationCompletedLog,
-  generationFailedLog,
-} from "../../observability/parsing/ai-generation-log.events.js";
-import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
-import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
+} from "../../observability/generation/ai-generation-log.events.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiGenerationMeta } from "../../ports/generation/ai-generator.port.js";
+import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { parseTodoPrompts } from "../../prompts/parsing/parse-todo/index.js";
-import type { GenerationMeta } from "../../prompts/structured-output.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { parseTodoPrompt } from "../../prompts/parsing/parse-todo/index.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 
 /** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
@@ -46,6 +45,8 @@ interface ChargedResult<T> {
 export interface ParseTodoResult {
   data: ParsedTodoData;
   meta: ParseTodoMeta;
+  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량. 읽지 못했으면 null이고 응답에서 빠진다 */
+  featureQuota: MeteredFeatureQuota | null;
 }
 
 /**
@@ -60,6 +61,8 @@ export interface ParseTodoInput {
   categoryId: number | undefined;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   locale: SupportedLocale | undefined;
+  /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
+  signal?: AbortSignal;
 }
 
 type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
@@ -70,16 +73,16 @@ type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
 /**
  * 자연어 → 단건 투두 파싱 use-case.
  *
- * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 정규화.
- * AI 호출 실패 시 사용량을 보상 감소하고, 공급자 오류 종류에 따라
- * 요청 과다(AI_1310)/호출 실패(AI_1301)/파싱 실패(AI_1302)를 구분해 던진다.
+ * 사용량 원자적 예약 → 프롬프트 조립 → 동의 범위 안의 업체로 AI 생성 → 정규화.
+ * 생성 실패 시 예약을 한 번 환불하고, 실패 종류에 따라 요청 과다(AI_1310)/호출 실패(AI_1301)/
+ * 할 일 만들기 실패(AI_1302)를 details.charged=false와 함께 던진다.
  */
 interface ParseTodoDependencies {
-  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
+  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -94,63 +97,56 @@ export class ParseTodo {
     const { userId } = input;
     const startTime = Date.now();
 
-    if (!this.#dependencies.aiProvider.isAvailable("parse-todo")) {
-      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
-      throw new ApplicationException(ErrorCode.AI_1301);
-    }
-
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
       userId,
       input,
     );
-    const reservation = await this.#dependencies.quota.reserve(userId);
-    let parsed: ChargedResult<ParseTodoResult>;
-    try {
-      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
-    } catch (error) {
-      await this.#dependencies.quota.release(reservation);
-      throw error;
-    }
-    if (!parsed.charge) {
-      await this.#dependencies.quota.release(reservation);
-    }
-    return parsed.result;
+    const { quota } = this.#dependencies;
+    const reservation = await quota.reserve({
+      userId,
+      feature: "AI_PARSE",
+      idempotencyKey: null,
+      reason: "parse-todo",
+    });
+    const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
+      reservation,
+      userId,
+      feature: "AI_PARSE",
+      task: parseTodoPrompt.id,
+      generate: async () => {
+        const parsed = await this.#parse({ ...input, timezone, locale }, startTime);
+        return { result: parsed.result, outcome: parsed.charge ? "CHARGE" : "NO_ACTION" };
+      },
+    });
+    return { ...result, featureQuota };
   }
 
   async #parse(
     input: ResolvedParseTodoInput,
     startTime: number,
-  ): Promise<ChargedResult<ParseTodoResult>> {
+  ): Promise<ChargedResult<Omit<ParseTodoResult, "featureQuota">>> {
     const { text, userId, timezone, categoryId, locale } = input;
-    const definition = parseTodoPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = parseTodoPrompt;
     const at = now();
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
       categoryId == null ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
-    const { system, prompt } = definition.build({
-      text,
-      timezone,
-      now: at,
-      categories: userCategories.map(({ id, name }) => ({ id, name })),
-    });
+    const built = definition.build({ text, timezone, now: at, categories: userCategories }, locale);
     const logBase = {
-      task: "parse-todo",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
     } as const;
 
+    const { agreedVersion } =
+      await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
-      const { value, meta } = await definition.output.generate(
-        this.#dependencies.aiProvider,
-        {
-          task: "parse-todo",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          policy: resolveGenerationPolicy("parse-todo", this.#dependencies.settings),
-        },
+      const { value, meta } = await generateWithPrompt(
+        this.#dependencies.generator,
+        definition,
+        built,
         {
           text,
           timezone,
@@ -159,11 +155,12 @@ export class ParseTodo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           requestedCategoryId: categoryId,
         },
+        { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );
 
       const charge = value.intent === "TASK";
       this.#dependencies.logger.log({
-        ...generationCompletedLog(
+        ...buildGenerationCompletedLog(
           { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
           meta,
         ),
@@ -171,15 +168,15 @@ export class ParseTodo {
       });
       return {
         result: {
-          data: value.data,
-          meta: toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+          data: value.parsedTodo,
+          meta: toParseMeta(meta, definition.version, Date.now() - startTime),
         },
         charge,
       };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error(
-        generationFailedLog({
+        buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,
@@ -187,20 +184,21 @@ export class ParseTodo {
           quotaCharged: false,
         }),
       );
-      throw new ApplicationException(failure.errorCode);
+      // 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다. 환불에 실패하면 호출부가 뗀다.
+      throw new ApplicationException(failure.errorCode, { charged: false });
     }
   }
 }
 
 export function toParseMeta(
-  meta: GenerationMeta,
+  meta: AiGenerationMeta,
   promptVersion: string,
   processingTimeMs: number,
 ): ParseTodoMeta {
   return {
     model: meta.model,
     processingTimeMs,
-    tokenUsage: { input: meta.usage.input, output: meta.usage.output },
+    tokenUsage: { input: meta.inputTokens, output: meta.outputTokens },
     promptVersion,
   };
 }

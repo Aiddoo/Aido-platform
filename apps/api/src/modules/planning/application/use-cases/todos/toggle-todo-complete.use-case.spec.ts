@@ -7,6 +7,7 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
+import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../../domain/events/todos/todo-toggled.event.js";
 import { ToggleTodoComplete } from "./toggle-todo-complete.use-case.js";
 
@@ -26,7 +27,12 @@ describe("할 일 완료 상태 전이", () => {
 
   it("완료 시각을 고정해서 저장하고 해제하면 null로 지운다", async () => {
     // Given
-    const input = { id: 1, userId: fixture.userId, timezone: "Asia/Seoul", completed: true };
+    const input = {
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      completed: true,
+    };
     // When
     const completed = await useCase.execute(input);
     const uncompleted = await useCase.execute({ ...input, completed: false });
@@ -41,7 +47,12 @@ describe("할 일 완료 상태 전이", () => {
   });
   it("같은 완료 요청은 시각과 이벤트를 중복 변경하지 않는다", async () => {
     // Given
-    const input = { id: 1, userId: fixture.userId, timezone: "Asia/Seoul", completed: true };
+    const input = {
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      completed: true,
+    };
     await useCase.execute(input);
     const completionWrite = vi.spyOn(fixture.todoRepository, "updateCompletion");
     vi.setSystemTime(new Date("2026-05-15T04:00:00Z"));
@@ -52,12 +63,53 @@ describe("할 일 완료 상태 전이", () => {
     expect(fixture.eventPublisher.events).toHaveLength(1);
     expect(completionWrite).not.toHaveBeenCalled();
   });
+  it("완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림 재예약 이벤트를 낸다", async () => {
+    // Given
+    const instant = new Date("2026-05-16T14:00:00.000Z");
+    fixture = createPlanningTodoFixture({
+      todos: [
+        {
+          ...createPlanningTodo(),
+          startDate: new Date("2026-05-16T00:00:00.000Z"),
+          scheduledLocalTime: "10:00",
+          scheduledTime: instant,
+          isAllDay: false,
+          completed: true,
+          completedAt: PLANNING_TIME,
+        },
+      ],
+    });
+    useCase = new ToggleTodoComplete(fixture);
+    // When
+    const result = await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      completed: false,
+    });
+    // Then
+    expect(fixture.records.get(1)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: instant,
+      completed: false,
+    });
+    expect(result).toMatchObject({ scheduledLocalTime: "10:00" });
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, instant),
+    );
+  });
+
   it("다른 사용자의 할 일은 완료할 수 없다", async () => {
     // Given
     const before = structuredClone(fixture.records.get(1));
     // When / Then
     await expect(
-      useCase.execute({ id: 1, userId: "other-user", timezone: "UTC", completed: true }),
+      useCase.execute({
+        id: 1,
+        userId: "other-user",
+        timezone: "UTC",
+        completed: true,
+      }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
     expect(fixture.eventPublisher.events).toEqual([]);

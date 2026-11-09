@@ -1,27 +1,35 @@
+import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
 import {
   TODO_REPOSITORY,
   type TodoRepositoryPort,
 } from "#api/modules/planning/application/ports/todos/todo.repository.port";
+import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
 import { AddTodoItem } from "#api/modules/planning/application/use-cases/todos/add-todo-item.use-case";
-import { CreateRecurringTodos } from "#api/modules/planning/application/use-cases/todos/create-recurring-todos.use-case";
+import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
 import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
 import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
   todoItem,
+  todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
 import {
+  AFTER_COMMIT_TASK_REGISTRY,
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,
+  type AfterCommitTaskRegistryPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -186,8 +194,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const outcomes = await contend(
-      () => add.execute({ todoId, userId, title: "첫 요청" }),
-      () => add.execute({ todoId, userId, title: "두 번째 요청" }),
+      () => add.execute({ todoId, userId, title: "첫 요청", timezone: "UTC" }),
+      () => add.execute({ todoId, userId, title: "두 번째 요청", timezone: "UTC" }),
     );
     const items = await client.query.todoItem.findMany({
       columns: { sortOrder: true },
@@ -212,8 +220,20 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const outcomes = await contend(
-      () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
-      () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
+      () =>
+        toggle.execute({
+          id: todoId,
+          userId,
+          completed: true,
+          timezone: "Asia/Seoul",
+        }),
+      () =>
+        toggle.execute({
+          id: todoId,
+          userId,
+          completed: true,
+          timezone: "Asia/Seoul",
+        }),
     );
 
     // Then
@@ -236,12 +256,17 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const otherTodoId = await createTodo();
     const add = context.module.get(AddTodoItem);
     const release = await holdTodoRow();
-    const blocked = add.execute({ todoId, userId, title: "대기 중" });
+    const blocked = add.execute({ todoId, userId, title: "대기 중", timezone: "UTC" });
 
     // When
     try {
       await waitForBlockedRequests(1);
-      const response = await add.execute({ todoId: otherTodoId, userId, title: "독립 요청" });
+      const response = await add.execute({
+        todoId: otherTodoId,
+        userId,
+        title: "독립 요청",
+        timezone: "UTC",
+      });
 
       // Then
       expect(response.items.map((item) => item.title)).toEqual(["독립 요청"]);
@@ -334,36 +359,185 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     recording = statements;
 
     // When
-    const response = await context.module.get(CreateRecurringTodos).execute({
+    const response = await context.module.get(CreateTodo).execute({
+      userId,
+      categoryId,
+      title: "반복 생성",
+      startDate: new Date("2027-01-04"),
+      scheduledTime: null,
       timezone: "Asia/Seoul",
-      data: {
-        userId,
-        categoryId,
-        title: "반복 생성",
-        startDate: "2027-01-04",
-        endDate: "2027-01-06",
-        daysOfWeek: ["MON", "TUE", "WED"],
-        scheduledTime: null,
-        isAllDay: true,
-        visibility: "PUBLIC",
-        items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
-      },
+      isAllDay: true,
+      visibility: "PUBLIC",
+      items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
+      repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
     });
     recording = null;
 
     // Then
-    expect(response.count).toBe(3);
+    expect(response.todos).toHaveLength(3);
     expect(response.todos.map((created) => created.items.map((item) => item.title))).toEqual(
       Array.from({ length: 3 }, () => ["첫 항목", "둘째 항목"]),
     );
     expect(response.todos.map((created) => created.sortOrder)).toEqual([0, 1, 2]);
-    expect(statementSummary(statements)).toEqual({ total: 7, orm: 6, locks: 1 });
+    expect(statements.filter((statement) => /^insert into "Todo"/i.test(statement))).toHaveLength(
+      1,
+    );
     expect(
       statements.filter((statement) => /^insert into "TodoItem"/i.test(statement)),
     ).toHaveLength(1);
-    process.stdout.write(
-      `PLANNING_QUERY_AFTER_RESULT ${JSON.stringify({ scenario: "recurring-3-todos-2-items", ...statementSummary(statements), fixture: { parents: 3, itemsPerParent: 2 }, transactionControlsExcluded: true })}\n`,
+  });
+
+  it("규칙 하나로 체크리스트 포함 90일 회차를 Todo·TodoItem INSERT 한 번씩으로 만든다", async () => {
+    // Given
+    const statements: string[] = [];
+    recording = statements;
+    // When
+    const response = await context.module.get(CreateTodo).execute({
+      userId,
+      categoryId,
+      title: "매일 반복",
+      startDate: AT,
+      timezone: "UTC",
+      items: [{ title: "항목" }],
+      repeat: { frequency: "DAILY", end: { type: "NEVER" } },
+    });
+    recording = null;
+    // Then
+    expect(response.todos).toHaveLength(TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS + 1);
+    expect(statements.filter((statement) => /^insert into "Todo"/i.test(statement))).toHaveLength(
+      1,
     );
+    expect(
+      statements.filter((statement) => /^insert into "TodoItem"/i.test(statement)),
+    ).toHaveLength(1);
+    expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
+  });
+
+  describe("카테고리와 규칙", () => {
+    async function createCategory(name: string) {
+      const [category] = await client
+        .insert(todoCategory)
+        .values({ userId, name, color: "#123456", sortOrder: 1 })
+        .returning();
+      if (category === undefined) {
+        throw new Error("category fixture 누락");
+      }
+      return category.id;
+    }
+
+    function startSeries(target: number, repeat: TodoRepeat) {
+      return context.module.get(CreateTodo).execute({
+        userId,
+        categoryId: target,
+        title: "카테고리 반복",
+        startDate: AT,
+        timezone: "UTC",
+        repeat,
+      });
+    }
+
+    it("카테고리를 지우며 옮기면 회차와 진행 중 규칙을 함께 옮긴다", async () => {
+      // Given
+      const source = await createCategory("지울 카테고리");
+      const { series } = await startSeries(source, { frequency: "DAILY", end: { type: "NEVER" } });
+      // When
+      await context.module
+        .get(DeleteTodoCategory)
+        .execute({ userId, categoryId: source, moveToCategoryId: categoryId });
+      // Then
+      const moved = await client.query.todoSeries.findFirst({ where: { id: series?.id } });
+      expect(moved?.categoryId).toBe(categoryId);
+      expect(await client.$count(todo, eq(todo.categoryId, source))).toBe(0);
+    });
+
+    it("진행 중 규칙이 있으면 할 일이 없어도 옮길 곳을 묻는다", async () => {
+      // Given
+      const source = await createCategory("규칙만 있는 카테고리");
+      await startSeries(source, { frequency: "DAILY", end: { type: "NEVER" } });
+      await client.delete(todo).where(eq(todo.categoryId, source));
+      // When
+      const outcome = context.module
+        .get(DeleteTodoCategory)
+        .execute({ userId, categoryId: source });
+      // Then
+      await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0855 });
+    });
+
+    it("끝난 규칙만 남은 카테고리는 묻지 않고 지운다", async () => {
+      // Given
+      const source = await createCategory("끝난 규칙 카테고리");
+      const { series } = await startSeries(source, {
+        frequency: "DAILY",
+        end: { type: "COUNT", count: 1 },
+      });
+      await client.delete(todo).where(eq(todo.categoryId, source));
+      // When
+      await context.module.get(DeleteTodoCategory).execute({ userId, categoryId: source });
+      // Then
+      expect(
+        await client.query.todoSeries.findFirst({ where: { id: series?.id } }),
+      ).toBeUndefined();
+    });
+
+    it("미래 회차는 한도에 세지 않고 진행 중 규칙 하나로 센다", async () => {
+      // Given
+      await startSeries(categoryId, { frequency: "DAILY", end: { type: "NEVER" } });
+      // When
+      const usage = await context.module
+        .get<TodoRepositoryPort>(TODO_REPOSITORY)
+        .countCategoryUsage(userId, categoryId);
+      // Then
+      expect(usage).toBe(2);
+    });
+  });
+
+  describe("커밋 후 생성 포트", () => {
+    function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
+      const creator = context.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
+      const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+      const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+      return unitOfWork.run(async () => {
+        const staged = await creator.stage({
+          userId,
+          categoryId,
+          title: "포트 반복",
+          startDate: new Date("2027-01-04"),
+          scheduledTime: "09:00",
+          timezone: "Asia/Seoul",
+          repeat: { frequency: "DAILY", end: { type: "UNTIL", date: "2027-01-05" } },
+        });
+        registry.register(staged.afterCommit);
+        await afterStage();
+        return staged;
+      });
+    }
+
+    it("바깥 트랜잭션이 롤백되면 할 일도 생성 이벤트도 남지 않는다", async () => {
+      // Given
+      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
+      const publishAll = vi.spyOn(publisher, "publishAll");
+      const failure = new Error("바깥 작업 실패");
+      // When
+      const outcome = stageInsideUnitOfWork(() => Promise.reject(failure));
+      // Then
+      await expect(outcome).rejects.toBe(failure);
+      expect(publishAll).not.toHaveBeenCalled();
+      expect(await client.$count(todo, eq(todo.title, "포트 반복"))).toBe(0);
+    });
+
+    it("커밋에 성공하면 그 뒤에 규칙당 생성 이벤트 하나를 낸다", async () => {
+      // Given
+      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
+      const publishAll = vi.spyOn(publisher, "publishAll");
+      // When
+      const staged = await stageInsideUnitOfWork(async () => {
+        expect(publishAll).not.toHaveBeenCalled();
+      });
+      // Then
+      expect(staged.todos).toHaveLength(2);
+      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(1);
+      expect(staged.todos.every((created) => !created.isAllDay)).toBe(true);
+    });
   });
 
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
@@ -374,16 +548,21 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const result = unitOfWork.run(() =>
-      repository.createMany(
+      repository.insertOccurrences(
         [
           {
             userId,
             categoryId,
             title: "rollback 대상",
             startDate: AT,
+            endDate: null,
+            scheduledLocalTime: null,
+            scheduledTime: null,
             sortOrder: 1,
             isAllDay: true,
             visibility: "PUBLIC",
+            occurrenceDate: "2027-01-04",
+            createdAt: AT,
           },
         ],
         "00000000-0000-4000-8000-000000000701",

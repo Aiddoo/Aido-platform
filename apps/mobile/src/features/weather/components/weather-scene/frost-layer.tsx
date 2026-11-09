@@ -15,7 +15,6 @@ import { range } from 'es-toolkit';
 import { useEffect, useMemo } from 'react';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { GustStreaks } from './gust-layer';
 import {
   createParticleSeeds,
   createSeededRandom,
@@ -25,7 +24,8 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import { GustStreaks } from './gust-layer';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const SPINDRIFT_SEED = 0x5d1f;
@@ -138,19 +138,19 @@ FrostLayer.Spindrift = function Spindrift({
   time,
 }: FrostLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('spindrift', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('spindrift', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, SPINDRIFT_SEED);
   const { dot } = PARTICLE_SPRITES;
   const [minDepth, maxDepth] = SPINDRIFT.depth;
-  const depthOf = (index: number) =>
+  const getDepth = (index: number) =>
     minDepth + (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) * (maxDepth - minDepth);
   const sprites = range(count).map(() => Skia.XYWHRect(dot.x, dot.y, dot.width, dot.height));
   const colors = range(count).map((index) =>
     Skia.Color(
-      `rgba(255,255,255,${SPINDRIFT.alpha.base + SPINDRIFT.alpha.depth * depthOf(index)})`,
+      `rgba(255,255,255,${SPINDRIFT.alpha.base + SPINDRIFT.alpha.depth * getDepth(index)})`,
     ),
   );
-  const depths = range(count).map(depthOf);
+  const depths = range(count).map(getDepth);
   const anchor = { x: dot.width / 2, y: dot.height / 2 };
   const travelWidth = width + EDGE_MARGIN * 2;
 
@@ -191,7 +191,7 @@ FrostLayer.Spindrift = function Spindrift({
 
 FrostLayer.Crystals = function Crystals({ width, height, isLowEndDevice, time }: FrostLayerProps) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('iceCrystal', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('iceCrystal', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, CRYSTAL_SEED);
   const { crystal, dot } = PARTICLE_SPRITES;
   const crystalSprites = range(count).map(() =>

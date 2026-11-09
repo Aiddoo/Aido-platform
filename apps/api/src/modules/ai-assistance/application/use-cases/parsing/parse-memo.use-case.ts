@@ -1,26 +1,28 @@
 import type { ParsedMemoData } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
 
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
-  generationCompletedLog,
-  generationFailedLog,
-} from "../../observability/parsing/ai-generation-log.events.js";
-import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
-import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
+} from "../../observability/generation/ai-generation-log.events.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
+import type { UpcomingTodoReaderPort } from "../../ports/parsing/upcoming-todo-reader.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { parseMemoPrompts } from "../../prompts/parsing/parse-memo/index.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
+import { buildWithinLimit } from "../../prompts/planning/planning-context.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
+import { fingerprintRequest } from "../../services/parsing/request-fingerprint.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
@@ -33,6 +35,8 @@ export interface ParseMemoMeta extends ParseTodoMeta {
 export interface ParseMemoResult {
   data: ParsedMemoData;
   meta: ParseMemoMeta;
+  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량. 읽지 못했으면 null이고 응답에서 빠진다 */
+  featureQuota: MeteredFeatureQuota | null;
 }
 
 /**
@@ -47,6 +51,10 @@ export interface ParseMemoInput {
   categoryId: number;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   locale: SupportedLocale | undefined;
+  /** Idempotency-Key 헤더. 출시 앱은 보내지 않아 요청마다 차감한다. */
+  idempotencyKey: string | null;
+  /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
+  signal?: AbortSignal;
 }
 
 type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
@@ -57,15 +65,16 @@ type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
 /**
  * 메모 → 다중 투두 파싱 use-case.
  *
- * parse-todo와 동일한 가용성/사용량/에러 규약을 따르되, 할 일은 합치지 않고 앞의 5개만 만들며
+ * parse-todo와 동일한 사용량/에러 규약을 따르되, 할 일은 합치지 않고 앞의 5개만 만들며
  * 나머지 수를 meta.omittedTodoCount로 알린다. 미지 카테고리는 요청 기본 categoryId로 대체한다.
  */
 interface ParseMemoDependencies {
-  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
+  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "findByUserId">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -77,65 +86,72 @@ export class ParseMemo {
   }
 
   async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
-    const { userId } = input;
+    const { userId, content, categoryId, idempotencyKey } = input;
     const startTime = Date.now();
-
-    if (!this.#dependencies.aiProvider.isAvailable("parse-memo")) {
-      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
-      throw new ApplicationException(ErrorCode.AI_1301);
-    }
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
       userId,
       input,
     );
-    const reservation = await this.#dependencies.quota.reserve(userId);
-    let parsed: { readonly result: ParseMemoResult; readonly charge: boolean };
-    try {
-      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
-    } catch (error) {
-      await this.#dependencies.quota.release(reservation);
-      throw error;
-    }
-    // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
-    if (!parsed.charge) {
-      await this.#dependencies.quota.release(reservation);
-    }
-    return parsed.result;
+    const { quota } = this.#dependencies;
+    const reservation = await quota.reserve({
+      userId,
+      feature: "AI_PARSE",
+      idempotencyKey,
+      ...(idempotencyKey != null && {
+        requestHash: fingerprintRequest(userId, { content, categoryId }),
+      }),
+      reason: "parse-memo",
+    });
+    const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
+      // 확정 뒤 응답을 받지 못한 재시도다. 메모 결과는 서버에 남기지 않아 추가 차감 없이 다시 만든다.
+      reservation: reservation.isAlreadyCommitted ? await quota.reopen(reservation) : reservation,
+      userId,
+      feature: "AI_PARSE",
+      task: parseMemoPrompt.id,
+      generate: async () => {
+        const parsed = await this.#parse({ ...input, timezone, locale }, startTime);
+        // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
+        return { result: parsed.result, outcome: parsed.shouldCharge ? "CHARGE" : "NO_ACTION" };
+      },
+    });
+    return { ...result, featureQuota };
   }
 
   async #parse(
     input: ResolvedParseMemoInput,
     startTime: number,
-  ): Promise<{ readonly result: ParseMemoResult; readonly charge: boolean }> {
+  ): Promise<{
+    readonly result: Omit<ParseMemoResult, "featureQuota">;
+    readonly shouldCharge: boolean;
+  }> {
     const { content, userId, timezone, categoryId, locale } = input;
-    const definition = parseMemoPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = parseMemoPrompt;
     const at = now();
 
-    const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const { system, prompt } = definition.build({
-      content,
-      timezone,
-      now: at,
-      categories: userCategories.map(({ id, name }) => ({ id, name })),
-    });
+    const [userCategories, upcomingTodos] = await Promise.all([
+      this.#dependencies.categoryReader.findByUserId(userId),
+      this.#dependencies.upcomingTodoReader.findByUserId(userId, timezone),
+    ]);
+    const built = buildWithinLimit(
+      definition,
+      { content, timezone, now: at, categories: userCategories, upcomingTodos },
+      locale,
+    );
     const logBase = {
-      task: "parse-memo",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
     } as const;
 
+    const { agreedVersion } =
+      await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
-      const { value, meta } = await definition.output.generate(
-        this.#dependencies.aiProvider,
-        {
-          task: "parse-memo",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          policy: resolveGenerationPolicy("parse-memo", this.#dependencies.settings),
-        },
+      const { value, meta } = await generateWithPrompt(
+        this.#dependencies.generator,
+        definition,
+        built,
         {
           content,
           timezone,
@@ -143,13 +159,15 @@ export class ParseMemo {
           locale,
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           defaultCategoryId: categoryId,
+          upcomingTodos,
         },
+        { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );
-      const { data, omittedTodoCount } = value;
-      const charge = !value.noAction;
+      const { parsedMemo: data, omittedTodoCount } = value;
+      const charge = !value.hasNoAction;
 
       this.#dependencies.logger.log({
-        ...generationCompletedLog(
+        ...buildGenerationCompletedLog(
           { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
           meta,
         ),
@@ -157,21 +175,22 @@ export class ParseMemo {
         omittedTodoCount,
         itemCount: sumBy(data.todos, (todo) => todo.items.length),
         warnings: value.warnings,
+        dateRefs: value.dateRefs,
       });
       return {
         result: {
           data,
           meta: {
-            ...toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+            ...toParseMeta(meta, definition.version, Date.now() - startTime),
             omittedTodoCount,
           },
         },
-        charge,
+        shouldCharge: charge,
       };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        ...generationFailedLog({
+        ...buildGenerationFailedLog({
           ...logBase,
           outcome: "FAILED",
           ...failure,
@@ -182,7 +201,8 @@ export class ParseMemo {
           validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
         }),
       });
-      throw new ApplicationException(failure.errorCode);
+      // 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다. 환불에 실패하면 호출부가 뗀다.
+      throw new ApplicationException(failure.errorCode, { charged: false });
     }
   }
 }

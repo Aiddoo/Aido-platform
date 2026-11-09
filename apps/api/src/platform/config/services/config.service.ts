@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
 
+import { AI_CONFIG_KEYS, aiSchema, type AiSettings, toAiSettings } from "../schemas/ai.schema.js";
 import type { EnvConfig } from "../schemas/index.js";
 
 /**
@@ -11,6 +12,8 @@ import type { EnvConfig } from "../schemas/index.js";
  */
 @Injectable()
 export class TypedConfigService {
+  #ai: AiSettings | undefined;
+
   constructor(private configService: NestConfigService<EnvConfig, true>) {}
 
   get<K extends keyof EnvConfig>(key: K): EnvConfig[K] {
@@ -33,8 +36,13 @@ export class TypedConfigService {
     return this.get("PORT");
   }
 
-  get nodeEnv(): string {
+  get nodeEnv(): EnvConfig["NODE_ENV"] {
     return this.get("NODE_ENV");
+  }
+
+  /** 헬스 체크 응답에 노출할 인스턴스 식별자 */
+  get instanceId(): string | undefined {
+    return this.get("INSTANCE_ID");
   }
 
   /**
@@ -55,6 +63,15 @@ export class TypedConfigService {
 
   get databaseUrl(): string {
     return this.get("DATABASE_URL");
+  }
+
+  get database() {
+    return {
+      url: this.get("DATABASE_URL"),
+      poolMax: this.get("DATABASE_POOL_MAX"),
+      idleTimeoutMs: this.get("DATABASE_POOL_IDLE_TIMEOUT_MS"),
+      connectionTimeoutMs: this.get("DATABASE_POOL_CONNECTION_TIMEOUT_MS"),
+    };
   }
 
   get jwtSecret(): string {
@@ -89,6 +106,10 @@ export class TypedConfigService {
     return this.get("TOKEN_ENCRYPTION_KEY");
   }
 
+  get tokenEncryptionSalt(): string | undefined {
+    return this.get("TOKEN_ENCRYPTION_SALT");
+  }
+
   get googleOAuth() {
     return {
       clientId: this.get("GOOGLE_CLIENT_ID"),
@@ -112,6 +133,8 @@ export class TypedConfigService {
       keyId: this.get("APPLE_KEY_ID"),
       privateKey,
       callbackUrl: this.get("APPLE_CALLBACK_URL"),
+      jwksUrl: this.get("APPLE_JWKS_URL"),
+      jwksCooldownDurationMs: this.get("APPLE_JWKS_COOLDOWN_DURATION_MS"),
       isConfigured: !!(
         this.get("APPLE_CLIENT_ID") &&
         this.get("APPLE_TEAM_ID") &&
@@ -146,10 +169,10 @@ export class TypedConfigService {
 
   get email() {
     return {
+      provider: this.get("EMAIL_PROVIDER"),
       apiKey: this.get("RESEND_API_KEY"),
       from: this.get("EMAIL_FROM"),
       fromName: this.get("EMAIL_FROM_NAME"),
-      isConfigured: !!this.get("RESEND_API_KEY"),
       supportEmail: this.get("SUPPORT_EMAIL"),
     };
   }
@@ -189,8 +212,20 @@ export class TypedConfigService {
 
   get revenuecat() {
     return {
-      secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),
       webhookSecret: this.get("REVENUECAT_WEBHOOK_SECRET"),
+      projectId: this.get("REVENUECAT_PROJECT_ID"),
+      apiV2SecretKey: this.get("REVENUECAT_API_V2_SECRET_KEY"),
+    };
+  }
+
+  get nudge() {
+    return { interactionsEnabled: this.get("NUDGE_INTERACTIONS_ENABLED") };
+  }
+
+  get invite() {
+    return {
+      enabled: this.get("INVITE_ENABLED"),
+      claimHashSecret: this.get("INVITE_CLAIM_HASH_SECRET"),
     };
   }
 
@@ -208,8 +243,14 @@ export class TypedConfigService {
 
   // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (sentryRelease getter)
 
-  get googleGenerativeAiApiKey(): string | undefined {
-    return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
+  /** AI 업체 키·순서·모델과 작업별 설정. 처음 읽을 때 한 번 파싱해 고정한다. */
+  get ai(): AiSettings {
+    this.#ai ??= Object.freeze(
+      toAiSettings(
+        aiSchema.parse(Object.fromEntries(AI_CONFIG_KEYS.map((key) => [key, this.get(key)]))),
+      ),
+    );
+    return this.#ai;
   }
 
   get dataGoKrApiKey(): string | undefined {
@@ -263,6 +304,10 @@ export class TypedConfigService {
 
   get logLevel(): string | undefined {
     return this.get("LOG_LEVEL");
+  }
+
+  get adminNotifierProvider() {
+    return this.get("ADMIN_NOTIFIER_PROVIDER");
   }
 
   get discordSignupWebhookUrl(): string | undefined {

@@ -1,78 +1,34 @@
-import { createMockSyncStorage } from '@src/shared/__tests__';
+import { toThemeMode, THEME_MODE_STORAGE_KEY } from './theme-mode.preference';
 
-import { readThemeMode, writeThemeMode } from './theme-mode.preference';
-
-describe('readThemeMode', () => {
+describe('toThemeMode', () => {
   it('저장된 값이 없으면 system을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue(undefined);
-
     // When
-    const result = readThemeMode(storage);
+    const result = toThemeMode(undefined);
 
     // Then
     expect(result).toBe('system');
   });
 
-  it('light가 저장되어 있으면 light를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('light');
-
+  it.each(['light', 'dark', 'system'] as const)('%s가 저장되어 있으면 그대로 반환한다', (saved) => {
     // When
-    const result = readThemeMode(storage);
+    const result = toThemeMode(saved);
 
     // Then
-    expect(result).toBe('light');
-  });
-
-  it('dark가 저장되어 있으면 dark를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('dark');
-
-    // When
-    const result = readThemeMode(storage);
-
-    // Then
-    expect(result).toBe('dark');
-  });
-
-  it('system이 저장되어 있으면 system을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('system');
-
-    // When
-    const result = readThemeMode(storage);
-
-    // Then
-    expect(result).toBe('system');
+    expect(result).toBe(saved);
   });
 
   it('유효하지 않은 값이 저장되어 있으면 system을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('invalid');
-
     // When
-    const result = readThemeMode(storage);
+    const result = toThemeMode('invalid');
 
     // Then
     expect(result).toBe('system');
   });
 });
 
-describe('writeThemeMode', () => {
-  it('올바른 key와 value로 storage.set을 호출한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-
-    // When
-    writeThemeMode(storage, 'dark');
-
-    // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_theme_mode', 'dark');
+describe('저장 키', () => {
+  it('이미 설치된 앱의 저장 값을 읽도록 키를 바꾸지 않는다', () => {
+    // When·Then
+    expect(THEME_MODE_STORAGE_KEY).toBe('aido_theme_mode');
   });
 });

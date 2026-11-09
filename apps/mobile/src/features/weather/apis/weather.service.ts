@@ -3,13 +3,15 @@ import {
   weatherLocationSchema,
   weatherReportSchema,
 } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
-import type { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import type { ApiError } from '@src/core/errors/api-error';
+import type { Result } from '@src/core/errors/result';
+import type { HttpClient } from '@src/core/ports/http-client';
+import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { RegisteredLocation } from '../domains/weather-location.model';
+import type { Coordinates } from '../domains/weather-location.model';
+import type { RegisteredLocation } from '../domains/weather-report.model';
 import type { WeatherReport } from '../domains/weather-report.model';
+import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { toRegisteredLocation, toWeatherReport } from './weather.mapper';
 
 export class WeatherService {
@@ -19,38 +21,41 @@ export class WeatherService {
     this.#httpClient = httpClient;
   }
 
-  getReport = async (signal?: AbortSignal): Promise<Result<WeatherReport, ApiError>> => {
-    const result = await this.#httpClient.get('v2/weather', { signal });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = weatherReportSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[WeatherService] Invalid getReport response: ${parsed.error.message}`);
-    }
-
-    return ok(toWeatherReport(parsed.data));
-  };
+  getReport = async (signal?: AbortSignal): Promise<Result<WeatherReport, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.get('v2/weather', { signal }),
+      weatherReportSchema,
+      toWeatherReport,
+      '[WeatherService] Invalid getReport response',
+    );
 
   updateLocation = async (
     input: UpdateWeatherLocationInput,
     signal?: AbortSignal,
-  ): Promise<Result<RegisteredLocation, ApiError>> => {
-    const result = await this.#httpClient.put('v2/weather/location', input, { signal });
+  ): Promise<Result<RegisteredLocation, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.put('v2/weather/location', input, { signal }),
+      weatherLocationSchema,
+      toRegisteredLocation,
+      '[WeatherService] Invalid updateLocation response',
+    );
 
-    if (!result.ok) {
+  // 서버가 위치를 잃으면(WEATHER_1902) 한 번만 다시 등록하고, 그것도 안 되면 처음의 1902를 돌려 위치 안내를 띄운다
+  getReportWithReregistration = async ({
+    lastRegistered,
+    signal,
+  }: {
+    lastRegistered: Coordinates | null;
+    signal?: AbortSignal;
+  }): Promise<Result<WeatherReport, ApiError>> => {
+    const result = await this.getReport(signal);
+    if (result.ok || !isLocationNotRegisteredError(result.error) || lastRegistered == null) {
       return result;
     }
-
-    const parsed = weatherLocationSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[WeatherService] Invalid updateLocation response: ${parsed.error.message}`,
-      );
+    const registration = await this.updateLocation(lastRegistered, signal);
+    if (!registration.ok) {
+      return result;
     }
-
-    return ok(toRegisteredLocation(parsed.data));
+    return this.getReport(signal);
   };
 }

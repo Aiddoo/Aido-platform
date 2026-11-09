@@ -17,6 +17,8 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { AirkoreaProvider } from "./airkorea.provider.js";
 
@@ -29,6 +31,8 @@ describe("AirkoreaProvider — 에어코리아 대기질 프로바이더", () =>
     const { unit, unitRef } = await TestBed.solitary(AirkoreaProvider)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(OutboundPolicyRegistry)
+      .final(createWeatherOutbound().policies)
       .compile();
 
     provider = unit;

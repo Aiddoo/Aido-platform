@@ -12,8 +12,11 @@
  * 4. 읽음 처리
  */
 
+import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
+
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -69,6 +72,56 @@ describe("응원 E2E", () => {
         // Then - 쿨다운 에러 검증
         expect(cooldownResponse.body.success).toBe(false);
         expect(cooldownResponse.body.error.code).toBe("CHEER_1202");
+      });
+
+      it("하루 한도를 다 쓰면 429 CHEER_1201과 차감 없음·X-Timezone 자정 기준 featureQuota를 준다", async () => {
+        // Given
+        const sender = await ctx.helpers.createVerifiedUser(
+          "cheer-limit-sender@test.com",
+          password,
+        );
+        const receivers = [];
+        for (let index = 0; index <= PLAN_CATALOG.CHEER.free; index += 1) {
+          const receiver = await ctx.helpers.createVerifiedUser(
+            `cheer-limit-receiver-${index}@test.com`,
+            password,
+          );
+          await ctx.helpers.createFriendship(sender, receiver);
+          receivers.push(receiver);
+        }
+        for (const receiver of receivers.slice(0, PLAN_CATALOG.CHEER.free)) {
+          await request(ctx.app.getHttpServer())
+            .post("/v1/cheers")
+            .set("Authorization", `Bearer ${sender.accessToken}`)
+            .set("X-Timezone", "Asia/Seoul")
+            .send({ receiverId: receiver.userId })
+            .expect(201);
+        }
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/cheers")
+          .set("Authorization", `Bearer ${sender.accessToken}`)
+          .set("X-Timezone", "Asia/Seoul")
+          .send({ receiverId: receivers[PLAN_CATALOG.CHEER.free]?.userId })
+          .expect(429);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.CHEER_1201);
+        expect(quotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+          charged: false,
+          featureQuota: {
+            feature: "CHEER",
+            allowed: true,
+            limit: PLAN_CATALOG.CHEER.free,
+            used: PLAN_CATALOG.CHEER.free,
+            remaining: 0,
+            period: "day",
+            resetsAt: dayWindowInTimezone(new Date(), "Asia/Seoul").endsAt.toISOString(),
+            isFairUse: false,
+            perUse: null,
+          },
+        });
       });
 
       it("메시지 없이도 응원을 보낼 수 있다", async () => {

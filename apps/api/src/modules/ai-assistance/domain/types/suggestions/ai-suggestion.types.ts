@@ -67,12 +67,6 @@ export interface SuggestionHistoryItem {
   readonly status: "ACCEPTED" | "DISMISSED";
 }
 
-/** 저장 후보를 검증할 실제 사용자 기록과 날씨 근거. */
-export interface PatternEvidenceContext {
-  readonly todos: readonly TodoSummaryForAnalysis[];
-  readonly weather: string | null;
-}
-
 /** Calendar DATE 기준 실제 기록과 완료 근거. 등록 횟수와 완료 횟수는 구분한다. */
 export interface RecordedActivityEvidence {
   readonly title: string;

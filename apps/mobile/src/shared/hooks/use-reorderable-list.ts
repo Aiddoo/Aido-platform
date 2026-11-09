@@ -1,5 +1,5 @@
-import { ImpactFeedbackStyle } from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { useHaptics } from '@src/shared/di/shared-di-context';
+import { useState } from 'react';
 import {
   type ReorderableListDragEndEvent,
   type ReorderableListReorderEvent,
@@ -7,15 +7,17 @@ import {
 } from 'react-native-reorderable-list';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { impactFeedback, selectionFeedback } from '../utils/haptics';
-import { getReorderInstruction, type ReorderInstruction } from '../utils/reorder-instruction';
+import { getReorderInstruction, type ReorderInstruction } from '../utils/get-reorder-instruction';
 
-export interface ReorderedList<TItem, TId> {
+/** 바로 켜면 Android에서 행 위 스와이프를 끌기가 가져가 스크롤이 멈춘다. `panGesture`는 gesture-handler 2 타입이라 3과 맞지 않아 `panActivateAfterLongPress`를 쓴다 */
+const DRAG_ACTIVATION_DELAY_MS = 520;
+
+interface ReorderedList<TItem, TId> {
   instruction: ReorderInstruction<TId>;
   items: TItem[];
 }
 
-interface UseReorderableListParams<TItem, TId> {
+interface UseReorderableListOptions<TItem, TId> {
   items: TItem[];
   updatedAt: number;
   isPending: boolean;
@@ -23,61 +25,55 @@ interface UseReorderableListParams<TItem, TId> {
   onReorder: (reordered: ReorderedList<TItem, TId>) => void;
 }
 
-/**
- * 서버 순서를 받아 `ReorderableList`/`NestedReorderableList`에 그대로 펼칠 props를 만든다.
- * 놓으면 화면 순서를 먼저 바꾸고 서버에 이동 지시를 보낸다. 끄는 동안 들어온 서버 순서는 놓은 뒤 반영한다.
- */
+interface ReorderHold<TItem> {
+  items: TItem[];
+  updatedAt: number;
+  isDragging: boolean;
+}
+
+/** 콜백이 worklet이라 햅틱을 호출부로 나누면 `scheduleOnRN`까지 옮겨야 해 여기서 낸다 */
 export function useReorderableList<TItem, TId>({
   items,
   updatedAt,
   isPending,
   getItemId,
   onReorder,
-}: UseReorderableListParams<TItem, TId>) {
-  const [data, setData] = useState(items);
-  const isDraggingRef = useRef(false);
-  const syncedAtRef = useRef(updatedAt);
-
-  const syncServerItems = () => {
-    if (syncedAtRef.current === updatedAt) {
-      return;
-    }
-    syncedAtRef.current = updatedAt;
-    setData(items);
-  };
-
-  useEffect(() => {
-    if (isDraggingRef.current || isPending) {
-      return;
-    }
-    syncServerItems();
-  }, [items, updatedAt, isPending]);
+}: UseReorderableListOptions<TItem, TId>) {
+  const haptics = useHaptics();
+  const [hold, setHold] = useState<ReorderHold<TItem> | null>(null);
+  const isHolding = hold != null && (hold.isDragging || isPending || hold.updatedAt === updatedAt);
+  const data = isHolding ? hold.items : items;
 
   const handleDragStart = () => {
-    isDraggingRef.current = true;
-    impactFeedback(ImpactFeedbackStyle.Medium);
+    setHold({ items: data, updatedAt, isDragging: true });
+    haptics.impact('medium');
   };
 
   const handleDragEnd = ({ from, to }: ReorderableListDragEndEvent) => {
-    isDraggingRef.current = false;
     if (from === to) {
-      syncServerItems();
+      setHold(null);
     }
+  };
+
+  const handleIndexChange = () => {
+    haptics.selection();
   };
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
     const reorderedItems = reorderItems(data, from, to);
-    const instruction = getReorderInstruction(reorderedItems, from, to, getItemId);
+    const instruction = getReorderInstruction({ reorderedItems, from, to, getItemId });
     if (instruction == null) {
+      setHold(null);
       return;
     }
 
-    setData(reorderedItems);
+    setHold({ items: reorderedItems, updatedAt, isDragging: false });
     onReorder({ instruction, items: reorderedItems });
   };
 
   return {
     data,
+    panActivateAfterLongPress: DRAG_ACTIVATION_DELAY_MS,
     dragEnabled: !isPending,
     onReorder: handleReorder,
     onDragStart: () => {
@@ -86,7 +82,7 @@ export function useReorderableList<TItem, TId>({
     },
     onIndexChange: () => {
       'worklet';
-      scheduleOnRN(selectionFeedback);
+      scheduleOnRN(handleIndexChange);
     },
     onDragEnd: (event: ReorderableListDragEndEvent) => {
       'worklet';

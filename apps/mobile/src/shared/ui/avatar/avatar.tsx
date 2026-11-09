@@ -14,14 +14,14 @@ interface AvatarProps extends AvatarRootProps {
 }
 
 export function Avatar({ isSelected, className, children, ...props }: AvatarProps) {
-  const showSelection = isSelected != null;
+  const isSelectable = isSelected != null;
 
   return (
-    <Box className={cn(showSelection && 'relative overflow-visible')}>
+    <Box className={cn(isSelectable && 'relative overflow-visible')}>
       <HeroUIAvatar
         className={cn(
-          showSelection && 'border-2',
-          showSelection && (isSelected ? 'border-main' : 'border-gray-3'),
+          isSelectable && 'border-2',
+          isSelectable && (isSelected ? 'border-main' : 'border-gray-3'),
           className,
         )}
         {...props}

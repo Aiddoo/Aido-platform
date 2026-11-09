@@ -1,32 +1,83 @@
-import type { ParsedTodoData } from "@aido/api";
+import type {
+  DateRef,
+  PlanRepeatRef,
+  RepeatRef,
+  ScheduleDraft,
+  TimeRef,
+  TodoDraft,
+} from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
 
-import type { DetectedPattern } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
+/** 테스트가 말한 칸만 쓰면 나머지는 모델처럼 null로 채운다. */
+export type DateRefInput = Partial<DateRef> & Pick<DateRef, "kind">;
+export type RepeatRefInput = Partial<Omit<RepeatRef, "until">> &
+  Pick<RepeatRef, "pattern"> & { readonly until?: DateRefInput | null };
 
-export function createParsedTodoResponse(overrides: Partial<ParsedTodoData> = {}): ParsedTodoData {
-  const response: ParsedTodoData = {
-    title: "테스트 할 일",
-    startDate: "2025-01-25",
-    endDate: null,
-    scheduledTime: null,
-    isAllDay: true,
-    isRecurring: false,
-    recurrence: null,
-    ...overrides,
-  };
-  return structuredClone(response);
+export interface ScheduleDraftInput {
+  readonly date?: DateRefInput;
+  readonly endDate?: DateRefInput | null;
+  readonly time?: Partial<TimeRef> | null;
+  readonly repeat?: RepeatRefInput;
 }
 
-export function createDetectedPattern(overrides: Partial<DetectedPattern> = {}): DetectedPattern {
-  const pattern: DetectedPattern = {
-    title: "책 읽기 10분",
-    daysOfWeek: ["MON"],
-    scheduledTime: null,
-    confidence: 0.85,
-    reason: "최근 기록에서 같은 독서 행동을 반복했어요.",
-    matchedTitles: ["책 읽기 10분", "책 읽기 10분", "책 읽기 10분"],
-    ...overrides,
+export type TodoDraftInput = ScheduleDraftInput &
+  Partial<Pick<TodoDraft, "intent" | "title" | "categoryId">>;
+
+export function dateRefFixture(input: DateRefInput): DateRef {
+  return {
+    amount: null,
+    weekday: null,
+    weekOffset: null,
+    month: null,
+    day: null,
+    year: null,
+    ...input,
   };
-  return structuredClone(pattern);
+}
+
+export function timeRefFixture(input: Partial<TimeRef>): TimeRef {
+  return {
+    hour: null,
+    minute: null,
+    meridiem: null,
+    partOfDay: null,
+    relativeMinutes: null,
+    ...input,
+  };
+}
+
+export function repeatRefFixture(input: RepeatRefInput): RepeatRef {
+  return {
+    daysOfWeek: null,
+    forDuration: null,
+    ...input,
+    until: input.until == null ? null : dateRefFixture(input.until),
+  };
+}
+
+export function planRepeatRefFixture(
+  input: RepeatRefInput & Partial<Pick<PlanRepeatRef, "monthDay">>,
+): PlanRepeatRef {
+  return { monthDay: null, ...input, ...repeatRefFixture(input) };
+}
+
+/** 일정 표현. 기본은 날짜·시각·반복 언급이 없는 종일 할 일이다. */
+export function scheduleDraftFixture(input: ScheduleDraftInput = {}): ScheduleDraft {
+  return {
+    date: dateRefFixture(input.date ?? { kind: "NONE" }),
+    endDate: input.endDate == null ? null : dateRefFixture(input.endDate),
+    time: input.time == null ? null : timeRefFixture(input.time),
+    repeat: repeatRefFixture(input.repeat ?? { pattern: "NONE" }),
+  };
+}
+
+/** parse-todo 모델 출력(일정 표현). 기본은 날짜·시각 언급 없는 종일 할 일이다. */
+export function createTodoDraftResponse(overrides: TodoDraftInput = {}): TodoDraft {
+  return structuredClone({
+    intent: overrides.intent ?? "TASK",
+    title: overrides.title ?? "테스트 할 일",
+    categoryId: overrides.categoryId ?? null,
+    ...scheduleDraftFixture(overrides),
+  });
 }
 
 export function createReportAiResponse(locale: "ko" | "en" = "ko") {
@@ -35,9 +86,9 @@ export function createReportAiResponse(locale: "ko" | "en" = "ko") {
     : { summary: "이번 주에도 차근차근 기록을 쌓았어요.", tips: ["책 읽기 한 가지부터 시작해요."] };
 }
 
-export function createParsedMemoResponse(categoryId = 7) {
+export function createMemoDraftResponse(categoryId = 7) {
   return {
-    todos: [{ ...createParsedTodoResponse(), categoryId, items: [{ title: "자료 준비" }] }],
+    todos: [{ ...createTodoDraftResponse(), categoryId, items: [{ title: "자료 준비" }] }],
   };
 }
 

@@ -1,7 +1,6 @@
 import { INVITE_FRIENDSHIP, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   type AfterCommitTaskRegistryPort,
@@ -32,11 +31,11 @@ interface FriendshipEstablisherDependencies {
     | "getMaxSortOrderForFriends"
     | "getUserDisplayName"
   >;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimitInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx">;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly effects: Pick<
     FriendshipEffects,
-    "invalidateFriendshipCaches" | "notifyMutual" | "checkFirstFriendMilestone"
+    "invalidateFriendshipCaches" | "notifyFriendshipEstablished" | "checkFirstFriendMilestone"
   >;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -95,11 +94,11 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
   }
 
   async #isAtFriendLimit(userId: string): Promise<boolean> {
-    const [entitlement, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.getResourceLimitInTx(userId, Resource.FRIEND),
+    const [friendLimit, friendCount] = await Promise.all([
+      this.#dependencies.entitlementReader.getLimitInTx(userId, "FRIEND"),
       this.#dependencies.followRepository.countMutualFriends(userId),
     ]);
-    return hasReachedFriendLimit(entitlement.maxCount, friendCount);
+    return hasReachedFriendLimit(friendLimit, friendCount);
   }
 
   async #request(
@@ -174,19 +173,10 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
     });
     await this.#dependencies.effects.invalidateFriendshipCaches(requesterId, targetUserId);
     if (shouldNotifyFriends) {
-      const [requesterName, targetName] = await Promise.all([
-        this.#dependencies.followRepository.getUserDisplayName(requesterId),
-        this.#dependencies.followRepository.getUserDisplayName(targetUserId),
-      ]);
-      this.#dependencies.effects.notifyMutual({
-        userId: requesterId,
-        friendId: targetUserId,
-        friendName: targetName,
-      });
-      this.#dependencies.effects.notifyMutual({
-        userId: targetUserId,
-        friendId: requesterId,
-        friendName: requesterName,
+      this.#dependencies.effects.notifyFriendshipEstablished({
+        actorId: requesterId,
+        actorName: await this.#dependencies.followRepository.getUserDisplayName(requesterId),
+        counterpartId: targetUserId,
       });
     }
     await Promise.all([

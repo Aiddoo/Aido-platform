@@ -3,35 +3,62 @@
     "todoAdded": "Added your to-do!",
     "todoUpdated": "Updated your to-do",
     "todoDeleted": "Deleted your to-do",
-    "scheduleChanged": "Schedule updated",
+    "dateChanged": "Date updated",
+    "timeChanged": "Time updated",
     "categoryChanged": "Category changed",
     "categoryAdded": "Category added",
     "categoryUpdated": "Category updated",
     "categoryDeleted": "Category deleted",
     "recurringAdded": "Added your repeating to-dos!",
-    "recurringCategoryLimit": "Creating these repeating to-dos would exceed the category limit. Try a shorter date range.",
-    "categoryLimitReached": "This category has reached its to-do limit. Complete some or move them to another category.",
-    "subTodoAddFailed": "Couldn't add the item",
-    "subTodoUpdateFailed": "Couldn't update the item",
-    "subTodoDeleteFailed": "Couldn't delete the item",
-    "parseFailed": "We couldn't quite understand that. Please try again.",
+    "recurringCategoryLimit": "These repeating to-dos would go over the category limit. Try a shorter period.",
+    "categoryLimitReached": "This category is full. Complete some to-dos or move them to another category.",
+    "subTodoAddFailed": "Couldn't add the subtask",
+    "subTodoUpdateFailed": "Couldn't update the subtask",
+    "subTodoDeleteFailed": "Couldn't delete the subtask",
     "nudgeSent": "Nudge sent!",
     "remindNudgeSent": "Sent a nudge to help them get started!",
     "addFailedRetry": "Try adding again in a moment",
     "updateFailedRetry": "Try editing again in a moment",
     "deleteFailedRetry": "Try deleting again in a moment",
     "changeFailedRetry": "Try again in a moment",
-    "retryLater": "Please try again in a moment"
-  },
-  "errors": {
-    "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
-    "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
+    "retryLater": "Please try again in a moment",
+    "seriesStopped": "Stopped repeating",
+    "series": {
+      "not-found": {
+        "title": "We couldn't find this repeating to-do",
+        "description": "We refreshed your list."
+      },
+      "limit": {
+        "title": "You can have up to {{limit}} repeating to-dos",
+        "description": "Stop or delete one you don't use, then try again."
+      },
+      "no-dates": {
+        "title": "No dates match this repeat setting",
+        "description": "Please choose the repeat again."
+      },
+      "not-repeating": {
+        "title": "This to-do doesn't repeat",
+        "description": "We refreshed your list."
+      },
+      "invalid": {
+        "title": "This repeat setting isn't valid",
+        "description": "Please choose the repeat again."
+      },
+      "too-many-past": {
+        "title": "That start date is too far back",
+        "description": "There are too many past dates. Pick a more recent start date."
+      },
+      "category-full": {
+        "title": "This category is full",
+        "description": "Complete some to-dos or pick another category. Your changes weren't saved."
+      },
+      "ended": {
+        "title": "This repeat has already ended",
+        "description": "We refreshed your list."
+      }
+    }
   },
   "form": {
-    "titleRequired": "Please enter a title",
-    "titleMaxLength": "Title can be up to 200 characters",
-    "repeatEndDateRequired": "Please choose an end date for the repeat",
-    "repeatDaysRequired": "Please choose days to repeat",
     "nudgeMessageMax_one": "Your message can be up to {{count}} character",
     "nudgeMessageMax_other": "Your message can be up to {{count}} characters"
   },
@@ -45,21 +72,67 @@
     "time": "Time",
     "selectTime": "Choose a time",
     "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
+    "reminderInfoAllDay": "ⓘ All-day to-dos don't send reminders",
     "repeatPeriod": "Repeat period",
     "selectPeriod": "Please choose a period",
+    "periodNever": "From {{date}}, ongoing",
+    "periodCount_one": "From {{date}}, {{count}} time",
+    "periodCount_other": "From {{date}}, {{count}} times",
     "repeatDaily": "Repeats daily",
     "repeatWeekdays": "Repeats on weekdays",
     "repeatWeekends": "Repeats on weekends",
     "repeatWeekly": "Repeats weekly on {{days}}",
+    "repeatBiweekly": "Repeats every 2 weeks on {{days}}",
+    "repeatMonthly": "Repeats monthly on day {{day}}",
     "presetDaily": "Daily",
     "presetWeekdays": "Weekdays",
     "presetWeekends": "Weekends",
-    "selectDays": "Please choose days"
+    "presetBiweekly": "Every 2 weeks",
+    "presetMonthly": "Monthly on day {{day}}",
+    "repeatForever": "Repeat forever",
+    "selectDays": "Please choose days",
+    "noOccurrence": "No repeating days in this period"
+  },
+  "repeat": {
+    "summary": {
+      "DAILY": "Daily",
+      "WEEKDAYS": "Weekdays",
+      "WEEKENDS": "Weekends",
+      "WEEKLY": "Weekly on {{days}}",
+      "BIWEEKLY": "Every 2 weeks on {{days}}",
+      "MONTHLY": "Monthly on day {{day}}",
+      "untilSuffix": "until {{date}}",
+      "countSuffix_one": "{{count}} time",
+      "countSuffix_other": "{{count}} times"
+    },
+    "spokenRule": "Repeats {{rule}}",
+    "monthEndHint": "In shorter months, it repeats on the last day",
+    "horizonHint": "Repeating to-dos show up to 3 months ahead",
+    "horizonInfo": {
+      "title": "To-dos past 3 months aren't shown yet",
+      "description": "Your repeat hasn't ended. They'll appear as the date gets closer.",
+      "label": "More about repeating to-dos"
+    }
+  },
+  "scope": {
+    "editTitle": "Edit repeating to-do",
+    "deleteTitle": "Delete repeating to-do",
+    "thisOnly": "Just this one",
+    "thisAndFollowing": "This and following",
+    "allRepeats": "All in this repeat",
+    "editThisOnlyHint": "Only {{date}} changes",
+    "editFollowingHint": "Changes from {{date}} onward",
+    "deleteThisOnlyHint": "Only {{date}} is deleted",
+    "deleteFollowingHint": "Deleted from {{date}} onward",
+    "deleteAllHint": "Past and completed ones are deleted too"
+  },
+  "multiDayDelete": {
+    "title": "Delete this to-do for all days?",
+    "description": "It will be deleted for all of {{period}}.",
+    "confirm": "Delete all"
   },
   "chip": {
     "repeat": "Repeat",
-    "daily": "Daily",
-    "weeklyDays": "Weekly on {{days}}",
     "allDay": "All day",
     "private": "Private",
     "public": "Public",
@@ -68,14 +141,12 @@
   "add": {
     "placeholder": "What do you want to get done?",
     "submit": "Select",
-    "aiFeature": "Create a to-do with AI",
-    "voiceAddTitle": "Add to-dos by voice",
-    "voiceAddHint": "Say something like \"Dinner at 7 PM this Friday\"\nand we'll fill in the date and time"
+    "save": "Save"
   },
   "subTodo": {
-    "addItem": "Add item",
-    "placeholder": "Enter an item",
-    "voiceInput": "Voice input",
+    "addItem": "Add subtask",
+    "placeholder": "Enter a subtask",
+    "voiceInput": "Dictate",
     "voiceTitle": "Type with your voice",
     "voiceHint": "Tap the mic button and speak —\nyour words become text"
   },
@@ -91,10 +162,12 @@
     "changeSubmit": "Save",
     "more": "More options",
     "complete": "Mark as done",
-    "uncomplete": "Mark as not done"
+    "uncomplete": "Mark as not done",
+    "stopRepeat": "Stop repeating"
   },
   "list": {
-    "loadError": "Something went wrong while loading your to-dos."
+    "loadError": "Something went wrong while loading your to-dos.",
+    "reminderOff": "Notifications off"
   },
   "friendTodo": {
     "emptyTitle": "Your friend has no to-dos yet",
@@ -103,42 +176,33 @@
     "alreadyNudged": "Already nudged"
   },
   "nudge": {
-    "limitTitle": "You've used all your nudges for today",
     "limitSpentTitle": "You've used up today's nudges",
-    "subscribeUnlimited": "Subscribe for unlimited nudges",
     "promptPrefix": "Send a friend a",
     "promptHighlight": "nudge",
     "promptSuffix": "to cheer them on?",
     "hintPrefix": "To share a little support, tap",
-    "hintHighlight": "nudge",
     "hintSuffix": "and cheer them on",
-    "remaining_one": "{{count}} nudge left today (unlimited with Pro)",
-    "remaining_other": "{{count}} nudges left today (unlimited with Pro)",
+    "remaining_one": "{{count}} nudge left today",
+    "remaining_other": "{{count}} nudges left today",
     "sheetTitle": "A little encouragement for a friend",
     "whenTodo": "Cheering you on: {{title}}",
     "placeholder": "(Optional) Take it at your pace. I’m cheering for you!",
     "send": "Send encouragement",
-    "dialogTarget": "Send some encouragement to {{name}}",
-    "dialogPlaceholder": "(Optional) Cheering you on for {{title}}!",
     "remindTitle": "Shall we start today together?",
     "remindPlaceholder": "(Optional) Let’s start with one small to-do!",
     "statusUnavailable": "Couldn’t check if you can send a nudge",
     "to": "to. {{name}}"
   },
   "category": {
+    "colorOption": "Color {{index}} of {{total}}",
     "nameLabel": "Category name",
     "namePlaceholder": "Enter a category name",
-    "premiumMore": "Subscribe to create more categories",
     "deleteTitle": "Delete the {{name}} category?",
     "deleteDescription": "This can't be undone",
     "todoCount_one": "It contains {{count}} to-do",
     "todoCount_other": "It contains {{count}} to-dos",
     "moveSelect": "Please choose a category to move them to",
-    "select": "Choose a category",
-    "fallback": "Category"
-  },
-  "premium": {
-    "unlimitedParse": "Subscribe for unlimited AI parsing"
+    "select": "Choose a category"
   },
   "calendar": {
     "week": "Week",
@@ -152,19 +216,7 @@
     "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
     "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
     "preparing": "We're preparing this week's suggestions",
-    "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again."
-  },
-  "friendStrip": {
-    "me": "Me",
-    "meLabel": "View my to-dos",
-    "friendLabel": "View {{name}}'s to-dos",
-    "findFriends": "Find friends",
-    "loadMoreFailed": "Retry",
-    "loadMoreFailedLabel": "Couldn't load more friends. Retry",
-    "emptyInvite": "Invite",
-    "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
-    "emptySearchHint": "Find friends to see and cheer on each other's to-dos",
-    "hintDismiss": "Dismiss the friends tip"
+    "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again"
   },
   "activation": {
     "title": "Create and complete your first to-do",
@@ -186,37 +238,9 @@
     "selectPrompt": "Select a to-do to see its details and comments here",
     "unavailableTitle": "This to-do is no longer available",
     "unavailableDescription": "It may have been deleted, or your friendship may have changed",
-    "title": "To-do",
     "open": "Comments",
     "pageTitle": "To-do details",
-    "views": "{{count}} views",
-    "unknownOwner": "User",
-    "metrics": "{{views}} views · {{comments}} comments"
-  },
-  "comments": {
-    "title": "Comments",
-    "popular": "Popular",
-    "latest": "Latest",
-    "empty": "Start the conversation.",
-    "placeholder": "Add a comment...",
-    "replyPlaceholder": "Add a reply...",
-    "replyingTo": "Replying to {{name}}",
-    "more": "Load more comments",
-    "viewReplies": "View {{count}} replies",
-    "moreReplies": "Load more replies",
-    "viewAllComments": "View all comments",
-    "edited": "Edited",
-    "loadRepliesError": "Couldn't load replies. Try again",
-    "reply": "Reply",
-    "edit": "Edit",
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "save": "Save",
-    "deleted": "This comment was deleted.",
-    "deletedUser": "Deleted comment",
-    "unknownUser": "User",
-    "authorBadge": "Author",
-    "loadError": "Couldn't load comments. Try again"
+    "unknownOwner": "User"
   },
   "interaction": {
     "detailTitle": "A little encouragement",
@@ -258,8 +282,8 @@
     "thanksLoadError": "Couldn’t load the friends who cheered you on",
     "encouragementTitle": "Cheering you on, at your own pace!",
     "replyCompletionHint": "Sending a reply does not complete your to-do",
-    "completedThanksHint": "You did it! Send a little thanks to the friends who cheered you on.",
-    "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately.",
+    "completedThanksHint": "You did it! Send a little thanks to the friends who cheered you on",
+    "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately",
     "thanksSendCount_one": "Thank {{count}} friend",
     "thanksSendCount_other": "Thank {{count}} friends",
     "thanksDescription_one": "Send {{count}} friend a little thanks and let them know you’re done",

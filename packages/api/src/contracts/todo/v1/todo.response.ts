@@ -1,9 +1,15 @@
 import { z } from "zod";
 
-import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import {
+  datetimeSchema,
+  nullableDateSchema,
+  nullableDatetimeSchema,
+  timeOfDaySchema,
+} from "../../../common/datetime.js";
 import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
-import { todoVisibilitySchema } from "./todo.common.js";
+import { todoSeriesResponseSchema } from "./todo-series.response.js";
+import { todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
 
 export const todoItemResponseSchema = z.object({
   id: z.number().int().describe("하위 항목 고유 ID"),
@@ -22,6 +28,33 @@ export const todoItemStatsSchema = z.object({
 });
 
 export type TodoItemStats = z.infer<typeof todoItemStatsSchema>;
+
+const todoExample = {
+  id: 1,
+  userId: "clz7x5p8k0010qz0z8z8z8z8z",
+  title: "운동하기",
+  sortOrder: 0,
+  completed: false,
+  completedAt: null,
+  startDate: "2024-01-15",
+  endDate: "2024-01-15",
+  scheduledTime: "2024-01-15T09:00:00.000Z",
+  scheduledLocalTime: "18:00",
+  isAllDay: false,
+  visibility: "PUBLIC",
+  recurrenceGroupId: null,
+  category: {
+    id: 1,
+    name: "중요한 일",
+    color: "#FFB3B3",
+    sortOrder: 0,
+  },
+  items: [],
+  itemStats: { total: 0, completed: 0 },
+  commentCount: 0,
+  createdAt: "2024-01-10T12:00:00.000Z",
+  updatedAt: "2024-01-10T12:00:00.000Z",
+};
 
 export const todoSchema = z
   .object({
@@ -44,11 +77,28 @@ export const todoSchema = z
       .nullable()
       .describe("종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)"),
     scheduledTime: nullableDatetimeSchema.describe(
-      "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+      "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null). 날짜 + 벽시계 + 사용자 시간대의 파생값이라 시간대가 바뀌면 다시 계산된다",
     ),
+    scheduledLocalTime: timeOfDaySchema
+      .nullable()
+      .optional()
+      .describe(
+        "사용자가 고른 벽시계 시각 (HH:mm). 어디서든 이 시각으로 보여 준다. 종일 일정은 null, 구버전 서버 응답에는 키가 없다",
+      ),
     isAllDay: z.boolean().describe("종일 일정 여부"),
     visibility: todoVisibilitySchema.describe("공개 범위 (PUBLIC | FRIENDS | PRIVATE)"),
     recurrenceGroupId: z.string().nullable().describe("반복 생성 그룹 ID (null이면 단일 생성)"),
+    repeat: todoRepeatSchema
+      .nullable()
+      .optional()
+      .describe(
+        "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+      ),
+    occurrenceDate: nullableDateSchema
+      .optional()
+      .describe(
+        "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+      ),
     category: todoCategorySummarySchema.describe("카테고리 정보"),
     items: z
       .array(todoItemResponseSchema)
@@ -62,35 +112,15 @@ export const todoSchema = z
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)"),
     updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)"),
   })
-  .meta({
-    example: {
-      id: 1,
-      userId: "clz7x5p8k0010qz0z8z8z8z8z",
-      title: "운동하기",
-      sortOrder: 0,
-      completed: false,
-      completedAt: null,
-      startDate: "2024-01-15",
-      endDate: "2024-01-15",
-      scheduledTime: "2024-01-15T09:00:00.000Z",
-      isAllDay: false,
-      visibility: "PUBLIC",
-      recurrenceGroupId: null,
-      category: {
-        id: 1,
-        name: "중요한 일",
-        color: "#FFB3B3",
-        sortOrder: 0,
-      },
-      items: [],
-      itemStats: { total: 0, completed: 0 },
-      commentCount: 0,
-      createdAt: "2024-01-10T12:00:00.000Z",
-      updatedAt: "2024-01-10T12:00:00.000Z",
-    },
-  });
+  .meta({ example: todoExample });
 
 export type Todo = z.infer<typeof todoSchema>;
+
+export const friendTodoSchema = todoSchema
+  .omit({ repeat: true, occurrenceDate: true })
+  .meta({ example: todoExample });
+
+export type FriendTodo = z.infer<typeof friendTodoSchema>;
 
 export { numberCursorPaginationInfoSchema };
 
@@ -134,10 +164,20 @@ export const todoListResponseSchema = z
 
 export type TodoListResponse = z.infer<typeof todoListResponseSchema>;
 
+export const friendTodoListResponseSchema = z.object({
+  items: z.array(friendTodoSchema),
+  pagination: numberCursorPaginationInfoSchema,
+});
+
+export type FriendTodoListResponse = z.infer<typeof friendTodoListResponseSchema>;
+
 export const createTodoResponseSchema = z
   .object({
     message: z.string(),
     todo: todoSchema,
+    series: todoSeriesResponseSchema
+      .optional()
+      .describe("repeat로 만들면 반복 규칙, 이때 todo는 첫 회차. 단일 할 일은 없다"),
   })
   .meta({
     example: {

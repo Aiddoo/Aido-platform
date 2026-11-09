@@ -19,9 +19,6 @@ export const REMINDER_STAGES: readonly ReminderStage[] = [
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
 export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
 
-/** 즉시 발송 label */
-export const REMINDER_IMMEDIATE_LABEL = "immediate";
-
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {
   readonly label: string;
@@ -31,31 +28,30 @@ export interface PlannedReminderJob {
 /**
  * 마감 시각과 현재 시각으로 예약할 리마인더 잡 목록을 계획한다.
  *
- * - scheduledTime이 이미 과거면 아무 잡도 계획하지 않는다(빈 배열).
- * - 각 단계 중 리드 타임을 빼도 여전히 미래인 단계만 지연 잡으로 계획한다.
- * - 모든 단계가 이미 지났지만 scheduledTime은 미래라면 즉시 발송 잡 1건을 계획한다.
+ * 리드 타임을 빼도 여전히 미래인 단계만 지연 잡으로 계획한다. 이미 지난 단계는 건너뛴다.
+ * 바로 보내면 정시 직전에 시간을 고칠 때마다, 시간대를 건널 때마다 알림이 쏟아진다.
  */
 export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedReminderJob[] {
-  if (scheduledMs <= nowMs) {
-    return [];
-  }
-
-  const jobs: PlannedReminderJob[] = [];
-  for (const stage of REMINDER_STAGES) {
-    const delay = scheduledMs - stage.leadTimeMs - nowMs;
-    if (delay > 0) {
-      jobs.push({ label: stage.label, delay });
-    }
-  }
-
-  if (jobs.length === 0) {
-    jobs.push({ label: REMINDER_IMMEDIATE_LABEL, delay: 0 });
-  }
-
-  return jobs;
+  return REMINDER_STAGES.flatMap(({ label, leadTimeMs }) => {
+    const delay = scheduledMs - leadTimeMs - nowMs;
+    return delay > 0 ? [{ label, delay }] : [];
+  });
 }
 
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */
 export function allReminderLabels(): string[] {
-  return [...REMINDER_STAGES.map((s) => s.label), REMINDER_IMMEDIATE_LABEL];
+  return REMINDER_STAGES.map((stage) => stage.label);
+}
+
+/**
+ * 같은 할 일의 같은 단계를 한 번만 보내는 회차 값. 날짜와 벽시계로 만든다.
+ *
+ * 시간대 재계산은 날짜와 벽시계를 바꾸지 않아 값이 그대로이고, 사용자가 날짜나 시간을 고치면 값이 달라진다.
+ * 벽시계가 빈 행(롤백 중 옛 서버가 쓴 행)은 날짜만 쓴다.
+ */
+export function createReminderOccurrenceKey(
+  startDate: string,
+  scheduledLocalTime: string | null,
+): string {
+  return scheduledLocalTime == null ? startDate : `${startDate}T${scheduledLocalTime}`;
 }

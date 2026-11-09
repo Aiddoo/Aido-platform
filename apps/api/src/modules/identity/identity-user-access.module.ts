@@ -1,5 +1,6 @@
 import { Module, type FactoryProvider } from "@nestjs/common";
 
+import { USER_ACTIVITY_READER } from "./application/ports/auth/user-activity.reader.port.js";
 import { USER_APP_VERSION_READER } from "./application/ports/auth/user-app-version.reader.port.js";
 import {
   USER_MUTATION_LOCK,
@@ -26,7 +27,13 @@ const userMutationLockProvider: FactoryProvider<UserMutationLockPort> = {
     userMutationLockProvider,
     { provide: USER_PROFILE_INVALIDATOR, useExisting: AuthCacheAdapter },
     { provide: USER_APP_VERSION_READER, useExisting: DrizzleUserRepository },
+    { provide: USER_ACTIVITY_READER, useExisting: DrizzleUserRepository },
   ],
-  exports: [USER_MUTATION_LOCK, USER_PROFILE_INVALIDATOR, USER_APP_VERSION_READER],
+  exports: [
+    USER_MUTATION_LOCK,
+    USER_PROFILE_INVALIDATOR,
+    USER_APP_VERSION_READER,
+    USER_ACTIVITY_READER,
+  ],
 })
 export class IdentityUserAccessModule {}

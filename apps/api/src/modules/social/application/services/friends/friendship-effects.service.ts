@@ -27,8 +27,17 @@ export class FriendshipEffects {
     return invalidateFriendshipCaches(this.#dependencies.cache, userId, targetUserId);
   }
 
-  notifyMutual(params: { userId: string; friendId: string; friendName: string }): void {
-    this.#dependencies.notifier.notifyFollowMutual(params);
+  /** 친구가 된 사실은 상대에게만 알린다. 수락이나 초대 입력을 직접 한 사람은 이미 화면에서 결과를 봤다 */
+  notifyFriendshipEstablished(params: {
+    actorId: string;
+    actorName: string;
+    counterpartId: string;
+  }): void {
+    this.#dependencies.notifier.notifyFollowMutual({
+      userId: params.counterpartId,
+      friendId: params.actorId,
+      friendName: params.actorName,
+    });
   }
 
   async checkFirstFriendMilestone(userId: string): Promise<void> {

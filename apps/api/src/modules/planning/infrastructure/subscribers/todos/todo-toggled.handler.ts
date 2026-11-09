@@ -17,7 +17,6 @@ import {
 } from "../../../application/ports/todos/todo-read.repository.port.js";
 import {
   TODO_REMINDER,
-  type TodoReminderCancellationResult,
   type TodoReminderPort,
 } from "../../../application/ports/todos/todo-reminder.port.js";
 import { TODO_EVENTS } from "../../../domain/events/todos/todo-event-names.js";
@@ -62,9 +61,9 @@ export class TodoToggledHandler {
     const { todoId, userId, completed, timezone } = event;
 
     const sideEffects: Promise<void>[] = [];
-    let cancellation: Promise<TodoReminderCancellationResult> | undefined;
+    let cancellation: Promise<void> | undefined;
     if (completed) {
-      cancellation = this.todoReminder.cancelReminder(todoId);
+      cancellation = this.todoReminder.cancelReminders([todoId]);
       sideEffects.push(this.#checkAndEnqueueFriendCompleted(userId, timezone));
       sideEffects.push(this.#checkAndEnqueueMilestone(userId));
     }

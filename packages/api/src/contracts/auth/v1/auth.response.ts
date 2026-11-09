@@ -2,8 +2,12 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../../vocabulary/auth.constants.js";
-import type { PremiumFeature } from "../../../vocabulary/premium-features.constants.js";
-import { PREMIUM_SOURCE } from "../../../vocabulary/subscription.constants.js";
+import type { PremiumFeature } from "../../../vocabulary/plan-catalog.constants.js";
+import {
+  PREMIUM_SOURCE,
+  SUBSCRIPTION_PLAN_TYPES,
+  SUBSCRIPTION_STATUS,
+} from "../../../vocabulary/subscription.constants.js";
 import { deviceTypeSchema, oauthProviderSchema } from "./auth.request.js";
 
 export const userStatusSchema = z.enum(USER_STATUS).describe("사용자 계정 상태");
@@ -110,17 +114,17 @@ export const currentUserPayloadSchema = z
 
 export type CurrentUserPayload = z.infer<typeof currentUserPayloadSchema>;
 
-export const SUBSCRIPTION_STATUS = ["FREE", "ACTIVE", "EXPIRED", "CANCELLED"] as const;
-
 export const subscriptionStatusSchema = z
   .enum(SUBSCRIPTION_STATUS)
   .describe("구독 상태 (FREE: 무료, ACTIVE: 구독 중, EXPIRED: 만료, CANCELLED: 취소)");
 
-export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
-
 export const premiumSourceSchema = z
   .enum(PREMIUM_SOURCE)
   .describe("프리미엄 출처 (STORE: 스토어 구독, GRANT: 서버가 지급한 보상 기간)");
+
+export const subscriptionPlanTypeSchema = z
+  .enum(SUBSCRIPTION_PLAN_TYPES)
+  .describe("요금제 종류 (ANNUAL: 연간 구독, MONTHLY: 월간 구독)");
 
 export const premiumFeatureEntitlementSchema = z
   .object({
@@ -228,6 +232,18 @@ export const currentUserSchema = z
       .describe(
         "마지막 보상 기간이 끝난 시각입니다 (ISO 8601 UTC). 지금 프리미엄이 아니고 최근 7일 안에 끝났을 때만 값이 있고, 그 밖에는 null입니다. 구버전 서버는 생략합니다.",
       ),
+    premiumIsTrial: z
+      .boolean()
+      .optional()
+      .describe(
+        "지금 프리미엄이 스토어 무료 체험 기간인지입니다. premiumSource가 STORE이고 스토어가 알려 준 기간 유형이 TRIAL이면 true입니다. 체험이 끝나는 시각은 premiumPeriodEndsAt(스토어 expiration_at_ms)이고 서버가 체험 길이를 계산하지 않습니다. 결제로 넘어가면 false입니다. 1.15.0+ 서버이며 구버전 서버는 생략합니다.",
+      ),
+    premiumPlanType: subscriptionPlanTypeSchema
+      .nullable()
+      .optional()
+      .describe(
+        "지금 프리미엄 기간을 정하는 스토어 구독의 요금제입니다. 스토어 상품 ID로 정하고(Play의 \"상품:기본요금제\"는 ':' 앞만 봅니다) 무료 체험이면 체험 뒤 이어질 요금제입니다. premiumSource가 STORE가 아니거나 모르는 상품이면 null입니다. 1.15.0+ 서버이며 구버전 서버는 생략합니다.",
+      ),
     isPremium: z
       .boolean()
       .optional()
@@ -262,6 +278,8 @@ export const currentUserSchema = z
       willRenew: false,
       bankedPremiumDays: 0,
       premiumGrantEndedAt: null,
+      premiumIsTrial: false,
+      premiumPlanType: null,
       isPremium: false,
     },
   });
@@ -340,12 +358,17 @@ export const registerResponseSchema = z
   .object({
     message: z.string().describe("응답 메시지"),
     email: z.email().describe("가입한 이메일 주소"),
+    emailSent: z
+      .boolean()
+      .optional()
+      .describe("인증 메일을 발송 큐에 담았는지. false면 가입은 됐고 재발송으로 다시 보내면 된다"),
   })
   .describe("회원가입 응답")
   .meta({
     example: {
       message: "인증 코드가 이메일로 발송되었습니다.",
       email: "dydals3440@gmail.com",
+      emailSent: true,
     },
   });
 

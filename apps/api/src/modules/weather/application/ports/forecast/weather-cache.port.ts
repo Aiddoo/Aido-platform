@@ -22,13 +22,22 @@ export interface WeatherCachePort {
     timing: KmaForecastTiming,
   ): Promise<WeatherForecast | undefined>;
 
-  /** 예보 단건 저장 (정규 3h + latest 24h). */
-  saveForecast(
+  /**
+   * 정규 예보가 없으면 load로 한 번만 불러 정규·latest에 저장한다. 같은 격자를 동시에 물으면
+   * 공급자 호출 하나를 나눠 쓴다.
+   */
+  getOrLoadForecast(
     gridX: number,
     gridY: number,
     timing: KmaForecastTiming,
-    forecast: WeatherForecast,
-  ): Promise<void>;
+    load: () => Promise<WeatherForecast>,
+  ): Promise<WeatherForecast>;
+
+  /** 최근 1분 안에 공급자 조회가 실패한 격자인지 */
+  hasRecentForecastFailure(gridX: number, gridY: number): Promise<boolean>;
+
+  /** 격자 조회 실패를 1분 기억해 그동안 요청마다 공급자 시간 초과를 기다리지 않게 한다. */
+  markForecastFailure(gridX: number, gridY: number): Promise<void>;
 
   /** latest 예보 단건 조회 (프로바이더 실패 시 폴백). */
   getLatestForecast(gridX: number, gridY: number): Promise<WeatherForecast | undefined>;

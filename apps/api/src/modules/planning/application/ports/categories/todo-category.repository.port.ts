@@ -49,5 +49,6 @@ export interface TodoCategoryRepositoryPort {
   ): Promise<number>;
 
   getTodoCount(categoryId: number): Promise<number>;
-  moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number>;
+  countActiveSeries(categoryId: number): Promise<number>;
+  moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void>;
 }

@@ -46,6 +46,28 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
       marketingPushAgreedAt: null,
       aiDataSharingAgreedAt: null,
       aiDataSharingVersion: null,
+      marketingReconfirmedAt: null,
+    });
+  });
+  it("철회 응답에는 처리한 서버 시각을, 동의 응답에는 null을 싣는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
+    const useCase = new UpdateMarketingConsent(fixture);
+    const withdrawAt = new Date(SETTINGS_TIME.getTime() + 60_000);
+
+    // When
+    vi.setSystemTime(withdrawAt);
+    const withdrawn = await useCase.execute({ userId: fixture.userId, agreed: false });
+    const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
+
+    // Then
+    expect(withdrawn).toEqual({
+      marketingAgreedAt: null,
+      marketingWithdrawnAt: withdrawAt.toISOString(),
+    });
+    expect(agreed).toEqual({
+      marketingAgreedAt: withdrawAt.toISOString(),
+      marketingWithdrawnAt: null,
     });
   });
 });

@@ -212,14 +212,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ...(kakaoNativeAppKey && { LSApplicationQueriesSchemes: KAKAO_QUERY_SCHEMES }),
         CFBundleAllowMixedLocalizations: true,
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
-        // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
-        NSMicrophoneUsageDescription: '말로 할 일을 입력할 때 마이크를 써요.',
-        NSSpeechRecognitionUsageDescription:
-          '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
+        // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko.json을 그대로 쓴다.
+        NSMicrophoneUsageDescription: koNativeLocale.ios.NSMicrophoneUsageDescription,
+        NSSpeechRecognitionUsageDescription: koNativeLocale.ios.NSSpeechRecognitionUsageDescription,
         // 앱이 사진을 직접 읽지 않아도 포함된 SDK가 사진 보관함 API를 참조해 App Store 업로드에 읽기 문구가 필요하다(ITMS-90683).
-        NSPhotoLibraryUsageDescription: '공유하거나 저장할 이미지를 다룰 때 사진 보관함을 써요.',
+        NSPhotoLibraryUsageDescription: koNativeLocale.ios.NSPhotoLibraryUsageDescription,
         // 공유 시트의 "이미지 저장"이 사진 보관함에 추가할 때 쓴다.
-        NSPhotoLibraryAddUsageDescription: '공유한 이미지를 사진 보관함에 저장할 때 써요.',
+        NSPhotoLibraryAddUsageDescription: koNativeLocale.ios.NSPhotoLibraryAddUsageDescription,
         ...(isDevelopment && {
           NSAppTransportSecurity: {
             NSAllowsArbitraryLoads: true,
@@ -278,14 +277,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'com.google.android.gms.permission.AD_ID',
         'android.permission.ACCESS_ADSERVICES_AD_ID',
         'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
+        // expo-secure-store가 끌어오는 androidx.biometric이 더한다. 생체 인증 잠금(requireAuthentication)을 쓰지 않는다.
+        'android.permission.USE_BIOMETRIC',
+        'android.permission.USE_FINGERPRINT',
+        // expo-file-system·expo-image가 더한다. 녹음과 공유 이미지는 앱 전용 폴더만 쓰고 외부 저장소를 읽거나 쓰지 않는다.
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        // 기본 템플릿이 넣는다. 개발 메뉴(expo-dev-menu debug)만 쓰므로 개발 빌드에는 남긴다.
+        ...(isDevelopment ? [] : ['android.permission.SYSTEM_ALERT_WINDOW']),
       ],
       googleServicesFile: './google-services.json',
-    },
-
-    // Web
-    web: {
-      bundler: 'metro',
-      output: 'static',
     },
 
     // Plugins
@@ -294,6 +295,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       './plugins/withGradleJvmArgs',
       // @react-native-kakao 모듈의 compileSdk 33을 앱 compileSdk로 맞춘다 (release AAR metadata 검사)
       './plugins/withKakaoAndroidCompileSdk',
+      ...(isDevelopment ? [] : ['./plugins/withoutDevLauncherLocalNetwork']),
       [
         'expo-localization',
         {
@@ -392,16 +394,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           icon: NOTIFICATION_ICON,
           color: BRAND_COLOR,
-          // TODO: 알림음 파일 추가 시 설정
-          // sounds: ["./assets/sounds/notification.wav"],
         },
       ],
 
       [
         'expo-location',
         {
-          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
-          locationWhenInUsePermission: '현재 위치의 날씨를 보여줄 때 위치를 써요.',
+          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko.json을 그대로 쓴다.
+          locationWhenInUsePermission: koNativeLocale.ios.NSLocationWhenInUseUsageDescription,
           // 날씨는 대략적인 위치(Balanced)만 쓰므로 정확한 위치 임시 요청과 동작 감지 권한을 넣지 않는다.
           locationFullAccuracyPermission: false,
           motionUsagePermission: false,
@@ -418,16 +418,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-system-ui',
       WEB_BROWSER_PLUGIN_PATH,
 
+      // expo-audio 플러그인은 등록하지 않는다. 기본값이 백그라운드 재생(iOS audio 모드, Android 전경 서비스)을
+      // 켜는데, 앱은 화면을 보는 동안만 듣고 재생한다. 마이크 권한과 문구는 아래 플러그인이 넣는다.
       [
         'expo-speech-recognition',
         {
-          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
-          microphonePermission: '말로 할 일을 입력할 때 마이크를 써요.',
-          speechRecognitionPermission:
-            '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
+          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko.json을 그대로 쓴다.
+          microphonePermission: koNativeLocale.ios.NSMicrophoneUsageDescription,
+          speechRecognitionPermission: koNativeLocale.ios.NSSpeechRecognitionUsageDescription,
           androidSpeechServicePackages: [
             'com.google.android.googlequicksearchbox',
             'com.google.android.tts',
+            // 기기 안 인식(Android System Intelligence)
+            'com.google.android.as',
           ],
         },
       ],
@@ -450,6 +453,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           bundleIdentifier: `${envConfig.bundleIdentifier}.ExpoWidgetsTarget`,
           groupIdentifier: appGroupIdentifier,
+          // Android 위젯은 아래 react-native-android-widget이 맡는다. 기본값이 false여도 이유를 남겨 둔다
+          enableAndroid: false,
           // displayName·description은 위젯 확장의 Localizable.strings 키다.
           // 번역은 native-locales/{ko,en}.json의 ios["Localizable.strings"]에 둔다.
           widgets: [
@@ -458,7 +463,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               displayName: '오늘 할 일',
               description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
               ios: {
-                initialLayout: './src/features/widget/components/widgets.ios.tsx',
+                initialLayout: './src/features/device/widget/components/widgets.ios.tsx',
                 supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
               },
             },
@@ -537,7 +542,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       isProduction,
       revenueCatAppleApiKey: process.env.REVENUECAT_APPLE_API_KEY,
       revenueCatGoogleApiKey: process.env.REVENUECAT_GOOGLE_API_KEY,
-      revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY,
+      // 테스트 키는 개발 빌드에서만 쓴다. 운영·프리뷰 번들에 싣지 않는다
+      ...(isDevelopment && { revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY }),
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       kakaoNativeAppKey,
       // dev에서 Sentry 전송을 강제로 켜는 플래그(테스트 버튼 검증용). 평소 미설정 → dev는 전송 안 함.

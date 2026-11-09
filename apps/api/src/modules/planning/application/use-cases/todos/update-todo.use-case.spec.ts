@@ -8,6 +8,7 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
+import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
 import { TodoUpdatedEvent } from "../../../domain/events/todos/todo-updated.event.js";
 import { UpdateTodo } from "./update-todo.use-case.js";
 
@@ -45,6 +46,56 @@ describe("할 일 부분 수정", () => {
       completed: false,
     });
   });
+  it("날짜만 옮기면 벽시계를 새 날짜의 순간으로 다시 만들고 알림 재예약 이벤트를 낸다", async () => {
+    // Given
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "10:00" },
+    });
+    fixture.eventPublisher.events.length = 0;
+    // When
+    const result = await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "America/New_York",
+      data: { startDate: new Date("2026-05-20T00:00:00Z") },
+    });
+    // Then
+    const instant = new Date("2026-05-20T14:00:00.000Z");
+    expect(result).toMatchObject({ startDate: "2026-05-20", scheduledLocalTime: "10:00" });
+    expect(fixture.records.get(1)).toMatchObject({ scheduledTime: instant, isAllDay: false });
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, instant),
+    );
+  });
+  it("PATCH로 완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림을 다시 잡는다", async () => {
+    // Given
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "10:00", completed: true },
+    });
+    fixture.eventPublisher.events.length = 0;
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "America/New_York",
+      data: { completed: false },
+    });
+    // Then
+    const instant = new Date("2026-05-15T01:00:00.000Z");
+    expect(fixture.records.get(1)).toMatchObject({
+      scheduledLocalTime: "10:00",
+      scheduledTime: instant,
+    });
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, instant),
+    );
+  });
   it("시간만 수정하면 저장된 날짜와 사용자 timezone으로 변환한다", async () => {
     // Given / When
     const result = await useCase.execute({
@@ -60,7 +111,35 @@ describe("할 일 부분 수정", () => {
     });
     expect(fixture.records.get(1)?.scheduledTime).toEqual(new Date("2026-05-15T03:30:00Z"));
   });
-  it("명시한 null은 시간을 지우고 생략한 endDate와 false 값은 보존한다", async () => {
+  it("시간을 바꾸면 리마인더를 다시 잡도록 재예약 이벤트를 낸다", async () => {
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "12:30" },
+    });
+    // Then
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, new Date("2026-05-15T03:30:00.000Z")),
+    );
+  });
+
+  it("시각이 그대로면 재예약 이벤트를 내지 않는다", async () => {
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { title: "제목만" },
+    });
+    // Then
+    expect(
+      fixture.eventPublisher.events.filter((event) => event instanceof TodoRescheduledEvent),
+    ).toEqual([]);
+  });
+
+  it("명시한 null은 시간을 지워 종일로 맞추고 생략한 endDate와 false 값은 보존한다", async () => {
     // Given
     const saved = fixture.records.get(1);
     if (saved == null) {
@@ -73,15 +152,29 @@ describe("할 일 부분 수정", () => {
       id: 1,
       userId: fixture.userId,
       timezone: "UTC",
-      data: { scheduledTime: null, isAllDay: false },
+      data: { scheduledTime: null, isAllDay: false, completed: false },
     });
     // Then
     expect(result).toMatchObject({
       scheduledTime: null,
       endDate: "2026-05-16",
-      isAllDay: false,
+      isAllDay: true,
       completed: false,
     });
+  });
+  it("시간만 보내도 종일을 함께 풀어 저장한다", async () => {
+    // Given
+    const input = {
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { scheduledTime: "09:00" },
+    };
+    // When
+    const result = await useCase.execute(input);
+    // Then
+    expect(result).toMatchObject({ isAllDay: false, scheduledTime: expect.any(String) });
+    expect(fixture.records.get(1)?.isAllDay).toBe(false);
   });
   it("완료 상태가 바뀔 때만 completedAt을 바꾼다", async () => {
     // Given

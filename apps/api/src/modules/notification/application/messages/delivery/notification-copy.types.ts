@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from "@aido/api/vocabulary";
+import type { NudgeReplyKind, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {
@@ -32,7 +32,7 @@ type ExactCatalog<TVariablesByKey> = {
 export interface SchedulerCopyVariablesByKey {
   readonly TODO_REMINDER_60MIN: { readonly todoTitle: string };
   readonly TODO_REMINDER_10MIN: { readonly todoTitle: string };
-  readonly TODO_REMINDER_IMMEDIATE: { readonly todoTitle: string };
+  readonly TODO_SERIES_PAUSED: undefined;
   readonly MORNING_REMINDER: { readonly count: number };
   readonly EVENING_COMPLETE: undefined;
   readonly EVENING_PARTIAL: { readonly remaining: number };
@@ -139,6 +139,17 @@ export interface SocialCopyVariablesByKey {
 
 export type SocialNotificationCopyCatalog = ExactCatalog<SocialCopyVariablesByKey>;
 
+/** 체험이 끝나기까지 남은 사용자 달력 일수(0 = 오늘)와 그 시간대·언어로 쓴 끝나는 날짜 */
+export interface PremiumTrialEndingCopyVariables {
+  readonly days: number;
+  readonly date: string;
+}
+
+/** 체험 뒤 이어질 요금제. 모르는 상품이면 null이라 요금제 없이 "구독"이라고 쓴다. */
+export interface PremiumTrialRenewingCopyVariables extends PremiumTrialEndingCopyVariables {
+  readonly planType: SubscriptionPlanType | null;
+}
+
 export interface SystemCopyVariablesByKey {
   readonly WINBACK_DAY3: undefined;
   readonly WINBACK_DAY7: undefined;
@@ -153,6 +164,12 @@ export interface SystemCopyVariablesByKey {
   readonly AI_SUGGESTION: undefined;
   readonly BILLING_ISSUE: undefined;
   readonly PREMIUM_GRANT_ENDING: undefined;
+  readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialRenewingCopyVariables;
+  readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
+  /** 연간 구독 갱신까지 남은 사용자 달력 일수와 결제 날짜 */
+  readonly PREMIUM_RENEWAL_UPCOMING: PremiumTrialEndingCopyVariables;
+  /** 처음 동의한 날을 받는 사람 시간대·언어로 쓴 값 */
+  readonly MARKETING_CONSENT_RECONFIRM: { readonly agreedOn: string };
   readonly ONBOARDING_DAY0: undefined;
   readonly ONBOARDING_DAY1: undefined;
   readonly ONBOARDING_DAY2: undefined;

@@ -1,23 +1,24 @@
 import { Module } from "@nestjs/common";
-import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
+import { HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DatabaseModule } from "#api/platform/database/index";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import { AdminEventNotifier } from "./application/notifiers/notifications/admin-event.notifier.js";
+import { ADMIN_NOTICE_USER_READER } from "./application/ports/notifications/admin-notice-user.reader.port.js";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/notifications/admin-notification-queue.port.js";
-import {
-  ADMIN_NOTIFIER,
-  PAYMENT_NOTIFIER,
-} from "./application/ports/notifications/admin-notifier.port.js";
+import { ADMIN_NOTIFIER } from "./application/ports/notifications/admin-notifier.port.js";
 import { SIGNUP_STATS_READER } from "./application/ports/notifications/signup-stats.reader.port.js";
 import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/notifications/admin-notification-queue.adapter.js";
-import { DiscordWebhookProvider } from "./infrastructure/adapters/notifications/discord-webhook.provider.js";
+import { createAdminNotifier } from "./infrastructure/adapters/notifications/admin-notifier.factory.js";
+import { DrizzleAdminNoticeUserReader } from "./infrastructure/adapters/notifications/drizzle-admin-notice-user.reader.js";
 import { DrizzleSignupStatsReader } from "./infrastructure/adapters/notifications/drizzle-signup-stats.reader.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/notifications/admin-notification-queue.processor.js";
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/notifications/daily-signup-summary.scheduler.js";
 import {
   adminEventNotifierProvider,
+  adminNoticeUserResolverProvider,
   dispatchDailySignupSummaryProvider,
   enqueueSubscriptionEventProvider,
   enqueueUserRegisteredProvider,
@@ -31,6 +32,7 @@ import {
   ],
   providers: [
     adminEventNotifierProvider,
+    adminNoticeUserResolverProvider,
     enqueueUserRegisteredProvider,
     enqueueSubscriptionEventProvider,
     sendAdminNotificationProvider,
@@ -46,24 +48,15 @@ import {
       useClass: DrizzleSignupStatsReader,
     },
     {
-      provide: ADMIN_NOTIFIER,
-      useFactory: (config: TypedConfigService, http: HttpClient) =>
-        new DiscordWebhookProvider(
-          config.isTest ? undefined : config.discordSignupWebhookUrl,
-          http,
-        ),
-      inject: [TypedConfigService, getHttpClientToken("discord")],
+      provide: ADMIN_NOTICE_USER_READER,
+      useClass: DrizzleAdminNoticeUserReader,
     },
     {
-      provide: PAYMENT_NOTIFIER,
-      useFactory: (config: TypedConfigService, http: HttpClient) =>
-        new DiscordWebhookProvider(
-          config.isTest ? undefined : config.discordPaymentWebhookUrl,
-          http,
-        ),
-      inject: [TypedConfigService, getHttpClientToken("discord")],
+      provide: ADMIN_NOTIFIER,
+      useFactory: createAdminNotifier,
+      inject: [TypedConfigService, getHttpClientToken("discord"), OutboundPolicyRegistry],
     },
   ],
-  exports: [AdminEventNotifier, PAYMENT_NOTIFIER],
+  exports: [AdminEventNotifier],
 })
 export class OperationsNotificationsModule {}

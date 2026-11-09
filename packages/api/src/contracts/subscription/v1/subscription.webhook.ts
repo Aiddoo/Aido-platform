@@ -16,6 +16,11 @@ export const revenueCatEventSchema = z.looseObject({
   type: z.string().min(1),
   app_user_id: z.string().min(1),
   product_id: z.string().min(1),
+  /**
+   * PRODUCT_CHANGE에서 바꾼 대상 상품. 다음 갱신에 적용되는 변경(App Store·Play)에 오고 이때 product_id는
+   * 바꾸기 전 상품일 수 있다. 형식이 다르면 없는 것으로 본다
+   */
+  new_product_id: z.string().min(1).optional().catch(undefined),
   event_timestamp_ms: z.number().optional(),
   period_type: z.string().optional(),
   purchased_at_ms: z.number().optional(),
@@ -28,6 +33,10 @@ export const revenueCatEventSchema = z.looseObject({
   original_transaction_id: z.string().optional(),
   is_family_share: z.boolean().optional(),
   cancel_reason: z.string().optional(),
+  /** EXPIRATION의 만료 사유 (UNSUBSCRIBE·BILLING_ERROR 등). 형식이 달라도 이벤트 처리는 막지 않는다 */
+  expiration_reason: z.string().optional().catch(undefined),
+  /** 무료 체험이 끝나 첫 결제로 넘어간 RENEWAL이면 true. 형식이 다르면 전환이 아닌 것으로 본다 */
+  is_trial_conversion: z.boolean().optional().catch(undefined),
   price: z.number().optional(),
   currency: z.string().optional(),
   price_in_purchased_currency: z.number().optional(),

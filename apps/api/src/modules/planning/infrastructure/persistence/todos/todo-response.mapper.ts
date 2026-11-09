@@ -1,4 +1,4 @@
-import type { Todo } from "@aido/api";
+import type { FriendTodo, Todo } from "@aido/api";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -9,10 +9,12 @@ import {
   toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
 
-import type { TodoWithCategory } from "./todo-row.types.js";
+import { toTodoRepeat } from "../../../application/read-models/series/todo-series.read-model.js";
+import { toRepeatRule } from "../series/repeat-rule-row.mapper.js";
+import type { TodoWithCategory, TodoWithSeries } from "./todo-row.types.js";
 
 export abstract class TodoMapper {
-  static toResponse(entity: TodoWithCategory): Todo {
+  static toFriendResponse(entity: TodoWithCategory): FriendTodo {
     const category = requireRecord(entity.category);
     const items = entity.items.map((item) => ({
       id: item.id,
@@ -34,9 +36,11 @@ export abstract class TodoMapper {
       startDate: toDateString(entity.startDate),
       endDate: toDateStringOrNull(entity.endDate),
       scheduledTime: toISOStringOrNull(entity.scheduledTime),
+      // 옛 서버가 시간을 지운 행은 칸이 낡았을 수 있다. 칸이 빈 행은 앱이 순간에서 읽는다.
+      scheduledLocalTime: entity.scheduledTime == null ? null : entity.scheduledLocalTime,
       isAllDay: entity.isAllDay,
       visibility: entity.visibility,
-      recurrenceGroupId: entity.recurrenceGroupId,
+      recurrenceGroupId: entity.seriesId,
       category: {
         id: category.id,
         name: category.name,
@@ -54,7 +58,19 @@ export abstract class TodoMapper {
     };
   }
 
-  static toManyResponse(entities: TodoWithCategory[]): Todo[] {
+  static toManyFriendResponse(entities: TodoWithCategory[]): FriendTodo[] {
+    return entities.map((entity) => TodoMapper.toFriendResponse(entity));
+  }
+
+  static toResponse(entity: TodoWithSeries): Todo {
+    return {
+      ...TodoMapper.toFriendResponse(entity),
+      repeat: entity.series == null ? null : toTodoRepeat(toRepeatRule(entity.series)),
+      occurrenceDate: toDateStringOrNull(entity.occurrenceDate),
+    };
+  }
+
+  static toManyResponse(entities: TodoWithSeries[]): Todo[] {
     return entities.map((entity) => TodoMapper.toResponse(entity));
   }
 }

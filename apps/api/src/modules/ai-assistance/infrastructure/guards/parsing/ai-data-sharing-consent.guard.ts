@@ -36,7 +36,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
     }
 
     const { appVersion } = this.requestClientReader.current();
-    const decision = await this.consentReader.findAiDataSharingDecision(user.userId);
+    const { decision } = await this.consentReader.findAiDataSharingConsent(user.userId);
     if (!canShareWithAi(decision, appVersion)) {
       throw new ApplicationException(ErrorCode.AI_1311, { decision });
     }

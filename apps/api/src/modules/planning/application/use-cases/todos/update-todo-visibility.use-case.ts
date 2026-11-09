@@ -1,5 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -10,7 +11,6 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import type { TodoVisibility } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";

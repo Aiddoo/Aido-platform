@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import {
   getInquiryHtml,
@@ -33,50 +35,48 @@ import {
 export function createVerificationCodeEmail(
   to: string,
   data: VerificationCodeTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "verification",
     to,
     subject: getVerificationCodeSubject(),
     html: getVerificationCodeHtml(data),
     text: getVerificationCodeText(data),
     tags: [{ name: "type", value: "verification" }],
-    idempotencyKey,
   });
 }
 
 export function createPasswordResetEmail(
   to: string,
   data: PasswordResetTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "password-reset",
     to,
     subject: getPasswordResetSubject(),
     html: getPasswordResetHtml(data),
     text: getPasswordResetText(data),
     tags: [{ name: "type", value: "password-reset" }],
-    idempotencyKey,
   });
 }
 
 export function createPasswordSetupEmail(
   to: string,
   data: PasswordSetupTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "password-setup",
     to,
     subject: getPasswordSetupSubject(),
     html: getPasswordSetupHtml(data),
     text: getPasswordSetupText(data),
     tags: [{ name: "type", value: "password-setup" }],
-    idempotencyKey,
   });
 }
 
 export function createInquiryEmail(to: string, data: InquiryTemplateData): EmailMessage {
   return EmailMessage.create({
+    kind: "inquiry",
     to,
     subject: getInquirySubject(data.categoryLabel),
     html: getInquiryHtml(data),
@@ -85,11 +85,16 @@ export function createInquiryEmail(to: string, data: InquiryTemplateData): Email
       { name: "type", value: "inquiry" },
       { name: "category", value: data.category },
     ],
+    // 응답을 못 받은 재전송이 운영자에게 두 번 가지 않게 같은 내용은 공급자가 한 번만 받는다.
+    idempotencyKey: `inquiry:${createHash("sha256")
+      .update(JSON.stringify([to, data.userEmail, data.category, data.content]))
+      .digest("hex")}`,
   });
 }
 
 export function createUserReportEmail(to: string, data: UserReportTemplateData): EmailMessage {
   return EmailMessage.create({
+    kind: "user-report",
     to,
     subject: getUserReportSubject(data),
     html: getUserReportHtml(data),

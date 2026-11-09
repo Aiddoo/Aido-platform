@@ -1,6 +1,6 @@
-import { type LegalDocument, legalUrl } from './legal-urls';
+import { getLegalUrl, type LegalDocument } from './legal-urls';
 
-describe('legalUrl', () => {
+describe('getLegalUrl', () => {
   it.each<{ document: LegalDocument; language: 'ko' | 'en'; expected: string }>([
     { document: 'terms', language: 'ko', expected: 'https://aido.kr/ko/terms' },
     { document: 'privacy', language: 'ko', expected: 'https://aido.kr/ko/privacy' },
@@ -9,12 +9,23 @@ describe('legalUrl', () => {
   ])(
     '$language 앱 언어에서 $document 문서는 $expected 로 연결한다',
     ({ document, language, expected }) => {
-      // Given: 앱 언어와 열려는 문서
-      // When: 주소를 만들면
-      const url = legalUrl(document, language);
+      // When
+      const url = getLegalUrl(document, language);
 
-      // Then: 랜딩의 언어별 주소(www 없음)가 나온다
+      // Then
+      // 랜딩의 언어별 주소(www 없음)가 나온다
       expect(url).toBe(expected);
     },
   );
+
+  it.each([
+    { language: 'ko', expected: 'https://aido.kr/ko/privacy#overseas-transfer' },
+    { language: 'en', expected: 'https://aido.kr/en/privacy#overseas-transfer' },
+  ] as const)('$language 국외 이전 조항은 $expected 로 바로 연결한다', ({ language, expected }) => {
+    // When
+    const url = getLegalUrl('privacy', language, 'overseas-transfer');
+
+    // Then
+    expect(url).toBe(expected);
+  });
 });

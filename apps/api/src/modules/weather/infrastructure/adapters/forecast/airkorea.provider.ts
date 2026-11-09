@@ -4,12 +4,15 @@ import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import type {
   AirQuality,
   AirQualityProvider,
 } from "../../../application/ports/forecast/air-quality-provider.port.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
+import { AIRKOREA_POLICY } from "./weather-outbound.policies.js";
 import { convertToTm } from "./wgs84-to-utmk.js";
 
 const nearbyStationResponseSchema = z.object({
@@ -46,10 +49,15 @@ const airQualityResponseSchema = z.object({
 export class AirkoreaProvider implements AirQualityProvider {
   readonly #logger = new Logger(AirkoreaProvider.name);
 
+  readonly #policy: OutboundPolicy;
+
   constructor(
     private readonly configService: TypedConfigService,
     @InjectHttpClient("weather") private readonly http: HttpClient,
-  ) {}
+    policies: OutboundPolicyRegistry,
+  ) {
+    this.#policy = policies.get(AIRKOREA_POLICY);
+  }
 
   async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
     try {
@@ -83,16 +91,19 @@ export class AirkoreaProvider implements AirQualityProvider {
   async #findNearestStation(apiKey: string, lat: number, lon: number): Promise<string | null> {
     const { tmX, tmY } = convertToTm(lat, lon);
 
-    const outcome = await requestVendorJson(
-      this.http,
-      "https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList",
-      {
-        serviceKey: apiKey,
-        returnType: "json",
-        tmX,
-        tmY,
-        ver: "1.1",
-      },
+    const outcome = await this.#policy.execute((signal) =>
+      requestVendorJson(
+        this.http,
+        "https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList",
+        {
+          serviceKey: apiKey,
+          returnType: "json",
+          tmX,
+          tmY,
+          ver: "1.1",
+        },
+        { signal },
+      ),
     );
 
     if (outcome.kind === "http_failure") {
@@ -148,16 +159,19 @@ export class AirkoreaProvider implements AirQualityProvider {
   }
 
   async #fetchAirQuality(apiKey: string, stationName: string): Promise<AirQuality | null> {
-    const outcome = await requestVendorJson(
-      this.http,
-      "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
-      {
-        serviceKey: apiKey,
-        returnType: "json",
-        stationName,
-        dataTerm: "DAILY",
-        ver: "1.5",
-      },
+    const outcome = await this.#policy.execute((signal) =>
+      requestVendorJson(
+        this.http,
+        "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
+        {
+          serviceKey: apiKey,
+          returnType: "json",
+          stationName,
+          dataTerm: "DAILY",
+          ver: "1.5",
+        },
+        { signal },
+      ),
     );
 
     if (outcome.kind === "http_failure") {

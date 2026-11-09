@@ -3,14 +3,14 @@ import request from "supertest";
 import { assert } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 /**
  * AI 리포트 모듈 E2E 테스트
  *
  * @description
  * AI 리포트 API의 전체 HTTP 요청/응답 플로우 테스트.
- * FakeAiProvider를 사용하여 실제 Gemini API 호출을 모킹합니다.
+ * FakeAiGenerator를 사용하여 실제 Gemini API 호출을 모킹합니다.
  *
  * ### 테스트 범위
  * - GET /ai/reports/status: 리포트 상태 조회
@@ -23,19 +23,20 @@ import { todo, todoCategory, user as userTable } from "#api/platform/database/sc
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI 리포트 E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
 
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
-      additionalResetters: [() => fakeAiProvider.clear()],
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 
@@ -199,7 +200,7 @@ describe("AI 리포트 E2E", () => {
       // Given
       const user = await createPremiumUser(`ai-report-${locale}@example.com`, "Test1234!");
       const raw = createReportAiResponse(locale);
-      fakeAiProvider.setRawResponse(raw);
+      fakeAiGenerator.setRawResponse(raw);
       await seedLastWeekTodo(user.userId);
 
       // When
@@ -216,11 +217,11 @@ describe("AI 리포트 E2E", () => {
       expect(response.body.data.report.aiSummary).toBe(raw.summary);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
       expect(response.body.data.report.periodLabel).toBe(report.periodLabel);
-      expect(fakeAiProvider.getCallCount()).toBe(1);
+      expect(fakeAiGenerator.getCallCount()).toBe(1);
       const stored = await ctx.testDatabase
         .getClient()
         .query.aiReport.findFirst({ where: { id: report.id } });
-      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@v2.1" });
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@3" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
@@ -246,6 +247,6 @@ describe("AI 리포트 E2E", () => {
       expect(response.status).toBe(403);
       expect(response.body.error.code).toBe("AI_1308");
     }
-    expect(fakeAiProvider.getCallCount()).toBe(0);
+    expect(fakeAiGenerator.getCallCount()).toBe(0);
   });
 });

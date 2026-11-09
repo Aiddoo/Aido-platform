@@ -40,6 +40,8 @@ import {
   todoCommentLike,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
+import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -49,6 +51,7 @@ import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/
 import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
+  accountUsageCleanupProvider,
 } from "../../src/modules/identity/identity-auth-account-cleanup.providers.js";
 import { purgeDeletedAccountsProvider } from "../../src/modules/identity/identity-auth-application.providers.js";
 import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
@@ -242,6 +245,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: AUTH_SECURITY_LOG_REPOSITORY, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
+        { provide: USAGE_METER, useClass: DrizzleUsageMeterAdapter },
+        accountUsageCleanupProvider,
         purgeDeletedAccountsProvider,
       ],
     }).compile();

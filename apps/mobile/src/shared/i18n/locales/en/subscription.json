@@ -5,61 +5,70 @@
     "perYear": "/year",
     "perMonth": "/month",
     "discount": "{{percent}}% off",
-    "monthlyEquivalent": "About {{price}}/month"
+    "monthlyEquivalent": "About {{price}}/month",
+    "freeTrial": "{{period}} free",
+    "pricePerYear": "{{price}}/year",
+    "pricePerMonth": "{{price}}/month"
+  },
+  "trialPeriod": {
+    "day_one": "{{count}} day",
+    "day_other": "{{count}} days",
+    "week_one": "{{count}} week",
+    "week_other": "{{count}} weeks",
+    "month_one": "{{count}} month",
+    "month_other": "{{count}} months",
+    "year_one": "{{count}} year",
+    "year_other": "{{count}} years"
   },
   "toast": {
-    "purchaseSuccess": "You're subscribed!",
     "purchaseSyncPending": "It may take a moment for your payment to show up",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
-    "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
     "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
-  },
-  "errors": {
-    "storeUnavailable": "The store isn't available",
-    "storeProblem": "The store isn't responding right now",
-    "offeringsUnavailable": "Couldn't load subscription products",
-    "network": "Couldn't connect to the store",
-    "purchaseCancelled": "Purchase canceled",
-    "paymentPending": "Payment approval is pending",
-    "purchaseFailed": "Purchase failed",
-    "restoreFailed": "Failed to restore purchases"
   },
   "benefits": {
     "aiParsing": {
-      "title": "Unlimited AI to-dos",
-      "description": "Organize to-dos in natural language, without the {{limit}}-per-month limit"
+      "title": "More AI to-dos",
+      "description": "{{free}}\u00a0a\u00a0month on Free, up to {{premium}}\u00a0a\u00a0month with Premium"
+    },
+    "voiceNote": {
+      "title": "Voice notes: {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each",
+      "description": "{{free}}\u00a0a\u00a0month, {{freeMinutes}}\u00a0min each on Free. {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each with Premium"
     },
     "nudge": {
       "title": "Unlimited nudges",
-      "description": "Nudge your friends freely, without the {{limit}}-per-day limit"
+      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
+    },
+    "cheer": {
+      "title": "Unlimited cheers",
+      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
     },
     "reminder": {
-      "title": "Custom reminder times",
-      "description": "Get notified when you want, not at fixed times"
+      "title": "Choose your reminder times",
+      "description": "Free uses set times. With Premium, get reminders when you want"
     },
     "appIcon": {
-      "title": "App icon customization",
-      "description": "Change the app icon to match your style"
+      "title": "Change the app icon",
+      "description": "Free uses the default icon. With Premium, pick the one you like"
     },
     "friends": {
       "title": "Unlimited friends",
-      "description": "Add friends freely, without the {{limit}}-friend limit"
+      "description": "{{free}} on Free, unlimited with Premium"
     },
     "categories": {
-      "title": "Up to {{premium}} categories",
-      "description": "Grow from the {{free}}-category limit up to {{premium}}"
+      "title": "Up to {{premium}}\u00a0categories",
+      "description": "{{free}} on Free, up to {{premium}} with Premium"
     },
     "aiRepeat": {
       "title": "AI repeat suggestions",
-      "description": "AI automatically suggests recurring to-dos"
+      "description": "AI suggests the to-dos you keep repeating"
     },
     "aiReport": {
-      "title": "AI weekly/monthly reports",
+      "title": "AI weekly and monthly reports",
       "description": "See your completion rate and patterns at a glance"
     },
-    "future": "All future premium features"
+    "future": "All future Premium features"
   },
   "subscriber": {
     "benefitsTitle": "Your benefits",
@@ -70,20 +79,37 @@
   },
   "paywall": {
     "title": "Upgrade to Premium",
-    "subtitle": "Use every feature without limits",
-    "futureIncluded": "All future premium features are included too",
+    "subtitle": "Get more out of every feature",
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
-    "moreBenefits": "More premium benefits",
+    "blockedLimit": "Just ran out",
+    "blockedLocked": "Premium feature",
     "subscribeButton": "Subscribe",
+    "startAnnual": "Start annual plan",
+    "startMonthly": "Start monthly plan",
+    "startFreeTrial": "Start free for {{period}}",
+    "trialDisclosure": "Billed {{price}} from {{date}} · Cancel anytime",
+    "renewalDisclosure": "Billed {{price}} · Cancel anytime",
     "renewalNotice": {
-      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
-      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
+      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App\u00a0Store subscription settings.",
+      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google\u00a0Play subscription settings."
     },
     "termsPrefix": "By purchasing, you agree to the ",
-    "termsLink": "Terms of Service",
+    "termsLink": "Terms\u00a0of\u00a0Service",
     "termsAnd": " and ",
-    "privacyLink": "Privacy Policy",
-    "termsSuffix": "."
+    "privacyLink": "Privacy\u00a0Policy",
+    "termsSuffix": ".",
+    "amountDueToday": "Due today",
+    "benefitChip": "Benefit {{index}}",
+    "benefitQuota": "Free {{free}} → Premium {{premium}}",
+    "premiumOnly": "Premium only"
+  },
+  "trialTimeline": {
+    "title": "Your free trial",
+    "today": "Today",
+    "start": "Trial starts",
+    "reminder": "Reminder {{days}} days before",
+    "charge": "First charge {{price}}",
+    "cancelHint": "Cancel before {{date}} and you won't be charged"
   },
   "endingNotice": {
     "badgeTomorrow": "Tomorrow",
@@ -91,12 +117,31 @@
     "tomorrow": "Your Premium ends tomorrow. Subscribe to keep Premium going",
     "today": "Your Premium ends today. Subscribe to keep Premium going",
     "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
-    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going"
+    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going",
+    "badgeDaysLeft": "In {{days}} days",
+    "trialRenewing": "Your {{plan}} starts in {{days}} days",
+    "trialRenewingTomorrow": "Your {{plan}} starts tomorrow",
+    "trialRenewingToday": "Your {{plan}} starts today",
+    "trialCancelled": "Your free trial ends in {{days}} days",
+    "trialCancelledTomorrow": "Your free trial ends tomorrow",
+    "trialCancelledToday": "Your free trial ends today",
+    "annualRenewing": "Your annual plan renews in {{days}} days",
+    "annualRenewingTomorrow": "Your annual plan renews tomorrow",
+    "annualRenewingToday": "Your annual plan renews today",
+    "plan": {
+      "annual": "annual plan",
+      "monthly": "monthly plan",
+      "unknown": "subscription"
+    }
   },
   "receipt": {
     "paid": {
       "title": "Premium active",
-      "description": "You're enjoying all premium features"
+      "description": "You're enjoying all Premium features"
+    },
+    "trial": {
+      "title": "Free trial active",
+      "description": "You get every Premium feature during your trial"
     },
     "reward": {
       "title": "Premium from an invite reward",
@@ -107,12 +152,18 @@
       "description": "All features unlocked"
     },
     "rows": {
+      "plan": "Plan",
+      "planUnknown": "Subscription",
+      "planWithPrice": "{{plan}} · {{price}}",
       "account": "Account",
       "accountAdmin": "Admin",
       "rewardRecord": "Invite reward record",
       "until": "Until {{date}}",
       "nextBillingDate": "Next billing date",
       "renewalPending": "Confirming renewal",
+      "trialEndsOn": "Trial ends",
+      "firstBillingDate": "First billing date",
+      "dateWithPrice": "{{date}} · {{price}}",
       "subscriptionEndsOn": "Subscription ends",
       "subscriptionStatus": "Subscription status",
       "autoRenewalOn": "Auto-renews",
@@ -130,7 +181,10 @@
       "returnsToFreePlan": "After {{date}}, you'll go back to the free plan",
       "rewardStartsAfterSubscription_one": "When your subscription ends, your {{count}} reward day starts",
       "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
-      "manageAutoRenewalInStore": "You can change auto-renew in your store settings"
+      "manageAutoRenewalInStore": "You can change auto-renew in your store settings",
+      "cancelTrialInStore": "Cancel in your store subscription settings before the trial ends and you won't be charged",
+      "rewardStartsOn_one": "When your subscription ends on {{date}}, your {{count}}-day reward starts",
+      "rewardStartsOn_other": "When your subscription ends on {{date}}, your {{count}}-day reward starts"
     }
   },
   "failure": {
@@ -162,5 +216,156 @@
     "plansTitle": "We'll show subscription plans once you're online",
     "description": "They'll load automatically when you reconnect",
     "actionsDisabled": "Connect to the internet to subscribe or restore purchases"
+  },
+  "gate": {
+    "aiParseTitle": "You've used all your AI to-dos this month",
+    "voiceNoteTitle": "You've used all your voice notes this month",
+    "nudgeTitle": "You've used all your nudges today",
+    "cheerTitle": "You've used all your cheers today",
+    "friendTitle": "You've reached your friend limit",
+    "categoryTitle": "You can't add more categories",
+    "aiReportTitle": "AI reports are a Premium feature",
+    "aiReportDescription": "Get weekly and monthly AI reports.",
+    "aiSuggestionTitle": "AI repeat suggestions are a Premium feature",
+    "aiSuggestionDescription": "AI suggests the to-dos you keep repeating.",
+    "reminderTimeTitle": "Custom reminder times are a Premium feature",
+    "reminderTimeDescription": "Get reminders at the times you choose. You'll still get reminders at your default time.",
+    "appIconTitle": "Custom app icons are a Premium feature",
+    "appIconDescription": "Give the app icon your own style.",
+    "refillToday": "Resets to {{amount}} later today",
+    "refillTomorrow": "Resets to {{amount}} tomorrow",
+    "refillOn": "Resets to {{amount}} on {{date}}",
+    "notCharged": "This didn't count"
+  },
+  "quota": {
+    "summaryTitle": "AI usage this month",
+    "aiParse": "AI to-dos",
+    "aiParseHint": "Shared by speaking to add and splitting memos",
+    "voiceNote": "Voice note summaries",
+    "remaining": "{{amount}} left",
+    "usedUpMonth": "Used up this month",
+    "usedUpDay": "Used up today"
+  },
+  "tier": {
+    "admin": "Admin",
+    "premium": "Premium",
+    "basic": "Basic"
+  },
+  "upsell": {
+    "viewPremium": "See Premium",
+    "later": "Not now",
+    "usage": "{{used}} of {{limit}} used",
+    "free": "Free",
+    "premium": "Premium",
+    "unlimited": "Unlimited",
+    "amount": {
+      "perMonth": "{{amount}}\u00a0a\u00a0month",
+      "perDay": "{{amount}}\u00a0a\u00a0day",
+      "people": "{{amount}}\u00a0friends",
+      "items": "{{amount}}\u00a0categories"
+    }
+  },
+  "benefitSlides": {
+    "aiParse": {
+      "title": "More AI to-dos",
+      "description": "Turn what you say or type into several to-dos"
+    },
+    "aiReport": {
+      "title": "AI weekly and monthly reports",
+      "description": "See your completion rate and your best days and times"
+    },
+    "aiSuggestion": {
+      "title": "AI repeat suggestions",
+      "description": "Get suggestions to repeat the to-dos you do often"
+    },
+    "voiceNote": {
+      "title": "AI voice note summaries",
+      "description": "Record and get a summary and the to-dos you mentioned"
+    }
+  },
+  "planComparison": {
+    "title": "Free vs Premium",
+    "hint": "Tap a name to see what it means",
+    "benefit": "Benefit",
+    "included": "Included",
+    "excluded": "Not included",
+    "groups": {
+      "ai": "AI features",
+      "limits": "Higher limits",
+      "reminderAndLooks": "Reminders and looks"
+    },
+    "rows": {
+      "aiParse": {
+        "label": "AI to-dos",
+        "term": "Turns what you say or type into several to-dos, with dates and times."
+      },
+      "aiReport": {
+        "label": "AI weekly and monthly reports",
+        "term": "Sums up your completion rate and the days and times you get things done."
+      },
+      "aiSuggestion": {
+        "label": "AI repeat suggestions",
+        "term": "Finds what you do often and suggests it as a repeating to-do."
+      },
+      "voiceNote": {
+        "label": "AI voice note summaries",
+        "term": "Record and get a summary and the to-dos you mentioned. Recordings stay on your device."
+      },
+      "friend": {
+        "label": "Friends",
+        "term": "People who can see your shared to-dos and cheer you on."
+      },
+      "nudge": {
+        "label": "Nudges and cheers",
+        "term": "Notifications you send to friends."
+      },
+      "category": {
+        "label": "Categories",
+        "term": "Groups that sort your to-dos."
+      },
+      "reminderTime": {
+        "label": "Custom reminder times",
+        "term": "Get reminders at the time you pick instead of a set time."
+      },
+      "appIcon": {
+        "label": "Cat app icons",
+        "term": "Pick a cat icon for your home screen."
+      }
+    }
+  },
+  "welcome": {
+    "title": "You're on Premium",
+    "subtitle": "Enjoy every feature with room to spare",
+    "subtitleTrial": "Use every feature free until {{date}}",
+    "done": "Done",
+    "rows": {
+      "plan": "Plan",
+      "reminder": "Reminder",
+      "firstCharge": "First charge"
+    },
+    "quickstart": {
+      "title": "Try these first",
+      "voiceNote": {
+        "title": "Record a voice note",
+        "description": "Get a summary and to-dos, even from long recordings"
+      },
+      "aiReport": {
+        "title": "See your AI report",
+        "description": "Check your completion rate and best days and times"
+      },
+      "appIcon": {
+        "title": "Change the app icon",
+        "description": "Pick one of the cat icons"
+      }
+    },
+    "rewardContinues": "Your remaining invite reward continues after your subscription ends"
+  },
+  "planSummary": {
+    "annual": "Annual plan",
+    "monthly": "Monthly plan",
+    "unknown": "Subscribed",
+    "nextBilling": "Next payment on {{date}}",
+    "firstBilling": "Billing starts on {{date}}",
+    "endsOn": "Ends on {{date}}"
   }
 }

@@ -1,57 +1,62 @@
-import { pushNotificationDataSchema } from '@aido/api';
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
-import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
-import { invalidateOnInviteNotification } from '@src/features/invite/queries/invite-cache';
-import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
-import { invalidateMe } from '@src/features/user/queries/user-cache';
+import { useLogger, useNotificationBadgeService } from '@src/bootstrap/providers/di-context';
+import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
-import type * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { type NotificationType } from '../domains/notification.model';
+import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
+
+const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 
 interface UseForegroundNotificationSyncOptions {
   isAuthenticated: boolean;
+  /** 받은 알림 타입이 바꾸는 다른 기능의 화면을 다시 받는다. 위층인 bootstrap이 조립한다 */
+  invalidateByType: (type: NotificationType) => Promise<unknown>;
 }
 
 export function useForegroundNotificationSync({
   isAuthenticated,
+  invalidateByType,
 }: UseForegroundNotificationSyncOptions) {
-  const notificationService = useNotificationService();
+  const notificationBadgeService = useNotificationBadgeService();
   const queryClient = useQueryClient();
   const logger = useLogger();
-  const syncNotification = useMemo(
-    () =>
-      debounce((notification?: Notifications.Notification) => {
-        const tasks: Promise<void>[] = [
-          queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
-          notificationService.syncBadgeCount(),
-        ];
-        const result = pushNotificationDataSchema.safeParse(notification?.request.content.data);
-        const type = result.success ? result.data.type : undefined;
-        if (type === 'NUDGE_RECEIVED' || type === 'NUDGE_REPLIED' || type === 'NUDGE_THANKED') {
-          tasks.push(invalidateNudgeInteractions(queryClient));
-        }
-        if (type === 'FOLLOW_NEW' || type === 'FOLLOW_ACCEPTED') {
-          tasks.push(invalidateFriends(queryClient));
-        }
-        if (type === 'INVITE_JOINED' || type === 'INVITE_REWARDED' || type === 'INVITE_PROGRESS') {
-          tasks.push(invalidateOnInviteNotification(queryClient));
-        }
-        // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
-        if (type === 'PREMIUM_GRANT_ENDING') {
-          tasks.push(invalidateMe(queryClient));
-        }
+  const syncNotification = useMemo(() => {
+    // 마지막 알림만 남기면 1초 안에 온 다른 타입의 화면이 옛 값으로 남으므로 받은 타입을 모은다
+    const pendingTypes = new Set<NotificationType>();
+    const flush = debounce(() => {
+      const types = [...pendingTypes];
+      pendingTypes.clear();
+      const tasks: Promise<unknown>[] = [
+        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+        notificationBadgeService.syncBadgeCount(),
+        ...types.map((type) => invalidateByType(type)),
+      ];
 
-        Promise.all(tasks).catch((error) =>
-          logger.error(NOTIFICATION_LOG_EVENT.FOREGROUND_HANDLER_FAILED, toError(error)),
-        );
-      }, 1000),
-    [logger, notificationService, queryClient],
-  );
+      Promise.all(tasks).catch((error) =>
+        logger.error(NOTIFICATION_LOG_EVENT.FOREGROUND_HANDLER_FAILED, toError(error)),
+      );
+    }, FOREGROUND_SYNC_DELAY_MS);
+
+    return {
+      schedule: (notification?: ReceivedPushNotification) => {
+        const payload = pushNotificationPayloadSchema.safeParse(notification?.data);
+        if (payload.success && payload.data.type != null) {
+          pendingTypes.add(payload.data.type);
+        }
+        flush();
+      },
+      cancel: () => {
+        pendingTypes.clear();
+        flush.cancel();
+      },
+    };
+  }, [invalidateByType, logger, notificationBadgeService, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -60,12 +65,12 @@ export function useForegroundNotificationSync({
   }, [syncNotification, isAuthenticated]);
 
   return useCallback(
-    (notification?: Notifications.Notification) => {
+    (notification?: ReceivedPushNotification) => {
       if (!isAuthenticated) {
         return;
       }
 
-      syncNotification(notification);
+      syncNotification.schedule(notification);
     },
     [isAuthenticated, syncNotification],
   );

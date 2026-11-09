@@ -43,7 +43,8 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
   beforeEach(async () => {
     todoReminder = {
       scheduleReminder: vi.fn(),
-      cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
+      scheduleReminders: vi.fn(),
+      cancelReminders: vi.fn().mockResolvedValue(undefined),
     };
 
     const { unit, unitRef } = await TestBed.solitary(TodoToggledHandler)
@@ -78,7 +79,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
     await handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"));
 
     // Then
-    expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
+    expect(todoReminder.cancelReminders).toHaveBeenCalledWith([1]);
     expect(streakPort.recordTodoToggle).toHaveBeenCalledWith("user-123", true, "UTC");
   });
 
@@ -128,26 +129,9 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
     // Then
     expect(streakPort.recordTodoToggle).toHaveBeenCalledWith("user-123", false, "UTC");
-    expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
+    expect(todoReminder.cancelReminders).not.toHaveBeenCalled();
     expect(todoNotification.enqueueFriendCompleted).not.toHaveBeenCalled();
     expect(todoNotification.enqueueMilestoneReached).not.toHaveBeenCalled();
-  });
-
-  it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
-    // Given - 잡이 이미 처리됐고 나머지 부수효과는 정상
-    vi.mocked(todoReminder.cancelReminder).mockResolvedValue({
-      status: "missing",
-    });
-    todoReadRepository.getTodayTodoStats.mockResolvedValue({
-      total: 1,
-      completed: 0,
-    });
-    todoReadRepository.countCompletedByUser.mockResolvedValue(5);
-
-    // When & Then - 명시적 missing만 정상 처리
-    await expect(
-      handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC")),
-    ).resolves.toBeUndefined();
   });
 
   it("취소 인프라 실패는 다른 안전한 부수효과를 정리한 뒤 전파한다", async () => {
@@ -155,7 +139,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
     const error = new Error("scheduler down");
     const rejected = Promise.reject(error);
     void rejected.catch(() => undefined);
-    vi.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+    vi.mocked(todoReminder.cancelReminders).mockReturnValue(rejected);
     todoReadRepository.getTodayTodoStats.mockResolvedValue({
       total: 1,
       completed: 0,

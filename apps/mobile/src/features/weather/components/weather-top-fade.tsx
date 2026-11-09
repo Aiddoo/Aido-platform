@@ -22,10 +22,7 @@ interface WeatherTopFadeProps {
   height: number;
 }
 
-/**
- * 스크롤한 내용이 상태 표시줄·투명 헤더 밑으로 지나갈 때 하늘색으로 서서히 덮는다.
- * 배경과 같은 하늘·스크림 레이어를 창 크기로 그리고 위쪽만 남겨 이음매가 보이지 않는다.
- */
+/** 배경과 같은 하늘·스크림 레이어를 창 크기로 그리고 위쪽만 남겨 이음매가 보이지 않게 한다 */
 export function WeatherTopFade({ solidHeight, height }: WeatherTopFadeProps) {
   const scene = useWeatherScene();
   const window = useWindowDimensions();

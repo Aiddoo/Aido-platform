@@ -1,21 +1,24 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import type { Logger } from '@src/core/ports/logger';
-import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { AuthStatus } from '@src/core/session/auth-status';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
+import {
+  createAppLifecycleGatewayStub,
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+  createTestDi,
+  createTestQueryClient,
+} from '@src/shared/__tests__';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
 
 import {
+  createNotificationApiError,
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
-import type { NotificationAuthStatus } from '../utils/navigation/notification-response-disposition';
 import { usePushDeviceSync } from './use-push-device-sync';
-
-const silentLogger: Logger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 describe('usePushDeviceSync', () => {
   beforeEach(() => {
@@ -27,31 +30,41 @@ describe('usePushDeviceSync', () => {
     jest.restoreAllMocks();
   });
 
-  async function setup(authStatus: NotificationAuthStatus = 'authenticated') {
-    const removeAppStateListener = jest.fn();
-    let appStateListener: ((state: AppStateStatus) => void) | undefined;
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
-      appStateListener = listener;
-      return { remove: removeAppStateListener };
-    });
+  async function setup(authStatus: AuthStatus = 'authenticated') {
+    const appLifecycle = createAppLifecycleGatewayStub();
 
     const removeTokenListener = jest.fn();
     let tokenListener: (() => void) | undefined;
     const gateway = createPushNotificationGatewayStub({
-      addTokenListener: jest.fn((listener: () => void) => {
+      subscribeToken: jest.fn((listener: () => void) => {
         tokenListener = listener;
         return removeTokenListener;
       }),
     });
-    const httpClient = createMockHttpClient();
+    let responseListener: (() => void) | undefined;
+    gateway.subscribeResponse.mockImplementation((listener) => {
+      responseListener = () =>
+        listener({ id: 'response-1', actionIdentifier: 'default', data: {} });
+      return jest.fn();
+    });
+    const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-    const pushDeviceService = new PushDeviceService(
+    const timeZone = { current: 'Asia/Seoul' };
+    const onReported = jest.fn();
+    const pushDeviceService = new PushDeviceService({
       gateway,
-      { get: async () => 'ios_device-123' },
+      deviceIdService: { get: async () => 'ios_device-123' },
       httpClient,
-      silentLogger,
-    );
-    const container = createMockDIContainer({ pushDeviceService, logger: silentLogger });
+      logger: createLoggerStub(),
+      getTimeZone: () => timeZone.current,
+      sessionEpoch: createSessionEpoch(),
+    });
+    const container = createTestDi({
+      pushDeviceService,
+      pushNotification: gateway,
+      appLifecycle,
+      logger: createLoggerStub(),
+    });
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={container}>
@@ -60,7 +73,8 @@ describe('usePushDeviceSync', () => {
     );
 
     const hook = await renderHook(
-      ({ status }: { status: NotificationAuthStatus }) => usePushDeviceSync({ authStatus: status }),
+      ({ status, deviceTimeZone }: { status: AuthStatus; deviceTimeZone?: string }) =>
+        usePushDeviceSync({ authStatus: status, deviceTimeZone, onReported }),
       { wrapper, initialProps: { status: authStatus } },
     );
     await act(() => jest.advanceTimersByTimeAsync(0));
@@ -69,9 +83,12 @@ describe('usePushDeviceSync', () => {
       ...hook,
       gateway,
       httpClient,
-      removeAppStateListener,
+      timeZone,
+      onReported,
+      emitPushTap: () => responseListener?.(),
+      appLifecycle,
       removeTokenListener,
-      emitAppState: (state: AppStateStatus) => appStateListener?.(state),
+      emitAppState: appLifecycle.emit,
       emitTokenChange: () => tokenListener?.(),
     };
   }
@@ -112,6 +129,84 @@ describe('usePushDeviceSync', () => {
 
     // Then
     expect(gateway.getPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it('시간대를 바꾸고 앱으로 돌아오면 요청이 없는 화면이어도 바로 보고한다', async () => {
+    // Given
+    const { httpClient, timeZone, emitAppState } = await setup();
+    httpClient.put.mockClear();
+    timeZone.current = 'America/New_York';
+
+    // When
+    await act(async () => {
+      emitAppState('active');
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('시간대가 그대로면 앱으로 돌아와도 요청하지 않는다', async () => {
+    // Given
+    const { httpClient, emitAppState } = await setup();
+    httpClient.put.mockClear();
+
+    // When
+    await act(async () => {
+      emitAppState('active');
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Then
+    expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
+  it('푸시를 누르면 시간대가 바뀌었을 때 다시 보고한다', async () => {
+    // Given
+    const { httpClient, timeZone, emitPushTap } = await setup();
+    httpClient.put.mockClear();
+    timeZone.current = 'America/New_York';
+
+    // When
+    await act(async () => {
+      emitPushTap();
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('앞에 떠 있는 동안 시간대가 바뀌면 복귀를 기다리지 않고 보고한다', async () => {
+    // Given
+    const { httpClient, timeZone, rerender } = await setup();
+    httpClient.put.mockClear();
+    timeZone.current = 'America/New_York';
+
+    // When
+    await rerender({ status: 'authenticated', deviceTimeZone: 'America/New_York' });
+    await act(() => jest.advanceTimersByTimeAsync(0));
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('보고가 성공할 때만 onReported를 부른다', async () => {
+    // Given
+    const { httpClient, onReported, timeZone, emitAppState } = await setup();
+    expect(onReported).toHaveBeenCalledTimes(1);
+    timeZone.current = 'America/New_York';
+    httpClient.put.mockResolvedValueOnce({ ok: false, error: createNotificationApiError() });
+
+    // When
+    await act(async () => {
+      emitAppState('active');
+      await jest.advanceTimersByTimeAsync(1_000);
+    });
+
+    // Then
+    expect(onReported).toHaveBeenCalledTimes(1);
   });
 
   it('기기 토큰이 바뀌면 새 토큰으로 다시 보고한다', async () => {
@@ -168,8 +263,7 @@ describe('usePushDeviceSync', () => {
 
   it('언마운트하면 모든 구독을 해제하고 기다리던 보고도 보내지 않는다', async () => {
     // Given
-    const { gateway, unmount, emitAppState, removeAppStateListener, removeTokenListener } =
-      await setup();
+    const { gateway, unmount, emitAppState, appLifecycle, removeTokenListener } = await setup();
     gateway.getPermission.mockClear();
     emitAppState('active');
 
@@ -178,7 +272,7 @@ describe('usePushDeviceSync', () => {
     await act(() => jest.advanceTimersByTimeAsync(1_000));
 
     // Then
-    expect(removeAppStateListener).toHaveBeenCalledTimes(1);
+    expect(appLifecycle.getListenerCount()).toBe(0);
     expect(removeTokenListener).toHaveBeenCalledTimes(1);
     expect(gateway.getPermission).not.toHaveBeenCalled();
   });

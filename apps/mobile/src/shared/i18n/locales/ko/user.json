@@ -1,10 +1,16 @@
 {
   "mypage": {
+    "empty": {
+      "title": "메뉴를 골라 주세요",
+      "description": "고른 메뉴가 여기에 보여요"
+    },
     "header": "내 정보",
     "sections": {
-      "activity": "활동",
+      "friends": "친구",
+      "records": "기록",
       "subscription": "구독",
-      "settings": "설정"
+      "settings": "설정",
+      "support": "도움말"
     },
     "items": {
       "friends": "친구 관리",
@@ -33,16 +39,14 @@
     "confirmAction": "탈퇴하기"
   },
   "profile": {
+    "copyTag": "해시태그 복사",
     "defaultName": "열정적인 사용자",
     "avatarAlt": "{{name}} 프로필",
+    "changeImage": "프로필 이미지 바꾸기",
     "tagCopied": "해시태그 복사 완료",
     "tagCopiedDescription": "8자리 해시태그를 친구에게 공유해 친구 요청을 받아보세요",
+    "tagCopyFailed": "해시태그를 복사하지 못했어요",
     "updateFailed": "프로필 변경에 실패했어요",
-    "badges": {
-      "admin": "어드민",
-      "premium": "프리미엄",
-      "basic": "베이직"
-    },
     "imageSheet": {
       "title": "프로필 이미지 선택",
       "selectedAlt": "선택된 프로필 이미지",

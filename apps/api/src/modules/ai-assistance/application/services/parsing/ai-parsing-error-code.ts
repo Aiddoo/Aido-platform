@@ -1,27 +1,55 @@
-import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
-import { match } from "ts-pattern";
+import type { ErrorCodeType } from "@aido/api/errors";
+import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
-import { providerFailure } from "../../observability/parsing/ai-generation-log.events.js";
-import type { AiProviderErrorKind, AiUpstreamCause } from "../../ports/parsing/ai-provider.port.js";
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-/** 공급자 실패 종류를 사용자 파싱 응답 코드로 바꾼다. 일시 장애를 "이해 못함"으로 보내지 않는다. */
-export function toParsingErrorCode(kind: AiProviderErrorKind): ErrorCodeType {
-  return match(kind)
-    .with("RATE_LIMITED", () => ErrorCode.AI_1310)
-    .with("UNAVAILABLE", "UPSTREAM", "TIMEOUT", () => ErrorCode.AI_1301)
-    .with("BLOCKED", "TRUNCATED", "INVALID_OUTPUT", () => ErrorCode.AI_1302)
-    .exhaustive();
-}
+import {
+  AiGenerationLogEvent,
+  type GenerationFailure,
+  toGenerationFailure,
+} from "../../observability/generation/ai-generation-log.events.js";
+import { resolveAiFailureRule } from "../../ports/generation/ai-generation.errors.js";
+import type { AiTaskId } from "../../ports/generation/ai-generator.port.js";
 
-export interface ParsingFailure {
-  readonly errorType: AiProviderErrorKind;
-  readonly statusCode: number | undefined;
-  readonly upstream: AiUpstreamCause | undefined;
+export interface ParsingFailure extends GenerationFailure {
   readonly errorCode: ErrorCodeType;
 }
 
-/** 공급자 오류가 아닌 실패는 서버 정규화·검증이 거절한 출력으로 본다. */
+/** 생성 실패 종류를 사용자 응답 코드로 바꾼다. 일시 장애를 "이해 못함"으로 보내지 않는다. */
 export function describeParsingFailure(error: unknown): ParsingFailure {
-  const failure = providerFailure(error);
-  return { ...failure, errorCode: toParsingErrorCode(failure.errorType) };
+  const failure = toGenerationFailure(error);
+  return { ...failure, errorCode: resolveAiFailureRule(failure.errorType).errorCode };
+}
+
+/** 환불하지 못한 요청은 차감 여부를 보장할 수 없으므로 details의 charged:false를 떼고 같은 코드로 던진다. */
+export function withoutChargedClaim(error: unknown): unknown {
+  return error instanceof ApplicationException ? new ApplicationException(error.errorCode) : error;
+}
+
+/** 확정·환불 뒤의 한도 읽기. 실패해도 이미 만든 결과를 잃지 않게 null을 돌려준다(응답 칸은 optional이다). */
+export async function readFeatureQuotaOrNull(
+  dependencies: {
+    readonly quota: Pick<QuotaLedgerPort, "read">;
+    readonly logger: Pick<ApplicationLogger, "warn">;
+  },
+  input: {
+    readonly userId: string;
+    readonly feature: MeteredFeatureKey;
+    readonly task: AiTaskId;
+  },
+): Promise<MeteredFeatureQuota | null> {
+  try {
+    return await dependencies.quota.read(input.userId, input.feature);
+  } catch (error) {
+    dependencies.logger.warn({
+      event: AiGenerationLogEvent.QUOTA_READ_FAILED,
+      feature: input.feature,
+      task: input.task,
+      errorType: toErrorType(error),
+    });
+    return null;
+  }
 }

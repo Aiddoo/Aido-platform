@@ -13,33 +13,41 @@ iOS는 커스텀 뷰(`headerLeft`/`headerRight`, `Stack.Toolbar.View`)를 레일
 배경·그림자·제목 글꼴·틴트·뒤로가기 표시를 한 번에 맞춘 screenOptions를 돌려줍니다. `header`는 덮어쓰지 않습니다.
 
 ```tsx
-const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
+const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
 <Stack screenOptions={screenOptions}>
   <Stack.Screen name="index" options={{ title: t('titles.index') }} />
 </Stack>;
 ```
 
-| 옵션          | 타입                                           | 기본값      | 설명                         |
-| ------------- | ---------------------------------------------- | ----------- | ---------------------------- |
-| `background`  | `'bg-gray-1' \| 'bg-white' \| 'bg-background'` | `bg-gray-1` | 헤더 배경                    |
-| `fillContent` | `boolean`                                      | `false`     | 화면 배경도 같은 색으로 채움 |
+| 옵션                   | 타입         | 기본값     | 설명                                      |
+| ---------------------- | ------------ | ---------- | ----------------------------------------- |
+| `background`           | `'bg-white'` | `bg-white` | 헤더 배경                                 |
+| `hasContentBackground` | `boolean`    | `false`    | 화면 배경도 헤더와 같은 `bg-white`로 채움 |
 
 ## useStackBackToolbar
 
 중첩 Stack의 첫 화면은 이전 화면이 부모 Stack에 있어 iOS가 뒤로가기를 그리지 않습니다.
-같은 자리에 네이티브 뒤로가기 버튼을 두는 `Stack.Toolbar` 요소를 돌려주며, 레이아웃의 `Stack.Screen` 자식으로 넣습니다.
+먼저 화면을 부모 Stack에 직접 선언해 네이티브 뒤로가기를 씁니다(`(app)/_layout`의 알림·콕 찌르기·AI 제안, 마이 탭 Stack).
+그룹 Stack이 꼭 필요한 흐름(메모 AI 정리·녹음·날씨·공개 초대)만 이 훅으로 같은 자리에 네이티브 뒤로가기 버튼을 둡니다.
+`Stack.Toolbar` 요소를 돌려주며, 레이아웃의 `Stack.Screen` 자식으로 넣습니다.
 `Stack.Screen`은 자식 타입을 직접 읽으므로 컴포넌트로 감싸지 않고 요소를 그대로 넘깁니다.
 
 ```tsx
-const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
+const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
 
-<Stack.Screen name="index" options={{ title: t('titles.notifications') }}>
+<Stack.Screen name="index" options={{ title: t('drafts.title') }}>
   {backToolbar}
 </Stack.Screen>;
 ```
 
 `fallbackHref`는 돌아갈 화면이 없을 때(푸시·딥링크로 바로 연 경우) `router.replace`로 여는 화면입니다.
+아래로 닫는 화면은 `icon={STACK_CLOSE_ICON}`과 `accessibilityLabel`로 닫기 모양을 줍니다.
+
+## StackHeaderTitle
+
+네이티브 제목과 같은 글자(b2 bold, gray-9, 앱 글자 크기 설정)로 그리는 제목 뷰입니다. `headerTitle: StackHeaderTitle`로 넘깁니다.
+네이티브 제목 글자가 그려지지 않는 곳에만 씁니다. iPadOS는 위 탭 바가 헤더에 있으면 탭 첫 화면의 제목 글자를 숨기지만 제목 뷰는 탭 바 아래 줄에 그립니다(마이 탭 첫 화면).
 
 ## 화면별 버튼
 
@@ -62,6 +70,7 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 </Stack.Toolbar>
 ```
 
+- 버튼이 많으면 iOS가 좁은 창에서 시스템 넘침 메뉴로 접는다. 자주 쓰는 버튼만 두고 나머지는 `Stack.Toolbar.Menu` + `Stack.Toolbar.MenuAction`(글자는 자식, 삭제는 `destructive`)에 넣는다. 아이콘 버튼도 라벨을 자식으로 주면 바에는 아이콘만 보이고 넘쳤을 때 글자가 나온다.
 - 아이콘: iOS는 SF Symbol 이름, Android는 `@expo/material-symbols/{name}.xml`을 `process.env.EXPO_OS`로 고릅니다.
 - 글자 버튼(완료·편집·저장)은 라벨을 자식으로 둡니다. Android 툴바는 라벨을 그리지 않으므로 Android에만 아이콘을 줍니다.
 - `AdaptivePane` 안의 pane은 Stack 화면이 아니므로 `Stack.Toolbar`를 쓰지 않습니다(바깥 화면 헤더에 붙는다).
@@ -74,6 +83,9 @@ stack-header/
 ├── use-stack-screen-options.ts   # 공통 네이티브 헤더 옵션
 ├── use-stack-back-toolbar.tsx    # 중첩 Stack 첫 화면의 뒤로가기
 ├── stack-back-icon.ts            # 플랫폼별 뒤로가기 아이콘
+├── stack-close-icon.ts           # 플랫폼별 닫기 아이콘
+├── stack-more-icon.ts            # 플랫폼별 더 보기·메뉴 항목 아이콘
+├── stack-header-title.tsx        # 네이티브 제목과 같은 글자의 제목 뷰
 ├── stack-header.md               # 이 문서
 └── index.ts                      # 배럴
 ```

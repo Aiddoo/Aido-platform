@@ -1,14 +1,105 @@
 import {
+  NOTIFICATION_ACTION_TYPE,
+  NOTIFICATION_ACTIVITY_KIND,
+  NOTIFICATION_CATEGORY,
   NOTIFICATION_TYPE,
-  notificationActionTypeSchema,
-  notificationRoutingSchema,
-  notificationTypeSchema,
-  getNotificationsQuerySchema,
-  type NotificationType,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
+import type { AuthStatus } from '@src/core/session/auth-status';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { instantSchema } from '@src/shared/date/instant';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const notificationSchema = z.object({
+import {
+  MARKETING_OPT_OUT_ACTION,
+  NOTIFICATION_TYPE_TRAITS,
+} from '../constants/notification.constants';
+import type { PushNotificationPayload } from '../schemas/push-notification-payload.schema';
+
+const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
+export type NotificationType = z.infer<typeof notificationTypeSchema>;
+
+export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
+
+const notificationContextSchema = z.object({
+  todoId: z.number().optional(),
+  friendId: z.string().optional(),
+  nudgeId: z.number().optional(),
+  cheerId: z.number().optional(),
+});
+export type NotificationContext = z.infer<typeof notificationContextSchema>;
+
+const notificationRoutingSchema = z.object({
+  commentId: z.string().optional(),
+  threadRootId: z.string().optional(),
+  activityKind: z.enum(NOTIFICATION_ACTIVITY_KIND).optional(),
+  senderId: z.string().optional(),
+  senderName: z.string().optional(),
+  todoOwnerId: z.string().optional(),
+  todoDate: z.string().optional(),
+});
+export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
+
+const notificationActionSchema = z.object({
+  type: z.enum(NOTIFICATION_ACTION_TYPE),
+  url: z.string().optional(),
+});
+export type NotificationAction = z.infer<typeof notificationActionSchema>;
+
+/** 서버(1.13.0+)가 할 일 알림에 싣는 할 일 주인·날짜. 예전 알림에는 없다. */
+const todoTargetShape = {
+  todoOwnerId: z.string().min(1).optional().catch(undefined),
+  todoDate: z.iso.date().optional().catch(undefined),
+};
+
+/** 구 필드(type·context·routing)로 목적지를 고를 때 타입마다 필요한 재료. 재료가 틀리면 이동하지 않는다 */
+export const notificationDestinationRoutingSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('TODO_SHARED'),
+    todoId: z.int().positive(),
+    commentId: z.cuid().optional().catch(undefined),
+    ...todoTargetShape,
+  }),
+  z.object({ type: z.literal('FOLLOW_NEW') }),
+  z.object({ type: z.literal('FOLLOW_ACCEPTED'), friendId: z.string() }),
+  z.object({ type: z.literal('CHEER_RECEIVED'), friendId: z.string() }),
+  z.object({ type: z.literal('FRIEND_COMPLETED'), friendId: z.string() }),
+  z.object({
+    type: z.literal('NUDGE_RECEIVED'),
+    friendId: z.string().min(1).optional(),
+    todoId: z.int().positive().optional(),
+    nudgeId: z.int().positive().optional(),
+    ...todoTargetShape,
+  }),
+  z.object({
+    type: z.literal('NUDGE_REPLIED'),
+    nudgeId: z.int().positive().optional(),
+  }),
+  z.object({
+    type: z.literal('NUDGE_THANKED'),
+    nudgeId: z.int().positive().optional(),
+  }),
+  z.object({
+    type: z.literal('TODO_REMINDER'),
+    todoId: z.int().positive().optional(),
+    ...todoTargetShape,
+  }),
+  z.object({ type: z.literal('WEATHER_MORNING') }),
+  z.object({ type: z.literal('WEATHER_EVENING') }),
+  z.object({ type: z.literal('NUDGE_SUGGEST'), friendId: z.string() }),
+  z.object({ type: z.literal('WEEKLY_ACHIEVEMENT') }),
+  z.object({ type: z.literal('WEEKLY_REPORT') }),
+  z.object({ type: z.literal('MONTHLY_REPORT') }),
+  z.object({ type: z.literal('AI_SUGGESTION') }),
+  z.object({ type: z.literal('PREMIUM_GRANT_ENDING') }),
+  z.object({ type: z.literal('INVITE_JOINED') }),
+  z.object({ type: z.literal('INVITE_REWARDED') }),
+  z.object({ type: z.literal('INVITE_PROGRESS') }),
+  z.object({ type: z.literal('FEED') }),
+]);
+export type NotificationDestinationRouting = z.infer<typeof notificationDestinationRoutingSchema>;
+
+const notificationSchema = z.object({
   id: z.number(),
   userId: z.string(),
   type: notificationTypeSchema,
@@ -16,47 +107,40 @@ export const notificationSchema = z.object({
   body: z.string(),
   isRead: z.boolean(),
   routing: notificationRoutingSchema.optional(),
-  context: z
-    .object({
-      todoId: z.number().optional(),
-      friendId: z.string().optional(),
-      nudgeId: z.number().optional(),
-      cheerId: z.number().optional(),
-    })
-    .optional(),
-  action: z.object({ type: notificationActionTypeSchema, url: z.string().optional() }).optional(),
-  createdAt: z.date(),
-  readAt: z.date().nullable(),
+  context: notificationContextSchema.optional(),
+  action: notificationActionSchema.optional(),
+  createdAt: instantSchema,
+  readAt: instantSchema.nullable(),
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
-export const notificationListResultSchema = z.object({
+const notificationListResultSchema = z.object({
   notifications: z.array(notificationSchema),
-  unreadCount: z.number(),
   hasMore: z.boolean(),
   nextCursor: z.number().nullable(),
 });
 export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
 
-const notificationsQueryInputSchema = getNotificationsQuerySchema.partial();
-export type GetNotificationsQuery = z.infer<typeof notificationsQueryInputSchema>;
+/** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
+export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
 
-const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
-  'WEEKLY_REPORT',
-  'MONTHLY_REPORT',
-  'AI_SUGGESTION',
-]);
-
-export function isAiFeature(notification: Notification) {
-  return AI_FEATURE_TYPES.has(notification.type);
+export interface PendingNotificationResponse {
+  id: string;
+  actionIdentifier: string;
+  data: PushNotificationPayload;
+  receivedAt: number;
 }
 
-/**
- * 받은 응원 알림이면 신고할 응원과 보낸 친구. 응원 ID가 없는 이전 알림은 신고할 대상을 알 수 없어 null.
- * 보낸 사람 이름은 1.13.0 서버부터 실리므로 이전 알림에는 없을 수 있다.
- */
-export function findReceivedCheer(
-  notification: Notification,
+/** 인증을 기다리는 응답을 보관하는 수명 */
+const PENDING_RESPONSE_LIFETIME_MS = 10 * MINUTE_MS;
+
+function isAiFeature(notification: Pick<Notification, 'type'>) {
+  return NOTIFICATION_TYPE_TRAITS[notification.type].isAiFeature;
+}
+
+/** 응원 ID가 없는 이전 알림은 null이다. 보낸 사람 이름은 1.13.0 서버부터 실리므로 이전 알림에는 없을 수 있다 */
+function findReceivedCheer(
+  notification: Pick<Notification, 'type' | 'context' | 'routing'>,
 ): { cheerId: number; senderId: string; senderName: string | null } | null {
   const cheerId = notification.context?.cheerId;
   const senderId = notification.context?.friendId;
@@ -70,7 +154,39 @@ export function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
+type NotificationResponseAction =
+  | { type: 'optOut' }
+  | { type: 'open' }
+  | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
+  | { type: 'drop'; reason: 'expired' };
+
+/** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
+function getResponseAction(
+  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
+  { authStatus, now }: { authStatus: AuthStatus; now: number },
+): NotificationResponseAction {
+  if (now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS) {
+    return { type: 'drop', reason: 'expired' };
+  }
+  if (response.actionIdentifier === MARKETING_OPT_OUT_ACTION) {
+    return { type: 'optOut' };
+  }
+  return match(authStatus)
+    .returnType<NotificationResponseAction>()
+    .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
+    .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
+    .with('authenticated', () => ({ type: 'open' }))
+    .exhaustive();
+}
+
+/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
+function hasServerRecord({ notificationId }: Pick<PushNotificationPayload, 'notificationId'>) {
+  return notificationId > 0;
+}
+
 export const NotificationPolicy = {
+  hasServerRecord,
   isAiFeature,
   findReceivedCheer,
+  getResponseAction,
 } as const;

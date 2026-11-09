@@ -1,4 +1,5 @@
-import { FOLLOW_LIMITS } from "@aido/api";
+import { PLAN_CATALOG } from "@aido/api";
+import { friendQuotaErrorDetailsSchema } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -20,7 +21,7 @@ import { resourceBonus, user as userTable } from "#api/platform/database/schema/
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const FREE_LIMIT = FOLLOW_LIMITS.FREE_MAX_FRIENDS; // 5
+const FREE_LIMIT = PLAN_CATALOG.FRIEND.free;
 
 describe("팔로우 리소스 제한 E2E", () => {
   let ctx: E2eTestContext;
@@ -70,9 +71,21 @@ describe("팔로우 리소스 제한 E2E", () => {
       // Then - 403 에러와 FOLLOW_0909 코드 반환
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("FOLLOW_0909");
-      expect(response.body.error.details).toMatchObject({
+      expect(friendQuotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
         current: FREE_LIMIT,
         limit: FREE_LIMIT,
+        charged: false,
+        featureQuota: {
+          feature: "FRIEND",
+          allowed: true,
+          limit: FREE_LIMIT,
+          used: FREE_LIMIT,
+          remaining: 0,
+          period: null,
+          resetsAt: null,
+          isFairUse: false,
+          perUse: null,
+        },
       });
 
       // When - 리소스 제한 조회
@@ -115,9 +128,11 @@ describe("팔로우 리소스 제한 E2E", () => {
 
       // Then
       expect(response.body.error.code).toBe("FOLLOW_0909");
-      expect(response.body.error.details).toEqual({
+      expect(friendQuotaErrorDetailsSchema.parse(response.body.error.details)).toMatchObject({
         current: FREE_LIMIT + 1,
         limit: FREE_LIMIT + 1,
+        charged: false,
+        featureQuota: { limit: FREE_LIMIT + 1, used: FREE_LIMIT + 1, remaining: 0 },
       });
     });
   });

@@ -1,36 +1,71 @@
-import type { Logger } from '@src/core/ports/logger';
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
+import {
+  createHttpClientStub,
+  createLoggerStub,
+  createPushNotificationGatewayStub,
+} from '@src/shared/__tests__';
 
 import {
   createNotificationApiError,
   createPushDeviceResponseDto,
-  createPushNotificationGatewayStub,
   createPushPermissionResponse,
   INVALID_DTO,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
 import { PushDeviceService } from './push-device.service';
 
 const DEVICE_ID = 'ios_device-123';
 
-function setup(gateway = createPushNotificationGatewayStub()) {
-  const httpClient = createMockHttpClient();
+function setup(gateway = createPushNotificationGatewayStub(), getTimeZone = () => 'Asia/Seoul') {
+  const sessionEpoch = createSessionEpoch();
+  const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-  const logger: jest.Mocked<Logger> = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
-  const service = new PushDeviceService(
+  const logger = createLoggerStub();
+  const service = new PushDeviceService({
     gateway,
-    { get: async () => DEVICE_ID },
+    deviceIdService: { get: async () => DEVICE_ID },
     httpClient,
     logger,
-  );
-  return { service, gateway, httpClient, logger };
+    getTimeZone,
+    sessionEpoch,
+  });
+  return { service, gateway, httpClient, logger, sessionEpoch };
 }
 
 describe('PushDeviceService.report', () => {
+  it('값이 같아도 기기 시간대가 바뀌면 서버가 헤더를 읽도록 다시 보낸다', async () => {
+    // Given
+    let timeZone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timeZone);
+    await service.report();
+    timeZone = 'America/New_York';
+
+    // When
+    await service.report();
+    await service.report();
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('시간대 보고가 실패하면 다음 복귀 때 다시 보낸다', async () => {
+    // Given
+    let timeZone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timeZone);
+    await service.report();
+    timeZone = 'America/New_York';
+    httpClient.put.mockResolvedValueOnce({
+      ok: false,
+      error: createNotificationApiError(),
+    });
+    await service.report();
+
+    // When
+    await service.report();
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(3);
+  });
+
   it('허용된 기기는 권한과 토큰을 기기 경로로 보고하고 토큰은 로그에 남기지 않는다', async () => {
     // Given
     const { service, httpClient, logger } = setup();
@@ -138,31 +173,6 @@ describe('PushDeviceService.report', () => {
     });
   });
 
-  it('Android 알림 채널을 먼저 만든 뒤 권한을 읽고 토큰을 받는다', async () => {
-    // Given
-    const order: string[] = [];
-    const gateway = createPushNotificationGatewayStub({
-      ensureChannel: jest.fn(async () => {
-        order.push('channel');
-      }),
-      getPermission: jest.fn(async () => {
-        order.push('permission');
-        return createPushPermissionResponse();
-      }),
-      getToken: jest.fn(async () => {
-        order.push('token');
-        return 'ExponentPushToken[device-123]';
-      }),
-    });
-    const { service } = setup(gateway);
-
-    // When
-    await service.report();
-
-    // Then
-    expect(order).toEqual(['channel', 'permission', 'token']);
-  });
-
   it('이번 세션에 같은 값을 이미 보냈으면 다시 요청하지 않고, 토큰이 바뀌면 다시 보낸다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
@@ -180,6 +190,18 @@ describe('PushDeviceService.report', () => {
       expect.any(String),
       expect.objectContaining({ token: 'ExponentPushToken[rotated]' }),
     );
+  });
+
+  it('권한 허용 직후처럼 같은 값을 동시에 보고하면 요청은 한 번만 보낸다', async () => {
+    // Given
+    const { service, httpClient } = setup();
+
+    // When
+    const [first, second] = await Promise.all([service.report(), service.report()]);
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
   });
 
   it('언어가 바뀌는 등 강제로 보내면 같은 값이어도 다시 요청한다', async () => {
@@ -223,17 +245,10 @@ describe('PushDeviceService.report', () => {
 });
 
 describe('PushDeviceService.requestPermission', () => {
-  it('채널을 먼저 만든 뒤 시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
+  it('시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
     // Given
-    const order: string[] = [];
     const gateway = createPushNotificationGatewayStub({
-      ensureChannel: jest.fn(async () => {
-        order.push('channel');
-      }),
-      requestPermission: jest.fn(async () => {
-        order.push('request');
-        return createPushPermissionResponse();
-      }),
+      requestPermission: jest.fn(async () => createPushPermissionResponse()),
     });
     const { service, httpClient } = setup(gateway);
 
@@ -241,7 +256,7 @@ describe('PushDeviceService.requestPermission', () => {
     const permission = await service.requestPermission();
 
     // Then
-    expect(order.slice(0, 2)).toEqual(['channel', 'request']);
+    expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
     expect(permission).toEqual({ status: 'GRANTED', canAskAgain: false });
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
@@ -308,5 +323,137 @@ describe('PushDeviceService.unregister', () => {
     // Then
     expect(deletedBeforeReportSettled).toBe(false);
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('권한과 토큰을 읽는 중에 해제하면 늦은 보고를 보내지 않아 기기를 다시 등록하지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    let resolveToken: ((token: string) => void) | undefined;
+    gateway.getToken.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToken = resolve;
+        }),
+    );
+    const { service, httpClient } = setup(gateway);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const reporting = service.report();
+    while (resolveToken == null) {
+      await Promise.resolve();
+    }
+
+    // When
+    const unregistering = service.unregister();
+    resolveToken('token-1');
+    await Promise.all([reporting, unregistering]);
+
+    // Then
+    expect(httpClient.put).not.toHaveBeenCalled();
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('토큰 발급이 끝나지 않아도 제한 시간 뒤에 해제해 로그아웃을 붙잡지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    gateway.getToken.mockImplementationOnce(() => new Promise(() => {}));
+    const { service, httpClient } = setup(gateway);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    service.report();
+
+    // When
+    const result = await service.unregister({ timeout: 10 });
+
+    // Then
+    expect(result.ok).toBe(true);
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('겹친 보고 중 먼저 시작한 보고가 남아 있으면 그 보고까지 기다린 뒤 해제한다', async () => {
+    // Given
+    const { service, httpClient } = setup();
+    let resolveFirstPut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstPut = resolve;
+        }),
+    );
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const firstReport = service.report();
+    while (resolveFirstPut == null) {
+      await Promise.resolve();
+    }
+    await service.report({ force: true });
+
+    // When
+    const unregistering = service.unregister();
+    await Promise.resolve();
+    const deletedBeforeFirstSettled = httpClient.delete.mock.calls.length > 0;
+    resolveFirstPut({ ok: true, value: createPushDeviceResponseDto() });
+    await Promise.all([firstReport, unregistering]);
+
+    // Then
+    expect(deletedBeforeFirstSettled).toBe(false);
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('권한과 토큰을 읽는 중에 세션이 끝나면 보고를 보내지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    let resolveToken: ((token: string) => void) | undefined;
+    gateway.getToken.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToken = resolve;
+        }),
+    );
+    const { service, httpClient, sessionEpoch } = setup(gateway);
+    const reporting = service.report();
+    while (resolveToken == null) {
+      await Promise.resolve();
+    }
+
+    // When
+    sessionEpoch.advance();
+    resolveToken('token-1');
+    const result = await reporting;
+
+    // Then
+    expect(result).toEqual({ ok: true, value: null });
+    expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
+  it('보고를 기다리는 사이 세션이 바뀌면 해제하지 않아 새 세션의 기기 등록을 지키지 않는다', async () => {
+    // Given
+    // 이전 세션의 보고가 진행 중이다
+    const { service, httpClient, sessionEpoch } = setup();
+    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePut = resolve;
+        }),
+    );
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const reporting = service.report();
+    while (resolvePut == null) {
+      await Promise.resolve();
+    }
+    const unregistering = service.unregister();
+
+    // When
+
+    // 기다리는 사이 세션이 끝나고 다시 로그인해 보고가 끝난다
+    sessionEpoch.advance();
+    resolvePut({ ok: true, value: createPushDeviceResponseDto() });
+    const [, result] = await Promise.all([reporting, unregistering]);
+
+    // Then
+
+    // 새 세션의 등록을 지우는 DELETE를 보내지 않고, 새 세션의 보고 기록도 지우지 않는다
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(httpClient.delete).not.toHaveBeenCalled();
+    await service.report();
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 });

@@ -53,19 +53,21 @@ export class VerificationService {
     return result;
   }
 
-  // 이메일 발송 실패는 로그만 남기고 예외를 던지지 않음 (재발송 가능)
-  async sendVerificationEmail(email: string, code: string): Promise<void> {
-    const emailResult = await this.#dependencies.emailSender.sendVerificationCode(email, {
+  /** 발송 큐에 담았으면 true. 담지 못해도 예외를 던지지 않고 호출자가 다시 보내게 안내한다. */
+  async sendVerificationEmail(email: string, code: string): Promise<boolean> {
+    const dispatch = await this.#dependencies.emailSender.sendVerificationCode(email, {
       code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
     });
 
-    if (!emailResult.success) {
+    if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "EMAIL_VERIFY",
+        reason: dispatch.reason,
       });
     }
+    return dispatch.status === "queued";
   }
 
   async createAndSendPasswordReset(userId: string, email: string): Promise<VerificationCodeResult> {
@@ -78,16 +80,17 @@ export class VerificationService {
 
     const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
 
-    const emailResult = await this.#dependencies.emailSender.sendPasswordResetCode(email, {
+    const dispatch = await this.#dependencies.emailSender.sendPasswordResetCode(email, {
       code: result.code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
     });
 
-    if (!emailResult.success) {
+    if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "PASSWORD_RESET",
         userId,
+        reason: dispatch.reason,
       });
     }
 
@@ -109,16 +112,17 @@ export class VerificationService {
 
     const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
 
-    const emailResult = await this.#dependencies.emailSender.sendPasswordSetupCode(email, {
+    const dispatch = await this.#dependencies.emailSender.sendPasswordSetupCode(email, {
       code: result.code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
     });
 
-    if (!emailResult.success) {
+    if (dispatch.status === "rejected") {
       this.#dependencies.logger.error({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "PASSWORD_SETUP",
         userId,
+        reason: dispatch.reason,
       });
     }
 

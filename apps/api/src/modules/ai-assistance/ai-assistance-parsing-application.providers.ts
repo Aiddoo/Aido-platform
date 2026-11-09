@@ -1,11 +1,10 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
-import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
-import {
-  AI_TASK_SETTINGS,
-  type AiTaskSettingsMap,
-} from "./application/ports/parsing/ai-task-settings.port.js";
+import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
+
+import { AI_GENERATOR } from "./application/ports/generation/ai-generator.port.js";
+import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
+import { UPCOMING_TODO_READER } from "./application/ports/parsing/upcoming-todo-reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
 import { GetAiUsage } from "./application/use-cases/parsing/get-ai-usage.use-case.js";
@@ -14,7 +13,7 @@ import { ParseTodo } from "./application/use-cases/parsing/parse-todo.use-case.j
 
 export const getAiUsageProvider: FactoryProvider<GetAiUsage> = {
   provide: GetAiUsage,
-  inject: [AI_QUOTA],
+  inject: [QUOTA_LEDGER],
   useFactory: (quota: ConstructorParameters<typeof GetAiUsage>[0]["quota"]) =>
     new GetAiUsage({ quota }),
 };
@@ -22,25 +21,28 @@ export const getAiUsageProvider: FactoryProvider<GetAiUsage> = {
 export const parseMemoProvider: FactoryProvider<ParseMemo> = {
   provide: ParseMemo,
   inject: [
-    AI_PROVIDER,
+    AI_GENERATOR,
+    AI_DATA_SHARING_CONSENT_DECISION_READER,
     USER_CATEGORY_READER,
-    AI_QUOTA,
+    UPCOMING_TODO_READER,
+    QUOTA_LEDGER,
     USER_LOCALE_PREFERENCE_READER,
-    AI_TASK_SETTINGS,
   ],
   useFactory: (
-    aiProvider: ConstructorParameters<typeof ParseMemo>[0]["aiProvider"],
+    generator: ConstructorParameters<typeof ParseMemo>[0]["generator"],
+    consentReader: ConstructorParameters<typeof ParseMemo>[0]["consentReader"],
     categoryReader: ConstructorParameters<typeof ParseMemo>[0]["categoryReader"],
+    upcomingTodoReader: ConstructorParameters<typeof ParseMemo>[0]["upcomingTodoReader"],
     quota: ConstructorParameters<typeof ParseMemo>[0]["quota"],
     localePreferenceReader: ConstructorParameters<typeof ParseMemo>[0]["localePreferenceReader"],
-    settings: AiTaskSettingsMap,
   ) =>
     new ParseMemo({
-      aiProvider,
+      generator,
+      consentReader,
       categoryReader,
+      upcomingTodoReader,
       quota,
       localePreferenceReader,
-      settings: settings["parse-memo"],
       logger: new Logger(ParseMemo.name),
     }),
 };
@@ -48,25 +50,25 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
 export const parseTodoProvider: FactoryProvider<ParseTodo> = {
   provide: ParseTodo,
   inject: [
-    AI_PROVIDER,
+    AI_GENERATOR,
+    AI_DATA_SHARING_CONSENT_DECISION_READER,
     USER_CATEGORY_READER,
-    AI_QUOTA,
+    QUOTA_LEDGER,
     USER_LOCALE_PREFERENCE_READER,
-    AI_TASK_SETTINGS,
   ],
   useFactory: (
-    aiProvider: ConstructorParameters<typeof ParseTodo>[0]["aiProvider"],
+    generator: ConstructorParameters<typeof ParseTodo>[0]["generator"],
+    consentReader: ConstructorParameters<typeof ParseTodo>[0]["consentReader"],
     categoryReader: ConstructorParameters<typeof ParseTodo>[0]["categoryReader"],
     quota: ConstructorParameters<typeof ParseTodo>[0]["quota"],
     localePreferenceReader: ConstructorParameters<typeof ParseTodo>[0]["localePreferenceReader"],
-    settings: AiTaskSettingsMap,
   ) =>
     new ParseTodo({
-      aiProvider,
+      generator,
+      consentReader,
       categoryReader,
       quota,
       localePreferenceReader,
-      settings: settings["parse-todo"],
       logger: new Logger(ParseTodo.name),
     }),
 };

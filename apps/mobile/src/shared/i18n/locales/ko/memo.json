@@ -1,12 +1,14 @@
 {
   "titles": {
     "create": "새 메모",
-    "aiReview": "AI 파싱"
+    "aiReview": "메모를 할 일로 나누기"
   },
   "tab": {
-    "addMemo": "메모 추가"
+    "title": "메모"
   },
   "list": {
+    "scrollToTop": "맨 위로 이동",
+    "savedTitle": "저장한 메모",
     "emptyTitle": "아직 메모가 없어요",
     "emptyDescription": "애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요",
     "loadFailed": "메모를 불러오지 못했어요",
@@ -17,46 +19,32 @@
     "placeholder": "아이디어를 자유롭게 적어보세요..."
   },
   "detail": {
+    "unavailableTitle": "지금은 볼 수 없는 메모예요",
+    "unavailableDescription": "메모가 삭제됐을 수 있어요",
     "emptyTitle": "선택한 메모가 없어요",
     "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",
-    "convertToTodo": "할 일로 변환",
+    "aiParse": "AI로 할 일 나누기",
+    "convertToTodo": "할 일로 바꾸기",
+    "more": "더 보기",
+    "aiParsing": "할 일로 나누는 중이에요",
     "deleteConfirmTitle": "메모를 삭제할까요?",
-    "deleteConfirmDescription": "삭제한 메모는 복구할 수 없어요"
+    "deleteConfirmDescription": "삭제하면 되돌릴 수 없어요"
   },
   "toasts": {
-    "convertedOne": "메모를 할 일로 변환했어요",
-    "convertedMany": "메모를 {{count}}개의 할 일로 변환했어요",
+    "convertedOne": "메모를 할 일로 바꿨어요",
     "deleted": "메모를 삭제했어요",
     "retryLater": "잠시 후 다시 시도해주세요",
-    "reorderFailed": "순서 변경에 실패했어요",
-    "deleteRetry": "잠시 후 다시 삭제해 보세요",
-    "limitReached": "메모 개수가 한도에 도달했어요",
-    "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용을 지웠어요"
-  },
-  "aiDialog": {
-    "limitTitle": "이번 달 AI 파싱 횟수를 모두 사용했어요",
-    "subscribeUnlimited": "구독하면 무제한으로 사용할 수 있어요",
-    "confirmTitle": "AI로 메모를 할 일로 만들게요",
-    "usageRemaining": "이번 달 {{remaining}}/{{limit}}회 사용할 수 있어요",
-    "warnWithDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.",
-    "warnNoDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없어요.",
-    "start": "시작하기"
+    "deleteRetry": "잠시 후 다시 삭제해보세요",
+    "limitReached": "메모는 {{max}}개까지 쓸 수 있어요",
+    "limitReachedDescription": "안 쓰는 메모를 지우면 새로 쓸 수 있어요",
+    "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용은 삭제했어요"
   },
   "aiReview": {
-    "titleLabel": "할 일 제목",
-    "analyzing": "메모를 분석하고 있어요...",
-    "limitTitle": "이번 달 AI 사용 횟수를 모두 사용했어요",
-    "parseFailed": "파싱에 실패했어요",
-    "retryLater": "잠시 후 다시 시도해 주세요",
+    "draftLost": "나눈 내용을 불러오지 못했어요. 메모에서 다시 나눠주세요",
     "goBack": "돌아가기",
-    "noTodosTitle": "생성할 할 일이 없어요",
-    "createCount": "{{count}}개 할 일 생성",
-    "omittedTodos": "할 일이 많아서 {{max}}개까지 만들었어요. 나머지 {{count}}개는 메모에 그대로 있어요",
-    "allDay": "종일",
-    "categoryFallback": "카테고리",
-    "weeklyRepeat": "매주 {{days}}",
-    "select": "선택하기"
+    "noCategory": "카테고리를 찾을 수 없어요",
+    "loadFailed": "나눈 내용을 불러오지 못했어요"
   }
 }

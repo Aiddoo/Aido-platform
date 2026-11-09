@@ -120,6 +120,7 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: type,
         userId,
+        reason: "queue_unavailable",
       });
       const logs = JSON.stringify(logger.error.mock.calls);
       expect(logs).not.toContain(email);

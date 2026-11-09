@@ -1,3 +1,3 @@
-export { AdaptivePane } from './adaptive-pane';
+export { AdaptivePane, useAdaptivePaneLayoutKey } from './adaptive-pane';
+export { getPaneEdgeInsets } from './get-pane-edge-insets';
 export { getPrimaryPaneWidth } from './get-primary-pane-width';
-export type { AdaptivePaneProps } from './adaptive-pane.types';

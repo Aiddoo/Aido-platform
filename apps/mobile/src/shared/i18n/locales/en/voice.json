@@ -1,0 +1,67 @@
+{
+  "language": {
+    "ko": "Korean",
+    "en": "English"
+  },
+  "button": {
+    "label": "Speak to add"
+  },
+  "dictation": {
+    "start": "Dictate",
+    "stop": "Stop dictating"
+  },
+  "info": {
+    "label": "Make to-dos with AI",
+    "title": "Talk, and AI splits it into to-dos",
+    "description": "Tap the mic and say what you want to do. Dates, times, and repeats are filled in for you.",
+    "examples": "It understands \"every day,\" \"Mon Wed Fri,\" \"all next week,\" and \"just for me.\"",
+    "remaining": "{{amount}} left this month",
+    "notCharged": "If it fails, it doesn't count",
+    "typeStillFree": "Typing is still free",
+    "usedUpChipHint": "Opens this month's AI usage and Premium info"
+  },
+  "coach": {
+    "quickStart": {
+      "title": "You can just say it now",
+      "description": "Say everything on your mind. AI fills in dates, times, and repeats for you."
+    }
+  },
+  "listening": {
+    "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
+    "prompt": "Go ahead, we're listening",
+    "cancel": "Cancel",
+    "done": "Done",
+    "resume": "Keep talking",
+    "pausedHint": "Paused for a moment. Keep talking?",
+    "autoFinishHint": "We'll wrap up when you pause"
+  },
+  "planning": {
+    "cancel": "Cancel and type",
+    "title": "Splitting into to-dos…"
+  },
+  "review": {
+    "restart": "Say it again",
+    "typeInstead": "Type instead",
+    "leaveTitle": "Close this plan?",
+    "leaveDescription": "You won't be able to see this plan again.",
+    "leaveDescriptionCharged": "You won't be able to see this plan again, and the use won't be returned.",
+    "leaveConfirm": "Close",
+    "leaveCancel": "Keep choosing"
+  },
+  "failed": {
+    "keptText": "We kept what we heard. Keep talking or edit it yourself.",
+    "typedTextKept": "Your text stays as typed. What we heard wasn't added to it.",
+    "nothingHeard": "We haven't heard anything yet. Keep talking or type it yourself.",
+    "consentRequired": "AI consent is needed to sort this out. Try again to see the notice.",
+    "resume": "Keep talking",
+    "retry": "Try again"
+  },
+  "limit": {
+    "title": "That's a long one",
+    "description": "Everything so far is saved. Turn it into to-dos now, or keep talking in a voice note.",
+    "titleEmpty": "We haven't heard anything yet",
+    "descriptionEmpty": "You can keep talking in a voice note.",
+    "finish": "Make to-dos now",
+    "continueAsNote": "Continue as a voice note"
+  }
+}

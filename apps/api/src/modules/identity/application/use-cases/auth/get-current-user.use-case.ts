@@ -1,8 +1,10 @@
 import type { PremiumEntitlements } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
+import { pick } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { AiQuotaPort } from "#api/modules/access/access-quota.public";
+import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
@@ -24,7 +26,7 @@ interface GetCurrentUserDependencies {
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
-  readonly aiQuota: Pick<AiQuotaPort, "read">;
+  readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
   readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
 }
@@ -67,6 +69,8 @@ export class GetCurrentUser {
           willRenew: premiumAccess.willRenew,
           bankedPremiumDays: premiumAccess.bankedDays,
           premiumGrantEndedAt: toISOStringOrNull(premiumAccess.recentGrantEndedAt),
+          premiumIsTrial: premiumAccess.isTrial,
+          premiumPlanType: premiumAccess.planType,
         };
       },
     );
@@ -97,6 +101,9 @@ export class GetCurrentUser {
       willRenew: cachedProfile.willRenew,
       bankedPremiumDays: cachedProfile.bankedPremiumDays,
       premiumGrantEndedAt: cachedProfile.premiumGrantEndedAt,
+      premiumIsTrial: cachedProfile.premiumIsTrial,
+      // 배포 전 캐시(TTL 5분 이하)에는 이 칸이 없어 키 버전을 올리지 않고 모름(null)으로 읽는다
+      premiumPlanType: cachedProfile.premiumPlanType ?? null,
       isPremium,
       entitlements,
     };
@@ -106,14 +113,16 @@ export class GetCurrentUser {
     userId: string,
     timezone: string,
   ): Promise<{ isPremium: boolean; entitlements: PremiumEntitlements }> {
-    const { entitlementReader, aiQuota, cheerUsageReader, nudgeUsageReader } = this.#dependencies;
+    const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
+      this.#dependencies;
     const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
       entitlementReader.getAccessSnapshot(userId),
-      aiQuota.read(userId),
+      quotaLedger.read(userId, "AI_PARSE"),
       cheerUsageReader.readDailyUsage(userId, timezone),
       nudgeUsageReader.readDailyUsage(userId, timezone),
     ]);
-    const { features } = snapshot;
+    // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
+    const features = pick(snapshot.features, PREMIUM_FEATURE_KEYS);
     return {
       isPremium: snapshot.isPremium,
       entitlements: {

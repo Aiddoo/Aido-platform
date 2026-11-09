@@ -329,12 +329,25 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.details).toBe("unexpected error");
     });
 
-    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit)만 싣는다", () => {
+    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit·charged·featureQuota)만 싣는다", () => {
       // Given
       filter = createFilter(false);
+      const featureQuota = {
+        feature: "FRIEND",
+        allowed: true,
+        limit: 6,
+        used: 6,
+        remaining: 0,
+        period: null,
+        resetsAt: null,
+        isFairUse: false,
+        perUse: null,
+      };
       const exception = new ApplicationException(ErrorCode.FOLLOW_0909, {
         current: 6,
         limit: 6,
+        charged: false,
+        featureQuota,
         userId: "user-123",
       });
 
@@ -343,8 +356,29 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
-      expect(jsonArg?.error.details).toEqual({ current: 6, limit: 6 });
+      expect(jsonArg?.error.details).toEqual({
+        current: 6,
+        limit: 6,
+        charged: false,
+        featureQuota,
+      });
     });
+
+    it.each([ErrorCode.AI_1301, ErrorCode.AI_1302, ErrorCode.AI_1310])(
+      "production 환경에서도 환불한 AI 실패 %s는 차감 없음(charged:false)만 싣는다",
+      (errorCode) => {
+        // Given
+        filter = createFilter(false);
+        const exception = new ApplicationException(errorCode, { charged: false, provider: "x" });
+
+        // When
+        filter.catch(exception, mockHost);
+
+        // Then
+        const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+        expect(jsonArg?.error.details).toEqual({ charged: false });
+      },
+    );
 
     it("production 환경에서 공개 상세가 없는 업무 오류의 details는 싣지 않는다", () => {
       // Given

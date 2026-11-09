@@ -2,6 +2,7 @@ export * from "./change-category.request.dto.js";
 export * from "./create-recurring-todo.request.dto.js";
 export * from "./create-todo.request.dto.js";
 export * from "./create-todo-item.request.dto.js";
+export * from "./delete-todo-query.request.dto.js";
 export * from "./get-friend-todos-query.request.dto.js";
 export * from "./get-todos-query.request.dto.js";
 export * from "./reorder-todo.request.dto.js";

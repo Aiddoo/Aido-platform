@@ -1,13 +1,17 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
+import type { WeatherPrecipitationType } from '@aido/api/vocabulary';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
+import { getMinutesUntil, type Instant } from '@src/shared/date/instant';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherRainIcon } from '@src/shared/ui/icon';
-import { formatInstantHour, type TimeFormat } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
+import { Separator } from 'heroui-native';
 import { useEffect } from 'react';
 import Animated, {
   cancelAnimation,
@@ -19,24 +23,21 @@ import Animated, {
 import Svg, { Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import { match } from 'ts-pattern';
 
-import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors';
-import { PRECIPITATION_LEVEL_LABEL_KEYS } from '../constants/weather-labels';
+import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors.constants';
+import {
+  PRECIPITATION_LEVEL_LABEL_KEYS,
+  PRECIPITATION_SUBJECT_LABEL_KEYS,
+} from '../constants/weather-labels';
 import {
   type HourlyPrecipitationOutlook,
-  WeatherNextHourPolicy,
-} from '../domains/weather-next-hour.model';
-import { type MinuteForecast, WeatherReportPolicy } from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
-import { usePrecipitationMessage } from '../hooks/use-precipitation-message';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
-import {
-  NEXT_HOUR_CHART_SIZE,
-  toNextHourChart,
-} from '../utils/view-models/next-hour-chart.view-model';
+  type PrecipitationPrecision,
+  type PrecipitationWindow,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
+import type { MinuteForecast } from '../domains/weather-report.model';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -48,12 +49,11 @@ const LINE_EASING = Easing.bezier(0.3, 0.7, 0.2, 1);
 const AREA_EASING = Easing.out(Easing.ease);
 const LABEL_FONT = 'WantedSans-Medium';
 const AREA_GRADIENT_ID = 'next-hour-area';
-const FALLBACK_ICON_SIZE = 30;
+const HOURLY_OUTLOOK_ICON_SIZE = 30;
+const TITLE_ICON_SIZE = 13;
+const GUIDE_LABEL_FONT_SIZE = 10;
 
-/**
- * 분 단위 예보가 있으면 그래프로, 없는 지역(국내 등)은 시간 단위 한 줄 카드로 알린다. 비 소식이 없으면 카드를 만들지 않는다.
- * 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비를 안내하지 않는다.
- */
+/** 분 단위 예보가 없는 지역(국내 등)은 시간 단위 카드로 알리고, 6시간 넘게 낡은 데이터로는 안내하지 않는다 */
 export function NextHourPrecipitation() {
   const { t } = useTranslation('weather');
   const [{ data }, { data: preference }] = useSuspenseQueries({
@@ -63,7 +63,7 @@ export function NextHourPrecipitation() {
     ],
   });
   const now = useMinuteNow();
-  const toMessage = usePrecipitationMessage({
+  const toMessage = useFormatPrecipitationMessage({
     timeZone: data.location.timezone,
     timeFormat: preference.timeFormat,
     now,
@@ -73,11 +73,11 @@ export function NextHourPrecipitation() {
     return <NextHourPrecipitation.Empty />;
   }
   if (data.nextHour == null) {
-    const outlook = WeatherNextHourPolicy.hourlyOutlook(data.hourly, now);
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(data.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
-      <NextHourPrecipitation.HourlyFallback
+      <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
         timeZone={data.location.timezone}
         timeFormat={preference.timeFormat}
@@ -86,14 +86,20 @@ export function NextHourPrecipitation() {
     );
   }
 
-  const window = WeatherReportPolicy.precipitationWindow(data, now);
+  const window = WeatherReportPolicy.getPrecipitationWindow(data, now);
   const { headline, detail } = toMessage(window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 
   return (
     <WeatherCard
       title={t('nextHour.title')}
-      icon={<WeatherRainIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />}
+      icon={
+        <WeatherRainIcon
+          width={TITLE_ICON_SIZE}
+          height={TITLE_ICON_SIZE}
+          colorClassName="text-on-sky/[0.62]"
+        />
+      }
       className="gap-0 pb-3"
     >
       <VStack gap={2} className="mt-1.5">
@@ -106,14 +112,14 @@ export function NextHourPrecipitation() {
           </Text>
         )}
       </VStack>
-      <Box className="mt-3 h-[0.5px] bg-on-sky/[0.18]" />
+      <Separator thickness={0.5} className="mt-3 bg-on-sky/[0.18]" />
       <NextHourPrecipitation.Chart minutes={data.nextHour.minutes} summary={summary} />
     </WeatherCard>
   );
 }
 
 /** 분 단위 예보가 없는 지역(국내 등)은 그래프 대신 6시간 안에 비가 오는 첫 시간을 한 줄로 알린다. */
-NextHourPrecipitation.HourlyFallback = function HourlyFallback({
+NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   outlook,
   timeZone,
   timeFormat,
@@ -122,12 +128,12 @@ NextHourPrecipitation.HourlyFallback = function HourlyFallback({
   outlook: HourlyPrecipitationOutlook;
   timeZone: string;
   timeFormat: TimeFormat;
-  now: Date;
+  now: Instant;
 }) {
   const { t } = useTranslation('weather');
   const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useLocalTimeLabel(timeZone, now);
-  const iconSize = Math.round(FALLBACK_ICON_SIZE * useFontScaleRatio());
+  const localTime = useFormatLocalTime(timeZone, now);
+  const iconSize = Math.round(HOURLY_OUTLOOK_ICON_SIZE * useFontScaleRatio());
   const { hour, isOngoing } = outlook;
   const isSnow = WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
   const chance = hour.precipitationChance;
@@ -172,10 +178,7 @@ NextHourPrecipitation.HourlyFallback = function HourlyFallback({
   );
 };
 
-/**
- * 부모 폭에 맞춰 viewBox를 같은 비율로 늘리므로 회전·창 크기 변경에도 다시 계산할 것이 없다.
- * 선은 왼쪽부터 그려지고 면은 함께 서서히 나타난다. 동작 줄이기에서는 완성된 그래프를 바로 보인다.
- */
+/** viewBox를 같은 비율로 늘려 회전·창 크기 변경에도 다시 계산하지 않는다. 동작 줄이기에서는 바로 완성해 보인다 */
 NextHourPrecipitation.Chart = function Chart({
   minutes,
   summary,
@@ -184,17 +187,22 @@ NextHourPrecipitation.Chart = function Chart({
   summary: string;
 }) {
   const { t } = useTranslation('weather');
-  const isReducedMotion = useReduceMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const chart = toNextHourChart(minutes);
-  const guideColor = useOnSkyColor('text-on-sky/22');
-  const guideLabelColor = useOnSkyColor('text-on-sky/50');
-  const baselineColor = useOnSkyColor('text-on-sky/35');
+  const guideColor = useResolvedColor('text-on-sky/22');
+  const guideLabelColor = useResolvedColor('text-on-sky/50');
+  const baselineColor = useResolvedColor('text-on-sky/35');
   const length = chart?.length ?? 0;
   const lineProgress = useSharedValue(isReducedMotion ? 1 : 0);
   const areaOpacity = useSharedValue(isReducedMotion ? 1 : 0);
   const { width, height, baseline } = NEXT_HOUR_CHART_SIZE;
+  const hasChart = chart != null;
 
+  // 그래프가 처음 나타날 때만 그린다. 재조회로 선만 바뀌면 지웠다 다시 그리지 않고 그대로 바꾼다
   useEffect(() => {
+    if (!hasChart) {
+      return;
+    }
     if (isReducedMotion) {
       lineProgress.value = 1;
       areaOpacity.value = 1;
@@ -208,7 +216,7 @@ NextHourPrecipitation.Chart = function Chart({
       cancelAnimation(lineProgress);
       cancelAnimation(areaOpacity);
     };
-  }, [chart?.line, isReducedMotion, lineProgress, areaOpacity]);
+  }, [hasChart, isReducedMotion, lineProgress, areaOpacity]);
 
   const lineProps = useAnimatedProps(() => ({
     strokeDashoffset: length * (1 - lineProgress.value),
@@ -252,7 +260,7 @@ NextHourPrecipitation.Chart = function Chart({
             y={guide.y - 4}
             textAnchor="end"
             fill={guideLabelColor}
-            fontSize={10}
+            fontSize={GUIDE_LABEL_FONT_SIZE}
             fontFamily={LABEL_FONT}
           >
             {t(PRECIPITATION_LEVEL_LABEL_KEYS[guide.level])}
@@ -289,11 +297,73 @@ NextHourPrecipitation.Chart = function Chart({
   );
 };
 
-/** 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */
-NextHourPrecipitation.Loading = function Loading() {
-  return null;
-};
-
 NextHourPrecipitation.Empty = function Empty() {
   return null;
 };
+
+interface PrecipitationMessage {
+  headline: string;
+  detail: string | null;
+}
+
+/** 시각은 위치 시간대로 말하고, 위치 벽시계가 기기와 다르면 '현지'를 붙인다 */
+function useFormatPrecipitationMessage({
+  timeZone,
+  timeFormat,
+  now,
+}: {
+  timeZone: string;
+  timeFormat: TimeFormat;
+  now: Instant;
+}) {
+  const { t } = useTranslation('weather');
+  const dateFormat = useLocationDateFormat(timeZone);
+  const localTime = useFormatLocalTime(timeZone, now);
+
+  const formatMoment = (date: Instant, precision: PrecipitationPrecision) =>
+    localTime(
+      match(precision)
+        .with('minute', () => formatClockTime(date, timeFormat, dateFormat))
+        .with('hour', () => formatInstantHour(date, timeFormat, dateFormat))
+        .exhaustive(),
+    );
+
+  /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
+  const toSubject = (type: WeatherPrecipitationType | null) =>
+    t(PRECIPITATION_SUBJECT_LABEL_KEYS[type ?? 'MIXED']);
+
+  const formatEnd = (wet: Exclude<PrecipitationWindow, { kind: 'dry' }>) => {
+    if (wet.endsAt == null) {
+      return t('nextHour.continues');
+    }
+    const time = formatMoment(wet.endsAt, wet.endPrecision);
+    return wet.isEndingOnLaterDay
+      ? t('nextHour.endsAroundTomorrow', { time })
+      : t('nextHour.endsAround', { time });
+  };
+
+  return (window: PrecipitationWindow): PrecipitationMessage =>
+    match(window)
+      .with({ kind: 'dry' }, () => ({ headline: t('nextHour.dry'), detail: null }))
+      .with({ kind: 'ongoing' }, (wet) => ({
+        headline: t('nextHour.ongoing', {
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .with({ kind: 'upcoming', precision: 'minute' }, (wet) => ({
+        headline: t('nextHour.startsInMinutes', {
+          minutes: getMinutesUntil(wet.startsAt, now),
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .with({ kind: 'upcoming', precision: 'hour' }, (wet) => ({
+        headline: t('nextHour.startsAround', {
+          time: formatMoment(wet.startsAt, 'hour'),
+          subject: toSubject(wet.precipitationType),
+        }),
+        detail: formatEnd(wet),
+      }))
+      .exhaustive();
+}

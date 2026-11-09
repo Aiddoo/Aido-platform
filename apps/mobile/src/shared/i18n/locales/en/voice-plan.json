@@ -1,0 +1,82 @@
+{
+  "plan": {
+    "title_one": "Found {{count}} to-do",
+    "title_other": "Found {{count}} to-dos",
+    "titleMemoOnly": "Sorted into a memo",
+    "titleAlreadyAdded": "Already in your to-dos",
+    "guide": {
+      "label": "Only checked ones are added",
+      "title": "Review before adding",
+      "description": "Check the ones to add. Tap a to-do to edit its title, date, time, or repeat.",
+      "note": "Nothing is saved until you tap the button below"
+    },
+    "omitted_one": "{{count}} to-do couldn't be included here.",
+    "omitted_other": "{{count}} to-dos couldn't be included here.",
+    "empty": "No to-dos found",
+    "duplicate": "Already added",
+    "select": "Add {{title}}",
+    "editHint": "Edits this to-do",
+    "memoCaption": "Saves as a memo",
+    "apply_one": "Add {{count}} to-do",
+    "apply_other": "Add {{count}} to-dos",
+    "applyNothing": "Add to-dos",
+    "applyMemo": "Save memo"
+  },
+  "applied": {
+    "todos_one": "Added {{count}} to-do",
+    "todos_other": "Added {{count}} to-dos",
+    "todosAndMemo_one": "Saved {{count}} to-do and a memo",
+    "todosAndMemo_other": "Saved {{count}} to-dos and a memo",
+    "memo": "Saved your memo"
+  },
+  "edit": {
+    "confirm": "Done",
+    "titleLabel": "To-do title"
+  },
+  "failure": {
+    "consent-required": {
+      "title": "AI consent is needed to sort this out",
+      "description": "Try again to see the notice."
+    },
+    "network": {
+      "title": "You're offline",
+      "description": "Check your connection and try again."
+    },
+    "limit": {
+      "title": "You're out of tries this month",
+      "description": "More on the 1st of next month."
+    },
+    "too-long": {
+      "title": "That's too long",
+      "description": "Shorten it a little and try again."
+    },
+    "in-progress": {
+      "title": "Still working on it",
+      "description": "Please try again in a moment."
+    },
+    "ai-unavailable": {
+      "title": "Couldn't sort it out right now",
+      "description": "Please try again in a moment."
+    },
+    "unknown": {
+      "title": "Something went wrong",
+      "description": "Please try again in a moment."
+    },
+    "rejected": {
+      "title": "Some cards can't be saved",
+      "description": "Edit the cards and try again."
+    },
+    "key-conflict": {
+      "title": "The content changed",
+      "description": "Tap again to save the current version."
+    },
+    "memo-limit": {
+      "title": "You can't add more memos",
+      "description": "Delete a memo you don't need, then save again."
+    },
+    "source-memo-missing": {
+      "title": "We couldn't find this memo",
+      "description": "It was already deleted, so nothing was saved."
+    }
+  }
+}

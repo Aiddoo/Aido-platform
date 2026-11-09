@@ -16,7 +16,7 @@ import {
  * 관리자 알림 JobRuntime Processor (진입 어댑터).
  *
  * - dispatch-signup-summary: 스케줄러 트리거 → DispatchDailySignupSummary
- * - send-notification: Discord 웹훅 발송 → SendAdminNotification
+ * - send-notification: 관리자 알림 채널 발송 → SendAdminNotification
  *
  */
 
@@ -92,7 +92,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
       return;
     }
 
-    const { channel, notification } = job.data;
-    await this.sendAdminNotification.execute(channel, notification);
+    const { channel, notice } = job.data;
+    await this.sendAdminNotification.execute(channel, notice);
   }
 }

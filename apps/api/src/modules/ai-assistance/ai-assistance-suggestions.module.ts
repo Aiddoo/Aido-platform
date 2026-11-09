@@ -6,6 +6,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
 import { PlanningTodosModule } from "../planning/planning-todos.public.js";
 import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
+import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 import { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
 import {
@@ -15,9 +16,7 @@ import {
   suggestionContextBuilderProvider,
 } from "./ai-assistance-suggestions-application.providers.js";
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/suggestions/ai-suggestion.repository.port.js";
-import { RECURRING_TODO_CREATOR } from "./application/ports/suggestions/recurring-todo-creator.port.js";
 import { WEEKLY_REPORT_READER } from "./application/ports/suggestions/weekly-report-reader.port.js";
-import { RecurringTodoCreatorAdapter } from "./infrastructure/adapters/suggestions/recurring-todo-creator.adapter.js";
 import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/suggestions/weekly-report-reader.adapter.js";
 import { AiSuggestionQueueMaintenanceService } from "./infrastructure/jobs/suggestions/ai-suggestion-queue-maintenance.service.js";
 import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestions/suggestion-analysis.job.js";
@@ -36,8 +35,9 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
  * - 매일 KST 07:30 크론 → per-user 패턴 분석(pg-boss) → 새 제안 생성 + 알림
  *
  * ### 크로스모듈(전부 포트/어댑터로 역전)
- * - AiAssistanceParsingModule: AI_PROVIDER(Gemini)로 제안 생성
- * - PlanningTodosModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
+ * - AiAssistanceGenerationModule: AI_GENERATOR(동의 범위 안의 업체 폴백)로 제안 생성
+ * - AiAssistanceParsingModule: AI 데이터 처리 동의·앱 버전 reader
+ * - PlanningTodosModule: 수락 시 STAGED_TODO_CREATOR로 같은 트랜잭션에 반복 할 일을 만들고 효과는 커밋 뒤 실행
  * - AiAssistanceReportsModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
  * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
  * - NotificationDeliveryModule: 새 제안 생성 시 알림 발송(프로세서)
@@ -46,6 +46,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
   imports: [
     AccessModule,
     IdentityUserAccessModule,
+    AiAssistanceGenerationModule,
     AiAssistanceParsingModule,
     AiAssistanceReportsModule,
     NotificationDeliveryModule,
@@ -58,7 +59,6 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
       provide: AI_SUGGESTION_REPOSITORY,
       useClass: DrizzleAiSuggestionRepository,
     },
-    { provide: RECURRING_TODO_CREATOR, useClass: RecurringTodoCreatorAdapter },
     { provide: WEEKLY_REPORT_READER, useClass: WeeklyReportReaderAdapter },
     suggestionContextBuilderProvider,
     getPendingSuggestionsProvider,

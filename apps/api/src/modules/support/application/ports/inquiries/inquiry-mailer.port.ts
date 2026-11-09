@@ -3,11 +3,10 @@ import type { InquirySubmission } from "../../read-models/inquiries/inquiry-subm
 /** InquiryMailerPort DI 토큰 */
 export const INQUIRY_MAILER = Symbol("INQUIRY_MAILER");
 
-/** 문의 전달 결과 (성공 여부 + 실패 사유) */
-export interface InquiryDeliveryResult {
-  readonly success: boolean;
-  readonly error?: string;
-}
+/** 문의 전달 결과. 요청 안에서 한 번 보내고 실패하면 rejected로 돌려준다. */
+export type InquiryDeliveryResult =
+  | { readonly status: "sent" }
+  | { readonly status: "rejected"; readonly reason: string };
 
 /**
  * 문의 전달 포트 — 벤더 중립 계약.

@@ -1,14 +1,16 @@
-import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
-import type { AppEventMap, FeatureKey } from '@src/shared/observability/telemetry-keys';
+import { useAnalytics, useFeatureAttribution, useLogger } from '@src/shared/di/shared-di-context';
 import { useCallback } from 'react';
 
+import type { AppEventMap } from './event-map';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
+import type { FeatureKey } from './feature-key';
+import { track } from './track';
 
-/** `track()`의 hook 버전 — DI에서 Analytics를 받아 타입 이벤트만 전송한다. */
-export const useTrack = () => {
+export function useTrack() {
   const analytics = useAnalytics();
   const featureAttribution = useFeatureAttribution();
+  const logger = useLogger();
 
   const trackEvent = useCallback(
     <E extends keyof AppEventMap & string>(
@@ -17,17 +19,27 @@ export const useTrack = () => {
         ? []
         : [params: AppEventMap[E] & AnalyticsEventParams]
     ): void => {
-      const [params] = args;
-      analytics.trackEvent(eventName, params);
+      track(analytics, eventName, ...args);
     },
     [analytics],
   );
 
   const trackAttributedFeatureSuccess = useCallback(
-    ({ accountId, feature }: { accountId: string; feature: FeatureKey }): boolean =>
-      emitAttributedFeatureSuccess(analytics, featureAttribution, { accountId, feature }),
-    [analytics, featureAttribution],
+    ({ accountId, feature }: { accountId: string; feature: FeatureKey }): void =>
+      emitAttributedFeatureSuccess(
+        { analytics, attribution: featureAttribution, logger },
+        { accountId, feature },
+      ),
+    [analytics, featureAttribution, logger],
   );
 
-  return { trackEvent, trackAttributedFeatureSuccess };
-};
+  const clearUser = useCallback(() => {
+    analytics.clearUser();
+  }, [analytics]);
+
+  const resetData = useCallback(() => {
+    analytics.resetData();
+  }, [analytics]);
+
+  return { trackEvent, trackAttributedFeatureSuccess, clearUser, resetData };
+}

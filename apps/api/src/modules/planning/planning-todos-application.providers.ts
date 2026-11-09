@@ -6,27 +6,43 @@ import {
   DOMAIN_EVENT_PUBLISHER,
   MUTATION_LOCK,
 } from "#api/shared/application/ports/index";
+import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 
+import { TODO_SERIES_OWNER } from "./application/ports/series/todo-series-owner.port.js";
+import { TODO_SERIES_REPOSITORY } from "./application/ports/series/todo-series.repository.port.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE } from "./application/ports/todos/todo-cache.port.js";
+import { TODO_OWNER_TIMEZONE } from "./application/ports/todos/todo-owner-timezone.port.js";
 import { TODO_READ_REPOSITORY } from "./application/ports/todos/todo-read.repository.port.js";
+import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
+import { TodoOccurrenceMaterializer } from "./application/services/series/todo-occurrence-materializer.service.js";
+import { TodoSeriesCatchUp } from "./application/services/series/todo-series-catch-up.service.js";
+import { TodoSeriesDueRunner } from "./application/services/series/todo-series-due-runner.service.js";
+import { TodoSeriesEditEffects } from "./application/services/series/todo-series-edit-effects.service.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
 import { TodoCreationWriter } from "./application/services/todos/todo-creation-writer.service.js";
+import { TodoTimezoneResolver } from "./application/services/todos/todo-timezone-resolver.service.js";
+import { GetTodoSeries } from "./application/use-cases/series/get-todo-series.use-case.js";
+import { MaterializeDueTodoSeries } from "./application/use-cases/series/materialize-due-todo-series.use-case.js";
+import { StartSeriesFromTodo } from "./application/use-cases/series/start-series-from-todo.use-case.js";
+import { StopTodoSeries } from "./application/use-cases/series/stop-todo-series.use-case.js";
+import { UpdateFollowingTodos } from "./application/use-cases/series/update-following-todos.use-case.js";
 import { AddTodoItem } from "./application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "./application/use-cases/todos/change-todo-category.use-case.js";
-import { CreateRecurringTodos } from "./application/use-cases/todos/create-recurring-todos.use-case.js";
 import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
 import { DeleteTodoItem } from "./application/use-cases/todos/delete-todo-item.use-case.js";
 import { DeleteTodo } from "./application/use-cases/todos/delete-todo.use-case.js";
+import { EditTodo } from "./application/use-cases/todos/edit-todo.use-case.js";
 import { GetFriendTodos } from "./application/use-cases/todos/get-friend-todos.use-case.js";
 import { GetTodoById } from "./application/use-cases/todos/get-todo-by-id.use-case.js";
 import { GetTodoResourceLimit } from "./application/use-cases/todos/get-todo-resource-limit.use-case.js";
 import { GetTodoSummary } from "./application/use-cases/todos/get-todo-summary.use-case.js";
 import { GetTodos } from "./application/use-cases/todos/get-todos.use-case.js";
+import { RebaseTodoTimezone } from "./application/use-cases/todos/rebase-todo-timezone.use-case.js";
 import { ReorderTodoItems } from "./application/use-cases/todos/reorder-todo-items.use-case.js";
 import { ReorderTodo } from "./application/use-cases/todos/reorder-todo.use-case.js";
 import { ToggleTodoComplete } from "./application/use-cases/todos/toggle-todo-complete.use-case.js";
@@ -35,6 +51,99 @@ import { UpdateTodoSchedule } from "./application/use-cases/todos/update-todo-sc
 import { UpdateTodoTitle } from "./application/use-cases/todos/update-todo-title.use-case.js";
 import { UpdateTodoVisibility } from "./application/use-cases/todos/update-todo-visibility.use-case.js";
 import { UpdateTodo } from "./application/use-cases/todos/update-todo.use-case.js";
+
+export const todoTimezoneResolverProvider: FactoryProvider<TodoTimezoneResolver> = {
+  provide: TodoTimezoneResolver,
+  inject: [TODO_OWNER_TIMEZONE],
+  useFactory: (
+    ownerTimezone: ConstructorParameters<typeof TodoTimezoneResolver>[0]["ownerTimezone"],
+  ) => new TodoTimezoneResolver({ ownerTimezone }),
+};
+
+export const rebaseTodoTimezoneProvider: FactoryProvider<RebaseTodoTimezone> = {
+  provide: RebaseTodoTimezone,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TODO_OWNER_TIMEZONE,
+    TODO_REMINDER,
+    TODO_CACHE,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof RebaseTodoTimezone>[0]["seriesRepository"],
+    ownerTimezone: ConstructorParameters<typeof RebaseTodoTimezone>[0]["ownerTimezone"],
+    todoReminder: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoReminder"],
+    todoCache: ConstructorParameters<typeof RebaseTodoTimezone>[0]["todoCache"],
+    unitOfWork: ConstructorParameters<typeof RebaseTodoTimezone>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof RebaseTodoTimezone>[0]["mutationLock"],
+  ) =>
+    new RebaseTodoTimezone({
+      todoRepository,
+      seriesRepository,
+      ownerTimezone,
+      todoReminder,
+      todoCache,
+      unitOfWork,
+      mutationLock,
+      logger: new Logger(RebaseTodoTimezone.name),
+    }),
+};
+
+export const todoSeriesDueRunnerProvider: FactoryProvider<TodoSeriesDueRunner> = {
+  provide: TodoSeriesDueRunner,
+  inject: [
+    TODO_SERIES_REPOSITORY,
+    TodoOccurrenceMaterializer,
+    TodoCreationEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["materializer"],
+    effects: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof TodoSeriesDueRunner>[0]["mutationLock"],
+  ) =>
+    new TodoSeriesDueRunner({ seriesRepository, materializer, effects, unitOfWork, mutationLock }),
+};
+
+export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
+  provide: TodoSeriesCatchUp,
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesOwner"],
+    dueRunner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRunner"],
+  ) =>
+    new TodoSeriesCatchUp({
+      seriesRepository,
+      seriesOwner,
+      dueRunner,
+      logger: new Logger(TodoSeriesCatchUp.name),
+    }),
+};
+
+export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
+  provide: MaterializeDueTodoSeries,
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRunner, OPERATIONAL_ALERT],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesOwner"],
+    dueRunner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRunner"],
+    alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
+  ) =>
+    new MaterializeDueTodoSeries({
+      seriesRepository,
+      seriesOwner,
+      dueRunner,
+      alert,
+      logger: new Logger(MaterializeDueTodoSeries.name),
+    }),
+};
 
 export const getFriendTodosProvider: FactoryProvider<GetFriendTodos> = {
   provide: GetFriendTodos,
@@ -71,35 +180,46 @@ export const getTodoResourceLimitProvider: FactoryProvider<GetTodoResourceLimit>
 
 export const getTodoSummaryProvider: FactoryProvider<GetTodoSummary> = {
   provide: GetTodoSummary,
-  inject: [TODO_READ_REPOSITORY, STREAK_PORT],
+  inject: [TODO_READ_REPOSITORY, STREAK_PORT, TodoSeriesCatchUp],
   useFactory: (
     todoReadRepository: ConstructorParameters<typeof GetTodoSummary>[0]["todoReadRepository"],
     streakPort: ConstructorParameters<typeof GetTodoSummary>[0]["streakPort"],
-  ) => new GetTodoSummary({ todoReadRepository, streakPort }),
+    seriesCatchUp: ConstructorParameters<typeof GetTodoSummary>[0]["seriesCatchUp"],
+  ) => new GetTodoSummary({ todoReadRepository, streakPort, seriesCatchUp }),
 };
 
 export const getTodosProvider: FactoryProvider<GetTodos> = {
   provide: GetTodos,
-  inject: [TODO_READ_REPOSITORY, PaginationService],
+  inject: [TODO_READ_REPOSITORY, PaginationService, TodoSeriesCatchUp],
   useFactory: (
     todoReadRepository: ConstructorParameters<typeof GetTodos>[0]["todoReadRepository"],
     paginationService: ConstructorParameters<typeof GetTodos>[0]["paginationService"],
+    seriesCatchUp: ConstructorParameters<typeof GetTodos>[0]["seriesCatchUp"],
   ) =>
     new GetTodos({
       todoReadRepository,
       paginationService,
+      seriesCatchUp,
     }),
 };
 
 export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
   provide: AddTodoItem,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof AddTodoItem>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof AddTodoItem>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof AddTodoItem>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof AddTodoItem>[0]["eventPublisher"],
   ) =>
     new AddTodoItem({
       todoRepository,
@@ -107,6 +227,7 @@ export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
       unitOfWork,
       mutationLock,
       todoCache,
+      eventPublisher,
       logger: new Logger(AddTodoItem.name),
     }),
 };
@@ -143,13 +264,34 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
     }),
 };
 
+export const todoOccurrenceMaterializerProvider: FactoryProvider<TodoOccurrenceMaterializer> = {
+  provide: TodoOccurrenceMaterializer,
+  inject: [TODO_REPOSITORY, TODO_REMINDER],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof TodoOccurrenceMaterializer>[0]["todoRepository"],
+    todoReminder: ConstructorParameters<typeof TodoOccurrenceMaterializer>[0]["todoReminder"],
+  ) => new TodoOccurrenceMaterializer({ todoRepository, todoReminder }),
+};
+
 export const todoCreationWriterProvider: FactoryProvider<TodoCreationWriter> = {
   provide: TodoCreationWriter,
-  inject: [TODO_REPOSITORY, CATEGORY_OWNERSHIP],
+  inject: [TODO_REPOSITORY, TODO_SERIES_REPOSITORY, TodoOccurrenceMaterializer, CATEGORY_OWNERSHIP],
   useFactory: (
     todoRepository: ConstructorParameters<typeof TodoCreationWriter>[0]["todoRepository"],
+    todoSeriesRepository: ConstructorParameters<
+      typeof TodoCreationWriter
+    >[0]["todoSeriesRepository"],
+    occurrenceMaterializer: ConstructorParameters<
+      typeof TodoCreationWriter
+    >[0]["occurrenceMaterializer"],
     categoryOwnership: ConstructorParameters<typeof TodoCreationWriter>[0]["categoryOwnership"],
-  ) => new TodoCreationWriter({ todoRepository, categoryOwnership }),
+  ) =>
+    new TodoCreationWriter({
+      todoRepository,
+      todoSeriesRepository,
+      occurrenceMaterializer,
+      categoryOwnership,
+    }),
 };
 
 export const todoCreationEffectsProvider: FactoryProvider<TodoCreationEffects> = {
@@ -168,55 +310,42 @@ export const todoCreationEffectsProvider: FactoryProvider<TodoCreationEffects> =
 
 export const stagedTodoCreatorProvider: FactoryProvider<StagedTodoCreator> = {
   provide: StagedTodoCreator,
-  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY],
+  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY, TodoTimezoneResolver],
   useFactory: (
     writer: ConstructorParameters<typeof StagedTodoCreator>[0]["writer"],
     effects: ConstructorParameters<typeof StagedTodoCreator>[0]["effects"],
     todoReadRepository: ConstructorParameters<typeof StagedTodoCreator>[0]["todoReadRepository"],
-  ) => new StagedTodoCreator({ writer, effects, todoReadRepository }),
-};
-
-export const createRecurringTodosProvider: FactoryProvider<CreateRecurringTodos> = {
-  provide: CreateRecurringTodos,
-  inject: [
-    TodoCreationWriter,
-    TodoCreationEffects,
-    TODO_READ_REPOSITORY,
-    UNIT_OF_WORK,
-    MUTATION_LOCK,
-  ],
-  useFactory: (
-    writer: ConstructorParameters<typeof CreateRecurringTodos>[0]["writer"],
-    effects: ConstructorParameters<typeof CreateRecurringTodos>[0]["effects"],
-    todoReadRepository: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoReadRepository"],
-    unitOfWork: ConstructorParameters<typeof CreateRecurringTodos>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof CreateRecurringTodos>[0]["mutationLock"],
-  ) => new CreateRecurringTodos({ writer, effects, todoReadRepository, unitOfWork, mutationLock }),
+    timezoneResolver: ConstructorParameters<typeof StagedTodoCreator>[0]["timezoneResolver"],
+  ) => new StagedTodoCreator({ writer, effects, todoReadRepository, timezoneResolver }),
 };
 
 export const createTodoProvider: FactoryProvider<CreateTodo> = {
   provide: CreateTodo,
-  inject: [
-    TodoCreationWriter,
-    TodoCreationEffects,
-    TODO_READ_REPOSITORY,
-    UNIT_OF_WORK,
-    MUTATION_LOCK,
-  ],
+  inject: [StagedTodoCreator, UNIT_OF_WORK, MUTATION_LOCK],
   useFactory: (
-    writer: ConstructorParameters<typeof CreateTodo>[0]["writer"],
-    effects: ConstructorParameters<typeof CreateTodo>[0]["effects"],
-    todoReadRepository: ConstructorParameters<typeof CreateTodo>[0]["todoReadRepository"],
+    todoCreator: ConstructorParameters<typeof CreateTodo>[0]["todoCreator"],
     unitOfWork: ConstructorParameters<typeof CreateTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof CreateTodo>[0]["mutationLock"],
-  ) => new CreateTodo({ writer, effects, todoReadRepository, unitOfWork, mutationLock }),
+  ) => new CreateTodo({ todoCreator, unitOfWork, mutationLock }),
 };
 
 export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
   provide: DeleteTodo,
-  inject: [TODO_REPOSITORY, TODO_CACHE, UNIT_OF_WORK, MUTATION_LOCK, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TodoSeriesEditEffects,
+    TODO_REMINDER,
+    TODO_CACHE,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof DeleteTodo>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof DeleteTodo>[0]["seriesRepository"],
+    seriesEffects: ConstructorParameters<typeof DeleteTodo>[0]["seriesEffects"],
+    todoReminder: ConstructorParameters<typeof DeleteTodo>[0]["todoReminder"],
     todoCache: ConstructorParameters<typeof DeleteTodo>[0]["todoCache"],
     unitOfWork: ConstructorParameters<typeof DeleteTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof DeleteTodo>[0]["mutationLock"],
@@ -224,11 +353,128 @@ export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
   ) =>
     new DeleteTodo({
       todoRepository,
+      seriesRepository,
+      seriesEffects,
+      todoReminder,
       todoCache,
       unitOfWork,
       mutationLock,
       eventPublisher,
       logger: new Logger(DeleteTodo.name),
+    }),
+};
+
+export const todoSeriesEditEffectsProvider: FactoryProvider<TodoSeriesEditEffects> = {
+  provide: TodoSeriesEditEffects,
+  inject: [TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  useFactory: (
+    todoCache: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["eventPublisher"],
+  ) =>
+    new TodoSeriesEditEffects({
+      todoCache,
+      eventPublisher,
+      logger: new Logger(TodoSeriesEditEffects.name),
+    }),
+};
+
+export const getTodoSeriesProvider: FactoryProvider<GetTodoSeries> = {
+  provide: GetTodoSeries,
+  inject: [TODO_SERIES_REPOSITORY],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof GetTodoSeries>[0]["seriesRepository"],
+  ) => new GetTodoSeries({ seriesRepository }),
+};
+
+export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
+  provide: StopTodoSeries,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TODO_REMINDER,
+    TodoSeriesEditEffects,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof StopTodoSeries>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof StopTodoSeries>[0]["seriesRepository"],
+    todoReminder: ConstructorParameters<typeof StopTodoSeries>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof StopTodoSeries>[0]["effects"],
+    mutationLock: ConstructorParameters<typeof StopTodoSeries>[0]["mutationLock"],
+  ) =>
+    new StopTodoSeries({
+      todoRepository,
+      seriesRepository,
+      todoReminder,
+      effects,
+      mutationLock,
+      logger: new Logger(StopTodoSeries.name),
+    }),
+};
+
+export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodo> = {
+  provide: StartSeriesFromTodo,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TodoOccurrenceMaterializer,
+    TODO_REMINDER,
+    TodoCreationEffects,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof StartSeriesFromTodo>[0]["materializer"],
+    todoReminder: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof StartSeriesFromTodo>[0]["effects"],
+    mutationLock: ConstructorParameters<typeof StartSeriesFromTodo>[0]["mutationLock"],
+  ) =>
+    new StartSeriesFromTodo({
+      todoRepository,
+      seriesRepository,
+      materializer,
+      todoReminder,
+      effects,
+      mutationLock,
+    }),
+};
+
+export const updateFollowingTodosProvider: FactoryProvider<UpdateFollowingTodos> = {
+  provide: UpdateFollowingTodos,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    CATEGORY_OWNERSHIP,
+    TodoOccurrenceMaterializer,
+    TODO_REMINDER,
+    TodoSeriesEditEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoReadRepository"],
+    seriesRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["seriesRepository"],
+    categoryOwnership: ConstructorParameters<typeof UpdateFollowingTodos>[0]["categoryOwnership"],
+    materializer: ConstructorParameters<typeof UpdateFollowingTodos>[0]["materializer"],
+    todoReminder: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoReminder"],
+    effects: ConstructorParameters<typeof UpdateFollowingTodos>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof UpdateFollowingTodos>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateFollowingTodos>[0]["mutationLock"],
+  ) =>
+    new UpdateFollowingTodos({
+      todoRepository,
+      todoReadRepository,
+      seriesRepository,
+      categoryOwnership,
+      materializer,
+      todoReminder,
+      effects,
+      unitOfWork,
+      mutationLock,
+      logger: new Logger(UpdateFollowingTodos.name),
     }),
 };
 
@@ -321,6 +567,40 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
     }),
 };
 
+export const editTodoProvider: FactoryProvider<EditTodo> = {
+  provide: EditTodo,
+  inject: [
+    UpdateTodo,
+    UpdateFollowingTodos,
+    StartSeriesFromTodo,
+    StopTodoSeries,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TodoTimezoneResolver,
+  ],
+  useFactory: (
+    updateTodo: ConstructorParameters<typeof EditTodo>[0]["updateTodo"],
+    updateFollowingTodos: ConstructorParameters<typeof EditTodo>[0]["updateFollowingTodos"],
+    startSeriesFromTodo: ConstructorParameters<typeof EditTodo>[0]["startSeriesFromTodo"],
+    stopTodoSeries: ConstructorParameters<typeof EditTodo>[0]["stopTodoSeries"],
+    todoReadRepository: ConstructorParameters<typeof EditTodo>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof EditTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof EditTodo>[0]["mutationLock"],
+    timezoneResolver: ConstructorParameters<typeof EditTodo>[0]["timezoneResolver"],
+  ) =>
+    new EditTodo({
+      updateTodo,
+      updateFollowingTodos,
+      startSeriesFromTodo,
+      stopTodoSeries,
+      todoReadRepository,
+      unitOfWork,
+      mutationLock,
+      timezoneResolver,
+    }),
+};
+
 export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
   provide: UpdateTodo,
   inject: [
@@ -382,6 +662,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
     MUTATION_LOCK,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
+    TodoTimezoneResolver,
   ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoRepository"],
@@ -390,6 +671,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
     mutationLock: ConstructorParameters<typeof UpdateTodoSchedule>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodoSchedule>[0]["eventPublisher"],
+    timezoneResolver: ConstructorParameters<typeof UpdateTodoSchedule>[0]["timezoneResolver"],
   ) =>
     new UpdateTodoSchedule({
       todoRepository,
@@ -398,6 +680,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
       mutationLock,
       todoCache,
       eventPublisher,
+      timezoneResolver,
       logger: new Logger(UpdateTodoSchedule.name),
     }),
 };

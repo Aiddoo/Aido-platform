@@ -1,125 +1,68 @@
-import {
-  AI_PARSE_LIMITS,
-  CHEER_LIMITS,
-  FOLLOW_LIMITS,
-  NUDGE_LIMITS,
-  TODO_CATEGORY_LIMITS,
-} from "@aido/api/vocabulary";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
 
-import {
-  Feature,
-  NO_RESOURCE_BONUSES,
-  Resource,
-} from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import { NO_RESOURCE_BONUSES } from "../../../domain/policies/entitlement/entitlement.policy.js";
 
 describe("EntitlementService", () => {
-  it.each([{ feature: Feature.CHEER }, { feature: Feature.NUDGE }, { feature: Feature.AI_PARSE }])(
-    "ADMIN의 $feature 기능은 무료 구독에서도 무제한이다",
-    async ({ feature }) => {
+  it.each(["CHEER", "NUDGE", "AI_PARSE", "FRIEND", "TODO_CATEGORY"] as const)(
+    "ADMIN의 %s 한도는 무료 구독에서도 무제한이다",
+    async (feature) => {
       // Given
       const fixture = createEntitlementFixture({ role: "ADMIN" });
       // When
-      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
+      const limit = await fixture.service.getLimit(fixture.userId, feature);
       // Then
-      expect(entitlement).toEqual({ dailyLimit: null, isAdmin: true, subscriptionStatus: "FREE" });
-    },
-  );
-
-  it.each([{ feature: Feature.CHEER }, { feature: Feature.NUDGE }, { feature: Feature.AI_PARSE }])(
-    "ACTIVE 사용자의 $feature 기능은 무제한이다",
-    async ({ feature }) => {
-      // Given
-      const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-      // When
-      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
-      // Then
-      expect(entitlement).toEqual({
-        dailyLimit: null,
-        isAdmin: false,
-        subscriptionStatus: "ACTIVE",
-      });
+      expect(limit).toBeNull();
     },
   );
 
   it.each([
-    { status: "FREE", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
-    { status: "FREE", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
-    { status: "FREE", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
-    { status: "EXPIRED", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
-    { status: "EXPIRED", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
-    { status: "EXPIRED", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
-    { status: "CANCELLED", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
-    { status: "CANCELLED", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
-    { status: "CANCELLED", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
-  ])(
-    "$status 구독의 $feature 기능은 정의된 기간 한도 $limit 를 적용한다",
-    async ({ status, feature, limit }) => {
-      // Given
-      const fixture = createEntitlementFixture({ subscriptionStatus: status });
-      // When
-      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
-      // Then
-      expect(entitlement).toEqual({
-        dailyLimit: limit,
-        isAdmin: false,
-        subscriptionStatus: status,
-      });
-    },
-  );
+    { feature: "CHEER" as const, limit: null },
+    { feature: "NUDGE" as const, limit: null },
+    { feature: "AI_PARSE" as const, limit: null },
+    { feature: "FRIEND" as const, limit: null },
+    { feature: "TODO_CATEGORY" as const, limit: PLAN_CATALOG.TODO_CATEGORY.premium },
+  ])("ACTIVE 사용자의 $feature 표시 한도는 $limit이다", async ({ feature, limit }) => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+    // When
+    const result = await fixture.service.getLimit(fixture.userId, feature);
+    // Then
+    expect(result).toBe(limit);
+  });
 
-  it.each([{ resource: Resource.FRIEND }, { resource: Resource.CATEGORY }])(
-    "ADMIN의 $resource 보유량은 무제한이다",
-    async ({ resource }) => {
-      // Given
-      const fixture = createEntitlementFixture({ role: "ADMIN" });
-      // When
-      const entitlement = await fixture.service.getResourceLimit(fixture.userId, resource);
-      // Then
-      expect(entitlement).toEqual({ maxCount: null, isAdmin: true, subscriptionStatus: "FREE" });
-    },
-  );
-
-  it.each([
-    { status: "ACTIVE", resource: Resource.FRIEND, limit: null },
-    { status: "ACTIVE", resource: Resource.CATEGORY, limit: TODO_CATEGORY_LIMITS.ACTIVE_MAX_COUNT },
-    { status: "FREE", resource: Resource.FRIEND, limit: FOLLOW_LIMITS.FREE_MAX_FRIENDS },
-    { status: "FREE", resource: Resource.CATEGORY, limit: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT },
-    { status: "CANCELLED", resource: Resource.FRIEND, limit: FOLLOW_LIMITS.FREE_MAX_FRIENDS },
-  ])(
-    "$status 사용자의 $resource 보유량은 한도 $limit 를 적용한다",
-    async ({ status, resource, limit }) => {
-      // Given
-      const fixture = createEntitlementFixture({ subscriptionStatus: status });
-      // When
-      const entitlement = await fixture.service.getResourceLimit(fixture.userId, resource);
-      // Then
-      expect(entitlement).toEqual({ maxCount: limit, isAdmin: false, subscriptionStatus: status });
-    },
-  );
+  it.each(
+    ["FREE", "EXPIRED", "CANCELLED"].flatMap((status) =>
+      (["CHEER", "NUDGE", "AI_PARSE", "FRIEND", "TODO_CATEGORY"] as const).map((feature) => ({
+        status,
+        feature,
+      })),
+    ),
+  )("$status 구독의 $feature는 카탈로그 무료 한도를 적용한다", async ({ status, feature }) => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: status });
+    // When
+    const limit = await fixture.service.getLimit(fixture.userId, feature);
+    // Then
+    expect(limit).toBe(PLAN_CATALOG[feature].free);
+  });
 
   it("읽기 캐시는 저장 상태가 없어져도 warm snapshot을 반환하고 무효화 후 다시 조회한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-    await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+    await fixture.service.getLimit(fixture.userId, "AI_PARSE");
     fixture.database.users.delete(fixture.userId);
     // When
-    expect(await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE)).toMatchObject({
-      dailyLimit: null,
-      subscriptionStatus: "ACTIVE",
-    });
+    const warm = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
     await fixture.cache.invalidateSubscription(fixture.userId);
+    const cold = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
     // Then
-    expect(await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE)).toEqual({
-      dailyLimit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-      isAdmin: false,
-      subscriptionStatus: "FREE",
-    });
+    expect([warm, cold]).toEqual([null, PLAN_CATALOG.AI_PARSE.free]);
   });
 
   it.each([
-    { status: "FREE", expected: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
+    { status: "FREE", expected: PLAN_CATALOG.AI_PARSE.free },
     { status: "ACTIVE", expected: null },
   ])(
     "쓰기 판정은 warm cache와 달라진 최신 $status 상태를 사용한다",
@@ -128,64 +71,47 @@ describe("EntitlementService", () => {
       const fixture = createEntitlementFixture({
         subscriptionStatus: status === "FREE" ? "ACTIVE" : "FREE",
       });
-      await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+      await fixture.service.getLimit(fixture.userId, "AI_PARSE");
       fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
       // When
-      const entitlement = await fixture.service.getFeatureLimitInTx(
-        fixture.userId,
-        Feature.AI_PARSE,
-      );
+      const limit = await fixture.service.getLimitInTx(fixture.userId, "AI_PARSE");
       // Then
-      expect(entitlement).toEqual({
-        dailyLimit: expected,
-        isAdmin: false,
-        subscriptionStatus: status,
-      });
+      expect(limit).toBe(expected);
     },
   );
 
   it("카테고리 쓰기 한도는 유료 cache가 남아 있어도 최신 무료 상태를 사용한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-    await fixture.service.getResourceLimit(fixture.userId, Resource.CATEGORY);
+    await fixture.service.getLimit(fixture.userId, "TODO_CATEGORY");
     fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
     // When
-    const entitlement = await fixture.service.getResourceLimitInTx(
-      fixture.userId,
-      Resource.CATEGORY,
-    );
+    const limit = await fixture.service.getLimitInTx(fixture.userId, "TODO_CATEGORY");
     // Then
-    expect(entitlement).toEqual({
-      maxCount: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
-      isAdmin: false,
-      subscriptionStatus: "FREE",
-    });
+    expect(limit).toBe(PLAN_CATALOG.TODO_CATEGORY.free);
   });
 
   it("존재하지 않는 사용자는 읽기와 쓰기 모두 무료 기본 한도를 적용한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ exists: false });
     // When
-    const cached = await fixture.service.getFeatureLimit(fixture.userId, Feature.CHEER);
-    const fresh = await fixture.service.getFeatureLimitInTx(fixture.userId, Feature.CHEER);
+    const cached = await fixture.service.getLimit(fixture.userId, "CHEER");
+    const fresh = await fixture.service.getLimitInTx(fixture.userId, "CHEER");
     // Then
-    expect(cached).toEqual({
-      dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
-      isAdmin: false,
-      subscriptionStatus: "FREE",
-    });
-    expect(fresh).toEqual(cached);
+    expect([cached, fresh]).toEqual([PLAN_CATALOG.CHEER.free, PLAN_CATALOG.CHEER.free]);
   });
 
   it("알 수 없는 구독 상태는 무료 기본 한도로 안전하게 판정한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ subscriptionStatus: "UNRECOGNIZED" });
     // When
-    const feature = await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
-    const resource = await fixture.service.getResourceLimit(fixture.userId, Resource.CATEGORY);
+    const aiParse = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
+    const category = await fixture.service.getLimit(fixture.userId, "TODO_CATEGORY");
     // Then
-    expect(feature.dailyLimit).toBe(AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT);
-    expect(resource.maxCount).toBe(TODO_CATEGORY_LIMITS.FREE_MAX_COUNT);
+    expect([aiParse, category]).toEqual([
+      PLAN_CATALOG.AI_PARSE.free,
+      PLAN_CATALOG.TODO_CATEGORY.free,
+    ]);
     expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
@@ -204,18 +130,6 @@ describe("EntitlementService", () => {
     expect(result).toBe(allowed);
   });
 
-  it.each([
-    { limit: null, used: 1_000, expected: null },
-    { limit: 5, used: 7, expected: 0 },
-    { limit: 5, used: 2, expected: 3 },
-  ])("한도 $limit 와 사용량 $used 의 남은 횟수는 $expected 이다", ({ limit, used, expected }) => {
-    // Given
-    const fixture = createEntitlementFixture();
-    // When
-    const remaining = fixture.service.calculateRemaining(limit, used);
-    // Then
-    expect(remaining).toBe(expected);
-  });
   it.each(["FREE", "EXPIRED", "CANCELLED"])(
     "fresh premium은 warm ACTIVE cache와 달라진 %s 상태를 읽는다",
     async (status) => {
@@ -231,6 +145,95 @@ describe("EntitlementService", () => {
     expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(true);
     fixture.database.users.delete(fixture.userId);
     expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
+  });
+
+  describe("한도 오류 featureQuota", () => {
+    const RESETS_AT = new Date("2028-03-04T15:00:00.000Z");
+
+    it.each(["CHEER", "NUDGE"] as const)(
+      "무료 %s 일간 한도를 다 쓰면 남은 횟수 0과 다음 자정을 돌려준다",
+      async (feature) => {
+        // Given
+        const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+        const used = PLAN_CATALOG[feature].free;
+
+        // When
+        const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, feature, {
+          used,
+          resetsAt: RESETS_AT,
+        });
+
+        // Then
+        expect(quota).toEqual({
+          feature,
+          allowed: true,
+          limit: used,
+          used,
+          remaining: 0,
+          period: "day",
+          resetsAt: RESETS_AT.toISOString(),
+          isFairUse: false,
+          perUse: null,
+        });
+      },
+    );
+
+    it("친구 한도는 초대 보상 자리를 더하고 resource라 resetsAt이 null이다", async () => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+      fixture.database.resourceBonuses.set(fixture.userId, { FRIEND: 2 });
+      const limit = PLAN_CATALOG.FRIEND.free + 2;
+
+      // When
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "FRIEND", {
+        used: limit,
+        resetsAt: null,
+      });
+
+      // Then
+      expect(quota).toMatchObject({
+        feature: "FRIEND",
+        limit,
+        used: limit,
+        remaining: 0,
+        period: null,
+        resetsAt: null,
+      });
+    });
+
+    it.each([
+      { role: "USER", status: "FREE", limit: PLAN_CATALOG.TODO_CATEGORY.free },
+      { role: "USER", status: "ACTIVE", limit: PLAN_CATALOG.TODO_CATEGORY.premium },
+      { role: "ADMIN", status: "FREE", limit: null },
+    ])("$role·$status 카테고리 한도는 $limit이다", async ({ role, status, limit }) => {
+      // Given
+      const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
+
+      // When
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
+        used: 3,
+        resetsAt: null,
+      });
+
+      // Then
+      expect(quota).toMatchObject({ limit, used: 3 });
+    });
+
+    it("유료 캐시가 남아 있어도 최신 무료 상태로 계산한다", async () => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+      await fixture.service.getLimit(fixture.userId, "CHEER");
+      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
+
+      // When
+      const quota = await fixture.service.readFeatureQuotaInTx(fixture.userId, "CHEER", {
+        used: PLAN_CATALOG.CHEER.free,
+        resetsAt: RESETS_AT,
+      });
+
+      // Then
+      expect(quota).toMatchObject({ limit: PLAN_CATALOG.CHEER.free, remaining: 0 });
+    });
   });
 
   describe("보상 기간 종료 경계", () => {
@@ -251,11 +254,11 @@ describe("EntitlementService", () => {
       vi.setSystemTime(ENDS_AT);
       const cached = await fixture.service.can(fixture.userId, "AI_REPORT");
       const fresh = await fixture.service.canInTx(fixture.userId, "AI_REPORT");
-      const limit = await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+      const limit = await fixture.service.getLimit(fixture.userId, "AI_PARSE");
 
       // Then
       expect([before, cached, fresh]).toEqual([true, false, false]);
-      expect(limit).toMatchObject({ subscriptionStatus: "EXPIRED" });
+      expect(limit).toBe(PLAN_CATALOG.AI_PARSE.free);
     });
 
     it("기한이 없는 1.13.0 이전 캐시는 기존처럼 상태를 그대로 쓴다", async () => {

@@ -28,10 +28,11 @@ export class UpdateMarketingPushConsent {
   async execute(
     input: UpdateMarketingPushConsentInput,
   ): Promise<UpdateMarketingPushConsentResponse> {
+    const processedAt = now();
     const updated = await this.#dependencies.consentRepository.upsertMarketingPushConsent(
       input.userId,
       {
-        agreedAt: resolveMarketingAgreement(input.agreed, now()),
+        agreedAt: resolveMarketingAgreement(input.agreed, processedAt),
       },
     );
     this.#dependencies.logger.log({
@@ -39,6 +40,6 @@ export class UpdateMarketingPushConsent {
       userId: input.userId,
       agreed: input.agreed,
     });
-    return buildMarketingPushConsentView(updated);
+    return buildMarketingPushConsentView(updated, processedAt);
   }
 }

@@ -5,7 +5,7 @@ HeroUI Native Avatar를 확장한 공용 아바타 컴포넌트. `isSelected` pr
 ## 사용법
 
 ```tsx
-import { Avatar } from '@src/shared/ui/avatar/avatar';
+import { Avatar } from '@src/shared/ui';
 
 // 기본 사용 (선택 UI 없음)
 <Avatar size="lg" alt="프로필">
@@ -21,7 +21,7 @@ import { Avatar } from '@src/shared/ui/avatar/avatar';
 ### 선택 그리드 패턴
 
 ```tsx
-import { Avatar } from '@src/shared/ui/avatar/avatar';
+import { Avatar } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 
 <PressableFeedback onPress={handleSelect} className="rounded-2xl overflow-visible">
@@ -57,11 +57,11 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 
 ### isSelected 동작
 
-| 값          | border      | 체크 배지 | 용도                             |
-| ----------- | ----------- | --------- | -------------------------------- |
-| `undefined` | 없음        | 없음      | 비선택 컨텍스트 (ProfileCard 등) |
-| `false`     | gray border | 없음      | 선택 가능하지만 미선택           |
-| `true`      | main border | 표시      | 선택됨                           |
+| 값          | border      | 체크 배지 | 용도                            |
+| ----------- | ----------- | --------- | ------------------------------- |
+| `undefined` | 없음        | 없음      | 비선택 컨텍스트 (ProfileRow 등) |
+| `false`     | gray border | 없음      | 선택 가능하지만 미선택          |
+| `true`      | main border | 표시      | 선택됨                          |
 
 ### Sub-components
 
@@ -74,7 +74,10 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 ## 파일 구조
 
 ```
-src/shared/ui/Avatar/
-├── Avatar.tsx   # 메인 컴포넌트 + Loading + SelectedBadge
-└── Avatar.md    # 문서
+avatar/
+├── avatar.tsx                       # 메인 컴포넌트 + Loading + SelectedBadge
+├── avatar.md                        # 문서
+├── get-avatar-recycling-key.ts
+├── get-avatar-recycling-key.test.ts
+└── index.ts
 ```

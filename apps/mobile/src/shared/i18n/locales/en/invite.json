@@ -4,7 +4,6 @@
     "headline": "Enter the invite code\nyour friend sent you",
     "description": "It's 6 characters (letters and numbers), without look-alikes like 0, O, 1, I, or L",
     "inputLabel": "Invite code",
-    "paste": "Paste copied code",
     "submit": "Continue",
     "retry": "Check again",
     "invalidCharacter": {
@@ -24,7 +23,7 @@
       "title_other": "Get {{count}} days of Premium when you join",
       "description": "Make to-dos with AI and add friends as much as you like",
       "benefitFriend": "You'll be friends with {{name}} right away",
-      "benefitAi": "Unlimited AI to-dos",
+      "benefitAi": "More AI to-dos",
       "benefitFriends": "Unlimited friends and nudges",
       "codeLabel": "Invite code",
       "inviterReward": "When you complete to-dos on {{activeDays}} days, {{name}} gets {{days}} days of Premium too"
@@ -58,13 +57,15 @@
     "enterCode": "Enter code instead"
   },
   "errors": {
-    "invalidCode": "Invite codes are 6 characters (letters and numbers)"
+    "invalidCode": "Invite codes are 6 characters (letters and numbers)",
+    "offline": "You can check the invite code once you're online"
   },
   "myInvite": {
     "title": "Invite friends",
     "rewardInviteeLabel": "Your friend",
     "rewardInvitee": "{{days}} days of Premium right when they join",
     "rewardInviterLabel": "You",
+    "rewardLineLabel": "{{label}}, {{value}}",
     "rewardInviter": "{{days}} days of Premium + 1\u00a0more\u00a0friend once they complete to-dos on {{activeDays}} days",
     "heroTitle": "Invite a friend and\ncheer each other on",
     "codeLabel": "My invite code",

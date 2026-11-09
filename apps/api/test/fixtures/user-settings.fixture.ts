@@ -5,6 +5,7 @@ import type { UserConsentRecord } from "#api/modules/identity/domain/records/set
 import type { UserPreferenceRecord } from "#api/modules/identity/domain/records/settings/user-preference.record";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 import {
   StubUserPreferenceRepository,
   StubUserConsentRepository,
@@ -14,6 +15,7 @@ import {
   StubReminderScheduleEnqueuer,
   StubStreakMilestoneNotifier,
   StubTodoCompletionStatsReader,
+  StubTodoTimezoneRebaseEnqueuer,
 } from "#test/mocks/ports/user-settings.stub";
 
 export const SETTINGS_TIME = new Date("2026-01-16T09:00:00.000Z");
@@ -46,6 +48,8 @@ export function createUserSettingsFixture(
   const milestoneNotifier = new StubStreakMilestoneNotifier();
   const statsReader = new StubTodoCompletionStatsReader();
   const logger = mock<ApplicationLogger>();
+  const todoTimezoneRebase = new StubTodoTimezoneRebaseEnqueuer();
+  const unitOfWork = createUnitOfWorkMock();
   return {
     userId,
     preference,
@@ -60,5 +64,7 @@ export function createUserSettingsFixture(
     milestoneNotifier,
     statsReader,
     logger,
+    todoTimezoneRebase,
+    unitOfWork,
   };
 }

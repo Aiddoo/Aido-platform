@@ -6,8 +6,8 @@ import {
 } from "#api/modules/notification/notification-reminders.public";
 
 import type {
-  TodoReminderCancellationResult,
   TodoReminderPort,
+  TodoReminderSchedule,
 } from "../../../application/ports/todos/todo-reminder.port.js";
 
 /**
@@ -24,7 +24,11 @@ export class TodoReminderAdapter implements TodoReminderPort {
     return this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
   }
 
-  cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
-    return this.reminderScheduler.cancelReminder(todoId);
+  scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    return this.reminderScheduler.scheduleReminders(reminders);
+  }
+
+  cancelReminders(todoIds: readonly number[]): Promise<void> {
+    return this.reminderScheduler.cancelReminders(todoIds);
   }
 }

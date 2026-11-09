@@ -8,7 +8,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const SNOW_SEED = 0x5a0f;
@@ -20,6 +20,9 @@ const FALL = { base: 24, speed: 60, near: 0.35 } as const;
 const SWAY_AMPLITUDE = [6, 22] as const;
 const SWAY_DEPTH_BASE = 0.4;
 const SWAY_FREQUENCY = [0.4, 1.1] as const;
+/** 눈 결정은 흔들림 빈도가 가운데 값에서 벗어난 만큼 결정마다 다르게 돈다. */
+const SWAY_FREQUENCY_MIDPOINT = (SWAY_FREQUENCY[0] + SWAY_FREQUENCY[1]) / 2;
+const CRYSTAL_SPIN_SPREAD = 2;
 const ALPHA = { base: 0.35, depth: 0.6 } as const;
 const WIND_DRIFT = 60;
 const DOT_SIZE_RATIO = 3.6;
@@ -85,7 +88,7 @@ export function SnowLayer({
   time,
 }: SnowLayerProps) {
   const texture = useParticleTexture();
-  const count = getParticleCount('snow', density, { width, height }, isLowEndDevice);
+  const count = getParticleCount('snow', { density, screen: { width, height }, isLowEndDevice });
   const flakes = createFlakes(count);
   const crystals = flakes.flatMap((flake, index) => (flake.depth > CRYSTAL_DEPTH ? [index] : []));
   const rgb = isDaylight ? '255,255,255' : '226,234,255';
@@ -106,7 +109,7 @@ export function SnowLayer({
   const dotAnchor = { x: dot.width / 2, y: dot.height / 2 };
   const crystalAnchor = { x: crystal.width / 2, y: crystal.height / 2 };
 
-  const positionOf = (flake: Flake, t: number) => {
+  const getPosition = (flake: Flake, t: number) => {
     'worklet';
     const fall = (FALL.base + FALL.speed * speed) * (FALL.near + flake.depth);
     const drift = fall * slope + wind * WIND_DRIFT * flake.depth;
@@ -124,7 +127,7 @@ export function SnowLayer({
     if (flake == null) {
       return;
     }
-    const { x, y } = positionOf(flake, time.get());
+    const { x, y } = getPosition(flake, time.get());
     placeSprite(transform, (flake.radius * DOT_SIZE_RATIO) / dot.width, 0, dotAnchor, x, y);
   });
 
@@ -135,8 +138,10 @@ export function SnowLayer({
       return;
     }
     const t = time.get();
-    const { x, y } = positionOf(flake, t);
-    const rotation = flake.phase + (flake.swayFrequency - 0.75) * CRYSTAL_SPIN * 2 * t;
+    const { x, y } = getPosition(flake, t);
+    const rotation =
+      flake.phase +
+      (flake.swayFrequency - SWAY_FREQUENCY_MIDPOINT) * CRYSTAL_SPIN * CRYSTAL_SPIN_SPREAD * t;
     const scale = (flake.radius * CRYSTAL_SIZE_RATIO) / crystal.width;
     placeSprite(
       transform,

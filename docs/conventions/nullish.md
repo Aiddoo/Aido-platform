@@ -1,6 +1,6 @@
 # null·undefined와 비교 연산
 
-서버·모바일·`@aido/api` 공통 기준이다. `apps/api/src`·`apps/mobile/src`·`apps/mobile/app`·`packages/*/src`의 기존 코드는 1.13.0에서 이 기준으로 맞췄고, 새 코드와 리뷰에도 적용한다. 공개 계약은 하위 호환을 먼저 지킨다.
+서버·모바일·`@aido/api` 공통 기준이다. 대상은 `apps/api/src`·`apps/mobile/src`·`apps/mobile/app`·`packages/*/src`다. 공개 계약은 하위 호환을 먼저 지킨다.
 
 ## 1. 비교는 `===`, "없음"만 `== null`
 
@@ -22,7 +22,7 @@ Oxlint `eslint/eqeqeq: ["error", "always", { "null": "ignore" }]`가 root `.oxli
 
 ## 2. `=== null` / `=== undefined`는 뜻이 다를 때만
 
-둘을 구분해야 할 때만 엄격하게 비교하고, 비교가 있는 문장 바로 위(또는 같은 줄)에 `// nullish-strict: <이유>` 주석을 남긴다. 표시가 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 `pnpm --filter @aido/mobile check:conventions`가 위 네 경로에서 거부한다. 표시는 그 문장 안에서만 유효하므로 한 객체 리터럴의 여러 PATCH 필드는 표시 하나로 설명할 수 있지만, 다음 문장에는 다시 남겨야 한다. 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
+둘을 구분해야 할 때만 엄격하게 비교하고, 비교가 있는 문장 바로 위(또는 같은 줄)에 `// nullish-strict: <이유>` 주석을 남긴다. 표시가 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 `pnpm --filter @aido/mobile check:conventions`가 위 경로에서 거부한다. 표시는 그 문장 안에서만 유효하므로 한 객체 리터럴의 여러 PATCH 필드는 표시 하나로 설명할 수 있지만, 다음 문장에는 다시 남겨야 한다. 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
 
 - PATCH 입력: 생략(`undefined`) = 바꾸지 않음, `null` = 비우기
 - `Map.get`·배열 조회의 미존재(`undefined`)와 저장된 `null` 구분
@@ -60,7 +60,7 @@ const isBusy = isSaving || isDeleting;
 const limit = query.limit || 20;
 ```
 
-필수 값에 `??` 기본값을 덧붙여 잘못된 입력을 감추지 않는다. `null`과 `undefined` 사이를 오가는 `?? undefined`/`?? null`은 받는 API나 계약이 그 형태를 요구할 때만 쓴다.
+필수 값에 `??` 기본값을 덧붙여 잘못된 입력을 감추지 않는다. `null`과 `undefined` 사이를 오가는 `?? undefined`/`?? null`은 받는 API나 계약이 그 형태를 요구할 때만 쓴다. ORM 쓰기처럼 `undefined`가 "바꾸지 않음"인 경계가 그런 경우다.
 
 ## 4. 계약 (`@aido/api` Zod)
 

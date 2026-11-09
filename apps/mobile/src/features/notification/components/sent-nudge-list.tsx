@@ -1,47 +1,44 @@
-import { ErrorCode } from '@aido/api/errors';
-import { FlashList } from '@shopify/flash-list';
-import {
-  NudgeInteractionPolicy,
-  type NudgeInteraction,
-} from '@src/features/nudge/domains/nudge-interaction.model';
-import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/nudge/queries/get-nudge-interactions-infinite-query-options';
-import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
-import { isApiError } from '@src/shared/errors';
+import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-interaction-labels';
+import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
+import type { NudgeInteraction } from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { isSentNudgeListDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
-  Box,
-  Button,
-  NotiIcon,
+  InfiniteList,
+  NotificationIllustration,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator, Spinner } from 'heroui-native';
-import { RefreshControl } from 'react-native';
+import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
-import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
+import { toDateSectionedListItems } from '../utils/date-section';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
-  const { t } = useTranslation('common');
-  const query = useSuspenseInfiniteQuery(
-    useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
+    useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }));
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
-  const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
-  const { color: refreshTint } = useResolveClassNames('text-main');
+  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
-    <FlashList
+    <InfiniteList
       data={listItems}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      isFetchNextPageError={isFetchNextPageError}
+      fetchNextPage={fetchNextPage}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
@@ -57,40 +54,8 @@ export function SentNudgeList() {
           .with({ type: 'item' }, ({ entry }) => String(entry.id))
           .exhaustive()
       }
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={refreshTint}
-          colors={refreshTint == null ? undefined : [refreshTint]}
-        />
-      }
       ListEmptyComponent={<SentNudgeList.Empty />}
-      ListFooterComponent={match({
-        isFetchNextPageError: query.isFetchNextPageError,
-        isFetchingNextPage: query.isFetchingNextPage,
-      })
-        .with({ isFetchNextPageError: true }, () => (
-          <Box p={16}>
-            <Button variant="weak" onPress={() => query.fetchNextPage()}>
-              {t('actions.retry')}
-            </Button>
-          </Box>
-        ))
-        .with({ isFetchingNextPage: true }, () => (
-          <Box py={24}>
-            <Spinner size="lg" />
-          </Box>
-        ))
-        .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
-        .exhaustive()}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      onEndReached={() => {
-        if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          return query.fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
     />
   );
@@ -98,16 +63,17 @@ export function SentNudgeList() {
 
 SentNudgeList.Loading = NotificationListRow.Loading;
 
-SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
+  const isListDisabled = isSentNudgeListDisabledError(error);
+
   return (
     <VStack flex={1} p={24}>
-      <Result
+      <QueryErrorFallback
         title={t(
-          isDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
+          isListDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
         )}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+        reset={reset}
       />
     </VStack>
   );
@@ -115,9 +81,10 @@ SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackPr
 
 SentNudgeList.Empty = function Empty() {
   const { t } = useTranslation('notification');
+
   return (
     <VStack flex={1} p={24}>
-      <Result icon={<NotiIcon width={72} height={72} />} title={t('sentNudges.empty')} />
+      <Result icon={<NotificationIllustration />} title={t('sentNudges.empty')} />
     </VStack>
   );
 };
@@ -127,14 +94,14 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
   const openDetail = useSingleTap(() =>
     router.navigate({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } }),
   );
-  const status = match(NudgeInteractionPolicy.getStatus(nudge))
+  const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
     .with('UNAVAILABLE', () => t('interaction.unavailable'))
     .with('THANKED', () => t('interaction.thanked'))
     .with('COMPLETED', () => t('interaction.completed'))
     .with('REPLIED', () =>
       nudge.replyKind == null
         ? ''
-        : t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) }),
+        : t('interaction.replyStatus', { reply: t(NUDGE_REPLY_LABEL_KEYS[nudge.replyKind]) }),
     )
     .with('WAITING', () => t('interaction.waiting'))
     .exhaustive();

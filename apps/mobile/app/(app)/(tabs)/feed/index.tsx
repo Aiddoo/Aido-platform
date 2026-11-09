@@ -1,91 +1,173 @@
-import { ActivationChecklist } from '@src/features/activation/components/activation-checklist';
-import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
-import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
-import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
-import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
-import { InviteEntryBanner } from '@src/features/invite/components/invite-entry-banner';
-import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
-import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
-import { PokeBanner } from '@src/features/nudge/components/poke-banner';
-import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
-import { Calendar } from '@src/features/todo/components/calendar/calendar';
-import { FriendCalendar } from '@src/features/todo/components/calendar/friend-calendar';
-import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
-import { FeedListPane } from '@src/features/todo/components/feed-list-pane';
-import { FeedTodoDetailPane } from '@src/features/todo/components/feed-todo-detail-pane';
-import { FriendStrip } from '@src/features/todo/components/friend-strip';
-import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
-import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
-import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
-import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
-import { useFeedActionParam } from '@src/features/todo/hooks/use-feed-action-param';
-import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
-import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
-import { useFeedFriendIdParam } from '@src/features/todo/hooks/use-feed-friend-id-param';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { invalidateFeedTodos, invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';
-import { todoCreateSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
-import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
+import { WhatsNewEntryNotice } from '@src/features/app-config/whats-new/components/whats-new-entry-notice';
+import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
+import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
+import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
+import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
+import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
+import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
+import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
+import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
+import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
+import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
+import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
+import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
+import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
+import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
+import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
+import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
+import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
+import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
+import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
+import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
+import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
+import { useFeedDateKey, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
+import {
+  useFeedSelectedTodoId,
+  useFeedTodoDetailHandoff,
+} from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
+import { useStableFeedForeground } from '@src/features/planning/todo/hooks/use-stable-feed-foreground';
+import {
+  invalidateFeedTodos,
+  invalidateFriendTodos,
+} from '@src/features/planning/todo/queries/todo-cache';
+import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
+import { useRouteFriendQuery } from '@src/features/social/friend/hooks/use-route-friend-query';
+import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
+import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
+import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
+import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
+import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
+import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
+import { invalidateNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useTranslation } from '@src/shared/i18n';
+import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
-  Result,
   Spacing,
   StyledSafeAreaView,
-  Text,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { Suspense, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
+import { type ComponentProps, Suspense, useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
+/** 친구 피드 위 쿡 찌르기 안내 줄의 높이(그림 72). 불러오는 동안과 실패했을 때 같은 자리를 잡는다 */
+const NUDGE_BANNER_HEIGHT = 72;
+
 export default function FeedScreen() {
-  const [date, setDate] = useFeedDateParam();
-  const [friendId] = useFeedFriendIdParam();
+  const [friendId] = useFeedFriendId();
+  const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
+  const [{ sort, comment }] = useTodoCommentParams();
+  const isInviteAvailable = useIsInviteAvailable();
+  const openMyInvite = useOpenMyInvite();
+  const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+  // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
+  const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
+
+  useFeedTodoDetailHandoff();
 
   return (
-    <CalendarProvider>
-      <NotificationBell.Toolbar />
-      <FeedDateProvider date={date} onDateChange={setDate}>
-        <AdaptivePane
-          primary={
-            <FeedListPane>
-              <StyledSafeAreaView edges={['left', 'right']}>
-                <QueryErrorBoundary fallback={FriendStrip.Error}>
-                  <Suspense fallback={<FriendStrip.Loading />}>
-                    <FriendStrip />
+    <>
+      <NotificationBellToolbar />
+      <AdaptivePane
+        primary={
+          <Box flex={1} className="bg-white">
+            <StyledSafeAreaView edges={['left', 'right']}>
+              <QueryErrorBoundary fallback={FriendStrip.Error}>
+                <Suspense fallback={<FriendStrip.Loading />}>
+                  <FriendStrip
+                    onInvite={
+                      isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                    }
+                    isHintDismissed={hasScrolledFeed}
+                  />
+                </Suspense>
+              </QueryErrorBoundary>
+            </StyledSafeAreaView>
+
+            {match(friendId)
+              .with(P.string, (id) => (
+                <QueryErrorBoundary key={id} fallback={FriendFeedTodos.Error}>
+                  <Suspense fallback={<FriendFeedTodos.Loading />}>
+                    <FriendFeedTodos />
                   </Suspense>
                 </QueryErrorBoundary>
+              ))
+              .with(undefined, () => <MyFeed onScrollBeginDrag={() => setHasScrolledFeed(true)} />)
+              .exhaustive()}
+          </Box>
+        }
+        secondary={match(selectedTodoId)
+          .with(undefined, () => (
+            <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+              <TodoDetailSummary.Empty />
+            </StyledSafeAreaView>
+          ))
+          .with(P.number, (id) => (
+            <KeyboardBottomGapProvider key={id}>
+              <StyledSafeAreaView
+                edges={['left', 'right']}
+                className="flex-1 bg-white"
+                testID="todo-detail"
+              >
+                {/* 펼친 피드의 오른쪽 칸이라 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */}
+                <TodoCommentSession onExit={closeDetail}>
+                  <TodoCommentTitleBar />
+
+                  <TodoAvailabilityGuard
+                    fallback={<TodoDetailSummary.Unavailable onClose={closeDetail} />}
+                  >
+                    <TodoCommentKeyboardArea>
+                      <QueryErrorBoundary
+                        resetKeys={[id, sort, comment]}
+                        fallback={TodoCommentThreadList.Error}
+                      >
+                        <Suspense fallback={<TodoCommentThreadList.Loading />}>
+                          <TodoCommentThreadList />
+                        </Suspense>
+                      </QueryErrorBoundary>
+
+                      <QueryErrorBoundary resetKeys={[id]}>
+                        <Suspense fallback={<TodoCommentComposerBar.Loading />}>
+                          <TodoCommentComposerBar />
+                        </Suspense>
+                      </QueryErrorBoundary>
+                    </TodoCommentKeyboardArea>
+                  </TodoAvailabilityGuard>
+                </TodoCommentSession>
               </StyledSafeAreaView>
-              {match(friendId)
-                .with(P.string, (id) => <FriendFeed key={id} />)
-                .with(undefined, () => <MyFeed />)
-                .exhaustive()}
-            </FeedListPane>
-          }
-          secondary={<FeedTodoDetailPane />}
-        />
-      </FeedDateProvider>
-    </CalendarProvider>
+            </KeyboardBottomGapProvider>
+          ))
+          .exhaustive()}
+      />
+    </>
   );
 }
 
-function MyFeed() {
-  const selectedDateKey = useFeedDateKey();
+function MyFeed({
+  onScrollBeginDrag,
+}: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'>) {
+  const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
-  const weatherIntroduction = useWeatherIntroduction();
-  const featureDiscovery = useFeatureDiscoveryFeed({
-    isWeatherIntroductionPending: weatherIntroduction.isPending,
+  const status = useAuthStatus();
+  const hasPendingNavigation = useHasPendingNotificationEntry();
+  const isStable = useStableFeedForeground({
+    isAuthenticated: status === 'authenticated',
+    hasPendingNavigation,
   });
-  const [refreshing, onRefresh] = useRefresh(() =>
+  useOpenPushOnboarding({ isStable });
+  const isReminderOff = useIsPushReminderOff();
+  const isInviteAvailable = useIsInviteAvailable();
+  const whatsNew = useWhatsNewFeed({ isStable, isInviteAvailable });
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
 
@@ -93,148 +175,59 @@ function MyFeed() {
     <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      onScrollBeginDrag={onScrollBeginDrag}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
     >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+      <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
         <MyCalendar />
 
-        <Spacing size={10} />
+        <Spacing size={12} />
 
-        <ActivationChecklist className="mx-4 mb-5" />
+        {/* 스스로 숨는 안내는 숨을 때 간격도 함께 사라지게 아래 12를 자기 className으로 가진다 */}
+        <ActivationChecklist className="mx-4 mb-3" />
 
-        <Box px={16} style={{ flexGrow: 1 }}>
+        <Box px={16}>
           <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
             <Suspense fallback={<TodoList.Loading />}>
-              <TodoList key={selectedDateKey} />
+              <TodoList key={selectedDateKey} isReminderOff={isReminderOff} />
             </Suspense>
           </QueryErrorBoundary>
         </Box>
 
         <Spacing size={20} />
 
-        <InviteEntryBanner className="mx-4 mb-5" />
+        <InviteEntryBanner className="mx-4 mb-3" />
 
-        {featureDiscovery.isReentryVisible && (
-          <>
-            <Box px={16}>
-              <FeatureDiscoveryReentryCard
-                onPress={featureDiscovery.openFromReentry}
-                onDismiss={featureDiscovery.dismissReentry}
-              />
-            </Box>
-            <Spacing size={12} />
-          </>
+        {whatsNew.isReentryVisible && (
+          <WhatsNewEntryNotice
+            className="mx-4 mb-3"
+            onPress={whatsNew.openFromReentry}
+            onClose={whatsNew.dismissReentry}
+          />
         )}
 
+        {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
         <QueryErrorBoundary fallback={() => null}>
           <Suspense fallback={null}>
-            <PushPermissionCard className="mx-4 mb-3" />
-            <MarketingPushOptInBanner className="mx-4 mb-3" />
+            <PushPermissionNotice className="mx-4 mb-3" />
           </Suspense>
         </QueryErrorBoundary>
 
         <Box px={16}>
           <QueryErrorBoundary fallback={SuggestionEntry.Error}>
-            <Suspense fallback={<SuggestionEntry.Loading />}>
-              <SuggestionEntry />
-            </Suspense>
+            <SuggestionEntry />
           </QueryErrorBoundary>
         </Box>
+
         <Spacing size={20} />
       </StyledSafeAreaView>
     </ScrollViewContainer>
   );
 }
 
-/** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
-function AddTodoRequestEntry() {
-  const { t } = useTranslation(['widget', 'common']);
-  const [action, setAction] = useFeedActionParam();
-  const selectedDateKey = useFeedDateKey();
-  const isRequested = action === 'add-todo';
-  const categories = useQuery({
-    ...useGetTodoCategoriesQueryOptions(),
-    enabled: isRequested,
-    throwOnError: false,
-  });
-  const categoryId = categories.data?.categories[0]?.id;
-
-  useEffect(() => {
-    if (!isRequested || categoryId == null) {
-      return;
-    }
-    const frameId = requestAnimationFrame(() => {
-      setAction(undefined);
-      router.push(todoCreateSheetHref({ date: selectedDateKey, categoryId }));
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDateKey, setAction]);
-
-  const createEntryStatus = !isRequested
-    ? ('idle' as const)
-    : match(categories)
-        .with({ isLoading: true }, () => 'loading' as const)
-        .with({ isError: true }, () => 'error' as const)
-        .with({ isSuccess: true }, () =>
-          categoryId == null ? ('empty' as const) : ('idle' as const),
-        )
-        .otherwise(() => 'idle' as const);
-
-  return match(createEntryStatus)
-    .with('loading', () => (
-      <Box px={16} py={8}>
-        <Text size="b4" shade={6}>
-          {t('widget:entry.loading')}
-        </Text>
-      </Box>
-    ))
-    .with('error', () => (
-      <Box px={16} py={8}>
-        <Result
-          title={t('widget:entry.loadError')}
-          button={
-            <Result.Button onPress={() => categories.refetch()}>
-              {t('common:actions.retry')}
-            </Result.Button>
-          }
-        />
-      </Box>
-    ))
-    .with('empty', () => (
-      <Box px={16} py={8}>
-        <Result
-          title={t('widget:entry.emptyCategory')}
-          button={
-            <Result.Button
-              onPress={() => {
-                setAction(undefined);
-                router.navigate('/settings/category-settings');
-              }}
-            >
-              {t('widget:entry.manageCategories')}
-            </Result.Button>
-          }
-        />
-      </Box>
-    ))
-    .with('idle', () => null)
-    .exhaustive();
-}
-
-function FriendFeed() {
-  return (
-    <QueryErrorBoundary fallback={(props) => <FriendFeedTodos.Error {...props} />}>
-      <Suspense fallback={<FriendFeedTodos.Loading />}>
-        <FriendFeedTodos />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
 function FriendFeedTodos() {
-  const selectedDateKey = useFeedDateKey();
+  const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const {
     data: friend,
@@ -242,8 +235,8 @@ function FriendFeedTodos() {
     isFetchNextPageError,
     error,
     fetchNextPage,
-  } = useScreenFriend();
-  const [refreshing, onRefresh] = useRefresh(() =>
+  } = useRouteFriendQuery();
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
     Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
   );
 
@@ -251,7 +244,7 @@ function FriendFeedTodos() {
     .with({ friend: P.nullish, isFetchNextPageError: true }, () => (
       <FriendFeedTodos.Error
         error={error}
-        reset={() => fetchNextPage({ cancelRefetch: false }).catch(() => undefined)}
+        reset={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
       />
     ))
     .with({ friend: P.nullish, hasNextPage: true }, () => <FriendFeedTodos.Loading />)
@@ -259,30 +252,37 @@ function FriendFeedTodos() {
     .with({ friend: P.nonNullable }, ({ friend }) => (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        className="flex-1"
+        contentContainerClassName="grow"
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <FriendCalendar />
+          <FriendCalendar friendId={friend.id} />
 
           <Spacing size={8} />
 
-          <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
-            <Suspense fallback={<PokeBanner.Loading />}>
-              <PokeBanner />
-            </Suspense>
-          </QueryErrorBoundary>
+          <Box px={16}>
+            <QueryErrorBoundary fallback={NudgeLimitBanner.Error}>
+              <Suspense fallback={<NudgeLimitBanner.Loading />}>
+                <NudgeLimitBanner />
+              </Suspense>
+            </QueryErrorBoundary>
+          </Box>
 
           <Spacing size={16} />
 
-          <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+          <Box className="grow px-4 pb-6">
             <QueryErrorBoundary
               resetKeys={[friend.id, selectedDateKey]}
-              fallback={(props) => <FriendTodoList.Error {...props} />}
+              fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
-                <FriendTodoList key={selectedDateKey} />
+                <FriendTodoList
+                  key={selectedDateKey}
+                  friendId={friend.id}
+                  rowAction={FriendTodoNudgeAction}
+                  emptyAction={FriendRemindNudgeAction}
+                />
               </Suspense>
             </QueryErrorBoundary>
           </Box>
@@ -296,12 +296,20 @@ FriendFeedTodos.Loading = function Loading() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
+      className="flex-1"
+      contentContainerClassName="grow"
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
+
+        <Spacing size={8} />
+
+        <Box px={16}>
+          <NudgeLimitBanner.Loading />
+        </Box>
+
         <Spacing size={16} />
+
         <Box px={16}>
           <FriendTodoList.Loading />
         </Box>
@@ -310,16 +318,24 @@ FriendFeedTodos.Loading = function Loading() {
   );
 };
 
-FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
+FriendFeedTodos.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
+      className="flex-1"
+      contentContainerClassName="grow"
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Calendar />
-        <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+
+        <Spacing size={8} />
+
+        {/* 불러오기 전과 같은 높이로 안내 줄 자리를 비워 둬 오류 뒤 목록이 밀리지 않는다 */}
+        <Box className="px-4" style={{ height: NUDGE_BANNER_HEIGHT }} />
+
+        <Spacing size={16} />
+
+        <Box className="grow px-4 pb-6">
           <FriendTodoList.Error {...props} />
         </Box>
       </StyledSafeAreaView>
@@ -327,13 +343,12 @@ FriendFeedTodos.Error = function ErrorState(props: QueryErrorFallbackProps) {
   );
 };
 
-/** 더는 친구가 아닌 사람의 피드는 같은 화면의 내 피드로 돌린다. */
 function MyFeedRedirect() {
-  const [_friendId, setFriendId] = useFeedFriendIdParam();
+  const [_friendId, selectFriend] = useFeedFriendId();
 
   useEffect(() => {
-    setFriendId(undefined);
-  }, [setFriendId]);
+    selectFriend(undefined);
+  }, [selectFriend]);
 
   return null;
 }

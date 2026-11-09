@@ -1,18 +1,29 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
-export type OverlayRender<T = void> = (props: {
+interface OverlayRenderBaseProps {
   isOpen: boolean;
-  close: (value: T) => void;
-  exit: () => void;
-}) => ReactNode;
-
-interface OverlayItemProps<T> {
-  render: OverlayRender<T>;
-  onUnmount: () => void;
-  onResolve: (value: T) => void;
+  unmount: () => void;
 }
 
-export const OverlayItem = <T,>({ render, onUnmount, onResolve }: OverlayItemProps<T>) => {
+export type OverlayRender = (props: OverlayRenderBaseProps & { close: () => void }) => ReactNode;
+
+export type OverlayAsyncRender<T> = (
+  props: OverlayRenderBaseProps & { close: (value: T) => void },
+) => ReactNode;
+
+interface OverlayItemProps<T> {
+  render: OverlayAsyncRender<T>;
+  onUnmount: () => void;
+  onResolve: (value: T) => void;
+  dismissedValue: T;
+}
+
+export function OverlayItem<T>({
+  render,
+  onUnmount,
+  onResolve,
+  dismissedValue,
+}: OverlayItemProps<T>) {
   const [isOpen, setIsOpen] = useState(true);
 
   const close = (value: T) => {
@@ -20,5 +31,9 @@ export const OverlayItem = <T,>({ render, onUnmount, onResolve }: OverlayItemPro
     setIsOpen(false);
   };
 
-  return <>{render({ isOpen, close, exit: onUnmount })}</>;
-};
+  // 부른 컴포넌트 unmount, 다시 열기, resetKey 모두 이 항목이 트리에서 빠지는 일이라 한 곳에서 끝낸다.
+  // close가 먼저 끝냈으면 Promise는 그 값을 유지한다.
+  useEffect(() => () => onResolve(dismissedValue), [onResolve, dismissedValue]);
+
+  return <>{render({ isOpen, close, unmount: onUnmount })}</>;
+}

@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 
 import { TODO_CATEGORY_CACHE } from "./application/ports/categories/todo-category-cache.port.js";
+import { TODO_CATEGORY_COUNT_READER } from "./application/ports/categories/todo-category-count-reader.port.js";
 import { TODO_CATEGORY_LIMIT_READER } from "./application/ports/categories/todo-category-limit-reader.port.js";
 import { TODO_CATEGORY_PROVISIONER } from "./application/ports/categories/todo-category-provisioner.port.js";
 import { TODO_CATEGORY_READER } from "./application/ports/categories/todo-category-reader.port.js";
@@ -39,6 +40,7 @@ import { TodoCategoryController } from "./presentation/controllers/categories/v1
     },
     todoCategoryReaderProvider,
     { provide: TODO_CATEGORY_READER, useExisting: TodoCategoryReader },
+    { provide: TODO_CATEGORY_COUNT_READER, useExisting: TodoCategoryReader },
     getTodoCategoriesProvider,
     getTodoCategoryProvider,
     getTodoCategoryResourceLimitProvider,
@@ -49,6 +51,6 @@ import { TodoCategoryController } from "./presentation/controllers/categories/v1
     DefaultTodoCategorySeeder,
     { provide: TODO_CATEGORY_PROVISIONER, useExisting: DefaultTodoCategorySeeder },
   ],
-  exports: [TODO_CATEGORY_READER, TODO_CATEGORY_PROVISIONER],
+  exports: [TODO_CATEGORY_READER, TODO_CATEGORY_COUNT_READER, TODO_CATEGORY_PROVISIONER],
 })
 export class PlanningCategoriesModule {}

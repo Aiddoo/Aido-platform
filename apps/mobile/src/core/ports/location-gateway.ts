@@ -16,9 +16,16 @@ export interface PlaceName {
   district: string | null;
 }
 
+export interface LocationPermission {
+  isGranted: boolean;
+  canAskAgain: boolean;
+}
+
 export interface LocationGateway {
-  getPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
-  requestPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
+  getPermission(): Promise<LocationPermission>;
+  requestPermission(): Promise<LocationPermission>;
+  /** 이미 허용한 사용자의 권한을 앱을 켠 직후에 다시 확인한다. 처음 묻는 요청은 `requestPermission`이다. */
+  recheckPermission(): Promise<LocationPermission>;
   getCoordinates(signal: AbortSignal): Promise<LocationCoordinates>;
   getPlace(
     coordinates: LocationCoordinates,

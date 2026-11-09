@@ -158,7 +158,8 @@ export class SettingsController {
 **응답**
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`marketingAgreedAt\` | string? | 동의 시 현재 시점, 철회 시 null |`,
+| \`marketingAgreedAt\` | string? | 동의 시 현재 시점, 철회 시 null |
+| \`marketingWithdrawnAt\` | string? | 철회를 처리한 서버 시각, 동의 시 null (1.15.0+) |`,
   })
   @ApiSuccessResponse({ type: UpdateMarketingConsentResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -175,7 +176,7 @@ export class SettingsController {
     summary: "광고성 앱 푸시 수신 동의 변경",
     operationId: "updateMarketingPushConsent",
     description:
-      "광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
+      "광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다. 응답의 marketingPushAgreedAt(동의)·marketingPushWithdrawnAt(철회, 1.15.0+)은 처리한 서버 시각입니다.",
   })
   @ApiSuccessResponse({ type: UpdateMarketingPushConsentResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

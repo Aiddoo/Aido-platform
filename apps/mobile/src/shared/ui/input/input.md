@@ -5,10 +5,10 @@
 ## 사용법
 
 ```tsx
-import { Input } from '@src/shared/ui/input/input';
+import { Input } from '@src/shared/ui';
 
 // 기본
-<Input placeholder="이메일을 입력하세요" />
+<Input value={email} onChange={setEmail} placeholder="이메일을 입력하세요" />
 
 // 라벨 + 에러
 <Input
@@ -29,18 +29,21 @@ import { Input } from '@src/shared/ui/input/input';
 
 ## Props
 
-| Prop                | 타입                  | 기본값     | 설명                   |
-| ------------------- | --------------------- | ---------- | ---------------------- |
-| `variant`           | `'filled' \| 'line'`  | `'filled'` | 입력 필드 스타일       |
-| `size`              | `'medium' \| 'large'` | `'large'`  | 입력 필드 크기         |
-| `label`             | `string`              | -          | 라벨 텍스트            |
-| `isDisabled`        | `boolean`             | `false`    | 비활성화 상태          |
-| `isInvalid`         | `boolean`             | `false`    | 에러 상태              |
-| `errorMessage`      | `string`              | -          | 에러 메시지            |
-| `leftContent`       | `ReactNode`           | -          | 왼쪽 아이콘/컴포넌트   |
-| `rightContent`      | `ReactNode`           | -          | 오른쪽 아이콘/컴포넌트 |
-| `className`         | `string`              | -          | 컨테이너 추가 스타일   |
-| `...TextInputProps` | -                     | -          | `TextInput` 기본 props |
+| Prop                 | 타입                      | 기본값     | 설명                           |
+| -------------------- | ------------------------- | ---------- | ------------------------------ |
+| `value`              | `string`                  | -          | 입력값 (필수)                  |
+| `onChange`           | `(value: string) => void` | -          | 값 변경 콜백 (필수)            |
+| `variant`            | `'filled' \| 'line'`      | `'filled'` | 입력 필드 스타일               |
+| `size`               | `'medium' \| 'large'`     | `'large'`  | 입력 필드 크기                 |
+| `label`              | `string`                  | -          | 라벨 텍스트                    |
+| `isDisabled`         | `boolean`                 | `false`    | 비활성화 상태                  |
+| `isInvalid`          | `boolean`                 | `false`    | 에러 상태                      |
+| `errorMessage`       | `string`                  | -          | 에러 메시지                    |
+| `renderErrorMessage` | `boolean`                 | `true`     | 에러 메시지 영역을 그릴지 여부 |
+| `leftContent`        | `ReactNode`               | -          | 왼쪽 아이콘/컴포넌트           |
+| `rightContent`       | `ReactNode`               | -          | 오른쪽 아이콘/컴포넌트         |
+| `className`          | `string`                  | -          | 컨테이너 추가 스타일           |
+| `...TextInputProps`  | -                         | -          | `TextInput` 기본 props         |
 
 ## 스타일 (variant)
 
@@ -72,6 +75,20 @@ import { Input } from '@src/shared/ui/input/input';
 <Input size="large" />
 ```
 
+## 글자 크기
+
+입력 글자는 앱 글자 크기 설정을 따른다. OS 글꼴 배율은 `Text`처럼 끈다(`allowFontScaling={false}`). `Text`와 같은 표(`resolveSize`)를 타서 옆 글자와 같이 커지고, 글자 크기만 가진 `text-input-{토큰}` 유틸리티(`INPUT_FONT_SIZE_CLASSES`)를 골라 줄 간격은 그대로다. 호출부가 `style`을 넘기면 그 값이 먼저다.
+
+| 앱 설정  | `medium` (b3) | `large` (b2) |
+| -------- | ------------- | ------------ |
+| `xsmall` | 13            | 13           |
+| `small`  | 15            | 15           |
+| `medium` | 15            | 16           |
+| `large`  | 16            | 17           |
+| `xlarge` | 17            | 20           |
+
+고정 높이는 그대로 둔다. 테두리를 뺀 안쪽이 46·54이고 가장 큰 글자의 한 줄을 글자의 1.5배로 넉넉히 잡아도 26·30이라 20·24가 남는다.
+
 ## 상태
 
 ### 비활성화
@@ -97,7 +114,7 @@ BottomSheet 내부에서 키보드를 제대로 처리하기 위한 Input 래퍼
 ### 사용법
 
 ```tsx
-import { BottomSheetInput } from '@src/shared/ui/input';
+import { BottomSheetInput } from '@src/shared/ui';
 
 // BottomSheet 내부에서 사용
 <BottomSheet>
@@ -122,10 +139,10 @@ import { BottomSheetInput } from '@src/shared/ui/input';
 
 ## 파일 구조
 
-| 파일                   | 역할                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| `Input.tsx`            | 기본 입력 컴포넌트                                                             |
-| `Input.types.ts`       | 타입 정의 (`InputProps`, `InputInternalProps`)                                 |
-| `Input.variants.ts`    | Tailwind 스타일 (variant/size/상태)                                            |
-| `BottomSheetInput.tsx` | BottomSheet용 Input 래퍼                                                       |
-| `index.ts`             | Export: `Input`, `BottomSheetInput`, `InputProps`, `InputSize`, `InputVariant` |
+| 파일                     | 역할                                           |
+| ------------------------ | ---------------------------------------------- |
+| `input.tsx`              | 기본 입력 컴포넌트                             |
+| `input.types.ts`         | 타입 정의 (`InputProps`, `InputInternalProps`) |
+| `input.variants.ts`      | Tailwind 스타일 (variant/size/상태)            |
+| `bottom-sheet-input.tsx` | BottomSheet용 Input 래퍼                       |
+| `index.ts`               | Export: `Input`, `BottomSheetInput`            |

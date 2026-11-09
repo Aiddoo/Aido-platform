@@ -1,9 +1,13 @@
-import catAnchorImage from '@assets/images/cat_weather_anchor.png';
+import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTrack } from '@src/shared/analytics';
+import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
+import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
 import {
   Box,
   HStack,
@@ -12,40 +16,44 @@ import {
   type QueryErrorFallbackProps,
   VStack,
 } from '@src/shared/ui';
-import { formatRelativeTimeLabel } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
-import { useLocales } from 'expo-localization';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
+import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
-import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
+import type { PlaceName } from '../domains/weather-location.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
+import type { DailyForecastEntry } from '../domains/weather-report.model';
 import {
-  type DailyForecastEntry,
-  type TemperatureReading,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
-import {
-  isConnectionError,
+  isOfflineError,
+  isTimeoutError,
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
 } from '../domains/weather.error';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
+import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
 import {
+  useGetWeatherLocationQueryOptions,
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
-import { toWeatherReportFailedCause } from '../utils/analytics/weather-analytics';
+} from '../queries/weather.queries';
+import { findForeignCountryName } from '../utils/find-foreign-country-name';
+import { toWeatherReportFailedCause } from '../utils/weather-analytics';
+import {
+  type TemperatureReading,
+  formatTemperature,
+  toDisplayTemperature,
+  toTemperatureReading,
+} from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
-import { WeatherLocationPrompt } from './weather-location-prompt';
 import { WeatherResult } from './weather-result';
 
 const HERO_TEXT_SHADOW = {
-  textShadowColor: 'rgba(0,0,0,0.08)',
+  textShadowColor: HERO_TEXT_SHADOW_COLOR,
   textShadowOffset: { width: 0, height: 1 },
   textShadowRadius: 12,
 } as const;
@@ -61,36 +69,26 @@ const LONG_TEMPERATURE_FONT_SIZE = 76;
 const TEMPERATURE_LETTER_SPACING_EM = -0.06;
 /** display 토큰 크기. 줄 높이·자간을 글자 크기에 맞춰 조일 때만 쓴다. */
 const DISPLAY_FONT_SIZE = 96;
-/**
- * 숫자 글리프가 줄 상자 안에서 놓이는 높이가 플랫폼마다 달라(iOS는 위로 붙고 Android는 아래로 내려온다),
- * 지명·날씨 줄과 위아래 간격이 같아 보이도록 em 단위로 옮긴다. 76·96 모두 같은 비율로 맞는다.
- */
-const TEMPERATURE_OFFSET_EM = Platform.select({
-  ios: { top: 0.06, bottomTrim: 0.14 },
-  default: { top: -0.05, bottomTrim: 0.03 },
-});
-/**
- * 영하 기호는 숫자의 0.52배 크기로 숫자 세로 가운데에, °는 0.42배 크기로 숫자 위쪽에 붙인다.
- * 글리프가 줄 상자 안에 놓이는 높이가 플랫폼마다 달라 위치를 em 단위로 맞춘다.
- */
+/** 숫자 글리프 높이가 플랫폼마다 달라(iOS는 위, Android는 아래) 위아래 간격이 같아 보이도록 em 단위로 옮긴다 */
+const TEMPERATURE_OFFSET_EM =
+  process.env.EXPO_OS === 'ios'
+    ? { top: 0.06, bottomTrim: 0.14 }
+    : { top: -0.05, bottomTrim: 0.03 };
+/** 영하 기호는 숫자의 0.52배로 세로 가운데, °는 0.42배로 위쪽. 글리프 높이가 플랫폼마다 달라 em 단위다 */
 const SIGN = {
   scale: 0.52,
-  top: Platform.select({ ios: 0.27, default: 0.33 }),
+  top: process.env.EXPO_OS === 'ios' ? 0.27 : 0.33,
 } as const;
 /** 숫자가 가운데에 오도록 양쪽에 같은 폭의 기호 자리를 둔다. */
 const SYMBOL_SLOT_EM = 0.32;
 const DEGREE = {
   scale: 0.42,
-  top: Platform.select({ ios: 0.1, default: 0.18 }),
+  top: process.env.EXPO_OS === 'ios' ? 0.1 : 0.18,
 } as const;
 const HERO_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1).factory())
   .withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })
   .reduceMotion(ReduceMotion.System);
-
-function useHeroScale() {
-  return Math.min(useFontScaleRatio(), MAX_HERO_SCALE);
-}
 
 function scaleType(type: typeof PLACE_TYPE, scale: number) {
   return {
@@ -104,7 +102,7 @@ function scaleType(type: typeof PLACE_TYPE, scale: number) {
 export function WeatherHero() {
   const { t } = useTranslation('weather');
   const location = useWeatherLocation();
-  const scale = useHeroScale();
+  const scale = Math.min(useFontScaleRatio(), MAX_HERO_SCALE);
   const placeStyle = scaleType(PLACE_TYPE, scale);
   const lineStyle = scaleType(LINE_TYPE, scale);
   const unit = useTemperatureUnit();
@@ -113,13 +111,13 @@ export function WeatherHero() {
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = WeatherReportPolicy.todayForecast(data, now);
-  const place = location.status === 'ready' ? location.place : null;
-  const countryCode = location.status === 'ready' ? location.countryCode : null;
-  const title = place?.city ?? t('hero.currentLocation');
-  const reading = WeatherReportPolicy.temperatureReading(
-    WeatherReportPolicy.displayTemperature(data.current.temperature, unit),
-  );
+  const today = WeatherReportPolicy.findTodayOrFirstForecast(data, now);
+  const readyLocation = location.status === 'ready' ? location : null;
+  const place = readyLocation?.place ?? null;
+  const countryCode = readyLocation?.countryCode ?? null;
+  const isLastKnown = readyLocation?.isLastKnown === true;
+  const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
+  const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
   const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
   const temperature = reading.isBelowZero
     ? t('hero.temperatureBelowZero', { count: reading.magnitude })
@@ -140,13 +138,17 @@ export function WeatherHero() {
           })}
         >
           {place != null && (
-            <WeatherHero.LocationLabel countryCode={countryCode} district={place.district} />
+            <WeatherHero.LocationLabel
+              countryCode={countryCode}
+              district={place.district}
+              isLastKnown={isLastKnown}
+            />
           )}
           <Text
             weight="medium"
             align="center"
             tone="onSky"
-            maxLines={1}
+            numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={PLACE_MINIMUM_FONT_SCALE}
             className="mt-0.5 max-w-full"
@@ -166,18 +168,14 @@ export function WeatherHero() {
           {today != null && (
             <Text weight="medium" align="center" tone="onSky" style={lineStyle}>
               {t('hero.highLow', {
-                high: WeatherReportPolicy.degrees(
-                  WeatherReportPolicy.displayTemperature(today.temperatureMax, unit),
-                ),
-                low: WeatherReportPolicy.degrees(
-                  WeatherReportPolicy.displayTemperature(today.temperatureMin, unit),
-                ),
+                high: formatTemperature(today.temperatureMax, unit),
+                low: formatTemperature(today.temperatureMin, unit),
               })}
             </Text>
           )}
         </VStack>
         {today?.restOfDay != null && <WeatherHero.RestOfDay restOfDay={today.restOfDay} />}
-        {WeatherReportPolicy.isStale(data, now) && (
+        {WeatherReportPolicy.isReportStale(data, now) && (
           <WeatherHero.StaleNotice fetchedAt={data.fetchedAt} now={now} />
         )}
       </VStack>
@@ -185,26 +183,21 @@ export function WeatherHero() {
   );
 }
 
-/**
- * 도시 위의 작은 위치 표시. 기기 위치로 받은 지명일 때만 보이고, 기기 지역과 다른 나라면 나라 이름을,
- * 동네를 알면 동네 이름을 붙인다.
- */
+/** 기기 위치 지명일 때만 보이고, 권한을 확인하지 못해 직전 위치를 쓰면 현재 위치가 아니라 마지막 위치로 적는다 */
 WeatherHero.LocationLabel = function LocationLabel({
   countryCode,
   district,
+  isLastKnown,
 }: {
   countryCode: string | null;
   district: PlaceName['district'];
+  isLastKnown: boolean;
 }) {
   const { t, i18n } = useTranslation('weather');
-  const [deviceLocale] = useLocales();
+  const deviceLocale = useSystemLocale();
   const minimumFontScale = useMinimumFontScale('b4');
-  const country = WeatherLocationPolicy.foreignCountryName(
-    { countryCode },
-    deviceLocale?.regionCode ?? null,
-    i18n.language,
-  );
-  const area = compact([country, district]);
+  const country = findForeignCountryName({ countryCode }, deviceLocale.regionCode, i18n.language);
+  const area = compact([country, district]).join(' · ');
 
   return (
     <HStack align="center" gap={5}>
@@ -212,24 +205,24 @@ WeatherHero.LocationLabel = function LocationLabel({
       <Text
         size="b4"
         weight="medium"
-        maxLines={1}
+        numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={minimumFontScale}
         className="text-on-sky/[0.78]"
         style={HERO_TEXT_SHADOW}
       >
-        {area.length === 0
-          ? t('hero.currentLocation')
-          : t('hero.currentLocationIn', { area: area.join(' · ') })}
+        {match({ isLastKnown, hasArea: area.length > 0 })
+          .with({ isLastKnown: true, hasArea: true }, () => t('hero.lastLocationIn', { area }))
+          .with({ isLastKnown: true, hasArea: false }, () => t('hero.lastLocation'))
+          .with({ isLastKnown: false, hasArea: true }, () => t('hero.currentLocationIn', { area }))
+          .with({ isLastKnown: false, hasArea: false }, () => t('hero.currentLocation'))
+          .exhaustive()}
       </Text>
     </HStack>
   );
 };
 
-/**
- * 숫자 양쪽에 같은 폭의 기호 자리를 두어 숫자는 늘 가운데에 있고, 왼쪽 자리에 영하 기호, 오른쪽 자리에 °를 둔다.
- * 크기는 display 토큰을 쓰고(앱 글자 크기와 무관), 세 자리만 76으로 줄인다.
- */
+/** 크기는 앱 글자 크기와 무관한 display 토큰을 쓰고 세 자리만 76으로 줄인다 */
 WeatherHero.Temperature = function Temperature({ reading }: { reading: TemperatureReading }) {
   const digits = String(reading.magnitude);
   const isLong = digits.length >= LONG_TEMPERATURE_LENGTH;
@@ -314,7 +307,13 @@ WeatherHero.RestOfDay = function RestOfDay({
 };
 
 /** 30분 넘게 갱신되지 않은 데이터는 오류가 아니라 받은 시각만 조용히 알린다. */
-WeatherHero.StaleNotice = function StaleNotice({ fetchedAt, now }: { fetchedAt: Date; now: Date }) {
+WeatherHero.StaleNotice = function StaleNotice({
+  fetchedAt,
+  now,
+}: {
+  fetchedAt: Instant;
+  now: Instant;
+}) {
   const { t } = useTranslation('weather');
   const dateFormat = useDateFormatContext();
   return (
@@ -336,10 +335,7 @@ WeatherHero.Loading = function Loading() {
   );
 };
 
-/**
- * 리포트는 모든 블록이 같은 요청을 쓰므로 실패도 여기 한 곳에서만 보여 준다.
- * 위치를 아직 확인하는 중에 서버에 위치가 없다고(WEATHER_1902) 하면 등록이 끝날 때까지 기다린다.
- */
+/** 리포트는 모든 블록이 같은 요청을 쓰므로 실패도 여기 한 곳에서만 보여 준다 */
 WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();
@@ -356,9 +352,7 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
   }, [trackEvent, cause, isWaitingForLocation]);
 
   const retryButton = (
-    <WeatherResult.Action tone="light" onPress={reset}>
-      {t('common:actions.retry')}
-    </WeatherResult.Action>
+    <WeatherResult.Action onPress={reset}>{t('common:actions.retry')}</WeatherResult.Action>
   );
 
   return match(error)
@@ -366,7 +360,7 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
       location.status === 'checking' ? (
         <WeatherHero.Loading />
       ) : (
-        <WeatherLocationPrompt onRecovered={reset} />
+        <WeatherHero.LocationUnavailable onRecovered={reset} />
       ),
     )
     .with(P.when(isWeatherProviderUnavailableError), () => (
@@ -378,7 +372,16 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
         {retryButton}
       </WeatherResult>
     ))
-    .with(P.when(isConnectionError), () => (
+    .with(P.when(isTimeoutError), () => (
+      <WeatherResult
+        image={catAnchorImage}
+        title={t('weather:screen.timeout')}
+        description={t('weather:screen.retryLater')}
+      >
+        {retryButton}
+      </WeatherResult>
+    ))
+    .with(P.when(isOfflineError), () => (
       <WeatherResult
         image={catAnchorImage}
         title={t('weather:screen.offline')}
@@ -396,4 +399,40 @@ WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
         {retryButton}
       </WeatherResult>
     ));
+};
+
+interface LocationUnavailableProps {
+  onRecovered: () => void;
+}
+
+/** 서버 저장 위치가 있으면 그 위치를 다시 등록하고, 없으면 기기 위치를 다시 읽은 뒤 리포트 경계를 푼다 */
+WeatherHero.LocationUnavailable = function LocationUnavailable({
+  onRecovered,
+}: LocationUnavailableProps) {
+  const { t } = useTranslation(['weather', 'common']);
+  const location = useWeatherLocation();
+  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
+  const updateLocation = useMutation(useUpdateWeatherLocationMutationOptions());
+
+  const handleRetry = async () => {
+    if (reading?.status === 'located') {
+      const { latitude, longitude } = reading.registered;
+      await updateLocation.mutateAsync({ latitude, longitude }).catch(() => undefined);
+    } else if (location.status === 'unavailable') {
+      await location.retry();
+    }
+    onRecovered();
+  };
+
+  return (
+    <WeatherResult
+      image={catAnchorImage}
+      title={t('weather:locationPrompt.unavailableTitle')}
+      description={t('weather:locationPrompt.unavailableDescription')}
+    >
+      <WeatherResult.Action isLoading={updateLocation.isPending} onPress={handleRetry}>
+        {t('common:actions.retry')}
+      </WeatherResult.Action>
+    </WeatherResult>
+  );
 };

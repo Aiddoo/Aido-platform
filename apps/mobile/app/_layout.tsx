@@ -1,36 +1,37 @@
-import { useAppFonts } from '@src/bootstrap/hooks/use-app-fonts';
 import { useEncryptedStorageBootstrap } from '@src/bootstrap/hooks/use-encrypted-storage-bootstrap';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
+import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/navigation/root-error-boundary-log-events';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
+import { reloadApp } from '@src/shared/infra/application/app-bundle';
+import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { logger } from '@src/shared/infra/logger/global-logger';
-import { createEnvironmentErrorReporter } from '@src/shared/infra/observability-env';
-import { initSentry, wrapRootComponent } from '@src/shared/infra/observability/sentry';
+import {
+  initErrorReporting,
+  wrapRootComponent,
+} from '@src/shared/infra/observability/error-reporting';
 import { openSupportMail } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
-import { reloadAppAsync } from 'expo';
+import { noop } from 'es-toolkit';
 import type { ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Updates from 'expo-updates';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-initSentry();
+initErrorReporting();
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(noop);
 
 // 루트 경계는 DI 밖에서 그려질 수 있어 같은 규칙(Sentry/console)으로 직접 만든다
 const rootErrorReporter = createEnvironmentErrorReporter();
 
 function AppBootstrapLayout() {
-  const fontsLoaded = useAppFonts();
   const encryptedStorageBootstrap = useEncryptedStorageBootstrap();
-  const isReady = fontsLoaded && encryptedStorageBootstrap != null;
 
-  if (!isReady) {
+  if (encryptedStorageBootstrap == null) {
     return null;
   }
 
@@ -43,21 +44,18 @@ function AppBootstrapLayout() {
 
 export default wrapRootComponent(AppBootstrapLayout);
 
-// OTA가 켜져 있으면 받아 둔 업데이트로, 아니면(개발 빌드) 같은 번들로 다시 띄운다
-const restartApp = () =>
-  (Updates.isEnabled ? Updates.reloadAsync() : reloadAppAsync()).catch((error: unknown) =>
-    logger.warn('root_error_boundary.restart_failed', { error: errorMessageOf(error) }),
+function restartApp() {
+  return reloadApp().catch((error: unknown) =>
+    logger.warn(ROOT_ERROR_BOUNDARY_LOG_EVENT.RESTART_FAILED, { error: getErrorMessage(error) }),
   );
+}
 
-/**
- * Provider 안에서 던져진 오류의 마지막 경계. Provider·내비게이터가 없을 수 있어
- * RN 기본 컴포넌트와 디자인 토큰만 쓰고, 문의는 화면 이동 대신 메일로 연다.
- */
+/** Provider·내비게이터가 없을 수 있어 RN 기본 컴포넌트와 디자인 토큰만 쓰고, 문의는 화면 이동 대신 메일로 연다 */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
   useEffect(() => {
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(noop);
     rootErrorReporter.captureException(error, { feature: 'error_boundary' });
   }, [error]);
 

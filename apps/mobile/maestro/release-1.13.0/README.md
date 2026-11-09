@@ -57,7 +57,7 @@ pnpm --filter mobile maestro:release-1.13.0:flag-off # 아래 '기능 플래그 
 | smoke, full           | `invite-cold-start-logged-out`   | 로그아웃 링크 -> 카드 -> 로그인 -> 적용 | 초대 카드 -> `OO님과 친구가 됐어요` + `프리미엄 N일`      | -                       |
 | smoke, full           | `invite-code-entry`              | 유효한 코드 직접 입력                   | 초대 카드                                                 | -                       |
 | smoke, full           | `my-invite`                      | 공유 3종, 복사 토스트, 판, 전체 보기    | `링크를 복사했어요`, 전체/대기 탭, 초대한 B 표시          | -                       |
-| full                  | `entry-points`                   | 친구 빈 상태, 마이페이지, 기능 안내     | 모두 `내 초대 코드` 화면                                  | -                       |
+| full                  | `entry-points`                   | 친구 빈 상태, 마이페이지, 새 소식       | 모두 `내 초대 코드` 화면                                  | -                       |
 | full                  | `premium-grant-subscription`     | 보상 premium 구독 화면                  | `초대 보상으로 프리미엄 이용 중` + `이용 기간`            | -                       |
 | full                  | `avatar-and-date-smoke`          | 화면 왕복 후 아바타, 날짜 복귀          | `나 프로필`                                               | -                       |
 | failure               | `failure-code-format`            | 형식 오류, 고쳐서 재제출                | 같은 화면 오류 + `다시 확인`, 포커스 유지, 재제출 성공    | (클라이언트)            |
@@ -92,12 +92,12 @@ iOS는 Maestro `back`이 동작하지 않아 왼쪽 위 영역을 탭한다. 비
 
 ## 필요한 testID (앱에 추가 대기)
 
-`invite-code-input`, `invite-code-submit`, `invite-code-error`, `invite-code-paste`, `my-invite-code`,
+`invite-code-input`, `invite-code-submit`, `invite-code-error`, `my-invite-code`,
 `my-invite-rotate`, `invite-share-kakao`, `invite-share-copy-link`, `invite-share-system`, `invitees-see-all`,
 `invitees-tab-all`, `invitees-tab-waiting`, `invite-card-signup`, `invite-card-login`, `invite-card-redeem`,
 `invite-result-enter-code`, `invite-result-retry`, `invite-welcome-sheet`,
-`invite-welcome-later`, `friends-empty-invite`, `mypage-invite-card`, `feature-guide-open`,
-`feature-discovery-invite-cta`, `friend-delete`, `friend-delete-confirm`.
+`invite-welcome-later`, `friends-empty-invite`, `mypage-invite-card`, `whats-new-open`,
+`whats-new-release-1.14.0`, `whats-new-step-action`, `friend-delete`, `friend-delete-confirm`.
 친구 목록의 편집 버튼은 헤더 툴바 버튼이라 testID를 받지 않아 접근성 라벨(`list.edit`: `편집`/`Edit`)로 누른다.
 이메일 로그인(`email-login-*`)은 기존 testID를 쓴다. 로그인 시작의 `이메일로 로그인` 버튼은 1.11.0과 같이 텍스트로 누른다.
 

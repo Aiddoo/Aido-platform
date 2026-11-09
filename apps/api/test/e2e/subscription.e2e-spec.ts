@@ -384,4 +384,89 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(lastMoment.premiumGrantEndedAt).toBe(endsAt.toISOString());
     expect(afterWindow.premiumGrantEndedAt).toBeNull();
   });
+
+  it("/me는 스토어 무료 체험 중이면 premiumIsTrial=true와 스토어가 준 체험 끝을, 전환 뒤에는 false를 반환한다", async () => {
+    // Given
+    const user = await context.helpers.createVerifiedUser("billing-trial@example.com", "Test1234!");
+    const trialEndsAt = new Date("2027-02-04T00:00:00.000Z");
+    const nextYear = new Date("2028-02-28T00:00:00.000Z");
+    const trial = SubscriptionEventBuilder.initialPurchase()
+      .withAppUserId(user.userId)
+      .withOriginalTransactionId("billing-trial")
+      .withEventId("billing-trial-start")
+      .withPeriodType("TRIAL")
+      .withPrice(0)
+      .withPurchasedAtMs(at.getTime())
+      .withExpirationAtMs(trialEndsAt.getTime())
+      .build();
+    const conversion = SubscriptionEventBuilder.renewal()
+      .withAppUserId(user.userId)
+      .withOriginalTransactionId("billing-trial")
+      .withEventId("billing-trial-convert")
+      .withTrialConversion()
+      .withExpirationAtMs(nextYear.getTime())
+      .build();
+
+    // When
+    const before = currentUserSchema.parse(
+      (await currentUser(user.accessToken).expect(200)).body.data,
+    );
+    await webhook(trial).expect(200);
+    const during = currentUserSchema.parse(
+      (await currentUser(user.accessToken).expect(200)).body.data,
+    );
+    await webhook(conversion).expect(200);
+    const after = currentUserSchema.parse(
+      (await currentUser(user.accessToken).expect(200)).body.data,
+    );
+
+    // Then
+    expect(before.premiumIsTrial).toBe(false);
+    expect(during).toMatchObject({
+      premiumSource: "STORE",
+      premiumIsTrial: true,
+      willRenew: true,
+      premiumPeriodEndsAt: trialEndsAt.toISOString(),
+    });
+    expect(after).toMatchObject({
+      premiumIsTrial: false,
+      premiumPeriodEndsAt: nextYear.toISOString(),
+    });
+  });
+
+  it.each([
+    { productId: "com.aido.pro.monthly", expected: "MONTHLY" },
+    { productId: "com.aido.pro.yearly:yearly-base", expected: "ANNUAL" },
+    { productId: "premium_monthly", expected: null },
+  ])(
+    "/me는 스토어 상품 $productId의 요금제를 premiumPlanType $expected로 반환한다",
+    async ({ productId, expected }) => {
+      // Given
+      const user = await context.helpers.createVerifiedUser(
+        "billing-plan@example.com",
+        "Test1234!",
+      );
+      const purchased = SubscriptionEventBuilder.initialPurchase()
+        .withAppUserId(user.userId)
+        .withOriginalTransactionId("billing-plan")
+        .withEventId("billing-plan-purchase")
+        .withProductId(productId)
+        .withPurchasedAtMs(at.getTime())
+        .withExpirationAtMs(futureExpiry.getTime())
+        .build();
+
+      // When
+      const before = currentUserSchema.parse(
+        (await currentUser(user.accessToken).expect(200)).body.data,
+      );
+      await webhook(purchased).expect(200);
+      const after = currentUserSchema.parse(
+        (await currentUser(user.accessToken).expect(200)).body.data,
+      );
+
+      // Then
+      expect(before.premiumPlanType).toBeNull();
+      expect(after).toMatchObject({ premiumSource: "STORE", premiumPlanType: expected });
+    },
+  );
 });

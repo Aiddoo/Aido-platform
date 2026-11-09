@@ -1,0 +1,50 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
+
+import type {
+  VoiceCaptureOutcome,
+  VoiceDurationBucket,
+  VoicePlanAnalyticsSource,
+} from '../constants/voice.events';
+import type { VoiceCaptureState } from '../domains/voice-capture.model';
+import { VoicePlanPolicy, type VoicePlan, type VoicePlanSource } from '../domains/voice-plan.model';
+
+const SECONDS = { thirtySeconds: 30, threeMinutes: 180, tenMinutes: 600 } as const;
+
+/** 말한 길이는 정확한 값 대신 구간으로만 남긴다 */
+export function getDurationBucket(elapsedMs: number): VoiceDurationBucket {
+  const seconds = elapsedMs / SECOND_MS;
+  if (seconds < SECONDS.thirtySeconds) {
+    return 'lt_30s';
+  }
+  if (seconds < SECONDS.threeMinutes) {
+    return '30s_3m';
+  }
+  return seconds < SECONDS.tenMinutes ? '3m_10m' : '10m_30m';
+}
+
+const ANALYTICS_SOURCE = {
+  'quick-voice': 'quick_voice',
+  'quick-text': 'quick_text',
+  'voice-note': 'voice_note',
+  memo: 'memo',
+} as const satisfies Record<VoicePlanSource, VoicePlanAnalyticsSource>;
+
+export function toAnalyticsSource(source: VoicePlanSource) {
+  return ANALYTICS_SOURCE[source];
+}
+
+/** 제목·내용 없이 개수만 센다 */
+export function summarizePlanForAnalytics(plan: VoicePlan) {
+  return {
+    todo_count: plan.actions.filter(VoicePlanPolicy.isTodoAction).length,
+    memo_count: plan.actions.filter((action) => !VoicePlanPolicy.isTodoAction(action)).length,
+    duplicate_count: plan.actions.filter(VoicePlanPolicy.isDuplicateAction).length,
+  };
+}
+
+/** 듣기를 끝낸 뒤의 상태로 결과를 나눈다. 글자가 있으면 정리로 가고 없으면 처음으로 돌아간다 */
+export function toCaptureOutcome(
+  state: Pick<VoiceCaptureState, 'status'>,
+): Extract<VoiceCaptureOutcome, 'completed' | 'empty'> {
+  return state.status === 'planning' ? 'completed' : 'empty';
+}

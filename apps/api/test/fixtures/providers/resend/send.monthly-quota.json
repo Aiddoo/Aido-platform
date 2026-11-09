@@ -1,0 +1,5 @@
+{
+  "name": "monthly_quota_exceeded",
+  "statusCode": 429,
+  "message": "You have reached your monthly email sending quota."
+}

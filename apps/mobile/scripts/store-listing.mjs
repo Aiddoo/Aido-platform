@@ -236,7 +236,6 @@ export function checkListings() {
       }
     }
 
-    // ko/en 필드 짝 맞추기
     for (const [left, right] of config.pairs) {
       const a = Object.keys(loaded[left] ?? {}).sort();
       const b = Object.keys(loaded[right] ?? {}).sort();
@@ -400,7 +399,6 @@ function report() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { positionals, values } = parseArgs({
-    // pnpm이 넘기는 `--` 구분자는 버린다.
     args: process.argv.slice(2).filter((arg) => arg !== '--'),
     allowPositionals: true,
     options: { out: { type: 'string' }, quiet: { type: 'boolean', default: false } },

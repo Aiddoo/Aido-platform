@@ -14,6 +14,20 @@ export interface ConsentSeedInput {
   marketingPushAgreedAt?: Date | null;
 }
 
+/** 광고성 수신 동의 사실을 다시 알릴 사용자 */
+export interface MarketingReconfirmTarget {
+  readonly userId: string;
+  readonly marketingAgreedAt: Date | null;
+  readonly marketingPushAgreedAt: Date | null;
+}
+
+export interface FindMarketingReconfirmTargetsParams {
+  /** 이 시각 이전에 동의했거나 마지막으로 알린 사용자 */
+  readonly cutoff: Date;
+  readonly afterUserId?: string;
+  readonly limit: number;
+}
+
 /**
  * 약관 동의 리포지토리 포트.
  */
@@ -29,6 +43,18 @@ export interface UserConsentRepositoryPort {
     userId: string,
     data: { agreedAt: Date | null },
   ): Promise<UserConsentRecord>;
+  /** 활성 사용자 중 광고성 동의(또는 마지막 재확인)가 cutoff 이전인 사용자를 userId 순으로 읽는다. */
+  findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]>;
+  /**
+   * 아직 대상인 사용자만 재확인 시각을 기록하고 기록한 사용자를 돌려준다. 두 실행이 같은 사용자를 고르면
+   * 행 잠금 뒤 조건을 다시 보므로 한 실행만 얻는다.
+   */
+  claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]>;
   /** 동의하면 agreedAt에 시각, 거부·철회하면 null을 쓰고 답한 안내 version을 함께 남긴다. */
   upsertAiDataSharingConsent(
     userId: string,

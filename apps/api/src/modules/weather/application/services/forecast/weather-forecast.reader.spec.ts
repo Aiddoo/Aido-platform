@@ -48,7 +48,10 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
     // Given
     const cached = weatherForecastFixture({ temperatureMax: 17 });
-    await cache.saveForecast(60, 127, kmaTimingFixture(date), cached);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: cached }],
+      kmaTimingFixture(date),
+    );
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
     // Then
@@ -72,13 +75,54 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     // Given
     const previous = new Date("2026-07-22T00:00:00.000Z");
     const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.saveForecast(60, 127, kmaTimingFixture(previous), saved);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: saved }],
+      kmaTimingFixture(previous),
+    );
     weatherProvider.failure = new Error("provider down");
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
     // Then
     expect(result).toEqual(saved);
     expect(weatherProvider.calls).toHaveLength(1);
+  });
+
+  it("같은 격자를 동시에 물으면 공급자를 한 번만 부르고 같은 예보를 나눠 쓴다", async () => {
+    // Given
+    const location = weatherLocationFixture();
+    // When
+    const results = await Promise.all([
+      reader.fetchForLocation(location, date),
+      reader.fetchForLocation(location, date),
+      reader.fetchForLocation(location, date),
+    ]);
+    // Then
+    expect(weatherProvider.calls).toHaveLength(1);
+    expect(results[1]).toEqual(results[0]);
+    expect(results[2]).toEqual(results[0]);
+  });
+
+  it("실패한 격자는 1분 동안 공급자를 부르지 않고 latest로 넘어가고 1분 뒤 다시 부른다", async () => {
+    // Given
+    const previous = new Date("2026-07-22T00:00:00.000Z");
+    const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: saved }],
+      kmaTimingFixture(previous),
+    );
+    weatherProvider.failure = new Error("provider down");
+    await reader.fetchForLocation(weatherLocationFixture(), date);
+    // When
+    const duringCooldown = await reader.fetchForLocation(weatherLocationFixture(), date);
+    const callsDuringCooldown = weatherProvider.calls.length;
+    vi.setSystemTime(date.getTime() + 61_000);
+    weatherProvider.failure = null;
+    const recovered = await reader.fetchForLocation(weatherLocationFixture(), date);
+    // Then
+    expect(duringCooldown).toEqual(saved);
+    expect(callsDuringCooldown).toBe(1);
+    expect(weatherProvider.calls).toHaveLength(2);
+    expect(recovered.temperatureMax).not.toBe(18);
   });
 
   it("공급자 실패와 latest 없음이 겹치면 WEATHER_1901을 반환한다", async () => {
@@ -104,8 +148,14 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
       date: new Date("2026-07-22T00:00:00.000Z"),
       temperatureMax: 33,
     });
-    await cache.saveForecast(60, 127, kmaTimingFixture(date), hit);
-    await cache.saveForecast(52, 38, kmaTimingFixture(latest.date), latest);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: hit }],
+      kmaTimingFixture(date),
+    );
+    await cache.saveForecastBatch(
+      [{ gridX: 52, gridY: 38, forecast: latest }],
+      kmaTimingFixture(latest.date),
+    );
     weatherProvider.results.set("35.1796:129.0756", fresh);
     weatherProvider.results.set("33.4996:126.5312", new Error("jeju down"));
     weatherProvider.results.set("35.8:128.6", new Error("no fallback"));

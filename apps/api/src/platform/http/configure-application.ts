@@ -10,6 +10,7 @@ import { createCorsOptions } from "#api/platform/config/utils/cors-options";
 
 import { API_VERSIONING_OPTIONS } from "./api-versioning.js";
 import { configureRequestIdentity } from "./configure-request-identity.js";
+import { configureRouteBodyLimits } from "./route-body-limits.js";
 
 export interface ApplicationConfiguration {
   nodeEnv: EnvConfig["NODE_ENV"];
@@ -30,6 +31,7 @@ export function configureApplication(
   configureRequestIdentity(app);
   app.use(helmet());
   app.enableCors(createCorsOptions(config.nodeEnv, config.corsOrigins));
+  configureRouteBodyLimits(app);
   app.useGlobalPipes(
     new StandardSchemaValidationPipe({
       exceptionFactory: (issues) =>

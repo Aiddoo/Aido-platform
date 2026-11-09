@@ -32,6 +32,15 @@ describe("Register — 이메일 계정 등록", () => {
     return { ...fixture, useCase };
   }
 
+  it("가입 요청의 언어를 기본 카테고리 이름에 넘긴다", async () => {
+    // Given
+    const fixture = given();
+    // When
+    await fixture.useCase.execute({ ...input, metadata: { locale: "en" } });
+    // Then
+    expect(fixture.seeder.categoryLocales).toEqual(["en"]);
+  });
+
   const input = {
     email: "new@example.com",
     password: AUTH_CREDENTIAL_PASSWORD,
@@ -78,6 +87,7 @@ describe("Register — 이메일 계정 등록", () => {
         consent: {
           termsAgreedAt: AUTH_CREDENTIAL_TIME,
           privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+          agreedTermsVersion: "1.0.0",
           marketingAgreedAt: undefined,
           marketingPushAgreedAt: undefined,
         },
@@ -157,6 +167,17 @@ describe("Register — 이메일 계정 등록", () => {
       expect(fixture.adminEventNotifier.notifications).toEqual([]);
     },
   );
+
+  it("발송 큐에 담지 못해도 emailSent:false와 재발송 안내를 돌려준다", async () => {
+    // Given
+    const fixture = given({ empty: true });
+    vi.spyOn(fixture.verificationService, "sendVerificationEmail").mockResolvedValueOnce(false);
+    // When
+    const result = await fixture.useCase.execute(input);
+    // Then
+    expect(result.emailSent).toBe(false);
+    expect(result.message).toContain("재발송");
+  });
 
   it("메일 발송 예외가 나도 저장한 가입을 유지하고 재발송 안내를 반환한다", async () => {
     // Given

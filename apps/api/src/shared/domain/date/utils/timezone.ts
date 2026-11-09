@@ -4,6 +4,9 @@ import { DATE_FORMAT } from "../constants/date.constant.js";
 import { now } from "./core.js";
 
 const DEFAULT_TIMEZONE = "UTC";
+const MINUTE_MS = 60 * 1000;
+/** 겹치는 구간은 길어야 2시간이라 이만큼 앞선 시점이면 항상 전환 전이다. */
+const OVERLAP_LOOKBACK_MS = 3 * 60 * MINUTE_MS;
 
 /**
  * 알림 배송·자격 판정 전용 폴백 타임존.
@@ -54,6 +57,20 @@ export function resolveDeliveryTimezone(value: unknown): string {
 }
 
 /**
+ * 할 일 벽시계를 순간으로 바꿀 때 쓰는 시간대. 앞선 후보부터 쓴다(요청 → 저장값).
+ * `resolveDeliveryTimezone`과 달리 저장된 UTC는 진짜 UTC 사용자일 수 있어 그대로 둔다.
+ */
+export function resolveWallClockTimezone(...candidates: readonly unknown[]): string {
+  for (const candidate of candidates) {
+    const timezone = normalizeIanaTimezone(candidate);
+    if (timezone != null) {
+      return timezone;
+    }
+  }
+  return DEFAULT_DELIVERY_TIMEZONE;
+}
+
+/**
  * 지정 타임존 기준 "오늘" 날짜를 UTC midnight Date로 반환
  *
  * 사용자의 로컬 타임존에서 "오늘"이 무슨 날짜인지 확인할 때 사용합니다.
@@ -81,7 +98,22 @@ export function parseLocalDateTime(
   timeStr: string,
   tz: string = DEFAULT_TIMEZONE,
 ): Date {
-  return dayjs.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz)).utc().toDate();
+  const timezone = resolveTimezone(tz);
+  const parsed = dayjs.tz(`${dateStr}T${timeStr}:00`, timezone);
+  // 가을 전환으로 같은 벽시계가 두 번이면 RFC 5545대로 앞쪽(전환 전 오프셋)을 쓴다.
+  // 조금 앞선 시점의 오프셋이 더 크면 그 사이에 시계가 되돌아간 것이다.
+  const offsetBefore = dayjs(parsed.valueOf() - OVERLAP_LOOKBACK_MS)
+    .tz(timezone)
+    .utcOffset();
+  if (offsetBefore > parsed.utcOffset()) {
+    const earlier = dayjs(parsed.valueOf() - (offsetBefore - parsed.utcOffset()) * MINUTE_MS).tz(
+      timezone,
+    );
+    if (earlier.format("YYYY-MM-DDTHH:mm") === `${dateStr}T${timeStr}`) {
+      return earlier.utc().toDate();
+    }
+  }
+  return parsed.utc().toDate();
 }
 
 /**
@@ -107,9 +139,21 @@ export function localDateInTimezone(date: Date, tz: string = DEFAULT_TIMEZONE): 
 }
 
 /**
+ * 지정 타임존 달력에서 from의 날짜부터 to의 날짜까지의 일수. ms ÷ 하루로 세지 않아
+ * DST·자정·윤일 경계에서도 사용자가 보는 달력 날짜 차이와 같다.
+ *
+ * @example calendarDaysBetween(new Date('2026-11-09T14:59:00Z'), new Date('2026-11-12T15:00:00Z'), 'Asia/Seoul') // 4
+ */
+export function calendarDaysBetween(from: Date, to: Date, tz: string = DEFAULT_TIMEZONE): number {
+  return dayjs
+    .utc(localDateInTimezone(to, tz))
+    .diff(dayjs.utc(localDateInTimezone(from, tz)), "day");
+}
+
+/**
  * UTC Date → 지정 타임존의 로컬 시간 문자열 (HH:mm)
  *
- * `createRecurring`처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.
+ * 단일 할 일을 반복으로 전환할 때처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.
  * `parseLocalDateTime`의 역변환입니다.
  *
  * @example toLocalTimeString(new Date('2026-01-15T05:00:00Z'), 'Asia/Seoul') // "14:00"
@@ -176,4 +220,17 @@ export function dayWindowInTimezone(
  */
 export function firstOfMonthInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
   return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
+}
+
+/**
+ * 지정 타임존의 다음 달 1일 00:00을 실제 UTC timestamp로 반환. 월간 사용량이 다시 0이 되는 시각이다.
+ *
+ * @example firstOfNextMonthInTimezone(new Date('2026-04-30T15:00:00Z'), 'Asia/Seoul')
+ *   // KST 2026-05-01 00:00 → KST 2026-06-01 00:00 → 2026-05-31T15:00:00.000Z
+ */
+export function firstOfNextMonthInTimezone(
+  date: Date = now(),
+  tz: string = DEFAULT_TIMEZONE,
+): Date {
+  return dayjs(date).tz(resolveTimezone(tz)).startOf("month").add(1, "month").utc().toDate();
 }

@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
+import { TODO_ITEM_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import {
   Body,
   Controller,
@@ -22,6 +22,7 @@ import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
+  ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
   ApiErrorCodesResponse,
@@ -32,14 +33,15 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException, DomainException } from "#api/shared/domain/index";
 
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";
-import { CreateRecurringTodos } from "../../../../application/use-cases/todos/create-recurring-todos.use-case.js";
 import { CreateTodo } from "../../../../application/use-cases/todos/create-todo.use-case.js";
 import { DeleteTodoItem } from "../../../../application/use-cases/todos/delete-todo-item.use-case.js";
 import { DeleteTodo } from "../../../../application/use-cases/todos/delete-todo.use-case.js";
+import { EditTodo } from "../../../../application/use-cases/todos/edit-todo.use-case.js";
 import { GetFriendTodos } from "../../../../application/use-cases/todos/get-friend-todos.use-case.js";
 import { GetTodoById } from "../../../../application/use-cases/todos/get-todo-by-id.use-case.js";
 import { GetTodoResourceLimit } from "../../../../application/use-cases/todos/get-todo-resource-limit.use-case.js";
@@ -52,7 +54,6 @@ import { UpdateTodoItem } from "../../../../application/use-cases/todos/update-t
 import { UpdateTodoSchedule } from "../../../../application/use-cases/todos/update-todo-schedule.use-case.js";
 import { UpdateTodoTitle } from "../../../../application/use-cases/todos/update-todo-title.use-case.js";
 import { UpdateTodoVisibility } from "../../../../application/use-cases/todos/update-todo-visibility.use-case.js";
-import { UpdateTodo } from "../../../../application/use-cases/todos/update-todo.use-case.js";
 import {
   ChangeTodoCategoryDto,
   CreateRecurringTodoDto,
@@ -60,7 +61,9 @@ import {
   CreateTodoDto,
   CreateTodoItemDto,
   CreateTodoResponseDto,
+  DeleteTodoQueryDto,
   DeleteTodoResponseDto,
+  FriendTodoListResponseDto,
   GetFriendTodosQueryDto,
   GetTodosQueryDto,
   ReorderTodoDto,
@@ -94,8 +97,7 @@ export class TodoController {
     private readonly getTodoByIdUseCase: GetTodoById,
     private readonly getFriendTodosUseCase: GetFriendTodos,
     private readonly createTodoUseCase: CreateTodo,
-    private readonly createRecurringTodosUseCase: CreateRecurringTodos,
-    private readonly updateTodoUseCase: UpdateTodo,
+    private readonly editTodoUseCase: EditTodo,
     private readonly toggleTodoCompleteUseCase: ToggleTodoComplete,
     private readonly updateTodoVisibilityUseCase: UpdateTodoVisibility,
     private readonly changeTodoCategoryUseCase: ChangeTodoCategory,
@@ -176,7 +178,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -191,10 +193,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 **선택 필드**
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)
 - \`items\`: 하위 항목 배열 (선택, 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개). 투두와 함께 체크리스트를 일괄 생성합니다.
+- \`repeat\`: 반복 규칙 (선택). 있으면 \`endDate\`는 비워야 하고, 앞으로 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 치 회차를 만듭니다. 응답의 \`todo\`는 첫 회차, \`series\`는 규칙입니다. 체크리스트는 회차마다 복사합니다.
 
 ---
 
@@ -226,30 +229,39 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiCreatedResponse({ type: CreateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-  @ApiForbiddenError(ErrorCode.TODO_0811)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
+    ErrorCode.TODO_0811,
+    ErrorCode.TODO_0813,
+    ErrorCode.TODO_0842,
+  ])
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.TODO_0843, ErrorCode.TODO_0845])
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateTodoResponseDto> {
-    const todo = await this.createTodoUseCase.execute({
+    const { todos, series } = await this.createTodoUseCase.execute({
       userId: user.userId,
       title: dto.title,
       categoryId: dto.categoryId,
       startDate: parseDateOnly(dto.startDate),
       endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
-      scheduledTime:
-        dto.scheduledTime == null
-          ? undefined
-          : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
+      scheduledTime: dto.scheduledTime,
+      timezone,
       isAllDay: dto.isAllDay,
       visibility: dto.visibility,
       items: dto.items,
+      repeat: dto.repeat,
     });
+    const todo = todos.at(0);
+    if (todo == null) {
+      throw new ApplicationException(ErrorCode.SYS_0001, { reason: "created todo missing" });
+    }
 
     return {
       message: "할 일이 생성되었습니다.",
       todo,
+      ...(series != null && { series }),
     };
   }
 
@@ -257,13 +269,16 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
-    summary: "반복 할 일 생성",
+    summary: "반복 할 일 생성 (출시 앱 호환)",
     operationId: "createRecurringTodo",
-    description: `날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
+    deprecated: true,
+    description: `지원하는 마지막 앱 버전: 1.14.x. 새 앱은 \`POST /todos\`의 \`repeat\`를 씁니다.
+
+날짜 범위와 요일 조합에 따라 반복 할 일을 만듭니다. 앞으로 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 치 회차를 만들고 나머지는 매일 작업이 채웁니다.
 
 **필수 필드**
 - \`title\`: 할 일 제목 (1-200자)
@@ -272,11 +287,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`endDate\`: 반복 종료 날짜 (YYYY-MM-DD)
 - \`daysOfWeek\`: 반복할 요일 배열 (MON/TUE/WED/THU/FRI/SAT/SUN)
 
-**예시**: 3월 1일~31일, 매주 월/수/금 → 약 13개의 독립 할 일 생성
+**예시**: 3월 1일~31일, 매주 월/수/금 → 약 13개의 할 일 생성
+
+**응답**
+- \`count\`: 이번에 만든 할 일 수
 
 **제한사항**
-- 한 번에 최대 100개까지 생성 가능
-- 활성(미완료) 할 일 한도를 초과하면 전체 요청 거부`,
+- 카테고리 한도를 초과하면 전체 요청 거부
+- 진행 중인 반복이 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY}개면 \`TODO_0813\`으로 거부`,
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -286,27 +304,43 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   async createRecurring(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateRecurringTodoResponseDto> {
-    const result = await this.createRecurringTodosUseCase.execute({
-      data: {
+    const { todos } = await this.createTodoUseCase
+      .execute({
         userId: user.userId,
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        daysOfWeek: dto.daysOfWeek,
+        startDate: parseDateOnly(dto.startDate),
         scheduledTime: dto.scheduledTime,
+        timezone,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
-      },
-      timezone,
-    });
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: dto.daysOfWeek,
+          end: { type: "UNTIL", date: dto.endDate },
+        },
+        usesLegacySeriesLimit: true,
+      })
+      .catch((error: unknown) => {
+        // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.
+        if (error instanceof DomainException && error.errorCode === ErrorCode.TODO_0843) {
+          throw new ApplicationException(ErrorCode.SYS_0002, {
+            message: "선택한 기간과 요일에 해당하는 날짜가 없습니다",
+            startDate: dto.startDate,
+            endDate: dto.endDate,
+            daysOfWeek: dto.daysOfWeek,
+          });
+        }
+        throw error;
+      });
 
     return {
-      message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
-      todos: result.todos,
-      count: result.count,
+      message: `반복 할 일이 ${todos.length}개 생성되었습니다.`,
+      todos: [...todos],
+      count: todos.length,
     };
   }
 
@@ -411,9 +445,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 #### 시간 처리 (scheduledTime)
 
 - **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
-- **시간 이벤트** (\`isAllDay=false\`): \`scheduledTime\`은 UTC ISO 8601 형식
-  - 생성/수정 시 \`X-Timezone\` 헤더 기반으로 로컬→UTC 변환하여 저장
-  - 응답은 UTC로 반환, 클라이언트에서 로컬 시간으로 표시
+- **시간 이벤트** (\`isAllDay=false\`): \`scheduledLocalTime\`(HH:mm)이 사용자가 고른 시각이고 어디서든 그 시각입니다
+  - \`scheduledTime\`(UTC ISO 8601)은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이고 시간대가 바뀌면 다시 계산됩니다
+  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다. 키가 없는 옛 서버 응답에서만 \`scheduledTime\`을 기기 시간대로 바꿉니다
 
 #### 에러 케이스
 
@@ -516,14 +550,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
 | 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |`,
   })
-  @ApiSuccessResponse({ type: TodoListResponseDto })
+  @ApiSuccessResponse({ type: FriendTodoListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.FOLLOW_0906)
   async findFriendTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
-  ): Promise<TodoListResponseDto> {
+  ): Promise<FriendTodoListResponseDto> {
     const result = await this.getFriendTodosUseCase.execute({
       userId: user.userId,
       friendUserId: params.userId,
@@ -545,7 +579,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -553,21 +587,41 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     operationId: "updateTodo",
     description: `할 일의 정보를 부분 수정합니다.
 
-**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
+**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed
+
+**반복 할 일**
+- \`scope\`: 생략하거나 \`THIS_ONLY\`면 이 회차만 고칩니다. 옮겨도 원래 회차 날짜는 그대로라 다시 만들어지지 않습니다.
+- \`scope=THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 고칩니다. 완료한 회차는 그대로입니다. 첫 회차에서 고르면 전체를 고칩니다. 날짜·완료는 이 회차에만 적용합니다.
+- \`repeat\`: 생략은 변경 없음, \`null\`은 이 회차 뒤로 반복 끝내기, 값은 단일 할 일을 반복으로 전환하거나 \`scope=THIS_AND_FOLLOWING\`과 함께 규칙을 바꿉니다.
+- \`checklist\`: \`scope=THIS_AND_FOLLOWING\` 전용. 새로 만드는 회차에 복사합니다. 이미 만든 회차의 진행은 그대로입니다.`,
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ErrorCode.TODO_0841,
+    ErrorCode.TODO_CATEGORY_0851,
+  ])
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
+    ErrorCode.TODO_0843,
+    ErrorCode.TODO_0844,
+    ErrorCode.TODO_0845,
+  ])
+  @ApiForbiddenError(ErrorCode.TODO_0842)
+  @ApiConflictError(ErrorCode.TODO_0846)
   async update(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
-    const todo = await this.updateTodoUseCase.execute({
+    const todo = await this.editTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
       timezone,
+      scope: dto.scope,
+      repeat: dto.repeat,
+      checklist: dto.checklist,
       data: {
         title: dto.title,
         categoryId: dto.categoryId,
@@ -597,7 +651,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -698,7 +752,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 없으면 저장된 사용자 시간대",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -709,7 +763,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 **요청 필드** (\`startDate\` 필수, 나머지 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). 어디서든 그 시각입니다. 순간은 \`X-Timezone\`(없으면 저장된 사용자 시간대)으로 만듭니다.
 - \`isAllDay\`: 종일 여부`,
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
@@ -719,7 +773,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
-    @Timezone() timezone: string,
+    @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.updateTodoScheduleUseCase.execute({
       id: params.id,
@@ -727,12 +781,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       schedule: {
         startDate: parseDateOnly(dto.startDate),
         endDate: dto.endDate == null ? null : parseDateOnly(dto.endDate),
-        scheduledTime:
-          dto.scheduledTime == null
-            ? null
-            : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
+        scheduledTime: dto.scheduledTime ?? null,
         isAllDay: dto.isAllDay ?? true,
       },
+      timezone,
     });
 
     return {
@@ -810,18 +862,26 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     operationId: "deleteTodo",
     description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
 
-할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).`,
+할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).
+
+**반복 할 일** (\`scope\`)
+- 생략하거나 \`THIS_ONLY\`: 이 회차만 지웁니다. 횟수 종료에서는 지운 날짜도 횟수에 셉니다.
+- \`THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 지우고 반복을 끝냅니다. 완료한 회차는 남습니다.
+- \`ALL\`: 완료한 회차까지 모두 지웁니다.`,
   })
   @ApiSuccessResponse({ type: DeleteTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0841])
+  @ApiBadRequestError(ErrorCode.TODO_0844)
   async delete(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Query({ schema: DeleteTodoQueryDto }) query: DeleteTodoQueryDto,
   ): Promise<DeleteTodoResponseDto> {
     await this.deleteTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
+      scope: query.scope,
     });
 
     return {
@@ -843,6 +903,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 **동작**
 - 새 항목은 기존 항목 맨 뒤에 추가됩니다 (\`sortOrder\` 자동 증가)
+- 완료한 할 일에 추가하면 할 일이 미완료로 돌아갑니다
 - 투두당 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가 가능
 
 **응답**
@@ -870,11 +931,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
+    @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.addTodoItemUseCase.execute({
       todoId: params.id,
       userId: user.userId,
       title: dto.title,
+      timezone,
     });
 
     return {

@@ -1,4 +1,4 @@
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-quota.stub";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
 import { resolveRequestLocale } from "./resolve-request-locale.js";
 

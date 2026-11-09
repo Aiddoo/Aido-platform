@@ -1,4 +1,3 @@
-import { AiProviderError } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
   createAiAssistanceFixture,
   pauseAiResponse,
@@ -7,6 +6,7 @@ import {
   withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance.fixture";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 describe("GenerateReport", () => {
   it.each([
@@ -215,7 +215,7 @@ describe("GenerateReport", () => {
       ).toBeNull();
       // Then - 집계·AI·저장 모두 생략
       expect(f.todoStatsReader.calls).toEqual([]);
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved).toEqual([]);
     }),
   );
@@ -258,10 +258,10 @@ describe("GenerateReport", () => {
           aiTips: createReportAiResponse(locale).tips,
           stats: { totalTodos: 4, completedTodos: 3 },
           contentSource: "AI",
-          promptVersion: "report@v2.1",
+          promptVersion: "report@3",
         });
         expect(f.todoStatsReader.calls[0]?.startDate.toISOString()).toBe(start);
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
         expect(f.access.locks).toEqual([true]);
         expect(f.access.reads.map((row) => row.inUnitOfWork)).toEqual([false, true]);
       }),
@@ -288,7 +288,7 @@ describe("GenerateReport", () => {
     withAiAssistanceTime(async () => {
       // Given - 유료 상태 변경 또는 retained ACTIVE soft deletion, provider 불가용
       const f = createAiAssistanceFixture();
-      f.aiProvider.setAvailable(false);
+      f.generator.setAvailable(false);
       if (state === "deleted") {
         f.access.deletedAt = new Date();
         f.access.status = "SUSPENDED";
@@ -304,7 +304,7 @@ describe("GenerateReport", () => {
         }),
       ).toBeNull();
       // Then - AI·fallback·쓰기 모두 0
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved).toEqual([]);
       expect(f.todoStatsReader.calls).toEqual([]);
     }),
@@ -316,7 +316,7 @@ describe("GenerateReport", () => {
       withAiAssistanceTime(async () => {
         // Given - 정상 유료 사용자, AI 응답 대기
         const f = useReportResponse(createAiAssistanceFixture());
-        const gate = pauseAiResponse(f.aiProvider);
+        const gate = pauseAiResponse(f.generator);
         const pending = f.generateReport.execute({
           userId: f.userId,
           timezone: "Asia/Seoul",
@@ -338,7 +338,7 @@ describe("GenerateReport", () => {
         }
         // Then - 이미 시작한 AI 1회, 실제 저장 0
         expect(await pending).toBeNull();
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
         expect(f.reportRepository.saved).toEqual([]);
         expect(f.access.locks).toEqual([true]);
       }),
@@ -350,7 +350,7 @@ describe("GenerateReport", () => {
       withAiAssistanceTime(async () => {
         // Given - summary/tips 필수 필드가 없는 실제 원본
         const f = useReportActivity(createAiAssistanceFixture());
-        f.aiProvider.setRawResponse({});
+        f.generator.setRawResponse({});
         // When - 실제 report schema를 사용하는 생성
         const result = await f.generateReport.execute({
           userId: f.userId,
@@ -366,15 +366,15 @@ describe("GenerateReport", () => {
           createReportAiResponse(locale).summary,
         );
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
       }),
   );
 
-  it("provider 불가용 시 호출 없이 fallback을 저장한다", () =>
+  it("보낼 수 있는 AI 업체가 없으면 통계 기반 fallback을 저장한다", () =>
     withAiAssistanceTime(async () => {
       // Given - 유료 사용자, provider 불가용
       const f = useReportActivity(createAiAssistanceFixture());
-      f.aiProvider.setAvailable(false);
+      f.generator.setAvailable(false);
       // When - 실제 생성
       expect(
         await f.generateReport.execute({
@@ -384,7 +384,7 @@ describe("GenerateReport", () => {
         }),
       ).not.toBeNull();
       // Then - AI 없이 로컬 fallback 저장
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "FALLBACK" });
       expect(f.reportRepository.saved[0]?.aiSummary).toBeTruthy();
     }));
 
@@ -396,7 +396,7 @@ describe("GenerateReport", () => {
       // When
       await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
       // Then - 공급자를 부르지 않고 출처를 구분해 저장
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({
         contentSource: "NO_AI_CONSENT",
         promptVersion: null,
@@ -411,7 +411,7 @@ describe("GenerateReport", () => {
       // When
       await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
       // Then
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "NO_AI_CONSENT" });
     }));
 
@@ -428,7 +428,7 @@ describe("GenerateReport", () => {
         locale: "ko",
       });
       // Then
-      expect(f.aiProvider.getCallCount()).toBe(1);
+      expect(f.generator.getCallCount()).toBe(1);
       expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "AI" });
     }));
 
@@ -439,7 +439,7 @@ describe("GenerateReport", () => {
       // When
       await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
       // Then
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({
         hasActivity: false,
         contentSource: "TEMPLATE",
@@ -448,14 +448,14 @@ describe("GenerateReport", () => {
       });
     }));
 
-  it.each(["RATE_LIMITED", "UPSTREAM", "TIMEOUT"] as const)(
+  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT", "CIRCUIT_OPEN"] as const)(
     "마지막 시도 전 %s는 폴백을 저장하지 않고 잡 재시도를 위해 다시 던진다",
     (kind) =>
       withAiAssistanceTime(async () => {
         // Given
         const f = useReportActivity(createAiAssistanceFixture());
-        const failure = new AiProviderError(kind, undefined);
-        f.aiProvider.setInvalidResponse(failure);
+        const failure = createAiGenerationError(kind);
+        f.generator.setInvalidResponse(failure);
         // When
         const execution = f.generateReport.execute({
           userId: f.userId,
@@ -474,7 +474,7 @@ describe("GenerateReport", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = useReportActivity(createAiAssistanceFixture());
-      f.aiProvider.setInvalidResponse(new AiProviderError("RATE_LIMITED", 429));
+      f.generator.setInvalidResponse(createAiGenerationError("RATE_LIMITED"));
       // When
       await f.generateReport.execute({
         userId: f.userId,
@@ -499,11 +499,27 @@ describe("GenerateReport", () => {
       );
     }));
 
+  it("마지막 시도까지 회로가 열려 있으면 통계 기반 폴백을 저장한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = useReportActivity(createAiAssistanceFixture());
+      f.generator.setInvalidResponse(createAiGenerationError("CIRCUIT_OPEN"));
+      // When
+      await f.generateReport.execute({
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+        isFinalAttempt: true,
+      });
+      // Then
+      expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
+    }));
+
   it("재시도로 회복되지 않는 출력 오류는 첫 시도에서도 폴백을 저장한다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = useReportActivity(createAiAssistanceFixture());
-      f.aiProvider.setInvalidResponse(new AiProviderError("TRUNCATED", undefined));
+      f.generator.setInvalidResponse(createAiGenerationError("TRUNCATED"));
       // When
       const result = await f.generateReport.execute({
         userId: f.userId,
@@ -516,11 +532,36 @@ describe("GenerateReport", () => {
       expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
     }));
 
+  it.each(["HALTED", "USER_SPEND_LIMITED"] as const)(
+    "%s로 업체를 부르지 않았으면 첫 시도에서도 재시도 없이 폴백을 저장하고 error로 남기지 않는다",
+    (kind) =>
+      withAiAssistanceTime(async () => {
+        // Given
+        const f = useReportActivity(createAiAssistanceFixture());
+        f.generator.setInvalidResponse(createAiGenerationError(kind));
+        // When
+        const result = await f.generateReport.execute({
+          userId: f.userId,
+          timezone: "Asia/Seoul",
+          type: "WEEKLY",
+          isFinalAttempt: false,
+        });
+        // Then
+        expect(result).not.toBeNull();
+        expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
+        expect(f.logger.warn).toHaveBeenCalledWith({
+          event: "ai.report.provider.unavailable",
+          errorType: kind,
+        });
+        expect(f.logger.error).not.toHaveBeenCalled();
+      }),
+  );
+
   it("요약·팁이 비어 있는 출력은 저장하지 않고 폴백으로 바꾼다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = useReportActivity(createAiAssistanceFixture());
-      f.aiProvider.setRawResponse({ summary: " ", tips: [] });
+      f.generator.setRawResponse({ summary: " ", tips: [] });
       // When
       await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
       // Then
@@ -552,7 +593,7 @@ describe("GenerateReport", () => {
         hasActivity: true,
         generatedAt: new Date("2026-01-05T00:00:00Z"),
         contentSource: "AI",
-        promptVersion: "report@v2",
+        promptVersion: "report@v2.1",
       });
       // When
       await f.generateReport.execute({
@@ -562,8 +603,8 @@ describe("GenerateReport", () => {
         locale: "en",
       });
       // Then
-      expect(f.aiProvider.getLastPrompt()).not.toContain("지난 한국어 팁");
-      expect(f.aiProvider.getLastPrompt()).toContain('"start": "2026-03-09"');
-      expect(f.aiProvider.getLastPrompt()).toContain('"end": "2026-03-15"');
+      expect(f.generator.getLastPrompt()).not.toContain("지난 한국어 팁");
+      expect(f.generator.getLastPrompt()).toContain('"start": "2026-03-09"');
+      expect(f.generator.getLastPrompt()).toContain('"end": "2026-03-15"');
     }));
 });

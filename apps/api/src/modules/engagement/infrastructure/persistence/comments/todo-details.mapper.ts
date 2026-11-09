@@ -1,4 +1,4 @@
-import type { Todo } from "@aido/api";
+import type { FriendTodo } from "@aido/api";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
@@ -14,7 +14,7 @@ export type TodoDetailsRow = typeof todo.$inferSelect & {
   items: (typeof todoItem.$inferSelect)[];
 };
 
-export function toTodoResponse(row: TodoDetailsRow): Todo {
+export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
   const items = row.items.map((item) => ({
     id: item.id,
     title: item.title,
@@ -35,9 +35,10 @@ export function toTodoResponse(row: TodoDetailsRow): Todo {
     startDate: toDateString(row.startDate),
     endDate: toDateStringOrNull(row.endDate),
     scheduledTime: toISOStringOrNull(row.scheduledTime),
+    scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
-    recurrenceGroupId: row.recurrenceGroupId,
+    recurrenceGroupId: row.seriesId,
     category: {
       id: requireRecord(row.category).id,
       name: requireRecord(row.category).name,

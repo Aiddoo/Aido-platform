@@ -32,8 +32,8 @@ export const provisioningSeederTestProvider: Provider = {
         nightPushEnabled: true,
       });
     },
-    async seedDefaultCategories(userId: string): Promise<void> {
-      await defaultTodoCategorySeeder.seed(userId);
+    async seedDefaultCategories(userId, locale): Promise<void> {
+      await defaultTodoCategorySeeder.seed(userId, locale);
     },
   }),
   inject: [

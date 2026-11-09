@@ -1,0 +1,130 @@
+{
+  "entry": {
+    "mypage": "새로운 기능",
+    "feedTitle": "새로운 기능을 만나보세요",
+    "feedDescription": "14일 동안 여기서 다시 볼 수 있어요",
+    "openLabel": "새로운 기능 열기",
+    "dismissLabel": "새로운 기능 카드 닫기"
+  },
+  "v1_15_0": {
+    "release": {
+      "title": "말로 할 일 만들기, 이제 AI가 나눠드려요",
+      "description": "길게 말해도 AI가 할 일 여러 개로 나누고 날짜·시간까지 채워드려요. 회의를 AI가 요약해 주는 말로 메모하기도 새로 생겼어요"
+    },
+    "intro": {
+      "title": "말하면 아이두가 정리해요",
+      "description": "새로워진 말로 할 일 만들기와 새로 생긴 말로 메모하기를 보여드릴게요"
+    },
+    "voiceTodo": {
+      "title": "말하면 AI가 할 일로 나눠드려요",
+      "description": "날짜·시간까지 채워 목록에 넣어드려요",
+      "badge": "새로워졌어요"
+    },
+    "voiceNote": {
+      "title": "AI가 회의를 요약해 드려요",
+      "description": "녹음만 하면 핵심과 할 일까지 찾아드려요",
+      "badge": "새 기능"
+    },
+    "capture": {
+      "title": "이제 길게 말해도 괜찮아요",
+      "description": "들은 말은 바로 글자로 보이고, 다 말하면 AI가 할 일로 나눠드려요"
+    },
+    "review": {
+      "title": "AI가 할 일로 나눠드려요",
+      "description": "추가할 것만 체크하면 돼요. 직접 눌러보세요"
+    },
+    "list": {
+      "title": "할 일 목록에 바로 들어가요",
+      "description": "AI가 날짜·시간·반복·카테고리, 나만 보기까지 알아서 채워 넣어드려요",
+      "justAdded": "방금 추가"
+    },
+    "record": {
+      "title": "회의나 수업을 들려주세요",
+      "description": "중요한 순간에는 표시를 남길 수 있어요"
+    },
+    "result": {
+      "title": "AI가 요약과 할 일을 찾아드려요",
+      "description": "핵심 포인트와 할 일을 탭에서 골라 보세요"
+    },
+    "quota": {
+      "title": "무료로 이만큼 쓸 수 있어요",
+      "description": "잘 안 되면 횟수는 차감되지 않아요",
+      "voiceNote": "말로 메모하기",
+      "voiceNoteMinutes": "한 번에 {{minutes}}분까지 녹음해요",
+      "fullAccess": "지금은 넉넉하게 쓸 수 있어요"
+    },
+    "finish": {
+      "title": "이제 직접 말해볼까요?",
+      "description": "마이 > 새로운 기능에서 언제든 다시 볼 수 있어요",
+      "voiceTodo": "말로 할 일 만들기",
+      "voiceNote": "말로 메모하기",
+      "later": "나중에 할게요",
+      "bubble": "말해보세요"
+    },
+    "demo": {
+      "transcript": "매주 월수금 아침 7시에 운동하고 내일 오후 3시 치과 전화는 나만 보게 해 줘 일주일 안에 보고서도 끝내야 하니까 자료 정리랑 초안 쓰기로 나눠 줘",
+      "categories": {
+        "exercise": "운동",
+        "daily": "일상",
+        "work": "업무"
+      },
+      "todos": {
+        "workout": "아침 운동하기",
+        "dentist": "치과에 전화하기",
+        "report": "보고서 마무리하기",
+        "water": "물 2L 마시기"
+      },
+      "items": {
+        "research": "자료 정리하기",
+        "draft": "초안 쓰기"
+      },
+      "note": {
+        "title": "이번 주 출시 회의",
+        "summary": "이번 주에 출시 일정을 정하고, 수요일까지 디자인 시안을 공유한 뒤 목요일에 함께 QA를 하기로 했어요.",
+        "sentences": {
+          "goal": "이번 주 목표는 출시 일정을 정하는 거예요.",
+          "design": "디자인 시안은 수요일까지 공유해주세요.",
+          "qa": "QA는 목요일 오후에 같이 봐요.",
+          "retro": "금요일에는 회고하고 마무리할게요."
+        },
+        "keyPoints": {
+          "schedule": "이번 주 안에 출시 일정 확정",
+          "design": "디자인 시안은 수요일까지 공유",
+          "qa": "목요일 오후 함께 QA"
+        },
+        "todos": {
+          "design": "디자인 시안 공유하기",
+          "qa": "QA 일정 잡기"
+        }
+      }
+    }
+  },
+  "v1_14_0": {
+    "release": {
+      "title": "친구와 함께 발자국을 모아 보세요",
+      "description": "친구를 초대하면 친구도 나도 프리미엄을 받을 수 있어요"
+    },
+    "friendInvite": {
+      "title": "친구와 함께 발자국을 모아요",
+      "description": "친구가 {{activeDays}}일 동안 할 일을 끝내면 발자국이 찍히고 둘 다 프리미엄을 받을 수 있어요",
+      "action": "초대하러 가기"
+    },
+    "demo": {
+      "steps": {
+        "invite": "초대",
+        "join": "친구 합류",
+        "pawPrint": "발자국",
+        "reward": "프리미엄"
+      }
+    }
+  },
+  "list": {
+    "title": "새로운 기능",
+    "newBadge": "새 기능",
+    "updatedOn": "{{date}} 업데이트",
+    "unseenLabel": "아직 보지 않음"
+  },
+  "stage": {
+    "badge": "예시"
+  }
+}

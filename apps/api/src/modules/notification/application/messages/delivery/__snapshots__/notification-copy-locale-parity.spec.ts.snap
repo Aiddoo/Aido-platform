@@ -38,8 +38,8 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       3,
     ],
     [
-      "TODO_REMINDER_IMMEDIATE",
-      3,
+      "TODO_SERIES_PAUSED",
+      1,
     ],
     [
       "MORNING_REMINDER",
@@ -243,6 +243,22 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
     ],
     [
       "PREMIUM_GRANT_ENDING",
+      0,
+    ],
+    [
+      "PREMIUM_TRIAL_ENDING_RENEWING",
+      0,
+    ],
+    [
+      "PREMIUM_TRIAL_ENDING_CANCELLED",
+      0,
+    ],
+    [
+      "PREMIUM_RENEWAL_UPCOMING",
+      0,
+    ],
+    [
+      "MARKETING_CONSENT_RECONFIRM",
       0,
     ],
     [

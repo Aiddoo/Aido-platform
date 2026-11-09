@@ -1,3 +1,4 @@
+import { StoreSubscriptionId } from "../../value-objects/subscriptions/store-subscription-id.vo.js";
 import { Subscription, type SubscriptionProps } from "./subscription.aggregate.js";
 
 const startedAt = new Date("2026-12-03T12:00:00.000Z");
@@ -9,7 +10,8 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
   return Subscription.reconstitute({
     id: 1,
     userId: "user-1",
-    revenueCatId: "chain-1",
+    provider: "REVENUECAT",
+    storeSubscriptionId: StoreSubscriptionId.from("chain-1"),
     productId: "monthly",
     status: "ACTIVE",
     startedAt,
@@ -17,6 +19,8 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
     gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: "seed",
+    nextProductId: null,
+    periodType: null,
     ...overrides,
   });
 }
@@ -49,6 +53,8 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: "renewal",
+      nextProductId: null,
+      periodType: null,
     });
   });
 
@@ -104,16 +110,36 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
     expect(aggregate.expiresAt).toEqual(expiresAt);
   });
 
-  it("상품 변경과 연장은 생략한 만료일·취소 시각을 임의로 지우지 않는다", () => {
+  it("연간→월간 예약은 지금 기간 요금제를 두고 다음 결제 요금제만 바꾸며, 갱신하면 새 상품이 지금 기간이 된다", () => {
+    // Given
+    const aggregate = subscription({ productId: "com.aido.pro.yearly" });
+
+    // When
+    aggregate.reserveProductChange({
+      newProductId: "com.aido.pro.monthly",
+      expiresAt,
+      eventId: "change",
+    });
+    const reserved = [aggregate.planType(), aggregate.renewingPlanType()];
+    aggregate.renew(nextExpiry, "renew", undefined, "com.aido.pro.monthly");
+
+    // Then
+    expect(reserved).toEqual(["ANNUAL", "MONTHLY"]);
+    expect([aggregate.planType(), aggregate.renewingPlanType()]).toEqual(["MONTHLY", "MONTHLY"]);
+    expect(aggregate.persistenceState.nextProductId).toBeNull();
+    expect(aggregate.expiresAt).toEqual(nextExpiry);
+  });
+
+  it("상품 변경 예약과 연장은 생략한 만료일·취소 시각을 임의로 지우지 않는다", () => {
     // Given
     const aggregate = subscription({ status: "CANCELLED", cancelledAt: at });
 
     // When
-    aggregate.changeProduct("yearly", undefined, "product");
+    aggregate.reserveProductChange({ newProductId: "yearly", eventId: "product" });
 
     // Then
     expect(aggregate.status).toBe("CANCELLED");
-    expect(aggregate.productId).toBe("yearly");
+    expect(aggregate.productId).not.toBe("yearly");
     expect(aggregate.expiresAt).toEqual(expiresAt);
 
     // When
@@ -140,6 +166,47 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
     expect(aggregate.isActiveWithSameExpiry(nextExpiry)).toBe(true);
     expect(aggregate.expire(expiresAt, "old-expiry")).toBe(false);
     expect(aggregate.wasProcessedWith("renewal")).toBe(true);
+  });
+
+  describe("갱신 뒤 늦게 온 지난 기간의 이벤트", () => {
+    const earlier = new Date(expiresAt.getTime() - 1);
+
+    it.each([
+      [
+        "해지",
+        (s: Subscription) =>
+          s.cancel({ refunded: false, cancelledAt: at, eventExpiresAt: earlier, eventId: "late" }),
+      ],
+      ["해지 철회", (s: Subscription) => s.uncancel(earlier, "late")],
+      ["기간 연장", (s: Subscription) => s.extend(earlier, "late")],
+    ])("만료 시각이 1ms라도 이른 %s은 상태·상품·기간을 바꾸지 않는다", (_name, apply) => {
+      // Given
+      const aggregate = subscription();
+      const before = aggregate.persistenceState;
+
+      // When
+      const applied = apply(aggregate);
+
+      // Then
+      expect(applied).toBe(false);
+      expect(aggregate.persistenceState).toEqual(before);
+    });
+
+    it("같은 기간의 해지는 적용하고, 환불은 만료 시각이 일러도 즉시 끝낸다", () => {
+      // Given
+      const cancelled = subscription();
+      const refunded = subscription();
+
+      // When
+      const results = [
+        cancelled.cancel({ refunded: false, cancelledAt: at, eventExpiresAt: expiresAt }),
+        refunded.cancel({ refunded: true, cancelledAt: at, eventExpiresAt: earlier }),
+      ];
+
+      // Then
+      expect(results).toEqual([true, true]);
+      expect([cancelled.status, refunded.status]).toEqual(["CANCELLED", "EXPIRED"]);
+    });
   });
 
   describe("결제 유예", () => {

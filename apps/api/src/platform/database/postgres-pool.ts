@@ -1,8 +1,7 @@
 import { Injectable, type OnApplicationShutdown } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Pool, type PoolConfig } from "pg";
 
-import type { EnvConfig } from "#api/platform/config/index";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 // 세션 TimeZone을 UTC로 고정해 now() 기본값과 timestamp 비교가 서버·프로세스 TZ에 흔들리지 않게 한다
 export function createPostgresPoolConfig(databaseUrl: string): PoolConfig {
@@ -21,16 +20,13 @@ export function createPostgresPoolConfig(databaseUrl: string): PoolConfig {
 export class PostgresPool implements OnApplicationShutdown {
   readonly pool: Pool;
 
-  constructor(config: ConfigService<EnvConfig, true>) {
-    const idleTimeoutMillis = config.get("DATABASE_POOL_IDLE_TIMEOUT_MS", { infer: true });
-    const connectionTimeoutMillis = config.get("DATABASE_POOL_CONNECTION_TIMEOUT_MS", {
-      infer: true,
-    });
+  constructor(config: TypedConfigService) {
+    const { url, poolMax, idleTimeoutMs, connectionTimeoutMs } = config.database;
     this.pool = new Pool({
-      ...createPostgresPoolConfig(config.get("DATABASE_URL", { infer: true })),
-      max: config.get("DATABASE_POOL_MAX", { infer: true }),
-      ...(idleTimeoutMillis != null && { idleTimeoutMillis }),
-      ...(connectionTimeoutMillis != null && { connectionTimeoutMillis }),
+      ...createPostgresPoolConfig(url),
+      max: poolMax,
+      ...(idleTimeoutMs != null && { idleTimeoutMillis: idleTimeoutMs }),
+      ...(connectionTimeoutMs != null && { connectionTimeoutMillis: connectionTimeoutMs }),
     });
   }
 

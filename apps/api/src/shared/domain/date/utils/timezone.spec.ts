@@ -12,11 +12,14 @@ import { vi } from "vitest";
  * ```
  */
 import {
+  calendarDaysBetween,
   DEFAULT_DELIVERY_TIMEZONE,
   firstOfMonthInTimezone,
+  firstOfNextMonthInTimezone,
   localDateInTimezone,
   normalizeIanaTimezone,
   parseLocalDateTime,
+  resolveWallClockTimezone,
   resolveDeliveryTimezone,
   resolveTimezone,
   startOfDayInTimezone,
@@ -99,6 +102,51 @@ describe("timezone", () => {
       expect(result).toEqual(new Date("2026-07-15T18:00:00.000Z"));
     });
 
+    it.each([
+      {
+        zone: "America/New_York",
+        date: "2026-11-01",
+        time: "01:30",
+        at: "2026-11-01T05:30:00.000Z",
+      },
+      { zone: "Europe/London", date: "2026-10-25", time: "01:30", at: "2026-10-25T00:30:00.000Z" },
+      {
+        zone: "Australia/Sydney",
+        date: "2027-04-04",
+        time: "02:30",
+        at: "2027-04-03T15:30:00.000Z",
+      },
+      {
+        zone: "Australia/Lord_Howe",
+        date: "2027-04-04",
+        time: "01:45",
+        at: "2027-04-03T14:45:00.000Z",
+      },
+      { zone: "America/Havana", date: "2026-11-01", time: "00:30", at: "2026-11-01T04:30:00.000Z" },
+    ])("$zone 가을 전환으로 겹치는 $time 은 앞쪽을 고른다", ({ zone, date, time, at }) => {
+      // When
+      const result = parseLocalDateTime(date, time, zone);
+      // Then
+      expect(result.toISOString()).toBe(at);
+    });
+
+    it.each([
+      { name: "겹치기 직전", time: "00:59", at: "2026-11-01T04:59:00.000Z" },
+      { name: "겹침이 끝난 뒤", time: "02:00", at: "2026-11-01T07:00:00.000Z" },
+    ])("겹치지 않는 시각은 그대로다: $name", ({ time, at }) => {
+      // When
+      const result = parseLocalDateTime("2026-11-01", time, "America/New_York");
+      // Then
+      expect(result.toISOString()).toBe(at);
+    });
+
+    it("봄 전환으로 없는 시각은 뒤로 민다", () => {
+      // When
+      const result = parseLocalDateTime("2026-03-08", "02:30", "America/New_York");
+      // Then
+      expect(result.toISOString()).toBe("2026-03-08T07:30:00.000Z");
+    });
+
     it("기본 타임존(UTC)이면 시간 그대로 반환", () => {
       const result = parseLocalDateTime("2026-01-15", "14:00");
       expect(result).toEqual(new Date("2026-01-15T14:00:00.000Z"));
@@ -150,6 +198,38 @@ describe("timezone", () => {
       const date = new Date("2026-02-06T15:30:00Z");
       const result = startOfDayInTimezone(date, "UTC");
       expect(result).toEqual(new Date("2026-02-06T00:00:00.000Z"));
+    });
+  });
+
+  describe("calendarDaysBetween — 사용자 달력 날짜 차이", () => {
+    it.each([
+      {
+        from: "2026-11-09T14:59:00Z",
+        to: "2026-11-12T14:58:00Z",
+        tz: "Asia/Seoul",
+        expected: 3,
+      },
+      { from: "2026-11-09T15:00:00Z", to: "2026-11-12T15:00:00Z", tz: "Asia/Seoul", expected: 3 },
+      // 72시간 1분이라도 서울 자정을 네 번 넘기면 4일이다
+      { from: "2026-11-09T14:59:00Z", to: "2026-11-12T15:00:00Z", tz: "Asia/Seoul", expected: 4 },
+      // 윤일을 지나도 달력 날짜로 센다
+      { from: "2028-02-27T03:00:00Z", to: "2028-03-01T03:00:00Z", tz: "Asia/Seoul", expected: 3 },
+      // LA 서머타임 해제(11월 첫 일요일)는 하루가 25시간이다
+      {
+        from: "2026-10-31T19:00:00Z",
+        to: "2026-11-03T20:00:00Z",
+        tz: "America/Los_Angeles",
+        expected: 3,
+      },
+    ])("$tz $from → $to는 $expected일이다", ({ from, to, tz, expected }) => {
+      // Given
+      const range = { from: new Date(from), to: new Date(to) };
+
+      // When
+      const days = calendarDaysBetween(range.from, range.to, tz);
+
+      // Then
+      expect(days).toBe(expected);
     });
   });
 
@@ -247,5 +327,46 @@ describe("timezone", () => {
         new Date("2026-02-28T15:00:00.000Z"),
       );
     });
+  });
+
+  describe("firstOfNextMonthInTimezone", () => {
+    it.each([
+      { at: "2026-04-30T14:59:59.999Z", next: "2026-04-30T15:00:00.000Z" },
+      { at: "2026-04-30T15:00:00.000Z", next: "2026-05-31T15:00:00.000Z" },
+      { at: "2026-01-31T15:00:00.000Z", next: "2026-02-28T15:00:00.000Z" },
+      { at: "2028-02-29T15:00:00.000Z", next: "2028-03-31T15:00:00.000Z" },
+      { at: "2026-12-31T15:00:00.000Z", next: "2027-01-31T15:00:00.000Z" },
+    ])("KST $at 의 다음 달 1일 00:00은 $next 이다", ({ at, next }) => {
+      // Given
+      const date = new Date(at);
+
+      // When
+      const result = firstOfNextMonthInTimezone(date, "Asia/Seoul");
+
+      // Then
+      expect(result.toISOString()).toBe(next);
+    });
+  });
+});
+
+describe("resolveWallClockTimezone — 할 일 벽시계의 시간대", () => {
+  it.each([
+    {
+      name: "앞선 후보가 유효하면 그 값",
+      candidates: ["America/New_York", "Asia/Seoul"],
+      zone: "America/New_York",
+    },
+    {
+      name: "앞이 잘못되면 다음 후보",
+      candidates: ["Mars/Phobos", "Europe/London"],
+      zone: "Europe/London",
+    },
+    { name: "저장된 UTC는 그대로", candidates: [undefined, "UTC"], zone: "UTC" },
+    { name: "모두 없으면 기본값", candidates: [undefined, null], zone: "Asia/Seoul" },
+  ])("$name", ({ candidates, zone }) => {
+    // When
+    const timezone = resolveWallClockTimezone(...candidates);
+    // Then
+    expect(timezone).toBe(zone);
   });
 });

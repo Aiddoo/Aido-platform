@@ -1,78 +1,93 @@
 import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
+import { tv } from '@src/shared/utils/tv';
+import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
+import type { VariantProps } from 'tailwind-variants';
 
 import { Box } from '../box';
 import { ListRowImage } from './list-row-image';
 import { ListRowTexts } from './list-row-texts';
 
-export type ListRowVerticalPadding = 'small' | 'medium' | 'large' | 'xlarge';
-export type ListRowHorizontalPadding = 'small' | 'medium' | 'none';
-export type ListRowBorder = 'indented' | 'none';
-export type ListRowAlignment = 'top' | 'center';
+const listRowVariants = tv({
+  variants: {
+    verticalPadding: {
+      small: 'py-1',
+      medium: 'py-2',
+      large: 'py-4',
+      xlarge: 'py-5',
+    },
+    horizontalPadding: {
+      none: '',
+      small: 'px-2',
+      medium: 'px-4',
+    },
+    border: {
+      none: '',
+      indented: 'border-b border-gray-3',
+    },
+    isDisabled: {
+      true: 'opacity-40',
+    },
+  },
 
-export interface ListRowProps extends Omit<ViewProps, 'children'> {
+  defaultVariants: {
+    verticalPadding: 'medium',
+    horizontalPadding: 'none',
+    border: 'none',
+  },
+});
+
+const listRowSlotVariants = tv({
+  base: 'flex',
+  variants: {
+    alignment: {
+      top: 'items-start',
+      center: 'items-center',
+    },
+  },
+  defaultVariants: {
+    alignment: 'center',
+  },
+});
+
+type ListRowVariantProps = VariantProps<typeof listRowVariants>;
+
+/** @public */
+export type ListRowVerticalPadding = NonNullable<ListRowVariantProps['verticalPadding']>;
+/** @public */
+export type ListRowHorizontalPadding = NonNullable<ListRowVariantProps['horizontalPadding']>;
+/** @public */
+export type ListRowBorder = NonNullable<ListRowVariantProps['border']>;
+/** @public */
+export type ListRowAlignment = NonNullable<VariantProps<typeof listRowSlotVariants>['alignment']>;
+
+export interface ListRowProps extends Omit<ViewProps, 'children'>, ListRowVariantProps {
   left?: ReactNode;
-  contents?: ReactNode;
+  contents: ReactNode;
   right?: ReactNode;
-  verticalPadding?: ListRowVerticalPadding;
-  horizontalPadding?: ListRowHorizontalPadding;
-  border?: ListRowBorder;
+  onPress?: () => void;
   leftAlignment?: ListRowAlignment;
   rightAlignment?: ListRowAlignment;
-  isDisabled?: boolean;
   className?: string;
 }
-
-const listRowVariants = ({
-  verticalPadding = 'medium',
-  horizontalPadding = 'none',
-  border = 'none',
-  isDisabled = false,
-}: {
-  verticalPadding?: ListRowVerticalPadding;
-  horizontalPadding?: ListRowHorizontalPadding;
-  border?: ListRowBorder;
-  isDisabled?: boolean;
-}) => {
-  const paddingY = {
-    small: 'py-1',
-    medium: 'py-2',
-    large: 'py-4',
-    xlarge: 'py-5',
-  }[verticalPadding];
-
-  const paddingX = {
-    none: '',
-    small: 'px-2',
-    medium: 'px-4',
-  }[horizontalPadding];
-
-  const borderClass = border === 'indented' ? 'border-b border-gray-3' : '';
-  const disabledClass = isDisabled ? 'opacity-40' : '';
-
-  return cn(paddingY, paddingX, borderClass, disabledClass);
-};
-
-const listRowSlotVariants = ({ alignment = 'center' }: { alignment?: ListRowAlignment }) => {
-  return cn('flex', alignment === 'top' ? 'items-start' : 'items-center');
-};
 
 export function ListRow({
   left,
   contents,
   right,
-  verticalPadding = 'medium',
-  horizontalPadding = 'none',
-  border = 'none',
-  leftAlignment = 'center',
-  rightAlignment = 'center',
-  isDisabled = false,
+  verticalPadding,
+  horizontalPadding,
+  border,
+  leftAlignment,
+  rightAlignment,
+  isDisabled,
+  onPress,
   className,
   ...props
 }: ListRowProps) {
-  return (
+  const row = (
     <HStack
       align="center"
       gap={12}
@@ -83,9 +98,19 @@ export function ListRow({
       {...props}
     >
       {left && <Box className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</Box>}
-      {contents && <Box className="flex-1">{contents}</Box>}
+      <Box className="flex-1">{contents}</Box>
       {right && <Box className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</Box>}
     </HStack>
+  );
+
+  if (onPress == null) {
+    return row;
+  }
+
+  return (
+    <PressableFeedback accessibilityRole="button" isDisabled={isDisabled} onPress={onPress}>
+      {row}
+    </PressableFeedback>
   );
 }
 

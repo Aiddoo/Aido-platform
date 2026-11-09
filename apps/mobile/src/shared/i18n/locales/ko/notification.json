@@ -1,14 +1,24 @@
 {
+  "timezoneChanged": {
+    "title": "할 일 알림 시간을 지금 시간대에 맞췄어요",
+    "description": "오전 10시 할 일은 여기서도 오전 10시예요"
+  },
   "actions": {
     "marketingOptOut": "광고성 푸시 그만 받기"
   },
   "marketingOptIn": {
-    "bannerTitle": "혜택·리마인드 알림 받기",
-    "bannerDescription": "놓친 할 일과 연속 기록, 아이두 소식을 챙겨드려요",
-    "title": "이런 알림을 보내드려요",
-    "description": "· 연속 기록이 끊기기 전 미리 리마인드\n· 놓친 할 일과 AI 맞춤 추천\n· 이벤트·혜택 소식\n\n언제든 설정에서 끌 수 있어요.\n(광고성 정보 수신 동의)",
-    "agree": "네, 받을게요",
+    "title": "혜택·소식도 알림으로 받을까요?",
+    "description": "이벤트·혜택 소식과 맞춤 추천을 보내드려요",
+    "notice": "광고성 정보 수신 동의예요. 설정에서 언제든 끌 수 있어요",
+    "agree": "받을게요",
     "later": "나중에"
+  },
+  "consentResult": {
+    "marketingAgreed": "{{date}} 아이두 마케팅 정보 수신에 동의했어요",
+    "marketingPushAgreed": "{{date}} 아이두 광고성 앱 푸시 수신에 동의했어요",
+    "marketingWithdrawn": "{{date}} 아이두 마케팅 정보 수신 동의를 철회했어요",
+    "marketingPushWithdrawn": "{{date}} 아이두 광고성 앱 푸시 수신 동의를 철회했어요",
+    "marketingPushOptedOut": "광고성 앱 푸시를 더 보내지 않을게요"
   },
   "titles": {
     "notifications": "알림",
@@ -35,7 +45,8 @@
     "unreadCount": "{{count}}건",
     "markAllRead": "모두 읽음",
     "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
-    "loadError": "알림을 불러오지 못했어요"
+    "loadError": "알림을 불러오지 못했어요",
+    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요"
   },
   "directions": {
     "received": "받은 알림",
@@ -50,16 +61,18 @@
     "timeFormat24": "24시간제",
     "on": "켜짐",
     "off": "꺼짐",
+    "deviceOff": "기기에서 꺼짐",
     "pushLabel": "푸시 알림",
-    "pushDescription": "모든 푸시 알림을 받아요",
+    "pushDescription": "할 일·결제 안내를 받아요. 광고성 알림은 따로 동의해요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00 시간대에도 알림을 받아요",
     "marketingLabel": "마케팅 수신 동의",
     "marketingDescription": "이벤트·혜택·프로모션 소식을 받아요",
     "marketingPushLabel": "광고성 앱 푸시",
     "marketingPushDescription": "이벤트·혜택·맞춤 추천 알림을 받아요",
+    "marketingPushDeviceOff": "기기 알림이 꺼져 있어 지금은 받을 수 없어요",
     "weatherLabel": "날씨 알림",
-    "weatherDescription": "날씨 알림을 받아요",
+    "weatherDescription": "아침엔 오늘, 저녁엔 내일 날씨를 알려줘요",
     "weatherMorningLabel": "오전 날씨 알림",
     "weatherMorningDescription": "설정한 오전 시간에 오늘의 날씨를 알려줘요",
     "weatherEveningLabel": "오후 날씨 알림",
@@ -69,34 +82,49 @@
     "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",
     "reminderEveningLabel": "오후 리마인드",
     "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
-    "reminderPremium": "리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요."
+    "timeOutOfRange": "{{start}}부터 {{end}} 사이의 시각만 고를 수 있어요",
+    "sections": {
+      "app": "앱 알림",
+      "marketing": "혜택·이벤트 소식",
+      "times": "알림 시간"
+    }
   },
   "permission": {
+    "continue": "계속",
     "card": {
-      "askTitle": "할 일 알림을 받아 보세요",
-      "askDescription": "리마인더와 친구의 응원을 제때 알려드려요",
       "deniedTitle": "알림이 꺼져 있어요",
-      "requestDescription": "다시 허용하면 리마인더를 받을 수 있어요",
-      "settingsDescription": "설정에서 켜면 리마인더를 받을 수 있어요",
-      "appOffTitle": "푸시 알림이 꺼져 있어요",
-      "appOffDescription": "알림 설정에서 푸시 알림을 켜 주세요",
-      "allow": "허용하기",
+      "requestDescription": "다시 허용하면 리마인드 알림을 받을 수 있어요",
+      "settingsDescription": "설정에서 켜면 리마인드 알림을 받을 수 있어요",
       "openSettings": "설정 열기",
-      "turnOn": "켜기",
       "dismiss": "알림 안내 닫기"
     },
-    "dialog": {
-      "title": "알림을 보내드려도 될까요?",
-      "description": "할 일 리마인더, 친구의 응원·콕, 연속 기록 소식을 놓치지 않게 알려드려요. 언제든 설정에서 바꿀 수 있어요.",
-      "allow": "알림 받기",
-      "later": "나중에"
+    "onboarding": {
+      "title": "할 일 시간에 맞춰 알려드릴게요",
+      "description": "리마인드와 친구 응원을 놓치지 않아요"
+    },
+    "deviceOff": {
+      "title": "기기 알림이 꺼져 있어요",
+      "description": "켜야 아래 알림을 받을 수 있어요"
+    },
+    "todoTime": {
+      "off": "알림이 꺼져 있어 알려드릴 수 없어요"
     },
     "status": {
       "label": "기기 알림 권한",
-      "granted": "허용됨",
-      "provisional": "조용히 받는 중",
-      "denied": "꺼짐 · 기기 설정에서 켤 수 있어요",
-      "notDetermined": "아직 선택하지 않았어요"
+      "granted": "허용됨"
+    },
+    "toasts": {
+      "requestFailed": "알림 권한을 묻지 못했어요. 기기 설정에서 켜 주세요",
+      "settingsOpenFailed": "설정을 열지 못했어요. 기기 설정에서 직접 켜 주세요"
     }
+  },
+  "bell": {
+    "unreadLabel": "알림, 읽지 않은 알림 있음",
+    "retryLabel": "알림을 불러오지 못했어요. 다시 시도"
+  },
+  "billingReminder": {
+    "label": "체험 끝나기 전 알림",
+    "on": "{{date}}에 푸시로 알려드려요",
+    "off": "알림을 켜면 {{date}}에 알려드려요"
   }
 }

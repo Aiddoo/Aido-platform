@@ -1,10 +1,19 @@
 export const TODO_LIMITS = {
+  TITLE_MAX_LENGTH: 200, // 할 일 제목 최대 길이
   MAX_PER_CATEGORY: 300, // 카테고리당 최대 활성 투두 (모든 구독 동일)
 } as const;
 
 export const RECURRING_TODO_LIMITS = {
-  MAX_INSTANCES: 100,
   MAX_DAYS_RANGE: 366,
+} as const;
+
+/** 반복 할 일 시스템 상한. 성능·안정성 한도라 등급과 상관없이 ADMIN에도 같다. */
+export const TODO_SERIES_LIMITS = {
+  MAX_ACTIVE_PER_USER: 30,
+  /** 출시 앱(1.14.x까지)의 옛 경로 상한. 옛 서버에 없던 거절이라 카테고리 한도만큼 넉넉하게 둔다. */
+  MAX_ACTIVE_PER_USER_LEGACY: 300,
+  MAX_COUNT: 365,
+  VISIBLE_AHEAD_DAYS: 90,
 } as const;
 
 export const TODO_ITEM_LIMITS = {

@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../../common/datetime.js";
-import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
+import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
+import { dayOfWeekSchema, todoRepeatSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
 export const todoRecurrenceSchema = z.object({
@@ -27,7 +28,11 @@ export const parsedTodoDataSchema = z.object({
   recurrence: todoRecurrenceSchema
     .nullable()
     .default(null)
-    .describe("반복 설정 (비반복 일정은 null)"),
+    .describe("반복 설정 (비반복 일정은 null, 출시 앱용 요일+종료일)"),
+  repeat: todoRepeatSchema
+    .nullable()
+    .optional()
+    .describe("반복 규칙 (반복이 아니면 null). 1.15.0 이전 서버 응답에는 없다"),
   categoryId: z
     .number()
     .int()
@@ -45,7 +50,7 @@ export const parseTodoMetaSchema = z.object({
   promptVersion: z
     .string()
     .optional()
-    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
+    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@3"). 구 서버 응답에는 없을 수 있다'),
 });
 
 export type ParseTodoMeta = z.infer<typeof parseTodoMetaSchema>;
@@ -54,33 +59,9 @@ export const parseTodoResponseSchema = z.object({
   success: z.literal(true).describe("파싱 성공 여부 (항상 true)"),
   data: parsedTodoDataSchema.describe("파싱된 할 일 데이터"),
   meta: parseTodoMetaSchema.describe("AI 처리 메타데이터"),
+  featureQuota: featureQuotaSchema
+    .optional()
+    .describe("이 요청을 반영한 AI_PARSE 한도·사용량. 1.15.0 이전 서버 응답에는 없다"),
 });
 
 export type ParseTodoResponse = z.infer<typeof parseTodoResponseSchema>;
-
-// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
-/**
- * @internal 서비스 내부에서만 사용
- * @deprecated 사용처가 없는 레거시 LLM 출력 schema다. parse-todo v2는 서버 내부 draft schema를 쓴다.
- */
-export const llmParsedResultSchema = z
-  .object({
-    title: z.string(),
-    startDate: z.string(),
-    endDate: z.string().nullable(),
-    scheduledTime: z.string().nullable(),
-    isAllDay: z.boolean(),
-    isRecurring: z.boolean().default(false),
-    recurrence: z
-      .object({
-        daysOfWeek: z.array(z.string()),
-        endDate: z.string(),
-      })
-      .nullable()
-      .default(null),
-    reasoning: z.string(),
-  })
-  .meta({ deprecated: true, description: "(deprecated) 사용하지 않는 레거시 LLM 출력 schema" });
-
-/** @deprecated llmParsedResultSchema와 함께 제거한다. */
-export type LlmParsedResult = z.infer<typeof llmParsedResultSchema>;

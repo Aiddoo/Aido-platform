@@ -100,7 +100,11 @@ export class SendNudge {
       );
       if (dailyLimit != null && used >= dailyLimit) {
         throw new ApplicationException(ErrorCode.NUDGE_1101, {
-          limit: dailyLimit,
+          charged: false,
+          featureQuota: await this.#dependencies.limitReader.readDailyQuotaInTx(senderId, {
+            used,
+            resetsAt: quotaWindow.endsAt,
+          }),
         });
       }
 

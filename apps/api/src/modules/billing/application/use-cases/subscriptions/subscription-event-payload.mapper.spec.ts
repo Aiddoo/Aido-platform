@@ -1,72 +1,86 @@
-import { SubscriptionEventBuilder } from "#test/builders/index";
+import type { SubscriptionUser } from "../../ports/subscriptions/subscription.repository.port.js";
+import type { StoreSubscriptionChainEvent } from "../../types/subscriptions/store-subscription-event.js";
+import { baseEventPayload, premiumSnapshotOf } from "./subscription-event-payload.mapper.js";
 
-import { baseEventPayload, premiumGrantImpactOf } from "./subscription-event-payload.mapper.js";
+type NotifiableEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
 
-const user = { id: "user-1", email: "user@example.com", profile: { name: "사용자" } };
+const user: SubscriptionUser = {
+  id: "user-1",
+  email: "user@example.com",
+  subscriptionStatus: "ACTIVE",
+  subscriptionExpiresAt: null,
+  profile: { name: "매튜" },
+};
 
-describe("baseEventPayload — 운영 알림 부가 정보", () => {
-  it("RevenueCat 이벤트의 ID·국가·구독 유형·만료 사유·앱 속성을 싣는다", () => {
-    // Given
-    const { event } = SubscriptionEventBuilder.expiration()
-      .withAppUserId("app-user-1")
-      .withEventId("event-1")
-      .withEnvironment("SANDBOX")
-      .withPeriodType("TRIAL")
-      .build();
-    const raw = {
-      ...event,
-      country_code: "KR",
-      expiration_reason: "UNSUBSCRIBE",
-      subscriber_attributes: {
-        appVersion: { value: "1.14.0", updated_at_ms: 1 },
-        deviceModel: { value: "iPhone16,1", updated_at_ms: 1 },
-      },
-    };
+const common = {
+  provider: "REVENUECAT",
+  providerEventId: "evt-1",
+  providerEventType: "X",
+  environment: "PRODUCTION",
+  store: "APP_STORE",
+  details: { countryCode: "KR" },
+  appUserId: "user-1",
+  storeSubscriptionId: "otx-1",
+  productId: "com.aido.pro.yearly",
+  periodEndsAt: new Date("2027-11-10T00:00:00.000Z"),
+  periodKind: "NORMAL",
+  price: { usd: 27.99, amountInPurchasedCurrency: 39_000, purchasedCurrency: "KRW" },
+} as const;
 
+describe("baseEventPayload — 웹훅 값을 이벤트마다 같은 이름으로 싣는다", () => {
+  it.each<{ readonly label: string; readonly event: NotifiableEvent }>([
+    { label: "만료", event: { ...common, kind: "EXPIRED", reason: "BILLING_ERROR" } },
+    { label: "해지", event: { ...common, kind: "CANCELLED", reason: "UNSUBSCRIBE" } },
+    { label: "결제 문제", event: { ...common, kind: "BILLING_ISSUE", gracePeriodEndsAt: null } },
+    { label: "연장", event: { ...common, kind: "EXTENDED" } },
+  ])("$label 이벤트에도 금액·만료·요금제·국가가 있다", ({ event }) => {
     // When
-    const payload = baseEventPayload(
-      { ...user, subscriptionStatus: "FREE", subscriptionExpiresAt: null, revenueCatUserId: null },
-      raw,
-    );
+    const payload = baseEventPayload(user, event, "otx-1");
 
     // Then
     expect(payload).toMatchObject({
-      appUserId: "app-user-1",
-      eventId: "event-1",
-      environment: "SANDBOX",
+      planType: "ANNUAL",
+      priceUsd: 27.99,
+      priceInPurchasedCurrency: 39_000,
+      purchasedCurrency: "KRW",
+      expiresAt: "2027-11-10T00:00:00.000Z",
       countryCode: "KR",
-      periodType: "TRIAL",
-      expirationReason: "UNSUBSCRIBE",
-      appVersion: "1.14.0",
-      deviceModel: "iPhone16,1",
+      environment: "PRODUCTION",
     });
   });
 
-  it("형식이 다른 부가 정보는 그 필드만 버린다", () => {
+  it("상품 변경 예약은 바뀔 상품과 그 요금제를 싣는다", () => {
     // Given
-    const { event } = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId("app-user-1")
-      .build();
-    const raw = {
-      ...event,
-      expiration_reason: 82,
-      subscriber_attributes: { appVersion: "1.14.0" },
+    const event: NotifiableEvent = {
+      ...common,
+      kind: "PRODUCT_CHANGE_SCHEDULED",
+      newProductId: "com.aido.pro.monthly",
     };
 
     // When
-    const payload = baseEventPayload(
-      { ...user, subscriptionStatus: "FREE", subscriptionExpiresAt: null, revenueCatUserId: null },
-      raw,
-    );
+    const payload = baseEventPayload(user, event, "otx-1");
 
     // Then
-    expect(payload.expirationReason).toBeUndefined();
-    expect(payload.appVersion).toBeUndefined();
-    expect(payload.appUserId).toBe("app-user-1");
+    expect(payload).toMatchObject({ newProductId: "com.aido.pro.monthly", newPlanType: "MONTHLY" });
+  });
+
+  it("결제 문제는 스토어 결제 유예의 끝을 싣는다", () => {
+    // Given
+    const event: NotifiableEvent = {
+      ...common,
+      kind: "BILLING_ISSUE",
+      gracePeriodEndsAt: new Date("2027-11-26T00:00:00.000Z"),
+    };
+
+    // When
+    const payload = baseEventPayload(user, event, "otx-1");
+
+    // Then
+    expect(payload.gracePeriodEndsAt).toBe("2027-11-26T00:00:00.000Z");
   });
 });
 
-describe("premiumGrantImpactOf — 보상 기간 영향", () => {
+describe("premiumSnapshotOf — 이벤트 뒤 프리미엄 상태", () => {
   const none = {
     source: null,
     endsAt: null,
@@ -74,14 +88,30 @@ describe("premiumGrantImpactOf — 보상 기간 영향", () => {
     willRenew: false,
     bankedDays: 0,
     recentGrantEndedAt: null,
+    isTrial: false,
+    planType: null,
   };
 
   it.each([
-    { label: "보상이 없으면", access: none, expected: undefined },
     {
-      label: "스토어 뒤로 쌓아 두면",
-      access: { ...none, source: "STORE" as const, bankedDays: 7 },
-      expected: { bankedDays: 7, grantPeriodEndsAt: null },
+      label: "프리미엄이 아니면",
+      access: none,
+      expected: { source: null, periodEndsAt: null, bankedDays: 0, isTrial: false },
+    },
+    {
+      label: "스토어 뒤로 보상을 쌓아 두면",
+      access: {
+        ...none,
+        source: "STORE" as const,
+        periodEndsAt: new Date("2028-03-04T00:00:00.000Z"),
+        bankedDays: 7,
+      },
+      expected: {
+        source: "STORE",
+        periodEndsAt: "2028-03-04T00:00:00.000Z",
+        bankedDays: 7,
+        isTrial: false,
+      },
     },
     {
       label: "보상 기간이 이어지면",
@@ -90,10 +120,15 @@ describe("premiumGrantImpactOf — 보상 기간 영향", () => {
         source: "GRANT" as const,
         periodEndsAt: new Date("2028-03-04T00:00:00.000Z"),
       },
-      expected: { bankedDays: 0, grantPeriodEndsAt: "2028-03-04T00:00:00.000Z" },
+      expected: {
+        source: "GRANT",
+        periodEndsAt: "2028-03-04T00:00:00.000Z",
+        bankedDays: 0,
+        isTrial: false,
+      },
     },
-  ])("$label 영향은 $expected다", ({ access, expected }) => {
+  ])("$label 출처와 보상 일수를 그대로 싣는다", ({ access, expected }) => {
     // When / Then
-    expect(premiumGrantImpactOf(access)).toEqual(expected);
+    expect(premiumSnapshotOf(access)).toEqual(expected);
   });
 });

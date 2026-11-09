@@ -1,6 +1,6 @@
 import {
   currentUserSchema,
-  FOLLOW_LIMITS,
+  PLAN_CATALOG,
   myInviteResponseSchema,
   redeemInviteResponseSchema,
 } from "@aido/api";
@@ -12,6 +12,7 @@ import {
   SUBSCRIPTION_REPOSITORY,
   type SubscriptionRepositoryPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import {
   follow,
@@ -183,7 +184,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   it("초대한 사람 친구 자리가 꽉 차 있으면 친구 요청만 보내고 보상 기록은 남긴다", async () => {
     // Given
     const inviter = await ctx.helpers.createVerifiedUser("full-inviter@test.com", PASSWORD);
-    for (let index = 0; index < FOLLOW_LIMITS.FREE_MAX_FRIENDS; index++) {
+    for (let index = 0; index < PLAN_CATALOG.FRIEND.free; index++) {
       const friend = await ctx.helpers.createVerifiedUser(
         `full-friend-${index}@test.com`,
         PASSWORD,
@@ -212,7 +213,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const subscriptions = ctx.module.get<SubscriptionRepositoryPort>(SUBSCRIPTION_REPOSITORY);
     await subscriptions.create({
       userId: invitee.userId,
-      revenueCatId: "store-invitee-chain",
+      storeSubscriptionId: StoreSubscriptionId.from("store-invitee-chain"),
       productId: "premium_monthly",
       status: "ACTIVE",
       startedAt: new Date(),

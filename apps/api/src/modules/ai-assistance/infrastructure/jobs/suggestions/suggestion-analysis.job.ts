@@ -91,7 +91,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
             deletedAt: { isNull: true },
             todos: {
               startDate: { gte: twoWeeksAgo },
-              recurrenceGroupId: { isNull: true },
+              seriesId: { isNull: true },
             },
           },
           orderBy: { id: "asc" },

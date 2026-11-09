@@ -214,7 +214,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     expect(invalidateTimezones).not.toHaveBeenCalled();
   });
 
-  it("timezone 전용 최초 생성은 기존 DB push 기본값을 유지한다", async () => {
+  it("timezone 전용 최초 생성은 가입 seed와 같은 DB push 기본값(true)을 쓴다", async () => {
     // Given
     expect(await preferences.findByUserId(userId)).toBeNull();
 
@@ -225,8 +225,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     expect(await preferences.findByUserId(userId)).toEqual(
       expect.objectContaining({
         timezone: "Asia/Seoul",
-        pushEnabled: false,
-        nightPushEnabled: false,
+        pushEnabled: true,
+        nightPushEnabled: true,
       }),
     );
   });

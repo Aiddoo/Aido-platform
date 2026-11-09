@@ -15,7 +15,6 @@ import {
 import { useEffect, useMemo } from 'react';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { WeatherScenePolicy } from '../../domains/weather-scene.model';
 import {
   createStarField,
   getShootingStarProgress,
@@ -23,7 +22,8 @@ import {
   getShootingStarWindow,
   hashToUnit,
   placeSprite,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
+import { getMoonIllumination } from '../../utils/weather-scene.view-model';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
@@ -63,14 +63,14 @@ const SHOOTING_STAR = {
 const SHOOTING_STAR_ANGLE = Math.atan2(SHOOTING_STAR.travel.y, SHOOTING_STAR.travel.x);
 
 type NightSkyLayerProps = {
-  moon: boolean;
+  hasMoon: boolean;
   celestialCenter: { x: number; y: number };
   moonPhase: number;
   isSouthernHemisphere: boolean;
   isDark: boolean;
   occlusion: SharedValue<number>;
-  stars: boolean;
-  shootingStars: boolean;
+  hasStars: boolean;
+  hasShootingStars: boolean;
   clouds: number;
   width: number;
   height: number;
@@ -79,14 +79,14 @@ type NightSkyLayerProps = {
 
 /** 박자가 제각각인 별, 위상대로 차오른 달과 달무리, 가끔 지나가는 별똥별 */
 export function NightSkyLayer({
-  moon,
+  hasMoon,
   celestialCenter,
   moonPhase,
   isSouthernHemisphere,
   isDark,
   occlusion,
-  stars,
-  shootingStars,
+  hasStars,
+  hasShootingStars,
   clouds,
   width,
   height,
@@ -94,8 +94,10 @@ export function NightSkyLayer({
 }: NightSkyLayerProps) {
   return (
     <Group>
-      {stars && <NightSkyLayer.Stars clouds={clouds} width={width} height={height} time={time} />}
-      {moon && (
+      {hasStars && (
+        <NightSkyLayer.Stars clouds={clouds} width={width} height={height} time={time} />
+      )}
+      {hasMoon && (
         <NightSkyLayer.Moon
           center={celestialCenter}
           phase={moonPhase}
@@ -107,7 +109,7 @@ export function NightSkyLayer({
           time={time}
         />
       )}
-      {shootingStars && <NightSkyLayer.ShootingStar width={width} height={height} time={time} />}
+      {hasShootingStars && <NightSkyLayer.ShootingStar width={width} height={height} time={time} />}
     </Group>
   );
 }
@@ -175,10 +177,7 @@ type MoonProps = Omit<SkyAreaProps, 'height'> & {
   occlusion: SharedValue<number>;
 };
 
-/**
- * 날짜로 구한 위상만큼 차오른 달. 구운 표면 텍스처를 살짝 기울여 그리고, 10초 주기로 숨 쉬는 은빛 무리를 두른다.
- * 구름이 끼면 흐려지고, 구름이 25%를 넘으면 22° 달무리 고리가 비친다.
- */
+/** 10초 주기로 숨 쉬는 무리를 두르고, 구름이 끼면 흐려지며 25%를 넘으면 22° 달무리가 비친다 */
 NightSkyLayer.Moon = function Moon({
   center,
   phase,
@@ -191,7 +190,7 @@ NightSkyLayer.Moon = function Moon({
 }: MoonProps) {
   const texture = useMoonTexture(phase);
   const radius = getSceneReferenceWidth(width) * MOON.radius;
-  const lit = WeatherScenePolicy.moonIllumination(phase);
+  const lit = getMoonIllumination(phase);
   const glowStrength = THEME_MOON_GLOW[isDark ? 'dark' : 'light'];
   const visibility = 1 - clouds * MOON.cloudDimming;
   const opacity = useDerivedValue(() => visibility * (1 - occlusion.get() * MOON.occlusionDimming));

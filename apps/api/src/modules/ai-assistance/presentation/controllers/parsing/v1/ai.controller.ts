@@ -1,5 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
-import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
+import {
+  AI_PARSE_LIMITS,
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_KEY_MAX_LENGTH,
+  PLAN_CATALOG,
+} from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -8,7 +13,8 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Locale, Timezone } from "#api/platform/http/decorators/index";
+import { ClientAbortSignal, Locale, Timezone } from "#api/platform/http/decorators/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiErrorCodesResponse,
@@ -27,6 +33,7 @@ import { ParseMemo } from "../../../../application/use-cases/parsing/parse-memo.
 import { ParseTodo } from "../../../../application/use-cases/parsing/parse-todo.use-case.js";
 import { AiDataSharingConsentGuard } from "../../../../infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "../../../../infrastructure/guards/parsing/ai-usage.guard.js";
+import { toAiUsageData } from "../../../mappers/parsing/v1/ai-usage.mapper.js";
 import {
   AiUsageResponseDto,
   ParseMemoRequestDto,
@@ -34,6 +41,11 @@ import {
   ParseTodoRequestDto,
   ParseTodoResponseDto,
 } from "../../../schemas/parsing/v1/index.js";
+
+const AI_PARSE_QUOTA_DOC = `AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
+- 무료: **월 ${PLAN_CATALOG.AI_PARSE.free}회**
+- 프리미엄: 넉넉하게 (월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지, 넘으면 AI_1303)
+- 다시 채우는 때: KST 매월 1일 00:00`;
 
 const AI_PARSE_THROTTLE = {
   TODO: { ttl: 60_000, limit: 20 },
@@ -131,7 +143,7 @@ export class AiController {
 | \`processingTimeMs\` | number | 처리 시간 (ms) |
 | \`tokenUsage.input\` | number | 입력 토큰 수 |
 | \`tokenUsage.output\` | number | 출력 토큰 수 |
-| \`promptVersion\` | string (선택) | 응답을 만든 프롬프트 버전 (예: \`parse-todo@v2\`). 구 서버 응답에는 없을 수 있습니다. |
+| \`promptVersion\` | string (선택) | 응답을 만든 프롬프트 버전 (예: \`parse-todo@3\`). 구 서버 응답에는 없을 수 있습니다. |
 
 ## ⏰ 날짜·시간 해석 규칙
 AI는 문장에서 날짜·시각 표현의 종류만 읽고, 실제 날짜·요일·시각은 서버가 사용자 시간대(\`X-Timezone\`, 없으면 저장된 사용자 시간대) 기준으로 계산합니다.
@@ -161,9 +173,7 @@ AI는 문장에서 날짜·시각 표현의 종류만 읽고, 실제 날짜·요
 - 모델을 겨냥한 명령만 있는 입력은 제목 "입력 확인 필요"(en: "Needs review")의 오늘 종일 할 일로 응답하며 사용량을 차감하지 않습니다.
 
 ## 🚫 사용량 제한
-- 무료 유저: **월 5회** (Todo 파싱과 메모 파싱 합산)
-- 프리미엄: 무제한 (향후)
-- 리셋 시간: KST 매월 1일 00:00
+${AI_PARSE_QUOTA_DOC}
 
 ## 💡 입력 예시
 | 입력 | 예상 출력 |
@@ -214,6 +224,7 @@ if (confirmed) {
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
   ): Promise<ParseTodoResponseDto> {
     const result = await this.parseTodoUseCase.execute({
       text: dto.text,
@@ -221,12 +232,14 @@ if (confirmed) {
       timezone: tz,
       categoryId: dto.categoryId,
       locale,
+      signal,
     });
 
     return {
       success: true,
       data: result.data,
       meta: result.meta,
+      ...(result.featureQuota != null && { featureQuota: result.featureQuota }),
     };
   }
 
@@ -281,7 +294,7 @@ if (confirmed) {
    *     "model": "google:gemini-3.1-flash-lite",
    *     "processingTimeMs": 350,
    *     "tokenUsage": { "input": 450, "output": 280 },
-   *     "promptVersion": "parse-memo@v2.1",
+   *     "promptVersion": "parse-memo@3",
    *     "omittedTodoCount": 0
    *   }
    * }
@@ -311,6 +324,11 @@ if (confirmed) {
     required: false,
     example: "ko",
   })
+  @ApiHeader({
+    name: IDEMPOTENCY_KEY_HEADER,
+    required: false,
+    description: `사용자 행동 한 번마다 새로 만드는 키(${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 보내면 한 번만 차감합니다. 처리 중이면 AI_1314, 내용이 다르면 AI_1318입니다. 미전송 시 요청마다 차감합니다.`,
+  })
   @ApiDoc({
     summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
     operationId: "parseMemoToTodos",
@@ -336,7 +354,7 @@ if (confirmed) {
 | \`items\` | array | 서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개) |
 
 ## 📊 메타데이터 (\`meta\`)
-\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
+\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@3\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
 
 ## 🧠 AI 파싱 규칙
 - **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다
@@ -363,9 +381,7 @@ if (confirmed) {
 \`\`\`
 
 ## 🚫 사용량 제한
-- 기존 AI 파싱과 **월간 사용량 공유** (parse-todo와 동일 카운트)
-- 무료 유저: 월 5회 / 프리미엄: 무제한
-- 리셋: KST 매월 1일 00:00`,
+${AI_PARSE_QUOTA_DOC}`,
   })
   @ApiSuccessResponse({ type: ParseMemoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -378,6 +394,8 @@ if (confirmed) {
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<ParseMemoResponseDto> {
     const result = await this.parseMemoUseCase.execute({
       content: dto.content,
@@ -385,12 +403,15 @@ if (confirmed) {
       timezone: tz,
       categoryId: dto.categoryId,
       locale,
+      idempotencyKey: client.idempotencyKey,
+      signal,
     });
 
     return {
       success: true,
       data: result.data,
       meta: result.meta,
+      ...(result.featureQuota != null && { featureQuota: result.featureQuota }),
     };
   }
 
@@ -457,7 +478,7 @@ if (limit !== null && used >= limit) {
 
     return {
       success: true,
-      data: usage,
+      data: toAiUsageData(usage),
     };
   }
 }

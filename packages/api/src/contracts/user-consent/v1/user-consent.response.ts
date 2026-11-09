@@ -9,7 +9,7 @@ import {
 export const aiDataSharingDecisionSchema = z
   .enum(AI_DATA_SHARING_DECISIONS)
   .describe(
-    "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+    "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 지원하지 않는 안내 버전). 이전 안내 버전 동의도 AGREED이며 그 버전의 처리 업체만 쓴다",
   );
 
 const aiDataSharingConsentFields = {
@@ -21,7 +21,9 @@ const aiDataSharingConsentFields = {
     .string()
     .nullable()
     .optional()
-    .describe("마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+)"),
+    .describe(
+      "마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+). 현재 버전보다 오래되면 앱이 새 안내를 보여 줄 수 있다",
+    ),
 };
 
 export const userConsentSchema = z
@@ -79,6 +81,11 @@ export const updateMarketingConsentResponseSchema = z
     marketingAgreedAt: nullableDatetimeSchema.describe(
       "마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 철회 시 null)",
     ),
+    marketingWithdrawnAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "이번 요청으로 철회를 처리한 서버 시각 (동의 시 null, 1.15.0+ 서버). 앱은 결과 안내에 기기 시각 대신 이 값을 쓴다",
+      ),
   })
   .meta({
     example: {
@@ -93,6 +100,11 @@ export const updateMarketingPushConsentResponseSchema = z
     marketingPushAgreedAt: nullableDatetimeSchema.describe(
       "광고성 앱 푸시 수신 동의 시각 (철회 시 null)",
     ),
+    marketingPushWithdrawnAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "이번 요청으로 철회를 처리한 서버 시각 (동의 시 null, 1.15.0+ 서버). 앱은 결과 안내에 기기 시각 대신 이 값을 쓴다",
+      ),
   })
   .meta({ example: { marketingPushAgreedAt: "2026-01-17T10:00:00.000Z" } });
 

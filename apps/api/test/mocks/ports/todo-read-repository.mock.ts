@@ -11,10 +11,10 @@ export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
   return {
     findByIdAndUserId: vi.fn(),
     findOwnerId: vi.fn(),
-    findManyByRecurrenceGroupId: vi.fn(),
+    findManyBySeriesId: vi.fn(),
     findManyByUserId: vi.fn(),
     findPublicTodosByUserId: vi.fn(),
-    countActiveByCategory: vi.fn(),
+    countCategoryUsage: vi.fn(),
     countCompletedByUser: vi.fn(),
     getTodayTodoStats: vi.fn(),
     findTodayTopTodos: vi.fn(),

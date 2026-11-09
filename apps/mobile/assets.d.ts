@@ -19,3 +19,9 @@ declare module '*.webp' {
 }
 
 declare module '*.css';
+
+/** Android vector drawable(Material Symbols). Metro가 에셋 번호로 준다 */
+declare module '*.xml' {
+  const content: number;
+  export default content;
+}

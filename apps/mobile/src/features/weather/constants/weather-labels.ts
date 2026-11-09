@@ -1,27 +1,24 @@
-import type { WeatherRescheduleReason } from '@aido/api';
 import type {
   WeatherAirQualitySource,
   WeatherCondition,
   WeatherMoonPhase,
   WeatherPrecipitationType,
   WeatherPressureTrend,
-} from '@aido/api';
+  WeatherRescheduleReason,
+} from '@aido/api/vocabulary';
 
-import type {
-  CloudCoverLevel,
-  CloudCoverNote,
-  NextSunEvent,
-  VisibilityLevel,
-  WindLevel,
-} from '../domains/weather-detail.model';
+import type { NextSunEvent } from '../domains/weather-detail.model';
 import type { HourlySky } from '../domains/weather-hourly.model';
 import type {
   AirQualityGrade,
+  CloudCoverLevel,
   CompassDirection,
   FeelsLikeComparison,
   UvLevel,
-} from '../domains/weather-report.model';
-import type { PrecipitationLevel } from '../utils/view-models/next-hour-chart.view-model';
+  VisibilityLevel,
+  WindLevel,
+} from '../domains/weather-indicator.model';
+import type { PrecipitationLevel } from '../utils/next-hour-chart.geometry';
 
 export const WEATHER_CONDITION_LABEL_KEYS = {
   CLEAR: 'condition.clear',
@@ -149,6 +146,8 @@ export const WIND_LEVEL_NOTE_KEYS = {
   breeze: 'details.windBreeze',
   strong: 'details.windStrong',
 } as const satisfies Record<WindLevel, string>;
+
+type CloudCoverNote = 'overcast' | 'brokenDay' | 'brokenNight' | 'clearDay' | 'clearNight';
 
 export const CLOUD_COVER_NOTE_KEYS = {
   overcast: 'details.cloudOvercastNote',

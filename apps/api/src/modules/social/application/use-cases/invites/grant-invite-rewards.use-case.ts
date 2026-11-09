@@ -4,15 +4,16 @@ import { sumBy } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { INVITE_REWARD_MAX_ATTEMPTS } from "../../../domain/types/invites/reward-grant.types.js";
+import { SocialInviteAlertKey } from "../../observability/invites/social-invite-alerts.js";
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
 import type { InviteNotifierPort } from "../../ports/invites/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../../ports/invites/invite-redemption.repository.port.js";
-import type { InviteRewardAlertPort } from "../../ports/invites/invite-reward-alert.port.js";
 import type { InviteConfigPort } from "../../ports/invites/invite.config.port.js";
 import type { RewardApplierRegistry } from "../../ports/invites/reward-applier.port.js";
 import type {
@@ -54,7 +55,7 @@ interface GrantInviteRewardsDependencies {
   >;
   readonly rewardAppliers: RewardApplierRegistry;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteRewarded">;
-  readonly alert: InviteRewardAlertPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
   readonly inviteConfig: InviteConfigPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
@@ -168,21 +169,18 @@ export class GrantInviteRewards {
       attempts,
       ...(isErrorCode(errorCode) ? { errorCode } : { errorType: errorCode }),
     });
-    try {
-      this.#dependencies.alert.reportRetryExhausted({
+    this.#dependencies.alert.raise({
+      key: SocialInviteAlertKey.REWARD_RETRY_EXHAUSTED,
+      severity: "error",
+      message: "Invite reward retries exhausted",
+      tags: { errorCode },
+      details: {
         grantId: grant.id,
         redemptionId: grant.sourceId,
         rewardType: grant.rewardType,
         attempts,
-        errorCode,
-      });
-    } catch (error) {
-      this.#dependencies.logger.warn({
-        event: SocialInviteLogEvent.REWARD_RETRY_EXHAUSTED,
-        grantId: grant.id,
-        errorType: toErrorType(error),
-      });
-    }
+      },
+    });
   }
 
   /**

@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { FriendTodo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
@@ -31,9 +31,7 @@ export class GetFriendTodos {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    input: GetFriendTodosInput,
-  ): Promise<CursorPaginatedResponse<TodoResponse, number>> {
+  async execute(input: GetFriendTodosInput): Promise<CursorPaginatedResponse<FriendTodo, number>> {
     const { userId, friendUserId } = input;
 
     if (
@@ -91,7 +89,7 @@ export class GetFriendTodos {
     const items = await this.#dependencies.todoReadRepository.findPublicTodosByUserId(repoParams);
 
     const response = this.#dependencies.paginationService.createCursorPaginatedResponse<
-      TodoResponse,
+      FriendTodo,
       number
     >({
       items,

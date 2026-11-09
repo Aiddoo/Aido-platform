@@ -7,14 +7,22 @@ import {
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
-import { removeInvisibleCharacters } from "#api/shared/domain/prompt/sanitize";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
+import {
+  type ExistingTodo,
+  findDuplicateTodoId,
+} from "../../../domain/policies/planning/action-plan-dedupe.policy.js";
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
-import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
+import type {
+  DateRef,
+  ScheduleDraft,
+  TodoDraft,
+} from "../../../domain/types/parsing/todo-draft.types.js";
+import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
 
-/** 공개 계약의 제목 상한 */
-const TITLE_MAX_LENGTH = 200;
+/** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
+export const TITLE_MAX_LENGTH = 200;
 
 /**
  * 모델이 센 메모 전체 할 일 수의 상한. 입력에 심은 지시로 터무니없는 수("나머지 99999개")를
@@ -35,8 +43,10 @@ export type NormalizationWarning =
   | "INVALID_DATE"
   | "INVALID_TIME"
   | "END_BEFORE_START"
+  | "REPEAT_END_NOT_AFTER_START"
   | "UNSUPPORTED_RECURRENCE"
-  | "EMPTY_RECURRENCE";
+  | "EMPTY_RECURRENCE"
+  | "UNKNOWN_DUPLICATE";
 
 export interface DraftNormalizeContext {
   readonly now: Date;
@@ -45,12 +55,29 @@ export interface DraftNormalizeContext {
   readonly ownedCategoryIds: ReadonlySet<number>;
 }
 
-function cleanTitle(value: string): string {
+/** 보이지 않는 문자·연속 공백을 정리하고 제목 상한으로 자른다. */
+export function cleanTitle(value: string): string {
   return truncateGraphemes(
     removeInvisibleCharacters(value).replace(/\s+/g, " ").trim(),
     TITLE_MAX_LENGTH,
   );
 }
+
+/** 모델 대상 명령만 있는 입력의 일정: 오늘 하루(시각·반복 없음) */
+const NO_ACTION_SCHEDULE: ScheduleDraft = {
+  date: {
+    kind: "TODAY",
+    amount: null,
+    weekday: null,
+    weekOffset: null,
+    month: null,
+    day: null,
+    year: null,
+  },
+  endDate: null,
+  time: null,
+  repeat: { pattern: "NONE", daysOfWeek: null, until: null, forDuration: null },
+};
 
 interface NormalizedTodo {
   readonly todo: ParsedTodoData;
@@ -64,10 +91,10 @@ export function normalizeTodoDraft(
   context: DraftNormalizeContext & { readonly fallbackTitle: string },
 ): NormalizedTodo {
   if (draft.intent === "NO_ACTION") {
-    const schedule = resolveTodoSchedule(
-      { date: { kind: "TODAY" }, time: null, repeat: { pattern: "NONE" } },
-      { now: context.now, timeZone: context.timezone },
-    );
+    const schedule = resolveTodoSchedule(NO_ACTION_SCHEDULE, {
+      now: context.now,
+      timeZone: context.timezone,
+    });
     return {
       todo: parsedTodoDataSchema.parse({
         title: NO_ACTION_TITLE[context.locale],
@@ -77,6 +104,7 @@ export function normalizeTodoDraft(
         isAllDay: true,
         isRecurring: false,
         recurrence: null,
+        repeat: null,
       }),
       intent: "NO_ACTION",
       warnings: [],
@@ -96,7 +124,7 @@ export function normalizeTodoDraft(
   const categoryId =
     draft.categoryId != null && context.ownedCategoryIds.has(draft.categoryId)
       ? draft.categoryId
-      : undefined;
+      : null;
   return {
     todo: parsedTodoDataSchema.parse({
       title,
@@ -106,6 +134,7 @@ export function normalizeTodoDraft(
       isAllDay: schedule.isAllDay,
       isRecurring: schedule.isRecurring,
       recurrence: schedule.recurrence,
+      repeat: schedule.repeat,
       ...(categoryId != null && { categoryId }),
     }),
     intent: "TASK",
@@ -117,8 +146,9 @@ export function normalizeTodoDraft(
 export interface MemoDraftInput {
   readonly todos: readonly (TodoDraft & {
     readonly items: readonly { readonly title: string }[];
+    readonly duplicateOfTodoId: number | null;
   })[];
-  readonly totalTaskCount?: number;
+  readonly totalTaskCount: number | null;
 }
 
 /**
@@ -131,24 +161,26 @@ export function normalizeMemoDraft(
   context: DraftNormalizeContext & {
     readonly fallbackTitle: string;
     readonly defaultCategoryId: number;
+    readonly upcomingTodos: readonly ExistingTodo[];
   },
 ): {
-  data: ParsedMemoData;
-  noAction: boolean;
+  parsedMemo: ParsedMemoData;
+  hasNoAction: boolean;
   omittedTodoCount: number;
   warnings: NormalizationWarning[];
+  dateRefs: Pick<DateRef, "kind" | "weekOffset">[];
 } {
   const warnings: NormalizationWarning[] = [];
   const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
   const kept = tasks.slice(0, AI_PARSE_LIMITS.MEMO_MAX_TODOS);
-  const noAction = kept.length === 0;
-  const totalTaskCount = noAction
+  const hasNoAction = kept.length === 0;
+  const totalTaskCount = hasNoAction
     ? 0
     : Math.min(Math.max(tasks.length, memo.totalTaskCount ?? 0), MEMO_TOTAL_TASK_COUNT_MAX);
   if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
     warnings.push("TODOS_TRUNCATED");
   }
-  const drafts = noAction ? [{ ...noActionDraft(), items: [] }] : kept;
+  const drafts = hasNoAction ? [{ ...noActionDraft(), items: [], duplicateOfTodoId: null }] : kept;
 
   const parsed = drafts.map((draft) => {
     const normalized = normalizeTodoDraft(draft, context);
@@ -160,28 +192,37 @@ export function normalizeMemoDraft(
     if (items.truncated) {
       warnings.push("ITEMS_TRUNCATED");
     }
+    const isKnownDuplicate = context.upcomingTodos.some(({ id }) => id === draft.duplicateOfTodoId);
+    if (draft.duplicateOfTodoId != null && !isKnownDuplicate) {
+      warnings.push("UNKNOWN_DUPLICATE");
+    }
     return {
       ...normalized.todo,
       categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,
       items: items.titles.map((itemTitle) => ({ title: itemTitle })),
+      duplicateOfTodoId: hasNoAction
+        ? null
+        : findDuplicateTodoId(
+            {
+              title: normalized.todo.title,
+              startDate: normalized.todo.startDate,
+              duplicateOfTodoId: isKnownDuplicate ? draft.duplicateOfTodoId : null,
+            },
+            context.upcomingTodos,
+          ),
     };
   });
   return {
-    data: parsedMemoDataSchema.parse({ todos: parsed }),
-    noAction,
+    parsedMemo: parsedMemoDataSchema.parse({ todos: parsed }),
+    hasNoAction,
     omittedTodoCount: totalTaskCount - kept.length,
     warnings,
+    dateRefs: kept.map(({ date: { kind, weekOffset } }) => ({ kind, weekOffset })),
   };
 }
 
 function noActionDraft(): TodoDraft {
-  return {
-    intent: "NO_ACTION",
-    title: "",
-    date: { kind: "NONE" },
-    time: null,
-    repeat: { pattern: "NONE" },
-  };
+  return { intent: "NO_ACTION", title: "", categoryId: null, ...NO_ACTION_SCHEDULE };
 }
 
 /** 빈 항목·제목 반복을 빼고 입력 순서대로 앞의 5개만 둔다. */

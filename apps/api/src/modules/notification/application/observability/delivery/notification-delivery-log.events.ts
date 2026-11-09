@@ -1,4 +1,9 @@
 export const NotificationDeliveryLogEvent = {
+  MARKETING_CONSENT_RECONFIRMED: "notification.delivery.marketing-consent-reconfirm.completed",
+  MARKETING_CONSENT_RECONFIRM_SCHEDULER_REGISTERED:
+    "notification.delivery.marketing-consent-reconfirm.scheduler.registered",
+  MARKETING_CONSENT_RECONFIRM_JOB_FAILED:
+    "notification.delivery.marketing-consent-reconfirm.job.failed",
   RECONCILE_PUSH_RECEIPTS_CACHE_SETTLE_FAILED:
     "notification.delivery.reconcile-push-receipts.cache-settle-failed",
   NOTIFICATION_HISTORY_WARM_UP_FAILED: "notification.delivery.notification-history.warm-up-failed",

@@ -1,28 +1,32 @@
-import { createMockHttpClient } from '@src/shared/__tests__';
+import { err, ok, unwrap } from '@src/core/errors/result';
+import { createHttpClientStub } from '@src/shared/__tests__';
+import { NetworkError } from '@src/shared/errors';
+import { noop } from 'es-toolkit';
 
 import {
   createMarkReadResponseDto,
   createNotificationApiError,
   createNotificationListResponseDto,
-  createPushNotificationGatewayStub,
   createUnreadCountResponseDto,
   INVALID_DTO,
-} from '../__tests__/notification.factories';
+} from '../__tests__/notification.fixtures';
+import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
-  let httpClient: ReturnType<typeof createMockHttpClient>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
   let service: NotificationService;
 
   beforeEach(() => {
-    httpClient = createMockHttpClient();
-    service = new NotificationService(httpClient, createPushNotificationGatewayStub());
+    httpClient = createHttpClientStub();
+    service = new NotificationService({
+      httpClient,
+      publicHttpClient: httpClient,
+    });
   });
 
-  // ── getNotifications ─────────────────────────
-
   describe('getNotifications', () => {
-    test('정상 응답 -> NotificationListResult 반환', async () => {
+    it('응답을 받으면 알림 목록을 반환한다', async () => {
       // Given
       const dto = createNotificationListResponseDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -35,25 +39,27 @@ describe('NotificationService', () => {
         params: expect.objectContaining({ limit: 20 }),
       });
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.notifications).toHaveLength(2);
-        expect(result.value.notifications[0]?.createdAt).toBeInstanceOf(Date);
-      }
+      const page = unwrap(result);
+      expect(page.notifications).toHaveLength(2);
+      expect(page.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     });
 
-    test('Zod 검증 실패 -> ParseError throw', async () => {
+    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
-      // When & Then
-      await expect(service.getNotifications()).rejects.toThrow('Invalid getNotifications response');
+      // When
+
+      const result = service.getNotifications();
+
+      // Then
+
+      await expect(result).rejects.toThrow('Invalid getNotifications response');
     });
   });
 
-  // ── getUnreadCount ───────────────────────────
-
   describe('getUnreadCount', () => {
-    test('정상 응답 -> unreadCount 숫자 반환', async () => {
+    it('응답을 받으면 읽지 않은 수를 반환한다', async () => {
       // Given
       const dto = createUnreadCountResponseDto({ unreadCount: 5 });
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -68,7 +74,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: 5 });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.get.mockResolvedValue({ ok: false, error: apiError });
@@ -81,10 +87,8 @@ describe('NotificationService', () => {
     });
   });
 
-  // ── markAsRead ───────────────────────────────
-
   describe('markAsRead', () => {
-    test('정상 응답 -> MarkReadResult 반환', async () => {
+    it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {
       // Given
       const dto = createMarkReadResponseDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -97,7 +101,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: dto });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -110,10 +114,8 @@ describe('NotificationService', () => {
     });
   });
 
-  // ── markAllAsRead ────────────────────────────
-
   describe('markAllAsRead', () => {
-    test('정상 응답 -> MarkReadResult 반환', async () => {
+    it('응답을 받으면 읽음 처리 결과를 반환한다', async () => {
       // Given
       const dto = createMarkReadResponseDto({ readCount: 5 });
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
@@ -126,7 +128,7 @@ describe('NotificationService', () => {
       expect(result).toEqual({ ok: true, value: dto });
     });
 
-    test('HTTP 에러 -> Result.err 반환', async () => {
+    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
       // Given
       const apiError = createNotificationApiError();
       httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
@@ -137,5 +139,87 @@ describe('NotificationService', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
+  });
+});
+
+describe('NotificationService.markAsReadAndCheckOwnership', () => {
+  function setup() {
+    const httpClient = createHttpClientStub();
+    return {
+      httpClient,
+      service: new NotificationService({
+        httpClient,
+        publicHttpClient: httpClient,
+      }),
+    };
+  }
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('읽음이 성공하면 내 알림이다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+
+    // When
+    const ownership = await service.markAsReadAndCheckOwnership(7);
+
+    // Then
+    expect(ownership).toBe('ok');
+  });
+
+  it.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
+
+    // When
+    const ownership = await service.markAsReadAndCheckOwnership(7);
+
+    // Then
+    expect(ownership).toBe('foreign');
+  });
+
+  it('다른 4xx와 네트워크 실패는 모르는 것이다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+    httpClient.patch.mockResolvedValueOnce(err(createNotificationApiError({ status: 400 })));
+    httpClient.patch.mockRejectedValueOnce(new NetworkError());
+
+    // When
+    const rejected = await service.markAsReadAndCheckOwnership(7);
+    const offline = await service.markAsReadAndCheckOwnership(7);
+
+    // Then
+    expect(rejected).toBe('unknown');
+    expect(offline).toBe('unknown');
+  });
+
+  it('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
+    // Given
+    jest.useFakeTimers();
+    const { httpClient, service } = setup();
+    httpClient.patch.mockReturnValue(new Promise(noop));
+
+    // When
+    const ownership = service.markAsReadAndCheckOwnership(7);
+    await jest.advanceTimersByTimeAsync(NOTIFICATION_READ_BUDGET_MS);
+
+    // Then
+    await expect(ownership).resolves.toBe('unknown');
+  });
+
+  it('ID가 0이면 묻지 않는다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+
+    // When
+    const ownership = await service.markAsReadAndCheckOwnership(0);
+
+    // Then
+    expect(ownership).toBe('ok');
+    expect(httpClient.patch).not.toHaveBeenCalled();
   });
 });

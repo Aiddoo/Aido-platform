@@ -153,7 +153,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
 
     // Then
     await expect(repeatedAcceptance).rejects.toMatchObject({ errorCode: ErrorCode.FOLLOW_0903 });
-    expect(mutualNotifications).toBe(2);
+    expect(mutualNotifications).toBe(1);
   });
 
   it("동일 요청 두 수락은 하나만 처리하고 친구 알림을 1세트 발행해야 한다", async () => {
@@ -189,7 +189,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       { status: "rejected", reason: expect.objectContaining({ errorCode: ErrorCode.FOLLOW_0903 }) },
     ]);
     expect(accepted).toHaveLength(2);
-    expect(mutualNotifications).toBe(2);
+    expect(mutualNotifications).toBe(1);
     expect(milestoneNotifications).toBe(2);
   });
 
@@ -227,6 +227,6 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     expect(accepted.map((row) => row.sortOrder).sort((first, second) => first - second)).toEqual([
       0, 1,
     ]);
-    expect(mutualNotifications).toBe(4);
+    expect(mutualNotifications).toBe(2);
   });
 });

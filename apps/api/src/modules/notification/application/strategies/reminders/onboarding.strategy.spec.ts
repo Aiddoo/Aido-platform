@@ -82,6 +82,8 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
     expect(notifications?.[0]).toMatchObject({
       userId: "user-1",
       type: "SYSTEM_NOTICE",
+      // 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
+      purpose: "SCHEDULED_SERVICE",
       title: expected?.title,
       body: expected?.body,
       action: { type: "DEEP_LINK", url: "/feed" },

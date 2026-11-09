@@ -1,14 +1,19 @@
-import type { WeatherCondition } from '@aido/api';
-import { useFontScaleRatio } from '@src/shared/hooks/use-minimum-font-scale';
-import { HStack, Text } from '@src/shared/ui';
+import type { WeatherCondition } from '@aido/api/vocabulary';
+import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { Chip } from 'heroui-native';
+import type { ComponentProps } from 'react';
 
-import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors';
+import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
 import { WeatherIcon } from './weather-icon';
 
 const CHIP_ICON_SIZE = 15;
 
-interface WeatherBriefingChipProps {
+interface WeatherBriefingChipProps extends Omit<
+  ComponentProps<typeof Chip>,
+  'variant' | 'size' | 'color' | 'children'
+> {
   condition: WeatherCondition;
   isDaylight: boolean;
   label: string;
@@ -21,16 +26,19 @@ export function WeatherBriefingChip({
   isDaylight,
   label,
   tone,
+  className,
+  ...props
 }: WeatherBriefingChipProps) {
   const iconSize = Math.round(CHIP_ICON_SIZE * useFontScaleRatio());
   return (
-    <HStack
-      align="center"
-      gap={3}
+    <Chip
+      variant="tertiary"
       className={cn(
-        'min-h-[26px] self-start rounded-[13px] pr-[9px] pl-[7px]',
+        'min-h-[26px] gap-[3px] self-start rounded-[13px] py-0 pr-[9px] pl-[7px]',
         BRIEFING_ROW_TONES[tone].chip,
+        className,
       )}
+      {...props}
     >
       <WeatherIcon
         condition={condition}
@@ -41,6 +49,6 @@ export function WeatherBriefingChip({
       <Text size="e1" weight="semibold" tone="onSky" className="tabular-nums">
         {label}
       </Text>
-    </HStack>
+    </Chip>
   );
 }

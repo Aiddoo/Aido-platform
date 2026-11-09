@@ -1,0 +1,1 @@
+CREATE INDEX "QuotaCharge_reserved_updatedAt_idx" ON "QuotaCharge" ("updatedAt") WHERE ("status" = 'RESERVED');

@@ -167,5 +167,12 @@ export type MarkReadResponse = z.infer<typeof markReadResponseSchema>;
 export const notificationOpenedResponseSchema = z.object({ opened: z.boolean() });
 export type NotificationOpenedResponse = z.infer<typeof notificationOpenedResponseSchema>;
 
-export const marketingPushOptOutResponseSchema = z.object({ optedOut: z.literal(true) });
+export const marketingPushOptOutResponseSchema = z.object({
+  optedOut: z.literal(true),
+  marketingPushWithdrawnAt: datetimeSchema
+    .optional()
+    .describe(
+      "이번 요청을 처리한 서버 시각 (1.15.0+ 서버). 토큰 유효 여부를 숨기려고 항상 준다. 앱은 철회 결과 안내에 기기 시각 대신 이 값을 쓴다",
+    ),
+});
 export type MarketingPushOptOutResponse = z.infer<typeof marketingPushOptOutResponseSchema>;

@@ -1,28 +1,22 @@
-import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { formatClockTime } from '@src/shared/date/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useOpenUrl } from '@src/shared/hooks/use-open-url';
+import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
-import { Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { Image, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatClockTime } from '@src/shared/utils/date-format';
 import { tv } from '@src/shared/utils/tv';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { Image, type ImageLoadEventData } from 'expo-image';
+import type { ImageLoadEventData } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
-import {
-  type AttributionBackground,
-  type AttributionInfo,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
-import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/get-weather-report-query-options';
+import type { AttributionInfo } from '../domains/weather-report.model';
+import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { type AttributionBackground, toAttributionMark } from '../utils/to-attribution-mark';
 
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;
@@ -48,13 +42,10 @@ interface WeatherAttributionProps {
   background: AttributionBackground;
 }
 
-/**
- * WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 Apple Weather 표기와 출처 고지 링크를 둔다.
- * 마크는 Apple이 주는 로고 이미지를 변형 없이 쓰고, 하늘 위에서는 흰 글자(dark) 로고를 쓴다.
- */
+/** WeatherKit 이용 조건: Apple 날씨 데이터를 보여 주는 화면마다 표기와 출처 링크를 두고 로고는 변형 없이 쓴다 */
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
-  const openUrl = useOpenUrl();
+  const openUrl = useOpenInAppBrowser();
   const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.attribution },
@@ -63,7 +54,7 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
   });
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
-  const localTime = useLocalTimeLabel(data.location.timezone, now);
+  const localTime = useFormatLocalTime(data.location.timezone, now);
   const { attribution } = data;
   const tone = attributionTone({ background });
 
@@ -109,7 +100,7 @@ WeatherAttribution.Mark = function Mark({
   const { scale } = useWindowDimensions();
   const [hasLogoFailed, setHasLogoFailed] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(LOGO_DEFAULT_ASPECT_RATIO);
-  const mark = WeatherReportPolicy.attributionMark(attribution, background, scale);
+  const mark = toAttributionMark(attribution, background, scale);
 
   const handleLoad = ({ source }: ImageLoadEventData) => {
     if (source.width > 0 && source.height > 0) {

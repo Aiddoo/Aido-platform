@@ -1,212 +1,234 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import {
+  resendResponseFixture,
+  StubResendHttp,
+  type HttpResponseStep,
+} from "#test/mocks/resend-http.stub";
 
-import { createVerificationCodeEmail } from "../../../application/services/email/email-message.factory.js";
+import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import { EmailLogEvent } from "../../observability/email/email-log.events.js";
+import {
+  describeEmailSenderContract,
+  type EmailContractScenario,
+} from "./email-sender.contract.js";
 import { ResendEmailSenderAdapter } from "./resend-email-sender.adapter.js";
 
-describe("Resend Email Adapter — 발송 계약과 인증 정보 비노출", () => {
+const recipient = "private@example.com";
+const verificationCode = "987654";
+const message = (idempotencyKey?: string) =>
+  EmailMessage.create({
+    kind: "verification",
+    to: recipient,
+    subject: "인증 코드",
+    html: `<p>${verificationCode}</p>`,
+    text: verificationCode,
+    tags: [{ name: "type", value: "verification" }],
+    idempotencyKey,
+  });
+
+const success = resendResponseFixture("send.success.json");
+const unavailable = resendResponseFixture("send.application-error.json", 500);
+const rateLimited = resendResponseFixture("send.rate-limit.json", 429);
+
+const SCENARIO_RESPONSES: Record<EmailContractScenario, HttpResponseStep> = {
+  success,
+  unavailable,
+  "rate-limited": rateLimited,
+  "daily-quota": resendResponseFixture("send.daily-quota.json", 429),
+  "monthly-quota": resendResponseFixture("send.monthly-quota.json", 429),
+  rejected: resendResponseFixture("send.validation-error.json", 422),
+  unreachable: () => {
+    throw new TypeError("Network connection failed");
+  },
+};
+
+describe("ResendEmailSenderAdapter", () => {
   let http: StubResendHttp;
+  let alerts: RecordingOperationalAlert;
 
-  const recipient = "private@example.com";
-  const verificationCode = "987654";
-  const message = () =>
-    createVerificationCodeEmail(recipient, { code: verificationCode, expiryMinutes: 15 });
-
-  function adapter(isConfigured: boolean): ResendEmailSenderAdapter {
+  function adapter(apiKey: string | null = "test-key"): ResendEmailSenderAdapter {
+    alerts = new RecordingOperationalAlert();
     return new ResendEmailSenderAdapter(
-      mock<TypedConfigService>({
-        nodeEnv: "test",
-        email: {
-          isConfigured,
-          apiKey: isConfigured ? "test-key" : undefined,
-          from: "noreply@example.com",
-          fromName: "Aido",
-          supportEmail: "support@example.com",
-        },
-      }),
+      { apiKey, from: "noreply@example.com", fromName: "Aido", environment: "test" },
+      new OutboundPolicyRegistry(alerts),
     );
   }
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-07T00:00:00Z"));
-    http = new StubResendHttp([]);
+  function givenResponses(responses: readonly HttpResponseStep[]): void {
+    http = new StubResendHttp(responses);
     vi.stubGlobal("fetch", http.fetch);
+  }
+
+  beforeEach(() => {
     vi.stubEnv("RESEND_BASE_URL", "https://api.resend.com");
+    givenResponses([]);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
-    vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined);
-    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
-    expect(http.unexpectedRequests).toEqual([]);
-    expect(http.remainingResponses).toBe(0);
+    vi.restoreAllMocks();
   });
 
-  it("API key가 없으면 발송을 모의 처리하되 이메일 주소와 인증 코드를 기록하지 않는다", async () => {
-    // Given
-    const sender = adapter(false);
-
-    // When
-    const result = await sender.send(message());
-
-    // Then
-    expect(result).toEqual({
-      success: true,
-      messageId: expect.stringMatching(/^mock-/),
-      retryCount: 0,
-    });
-    expect(http.requests).toHaveLength(0);
-    expect(Logger.prototype.debug).toHaveBeenCalledWith({
-      event: EmailLogEvent.DELIVERY_SIMULATED,
-    });
-    expect(JSON.stringify(vi.mocked(Logger.prototype.debug).mock.calls)).not.toContain(recipient);
-    expect(JSON.stringify(vi.mocked(Logger.prototype.debug).mock.calls)).not.toContain(
-      verificationCode,
-    );
+  describeEmailSenderContract({
+    scenarios: [
+      "success",
+      "unavailable",
+      "rate-limited",
+      "daily-quota",
+      "monthly-quota",
+      "rejected",
+      "unreachable",
+    ],
+    arrange: (scenario) => {
+      givenResponses([SCENARIO_RESPONSES[scenario]]);
+      return adapter();
+    },
+    forwardedIdempotencyKeys: () =>
+      http.requests.map((request) => request.headers.get("idempotency-key")),
+    cleanup: () => {
+      expect(http.unexpectedRequests).toEqual([]);
+      expect(http.remainingResponses).toBe(0);
+    },
   });
 
-  it("공급자 성공 응답의 messageId를 유지하고 로그에는 수신자 대신 식별자를 기록한다", async () => {
+  it("성공 응답의 messageId를 돌려주고 설정·본문·환경 태그를 실제 요청에 싣는다", async () => {
     // Given
-    http = new StubResendHttp([resendResponseFixture("send.success.json")]);
-    vi.stubGlobal("fetch", http.fetch);
-    const sender = adapter(true);
+    givenResponses([success]);
 
     // When
-    const result = await sender.send(message());
+    const outcome = await adapter().send(message());
 
     // Then
-    expect(result).toEqual({ success: true, messageId: "fixture-message", retryCount: 0 });
+    expect(outcome).toEqual({ status: "sent", providerMessageId: "fixture-message" });
+    expect(http.request().headers.get("authorization")).toBe("Bearer test-key");
     expect(await http.request().json()).toEqual(
-      expect.objectContaining({ to: recipient, text: expect.stringContaining(verificationCode) }),
+      expect.objectContaining({
+        from: "Aido <noreply@example.com>",
+        to: recipient,
+        subject: "인증 코드",
+        text: expect.stringContaining(verificationCode),
+        tags: [
+          { name: "type", value: "verification" },
+          { name: "environment", value: "test" },
+        ],
+      }),
     );
-    expect(Logger.prototype.log).toHaveBeenCalledWith({
-      event: EmailLogEvent.DELIVERY_COMPLETED,
-      messageId: "fixture-message",
-      retryCount: 0,
-    });
-    expect(JSON.stringify(vi.mocked(Logger.prototype.log).mock.calls)).not.toContain(recipient);
   });
 
-  it("실제 SDK가 반환한 임의 오류 name은 로그에 노출하지 않는다", async () => {
+  it("멱등 키가 없으면 요청 헤더에도 싣지 않는다", async () => {
+    // Given
+    givenResponses([success]);
+
+    // When
+    await adapter().send(message());
+
+    // Then
+    expect(http.request().headers.has("idempotency-key")).toBe(false);
+  });
+
+  it("실패해도 한 번만 시도하고 다시 보내지 않는다", async () => {
+    // Given
+    givenResponses([unavailable]);
+
+    // When
+    await adapter().send(message());
+
+    // Then
+    expect(http.requests).toHaveLength(1);
+  });
+
+  it("API 키가 없으면 호출 없이 재시도 불가 not_configured로 끝낸다", async () => {
+    // Given
+    const sender = adapter(null);
+
+    // When
+    const outcome = await sender.send(message());
+
+    // Then
+    expect(outcome).toEqual({ status: "failed", reason: "not_configured", retryable: false });
+    expect(http.requests).toHaveLength(0);
+  });
+
+  it("모르는 오류 이름은 거절로 보고 로그에 오류 이름·수신자·원문을 남기지 않는다", async () => {
+    // Given
     const secret = `${recipient}:${verificationCode}:synthetic-private-key`;
-    http = new StubResendHttp([
+    givenResponses([
       () =>
         new Response(JSON.stringify({ name: secret, message: secret }), {
           status: 422,
           headers: { "content-type": "application/json" },
         }),
     ]);
-    vi.stubGlobal("fetch", http.fetch);
-    const result = await adapter(true).send(message());
-    expect(result).toEqual({ success: false, error: secret, retryCount: 0 });
+
+    // When
+    const outcome = await adapter().send(message());
+
+    // Then
+    expect(outcome).toEqual({ status: "failed", reason: "rejected", retryable: false });
     expect(Logger.prototype.error).toHaveBeenCalledWith({
       event: EmailLogEvent.DELIVERY_FAILED,
-      errorType: "RESEND_ERROR",
-      retryCount: 0,
+      reason: "rejected",
+      retryable: false,
     });
     expect(JSON.stringify(vi.mocked(Logger.prototype.error).mock.calls)).not.toContain(secret);
   });
 
-  it("실패 결과는 그대로 반환하고 수신자나 공급자 오류 원문을 로그에 기록하지 않는다", async () => {
+  it("응답이 없으면 10초 뒤 기다리기를 멈추고 재시도 가능한 unavailable로 끝낸다", async () => {
     // Given
-    const errorMessage = `Rejected ${recipient}: ${verificationCode}`;
-    http = new StubResendHttp([resendResponseFixture("send.validation-error.json", 422)]);
-    vi.stubGlobal("fetch", http.fetch);
-    const sender = adapter(true);
+    vi.useFakeTimers();
+    givenResponses([() => new Promise<Response>(() => undefined)]);
+    const sender = adapter();
 
     // When
-    const result = await sender.send(message());
+    const pending = sender.send(message());
+    await vi.advanceTimersByTimeAsync(10_000);
+    const outcome = await pending;
 
     // Then
-    expect(result).toEqual({ success: false, error: errorMessage, retryCount: 0 });
-    expect(Logger.prototype.error).toHaveBeenCalledWith({
-      event: EmailLogEvent.DELIVERY_FAILED,
-      errorType: "validation_error",
-      retryCount: 0,
-    });
-    expect(JSON.stringify(vi.mocked(Logger.prototype.error).mock.calls)).not.toContain(
-      errorMessage,
-    );
+    expect(outcome).toEqual({ status: "failed", reason: "unavailable", retryable: true });
   });
 
-  it("재시도 가능한 오류는 지수 백오프로 재시도하고 성공하면 재시도 횟수를 반환한다", async () => {
+  it("공급자 장애가 연속 5번이면 회로를 열어 다음 메일은 호출 없이 unavailable로 끝내고 경보를 올린다", async () => {
     // Given
-    http = new StubResendHttp([
-      resendResponseFixture("send.rate-limit.json", 429),
-      resendResponseFixture("send.application-error.json", 500),
-      resendResponseFixture("send.success.json"),
+    givenResponses(Array.from({ length: 5 }, () => unavailable));
+    const sender = adapter();
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await sender.send(message());
+    }
+
+    // When
+    const outcome = await sender.send(message());
+
+    // Then
+    expect(outcome).toEqual({ status: "failed", reason: "unavailable", retryable: true });
+    expect(http.requests).toHaveLength(5);
+    expect(alerts.alerts).toEqual([
+      expect.objectContaining({ key: "notification.email.circuit-open", severity: "error" }),
     ]);
-    vi.stubGlobal("fetch", http.fetch);
-
-    // When
-    const pending = adapter(true).send(message());
-    await vi.advanceTimersByTimeAsync(1000 + 2000);
-    const result = await pending;
-
-    // Then
-    expect(result).toEqual({ success: true, messageId: "fixture-message", retryCount: 2 });
-    expect(http.requests).toHaveLength(3);
-    expect(Logger.prototype.warn).toHaveBeenCalledWith(
-      "Retryable error (rate_limit_exceeded), retrying in 1000ms... (attempt 1/3)",
-    );
-    expect(Logger.prototype.warn).toHaveBeenCalledWith(
-      "Retryable error (application_error), retrying in 2000ms... (attempt 2/3)",
-    );
   });
 
-  it("재시도 횟수를 모두 소진하면 마지막 공급자 오류와 재시도 횟수를 반환한다", async () => {
+  it("429·검증 거절은 공급자 전체 장애로 세지 않아 회로가 열리지 않는다", async () => {
     // Given
-    http = new StubResendHttp(
-      Array.from({ length: 4 }, () => resendResponseFixture("send.application-error.json", 500)),
-    );
-    vi.stubGlobal("fetch", http.fetch);
+    givenResponses(Array.from({ length: 5 }, () => rateLimited));
+    const sender = adapter();
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await sender.send(message());
+    }
+    givenResponses([success]);
 
     // When
-    const pending = adapter(true).send(message());
-    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000);
-    const result = await pending;
+    const outcome = await sender.send(message());
 
     // Then
-    expect(result).toEqual({ success: false, error: "Persistent failure", retryCount: 3 });
-    expect(http.requests).toHaveLength(4);
-    expect(Logger.prototype.error).toHaveBeenCalledWith({
-      event: EmailLogEvent.DELIVERY_FAILED,
-      errorType: "application_error",
-      retryCount: 3,
-    });
-  });
-
-  it("SDK가 application_error로 변환한 네트워크 예외도 재시도 횟수만큼 재시도한 뒤 실패 결과를 반환한다", async () => {
-    // Given
-    const networkFailure = vi.fn().mockRejectedValue(new Error("socket hang up"));
-    vi.stubGlobal("fetch", networkFailure);
-
-    // When
-    const pending = adapter(true).send(message());
-    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000);
-    const result = await pending;
-
-    // Then
-    expect(result).toMatchObject({ success: false, retryCount: 3 });
-    expect(networkFailure).toHaveBeenCalledTimes(4);
-    expect(Logger.prototype.warn).toHaveBeenCalledWith(
-      "Retryable error (application_error), retrying in 1000ms... (attempt 1/3)",
-    );
-    expect(Logger.prototype.error).toHaveBeenCalledWith({
-      event: EmailLogEvent.DELIVERY_FAILED,
-      errorType: "application_error",
-      retryCount: 3,
-    });
+    expect(outcome.status).toBe("sent");
   });
 });

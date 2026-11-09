@@ -8,7 +8,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
@@ -52,6 +52,8 @@ const EDGE_MARGIN = 48;
 const BASE_SLANT = Math.atan(24 / 900);
 const FAR_DEPTH_BIAS = 1.6;
 const PACE = [0.62, 1];
+/** 입자마다 속도를 조금씩 달리해 줄이 맞아 보이지 않게 한다. */
+const PACE_JITTER = 0.12;
 const UNIT = [0, 1];
 
 type RainLayerProps = {
@@ -80,7 +82,7 @@ export function RainLayer({
 }: RainLayerProps) {
   const texture = useParticleTexture();
   const style = RAIN_VARIANT_STYLES[variant];
-  const count = getParticleCount(variant, density, { width, height }, isLowEndDevice);
+  const count = getParticleCount(variant, { density, screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, style.seed);
   const depths = range(count).map(
     (index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,
@@ -107,7 +109,7 @@ export function RainLayer({
     const base = index * PARTICLE_SEED_STRIDE;
     const depth = depths[index] ?? 0;
     const scale = interpolate(depth, UNIT, scaleRange) / PARTICLE_TEXTURE_SCALE;
-    const pace = interpolate(depth, UNIT, PACE) + 0.12 * (seeds[base + 2] ?? 0);
+    const pace = interpolate(depth, UNIT, PACE) + PACE_JITTER * (seeds[base + 2] ?? 0);
     const travelled = wrap(
       (seeds[base + 1] ?? 0) * travelHeight + time.get() * fallSpeed * pace,
       travelHeight,

@@ -25,7 +25,10 @@ interface AppToastProps {
 
 const ICON_SIZE = 20;
 
-const variantIconMap: Record<AppToastVariant, ReactNode | null> = {
+/** 행동 버튼 높이가 44pt에 못 미치므로 모양은 두고 눌리는 범위만 위아래로 넓힌다 */
+const ACTION_HIT_SLOP = { top: 8, bottom: 8 };
+
+const VARIANT_ICON_MAP: Record<AppToastVariant, ReactNode> = {
   default: null,
   success: <ToastSuccessIcon width={ICON_SIZE} height={ICON_SIZE} />,
   warning: <ToastWarningIcon width={ICON_SIZE} height={ICON_SIZE} />,
@@ -40,7 +43,7 @@ export function AppToast({
   action,
   toastProps,
 }: AppToastProps) {
-  const resolvedIcon = icon ?? variantIconMap[variant];
+  const resolvedIcon = icon ?? VARIANT_ICON_MAP[variant];
 
   return (
     <Toast {...toastProps} className="bg-transparent p-0">
@@ -48,11 +51,20 @@ export function AppToast({
         {resolvedIcon && <Box className="shrink-0">{resolvedIcon}</Box>}
 
         <Box className="flex-1">
-          <Text size="b2" weight="medium" className="text-white dark:text-gray-9">
+          <Text
+            size="b2"
+            weight="medium"
+            lineBreakStrategyIOS="hangul-word"
+            className="text-white dark:text-gray-9"
+          >
             {label}
           </Text>
-          {description && (
-            <Text size="b3" className="text-gray-3 dark:text-gray-7">
+          {description != null && description.length > 0 && (
+            <Text
+              size="b3"
+              lineBreakStrategyIOS="hangul-word"
+              className="text-gray-3 dark:text-gray-7"
+            >
               {description}
             </Text>
           )}
@@ -60,6 +72,8 @@ export function AppToast({
 
         {action && (
           <PressableFeedback
+            accessibilityRole="button"
+            hitSlop={ACTION_HIT_SLOP}
             onPress={() => {
               action.onPress?.();
               toastProps.hide();

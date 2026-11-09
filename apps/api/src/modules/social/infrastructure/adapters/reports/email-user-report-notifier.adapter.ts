@@ -27,9 +27,9 @@ export class EmailUserReportNotifierAdapter implements UserReportNotifierPort {
     private readonly configService: TypedConfigService,
   ) {}
 
-  async notifyOperators(submission: UserReportSubmission): Promise<UserReportDeliveryResult> {
+  notifyOperators(submission: UserReportSubmission): Promise<UserReportDeliveryResult> {
     const apiPublicUrl = this.configService.apiPublicUrl;
-    const result = await this.emailSender.sendUserReport(this.configService.email.supportEmail, {
+    return this.emailSender.sendUserReport(this.configService.email.supportEmail, {
       ...submission,
       resolutionEndpoint: `POST ${resolveUserReportPath(submission.reportId)}`,
       resolutionDocsUrl:
@@ -37,6 +37,5 @@ export class EmailUserReportNotifierAdapter implements UserReportNotifierPort {
           ? null
           : `${apiPublicUrl}${ADMIN_DOCS_PATH}#/${encodeURIComponent(SWAGGER_TAGS.ADMIN_REPORTS)}/${RESOLVE_USER_REPORT_OPERATION_ID}`,
     });
-    return { success: result.success, error: result.error };
   }
 }

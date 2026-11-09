@@ -24,6 +24,22 @@ describe("할 일 목록 조회", () => {
     vi.restoreAllMocks();
   });
 
+  it("복귀 처리가 끝난 뒤 목록을 읽는다", async () => {
+    // Given
+    const order: string[] = [];
+    vi.spyOn(fixture.seriesCatchUp, "ensureCaughtUp").mockImplementation(async () => {
+      order.push("catch-up");
+    });
+    vi.spyOn(fixture.todoReadRepository, "findManyByUserId").mockImplementation(async () => {
+      order.push("read");
+      return [];
+    });
+    // When
+    await useCase.execute({ userId: fixture.userId });
+    // Then
+    expect(order).toEqual(["catch-up", "read"]);
+  });
+
   it("필터와 정규화한 size를 읽기 경계에 전달한다", async () => {
     // Given
     const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");

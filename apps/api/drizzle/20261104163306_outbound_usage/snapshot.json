@@ -1,0 +1,180 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "6201daa9-8aa5-4e4f-a298-dafd814f150f",
+  "prevIds": [
+    "cee9718f-98aa-4601-b08e-35d47da8393a"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "OutboundUsage"
+      ],
+      "writes": [
+        "s|tbl|public.OutboundUsage",
+        "n|tbl|public.OutboundUsage",
+        "e|tbl|public.OutboundUsage",
+        "n|rel|public.OutboundUsage",
+        "n|type|public.OutboundUsage",
+        "n|rel|public.OutboundUsage_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "OutboundUsage",
+        "OutboundUsage_updatedAt_idx"
+      ],
+      "writes": [
+        "s|idx|public.OutboundUsage_updatedAt_idx",
+        "n|idx|public.OutboundUsage_updatedAt_idx",
+        "e|idx|public.OutboundUsage_updatedAt_idx",
+        "n|rel|public.OutboundUsage_updatedAt_idx"
+      ],
+      "reads": [
+        "n|tbl|public.OutboundUsage",
+        "n|sch|public",
+        "n|col|public.OutboundUsage.updatedAt"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "OutboundUsage",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "meter",
+        "type": "varchar(48)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "periodKey",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "subject",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "used",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "OutboundUsage_updatedAt_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "updatedAt",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OutboundUsage",
+        "name": "OutboundUsage_pkey",
+        "columns": [
+          "meter",
+          "periodKey",
+          "subject"
+        ],
+        "nameExplicit": true,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 # TextButton
 
-텍스트 링크 스타일의 버튼 컴포넌트입니다. 배경 없이 텍스트만 표시됩니다.
+텍스트 링크 스타일의 버튼 컴포넌트입니다. 배경 없이 텍스트만 표시됩니다. heroui `LinkButton`(ghost, 눌림은 크기 변화만) 위에 글자 크기 5단계를 얹었고, role `button`은 heroui가 넣습니다. 글자는 앱 글꼴 설정을 따르도록 자식 `Text`로 넣습니다. 비활성 투명도는 heroui 기본(0.5) 대신 `disabled:opacity-40`으로 기존 값을 지킵니다.
 
 ## 사용법
 
 ```tsx
-import { TextButton } from '@src/shared/ui/text-button/text-button';
+import { TextButton } from '@src/shared/ui';
 
 <TextButton onPress={() => {}}>더보기</TextButton>
 <TextButton variant="arrow" onPress={() => {}}>자세히 보기</TextButton>
@@ -79,7 +79,7 @@ import { TextButton } from '@src/shared/ui/text-button/text-button';
 ## 스타일
 
 - 텍스트 색상: `shade={6}` (회색 계열)
-- 터치 피드백: HeroUI PressableFeedback 사용
+- 터치 피드백: heroui `LinkButton`의 크기 변화
 
 ## 사용 예시
 
@@ -87,13 +87,13 @@ import { TextButton } from '@src/shared/ui/text-button/text-button';
 // 로그인 화면 하단
 <HStack justify="center" gap={8}>
   <TextButton onPress={() => {}}>회원가입</TextButton>
-  <Divider orientation="vertical" />
+  <Separator orientation="vertical" />
   <TextButton onPress={() => {}}>이메일로 로그인</TextButton>
 </HStack>
 
 // 리스트 아이템
 <ListRow
-  contents={<ListRow.Texts top="설정" />}
+  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
   right={<TextButton variant="arrow">변경</TextButton>}
 />
 ```

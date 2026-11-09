@@ -1,0 +1,29 @@
+import type { UpcomingTodoReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/upcoming-todo-reader.port";
+import type { UserCategoryReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/user-category-reader.port";
+import type {
+  UserLocalePreference,
+  UserLocalePreferenceReaderPort,
+} from "#api/modules/ai-assistance/application/ports/parsing/user-locale-preference.reader.port";
+
+export class StubAiUserCategoryReader implements UserCategoryReaderPort {
+  readonly categories = new Map<string, Array<{ id: number; name: string }>>();
+  async findByUserId(userId: string): Promise<Array<{ id: number; name: string }>> {
+    return (this.categories.get(userId) ?? []).map((category) => ({ ...category }));
+  }
+}
+
+export class StubUpcomingTodoReader implements UpcomingTodoReaderPort {
+  todos: Awaited<ReturnType<UpcomingTodoReaderPort["findByUserId"]>> = [];
+  async findByUserId() {
+    return this.todos;
+  }
+}
+
+export class StubUserLocalePreferenceReader implements UserLocalePreferenceReaderPort {
+  readonly preferences = new Map<string, UserLocalePreference>();
+  readCount = 0;
+  async read(userId: string): Promise<UserLocalePreference> {
+    this.readCount += 1;
+    return this.preferences.get(userId) ?? { timezone: "UTC", locale: "ko" };
+  }
+}

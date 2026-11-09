@@ -7,6 +7,21 @@
 
 @layer theme {
   :root {
+    /* Android는 음수 자간이면 잰 폭보다 줄바꿈 폭이 커져 마지막 글자가 다음 줄로 밀려 사라진다(QA #27: "계속"→"계") */
+    @variant android {
+      --text-display--letter-spacing: 0px;
+      --text-h1--letter-spacing: 0px;
+      --text-t1--letter-spacing: 0px;
+      --text-t2--letter-spacing: 0px;
+      --text-t3--letter-spacing: 0px;
+      --text-b1--letter-spacing: 0px;
+      --text-b2--letter-spacing: 0px;
+      --text-b3--letter-spacing: 0px;
+      --text-b4--letter-spacing: 0px;
+      --text-e1--letter-spacing: 0px;
+      --text-e2--letter-spacing: 0px;
+    }
+
     @variant light {
       --background: oklch(1 0 0);
       --foreground: oklch(0.32 0 0);
@@ -16,6 +31,8 @@
       --accent: oklch(0.65 0.2 30);
       --danger: oklch(0.6 0.22 25);
       --warning: oklch(0.87 0.17 85);
+      /* 흰·연회색 면 위 경고 글자. 4.5:1 이상 */
+      --warning-text: oklch(0.55 0.13 75);
       --divider: oklch(0.9 0 0);
       --highlight: oklch(0.97 0.015 30);
       --white: oklch(1 0 0);
@@ -48,6 +65,7 @@
       --accent: oklch(0.65 0.2 30);
       --danger: oklch(0.6 0.22 25);
       --warning: oklch(0.87 0.17 85);
+      --warning-text: oklch(0.87 0.17 85);
       --divider: oklch(0.5 0 0);
       --highlight: oklch(0.22 0 0);
       --white: oklch(0.182 0 0);
@@ -82,6 +100,7 @@
   --color-success: var(--success);
   --color-info: var(--info);
   --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
   --color-white: var(--white);
   --color-highlight: var(--highlight);
   --color-gray-1: var(--gray-1);
@@ -159,11 +178,47 @@
 }
 
 @layer utilities {
-  .text-input-lg {
+  .text-input-display {
+    font-size: var(--text-display);
+  }
+
+  .text-input-h1 {
+    font-size: var(--text-h1);
+  }
+
+  .text-input-t1 {
+    font-size: var(--text-t1);
+  }
+
+  .text-input-t2 {
+    font-size: var(--text-t2);
+  }
+
+  .text-input-t3 {
+    font-size: var(--text-t3);
+  }
+
+  .text-input-b1 {
+    font-size: var(--text-b1);
+  }
+
+  .text-input-b2 {
     font-size: var(--text-b2);
   }
 
-  .text-input-md {
+  .text-input-b3 {
     font-size: var(--text-b3);
+  }
+
+  .text-input-b4 {
+    font-size: var(--text-b4);
+  }
+
+  .text-input-e1 {
+    font-size: var(--text-e1);
+  }
+
+  .text-input-e2 {
+    font-size: var(--text-e2);
   }
 }

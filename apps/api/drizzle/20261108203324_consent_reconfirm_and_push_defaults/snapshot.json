@@ -1,0 +1,97 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "342da3b2-6570-4d16-a811-31be109fd173",
+  "prevIds": [
+    "4abc345b-e084-421f-9719-3c4766dffb5f"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserConsent",
+        "marketingReconfirmedAt"
+      ],
+      "writes": [
+        "s|col|public.UserConsent.marketingReconfirmedAt",
+        "n|col|public.UserConsent.marketingReconfirmedAt",
+        "e|col|public.UserConsent.marketingReconfirmedAt"
+      ],
+      "reads": [
+        "n|tbl|public.UserConsent",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserPreference",
+        "nightPushEnabled"
+      ],
+      "writes": [
+        "s|colprop|public.UserPreference.nightPushEnabled.default"
+      ],
+      "reads": [
+        "n|tbl|public.UserPreference",
+        "n|sch|public",
+        "n|col|public.UserPreference.nightPushEnabled"
+      ],
+      "sqlHash": "a0a1a1e913b6dabb"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserPreference",
+        "pushEnabled"
+      ],
+      "writes": [
+        "s|colprop|public.UserPreference.pushEnabled.default"
+      ],
+      "reads": [
+        "n|tbl|public.UserPreference",
+        "n|sch|public",
+        "n|col|public.UserPreference.pushEnabled"
+      ],
+      "sqlHash": "4e7f8c216b1aee6c"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "UserConsent",
+        "name": "marketingReconfirmedAt",
+        "type": "timestamp(3) with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"UserPreference\",\"nightPushEnabled\"]",
+      "set": {
+        "default": "true"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"UserPreference\",\"pushEnabled\"]",
+      "set": {
+        "default": "true"
+      }
+    }
+  ]
+}

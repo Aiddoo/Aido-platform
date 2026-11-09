@@ -7,6 +7,7 @@ import {
   StubAccountLifecycleRepository,
   StubAccountNotificationCleanup,
   StubAccountTodoCommentCleanup,
+  StubAccountUsageCleanup,
 } from "#test/mocks/ports/account-lifecycle.stub";
 import { StubAuthSecurityLogRepository } from "#test/mocks/ports/auth-session.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
@@ -31,12 +32,14 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     );
     const notificationCleanup = new StubAccountNotificationCleanup();
     const todoCommentCleanup = new StubAccountTodoCommentCleanup();
+    const usageCleanup = new StubAccountUsageCleanup();
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const logger = mock<ApplicationLogger>();
     const useCase = new PurgeDeletedAccounts({
       userRepository,
       notificationCleanup,
       todoCommentCleanup,
+      usageCleanup,
       securityLogRepository,
       logger,
       unitOfWork: createUnitOfWorkMock(),
@@ -46,10 +49,20 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       userRepository,
       notificationCleanup,
       todoCommentCleanup,
+      usageCleanup,
       securityLogRepository,
       logger,
     };
   }
+
+  it("영구 삭제하는 계정의 외부 호출 사용량을 함께 지운다", async () => {
+    // Given
+    const fixture = givenUsers(["user-1"]);
+    // When
+    await fixture.useCase.execute();
+    // Then
+    expect(fixture.usageCleanup.cleanedUserIds).toEqual(["user-1"]);
+  });
 
   it("알림과 댓글 정리 결과를 전달하고 계정 삭제·감사 기록과 실제 완료 수를 남긴다", async () => {
     // Given

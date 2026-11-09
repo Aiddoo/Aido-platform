@@ -1,1 +1,1 @@
-export { Barcode, type BarcodeProps } from './barcode';
+export { Barcode } from './barcode';

@@ -1,5 +1,7 @@
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
-import type { KyInstance } from 'ky';
+import { HTTPError, type KyInstance } from 'ky';
+
+import { readJsonBody, toApiError, toTransportError } from './ky-error';
 
 export class KyJsonFetcher implements JsonFetcher {
   readonly #client: Pick<KyInstance, 'get'>;
@@ -8,6 +10,20 @@ export class KyJsonFetcher implements JsonFetcher {
     this.#client = client;
   }
 
-  get = async (url: string, signal?: AbortSignal): Promise<unknown> =>
-    this.#client.get(url, { signal }).json<unknown>();
+  get = async (url: string, signal?: AbortSignal): Promise<unknown> => {
+    try {
+      return await readJsonBody(() => this.#client.get(url, { signal }).json<unknown>());
+    } catch (error) {
+      const transportError = toTransportError(error);
+      if (transportError != null) {
+        throw transportError;
+      }
+
+      if (error instanceof HTTPError) {
+        throw toApiError(error);
+      }
+
+      throw error;
+    }
+  };
 }

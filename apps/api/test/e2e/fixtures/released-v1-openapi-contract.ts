@@ -293,8 +293,41 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 인증 토큰 응답(AuthTokensDto)에 optional isNewUser만 추가. 소셜 로그인·OAuth 코드 교환에서만 채우고, 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preSocialSignupSchemasFingerprint:
 		"f1dc466cac426fe4252f6d06896a74db883035680a27fb6845b33f437f72ba09",
-	schemasFingerprint:
+	/** 1.15.0: AI 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional featureQuota만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preAiFeatureQuotaSchemasFingerprint:
 		"18cdee8e6b1dea37c676d7c38a780f47023d21c1a7744e1e2fcfc4ed68de5387",
+	/** 1.15.0: 반복 할 일. CreateTodoDto·ConvertMemoToTodoDto 계열에 optional repeat, CreateTodoResponseDto에 optional series, 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional repeat만 추가. 생략하면 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preTodoRepeatSchemasFingerprint:
+		"d16b70c92e007e8a74af7072cb7563c6f1868ad27c3f447aec8991c49adf20e1",
+	/** 1.15.0: 반복 할 일 범위 수정. UpdateTodoDto에 optional scope·repeat·checklist만 추가. 생략하면 THIS_ONLY·변경 없음으로 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preTodoSeriesScopeSchemasFingerprint:
+		"09265fd250a568883c771f60696823e1dea865be4572785410714784fbd74fd6",
+	/** 1.15.0: 할 일 목록 반복 정보. 소유자가 보는 할 일 응답(TodoResponseDto·TodoListResponseDto·CreateTodoResponseDto 등 todo를 담은 응답)에 optional repeat·occurrenceDate만 추가했다. 구버전 Zod는 strip 모드라 모르는 키를 버리고, 친구에게 보이는 응답에는 넣지 않는다. test/e2e/todo-list-repeat.e2e-spec.ts가 출시 앱 응답 스키마 파싱으로 증명한다. */
+	preTodoListRepeatSchemasFingerprint:
+		"3aac5ad1ccef735e82558836423631077517f9017ea1f62906ce6858f2d30544",
+	/** 1.15.0: 할 일 응답(소유자·친구·댓글 상세)에 선택 칸 scheduledLocalTime(HH:mm)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-floating-time.e2e-spec.ts가 출시 앱 응답 모양을 고정한다. */
+	preFloatingTimeSchemasFingerprint:
+		"35ccdb921f3151cb1420e75f83483e115975071ff3a8997fb6af1fbaad4cff0f",
+	/** 1.15.0: 메모 나누기 응답(ParseMemoResponseDto)의 할 일에 선택 칸 duplicateOfTodoId만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. */
+	preMemoDuplicateSchemasFingerprint:
+		"203cca850be8bee02f0b729eaef5b539fa6c40d269ec60d6b8204031024980d3",
+	/** 1.15.0: 일일 완료 조회 응답에 선택 칸 multiDayTodos만 추가. completions는 전과 같이 시작일에만 세고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/daily-completion.e2e-spec.ts가 출시 앱이 읽는 값을 고정한다. */
+	preMultiDayCalendarSchemasFingerprint:
+		"61f12446eb24a60db84ac9c7af0fb318abd28d766431c2a20fbaeb4ab3533af4",
+	/** 1.15.0: /me(CurrentUserResponseDto)에 선택 칸 premiumIsTrial(스토어 무료 체험 중인지)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/subscription.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	preStoreTrialSchemasFingerprint:
+		"808205645551c8b0030137499cddf95e63782645cc6fe9cd9fd27a5cc7052c56",
+	/** 1.15.0: 광고성 동의 변경 응답(UpdateMarketingConsentResponseDto·UpdateMarketingPushConsentResponseDto)에 선택 칸 marketingWithdrawnAt·marketingPushWithdrawnAt(철회 처리 서버 시각)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/consent-records.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	preMarketingWithdrawnSchemasFingerprint:
+		"0be330447e0fccab4294698ba69a64e4c5418d2ddb4c3f3631199454e813ea88",
+	/** 1.15.0: 광고성 푸시 수신 거부 응답(MarketingPushOptOutResponseDto)에 선택 칸 marketingPushWithdrawnAt(요청을 처리한 서버 시각)만 추가. 토큰 유효 여부와 상관없이 항상 줘 유효성을 드러내지 않는다. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/notification.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	preMarketingPushOptOutProcessedAtSchemasFingerprint:
+		"94854f7143e4150eb621cd55280d8f51e7c9329197b97155a2c2baef3cbe1f39",
+	/** 1.15.0: /me(CurrentUserResponseDto)에 선택 칸 premiumPlanType(지금 기간을 정하는 스토어 구독의 요금제 ANNUAL·MONTHLY, 모르면 null)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/subscription.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
+	prePremiumPlanTypeSchemasFingerprint:
+		"9884b465b5620978687c2933e8d3e76a6e29987249d441fe999f461d2df29f1b",
+	schemasFingerprint:
+		"ee973e126a930fb9002180abe69f7985b1cee60191cebcc619b962abdebfa6f7",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
@@ -322,6 +355,18 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.14.0: 날씨 v1을 Swagger에서 Deprecated(태그 `Weather v1 · Deprecated`, operation `deprecated: true`)로 표시했다. 태그·deprecated는 문서 표시용이라 fingerprint에서 description처럼 제외한다. 제외 전 값이 위 sourceCommit 문서와 같았으므로 같은 문서에서 다시 계산한 값이다. 경로·요청·응답·상태 코드는 같다. */
 	preDocumentationMetadataPathsFingerprint:
 		"5a0384f8da8af27e97e2607f372d505cae3bffb6be2dc66658af6886adace8a9",
-	pathsFingerprint:
+	/** 1.15.0: DELETE /todos/{id}에 선택 query scope(생략 시 THIS_ONLY), POST·PATCH·DELETE /todos 오류 응답에 반복 코드(TODO_0813·0841~0846)와 상태 키를 추가(PATCH에 400·403·409, POST에 400, DELETE에 400). 새 상태는 scope·repeat 같은 새 입력으로만 닿으므로 생략한 요청의 동작·응답 shape는 같고, 구버전 앱은 모르는 코드를 서버 message로 보여 준다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preTodoSeriesScopePathsFingerprint:
 		"acaf29b73c6284c5ee7122d51074301477f133fbf57fbfdcb7b532ce75b2ed0b",
+	/** 1.15.0: 친구의 할 일 목록(GET /todos/friends/{userId})의 응답 schema 이름만 TodoListResponseDto에서 FriendTodoListResponseDto로 나눴다. 소유자 응답에만 repeat·occurrenceDate를 더하려고 분리했고, 친구 응답의 필드·타입·상태 코드는 이전과 같다. */
+	preTodoListRepeatPathsFingerprint:
+		"db0449039f7686849cdcbee5ed817a12c90001dcdd3db5bb32b66e2f84cf355d",
+	/** 1.15.0: 할 일 응답에 들어가는 선택 칸 scheduledLocalTime과 메모 변환 403 enum에 TODO_0813 추가. 이 경로는 옛 서버도 카테고리 한도로 TODO_0813을 보냈고 문서만 빠져 있었다. 진행 중 반복 300개 상한(옛 경로)도 같은 코드로 거절한다. 응답 shape·상태 코드는 같다. */
+	preFloatingTimePathsFingerprint:
+		"9809c76e5f1d18f098fed794b83597baac7323d09bd2cf6cc0ec9bd2f52b7e60",
+	/** 1.15.0: parse-memo에 선택 Idempotency-Key 헤더만 추가. 생략 시 기존과 같이 요청마다 차감해 출시 앱은 영향이 없다. */
+	preMemoIdempotencyPathsFingerprint:
+		"873a009001b7bf72246c5a62f5d3d4ba92dc89edeeea9003d7bc559ada98c14d",
+	pathsFingerprint:
+		"2a18ce7a5e5781a06d09e3f61be42b73a0b95932ff8dbf0e1e3f79e2070fc930",
 } as const;

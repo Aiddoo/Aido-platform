@@ -8,6 +8,7 @@ import { IdentityLogEvent } from "../../observability/auth/identity-log.events.j
 import type {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
+  AccountUsageCleanupPort,
 } from "../../ports/auth/account-cleanup.port.js";
 import type {
   AuthSecurityLogRepositoryPort,
@@ -20,6 +21,7 @@ interface PurgeDeletedAccountsDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly notificationCleanup: AccountNotificationCleanupPort;
   readonly todoCommentCleanup: AccountTodoCommentCleanupPort;
+  readonly usageCleanup: AccountUsageCleanupPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -56,6 +58,7 @@ export class PurgeDeletedAccounts {
           const todoComment = await this.#dependencies.todoCommentCleanup.cleanupInTransaction(
             user.id,
           );
+          await this.#dependencies.usageCleanup.cleanupInTransaction(user.id);
           await this.#dependencies.userRepository.hardDelete(user.id);
           // 삭제된 User FK를 참조하지 않고 삭제·감사 기록을 함께 커밋한다.
           await this.#dependencies.securityLogRepository.create({

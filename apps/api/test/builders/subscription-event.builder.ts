@@ -129,6 +129,12 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
+  /** PRODUCT_CHANGE에서 바꾼 대상 상품 */
+  withNewProductId(newProductId: string): this {
+    this.event.new_product_id = newProductId;
+    return this;
+  }
+
   withStore(store: string): this {
     this.event.store = store;
     return this;
@@ -171,6 +177,18 @@ export class SubscriptionEventBuilder {
     if (priceInPurchasedCurrency != null) {
       this.event.price_in_purchased_currency = priceInPurchasedCurrency;
     }
+    return this;
+  }
+
+  /** 무료 체험이 끝나 첫 결제로 넘어간 RENEWAL */
+  withTrialConversion(): this {
+    this.event.is_trial_conversion = true;
+    this.event.period_type = "NORMAL";
+    return this;
+  }
+
+  withExpirationReason(reason: string): this {
+    this.event.expiration_reason = reason;
     return this;
   }
 

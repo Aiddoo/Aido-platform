@@ -1,46 +1,24 @@
-import { EmailVerificationCodeStep } from '@src/features/auth/components/email-verification-code-step';
-import {
-  verifyEmailScreenParamsSchema,
-  useVerifyEmailScreenParams,
-} from '@src/features/auth/hooks/use-verify-email-screen-params';
-import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
-import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
+import { VerifyEmailForm } from '@src/features/identity/auth/components/verify-email-form';
+import { verifyEmailParamsSchema } from '@src/features/identity/auth/schemas/verify-email-params.schema';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
-import { useMutation } from '@tanstack/react-query';
+import { Box, ReadableContent } from '@src/shared/ui';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 
-/** 로그인 중 미인증(EMAIL_0503) 계정이 이메일 인증을 마치는 화면 */
-function VerifyEmailScreen() {
+export default function VerifyEmailScreen() {
   const { t } = useTranslation('auth');
-  const { email } = useVerifyEmailScreenParams();
-  const verify = useMutation(useVerifyEmailMutationOptions());
-  const resend = useMutation(useResendVerificationMutationOptions());
+  const params = verifyEmailParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <Box className="flex-1 bg-white">
       <Stack.Screen options={{ title: t('verifyEmail.title') }} />
 
       <ReadableContent flex={1}>
-        <EmailVerificationCodeStep
-          isSeparated
-          email={email}
-          onComplete={(code) => verify.mutateAsync({ email, code })}
-          onResend={() => resend.mutateAsync({ email })}
-        />
+        <VerifyEmailForm />
       </ReadableContent>
     </Box>
-  );
-}
-
-export default function VerifyEmailRoute() {
-  const params = useLocalSearchParams();
-  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
-    return <Redirect href="/login" />;
-  }
-  return (
-    <QueryErrorBoundary>
-      <VerifyEmailScreen />
-    </QueryErrorBoundary>
   );
 }

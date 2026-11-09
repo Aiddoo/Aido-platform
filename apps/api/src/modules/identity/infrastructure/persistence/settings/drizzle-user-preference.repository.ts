@@ -71,8 +71,17 @@ export class DrizzleUserPreferenceRepository implements UserPreferenceRepository
     return updated.length === 1;
   }
 
-  async upsertTimezone(userId: string, timezone: string): Promise<void> {
-    await this.#upsert(userId, { timezone }, { timezone });
+  async upsertTimezone(userId: string, timezone: string): Promise<boolean> {
+    const written = await this.db
+      .insert(userPreference)
+      .values({ userId, timezone })
+      .onConflictDoUpdate({
+        target: userPreference.userId,
+        set: { timezone },
+        where: ne(userPreference.timezone, timezone),
+      })
+      .returning({ id: userPreference.id });
+    return written.length > 0;
   }
 
   async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {

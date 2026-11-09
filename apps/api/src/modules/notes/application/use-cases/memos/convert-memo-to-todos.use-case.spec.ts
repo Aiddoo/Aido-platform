@@ -1,3 +1,4 @@
+import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
@@ -10,6 +11,13 @@ import {
   ConvertMemoToTodos,
   type ConvertMemoToTodosInput,
 } from "./convert-memo-to-todos.use-case.js";
+
+const REPEAT = {
+  frequency: "WEEKLY",
+  interval: 1,
+  weekdays: ["MON", "WED"],
+  end: { type: "UNTIL", date: "2026-04-30" },
+} as const satisfies TodoRepeat;
 
 describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
   let fixture: ReturnType<typeof createNotesMemoFixture>;
@@ -88,7 +96,7 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
           .build(),
       ),
     ];
-    const scheduledTime = new Date("2026-04-06T00:30:00.000Z");
+    const scheduledTime = "09:30";
     // When
     const result = await new ConvertMemoToTodos(fixture).execute(
       input(memo.id, [
@@ -100,8 +108,7 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
           scheduledTime,
           isAllDay: false,
           items: [{ title: "운동복" }],
-          isRecurring: true,
-          recurrence: { daysOfWeek: ["MON", "WED"], endDate: new Date("2026-04-30T00:00:00.000Z") },
+          repeat: REPEAT,
         },
       ]),
     );
@@ -110,19 +117,16 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
     expect(result.message).toBe("메모가 3개의 할 일로 변환되었습니다.");
     expect(fixture.todoCreator.recurringInputs).toEqual([
       {
-        data: {
-          userId: fixture.userId,
-          title: "반복",
-          categoryId: 1,
-          startDate: "2026-04-06",
-          endDate: "2026-04-30",
-          daysOfWeek: ["MON", "WED"],
-          scheduledTime: "09:30",
-          isAllDay: false,
-          visibility: "PUBLIC",
-          items: [{ title: "운동복" }],
-        },
+        userId: fixture.userId,
+        title: "반복",
+        categoryId: 1,
+        startDate: NOTES_TIME,
+        scheduledTime: "09:30",
         timezone: "Asia/Seoul",
+        isAllDay: false,
+        visibility: "PUBLIC",
+        items: [{ title: "운동복" }],
+        repeat: REPEAT,
       },
     ]);
     expect(fixture.registeredTasks).toHaveLength(2);
@@ -144,13 +148,12 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
           categoryId: 1,
           startDate: NOTES_TIME,
           scheduledTime: null,
-          isRecurring: true,
-          recurrence: { daysOfWeek: ["MON"], endDate: NOTES_TIME },
+          repeat: REPEAT,
         },
       ]),
     );
     // Then
-    expect(fixture.todoCreator.recurringInputs[0]?.data).toMatchObject({
+    expect(fixture.todoCreator.recurringInputs[0]).toMatchObject({
       scheduledTime: null,
       isAllDay: true,
       visibility: "PUBLIC",
@@ -161,12 +164,12 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
     // Given
     const memo = fixture.addMemo("부분 성공 대상");
     const failure = new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: 999999 });
-    const stageTodo = fixture.todoCreator.stageTodo.bind(fixture.todoCreator);
-    vi.spyOn(fixture.todoCreator, "stageTodo").mockImplementation(async (data) => {
+    const stage = fixture.todoCreator.stage.bind(fixture.todoCreator);
+    vi.spyOn(fixture.todoCreator, "stage").mockImplementation(async (data) => {
       if (data.categoryId === 999999) {
         throw failure;
       }
-      return stageTodo(data);
+      return stage(data);
     });
     const prepared = Promise.withResolvers<void>();
     const finish = Promise.withResolvers<void>();

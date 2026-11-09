@@ -1,13 +1,15 @@
 # Flex 컴포넌트
 
-Flexbox 레이아웃을 위한 기본 컴포넌트입니다. `BoxProps`를 상속받아 spacing props도 지원합니다.
+`HStack`·`VStack`·`Grid`의 내부 구현입니다. `BoxProps`를 상속받아 spacing props도 지원합니다.
+
+화면과 feature에서는 `HStack`(가로)·`VStack`(세로)을 씁니다. 공용 export는 남겨 두고, 방향이 값으로 바뀌어야 하는 곳만 `Flex`를 직접 씁니다. 지금은 녹음 화면(`app/(app)/voice-notes/record.tsx`) 하나로, 창이 좁아지고 넓어질 때 `HStack`과 `VStack`을 바꿔 끼우면 파형·자막이 다시 마운트되기 때문입니다.
 
 ## 설치
 
 이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
 
 ```tsx
-import { Flex } from '@src/shared/ui/flex/flex';
+import { Flex } from '@src/shared/ui';
 ```
 
 ## 기본 사용법

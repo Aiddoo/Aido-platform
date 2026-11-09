@@ -33,7 +33,9 @@ interface WeatherForecastReaderDependencies {
   readonly weatherCache: Pick<
     WeatherCachePort,
     | "getForecast"
-    | "saveForecast"
+    | "getOrLoadForecast"
+    | "hasRecentForecastFailure"
+    | "markForecastFailure"
     | "getLatestForecast"
     | "getForecastBatch"
     | "saveForecastBatch"
@@ -50,7 +52,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
   }
 
   /**
-   * 단일 위치의 예보를 조회한다 (캐시 → 프로바이더 → latest 폴백 → WEATHER_1901).
+   * 단일 위치의 예보를 조회한다 (캐시 → 격자 최근 실패 확인 → 프로바이더(동시 요청 합치기) → latest 폴백 → WEATHER_1901).
    * KMA가 줄 수 없는 날짜는 공급자를 부르지 않고 400 SYS_0002로 거절한다.
    */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
@@ -69,23 +71,21 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       return cached;
     }
 
-    try {
-      const forecast = await this.#dependencies.weatherProvider.getForecast(
-        location.latitude,
-        location.longitude,
-        timing,
-      );
-
-      // 성공 시 정규 캐시 (3h) + latest 캐시 (24h) 모두 저장
-      await this.#dependencies.weatherCache.saveForecast(grid.gridX, grid.gridY, timing, forecast);
-
-      return forecast;
-    } catch (error) {
-      this.#dependencies.logger.warn({
-        event: WeatherLogEvent.FORECAST_PROVIDER_FAILED,
-        provider: this.#dependencies.weatherProvider.name,
-        errorType: toErrorType(error),
-      });
+    const { weatherCache, weatherProvider, logger } = this.#dependencies;
+    // 같은 격자가 1분 안에 실패했으면 요청마다 공급자 시간 초과를 기다리지 않고 latest로 넘어간다.
+    if (!(await weatherCache.hasRecentForecastFailure(grid.gridX, grid.gridY))) {
+      try {
+        return await weatherCache.getOrLoadForecast(grid.gridX, grid.gridY, timing, () =>
+          weatherProvider.getForecast(location.latitude, location.longitude, timing),
+        );
+      } catch (error) {
+        logger.warn({
+          event: WeatherLogEvent.FORECAST_PROVIDER_FAILED,
+          provider: weatherProvider.name,
+          errorType: toErrorType(error),
+        });
+        await weatherCache.markForecastFailure(grid.gridX, grid.gridY);
+      }
     }
 
     const latest = await this.#dependencies.weatherCache.getLatestForecast(grid.gridX, grid.gridY);

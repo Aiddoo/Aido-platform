@@ -1,4 +1,9 @@
-import { PUSH_PERMISSION_STATUS } from "@aido/api/vocabulary";
+import {
+  PUSH_PERMISSION_STATUS,
+  QUOTA_CHARGE_STATUSES,
+  QUOTA_METERS,
+  TODO_REPEAT_FREQUENCIES,
+} from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const accountProvider = pgEnum("AccountProvider", [
@@ -52,6 +57,8 @@ export const notificationType = pgEnum("NotificationType", [
   "PREMIUM_GRANT_ENDING",
   "INVITE_PROGRESS",
   "INVITE_QUALIFY_REMINDER",
+  "PREMIUM_TRIAL_ENDING",
+  "PREMIUM_RENEWAL_UPCOMING",
 ]);
 export const nudgeReplyKind = pgEnum("NudgeReplyKind", ["STARTING", "THANKFUL", "LATER"]);
 export const platform = pgEnum("Platform", ["IOS", "ANDROID"]);
@@ -78,6 +85,8 @@ export const pushDispatchStatus = pgEnum("PushDispatchStatus", [
   "HOLDOUT",
 ]);
 export const pushRateLimitPhase = pgEnum("PushRateLimitPhase", ["GENERAL", "ENGAGEMENT"]);
+export const quotaChargeStatus = pgEnum("QuotaChargeStatus", QUOTA_CHARGE_STATUSES);
+export const quotaMeter = pgEnum("QuotaMeter", QUOTA_METERS);
 export const reportType = pgEnum("ReportType", ["WEEKLY", "MONTHLY"]);
 export const retentionExperimentStageName = pgEnum("RetentionExperimentStageName", [
   "D0",
@@ -131,6 +140,7 @@ export const subscriptionStatus = pgEnum("SubscriptionStatus", [
 export const suggestionStatus = pgEnum("SuggestionStatus", ["PENDING", "ACCEPTED", "DISMISSED"]);
 export const timeFormat = pgEnum("TimeFormat", ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"]);
 export const todoVisibility = pgEnum("TodoVisibility", ["PUBLIC", "PRIVATE"]);
+export const todoRepeatFrequency = pgEnum("TodoRepeatFrequency", TODO_REPEAT_FREQUENCIES);
 export const userRole = pgEnum("UserRole", ["USER", "ADMIN"]);
 export const userStatus = pgEnum("UserStatus", ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"]);
 export const verificationType = pgEnum("VerificationType", [

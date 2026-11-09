@@ -59,7 +59,6 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(social.NUDGE_THANKED, { senderName: longName, todoTitle }),
     ...render(scheduler.TODO_REMINDER_60MIN, { todoTitle }),
     ...render(scheduler.TODO_REMINDER_10MIN, { todoTitle }),
-    ...render(scheduler.TODO_REMINDER_IMMEDIATE, { todoTitle }),
     ...render(scheduler.MORNING_REMINDER, { count: 999 }),
     ...render(scheduler.EVENING_COMPLETE, undefined),
     ...render(scheduler.EVENING_PARTIAL, { remaining: 999 }),

@@ -1,6 +1,5 @@
 {
   "titles": {
-    "index": "Weather",
     "settings": "Weather notification settings"
   },
   "condition": {
@@ -34,6 +33,8 @@
   "hero": {
     "currentLocation": "Current location",
     "currentLocationIn": "Current location · {{area}}",
+    "lastLocation": "Last known location",
+    "lastLocationIn": "Last known location · {{area}}",
     "highLow": "H:{{high}} L:{{low}}",
     "summary": "{{place}}, {{temperature}} now, {{condition}}",
     "temperature_one": "{{count}} degree",
@@ -270,30 +271,27 @@
     "entry": "Weather"
   },
   "locationPrompt": {
-    "title": "Register your location to see the weather",
-    "subtitle": "See your local weather and when to dodge the rain",
-    "register": "Register location",
-    "permissionDenied": "Turn on location access in Settings",
-    "allow": "Allow location",
-    "permissionDeniedDescription": "Come back after turning it on and we'll show the weather right away",
+    "title": "See your local weather",
+    "description": "We'll also flag to-dos that overlap with rain",
+    "continue": "Continue",
+    "deniedTitle": "Turn on location in Settings",
+    "deniedDescription": "Come back and we'll show the weather right away",
     "openSettings": "Open Settings",
     "unavailableTitle": "Couldn't find your location",
     "unavailableDescription": "Check that Location Services is on",
-    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location",
-    "footnote": "Your to-dos and reminders work without location"
+    "lastLocationNotice": "Couldn't confirm location access. Showing weather for your last known location",
+    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location"
   },
   "screen": {
     "loadFailed": "Couldn't load the weather",
     "retryLater": "Please try again in a moment",
     "providerUnavailable": "Weather is temporarily unavailable",
+    "timeout": "Taking longer than expected",
     "offline": "Check your internet connection",
     "offlineDescription": "We'll reload once you're back online"
   },
   "toasts": {
     "locationUpdateFailed": "Couldn't register your location"
-  },
-  "introduction": {
-    "description": "We use your current location to show today's weather. You can also set location access later on the weather screen."
   },
   "briefing": {
     "title": "Aido briefing",
@@ -313,6 +311,8 @@
     "range": "{{start}}–{{end}}",
     "more_one": "{{count}} more",
     "more_other": "{{count}} more",
+    "hiddenCount_one": "and {{count}} more",
+    "hiddenCount_other": "and {{count}} more",
     "stormy": {
       "title": "Lightning is possible during your to-dos",
       "body": "Lightning risk {{range}}. Shift the time or do it indoors",
@@ -378,6 +378,7 @@
     "moved_one": "Moved {{count}} to-do",
     "moved_other": "Moved {{count}} to-dos",
     "undo": "Undo",
+    "expired": "That time has passed, so I picked another one. Check it and tap again",
     "undone": "Moved back to the original time",
     "chartLabel": "Hourly chance of precipitation for the rest of today",
     "todoNotFound": "Couldn't find the to-dos to move",

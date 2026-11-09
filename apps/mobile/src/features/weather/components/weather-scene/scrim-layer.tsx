@@ -35,20 +35,26 @@ const HERO_SCRIM = {
   alpha: { day: 0.12, night: 0.24 },
 } as const;
 
-type HeroScrimLayerProps = ScrimLayerProps & { contentTop: number; heroWidth: number };
+type HeroScrimLayerProps = ScrimLayerProps & {
+  contentTop: number;
+  heroLeft: number;
+  heroWidth: number;
+};
 
 export function HeroScrimLayer({
   isDaylight,
   contentTop,
+  heroLeft,
   heroWidth,
   width,
   height,
 }: HeroScrimLayerProps) {
+  const columnWidth = Math.min(width - heroLeft, heroWidth);
   const center = vec(
-    Math.min(width, heroWidth) / 2,
+    heroLeft + columnWidth / 2,
     contentTop + height * HERO_SCRIM.centerBelowContentTop,
   );
-  const radius = Math.min(Math.min(width, heroWidth) * HERO_SCRIM.radius, HERO_SCRIM.maxRadius);
+  const radius = Math.min(columnWidth * HERO_SCRIM.radius, HERO_SCRIM.maxRadius);
   const time = isDaylight ? 'day' : 'night';
   const rgb = HERO_SCRIM.color[time];
   return (

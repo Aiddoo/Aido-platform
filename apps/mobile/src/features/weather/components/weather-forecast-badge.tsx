@@ -7,33 +7,30 @@ import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import {
-  type CurrentWeather,
-  type WeatherReport,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+import type { CurrentWeather, WeatherReport } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
-import { weatherHref } from '../utils/navigation/weather-href';
+import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
+import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
+import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
 import { WeatherIcon } from './weather-icon';
 
-const selectBadge = (report: WeatherReport) => ({
-  current: report.current,
-  serviceName: report.attribution.serviceName,
-});
+const BADGE_ICON_SIZE = 18;
 
-/**
- * 피드·메모 헤더의 날씨 진입점. 날씨 화면과 같은 리포트 key를 구독해 화면에 들어가면 캐시를 그대로 쓴다.
- * 헤더라 Suspense·오류 경계 대신 상태별로 그린다. 위치가 없거나 리포트를 받지 못해도 날씨 화면
- * (권한 안내·다시 시도)으로 들어갈 수 있게 진입 배지를 남긴다.
- */
+function selectBadge(report: WeatherReport) {
+  return {
+    current: report.current,
+    serviceName: report.attribution.serviceName,
+  };
+}
+
+/** 헤더라 경계 대신 상태별로 그리고, 위치·리포트가 없어도 날씨 화면(권한 안내·다시 시도)으로 갈 배지를 남긴다 */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: selectBadge,
-    enabled: WeatherLocationPolicy.canFetchReport(location.status),
+    enabled: WeatherLocationPolicy.shouldFetchReport(location),
   });
 
   return match(location)
@@ -47,10 +44,7 @@ export function WeatherForecastBadge() {
     .exhaustive();
 }
 
-/**
- * 헤더 왼쪽 자리는 아이콘과 온도만 들어가는 폭이라 로고(1x 38pt)를 줄이지 않고는 넣을 수 없다.
- * 로고를 줄이는 대신 날씨 화면(로고·출처 링크 표기)으로 보내고, 접근성 이름에 공급자를 밝힌다.
- */
+/** 헤더 폭에는 로고(1x 38pt)를 줄이지 않고 넣을 수 없어 날씨 화면으로 보내고 접근성 이름에 공급자를 밝힌다 */
 WeatherForecastBadge.Item = function Item({
   current,
   serviceName,
@@ -61,11 +55,13 @@ WeatherForecastBadge.Item = function Item({
   const { t } = useTranslation('weather');
   const push = useSingleTap(router.push);
   const unit = useTemperatureUnit();
-  const temperature = WeatherReportPolicy.displayTemperature(current.temperature, unit);
+  const temperature = toDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback
-      onPress={() => push(weatherHref('feed_badge'))}
+      onPress={() =>
+        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
+      }
       accessibilityRole="button"
       accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
@@ -75,13 +71,13 @@ WeatherForecastBadge.Item = function Item({
         <WeatherIcon
           condition={current.condition}
           isDaylight={current.isDaylight}
-          width={18}
-          height={18}
+          width={BADGE_ICON_SIZE}
+          height={BADGE_ICON_SIZE}
           variant="mono"
           colorClassName="text-gray-6"
         />
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
-          {WeatherReportPolicy.degrees(temperature)}
+          {formatDegrees(temperature)}
         </Text>
       </HStack>
     </PressableFeedback>
@@ -94,7 +90,9 @@ WeatherForecastBadge.Entry = function Entry() {
 
   return (
     <PressableFeedback
-      onPress={() => push(weatherHref('feed_badge'))}
+      onPress={() =>
+        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
+      }
       accessibilityRole="button"
       accessibilityLabel={t('badge.entry')}
       hitSlop={4}
@@ -104,8 +102,8 @@ WeatherForecastBadge.Entry = function Entry() {
         <WeatherIcon
           condition="PARTLY_CLOUDY"
           isDaylight
-          width={18}
-          height={18}
+          width={BADGE_ICON_SIZE}
+          height={BADGE_ICON_SIZE}
           variant="mono"
           colorClassName="text-gray-6"
         />
@@ -119,7 +117,7 @@ WeatherForecastBadge.Entry = function Entry() {
 
 WeatherForecastBadge.Loading = function Loading() {
   return (
-    <HStack align="center" px={4} className="min-h-11 min-w-16">
+    <HStack align="center" className="min-h-11 min-w-16 px-1">
       <TextSkeleton size="b4" className="w-8" />
     </HStack>
   );

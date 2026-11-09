@@ -3,19 +3,20 @@ import { createServer, type Server } from "node:http";
 
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
-import type { Mocked } from "vitest";
 import { vi, type Mock } from "vitest";
 
 import {
   OAUTH_PROVIDER_TIMEOUT_MS,
   OAuthTokenVerifierService,
 } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { asMock } from "#test/mocks/index";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 // Google Auth Library 모킹
 vi.mock("google-auth-library", () => ({
@@ -37,7 +38,6 @@ async function responseFromFixture(fixture: {
 describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
   let service: OAuthTokenVerifierService;
   let mockGoogleVerifyIdToken: Mock;
-  let configService: Mocked<ConfigService>;
   let appleJwksUrl: string | undefined;
 
   beforeEach(async () => {
@@ -48,28 +48,25 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
       return { verifyIdToken: mockGoogleVerifyIdToken };
     });
 
-    const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService)
+    const { unit } = await TestBed.solitary(OAuthTokenVerifierService)
       .mock(getHttpClientToken("oauth"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(OutboundPolicyRegistry)
+      .final(new OutboundPolicyRegistry(new RecordingOperationalAlert()))
+      .mock(TypedConfigService)
+      .final({
+        googleOAuth: { clientId: "google-client-id" },
+        get appleOAuth() {
+          return {
+            clientId: "apple-client-id",
+            jwksUrl: appleJwksUrl,
+            jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
+          };
+        },
+      })
       .compile();
 
     service = unit;
-    configService = unitRef.get(ConfigService);
-
-    // ConfigService mock 설정
-    configService.get.mockImplementation((key: string) => {
-      const config: Record<string, string | number> = {
-        GOOGLE_CLIENT_ID: "google-client-id",
-        APPLE_CLIENT_ID: "apple-client-id",
-        ...(appleJwksUrl
-          ? {
-              APPLE_JWKS_URL: appleJwksUrl,
-              APPLE_JWKS_COOLDOWN_DURATION_MS: 0,
-            }
-          : {}),
-      };
-      return config[key];
-    });
   });
 
   afterEach(() => {
@@ -332,6 +329,28 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
       // When & Then
       await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(ApplicationException);
+    });
+
+    it("연결 실패가 이어져도 오류 코드는 그대로이고 공급자가 돌아오면 바로 로그인된다", async () => {
+      // Given
+      asMock(global.fetch).mockRejectedValue(new TypeError("fetch failed"));
+      const failures: unknown[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        failures.push(await service.verifyKakaoToken("token").catch((error: unknown) => error));
+      }
+      asMock(global.fetch).mockResolvedValue(
+        await responseFromFixture({ ok: true, json: () => Promise.resolve(mockKakaoResponse) }),
+      );
+
+      // When
+      const profile = await service.verifyKakaoToken("token");
+
+      // Then
+      for (const failure of failures) {
+        expect(failure).toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
+      }
+      expect(global.fetch).toHaveBeenCalledTimes(7);
+      expect(profile.id).toBe(String(mockKakaoResponse.id));
     });
   });
 

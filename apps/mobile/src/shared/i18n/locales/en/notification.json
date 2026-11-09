@@ -1,14 +1,24 @@
 {
+  "timezoneChanged": {
+    "title": "To-do reminders now follow your time zone",
+    "description": "A 10 AM to-do stays at 10 AM"
+  },
   "actions": {
     "marketingOptOut": "Turn off promotional notifications"
   },
   "marketingOptIn": {
-    "bannerTitle": "Reminders, tips & Aido news",
-    "bannerDescription": "A little help with your streak, to-dos, and what’s new",
-    "title": "A little help along the way",
-    "description": "· Reminders to keep your streak going\n· Missed to-dos and AI suggestions for you\n· News, events, and special offers\n\nYou can turn these off anytime in Settings.\n(By agreeing, you consent to promotional notifications.)",
-    "agree": "Yes, notify me",
-    "later": "Later"
+    "title": "Get offers and news too?",
+    "description": "We'll send you events, offers, and picks just for you",
+    "notice": "This is consent to receive promotional messages. You can turn it off anytime in Settings",
+    "agree": "Yes, please",
+    "later": "Not now"
+  },
+  "consentResult": {
+    "marketingAgreed": "You agreed to Aido marketing messages on {{date}}",
+    "marketingPushAgreed": "You agreed to Aido promotional push notifications on {{date}}",
+    "marketingWithdrawn": "You withdrew consent to Aido marketing messages on {{date}}",
+    "marketingPushWithdrawn": "You withdrew consent to Aido promotional push notifications on {{date}}",
+    "marketingPushOptedOut": "We'll stop sending Aido promotional push notifications"
   },
   "titles": {
     "notifications": "Notifications",
@@ -35,7 +45,8 @@
     "unreadCount": "{{count}}",
     "markAllRead": "Mark all read",
     "premiumDescription": "Subscribe to unlock AI reports and suggestions",
-    "loadError": "Could not load notifications"
+    "loadError": "Could not load notifications",
+    "markAllReadFailed": "Couldn't mark everything as read. Please try again later"
   },
   "directions": {
     "received": "Received",
@@ -50,16 +61,18 @@
     "timeFormat24": "24-hour time",
     "on": "On",
     "off": "Off",
+    "deviceOff": "Off on device",
     "pushLabel": "Push notifications",
-    "pushDescription": "Receive all push notifications",
+    "pushDescription": "Get to-do and billing updates. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
     "marketingLabel": "Marketing communications",
     "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",
     "marketingPushDescription": "Receive events, benefits, and tailored picks",
+    "marketingPushDeviceOff": "Device notifications are off, so you won't get these for now",
     "weatherLabel": "Weather alerts",
-    "weatherDescription": "Receive weather alerts",
+    "weatherDescription": "Get today's weather in the morning and tomorrow's in the evening",
     "weatherMorningLabel": "Morning weather alert",
     "weatherMorningDescription": "Get today's weather at your morning time",
     "weatherEveningLabel": "Evening weather alert",
@@ -69,34 +82,49 @@
     "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",
     "reminderEveningLabel": "Evening reminder",
     "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
-    "reminderPremium": "Changing reminder times is available to premium subscribers only."
+    "timeOutOfRange": "Choose a time between {{start}} and {{end}}",
+    "sections": {
+      "app": "App notifications",
+      "marketing": "Offers and events",
+      "times": "Notification times"
+    }
   },
   "permission": {
+    "continue": "Continue",
     "card": {
-      "askTitle": "Get to-do reminders",
-      "askDescription": "We'll let you know about reminders and cheers from friends on time",
       "deniedTitle": "Notifications are off",
       "requestDescription": "Allow them again to get reminders",
       "settingsDescription": "Turn them on in Settings to get reminders",
-      "appOffTitle": "Push notifications are off",
-      "appOffDescription": "Turn on push notifications in notification settings",
-      "allow": "Allow",
       "openSettings": "Open settings",
-      "turnOn": "Turn on",
       "dismiss": "Dismiss notification notice"
     },
-    "dialog": {
-      "title": "Can we send you notifications?",
-      "description": "We'll remind you about to-dos, cheers and nudges from friends, and your streak. You can change this anytime in settings.",
-      "allow": "Get notifications",
-      "later": "Not now"
+    "onboarding": {
+      "title": "We'll remind you right on time",
+      "description": "Never miss a reminder or a cheer from friends"
+    },
+    "deviceOff": {
+      "title": "Device notifications are off",
+      "description": "Turn them on to get the notifications below"
+    },
+    "todoTime": {
+      "off": "Notifications are off, so we can't remind you"
     },
     "status": {
       "label": "Device notifications",
-      "granted": "Allowed",
-      "provisional": "Delivered quietly",
-      "denied": "Off · Turn on in device settings",
-      "notDetermined": "Not chosen yet"
+      "granted": "Allowed"
+    },
+    "toasts": {
+      "requestFailed": "Couldn't ask for notification permission. Turn it on in device settings",
+      "settingsOpenFailed": "Couldn't open Settings. Turn notifications on in device settings"
     }
+  },
+  "bell": {
+    "unreadLabel": "Notifications, unread",
+    "retryLabel": "Couldn't load notifications. Retry"
+  },
+  "billingReminder": {
+    "label": "Trial ending reminder",
+    "on": "We'll remind you on {{date}}",
+    "off": "Turn on notifications to get a reminder on {{date}}"
   }
 }

@@ -9,6 +9,7 @@ import { vi } from "vitest";
 import {
   ACCOUNT_NOTIFICATION_CLEANUP,
   ACCOUNT_TODO_COMMENT_CLEANUP,
+  ACCOUNT_USAGE_CLEANUP,
 } from "#api/modules/identity/application/ports/auth/account-cleanup.port";
 import {
   AUTH_ACCOUNT_REPOSITORY,
@@ -113,6 +114,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
             cleanupInTransaction: async () => ({ affectedUserIds: [] }),
             settleAfterCommit: async () => {},
           },
+        },
+        {
+          provide: ACCOUNT_USAGE_CLEANUP,
+          useValue: { cleanupInTransaction: async () => undefined },
         },
         {
           provide: ACCOUNT_TODO_COMMENT_CLEANUP,

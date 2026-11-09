@@ -1,48 +1,30 @@
 import type { LogContext, Logger } from '@src/core/ports/logger';
 
-export const createCompositeLogger = (loggers: Logger[]): Logger => ({
-  debug(message: string, context?: LogContext): void {
+export function createCompositeLogger(loggers: Logger[]): Logger {
+  function forEachLogger(write: (logger: Logger) => void): void {
     for (const logger of loggers) {
       try {
-        logger.debug(message, context);
+        write(logger);
       } catch (error) {
         if (__DEV__) {
           console.warn('[CompositeLogger] failed:', error);
         }
       }
     }
-  },
-  info(message: string, context?: LogContext): void {
-    for (const logger of loggers) {
-      try {
-        logger.info(message, context);
-      } catch (error) {
-        if (__DEV__) {
-          console.warn('[CompositeLogger] failed:', error);
-        }
-      }
-    }
-  },
-  warn(message: string, context?: LogContext): void {
-    for (const logger of loggers) {
-      try {
-        logger.warn(message, context);
-      } catch (error) {
-        if (__DEV__) {
-          console.warn('[CompositeLogger] failed:', error);
-        }
-      }
-    }
-  },
-  error(message: string, error?: Error, context?: LogContext): void {
-    for (const logger of loggers) {
-      try {
-        logger.error(message, error, context);
-      } catch (error) {
-        if (__DEV__) {
-          console.warn('[CompositeLogger] failed:', error);
-        }
-      }
-    }
-  },
-});
+  }
+
+  return {
+    debug(message: string, context?: LogContext): void {
+      forEachLogger((logger) => logger.debug(message, context));
+    },
+    info(message: string, context?: LogContext): void {
+      forEachLogger((logger) => logger.info(message, context));
+    },
+    warn(message: string, context?: LogContext): void {
+      forEachLogger((logger) => logger.warn(message, context));
+    },
+    error(message: string, error?: Error, context?: LogContext): void {
+      forEachLogger((logger) => logger.error(message, error, context));
+    },
+  };
+}

@@ -53,6 +53,7 @@ describe("카테고리 삭제", () => {
     repository.findByIdAndUserId.mockResolvedValue(createCategory());
     repository.countByUserId.mockResolvedValue(2);
     repository.getTodoCount.mockResolvedValue(0);
+    repository.countActiveSeries.mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -128,6 +129,19 @@ describe("카테고리 삭제", () => {
     expect(eventPublisher.events).toEqual([]);
   });
 
+  it("할 일 없이 진행 중 규칙만 있어도 옮길 곳을 묻고 상세에는 할 일 수만 싣는다", async () => {
+    // Given
+    repository.countActiveSeries.mockResolvedValue(2);
+    // When
+    const deletion = useCase.execute({ userId: "category-user", categoryId: 1 });
+    // Then
+    await expect(deletion).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0855,
+      details: { categoryId: 1, todoCount: 0 },
+    });
+    expect(repository.delete).not.toHaveBeenCalled();
+  });
+
   it("할 일을 대상 카테고리로 옮긴 뒤 삭제하고 캐시를 무효화한다", async () => {
     // Given
     repository.getTodoCount.mockResolvedValue(3);
@@ -142,7 +156,6 @@ describe("카테고리 삭제", () => {
           todoCategoryIds[index] = to;
         }
       }
-      return 3;
     });
     repository.delete.mockImplementation(async (id) => {
       categoryIds.delete(id);

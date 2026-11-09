@@ -28,7 +28,8 @@ describe("AdminEventNotifier", () => {
   const subscriptionPayload: SubscriptionEventPayload = {
     userId: "user-1",
     email: "test@example.com",
-    eventType: "INITIAL_PURCHASE",
+    kind: "STARTED",
+    store: null,
     productId: "aido_premium_monthly",
   };
 

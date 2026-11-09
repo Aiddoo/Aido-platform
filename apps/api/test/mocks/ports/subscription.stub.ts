@@ -2,10 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { pickBy } from "es-toolkit";
 
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
+import type { StoreSubscriptionReconcileSchedulerPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-reconcile.scheduler.port";
+import type { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-status.reader.port";
 import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
 import type {
   SubscriptionEventNotifierPort,
-  WebhookFailureContext,
+  StoreSubscriptionEventFailureContext,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import type {
   ClaimSubscriptionEventReceiptInput,
@@ -28,43 +30,57 @@ import {
   type PremiumGrantProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/premium-grant.aggregate";
 import {
+  type StoreSubscriptionState,
   Subscription,
   type SubscriptionProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
 import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/policies/subscriptions/premium-access.policy";
+import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+/** 저장소 대역의 사용자. appUserAlias는 스토어가 User.id 대신 쓰는 별칭(DB 칸 User.revenueCatUserId)이다. */
+export interface StubSubscriptionUser extends SubscriptionUser {
+  readonly appUserAlias?: string | null;
+}
+
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
-  readonly users = new Map<string, SubscriptionUser>();
+  readonly users = new Map<string, StubSubscriptionUser>();
   readonly subscriptions = new Map<string, SubscriptionProps>();
   readonly lapsedPremiumUserIds: string[] = [];
 
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const user = [...this.users.values()].find(
-      (candidate) => candidate.id === appUserId || candidate.revenueCatUserId === appUserId,
+      (candidate) => candidate.id === appUserId || candidate.appUserAlias === appUserId,
     );
-    return user ? this.#copyUser(user) : null;
+    if (user == null) {
+      return null;
+    }
+    const { appUserAlias: _alias, ...found } = this.#copyUser(user);
+    return found;
   }
 
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
     return [...this.subscriptions.values()]
       .filter((record) => record.userId === userId)
       .map((record) => ({
-        revenueCatId: record.revenueCatId,
+        storeSubscriptionId: record.storeSubscriptionId.value,
+        productId: record.productId,
+        startedAt: new Date(record.startedAt),
         status: record.status,
         expiresAt: new Date(record.expiresAt),
+        periodType: record.periodType,
       }));
   }
 
-  async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
-    const record = this.subscriptions.get(revenueCatId);
+  async claimChain(storeSubscriptionId: StoreSubscriptionId, userId: string): Promise<boolean> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     if (record == null) {
       return false;
     }
     if (record.userId === userId) {
       return false;
     }
-    this.subscriptions.set(revenueCatId, { ...record, userId });
+    this.subscriptions.set(storeSubscriptionId.value, { ...record, userId });
     return true;
   }
 
@@ -73,7 +89,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       (record) => record.userId === fromUserId,
     );
     for (const record of records) {
-      this.subscriptions.set(record.revenueCatId, { ...record, userId: toUserId });
+      this.subscriptions.set(record.storeSubscriptionId.value, { ...record, userId: toUserId });
     }
     return records.length;
   }
@@ -86,32 +102,49 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       .slice(0, params.limit);
   }
 
-  async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
-    const record = this.subscriptions.get(revenueCatId);
+  async findReconcilableByUserId(userId: string): Promise<Subscription[]> {
+    return [...this.subscriptions.values()]
+      .filter(
+        (record) =>
+          record.userId === userId && (record.status === "ACTIVE" || record.status === "CANCELLED"),
+      )
+      .map((record) => Subscription.reconstitute(record));
+  }
+
+  async findByStoreSubscriptionId(
+    storeSubscriptionId: StoreSubscriptionId,
+  ): Promise<Subscription | null> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     return record ? Subscription.reconstitute(record) : null;
   }
 
   async create(data: CreateSubscriptionData): Promise<void> {
-    this.subscriptions.set(data.revenueCatId, {
+    this.subscriptions.set(data.storeSubscriptionId.value, {
       ...data,
+      provider: "REVENUECAT",
       id: this.subscriptions.size + 1,
       startedAt: new Date(data.startedAt),
       expiresAt: new Date(data.expiresAt),
       gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: data.lastProcessedEventId ?? null,
+      nextProductId: null,
+      periodType: data.periodType ?? null,
     });
   }
 
-  async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
-    const record = this.subscriptions.get(revenueCatId);
+  async updateStatus(
+    storeSubscriptionId: StoreSubscriptionId,
+    data: UpdateSubscriptionStatusData,
+  ): Promise<void> {
+    const record = this.subscriptions.get(storeSubscriptionId.value);
     if (!record) {
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-        reason: `Subscription not found: ${revenueCatId}`,
+        reason: `Subscription not found: ${storeSubscriptionId.value}`,
       });
     }
     const cancelledAt = data.cancelledAt === undefined ? record.cancelledAt : data.cancelledAt;
-    this.subscriptions.set(revenueCatId, {
+    this.subscriptions.set(storeSubscriptionId.value, {
       ...record,
       ...pickBy(data, (value) => value !== undefined),
       expiresAt: new Date(data.expiresAt ?? record.expiresAt),
@@ -133,13 +166,38 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     );
   }
 
-  #copyUser(user: SubscriptionUser): SubscriptionUser {
+  #copyUser(user: StubSubscriptionUser): StubSubscriptionUser {
     return {
       ...user,
       subscriptionExpiresAt:
         user.subscriptionExpiresAt === null ? null : new Date(user.subscriptionExpiresAt),
       profile: user.profile === null ? null : { ...user.profile },
     };
+  }
+}
+
+/** 웹훅이 예약한 대조를 사용자 순서대로 기록한다. */
+export class StubStoreSubscriptionReconcileScheduler implements StoreSubscriptionReconcileSchedulerPort {
+  readonly scheduledUserIds: string[] = [];
+
+  async schedule(userId: string): Promise<void> {
+    this.scheduledUserIds.push(userId);
+  }
+}
+
+/** 체인 키별 스토어 상태를 돌려주는 대역. 읽기 실패를 흉내 내려면 failure를 넣는다. */
+export class StubStoreSubscriptionStatusReader implements StoreSubscriptionStatusReaderPort {
+  readonly states = new Map<string, StoreSubscriptionState>();
+  failure: Error | null = null;
+
+  async read(storeSubscriptionIds: readonly string[]): Promise<StoreSubscriptionState[]> {
+    if (this.failure != null) {
+      throw this.failure;
+    }
+    return storeSubscriptionIds.flatMap((id) => {
+      const state = this.states.get(id);
+      return state == null ? [] : [{ ...state }];
+    });
   }
 }
 
@@ -156,15 +214,15 @@ export class StubSubscriptionCache implements SubscriptionCachePort {
 export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   readonly events: SubscriptionEventPayload[] = [];
   readonly billingIssueUserIds: string[] = [];
-  readonly failures: Array<{ error: unknown; context: WebhookFailureContext }> = [];
+  readonly failures: Array<{ error: unknown; context: StoreSubscriptionEventFailureContext }> = [];
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.events.push(payload);
   }
-  notifyBillingIssue(userId: string): void {
+  async recordBillingIssue(userId: string): Promise<void> {
     this.billingIssueUserIds.push(userId);
   }
-  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
+  reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.failures.push({ error, context });
   }
 }

@@ -66,15 +66,31 @@ describe("카테고리 생성", () => {
     vi.restoreAllMocks();
   });
 
-  it("한도 초과면 TODO_CATEGORY_0857", async () => {
+  it("한도 초과면 차감 없음과 서버가 계산한 featureQuota를 담아 TODO_CATEGORY_0857로 거부한다", async () => {
     // Given
+    const featureQuota = {
+      feature: "TODO_CATEGORY",
+      allowed: true,
+      limit: 3,
+      used: 3,
+      remaining: 0,
+      period: null,
+      resetsAt: null,
+      isFairUse: false,
+      perUse: null,
+    } as const;
     limitReader.getMaxCountInTx.mockResolvedValue(3);
+    limitReader.readQuotaInTx.mockResolvedValue(featureQuota);
     repository.countByUserId.mockResolvedValue(3);
 
     // When / Then
     await expect(
       useCase.execute({ userId: "category-user", name: "x", color: "#FFB3B3" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0857 });
+    ).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0857,
+      details: { charged: false, featureQuota },
+    });
+    expect(limitReader.readQuotaInTx).toHaveBeenCalledWith("category-user", 3);
     expect(repository.create).not.toHaveBeenCalled();
     expect(cache.invalidate).not.toHaveBeenCalled();
   });

@@ -307,8 +307,9 @@ export const userPreference = pgTable(
     longestStreak: integer().default(0).notNull(),
     morningReminderHour: integer().default(8).notNull(),
     morningReminderMinute: integer().default(0).notNull(),
-    nightPushEnabled: boolean().default(false).notNull(),
-    pushEnabled: boolean().default(false).notNull(),
+    // 가입 시 seed와 같은 값. 기존 행은 바꾸지 않는다
+    nightPushEnabled: boolean().default(true).notNull(),
+    pushEnabled: boolean().default(true).notNull(),
     timeFormat: timeFormat().default("TWELVE_HOUR").notNull(),
     timezone: varchar({ length: 50 }).default("UTC").notNull(),
     userId: text().notNull(),
@@ -373,6 +374,8 @@ export const userConsent = pgTable(
     id: text().primaryKey().$defaultFn(createEntityId),
     marketingAgreedAt: timestamp({ precision: 3 }),
     marketingPushAgreedAt: timestamp({ precision: 3 }),
+    /** 광고성 수신 동의 사실을 2년마다 다시 알린 마지막 시각. 알린 적 없으면 null이다. */
+    marketingReconfirmedAt: timestamp({ precision: 3, withTimezone: true }),
     privacyAgreedAt: timestamp({ precision: 3 }),
     termsAgreedAt: timestamp({ precision: 3 }),
     userId: text().notNull(),

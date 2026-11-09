@@ -1,5 +1,5 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api";
-import type { PremiumSource } from "@aido/api/vocabulary";
+import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type { AccountProvider, UserStatus } from "../../../domain/types/auth/auth.types.js";
 
@@ -29,6 +29,9 @@ export interface AuthCachedUserProfile {
   willRenew?: boolean;
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
+  /** 1.15.0 이전 캐시에는 없다. 없으면 응답에서도 생략한다. */
+  premiumIsTrial?: boolean;
+  premiumPlanType?: SubscriptionPlanType | null;
 }
 
 export interface AuthCachedSession {
@@ -50,24 +53,24 @@ export interface AuthCachePort {
   ): Promise<AuthCachedUserProfile | undefined>;
 }
 
-export interface AuthEmailResult {
-  success: boolean;
-  error?: string;
-}
+/** 인증 메일 발송 요청의 결과. queued는 발송 큐에 담았다는 뜻이고 실제 발송은 비동기다. */
+export type AuthEmailDispatch =
+  | { readonly status: "queued" }
+  | { readonly status: "rejected"; readonly reason: string };
 
 export interface AuthEmailSenderPort {
   sendVerificationCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
   sendPasswordResetCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
   sendPasswordSetupCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
 }
 
 export interface AuthUserRegisteredNotification {

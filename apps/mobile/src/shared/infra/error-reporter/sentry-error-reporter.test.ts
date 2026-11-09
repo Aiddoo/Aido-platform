@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-native';
-import type { Severity } from '@src/core/ports/severity';
+import type { Severity } from '@src/core/observability/severity';
 
 import { createSentryErrorReporter } from './sentry-error-reporter';
 
@@ -48,27 +48,29 @@ describe('createSentryErrorReporter', () => {
 
     // When
     reporter.captureException(error, { feature: 'auth' });
-    reporter.captureMessage('hello');
+    reporter.captureMessage('session_expired');
 
     // Then
     expect(captureException).toHaveBeenCalledWith(error, {
       level: 'error',
       tags: { feature: 'auth' },
     });
-    expect(captureMessage).toHaveBeenCalledWith('hello', { level: 'info', tags: {} });
+    expect(captureMessage).toHaveBeenCalledWith('session_expired', { level: 'info', tags: {} });
   });
 
-  it('모든 Severity 값이 유효한 Sentry level로 매핑된다', () => {
+  it('모든 Severity 값은 같은 이름의 Sentry level로 넘어간다', () => {
     // Given
     const reporter = createSentryErrorReporter();
     const severities: Severity[] = ['debug', 'info', 'warning', 'error', 'fatal'];
 
-    // When / Then
+    // When
     for (const severity of severities) {
-      reporter.captureMessage('e', { severity });
+      reporter.captureMessage('session_expired', { severity });
     }
+
+    // Then
     severities.forEach((severity, index) => {
-      expect(captureMessage).toHaveBeenNthCalledWith(index + 1, 'e', {
+      expect(captureMessage).toHaveBeenNthCalledWith(index + 1, 'session_expired', {
         level: severity,
         tags: {},
       });

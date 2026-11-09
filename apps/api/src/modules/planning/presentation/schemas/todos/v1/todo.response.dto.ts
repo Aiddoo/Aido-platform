@@ -2,6 +2,7 @@ import {
   createRecurringTodoResponseSchema,
   createTodoResponseSchema,
   deleteTodoResponseSchema,
+  friendTodoListResponseSchema,
   reorderTodoResponseSchema,
   todoListResponseSchema,
   todoResourceLimitResponseSchema,
@@ -15,6 +16,10 @@ export const TodoResponseDto = todoSchema.meta({ id: "TodoResponseDto" });
 export type TodoResponseDto = z.infer<typeof TodoResponseDto>;
 export const TodoListResponseDto = todoListResponseSchema.meta({ id: "TodoListResponseDto" });
 export type TodoListResponseDto = z.infer<typeof TodoListResponseDto>;
+export const FriendTodoListResponseDto = friendTodoListResponseSchema.meta({
+  id: "FriendTodoListResponseDto",
+});
+export type FriendTodoListResponseDto = z.infer<typeof FriendTodoListResponseDto>;
 export const CreateTodoResponseDto = createTodoResponseSchema.meta({ id: "CreateTodoResponseDto" });
 export type CreateTodoResponseDto = z.infer<typeof CreateTodoResponseDto>;
 export const CreateRecurringTodoResponseDto = createRecurringTodoResponseSchema.meta({

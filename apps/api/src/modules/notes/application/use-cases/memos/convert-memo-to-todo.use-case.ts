@@ -1,5 +1,6 @@
 import type { Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -11,16 +12,16 @@ import {
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
+import type { MemoTodoCreatorPort } from "../../ports/memos/memo-todo-creator.port.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
-import type { StagedTodoCreatorPort } from "../../ports/memos/staged-todo-creator.port.js";
 
 export interface ConvertMemoToTodoData {
   readonly categoryId: number;
   readonly startDate: Date;
   readonly endDate?: Date | null;
-  readonly scheduledTime?: Date | null;
+  readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
-  readonly visibility?: "PUBLIC" | "PRIVATE";
+  readonly visibility?: TodoVisibility;
   readonly items?: { title: string }[];
 }
 
@@ -33,11 +34,12 @@ export interface ConvertMemoToTodoInput {
   readonly userId: string;
   readonly memoId: number;
   readonly data: ConvertMemoToTodoData;
+  readonly timezone: string | undefined;
 }
 
 interface ConvertMemoToTodoDependencies {
   readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
-  readonly todoCreator: Pick<StagedTodoCreatorPort, "stageTodo">;
+  readonly todoCreator: MemoTodoCreatorPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly afterCommit: AfterCommitTaskRegistryPort;
@@ -52,7 +54,7 @@ export class ConvertMemoToTodo {
   }
 
   async execute(input: ConvertMemoToTodoInput): Promise<ConvertMemoToTodoResult> {
-    const { userId, memoId, data } = input;
+    const { userId, memoId, data, timezone } = input;
     const todo = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
         MutationLockKeys.memo(memoId),
@@ -64,13 +66,14 @@ export class ConvertMemoToTodo {
       if (memo == null) {
         throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       }
-      const staged = await this.#dependencies.todoCreator.stageTodo({
+      const staged = await this.#dependencies.todoCreator.stage({
         userId,
         title: memo.toTodoTitle(),
         categoryId: data.categoryId,
         startDate: data.startDate,
         endDate: data.endDate,
         scheduledTime: data.scheduledTime,
+        timezone,
         isAllDay: data.isAllDay ?? true,
         visibility: data.visibility ?? "PUBLIC",
         items: data.items,

@@ -1,69 +1,31 @@
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
-} from '@src/features/widget/apis/widget-navigation.repository';
-import type { WidgetNavigationStorage } from '@src/features/widget/bridge/widget-navigation-storage';
+} from '@src/features/device/widget/apis/widget-navigation.repository';
+import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '@src/features/device/widget/constants/widget.constants';
+import { type WidgetNavigationCommand } from '@src/features/device/widget/domains/widget-navigation.model';
+import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import {
-  type WidgetNavigationCommand,
-  WIDGET_NAVIGATION_COMMAND_TTL_MS,
-} from '@src/features/widget/domains/widget-navigation.model';
-import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+  createTestDi,
+  createMemoryObservableSyncStorage,
+  createTestQueryClient,
+} from '@src/shared/__tests__';
+// 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
+import { useSegments } from '@src/shared/__tests__/mocks/expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { useLinkingURL } from 'expo-linking';
+import { router, usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 
 import { useWidgetAppEntry } from './use-widget-app-entry';
 
-let mockStatus = 'loading';
-let mockSegments = ['loading'];
-let mockPathname = '/loading';
-let mockParameters: Record<string, string> = {};
-let mockUrl: string | null = 'aido://feed?date=today';
+let authSessionStore = createAuthSessionStoreStub('loading');
 let mockRepository: WidgetNavigationRepository;
-const mockErrorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
-
-jest.mock('../providers/auth-provider', () => ({ useAuth: () => ({ status: mockStatus }) }));
-jest.mock('../providers/di-context', () => ({
-  useErrorReporter: () => mockErrorReporter,
-  useWidgetNavigationRepository: () => mockRepository,
-}));
-jest.mock('@src/features/user/queries/get-me-query-options', () => ({
-  useGetMeQueryOptions: () => ({
-    queryKey: ['user', 'me'],
-    queryFn: async () => ({ id: 'original-account' }),
-    staleTime: Infinity,
-  }),
-}));
-jest.mock('expo-linking', () => ({ useLinkingURL: () => mockUrl }));
-jest.mock('expo-router', () => ({
-  router: { navigate: jest.fn() },
-  useSegments: () => mockSegments,
-  usePathname: () => mockPathname,
-  useGlobalSearchParams: () => mockParameters,
-}));
-
-function createStorage(): WidgetNavigationStorage {
-  const values = new Map<string, string>();
-  const listeners = new Set<() => void>();
-  return {
-    getString: (key) => values.get(key),
-    set: (key, value) => {
-      values.set(key, value);
-      listeners.forEach((listener) => listener());
-    },
-    delete: (key) => {
-      values.delete(key);
-      listeners.forEach((listener) => listener());
-    },
-    subscribe: (_key, listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-}
 
 describe('종료된 앱의 위젯 명령 복원', () => {
   let queryClient: QueryClient;
@@ -72,7 +34,18 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   let command: WidgetNavigationCommand;
 
   function Wrapper({ children }: PropsWithChildren) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <StaticDIProvider
+          container={createTestDi({
+            authSessionStore,
+            widgetNavigationRepository: mockRepository,
+          })}
+        >
+          {children}
+        </StaticDIProvider>
+      </QueryClientProvider>
+    );
   }
 
   async function flushFrames() {
@@ -84,9 +57,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   }
 
   function authenticate() {
-    mockStatus = 'authenticated';
-    mockSegments = ['(app)', '(tabs)', 'feed'];
-    mockPathname = '/feed';
+    authSessionStore.setStatus('authenticated');
+    useSegments.mockReturnValue(['(app)', '(tabs)', 'feed']);
+    jest.mocked(usePathname).mockReturnValue('/feed');
   }
 
   beforeEach(() => {
@@ -105,14 +78,13 @@ describe('종료된 앱의 위젯 명령 복원', () => {
         frames.delete(id);
       }
     });
-    mockStatus = 'loading';
-    mockSegments = ['loading'];
-    mockPathname = '/loading';
-    mockParameters = {};
-    mockUrl = 'aido://feed?date=today';
-    mockRepository = createWidgetNavigationRepository(createStorage());
-    queryClient = createTestQueryClient();
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'original-account' });
+    authSessionStore = createAuthSessionStoreStub('loading');
+    useSegments.mockReturnValue(['loading']);
+    jest.mocked(usePathname).mockReturnValue('/loading');
+    jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
+    mockRepository = createWidgetNavigationRepository(createMemoryObservableSyncStorage());
+    queryClient = createTestQueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'original-account' }));
     command = {
       id: 'first-tap',
       uri: 'aido://todo/12',
@@ -128,7 +100,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   it('인증 복원을 기다린 뒤 이전 Linking URL보다 저장된 실제 터치 목적지를 우선한다', async () => {
     // Given
-    mockRepository.store(command);
+    mockRepository.save(command);
     const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
     expect(frames.size).toBe(0);
 
@@ -143,7 +115,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       { pathname: '/todo/[todoId]', params: { todoId: '12' } },
       { withAnchor: true },
     );
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
     await hook.rerender(undefined);
     await flushFrames();
     expect(router.navigate).toHaveBeenCalledTimes(1);
@@ -152,12 +124,12 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   it('이동 frame 전에 연속으로 누르면 마지막 명령만 실행한다', async () => {
     // Given
     authenticate();
-    mockRepository.store(command);
+    mockRepository.save(command);
     await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 
     // When
     await act(() => {
-      mockRepository.store({ ...command, id: 'latest-tap', uri: 'aido://todo/13' });
+      mockRepository.save({ ...command, id: 'latest-tap', uri: 'aido://todo/13' });
     });
     await flushFrames();
 
@@ -172,23 +144,23 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   it('warm Linking 이동은 중복하지 않고 뒤로간 뒤 같은 목적지를 다시 누르면 이동한다', async () => {
     // Given
     authenticate();
-    mockRepository.store(command);
+    mockRepository.save(command);
     const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 
     // When
-    mockUrl = command.uri;
-    mockPathname = '/todo/12';
+    jest.mocked(useLinkingURL).mockReturnValue(command.uri);
+    jest.mocked(usePathname).mockReturnValue('/todo/12');
     await hook.rerender(undefined);
     await flushFrames();
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
 
     // When
-    mockPathname = '/feed';
+    jest.mocked(usePathname).mockReturnValue('/feed');
     await hook.rerender(undefined);
-    await act(() => mockRepository.store({ ...command, id: 'second-tap' }));
+    await act(() => mockRepository.save({ ...command, id: 'second-tap' }));
     await flushFrames();
 
     // Then
@@ -200,14 +172,14 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     async (scenario) => {
       // Given
       authenticate();
-      mockUrl = null;
+      jest.mocked(useLinkingURL).mockReturnValue(null);
       if (scenario === 'unauthenticated') {
-        mockStatus = 'unauthenticated';
+        authSessionStore.setStatus('unauthenticated');
       }
       if (scenario === 'different-account') {
-        queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+        queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
       }
-      mockRepository.store(
+      mockRepository.save(
         scenario === 'expired'
           ? { ...command, createdAt: Date.now() - WIDGET_NAVIGATION_COMMAND_TTL_MS }
           : command,
@@ -219,32 +191,32 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
-      expect(mockRepository.getPendingCommand()).toBeNull();
+      expect(mockRepository.findPendingCommand()).toBeNull();
     },
   );
 
   it('frame 직전에 바뀐 계정으로 이전 명령을 실행하지 않는다', async () => {
     // Given
     authenticate();
-    mockRepository.store(command);
+    mockRepository.save(command);
     await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 
     // When
-    queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
     await flushFrames();
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toBeNull();
+    expect(mockRepository.findPendingCommand()).toBeNull();
   });
 
   it.each(['aido://todo/12', 'aido://feed?date=today&action=add-todo'])(
     '일반 홈으로 앱을 깨워도 이전 계정의 %s 명령은 복원하지 않는다',
     async (uri) => {
       // Given
-      mockUrl = 'aido://feed?date=today';
-      queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
-      mockRepository.store({ ...command, uri });
+      jest.mocked(useLinkingURL).mockReturnValue('aido://feed?date=today');
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'other-account' }));
+      mockRepository.save({ ...command, uri });
       const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
 
       // When
@@ -256,14 +228,14 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
       // Then
       expect(router.navigate).not.toHaveBeenCalled();
-      expect(mockRepository.getPendingCommand()).toBeNull();
+      expect(mockRepository.findPendingCommand()).toBeNull();
     },
   );
 
   it('화면이 해제되면 예약한 frame을 취소하고 명령은 다음 진입에 남긴다', async () => {
     // Given
     authenticate();
-    mockRepository.store(command);
+    mockRepository.save(command);
     const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
     expect(frames.size).toBe(1);
 
@@ -273,6 +245,6 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(mockRepository.getPendingCommand()).toEqual(command);
+    expect(mockRepository.findPendingCommand()).toEqual(command);
   });
 });

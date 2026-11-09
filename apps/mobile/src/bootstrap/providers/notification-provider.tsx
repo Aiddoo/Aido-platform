@@ -1,56 +1,53 @@
-import { useColdStartNotificationResponse } from '@src/features/notification/hooks/use-cold-start-notification-response';
+import { subscribeNotificationsChanged } from '@src/core/events/notifications-changed';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import type { NotificationType } from '@src/features/notification/domains/notification.model';
+import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
-import { useMarketingNotificationCategory } from '@src/features/notification/hooks/use-marketing-notification-category';
-import { useNativeNotificationListeners } from '@src/features/notification/hooks/use-native-notification-listeners';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
-import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
-import { useNotificationResponseProcessor } from '@src/features/notification/hooks/use-notification-response-processor';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useQuery } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
-import type { PropsWithChildren } from 'react';
-import { Platform } from 'react-native';
+import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
+import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
+import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
+import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification-gateway';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
-import { useAuth } from './auth-provider';
+import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
 
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-}
+registerForegroundNotificationPresentation();
 
-function NativeNotificationProvider({ children }: PropsWithChildren) {
-  const { status } = useAuth();
+export function NotificationProvider({ children }: PropsWithChildren) {
+  const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
-  const handleNotificationResponse = useNotificationResponseHandler();
-  const handleForegroundNotification = useForegroundNotificationSync({ isAuthenticated });
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const processResponse = useNotificationResponseProcessor({
-    accountId: isAuthenticated ? (me?.id ?? null) : null,
-    authStatus: status,
-    handleNotificationResponse,
+  const queryClient = useQueryClient();
+  const invalidateByType = useCallback(
+    (type: NotificationType) => invalidateOnNotificationReceived(queryClient, type),
+    [queryClient],
+  );
+  const handleForegroundNotification = useForegroundNotificationSync({
+    isAuthenticated,
+    invalidateByType,
   });
-  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  const accountId = isAuthenticated ? (me?.id ?? null) : null;
+  const { currentTimeZone } = useLocalDate();
+  const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
-  useColdStartNotificationResponse({ response: lastNotificationResponse, processResponse });
-  useNativeNotificationListeners({ processResponse, handleForegroundNotification });
-  useMarketingNotificationCategory();
-  usePushDeviceSync({ authStatus: status });
+  useForegroundNotificationListener(handleForegroundNotification);
+  useEffect(
+    () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
+    [queryClient],
+  );
+  useRegisterMarketingNotificationCategory();
+  usePushDeviceSync({
+    authStatus: status,
+    deviceTimeZone: currentTimeZone,
+    onReported: markReported,
+  });
+  useTimezoneChangeNotice({ accountId, reportCount });
   useNotificationBadgeSync(status);
 
   return children;
 }
-
-// 웹은 푸시 기기가 아니어서 권한·토큰·배지를 다루지 않는다
-function WebNotificationProvider({ children }: PropsWithChildren) {
-  return children;
-}
-
-export const NotificationProvider =
-  Platform.OS === 'web' ? WebNotificationProvider : NativeNotificationProvider;

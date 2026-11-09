@@ -1,16 +1,11 @@
-import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api';
-import { formatDateKey } from '@src/shared/utils/date-format';
-import { countBy, maxBy, minBy, sortBy, takeWhile } from 'es-toolkit';
+import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api/vocabulary';
+import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import {
-  type HourlyForecastEntry,
-  isWetHour,
-  selectUpcomingHours,
-  type WeatherReport,
-} from './weather-report.model';
+import type { HourlyForecastEntry, WeatherReport } from './weather-report.model';
+import { WeatherReportPolicy } from './weather-report.model';
 
-const HOUR_MS = 60 * 60_000;
 /** 요약 문장은 앞으로 하루 안의 강수만 말한다. */
 const PRECIPITATION_RANGE_HOURS = 24;
 /** 하늘 변화·기온 정점은 반나절 안에서만 찾는다. */
@@ -21,9 +16,9 @@ const MIN_PEAK_DIFFERENCE = 1;
 const HOURLY_SKIES = ['clear', 'partlyCloudy', 'cloudy', 'hazy'] as const;
 export type HourlySky = (typeof HOURLY_SKIES)[number];
 
-export interface TemperaturePeak {
+interface TemperaturePeak {
   extreme: 'highest' | 'lowest';
-  at: Date;
+  at: Instant;
   temperature: number;
 }
 
@@ -31,30 +26,26 @@ export type HourlySummary =
   | {
       kind: 'precipitationOngoing';
       precipitationType: WeatherPrecipitationType;
-      endsAt: Date | null;
-      endsOnLaterDay: boolean;
+      endsAt: Instant | null;
+      isEndingOnLaterDay: boolean;
     }
   | {
       kind: 'precipitationUpcoming';
       precipitationType: WeatherPrecipitationType;
-      startsAt: Date;
-      startsOnLaterDay: boolean;
+      startsAt: Instant;
+      isStartingOnLaterDay: boolean;
       skyBefore: HourlySky;
     }
   | {
       kind: 'skyChange';
       from: HourlySky;
       to: HourlySky;
-      changesAt: Date;
-      changesOnLaterDay: boolean;
+      changesAt: Instant;
+      isChangingOnLaterDay: boolean;
     }
   | { kind: 'steady'; sky: HourlySky; peak: TemperaturePeak | null };
 
-export type HourlyTimelineItem =
-  | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }
-  | { kind: 'sunrise' | 'sunset'; at: Date };
-
-/** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(isWetHour)로만 정한다. */
+/** 강수 확률이 낮은 비·눈 상태 시간은 흐린 하늘로 읽는다. 강수 여부는 확률(WeatherReportPolicy.isWetHour)로만 정한다. */
 function toHourlySky(condition: WeatherCondition): HourlySky {
   return match<WeatherCondition, HourlySky>(condition)
     .with('CLEAR', 'MOSTLY_CLEAR', 'HOT', () => 'clear')
@@ -131,7 +122,7 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   const skies = hours.slice(0, SKY_RANGE_HOURS).map((hour) => toHourlySky(hour.condition));
   const [from] = skies;
   const index = skies.findIndex(
-    (sky, position) => position > 0 && sky !== from && (skies[position + 1] ?? sky) === sky,
+    (sky, position) => position > 0 && sky !== from && skies[position + 1] === sky,
   );
   const hour = hours[index];
   const to = skies[index];
@@ -141,51 +132,51 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   return { from, to, changesAt: hour.startsAt };
 }
 
-/**
- * 시간별 카드 맨 위 한 문장의 재료. 하루 안의 비·눈을 먼저 말하고, 없으면 하늘 변화, 그것도 없으면
- * 하늘과 기온 정점을 말한다. 문장은 화면이 i18n 키로 만든다.
- */
-function summarizeHourly(
+/** 문장은 화면이 i18n 키로 만들고 여기서는 비·눈 → 하늘 변화 → 하늘과 기온 정점 순으로 재료를 고른다 */
+function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
-  now: Date,
+  now: Instant,
 ): HourlySummary | null {
-  const hours = selectUpcomingHours(report.hourly, now).slice(0, PRECIPITATION_RANGE_HOURS);
+  const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, now).slice(
+    0,
+    PRECIPITATION_RANGE_HOURS,
+  );
   const [first] = hours;
   if (first == null) {
     return null;
   }
-  const todayKey = formatDateKey(now, report.location.timezone);
-  const isLaterDay = (date: Date) => formatDateKey(date, report.location.timezone) !== todayKey;
+  const todayKey = toDateKey(now, report.location.timezone);
+  const isLaterDay = (date: Instant) => toDateKey(date, report.location.timezone) !== todayKey;
 
   // 지금 관측된 강수가 있으면 시간별 확률이 낮아도 '내리는 중'으로 말한다.
   const currentPrecipitation =
     report.current.precipitationIntensity > 0
       ? toCurrentPrecipitationType(report.current.condition)
       : null;
-  if (currentPrecipitation != null || isWetHour(first)) {
-    const dryHour = hours.slice(1).find((hour) => !isWetHour(hour));
+  if (currentPrecipitation != null || WeatherReportPolicy.isWetHour(first)) {
+    const dryHour = hours.slice(1).find((hour) => !WeatherReportPolicy.isWetHour(hour));
     return {
       kind: 'precipitationOngoing',
       precipitationType: currentPrecipitation ?? first.precipitationType,
       endsAt: dryHour?.startsAt ?? null,
-      endsOnLaterDay: dryHour != null && isLaterDay(dryHour.startsAt),
+      isEndingOnLaterDay: dryHour != null && isLaterDay(dryHour.startsAt),
     };
   }
 
-  const wetHour = hours.find(isWetHour);
+  const wetHour = hours.find(WeatherReportPolicy.isWetHour);
   if (wetHour != null) {
     return {
       kind: 'precipitationUpcoming',
       precipitationType: wetHour.precipitationType,
       startsAt: wetHour.startsAt,
-      startsOnLaterDay: isLaterDay(wetHour.startsAt),
+      isStartingOnLaterDay: isLaterDay(wetHour.startsAt),
       skyBefore: getDominantSky(hours.slice(0, hours.indexOf(wetHour))),
     };
   }
 
   const change = findSkyChange(hours);
   if (change != null) {
-    return { kind: 'skyChange', ...change, changesOnLaterDay: isLaterDay(change.changesAt) };
+    return { kind: 'skyChange', ...change, isChangingOnLaterDay: isLaterDay(change.changesAt) };
   }
 
   return {
@@ -195,40 +186,6 @@ function summarizeHourly(
   };
 }
 
-function timelineTime(item: HourlyTimelineItem): number {
-  return item.kind === 'hour' ? item.hour.startsAt.getTime() : item.at.getTime();
-}
-
-/** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
-function toHourlyTimeline(
-  report: Pick<WeatherReport, 'hourly' | 'daily'>,
-  now: Date,
-): HourlyTimelineItem[] {
-  const hours = selectUpcomingHours(report.hourly, now);
-  const last = hours.at(-1);
-  if (last == null) {
-    return [];
-  }
-  const rangeEnd = last.startsAt.getTime() + HOUR_MS;
-  const isInRange = (date: Date) => date.getTime() > now.getTime() && date.getTime() < rangeEnd;
-
-  const hourItems = hours.map((hour, index): HourlyTimelineItem => ({
-    kind: 'hour',
-    hour,
-    isNow: index === 0,
-  }));
-  const sunItems = report.daily.flatMap((day): HourlyTimelineItem[] => [
-    ...(day.sunrise != null && isInRange(day.sunrise)
-      ? [{ kind: 'sunrise' as const, at: day.sunrise }]
-      : []),
-    ...(day.sunset != null && isInRange(day.sunset)
-      ? [{ kind: 'sunset' as const, at: day.sunset }]
-      : []),
-  ]);
-  return sortBy([...hourItems, ...sunItems], [timelineTime]);
-}
-
 export const WeatherHourlyPolicy = {
-  summary: summarizeHourly,
-  timeline: toHourlyTimeline,
+  getHourlySummary,
 } as const;

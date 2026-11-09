@@ -5,17 +5,18 @@
 ## 구조
 
 ```
-ListRow/
-├── ListRow.tsx          # 메인 컴포넌트
-├── ListRowTexts.tsx     # 텍스트 서브 컴포넌트
-├── ListRowImage.tsx     # 이미지 서브 컴포넌트
-└── ListRow.test.tsx     # 테스트
+list-row/
+├── list-row.tsx         # 메인 컴포넌트
+├── list-row-texts.tsx   # 텍스트 서브 컴포넌트
+├── list-row-image.tsx   # 왼쪽 이미지 서브 컴포넌트
+├── list-row.md          # 이 문서
+└── index.ts
 ```
 
 ## 기본 사용법
 
 ```tsx
-import { ListRow } from '@src/shared/ui/list-row/list-row';
+import { ListRow } from '@src/shared/ui';
 
 // 기본 사용
 <ListRow
@@ -24,7 +25,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 // 완전한 구성
 <ListRow
-  left={<ListRow.Image source={{ uri: 'avatar.jpg' }} />}
+  left={<UserAvatar alt="김용민" profileImage="avatar.jpg" />}
   contents={<ListRow.Texts type="2RowTypeA" top="김용민" bottom="시니어 개발자" />}
   right={<ArrowRightIcon />}
   horizontalPadding="medium"
@@ -42,6 +43,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 | `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠        |
 | `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠 (필수) |
 | `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠      |
+| `onPress`           | `() => void`                                 | -          | 넘기면 행 전체가 버튼   |
 | `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩               |
 | `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩               |
 | `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
@@ -170,46 +172,6 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 - `type`: `ListRow.Texts`와 같은 줄 구성
 - `topProps` / `middleProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
 
-### ListRow.Image
-
-이미지를 표시하는 서브 컴포넌트입니다. React Native의 `ImageProps`를 확장합니다.
-
-#### Props
-
-| Prop      | Type                             | Default    | Description           |
-| --------- | -------------------------------- | ---------- | --------------------- |
-| `source`  | `ImageSourcePropType`            | -          | 이미지 소스 (필수)    |
-| `size`    | `'small' \| 'medium' \| 'large'` | `'medium'` | 이미지 크기           |
-| `rounded` | `boolean`                        | `true`     | 둥근 모서리 적용 여부 |
-
-#### Size 크기
-
-- `small`: 32x32px
-- `medium`: 48x48px
-- `large`: 64x64px
-
-#### 사용 예시
-
-```tsx
-// 기본 사용
-<ListRow.Image source={{ uri: 'https://example.com/avatar.jpg' }} />
-
-// 크기 지정
-<ListRow.Image
-  source={{ uri: 'https://example.com/avatar.jpg' }}
-  size="large"
-/>
-
-// 둥근 모서리 제거
-<ListRow.Image
-  source={{ uri: 'https://example.com/avatar.jpg' }}
-  rounded={false}
-/>
-
-// 로컬 이미지
-<ListRow.Image source={require('@assets/images/avatar.png')} />
-```
-
 ## 사용 예시
 
 ### 1. 기본 메뉴 아이템
@@ -226,7 +188,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 ```tsx
 <ListRow
-  left={<ListRow.Image source={{ uri: 'https://example.com/avatar.jpg' }} size="medium" />}
+  left={<UserAvatar alt="김용민" profileImage="https://example.com/avatar.jpg" />}
   contents={
     <ListRow.Texts
       type="2RowTypeA"
@@ -246,7 +208,14 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 ```tsx
 <ListRow
-  left={<ListRow.Image source={{ uri: 'https://example.com/project.jpg' }} size="large" />}
+  left={
+    <FeatureMedia
+      alt=""
+      source={{ uri: 'https://example.com/project.jpg' }}
+      ratio={1}
+      className="w-16"
+    />
+  }
   contents={
     <ListRow.Texts
       type="3RowTypeA"
@@ -374,71 +343,44 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 
 - 모든 텍스트는 기본적으로 읽기 가능
 - 이미지에는 적절한 `accessibilityLabel` 제공 권장
-- 클릭 가능한 항목은 `onPress` 핸들러 추가
+- 누르는 행은 `onPress`를 넘긴다. 행 전체가 `button` 역할의 버튼이 된다
 
 ```tsx
-<Pressable onPress={handlePress}>
-  <ListRow contents={<ListRow.Texts type="1RowTypeA" top="설정" />} right={<ArrowRightIcon />} />
-</Pressable>
+<ListRow
+  contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
+  right={<ArrowRightIcon />}
+  onPress={handlePress}
+/>
 ```
 
 ## 성능 최적화
 
-- `ListRow.Image`는 `resizeMode="cover"` 기본 적용
 - 큰 리스트에서는 `React.memo` 사용 권장
 - 이미지는 적절한 크기로 최적화하여 사용
 
 ```tsx
 const MemoizedListRow = React.memo(({ item }) => (
   <ListRow
-    left={<ListRow.Image source={{ uri: item.avatar }} />}
+    left={<UserAvatar alt={item.name} profileImage={item.avatar} />}
     contents={<ListRow.Texts type="2RowTypeA" top={item.name} bottom={item.role} />}
   />
 ));
 ```
 
-## 테스트
+## ListRow.Image
 
-Given-When-Then 패턴으로 작성된 테스트 코드를 참고하세요.
-
-```tsx
-it('should render contents when provided', () => {
-  // Given: ListRow에 contents가 주어졌을 때
-  const contentsText = '제목';
-
-  // When: ListRow를 렌더링하면
-  render(<ListRow contents={<ListRow.Texts type="1RowTypeA" top={contentsText} />} />);
-
-  // Then: contents가 화면에 표시된다
-  expect(screen.getByText(contentsText)).toBeTruthy();
-});
-```
-
-## 마이그레이션 가이드
-
-### Icon 제거
+목록 왼쪽의 작은 이미지다. 크기는 `small`(32), `medium`(48), `large`(64)이고 공용 `Image`로 그린다.
 
 ```tsx
-// Before
-<ListRow
-  right={
-    <ListRow.Icon>
-      <ArrowRightIcon />
-    </ListRow.Icon>
-  }
-/>
-
-// After
-<ListRow
-  right={<ArrowRightIcon />}
-/>
+<ListRow left={<ListRow.Image source={source} size="medium" rounded />} />
 ```
 
-### Import 경로
+## 누르는 행
+
+토스 `ListRow`의 `onClick`과 같은 역할로 `onPress`를 받는다. 넘기면 행 전체가 버튼이 된다.
 
 ```tsx
-// Before
-import { ListRow } from '@src/shared/ui/list-row';
-// After
-import { ListRow } from '@src/shared/ui/list-row/list-row';
+<ListRow contents={<ListRow.Texts type="1RowTypeA" top="계정" />} onPress={openAccount} />
 ```
+
+`contents`는 필수다. 패딩은 `withPadding` 대신 `verticalPadding`, `horizontalPadding`으로 정한다.

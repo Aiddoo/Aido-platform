@@ -53,6 +53,7 @@ export const notification = pgTable(
     openedAt: timestamp({ precision: 3 }),
     purpose: notificationPurpose().default("TRANSACTIONAL").notNull(),
     readAt: timestamp({ precision: 3 }),
+    reminderOccurrenceKey: varchar({ length: 16 }),
     title: varchar({ length: 200 }).notNull(),
     todoId: integer(),
     type: notificationType().notNull(),
@@ -74,12 +75,13 @@ export const notification = pgTable(
     index("Notification_friend_actor_cleanup_idx")
       .using("btree", table.friendId.asc().nullsLast())
       .where(sql`("friendId" IS NOT NULL)`),
-    uniqueIndex("Notification_todo_reminder_dedup")
+    uniqueIndex("Notification_todo_reminder_occurrence_dedup")
       .using(
         "btree",
         table.todoId.asc().nullsLast(),
         table.type.asc().nullsLast(),
         sql`(metadata ->> 'stage'::text)`,
+        sql`(COALESCE("reminderOccurrenceKey", ''::character varying))`,
       )
       .where(sql`((type = 'TODO_REMINDER'::"NotificationType") AND ("todoId" IS NOT NULL))`),
     index("Notification_todoId_type_createdAt_idx").using(

@@ -1,6 +1,6 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { DocsIcon, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { Result, SearchIllustration, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';
 
 export default function NotFoundScreen() {
@@ -12,7 +12,7 @@ export default function NotFoundScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <Result
-        icon={<DocsIcon width={72} height={72} />}
+        icon={<SearchIllustration />}
         title={t('notFound.title')}
         button={
           <Result.Button

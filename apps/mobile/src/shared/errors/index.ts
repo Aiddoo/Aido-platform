@@ -1,12 +1,10 @@
-// Base Classes
-export { ApiError, isApiError } from './api-error';
+export { ApiError, isApiError } from '@src/core/errors/api-error';
 
-// Boundary 에러 분류 (라우트 ErrorBoundary 처리 분기)
-export { type BoundaryErrorKind, classifyBoundaryError } from './classify-boundary-error';
+export { BusinessError } from './business-error';
 
-// Infrastructure Errors
+export { classifyBoundaryError } from './classify-boundary-error';
+
 export {
-  InfraError,
   isConnectivityError,
   isInfraError,
   NetworkError,
@@ -15,23 +13,13 @@ export {
   TimeoutError,
 } from './infra-error';
 
-// Result Type
-export {
-  type BusinessError,
-  err,
-  isBusinessError,
-  isErr,
-  isOk,
-  ok,
-  type Result,
-  unwrap,
-} from './result';
+/** @public */
+export type { CodedError } from '@src/core/errors/result';
 
-// Storage Errors
+export { err, isCodedError, ok, type Result, unwrap } from '@src/core/errors/result';
+
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 
-// 던져진 값 정규화
-export { errorMessageOf, toError } from './to-error';
+export { getErrorMessage, toError } from './to-error';
 
-// 사용자 노출 문구 판정
-export { userFacingMessageOf } from './user-facing-message';
+export { getUserFacingMessage } from './user-facing-message';

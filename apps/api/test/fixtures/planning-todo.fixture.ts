@@ -1,13 +1,21 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
+import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
+import { TodoSeriesEditEffects } from "#api/modules/planning/application/services/series/todo-series-edit-effects.service";
+import { TodoTimezoneResolver } from "#api/modules/planning/application/services/todos/todo-timezone-resolver.service";
+import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { TodoBuilder } from "#test/builders/index";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
   StubPlanningTodoRepository,
+  StubPlanningTodoOwnerTimezone,
   StubPlanningTodoReadRepository,
+  StubPlanningTodoReminder,
+  StubPlanningTodoSeriesOwner,
+  StubPlanningTodoSeriesRepository,
   StubPlanningTodoCache,
   StubPlanningEventPublisher,
   StubPlanningMutationLock,
@@ -34,15 +42,28 @@ export function createPlanningTodoFixture(
       categoryOwners.set(record.categoryId, record.userId);
     }
   }
-  const todoRepository = new StubPlanningTodoRepository(records);
-  const todoReadRepository = new StubPlanningTodoReadRepository(records, categories);
   const todoCache = new StubPlanningTodoCache();
   const eventPublisher = new StubPlanningEventPublisher();
+  const logger = mock<ApplicationLogger>();
+  const seriesStore = new Map<string, TodoSeries>();
+  const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
+  const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
+  const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
+  const seriesOwner = new StubPlanningTodoSeriesOwner();
+  const todoReminder = new StubPlanningTodoReminder();
+  const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository, todoReminder });
+  const seriesEffects = new TodoSeriesEditEffects({
+    todoCache,
+    eventPublisher,
+    logger,
+  });
   const mutationLock = new StubPlanningMutationLock();
   const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
   const unitOfWork = createUnitOfWorkMock();
-  const logger = mock<ApplicationLogger>();
+  const ownerTimezone = new StubPlanningTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
+  const timezoneResolver = new TodoTimezoneResolver({ ownerTimezone });
   const paginationService = new PaginationService();
+  const seriesCatchUp = { ensureCaughtUp: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
     async isMutualFriend(_userId: string, friendUserId: string) {
@@ -63,15 +84,25 @@ export function createPlanningTodoFixture(
     records,
     categories,
     categoryOwners,
+    seriesStore,
     todoRepository,
     todoReadRepository,
+    todoSeriesRepository,
+    todoReminder,
+    seriesRepository: todoSeriesRepository,
+    seriesOwner,
+    seriesEffects,
+    occurrenceMaterializer,
     todoCache,
     eventPublisher,
     mutationLock,
     categoryOwnership,
     unitOfWork,
+    ownerTimezone,
+    timezoneResolver,
     logger,
     paginationService,
+    seriesCatchUp,
     friendIds,
     friendPort,
     streakContext,

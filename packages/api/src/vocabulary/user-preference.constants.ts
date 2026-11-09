@@ -1,8 +1,9 @@
 export const TIME_FORMATS = ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"] as const;
 
 export const USER_PREFERENCE_DEFAULTS = {
-  PUSH_ENABLED: false,
-  NIGHT_PUSH_ENABLED: false,
+  // 가입 seed·DB 기본값과 같다
+  PUSH_ENABLED: true,
+  NIGHT_PUSH_ENABLED: true,
   TIMEZONE: "UTC",
   MORNING_REMINDER_HOUR: 8,
   MORNING_REMINDER_MINUTE: 0,

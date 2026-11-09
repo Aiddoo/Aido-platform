@@ -1,30 +1,25 @@
-import type { WeatherCondition } from '@aido/api';
-import { Box } from '@src/shared/ui';
-import { Image, type ImageSource } from 'expo-image';
+import type { WeatherCondition } from '@aido/api/vocabulary';
+import { Box, Image } from '@src/shared/ui';
+import type { ImageSource } from 'expo-image';
 import { type ComponentProps, useState } from 'react';
-import { withUniwind } from 'uniwind';
 
 import { WeatherIcon } from './weather-icon';
 
-const StyledImage = withUniwind(Image);
 const FALLBACK_ICON_SIZE = 40;
 
 interface WeatherMascotProps extends Omit<
-  ComponentProps<typeof StyledImage>,
+  ComponentProps<typeof Image>,
   'source' | 'onError' | 'accessible'
 > {
   source: ImageSource | number;
   /** 이미지를 불러오지 못했을 때 대신 그릴 날씨 아이콘 */
   fallbackCondition: WeatherCondition;
-  /** 테마 표면 위 단색 대체 아이콘의 색. 없으면 하늘 카드용 채움 아이콘을 그린다 */
-  fallbackColorClassName?: string;
 }
 
 /** 고양이 이미지는 장식이다. 불러오지 못하면 같은 자리에 날씨 아이콘을 그려 빈칸을 남기지 않는다. */
 export function WeatherMascot({
   source,
   fallbackCondition,
-  fallbackColorClassName,
   className,
   ...props
 }: WeatherMascotProps) {
@@ -39,15 +34,13 @@ export function WeatherMascot({
             isDaylight
             width={FALLBACK_ICON_SIZE}
             height={FALLBACK_ICON_SIZE}
-            variant={fallbackColorClassName == null ? 'color' : 'mono'}
-            colorClassName={fallbackColorClassName}
           />
         </Box>
       </Box>
     );
   }
   return (
-    <StyledImage
+    <Image
       source={source}
       className={className}
       contentFit="contain"

@@ -7,6 +7,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { assertEntitled } from "#api/modules/access/access-entitlement.public";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -14,6 +16,7 @@ import { ReminderTime } from "../../../domain/value-objects/settings/reminder-ti
 import { IdentitySettingsLogEvent } from "../../observability/settings/identity-settings-log.events.js";
 import type { PreferenceEntitlementPort } from "../../ports/settings/preference-entitlement.port.js";
 import { type ReminderScheduleEnqueuerPort } from "../../ports/settings/reminder-schedule.enqueuer.port.js";
+import type { TodoTimezoneRebaseEnqueuerPort } from "../../ports/settings/todo-timezone-rebase.enqueuer.port.js";
 import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
 import { buildUpdatedPreferenceView } from "../../read-models/settings/preference.read-model.js";
@@ -23,11 +26,13 @@ export type UpdatePreferenceInput = Readonly<PreferenceChanges> & {
 };
 
 interface UpdatePreferenceDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "upsert">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "upsert">;
   readonly entitlement: PreferenceEntitlementPort;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
   readonly reminderEnqueuer: Pick<ReminderScheduleEnqueuerPort, "enqueueReminderHourChanged">;
+  readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
+  readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -59,21 +64,31 @@ export class UpdatePreference {
       });
     }
 
-    const updated = await this.#dependencies.preferenceRepository.upsert(userId, {
-      pushEnabled: input.pushEnabled,
-      nightPushEnabled: input.nightPushEnabled,
-      timezone: timezone ?? undefined,
-      morningReminderHour: input.morningReminderHour,
-      morningReminderMinute: input.morningReminderMinute,
-      eveningReminderHour: input.eveningReminderHour,
-      eveningReminderMinute: input.eveningReminderMinute,
-      timeFormat: input.timeFormat,
-      weatherMorningEnabled: input.weatherMorningEnabled,
-      weatherMorningHour: input.weatherMorningHour,
-      weatherMorningMinute: input.weatherMorningMinute,
-      weatherEveningEnabled: input.weatherEveningEnabled,
-      weatherEveningHour: input.weatherEveningHour,
-      weatherEveningMinute: input.weatherEveningMinute,
+    const { preferenceRepository, todoTimezoneRebase } = this.#dependencies;
+    const updated = await this.#dependencies.unitOfWork.run(async () => {
+      const timezoneChanged =
+        timezone != null &&
+        (await preferenceRepository.findByUserId(userId))?.timezone !== timezone;
+      const written = await preferenceRepository.upsert(userId, {
+        pushEnabled: input.pushEnabled,
+        nightPushEnabled: input.nightPushEnabled,
+        timezone: timezone ?? undefined,
+        morningReminderHour: input.morningReminderHour,
+        morningReminderMinute: input.morningReminderMinute,
+        eveningReminderHour: input.eveningReminderHour,
+        eveningReminderMinute: input.eveningReminderMinute,
+        timeFormat: input.timeFormat,
+        weatherMorningEnabled: input.weatherMorningEnabled,
+        weatherMorningHour: input.weatherMorningHour,
+        weatherMorningMinute: input.weatherMorningMinute,
+        weatherEveningEnabled: input.weatherEveningEnabled,
+        weatherEveningHour: input.weatherEveningHour,
+        weatherEveningMinute: input.weatherEveningMinute,
+      });
+      if (timezoneChanged) {
+        await todoTimezoneRebase.enqueueRebase(userId, now());
+      }
+      return written;
     });
     await this.#dependencies.cache.invalidateUserPreference(userId);
 

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 
+import { DATE_FORMAT } from "../constants/date.constant.js";
 import { now } from "./core.js";
 
 /** 지정 분 후의 시각 반환 */
@@ -45,4 +46,14 @@ export function subtractMilliseconds(ms: number, from: Date = now()): Date {
 /** 지정 개월 전의 시각 반환 */
 export function subtractMonths(months: number, from: Date = now()): Date {
   return dayjs.utc(from).subtract(months, "month").toDate();
+}
+
+/**
+ * 달력 날짜 key(YYYY-MM-DD)의 일 산술. 시간대가 없는 값이라 process·DST와 무관하다.
+ *
+ * @example addDaysToDateKey("2028-02-28", 1)  // "2028-02-29"
+ * @example addDaysToDateKey("2026-03-01", -1) // "2026-02-28"
+ */
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  return dayjs.utc(dateKey).add(days, "day").format(DATE_FORMAT.DATE_ONLY);
 }

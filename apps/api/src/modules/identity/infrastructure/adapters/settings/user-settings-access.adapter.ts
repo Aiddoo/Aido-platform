@@ -1,10 +1,17 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import type { ConsentSeedInput } from "../../../application/ports/settings/user-consent.repository.port.js";
+import {
+  type ConsentSeedInput,
+  type FindMarketingReconfirmTargetsParams,
+  type MarketingReconfirmTarget,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
+} from "../../../application/ports/settings/user-consent.repository.port.js";
 import type {
   UserNotificationSettingsAccessPort,
   UserSettingsProvisionerPort,
   UserStreakAccessPort,
+  UserTimezoneReaderPort,
 } from "../../../application/ports/settings/user-settings-access.port.js";
 import { GetConsentRecord } from "../../../application/use-cases/settings/get-consent-record.use-case.js";
 import { GetConsentRecords } from "../../../application/use-cases/settings/get-consent-records.use-case.js";
@@ -19,7 +26,11 @@ import { UpsertPushTimezone } from "../../../application/use-cases/settings/upse
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()
 export class UserSettingsAccessAdapter
-  implements UserSettingsProvisionerPort, UserStreakAccessPort, UserNotificationSettingsAccessPort
+  implements
+    UserSettingsProvisionerPort,
+    UserStreakAccessPort,
+    UserNotificationSettingsAccessPort,
+    UserTimezoneReaderPort
 {
   constructor(
     private readonly seedUserSettingsUseCase: SeedUserSettings,
@@ -31,6 +42,11 @@ export class UserSettingsAccessAdapter
     private readonly upsertPushTimezoneUseCase: UpsertPushTimezone,
     private readonly upsertPushLocaleUseCase: UpsertPushLocale,
     private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
+    @Inject(USER_CONSENT_REPOSITORY)
+    private readonly consentRepository: Pick<
+      UserConsentRepositoryPort,
+      "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+    >,
   ) {}
 
   seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void> {
@@ -43,6 +59,11 @@ export class UserSettingsAccessAdapter
 
   getPreferenceRecord(userId: string) {
     return this.getPreferenceRecordUseCase.execute({ userId });
+  }
+
+  async findStoredTimezone(userId: string): Promise<string | null> {
+    const record = await this.getPreferenceRecordUseCase.execute({ userId });
+    return record?.timezone ?? null;
   }
 
   getPreferenceRecordsByUserIds(userIds: string[]) {
@@ -67,5 +88,18 @@ export class UserSettingsAccessAdapter
 
   async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
     await this.updateMarketingPushConsentUseCase.execute({ userId, agreed });
+  }
+
+  findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.consentRepository.findMarketingReconfirmTargets(params);
+  }
+
+  claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    return this.consentRepository.claimMarketingReconfirm(userIds, params);
   }
 }

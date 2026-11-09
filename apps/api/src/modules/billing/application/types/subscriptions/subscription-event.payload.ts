@@ -1,73 +1,87 @@
 /**
- * 구독 이벤트 페이로드 정의
- *
- * RevenueCat 웹훅으로부터 수신되는 구독 관련 이벤트 페이로드.
- * SubscriptionService 및 AdminEventNotifier에서 사용됩니다.
+ * 구독 이벤트 알림 페이로드. 구독 상태를 바꾼 뒤 운영 알림(결제 채널)으로 넘긴다. 공급자 이름을 모른다.
  */
 
 import type {
-  RevenueCatEventType,
-  RevenueCatStore,
+  PremiumSource,
+  StorePeriodType,
   SubscriptionEnvironment,
+  SubscriptionPlanType,
 } from "@aido/api/vocabulary";
 
+import type { SubscriptionLifecycle } from "../../../domain/policies/subscriptions/subscription-lifecycle.policy.js";
+import type {
+  StoreSubscriptionEventKind,
+  SubscriptionEndReason,
+  SubscriptionStore,
+} from "../../../domain/types/subscriptions/store-subscription.types.js";
+
+export type { SubscriptionLifecycle };
+
 /**
- * 구독 이벤트 페이로드
+ * 공급자 웹훅이 준 값은 이벤트마다 같은 이름으로 싣는다. 이벤트에 없으면 비운다.
  */
 export interface SubscriptionEventPayload {
-  /** 사용자 ID */
   userId: string;
-  /** 이메일 */
   email: string;
-  /** 이벤트 타입 (RevenueCat 원본 이벤트명) */
-  eventType: RevenueCatEventType;
-  /** 상품 ID */
+  name?: string;
+  kind: Exclude<StoreSubscriptionEventKind, "IGNORED">;
+  /** 기간 없는 일회성 구매(STARTED만) */
+  isOneTime?: boolean;
   productId: string;
-  /** 스토어 (APP_STORE / PLAY_STORE / STRIPE 등) */
-  store?: RevenueCatStore;
+  /** 상품 ID로 정한 요금제. 모르는 상품·이전 이벤트는 비운다. */
+  planType?: SubscriptionPlanType;
+  store: SubscriptionStore | null;
   /** 결제 환경. SANDBOX는 테스트 결제라 관리자 알림에 표시하고 매출로 보지 않는다. */
   environment?: SubscriptionEnvironment;
-  /** 트랜잭션 ID */
-  transactionId?: string;
-  /** 구매 시각 (ISO string) */
+  storeSubscriptionId?: string;
+  /** 이번 거래를 산 시각(구매·갱신) */
   purchasedAt?: string;
-  /** 만료 시각 (ISO string) */
+  /** 지금 기간의 끝. 자동 갱신 중이면 다음 갱신, 해지했으면 이용이 끝나는 시각이다. */
   expiresAt?: string;
-  /** 취소 사유 */
-  cancelReason?: string;
-  /** 사용자 이름 (UserProfile.name) */
-  name?: string;
-  /** USD 기준 가격 (RevenueCat event.price — 항상 USD) */
+  /** 결제 문제 뒤 스토어가 결제를 다시 시도하는 유예의 끝(BILLING_ISSUE만) */
+  gracePeriodEndsAt?: string;
+  endReason?: SubscriptionEndReason;
+  /** 공급자가 USD로 환산한 금액 */
   priceUsd?: number;
-  /** 구매 통화 기준 가격 (RevenueCat event.price_in_purchased_currency) */
+  /** 사용자가 낸 통화의 금액 */
   priceInPurchasedCurrency?: number;
-  /** 구매 통화 코드 (RevenueCat event.currency, e.g. KRW) */
   purchasedCurrency?: string;
-  /** RevenueCat app_user_id. 운영 알림의 고객 링크에 쓴다. */
+  /** 다음 갱신에 적용될 상품(PRODUCT_CHANGE_SCHEDULED만) */
+  newProductId?: string;
+  newPlanType?: SubscriptionPlanType;
+  /** 구매를 넘겨준·넘겨받은 앱 사용자 ID(TRANSFERRED만) */
+  transfer?: SubscriptionTransfer;
+  /** 앱 사용자 ID. 운영 알림의 공급자 고객 화면 링크에 쓴다. */
   appUserId?: string;
-  /** RevenueCat 고객 화면 주소. REVENUECAT_PROJECT_ID가 있을 때만 알림 어댑터가 채운다. */
-  revenueCatCustomerUrl?: string;
-  /** RevenueCat 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
+  /** 공급자 고객 화면 주소. 알림 어댑터가 설정이 있을 때만 채운다. */
+  providerCustomerUrl?: string;
+  /** 공급자 이벤트 ID. 알림 잡 멱등 키로 쓴다. */
   eventId?: string;
-  /** 구매 국가 (event.country_code) */
   countryCode?: string;
-  /** 구독 유형 (event.period_type: NORMAL / TRIAL / INTRO / PROMOTIONAL / PREPAID) */
-  periodType?: string;
-  /** 만료 사유 (event.expiration_reason) */
-  expirationReason?: string;
-  /** 앱이 RevenueCat subscriber attribute(appVersion)로 남긴 앱 버전 */
+  periodKind?: StorePeriodType;
   appVersion?: string;
-  /** 앱이 RevenueCat subscriber attribute(deviceModel)로 남긴 기기 모델 */
   deviceModel?: string;
+  /** 무료 체험 단계(시작·해지·전환·종료). 체험과 관계없는 이벤트는 비운다. */
+  lifecycle?: SubscriptionLifecycle;
   /** 이 사용자의 첫 스토어 구매인지(구매 이벤트만) */
   isFirstPurchase?: boolean;
-  /** 이 이벤트로 다시 계산한 보상 기간 상태. 쌓아 둔 보상이 있거나 보상 기간이 이어질 때만 있다. */
-  premiumGrantImpact?: PremiumGrantImpact;
+  /** 이 이벤트를 반영한 뒤의 프리미엄 상태. 구독 행을 바꾸지 않은 이벤트는 비운다. */
+  premium?: PremiumSnapshot;
 }
 
-export interface PremiumGrantImpact {
-  /** 스토어 구독 뒤로 쌓아 둔 보상 일수 */
+export interface SubscriptionTransfer {
+  readonly from: readonly string[];
+  readonly to: readonly string[];
+}
+
+export interface PremiumSnapshot {
+  /** 지금 프리미엄의 출처. 프리미엄이 아니면 null이다. */
+  readonly source: PremiumSource | null;
+  /** 지금 출처 기간의 끝(ISO string). STORE면 스토어 만료, GRANT면 진행 중인 보상 기간의 끝이다. */
+  readonly periodEndsAt: string | null;
+  /** 지금 기간이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 */
   readonly bankedDays: number;
-  /** 스토어가 끝나 보상 기간이 이어졌으면 그 기간의 끝(ISO string). 아니면 null이다. */
-  readonly grantPeriodEndsAt: string | null;
+  /** 스토어 무료 체험 기간인지 */
+  readonly isTrial: boolean;
 }

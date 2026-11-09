@@ -160,4 +160,21 @@ describe("CompleteOAuthAuthorization — 코드 교환부터 실제 로그인까
     });
     expect(result.redirectUri).toBe("aido://auth/callback");
   });
+
+  it("웹 콜백은 브라우저 요청이라 새 가입이어도 알림을 보내지 않고 교환 결과에 새 가입을 남긴다", async () => {
+    // Given
+    const fixture = given("KAKAO");
+    // When
+    await fixture.useCase.execute({
+      provider: "KAKAO",
+      code: "authorization-secret",
+      state: fixture.state.state,
+      metadata: { ip: "192.0.2.30", userAgent: "Mozilla/5.0" },
+    });
+    // Then
+    expect(fixture.adminEventNotifier.notifications).toEqual([]);
+    expect(fixture.oauthStateRepository.states.get(fixture.state.id)).toMatchObject({
+      isNewUser: true,
+    });
+  });
 });

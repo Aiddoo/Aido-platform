@@ -4,6 +4,7 @@ import { ErrorCode } from "@aido/api/errors";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
+  type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -18,14 +19,20 @@ export interface AddTodoItemInput {
   readonly todoId: number;
   readonly userId: string;
   readonly title: string;
+  /** 완료를 되돌릴 때 스트릭의 "오늘" 경계 */
+  readonly timezone: string;
 }
 
 interface AddTodoItemDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "createItem">;
+  readonly todoRepository: Pick<
+    TodoRepositoryPort,
+    "findByIdAndUserId" | "createItem" | "updateDetails"
+  >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
+  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -37,9 +44,9 @@ export class AddTodoItem {
   }
 
   async execute(input: AddTodoItemInput): Promise<TodoResponse> {
-    const { todoId, userId, title } = input;
+    const { todoId, userId, title, timezone } = input;
 
-    await this.#dependencies.unitOfWork.run(async () => {
+    const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
       if (todo == null) {
@@ -48,9 +55,27 @@ export class AddTodoItem {
 
       const plan = todo.planItemAddition(title);
       await this.#dependencies.todoRepository.createItem(todoId, plan);
+
+      if (!todo.reopenForAddedItem(timezone)) {
+        return [];
+      }
+      const snapshot = todo.toPersistence();
+      await this.#dependencies.todoRepository.updateDetails(todoId, {
+        completed: snapshot.completed,
+        completedAt: snapshot.completedAt,
+      });
+      this.#dependencies.logger.log({
+        event: PlanningTodoLogEvent.COMPLETION_CHANGED,
+        todoId,
+        userId,
+        completed: snapshot.completed,
+      });
+      return todo.pullDomainEvents();
     });
 
     this.#dependencies.logger.log({ event: PlanningTodoLogEvent.ITEM_ADDED, todoId, userId });
+
+    await this.#dependencies.eventPublisher.publishAll(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

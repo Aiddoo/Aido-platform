@@ -208,6 +208,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         categoryColors: [...completion.categoryColors],
       })),
       totalCompleteDays: result.totalCompleteDays,
+      multiDayTodos: result.multiDayTodos?.map((todo) => ({ ...todo })),
       dateRange: {
         startDate: result.dateRange.startDate,
         endDate: result.dateRange.endDate,

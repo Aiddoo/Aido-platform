@@ -1,12 +1,19 @@
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box';
 import { Text } from '../text/text';
+import { type FocusedFieldNode, useReportFocusedField } from './focused-field';
 import type { InputInternalProps } from './input.types';
-import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './input.variants';
+import {
+  INPUT_TEXT_SIZES,
+  inputContainerVariants,
+  inputLabelVariants,
+  inputTextVariants,
+} from './input.variants';
 
 const StyledTextInput = withUniwind(TextInput);
 
@@ -31,11 +38,23 @@ export function Input({
   ...props
 }: InputInternalProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const fieldRef = useRef<FocusedFieldNode | null>(null);
+  const reportFocusedField = useReportFocusedField(fieldRef);
   const InputComponent = textInputComponent ?? StyledTextInput;
+  const { resolveSize } = useFontScale();
 
   return (
-    <Box className="gap-1">
-      {label && (
+    <Box
+      ref={fieldRef}
+      className="gap-1"
+      onLayout={() => {
+        // 오류 문구가 여러 줄이 되는 등 칸 높이가 바뀌면 칸 전체를 다시 알린다
+        if (isFocused) {
+          reportFocusedField(true);
+        }
+      }}
+    >
+      {label != null && label.length > 0 && (
         <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>
@@ -54,14 +73,19 @@ export function Input({
           allowFontScaling={false}
           placeholder={placeholder}
           editable={!isDisabled}
-          className={inputTextVariants({ size, hasLeftContent: !!leftContent })}
-          onFocus={(e) => {
+          className={inputTextVariants({
+            fontSize: resolveSize(INPUT_TEXT_SIZES[size]),
+            hasLeftContent: !!leftContent,
+          })}
+          onFocus={(event) => {
             setIsFocused(true);
-            onFocus?.(e);
+            reportFocusedField(true);
+            onFocus?.(event);
           }}
-          onBlur={(e) => {
+          onBlur={(event) => {
             setIsFocused(false);
-            onBlur?.(e);
+            reportFocusedField(false);
+            onBlur?.(event);
           }}
           {...props}
         />

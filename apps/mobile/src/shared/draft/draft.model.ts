@@ -1,6 +1,9 @@
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { z } from 'zod';
 
-export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const DRAFT_TTL_MS = 7 * DAY_MS;
+
+const DRAFT_KEY_SEPARATOR = ':';
 
 const draftKeyIdSchema = z.string().brand<'DraftKeyId'>();
 
@@ -31,8 +34,6 @@ export function createDraftKey<TValue>({
 
   return { id: draftKeyIdSchema.parse(id), schema };
 }
-
-const DRAFT_KEY_SEPARATOR = ':';
 
 /** `createDraftKey`가 각 구간을 URI 인코딩하므로 구분자는 구간 안에 나타나지 않는다. */
 export function isDraftOwnedBy(draftKeyId: string, ownerId: string) {
@@ -77,7 +78,7 @@ export interface ResolveDraftRestoreInput<TValue> {
 }
 
 export function resolveDraftRestore<TValue>(
-  entry: DraftEntry | undefined,
+  entry: DraftEntry | null,
   { schema, now, sourceUpdatedAt }: ResolveDraftRestoreInput<TValue>,
 ): DraftRestoreResult<TValue> {
   if (entry == null) {

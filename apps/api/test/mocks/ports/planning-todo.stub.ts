@@ -1,25 +1,48 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
+import { isUndefined, omitBy } from "es-toolkit";
 
 import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "#api/modules/planning/application/models/todos/todo.types";
+import type { TodoSeriesOwnerPort } from "#api/modules/planning/application/ports/series/todo-series-owner.port";
+import type {
+  TodoSeriesRef,
+  DueTodoSeriesQuery,
+  TodoSeriesRepositoryPort,
+} from "#api/modules/planning/application/ports/series/todo-series.repository.port";
 import type { TodoCachePort } from "#api/modules/planning/application/ports/todos/todo-cache.port";
+import type { TodoOwnerTimezonePort } from "#api/modules/planning/application/ports/todos/todo-owner-timezone.port";
 import type {
   TodoReadRepositoryPort,
   TodaySummaryTodoRow,
 } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
 import type {
+  TodoReminderPort,
+  TodoReminderSchedule,
+} from "#api/modules/planning/application/ports/todos/todo-reminder.port";
+import type {
+  CreatedOccurrence,
+  OccurrencePatch,
+  OccurrenceRow,
+  OccurrenceTime,
+  RebaseCandidate,
+  RebaseCandidateQuery,
+  RebasedInstant,
+  TodoOccurrenceAttachment,
+  TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "#api/modules/planning/application/ports/todos/todo.repository.port";
+import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import {
   Todo,
   type TodoCreationPlan,
-  type TodoVisibility,
 } from "#api/modules/planning/domain/aggregates/todos/todo.aggregate";
 import { TodoItem } from "#api/modules/planning/domain/entities/todos/todo-item.entity";
+import type { SeriesOwnerActivity } from "#api/modules/planning/domain/policies/series/series-dormancy.policy";
 import { TodoId } from "#api/modules/planning/domain/value-objects/todos/todo-id.vo";
 import {
   TodoSchedule,
@@ -31,6 +54,8 @@ import type {
   MutationLockPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { ApplicationException } from "#api/shared/domain/index";
 import { TodoBuilder } from "#test/builders/index";
 import {
@@ -39,7 +64,10 @@ import {
 } from "#test/fixtures/todo-response.fixture";
 
 export class StubPlanningTodoRepository implements TodoRepositoryPort {
-  constructor(readonly records: Map<number, PlanningTodoRecord>) {}
+  constructor(
+    readonly records: Map<number, PlanningTodoRecord>,
+    readonly seriesStore: Map<string, TodoSeries> = new Map(),
+  ) {}
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
     const saved = this.records.get(id);
@@ -57,7 +85,8 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       completedAt: record.completedAt,
       schedule: TodoSchedule.reconstitute(record),
       visibility: record.visibility,
-      recurrenceGroupId: record.recurrenceGroupId,
+      seriesId: record.seriesId,
+      occurrenceDate: record.occurrenceDate,
       items: record.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -69,8 +98,6 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     const record = {
       ...TodoBuilder.create(data.userId).withId(id).build(),
       ...structuredClone(data),
-      endDate: data.endDate === undefined ? null : structuredClone(data.endDate),
-      scheduledTime: data.scheduledTime === undefined ? null : structuredClone(data.scheduledTime),
     };
     this.records.set(id, record);
     const todo = await this.findByIdAndUserId(id, data.userId);
@@ -80,24 +107,157 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     return todo;
   }
 
-  async createMany(
-    plans: TodoCreationPlan[],
-    recurrenceGroupId: string,
-    inlineItems?: readonly { title: string }[],
-  ): Promise<Todo[]> {
-    const created: Todo[] = [];
+  async insertOccurrences(
+    plans: readonly TodoOccurrencePlan[],
+    seriesId: string,
+    checklist: readonly { title: string }[],
+  ): Promise<readonly CreatedOccurrence[]> {
+    const created: CreatedOccurrence[] = [];
     for (const plan of plans) {
-      const todo = await this.create(plan);
-      this.#record(todo.getId().getValue()).recurrenceGroupId = recurrenceGroupId;
-      if (inlineItems !== undefined) {
-        await this.createInlineItems(todo.getId().getValue(), [...inlineItems]);
+      const occurrenceDate = parseDateOnly(plan.occurrenceDate);
+      const exists = [...this.records.values()].some(
+        (record) =>
+          record.seriesId === seriesId &&
+          record.occurrenceDate?.getTime() === occurrenceDate.getTime(),
+      );
+      if (exists) {
+        continue;
       }
-      created.push(todo);
+      const todo = await this.create(plan);
+      const id = todo.getId().getValue();
+      Object.assign(this.#record(id), { seriesId, occurrenceDate });
+      await this.createInlineItems(id, checklist);
+      created.push({ todoId: id, scheduledTime: plan.scheduledTime });
     }
     return created;
   }
 
-  async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
+  async findOccurrencesFrom(
+    seriesIds: readonly string[],
+    fromDate: string,
+  ): Promise<readonly OccurrenceRow[]> {
+    return [...this.records.values()]
+      .filter(
+        (record) =>
+          record.seriesId != null &&
+          seriesIds.includes(record.seriesId) &&
+          record.occurrenceDate !== null &&
+          toDateString(record.occurrenceDate) >= fromDate,
+      )
+      .map((record) => ({
+        todoId: record.id,
+        seriesId: record.seriesId ?? "",
+        occurrenceDate: toDateString(record.occurrenceDate ?? record.startDate),
+        startDate: toDateString(record.startDate),
+        completed: record.completed,
+      }))
+      .sort((left, right) => left.occurrenceDate.localeCompare(right.occurrenceDate));
+  }
+  async updateFollowingOccurrences(
+    seriesId: string,
+    fromDate: string,
+    patch: OccurrencePatch,
+  ): Promise<void> {
+    for (const row of await this.findOccurrencesFrom([seriesId], fromDate)) {
+      if (!row.completed) {
+        Object.assign(this.#record(row.todoId), omitBy(patch, isUndefined));
+      }
+    }
+  }
+  async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
+    for (const { todoId, scheduledLocalTime, scheduledTime } of times) {
+      Object.assign(this.#record(todoId), {
+        scheduledLocalTime,
+        scheduledTime,
+        isAllDay: scheduledTime === null,
+      });
+    }
+  }
+  async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
+    for (const todoId of todoIds) {
+      this.#record(todoId).seriesId = toSeriesId;
+    }
+  }
+  async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    Object.assign(this.#record(todoId), {
+      occurrenceDate: date,
+      startDate: date,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+    });
+  }
+  async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {
+    return [...this.records.values()]
+      .filter(
+        (record) =>
+          record.userId === query.userId &&
+          record.scheduledTime != null &&
+          (query.afterId == null || record.id > query.afterId),
+      )
+      .sort((left, right) => left.id - right.id)
+      .slice(0, query.limit)
+      .flatMap((record) =>
+        record.scheduledTime == null
+          ? []
+          : [
+              {
+                todoId: record.id,
+                startDate: toDateString(record.startDate),
+                scheduledLocalTime: record.scheduledLocalTime,
+                scheduledTime: record.scheduledTime,
+                completed: record.completed,
+              },
+            ],
+      );
+  }
+  async updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void> {
+    for (const { todoId, scheduledTime } of instants) {
+      this.#record(todoId).scheduledTime = scheduledTime;
+    }
+  }
+  async attachToSeries(
+    todoId: number,
+    seriesId: string,
+    occurrence: TodoOccurrenceAttachment,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    Object.assign(this.#record(todoId), {
+      seriesId,
+      occurrenceDate: date,
+      startDate: date,
+      endDate: null,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+      isAllDay: occurrence.scheduledTime === null,
+    });
+  }
+  async deleteOccurrences(query: {
+    readonly userId: string;
+    readonly seriesIds: readonly string[];
+    readonly fromDate?: string;
+    readonly includeCompleted: boolean;
+  }): Promise<readonly number[]> {
+    const { fromDate } = query;
+    const ids = [...this.records.values()]
+      .filter(
+        (record) =>
+          record.seriesId != null &&
+          query.seriesIds.includes(record.seriesId) &&
+          (query.includeCompleted || !record.completed) &&
+          (fromDate == null ||
+            (record.occurrenceDate != null && toDateString(record.occurrenceDate) >= fromDate)),
+      )
+      .map((record) => record.id);
+    await this.deleteMany(ids);
+    return ids;
+  }
+  async deleteMany(todoIds: readonly number[]): Promise<void> {
+    for (const todoId of todoIds) {
+      this.records.delete(todoId);
+    }
+  }
+  async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
       await this.createItem(todoId, { ...item, sortOrder });
     }
@@ -149,10 +309,21 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       }
     }
   }
-  async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.categoryId === categoryId && !record.completed,
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const activeSeries = [...this.seriesStore.values()].filter(
+      (series) =>
+        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
     ).length;
+    return (
+      activeSeries +
+      [...this.records.values()].filter(
+        (record) =>
+          record.userId === userId &&
+          record.categoryId === categoryId &&
+          !record.completed &&
+          record.seriesId === null,
+      ).length
+    );
   }
   async getMaxSortOrder(userId: string): Promise<number> {
     return Math.max(
@@ -215,6 +386,138 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
   }
 }
 
+/** 저장한 규칙을 메모리에 두고 복원해 돌려주는 Fake. 잠금은 흉내 내지 않는다. */
+export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
+  /** 비워 두면 소유자가 방금 활동한 것으로 읽는다. */
+  activity: SeriesOwnerActivity | null = null;
+  readonly exemptUserIds = new Set<string>();
+  /** 정지·탈퇴 대기 계정 */
+  readonly suspendedUserIds = new Set<string>();
+  async findOperatingOwners(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
+    return new Map(
+      userIds
+        .filter((userId) => !this.suspendedUserIds.has(userId))
+        .map((userId) => [
+          userId,
+          this.activity ?? {
+            lastActiveAt: new Date(),
+            signedUpAt: new Date(),
+            timezone: "UTC",
+          },
+        ]),
+    );
+  }
+  async isExemptFromDormancy(userId: string): Promise<boolean> {
+    return this.exemptUserIds.has(userId);
+  }
+}
+
+export class StubPlanningTodoOwnerTimezone implements TodoOwnerTimezonePort {
+  constructor(readonly timezones: Map<string, string> = new Map()) {}
+  async findTimezone(userId: string): Promise<string | null> {
+    return this.timezones.get(userId) ?? null;
+  }
+}
+
+export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
+  constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
+  async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
+    const owned = [...this.store.values()].filter(
+      (series) => series.getUserId() === userId && series.getTimezone() !== timezone,
+    );
+    for (const series of owned) {
+      series.applyDetails({ timezone });
+    }
+    return owned.length;
+  }
+  async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
+    const series = this.store.get(id);
+    return series === undefined || series.getUserId() !== userId ? null : this.#copy(series);
+  }
+  async lockForUpdate(id: string): Promise<TodoSeries | null> {
+    const series = this.store.get(id);
+    return series === undefined ? null : this.#copy(series);
+  }
+  async insert(series: TodoSeries): Promise<void> {
+    this.store.set(series.getId(), this.#copy(series));
+  }
+  async update(series: TodoSeries): Promise<void> {
+    this.store.set(series.getId(), this.#copy(series));
+  }
+  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
+    return [...this.store.values()]
+      .filter(
+        (series) => series.getUserId() === userId && series.getOriginSeriesId() === originSeriesId,
+      )
+      .map((series) => series.getId());
+  }
+  async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
+    return [...this.store.values()]
+      .filter(
+        (segment) =>
+          segment.getUserId() === series.getUserId() &&
+          segment.getOriginSeriesId() === series.getOriginSeriesId() &&
+          segment.getStartDate() >= series.getStartDate() &&
+          segment.getId() !== series.getId(),
+      )
+      .map((segment) => this.#copy(segment));
+  }
+  async deleteMany(ids: readonly string[]): Promise<void> {
+    for (const id of ids) {
+      this.store.delete(id);
+    }
+  }
+  async countActiveByUserId(userId: string): Promise<number> {
+    return [...this.store.values()].filter(
+      (series) => series.getUserId() === userId && series.isActive(),
+    ).length;
+  }
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
+    return [...this.store.values()]
+      .filter((series) => {
+        const next = series.getNextOccurrenceDate();
+        return (
+          next !== null &&
+          next <= query.through &&
+          (query.afterId === null || series.getId() > query.afterId)
+        );
+      })
+      .map((series) => ({
+        id: series.getId(),
+        userId: series.getUserId(),
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .slice(0, query.limit);
+  }
+  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
+    return [...this.store.values()]
+      .filter((series) => {
+        const next = series.getNextOccurrenceDate();
+        return series.getUserId() === userId && next !== null && next <= through;
+      })
+      .map((series) => series.getId());
+  }
+  #copy(series: TodoSeries): TodoSeries {
+    return TodoSeries.reconstitute({ ...series.toPersistence() });
+  }
+}
+
+export class StubPlanningTodoReminder implements TodoReminderPort {
+  readonly scheduled: TodoReminderSchedule[] = [];
+  readonly cancelled: number[] = [];
+  async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+    this.scheduled.push({ todoId, scheduledTime, userId });
+  }
+  async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    this.scheduled.push(...reminders);
+  }
+  async cancelReminders(todoIds: readonly number[]): Promise<void> {
+    this.cancelled.push(...todoIds);
+  }
+}
+
 export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   queryResults: TodoResponse[] = [];
   dayStats = { total: 0, completed: 0 };
@@ -222,6 +525,7 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   constructor(
     readonly records: Map<number, PlanningTodoRecord>,
     readonly categories: Map<number, TodoResponse["category"]>,
+    readonly seriesStore: Map<string, TodoSeries> = new Map(),
   ) {}
   async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
     const saved = this.records.get(id);
@@ -236,14 +540,9 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   async findOwnerId(id: number): Promise<string | null> {
     return this.records.get(id)?.userId ?? null;
   }
-  async findManyByRecurrenceGroupId(
-    userId: string,
-    recurrenceGroupId: string,
-  ): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
     const records = [...this.records.values()]
-      .filter(
-        (record) => record.userId === userId && record.recurrenceGroupId === recurrenceGroupId,
-      )
+      .filter((record) => record.userId === userId && record.seriesId === seriesId)
       .sort((left, right) => left.sortOrder - right.sortOrder);
     const responses: TodoResponse[] = [];
     for (const record of records) {
@@ -260,10 +559,21 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<TodoResponse[]> {
     return structuredClone(this.queryResults);
   }
-  async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.categoryId === categoryId && !record.completed,
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const activeSeries = [...this.seriesStore.values()].filter(
+      (series) =>
+        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
     ).length;
+    return (
+      activeSeries +
+      [...this.records.values()].filter(
+        (record) =>
+          record.userId === userId &&
+          record.categoryId === categoryId &&
+          !record.completed &&
+          record.seriesId === null,
+      ).length
+    );
   }
   async countCompletedByUser(userId: string): Promise<number> {
     return [...this.records.values()].filter(

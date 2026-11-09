@@ -1,5 +1,5 @@
 export interface AppIconGateway {
-  isSupported(): boolean;
+  isAvailable(): boolean;
   getCurrentIcon(): Promise<string | null>;
   changeIcon(name: string | null): Promise<string | null>;
 }

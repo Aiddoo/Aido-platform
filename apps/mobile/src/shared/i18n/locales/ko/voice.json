@@ -1,0 +1,67 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  },
+  "button": {
+    "label": "말로 할 일 만들기"
+  },
+  "dictation": {
+    "start": "말로 입력",
+    "stop": "말로 입력 멈추기"
+  },
+  "info": {
+    "label": "AI로 할 일 만들기",
+    "title": "길게 말하면 AI가 할 일로 나눠요",
+    "description": "마이크를 누르고 하고 싶은 일을 말해보세요. 날짜·시간·반복까지 알아서 채워드려요.",
+    "examples": "\"매일\", \"월수금\", \"다음 주 내내\", \"나만 보게\"도 알아들어요.",
+    "remaining": "이번 달 {{amount}}회 남았어요",
+    "notCharged": "잘 안 되면 횟수는 차감되지 않아요",
+    "typeStillFree": "직접 입력은 계속 무료예요",
+    "usedUpChipHint": "이번 달 AI 사용량과 프리미엄 안내를 열어요"
+  },
+  "coach": {
+    "quickStart": {
+      "title": "이제 말로 해도 돼요",
+      "description": "하고 싶은 일을 길게 말해보세요.\nAI가 날짜·시간·반복까지 알아서 채워드려요."
+    }
+  },
+  "listening": {
+    "languageChangeFailed": "언어를 바꾸지 못했어요. 듣던 언어로 이어 갈게요.",
+    "prompt": "말해보세요",
+    "cancel": "취소",
+    "done": "다 말했어요",
+    "resume": "이어서 말하기",
+    "pausedHint": "잠시 멈췄어요. 이어서 말할까요?",
+    "autoFinishHint": "말이 멈추면 알아서 정리할게요"
+  },
+  "planning": {
+    "cancel": "취소하고 직접 입력",
+    "title": "할 일로 나누는 중…"
+  },
+  "review": {
+    "restart": "다시 말하기",
+    "typeInstead": "직접 입력",
+    "leaveTitle": "이 계획을 닫을까요?",
+    "leaveDescription": "닫으면 이 계획은 다시 볼 수 없어요.",
+    "leaveDescriptionCharged": "닫으면 이 계획은 다시 볼 수 없고, 쓴 횟수도 돌아오지 않아요.",
+    "leaveConfirm": "닫기",
+    "leaveCancel": "계속 고르기"
+  },
+  "failed": {
+    "keptText": "들은 내용은 남겨뒀어요.\n이어서 말하거나 직접 고쳐주세요.",
+    "typedTextKept": "입력한 글자는 그대로 뒀어요.\n들은 내용은 입력 칸에 옮기지 않았어요.",
+    "nothingHeard": "아직 들은 내용이 없어요.\n이어서 말하거나 직접 입력해주세요.",
+    "consentRequired": "정리하려면 AI 동의가 필요해요.\n다시 정리를 누르면 안내를 볼 수 있어요.",
+    "resume": "이어서 말하기",
+    "retry": "다시 정리"
+  },
+  "limit": {
+    "title": "이야기가 길어졌어요",
+    "description": "들은 내용은 남아 있어요.\n여기까지 할 일로 나누거나,\n말로 메모하기에서 이어서 말할 수 있어요.",
+    "titleEmpty": "아직 들은 내용이 없어요",
+    "descriptionEmpty": "말로 메모하기에서 이어서 말할 수 있어요.",
+    "finish": "여기까지 정리",
+    "continueAsNote": "말로 메모하기로 이어가기"
+  }
+}

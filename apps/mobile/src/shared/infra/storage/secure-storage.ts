@@ -1,62 +1,34 @@
 import type { Storage } from '@src/core/ports/storage';
-import { errorMessageOf, KeychainLockedError } from '@src/shared/errors';
+import { getErrorMessage, KeychainLockedError } from '@src/shared/errors';
+import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import * as ExpoSecureStore from 'expo-secure-store';
 import type { z } from 'zod';
 
-// AFTER_FIRST_UNLOCK: 첫 잠금해제 후 접근 가능(잠금 중 백그라운드 접근 throw 방지), 재설치해도 유지.
-// DeviceIdRepository와 동일한 회복력 정책으로 정렬한다.
-//
-// ⚠️ 영속 계약: keychainAccessible(및 keychainService/accessGroup 미설정)은 이미 배포된
-// 설치의 키체인 항목 접근 조건이다. 옵션을 바꾸면 기존 항목을 읽지 못해 전체 강제
-// 로그아웃이 될 수 있다 — 변경이 불가피하면 구 옵션으로 읽어 재저장하는 마이그레이션 필수.
-const SECURE_STORE_OPTIONS: ExpoSecureStore.SecureStoreOptions = {
-  keychainAccessible: ExpoSecureStore.AFTER_FIRST_UNLOCK,
-};
+import { SECURE_STORE_OPTIONS } from './secure-store-options';
 
-/**
- * iOS `errSecInteractionNotAllowed`의 메시지.
- *
- * expo-secure-store의 `KeyChainException`은 OSStatus를 **메시지로만** 노출한다
- * (`code`는 클래스명에서 파생되므로 잠금과 영구 오류를 구분하지 못한다).
- * 벤더의 에러 형태를 아는 것은 이 인프라 경계의 책임이다 — 도메인이 문자열을 알아선 안 된다.
- *
- * Android에는 잠금 개념이 없다(`requireAuthentication` 미사용). `DecryptException` 등은
- * 영구 오류이므로 잠김으로 승격하지 않는다.
- *
- * `instanceof Error`를 관문으로 두지 않는다 — 네이티브 브릿지가 `{ message }` 형태의
- * 평범한 객체를 던지면 판별에 실패해 **잠긴 키체인이 곧 로그아웃**이 된다.
- */
+// expo-secure-store는 OSStatus를 메시지로만 노출해 `code`로는 잠금과 영구 오류를 구분할 수 없다. `instanceof Error`를 관문으로 두면 `{ message }` 객체를 놓쳐 잠긴 키체인이 로그아웃이 된다
+// Android에는 잠금 개념이 없어 `DecryptException` 등은 영구 오류로 둔다
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
-const isLockedKeychain = (error: unknown): boolean =>
-  errorMessageOf(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+function hasLockedKeychainMessage(error: unknown): boolean {
+  return getErrorMessage(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+}
+
+async function readItem(key: string): Promise<string | null> {
+  try {
+    return await ExpoSecureStore.getItemAsync(key, SECURE_STORE_OPTIONS);
+  } catch (error) {
+    // 일시적(잠김)만 타입으로 승격한다. 나머지는 원본 그대로 — 상위에서 리포팅 후 폴백한다.
+    if (hasLockedKeychainMessage(error)) {
+      throw new KeychainLockedError(error);
+    }
+    throw error;
+  }
+}
 
 export class SecureStorage implements Storage {
   async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
-    let item: string | null;
-    try {
-      item = await ExpoSecureStore.getItemAsync(key, SECURE_STORE_OPTIONS);
-    } catch (error) {
-      // 일시적(잠김)만 타입으로 승격한다. 나머지는 원본 그대로 — 상위에서 리포팅 후 폴백한다.
-      if (isLockedKeychain(error)) {
-        throw new KeychainLockedError(error);
-      }
-      throw error;
-    }
-
-    if (!item) {
-      return null;
-    }
-
-    let storedValue: unknown;
-    try {
-      storedValue = JSON.parse(item);
-    } catch {
-      return null;
-    }
-
-    const parsed = schema.safeParse(storedValue);
-    return parsed.success ? parsed.data : null;
+    return parseStoredJson(await readItem(key), schema);
   }
 
   async set<T>(key: string, value: T): Promise<void> {
@@ -65,11 +37,5 @@ export class SecureStorage implements Storage {
 
   async remove(key: string): Promise<void> {
     await ExpoSecureStore.deleteItemAsync(key, SECURE_STORE_OPTIONS);
-  }
-
-  async clear(): Promise<void> {
-    // expo-secure-store doesn't have a clear method
-    // You need to manually track and remove keys if needed
-    throw new Error('Clear method is not implemented for SecureStorage');
   }
 }

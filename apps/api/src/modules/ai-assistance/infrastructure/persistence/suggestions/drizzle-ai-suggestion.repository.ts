@@ -15,7 +15,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { recurringSuggestion } from "#api/platform/database/schema/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   AiSuggestionRepositoryPort,
@@ -247,6 +247,7 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       columns: {
         title: true,
         startDate: true,
+        scheduledLocalTime: true,
         scheduledTime: true,
         categoryId: true,
         completed: true,
@@ -254,7 +255,7 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       with: { category: { columns: { name: true } } },
       where: {
         userId,
-        recurrenceGroupId: { isNull: true },
+        seriesId: { isNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
       // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
@@ -266,7 +267,9 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       title: t.title,
       startDate: toDateString(t.startDate),
       scheduledTime:
-        t.scheduledTime == null ? null : dayjs(t.scheduledTime).tz(timezone).format("HH:mm"),
+        t.scheduledTime == null
+          ? null
+          : (t.scheduledLocalTime ?? toLocalTimeString(t.scheduledTime, timezone)),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,

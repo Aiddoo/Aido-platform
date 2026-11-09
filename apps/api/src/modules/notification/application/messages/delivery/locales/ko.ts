@@ -1,5 +1,6 @@
-import type { WeatherCondition } from "@aido/api/vocabulary";
+import type { SubscriptionPlanType, WeatherCondition } from "@aido/api/vocabulary";
 import { josa } from "es-hangul";
+import { match } from "ts-pattern";
 
 import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
@@ -61,12 +62,8 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("슬슬 준비해볼까요?", `10분 뒤 ‘${todoTitle}’ 시작이에요`),
     ],
   },
-  TODO_REMINDER_IMMEDIATE: {
-    variants: [
-      ({ todoTitle }) => copy("지금 할 시간이에요 🐾", `‘${todoTitle}’ 시작해볼까요?`),
-      ({ todoTitle }) => copy("알림을 맞춰둔 시간이에요", `‘${todoTitle}’ 끝내고 체크해봐요`),
-      ({ todoTitle }) => copy("시작이 반이에요", `‘${todoTitle}’ 첫걸음만 떼볼까요?`),
-    ],
+  TODO_SERIES_PAUSED: {
+    variants: [staticCopy("반복 할 일 알림을 잠시 멈췄어요", "앱을 열면 다시 시작돼요")],
   },
   MORNING_REMINDER: {
     variants: [
@@ -502,6 +499,19 @@ export const SOCIAL_TEMPLATES = {
   },
 } satisfies SocialNotificationCopyCatalog;
 
+/** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
+function dayPhrase(days: number): string {
+  return days <= 0 ? "오늘" : days === 1 ? "내일" : `${days}일 뒤`;
+}
+
+function planPhrase(planType: SubscriptionPlanType | null): string {
+  return match(planType)
+    .with("ANNUAL", () => "연간 구독")
+    .with("MONTHLY", () => "월간 구독")
+    .with(null, () => "구독")
+    .exhaustive();
+}
+
 export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
@@ -575,7 +585,33 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해주세요"),
   },
   PREMIUM_GRANT_ENDING: {
-    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요."),
+    copy: staticCopy("내일 프리미엄이 끝나요", "남은 기간은 구독 화면에서 볼 수 있어요"),
+  },
+  PREMIUM_TRIAL_ENDING_RENEWING: {
+    copy: ({ days, date, planType }) =>
+      copy(
+        `${dayPhrase(days)} ${planPhrase(planType)}이 시작돼요`,
+        `${date} 결제 예정 · 해지는 스토어에서`,
+      ),
+  },
+  PREMIUM_TRIAL_ENDING_CANCELLED: {
+    copy: ({ days, date }) =>
+      copy(
+        days <= 0
+          ? "오늘 무료 체험이 끝나요"
+          : days === 1
+            ? "내일 무료 체험이 끝나요"
+            : `무료 체험이 ${days}일 뒤 끝나요`,
+        `${date}까지 이용 · 결제는 없어요`,
+      ),
+  },
+  PREMIUM_RENEWAL_UPCOMING: {
+    copy: ({ days, date }) =>
+      copy(`${dayPhrase(days)} 연간 구독이 갱신돼요`, `${date} 결제 예정 · 해지는 스토어에서`),
+  },
+  MARKETING_CONSENT_RECONFIRM: {
+    copy: ({ agreedOn }) =>
+      copy("광고성 알림 수신에 동의 중이에요", `${agreedOn} 동의 · 설정에서 바꿀 수 있어요`),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 적어볼까요? 🌱", "지금 떠오르는 작은 일 하나면 충분해요"),

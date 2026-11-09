@@ -24,7 +24,8 @@ import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/applicati
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { SIGNUP_STATS_READER } from "#api/modules/operations/application/ports/notifications/signup-stats.reader.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
-import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
+import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import {
@@ -40,15 +41,9 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let processor: AdminNotificationProcessor;
 
-  // Mock Notifiers
+  const alerts = new RecordingOperationalAlert();
   const mockAdminNotifier = {
-    name: "admin-discord",
-    send: vi.fn().mockResolvedValue({ success: true }),
-  };
-
-  const mockPaymentNotifier = {
-    name: "payment-discord",
-    send: vi.fn().mockResolvedValue({ success: true }),
+    send: vi.fn().mockResolvedValue({ status: "sent" }),
   };
 
   // Mock ports (dispatch summary)
@@ -76,8 +71,8 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
           useValue: mockAdminNotifier,
         },
         {
-          provide: PAYMENT_NOTIFIER,
-          useValue: mockPaymentNotifier,
+          provide: OPERATIONAL_ALERT,
+          useValue: alerts,
         },
         {
           provide: SIGNUP_STATS_READER,
@@ -100,8 +95,8 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    mockAdminNotifier.send.mockResolvedValue({ success: true });
-    mockPaymentNotifier.send.mockResolvedValue({ success: true });
+    alerts.alerts.length = 0;
+    mockAdminNotifier.send.mockResolvedValue({ status: "sent" });
     mockSignupStatsReader.getSignupStats.mockResolvedValue({
       signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
       totalUsers: 100,
@@ -110,11 +105,12 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
   });
 
   describe("SEND 잡 처리 통합 테스트", () => {
-    it("SEND 잡 admin 채널 — adminNotifier.send()가 호출된다", async () => {
-      // Given - admin 채널로 알림 발송 잡
+    it("배포 전 큐에 남은 조립 메시지 잡도 admin 채널 일반 메시지로 발송한다", async () => {
+      // Given - 이전 형식(notification)으로 큐에 남은 admin 채널 잡
       const notification = {
         title: "신규 가입자 알림",
         body: "새로운 사용자가 가입했습니다.",
+        severity: "success",
       };
       const job = createMockJob("send-notification", {
         channel: "admin",
@@ -124,47 +120,87 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       // When - 잡 처리
       await processor.process(job);
 
-      // Then - adminNotifier.send()가 호출되어야 함
-      expect(mockAdminNotifier.send).toHaveBeenCalledWith(notification);
-      expect(mockPaymentNotifier.send).not.toHaveBeenCalled();
+      // Then - 포트가 admin 채널로 호출되어야 함
+      expect(mockAdminNotifier.send).toHaveBeenCalledWith("admin", {
+        type: "message",
+        message: notification,
+      });
     });
 
-    it("SEND 잡 payment 채널 — paymentNotifier.send()가 호출된다", async () => {
-      // Given - payment 채널로 알림 발송 잡
-      const notification = {
-        title: "결제 완료",
-        body: "구독 결제가 완료되었습니다.",
+    it("SEND 잡 payment 채널 — 구독 알림을 그대로 payment 채널로 발송한다", async () => {
+      // Given - payment 채널로 구독 알림 발송 잡
+      const notice = {
+        type: "subscription_event",
+        user: { userId: "user-1", email: "user@example.com", userTag: "MATT2025" },
+        subscription: { event: "renewed", environment: "PRODUCTION", price: { usd: 2.99 } },
       };
-      const job = createMockJob("send-notification", {
-        channel: "payment",
-        notification,
-      });
+      const job = createMockJob("send-notification", { channel: "payment", notice });
 
       // When - 잡 처리
       await processor.process(job);
 
-      // Then - paymentNotifier.send()가 호출되어야 함
-      expect(mockPaymentNotifier.send).toHaveBeenCalledWith(notification);
-      expect(mockAdminNotifier.send).not.toHaveBeenCalled();
+      // Then - 포트가 payment 채널로 호출되어야 함
+      expect(mockAdminNotifier.send).toHaveBeenCalledWith("payment", notice);
     });
 
-    it("send 실패 — 에러가 throw된다", async () => {
-      // Given - send가 실패를 반환하는 경우
+    it("재시도 가능한 실패 — 큐 재시도를 위해 에러가 throw된다", async () => {
+      // Given
       mockAdminNotifier.send.mockResolvedValue({
-        success: false,
-        error: "Webhook rate limited",
+        status: "failed",
+        retryable: true,
+        statusCode: 429,
       });
-
       const job = createMockJob("send-notification", {
         channel: "admin",
-        notification: {
-          title: "테스트",
-          body: "실패 테스트",
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "실패 테스트", severity: "info" },
         },
       });
 
-      // When & Then - 에러가 throw되어야 함
-      await expect(processor.process(job)).rejects.toThrow("Discord webhook failed");
+      // When & Then
+      await expect(processor.process(job)).rejects.toThrow("Admin notification delivery failed");
+      expect(alerts.alerts).toEqual([]);
+    });
+
+    it("재시도 불가 거절 — throw 없이 운영 경보를 올린다", async () => {
+      // Given
+      mockAdminNotifier.send.mockResolvedValue({
+        status: "failed",
+        retryable: false,
+        statusCode: 404,
+      });
+      const job = createMockJob("send-notification", {
+        channel: "payment",
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "거절 테스트", severity: "info" },
+        },
+      });
+
+      // When
+      await processor.process(job);
+
+      // Then
+      expect(alerts.alerts).toEqual([
+        expect.objectContaining({ key: "operations.admin-notification.rejected" }),
+      ]);
+    });
+
+    it("채널 미설정 — 던지지도 경보를 올리지도 않는다", async () => {
+      // Given
+      mockAdminNotifier.send.mockResolvedValue({ status: "skipped", reason: "not_configured" });
+      const job = createMockJob("send-notification", {
+        channel: "admin",
+        notice: {
+          type: "message",
+          message: { title: "테스트", body: "미설정 테스트", severity: "info" },
+        },
+      });
+
+      // When & Then
+      await expect(processor.process(job)).resolves.toBeUndefined();
+      expect(alerts.alerts).toEqual([]);
     });
   });
 
@@ -180,9 +216,10 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
       expect(mockSignupStatsReader.getSignupStats).toHaveBeenCalled();
       expect(mockQueuePort.enqueueSend).toHaveBeenCalledWith(
         "admin",
-        expect.objectContaining({
-          title: expect.stringContaining("일일 가입 리포트"),
-        }),
+        {
+          type: "message",
+          message: expect.objectContaining({ title: expect.stringContaining("일일 가입 리포트") }),
+        },
         expect.objectContaining({
           jobId: expect.stringContaining("signup-summary_"),
         }),

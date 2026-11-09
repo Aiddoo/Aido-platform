@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
   pgTable,
@@ -35,10 +36,18 @@ export const subscription = pgTable(
     gracePeriodEndsAt: timestamp({ precision: 3 }),
     id: serial().primaryKey(),
     lastProcessedEventId: varchar({ length: 255 }),
+    /** PRODUCT_CHANGE가 예약한 다음 갱신의 상품(new_product_id). 실제 결제·재개 이벤트가 productId로 옮기고 비운다. */
+    nextProductId: varchar({ length: 100 }),
+    /** 지금 기간의 RevenueCat period_type(STORE_PERIOD_TYPES). 이 열을 추가하기 전에 만든 행은 null = NORMAL이다. */
+    periodType: text(),
     productId: varchar({ length: 100 }).notNull(),
+    /** 연간 갱신 7일 전 안내를 보낸 기간의 expiresAt. 갱신으로 expiresAt이 바뀌면 다음 기간에 다시 보낸다. */
+    renewalNoticeExpiresAt: timestamp({ precision: 3 }),
     revenueCatId: varchar({ length: 255 }).notNull(),
     startedAt: timestamp({ precision: 3 }).notNull(),
     status: subscriptionStatus().notNull(),
+    /** 무료 체험 종료 3일 전 안내를 보낸 시각. 조건부 UPDATE로 체인마다 한 번만 보낸다. */
+    trialEndingNotifiedAt: timestamp({ precision: 3, withTimezone: true }),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
       .$defaultFn(() => new Date())
@@ -60,6 +69,10 @@ export const subscription = pgTable(
       table.expiresAt.asc().nullsLast(),
     ),
     index("Subscription_userId_idx").using("btree", table.userId.asc().nullsLast()),
+    // 체험 종료 안내 sweep이 아직 알리지 않은 체험만 끝나는 순서로 읽는다
+    index("Subscription_trial_ending_notice_idx")
+      .using("btree", table.expiresAt.asc().nullsLast(), table.id.asc().nullsLast())
+      .where(sql`${table.periodType} = 'TRIAL' AND ${table.trialEndingNotifiedAt} IS NULL`),
     unique("Subscription_revenueCatId_key").on(table.revenueCatId),
   ],
 );

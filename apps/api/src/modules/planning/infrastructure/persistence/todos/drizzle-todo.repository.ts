@@ -1,24 +1,32 @@
+import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gte, inArray, lte, max, sql } from "drizzle-orm";
-import { groupBy, isEmptyObject, isUndefined, omitBy, sortBy } from "es-toolkit";
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
+import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
   DatabaseRecordNotFoundError,
   requireRecord,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoItem } from "#api/platform/database/schema/index";
+import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import type {
+  CreatedOccurrence,
+  OccurrencePatch,
+  OccurrenceRow,
+  OccurrenceTime,
+  RebaseCandidate,
+  RebaseCandidateQuery,
+  RebasedInstant,
+  TodoOccurrenceAttachment,
+  TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "../../../application/ports/todos/todo.repository.port.js";
-import {
-  Todo,
-  type TodoCreationPlan,
-  type TodoVisibility,
-} from "../../../domain/aggregates/todos/todo.aggregate.js";
+import { Todo, type TodoCreationPlan } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import { TodoItem } from "../../../domain/entities/todos/todo-item.entity.js";
 import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
 import {
@@ -49,11 +57,13 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       schedule: TodoSchedule.reconstitute({
         startDate: row.startDate,
         endDate: row.endDate,
+        scheduledLocalTime: row.scheduledLocalTime,
         scheduledTime: row.scheduledTime,
         isAllDay: row.isAllDay,
       }),
       visibility: row.visibility,
-      recurrenceGroupId: row.recurrenceGroupId,
+      seriesId: row.seriesId,
+      occurrenceDate: row.occurrenceDate,
       items: row.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -85,7 +95,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return DrizzleTodoRepository.toDomain({ ...requireRecord(row), items: [] });
   }
 
-  async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
+  async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     if (items.length === 0) {
       return;
     }
@@ -94,41 +104,240 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .values(items.map((item, sortOrder) => ({ todoId, title: item.title, sortOrder })));
   }
 
-  async createMany(
-    items: readonly TodoCreationPlan[],
-    recurrenceGroupId: string,
-    inlineItems: readonly { title: string }[] = [],
-  ): Promise<Todo[]> {
+  async insertOccurrences(
+    plans: readonly TodoOccurrencePlan[],
+    seriesId: string,
+    checklist: readonly { title: string }[],
+  ): Promise<readonly CreatedOccurrence[]> {
+    if (plans.length === 0) {
+      return [];
+    }
     const rows = await this.db
       .insert(todo)
-      .values(items.map((item) => ({ ...item, recurrenceGroupId })))
-      .returning();
-    const itemRows =
-      inlineItems.length === 0
-        ? []
-        : await this.db
-            .insert(todoItem)
-            .values(
-              rows.flatMap((created) =>
-                inlineItems.map((item, sortOrder) => ({
-                  todoId: created.id,
-                  title: item.title,
-                  sortOrder,
-                })),
-              ),
-            )
-            .returning();
-    const itemsByTodoId = groupBy(itemRows, (item) => item.todoId);
-    return sortBy(rows, [(row) => row.sortOrder]).map((row) =>
-      DrizzleTodoRepository.toDomain({
-        ...row,
-        items: sortBy(itemsByTodoId[row.id] ?? [], [(item) => item.sortOrder]),
-      }),
-    );
+      .values(
+        plans.map((plan) => ({
+          ...plan,
+          seriesId,
+          occurrenceDate: parseDateOnly(plan.occurrenceDate),
+        })),
+      )
+      .onConflictDoNothing({
+        target: [todo.seriesId, todo.occurrenceDate],
+        where: isNotNull(todo.occurrenceDate),
+      })
+      .returning({ id: todo.id, scheduledTime: todo.scheduledTime });
+    if (rows.length > 0 && checklist.length > 0) {
+      await this.db.insert(todoItem).values(
+        rows.flatMap((created) =>
+          checklist.map((item, sortOrder) => ({
+            todoId: created.id,
+            title: item.title,
+            sortOrder,
+          })),
+        ),
+      );
+    }
+    return rows.map((row) => ({ todoId: row.id, scheduledTime: row.scheduledTime }));
   }
 
-  async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
-    await this.updateDetails(id, { completed, completedAt });
+  async findOccurrencesFrom(
+    seriesIds: readonly string[],
+    fromDate: string,
+  ): Promise<readonly OccurrenceRow[]> {
+    const rows = await this.db
+      .select({
+        todoId: todo.id,
+        seriesId: todo.seriesId,
+        occurrenceDate: todo.occurrenceDate,
+        startDate: todo.startDate,
+        completed: todo.completed,
+      })
+      .from(todo)
+      .where(
+        and(
+          inArray(todo.seriesId, [...seriesIds]),
+          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+        ),
+      )
+      .orderBy(asc(todo.occurrenceDate));
+    return rows.map((row) => ({
+      todoId: row.todoId,
+      seriesId: requireRecord(row.seriesId),
+      occurrenceDate: toDateString(requireRecord(row.occurrenceDate)),
+      startDate: toDateString(row.startDate),
+      completed: row.completed,
+    }));
+  }
+
+  async updateFollowingOccurrences(
+    seriesId: string,
+    fromDate: string,
+    patch: OccurrencePatch,
+  ): Promise<void> {
+    const values = omitBy(patch, isUndefined);
+    if (isEmptyObject(values)) {
+      return;
+    }
+    await this.db
+      .update(todo)
+      .set(values)
+      .where(
+        and(
+          eq(todo.seriesId, seriesId),
+          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+          eq(todo.completed, false),
+        ),
+      );
+  }
+
+  async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
+    if (times.length === 0) {
+      return;
+    }
+    // 행마다 다른 값을 쓰므로 CASE 한 문장으로 갱신한다.
+    const instantCases = sql.join(
+      times.map(
+        ({ todoId, scheduledTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledTime == null ? null : scheduledTime.toISOString()}::timestamptz`,
+      ),
+      sql` `,
+    );
+    const localTimeCases = sql.join(
+      times.map(
+        ({ todoId, scheduledLocalTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledLocalTime}::varchar`,
+      ),
+      sql` `,
+    );
+    await this.db
+      .update(todo)
+      .set({
+        scheduledTime: sql`CASE ${todo.id} ${instantCases} END`,
+        scheduledLocalTime: sql`CASE ${todo.id} ${localTimeCases} END`,
+        isAllDay: times.every(({ scheduledTime }) => scheduledTime == null),
+      })
+      .where(
+        inArray(
+          todo.id,
+          times.map(({ todoId }) => todoId),
+        ),
+      );
+  }
+
+  async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
+    if (todoIds.length === 0) {
+      return;
+    }
+    await this.db
+      .update(todo)
+      .set({ seriesId: toSeriesId })
+      .where(inArray(todo.id, [...todoIds]));
+  }
+
+  async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    await this.updateTodoRow(todoId, {
+      occurrenceDate: date,
+      startDate: date,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+    });
+  }
+
+  async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {
+    const rows = await this.db
+      .select({
+        todoId: todo.id,
+        startDate: todo.startDate,
+        scheduledLocalTime: todo.scheduledLocalTime,
+        scheduledTime: todo.scheduledTime,
+        completed: todo.completed,
+      })
+      .from(todo)
+      .where(
+        and(
+          eq(todo.userId, query.userId),
+          isNotNull(todo.scheduledTime),
+          query.afterId == null ? undefined : gt(todo.id, query.afterId),
+        ),
+      )
+      .orderBy(asc(todo.id))
+      .limit(query.limit)
+      .for("update");
+    return rows.map((row) => ({
+      ...row,
+      startDate: toDateString(row.startDate),
+      scheduledTime: requireRecord(row.scheduledTime),
+    }));
+  }
+
+  async updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void> {
+    if (instants.length === 0) {
+      return;
+    }
+    const cases = sql.join(
+      instants.map(
+        ({ todoId, scheduledTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledTime.toISOString()}::timestamptz`,
+      ),
+      sql` `,
+    );
+    await this.db
+      .update(todo)
+      .set({ scheduledTime: sql`CASE ${todo.id} ${cases} END`, updatedAt: sql`${todo.updatedAt}` })
+      .where(
+        inArray(
+          todo.id,
+          instants.map(({ todoId }) => todoId),
+        ),
+      );
+  }
+
+  async attachToSeries(
+    todoId: number,
+    seriesId: string,
+    occurrence: TodoOccurrenceAttachment,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    await this.updateTodoRow(todoId, {
+      seriesId,
+      occurrenceDate: date,
+      startDate: date,
+      endDate: null,
+      scheduledLocalTime: occurrence.scheduledLocalTime,
+      scheduledTime: occurrence.scheduledTime,
+      isAllDay: occurrence.scheduledTime == null,
+    });
+  }
+
+  async deleteOccurrences(query: {
+    readonly userId: string;
+    readonly seriesIds: readonly string[];
+    readonly fromDate?: string;
+    readonly includeCompleted: boolean;
+  }): Promise<readonly number[]> {
+    const deleted = await this.db
+      .delete(todo)
+      .where(
+        and(
+          // seriesId만으로는 부분 유니크 인덱스를 못 타 Todo 전체를 훑는다. userId 인덱스로 좁힌다.
+          eq(todo.userId, query.userId),
+          inArray(todo.seriesId, [...query.seriesIds]),
+          query.fromDate == null
+            ? undefined
+            : gte(todo.occurrenceDate, parseDateOnly(query.fromDate)),
+          query.includeCompleted ? undefined : eq(todo.completed, false),
+        ),
+      )
+      .returning({ id: todo.id });
+    return deleted.map((row) => row.id);
+  }
+
+  async deleteMany(todoIds: readonly number[]): Promise<void> {
+    if (todoIds.length === 0) {
+      return;
+    }
+    await this.db.delete(todo).where(inArray(todo.id, [...todoIds]));
   }
 
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
@@ -174,11 +383,25 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     requireRecord(deleted[0]);
   }
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return this.db.$count(
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const todos = await this.db.$count(
       todo,
-      and(eq(todo.userId, userId), eq(todo.categoryId, categoryId), eq(todo.completed, false)),
+      and(
+        eq(todo.userId, userId),
+        eq(todo.categoryId, categoryId),
+        eq(todo.completed, false),
+        isNull(todo.seriesId),
+      ),
     );
+    const series = await this.db.$count(
+      todoSeries,
+      and(
+        eq(todoSeries.userId, userId),
+        eq(todoSeries.categoryId, categoryId),
+        isNotNull(todoSeries.nextOccurrenceDate),
+      ),
+    );
+    return todos + series;
   }
 
   async getMaxSortOrder(userId: string): Promise<number> {

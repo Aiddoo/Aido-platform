@@ -14,8 +14,16 @@ export interface DailyCompletionSummary {
   readonly categoryColors: readonly string[];
 }
 
+export interface MultiDayTodoSpan {
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly completed: boolean;
+  readonly categoryColor: string;
+}
+
 export interface DailyCompletionsRange {
   readonly completions: readonly DailyCompletionSummary[];
   readonly totalCompleteDays: number;
+  readonly multiDayTodos?: readonly MultiDayTodoSpan[];
   readonly dateRange: { readonly startDate: string; readonly endDate: string };
 }

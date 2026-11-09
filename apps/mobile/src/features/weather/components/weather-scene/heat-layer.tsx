@@ -19,7 +19,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from './weather-scene-particles';
+} from '../../utils/weather-scene-particles';
 import {
   HEAT_WAVE_SPRITE,
   PARTICLE_SAMPLING,
@@ -172,7 +172,7 @@ HeatLayer.Embers = function Embers({
   time,
 }: HeatAreaProps & { isLowEndDevice: boolean }) {
   const texture = useParticleTexture();
-  const count = getAmbientCount('ember', { width, height }, isLowEndDevice);
+  const count = getAmbientCount('ember', { screen: { width, height }, isLowEndDevice });
   const seeds = createParticleSeeds(count, EMBER_SEED);
   const { warm } = PARTICLE_SPRITES;
   const sprites = range(count).map(() => Skia.XYWHRect(warm.x, warm.y, warm.width, warm.height));

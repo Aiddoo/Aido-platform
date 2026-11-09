@@ -1,18 +1,16 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { useDialogPortalTarget } from '@src/shared/ui/bottom-sheet';
+import { usePortalTarget } from '@src/shared/ui/bottom-sheet';
 import { Box } from '@src/shared/ui/box';
 import { Button, type ButtonProps } from '@src/shared/ui/button';
 import { HStack } from '@src/shared/ui/h-stack';
 import { READABLE_CONTENT_MAX_WIDTH } from '@src/shared/ui/readable-content';
 import { H4, Text } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
+import { WordWrapText } from '@src/shared/ui/word-wrap-text';
 import { Dialog } from 'heroui-native';
-import { cloneElement, isValidElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import type { ConfirmDialogProps } from './confirm-dialog.types';
-
-const asFullWidthAction = (action: ReactNode): ReactNode =>
-  isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
 
 export function ConfirmDialog({
   isOpen,
@@ -23,9 +21,8 @@ export function ConfirmDialog({
   confirmButton,
   secondaryButton,
 }: ConfirmDialogProps) {
-  const { fontScale } = useFontScale();
-  const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
-  const portalTarget = useDialogPortalTarget();
+  const portalTarget = usePortalTarget();
+
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal {...portalTarget}>
@@ -40,25 +37,11 @@ export function ConfirmDialog({
               {title}
               {description}
             </VStack>
-            {secondaryButton != null ? (
-              <VStack gap={8} className="w-full">
-                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-                <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
-                {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
-              </VStack>
-            ) : cancelButton && stackActions ? (
-              <VStack gap={8} className="w-full">
-                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
-                <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>
-              </VStack>
-            ) : cancelButton ? (
-              <HStack gap={8} className="w-full">
-                <Box className="flex-1">{cancelButton}</Box>
-                <Box className="flex-1">{confirmButton}</Box>
-              </HStack>
-            ) : (
-              <HStack className="w-full justify-end">{confirmButton}</HStack>
-            )}
+            <ConfirmDialogActions
+              cancelButton={cancelButton}
+              confirmButton={confirmButton}
+              secondaryButton={secondaryButton}
+            />
           </VStack>
         </Dialog.Content>
       </Dialog.Portal>
@@ -66,10 +49,50 @@ export function ConfirmDialog({
   );
 }
 
+type ConfirmDialogActionsProps = Pick<
+  ConfirmDialogProps,
+  'cancelButton' | 'confirmButton' | 'secondaryButton'
+>;
+
+function ConfirmDialogActions({
+  cancelButton,
+  confirmButton,
+  secondaryButton,
+}: ConfirmDialogActionsProps) {
+  const { fontScale } = useFontScale();
+
+  if (secondaryButton != null) {
+    return (
+      <VStack gap={8} className="w-full">
+        <Box className="w-full">{confirmButton}</Box>
+        <Box className="w-full">{secondaryButton}</Box>
+        {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
+      </VStack>
+    );
+  }
+  if (cancelButton == null) {
+    return <HStack className="w-full justify-end">{confirmButton}</HStack>;
+  }
+  if (fontScale === 'xlarge') {
+    return (
+      <VStack gap={8} className="w-full">
+        <Box className="w-full">{confirmButton}</Box>
+        <Box className="w-full">{cancelButton}</Box>
+      </VStack>
+    );
+  }
+  return (
+    <HStack gap={8} className="w-full">
+      <Box className="flex-1">{cancelButton}</Box>
+      <Box className="flex-1">{confirmButton}</Box>
+    </HStack>
+  );
+}
+
 ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
   return (
     <Dialog.Title>
-      <H4>{children}</H4>
+      <H4 lineBreakStrategyIOS="hangul-word">{children}</H4>
     </Dialog.Title>
   );
 };
@@ -77,9 +100,15 @@ ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
 ConfirmDialog.Description = function Description({ children }: { children: ReactNode }) {
   return (
     <Dialog.Description>
-      <Text size="b3" shade={6}>
-        {children}
-      </Text>
+      {typeof children === 'string' ? (
+        <WordWrapText size="b3" shade={6}>
+          {children}
+        </WordWrapText>
+      ) : (
+        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+          {children}
+        </Text>
+      )}
     </Dialog.Description>
   );
 };

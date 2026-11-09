@@ -9,21 +9,6 @@ export interface FindPremiumGrantUsersToReconcileParams {
   readonly limit: number;
 }
 
-export interface FindPremiumGrantEndingNoticesParams {
-  readonly now: Date;
-  /** 이 시각 이전에 끝나는 마지막 보상 기간만 안내한다. */
-  readonly endsBefore: Date;
-  /** 같은 실행에서 이미 본 후보 다음부터 읽는다(endsAt, id 순 keyset). */
-  readonly after?: { readonly endsAt: Date; readonly grantId: string };
-  readonly limit: number;
-}
-
-export interface PremiumGrantEndingNotice {
-  readonly grantId: string;
-  readonly userId: string;
-  readonly endsAt: Date;
-}
-
 export const PREMIUM_GRANT_REPOSITORY = Symbol("PREMIUM_GRANT_REPOSITORY");
 
 export interface PremiumGrantRepositoryPort {
@@ -42,9 +27,4 @@ export interface PremiumGrantRepositoryPort {
    * 대상이다.
    */
   findUserIdsToReconcile(params: FindPremiumGrantUsersToReconcileParams): Promise<string[]>;
-  /** 스토어 구독도 다음 기간도 없는 마지막 기간을 SKIP LOCKED로 잠그고 반환한다. 활성 UoW가 필요하다. */
-  lockEndingNotices(
-    params: FindPremiumGrantEndingNoticesParams,
-  ): Promise<PremiumGrantEndingNotice[]>;
-  markEndingNotified(grantIds: readonly string[], notifiedAt: Date): Promise<void>;
 }

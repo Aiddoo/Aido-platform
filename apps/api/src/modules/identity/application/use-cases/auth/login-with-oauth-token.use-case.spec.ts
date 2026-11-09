@@ -84,7 +84,6 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       expect(fixture.securityLogRepository.entries).toMatchObject([
         { event: SECURITY_EVENT.LOGIN_SUCCESS, metadata: { provider } },
       ]);
-      expect(fixture.adminEventNotifier.notifications).toEqual([]);
       expect(fixture.retentionEnroller.enrollments).toEqual([]);
       expect(JSON.stringify(fixture.logger.debug.mock.calls)).not.toContain("token-secret");
     },
@@ -113,7 +112,6 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       ]);
       expect(fixture.sessionRepository.sessions.size).toBe(0);
       expect(fixture.securityLogRepository.entries).toEqual([]);
-      expect(fixture.adminEventNotifier.notifications).toEqual([]);
     },
   );
 
@@ -150,22 +148,17 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       expect(fixture.seeder.settings).toEqual([
         {
           userId: result.userId,
-          consent: { termsAgreedAt: AUTH_CREDENTIAL_TIME, privacyAgreedAt: AUTH_CREDENTIAL_TIME },
+          consent: {
+            termsAgreedAt: AUTH_CREDENTIAL_TIME,
+            privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+            agreedTermsVersion: "1.0.0",
+          },
         },
       ]);
       expect(fixture.seeder.categoryUserIds).toEqual([result.userId]);
       expect(fixture.retentionEnroller.enrollments).toEqual([
         { userId: result.userId, activated: true },
       ]);
-      expect(fixture.adminEventNotifier.notifications).toMatchObject([
-        {
-          userId: result.userId,
-          email: fixture.identityProvider.profile.email,
-          provider: provider.toLowerCase(),
-          name: userName.slice(0, 20),
-        },
-      ]);
-      expect(fixture.adminEventNotifier.notifications[0]).not.toHaveProperty("devicePlatform");
       expect(fixture.securityLogRepository.entries).toMatchObject([
         {
           event: SECURITY_EVENT.REGISTRATION,
@@ -296,7 +289,6 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       },
       { event: SECURITY_EVENT.LOGIN_SUCCESS },
     ]);
-    expect(fixture.adminEventNotifier.notifications).toEqual([]);
     expect(fixture.retentionEnroller.enrollments).toEqual([]);
   });
 
@@ -398,7 +390,6 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         ),
       ).toBe(true);
       expect(fixture.sessionRepository.sessions.size).toBe(1);
-      expect(fixture.adminEventNotifier.notifications).toEqual([]);
     },
   );
 

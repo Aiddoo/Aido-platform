@@ -1,6 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import { isSemanticVersionAtLeast } from "@aido/api";
+import { IDEMPOTENCY_KEY_MAX_LENGTH } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -22,12 +23,15 @@ export interface RequestClient {
   readonly timezone: string | null;
   /** Accept-Language를 보냈으면 지원 locale(미지원 언어는 ko), 보내지 않았으면 null */
   readonly locale: SupportedLocale | null;
+  /** 형식이 맞는 Idempotency-Key. 사용자 행동 한 번을 가리킨다 */
+  readonly idempotencyKey: string | null;
 }
 
 const MAX_DEVICE_NAME_LENGTH = 40;
 const MAX_APP_VERSION_LENGTH = 30;
 const OS_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z._-]{0,19}$/;
 const APP_BUILD_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.]{0,19}$/;
+const IDEMPOTENCY_KEY_PATTERN = new RegExp(`^[\\x21-\\x7e]{1,${IDEMPOTENCY_KEY_MAX_LENGTH}}$`);
 
 function singleValue(value: string | string[] | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -104,5 +108,6 @@ export function parseRequestClient(headers: IncomingHttpHeaders, requestId: stri
     deviceName: normalizeDeviceName(singleValue(headers["x-device-name"])),
     timezone: normalizeIanaTimezone(headers["x-timezone"]),
     locale: parseAcceptLanguage(headers["accept-language"]) ?? null,
+    idempotencyKey: matchPattern(singleValue(headers["idempotency-key"]), IDEMPOTENCY_KEY_PATTERN),
   };
 }

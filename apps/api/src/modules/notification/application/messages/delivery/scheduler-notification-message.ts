@@ -20,7 +20,7 @@ interface LocalizedVariantInput {
 
 export interface TodoReminderNotificationInput extends LocalizedVariantInput {
   readonly todoTitle: string;
-  readonly stage: "60min" | "10min" | "immediate";
+  readonly stage: "60min" | "10min";
 }
 
 export interface MorningReminderNotificationInput extends LocalizedVariantInput {
@@ -61,16 +61,24 @@ export function createTodoReminderNotificationMessage({
 }: TodoReminderNotificationInput): NotificationMessage {
   const templates = LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES;
   const template =
-    stage === "10min"
-      ? templates.TODO_REMINDER_10MIN
-      : stage === "immediate"
-        ? templates.TODO_REMINDER_IMMEDIATE
-        : templates.TODO_REMINDER_60MIN;
+    stage === "10min" ? templates.TODO_REMINDER_10MIN : templates.TODO_REMINDER_60MIN;
 
   return renderLocalizedNotification({
     template,
     variables: { todoTitle: createNotificationLabelPreview({ label: todoTitle, locale }) },
     variantContext,
+  });
+}
+
+export function createTodoSeriesPausedNotificationMessage({
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: LocalizedVariantInput = {}): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.TODO_SERIES_PAUSED,
+    variables: undefined,
+    variantContext,
+    templateKey: "todo_series.paused",
   });
 }
 

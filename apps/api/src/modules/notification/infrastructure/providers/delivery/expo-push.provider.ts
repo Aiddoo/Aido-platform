@@ -4,6 +4,8 @@ import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk
 import { match, P } from "ts-pattern";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 import type {
   PushFailure,
@@ -21,6 +23,7 @@ import {
   NotificationProviderLogEvent,
   pushTransportStatusCode,
 } from "../../observability/delivery/notification-provider-log.events.js";
+import { EXPO_PUSH_POLICY } from "./expo-outbound.policy.js";
 import { buildExpoPushMessage } from "./expo-push-message.js";
 import { PushThroughputLimiter } from "./push-throughput.limiter.js";
 
@@ -58,9 +61,12 @@ export class ExpoPushProvider implements PushProvider {
     messagesPerSecond: EXPO_PUSH_MESSAGES_PER_SECOND,
   });
 
-  constructor(config: TypedConfigService) {
+  readonly #policy: OutboundPolicy;
+
+  constructor(config: TypedConfigService, policies: OutboundPolicyRegistry) {
     const accessToken = config.expoAccessToken;
     this.#expo = new Expo(accessToken ? { accessToken } : undefined);
+    this.#policy = policies.get(EXPO_PUSH_POLICY);
   }
 
   validateToken(token: string): boolean {
@@ -70,7 +76,9 @@ export class ExpoPushProvider implements PushProvider {
   async getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]> {
     const results: PushReceiptResult[] = [];
     for (const receiptBatch of this.#expo.chunkPushNotificationReceiptIds([...ticketIds])) {
-      const receipts = await this.#expo.getPushNotificationReceiptsAsync(receiptBatch);
+      const receipts = await this.#policy.execute(() =>
+        this.#expo.getPushNotificationReceiptsAsync(receiptBatch),
+      );
       for (const ticketId of receiptBatch) {
         const receipt = receipts[ticketId];
         if (receipt == null) {
@@ -154,7 +162,9 @@ export class ExpoPushProvider implements PushProvider {
   ): Promise<ExpoPushTicket[]> {
     await this.#throughput.acquire(batch.length);
     try {
-      return await this.#expo.sendPushNotificationsAsync(batch.map(({ message }) => message));
+      return await this.#policy.execute(() =>
+        this.#expo.sendPushNotificationsAsync(batch.map(({ message }) => message)),
+      );
     } catch (error) {
       const transportError = new RetryablePushProviderTransportError(
         {

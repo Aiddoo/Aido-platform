@@ -1,21 +1,21 @@
-import type { WeatherRescheduleReason } from '@aido/api';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
+import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, IconRadioItem } from '@src/shared/ui';
-import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
+import { SettingsListGroup, Text } from '@src/shared/ui';
 import { Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import type { RescheduleOption } from '../../domains/weather-briefing.model';
-import { WeatherReportPolicy } from '../../domains/weather-report.model';
+import type { RescheduleOption } from '../../domains/weather-reschedule.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
+import { formatTemperature } from '../../utils/weather-temperature';
 
 interface WeatherRescheduleTimeInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,
   'value' | 'onValueChange' | 'children'
 > {
   value: string;
-  onChange: (startsAt: string) => void;
+  onValueChange: (startsAt: string) => void;
   options: RescheduleOption[];
   reason: WeatherRescheduleReason;
   timeFormat: TimeFormat;
@@ -24,17 +24,17 @@ interface WeatherRescheduleTimeInputProps extends Omit<
 /** 옮길 시각 후보. 값은 후보 정시의 ISO 문자열이고 첫 후보가 추천이다. */
 export function WeatherRescheduleTimeInput({
   value,
-  onChange,
+  onValueChange,
   options,
   reason,
   timeFormat,
   ...props
 }: WeatherRescheduleTimeInputProps) {
   return (
-    <RadioGroup value={value} onValueChange={onChange} className="gap-0" {...props}>
+    <RadioGroup value={value} onValueChange={onValueChange} className="gap-0" {...props}>
       {options.map((option) => (
         <RescheduleTimeOption
-          key={option.startsAt.toISOString()}
+          key={option.startsAt}
           option={option}
           reason={reason}
           timeFormat={timeFormat}
@@ -45,7 +45,7 @@ export function WeatherRescheduleTimeInput({
 }
 
 interface RescheduleTimeOptionProps extends Omit<
-  ComponentProps<typeof IconRadioItem>,
+  ComponentProps<typeof SettingsListGroup.Radio>,
   'value' | 'label' | 'description'
 > {
   option: RescheduleOption;
@@ -61,27 +61,25 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
   const description =
     reason === 'heat'
       ? t('reschedule.heat.option', {
-          temperature: WeatherReportPolicy.degrees(
-            WeatherReportPolicy.displayTemperature(option.apparentTemperature, unit),
-          ),
+          temperature: formatTemperature(option.apparentTemperature, unit),
         })
       : t('reschedule.option', { chance: option.precipitationChance });
 
   return (
-    <Box>
-      <IconRadioItem
-        value={option.startsAt.toISOString()}
-        label={time}
-        description={description}
-        {...props}
-      />
-      {option.isRecommended && (
-        <Box className="absolute right-14 top-0 h-full justify-center" pointerEvents="none">
-          <Chip size="sm" color="accent" variant="soft">
-            <Chip.Label>{t('reschedule.recommended')}</Chip.Label>
+    <SettingsListGroup.Radio
+      value={option.startsAt}
+      label={time}
+      description={description}
+      badge={
+        option.isRecommended && (
+          <Chip size="sm" color="accent" variant="soft" pointerEvents="none">
+            <Text size="e1" weight="medium" className="text-accent-soft-foreground">
+              {t('reschedule.recommended')}
+            </Text>
           </Chip>
-        </Box>
-      )}
-    </Box>
+        )
+      }
+      {...props}
+    />
   );
 }

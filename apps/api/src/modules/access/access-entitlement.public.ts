@@ -18,5 +18,9 @@ export {
   type GrantResourceBonusInput,
   type ResourceBonusGranterPort,
 } from "./application/ports/entitlement/resource-bonus-granter.port.js";
-export { Feature, Resource } from "./domain/policies/entitlement/entitlement-limits.policy.js";
+export {
+  calculateRemainingLimit,
+  isExemptFromDormancy,
+  isExemptFromUserSpendLimit,
+} from "./domain/policies/entitlement/entitlement.policy.js";
 export { AccessModule } from "./access.module.js";

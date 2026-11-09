@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode, Ref } from 'react';
 import type { TextInputInstance, TextInputProps } from 'react-native';
 
-export type InputVariant = 'filled' | 'line';
+type InputVariant = 'filled' | 'line';
 export type InputSize = 'medium' | 'large';
 
 export interface InputProps extends Omit<

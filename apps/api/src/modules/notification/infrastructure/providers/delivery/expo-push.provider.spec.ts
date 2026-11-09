@@ -3,6 +3,8 @@ import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { RetryablePushProviderTransportError } from "../../../application/ports/delivery/push-provider.port.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.js";
@@ -56,6 +58,8 @@ beforeEach(async () => {
   const { unit } = await TestBed.solitary(ExpoPushProvider)
     .mock(TypedConfigService)
     .impl(() => ({ expoAccessToken: credential }))
+    .mock(OutboundPolicyRegistry)
+    .final(new OutboundPolicyRegistry(new RecordingOperationalAlert()))
     .compile();
   provider = unit;
 });
@@ -199,6 +203,22 @@ describe("ExpoPushProvider — 설치된 SDK와 차단된 외부 네트워크", 
         acceptedTicketCountBeforeFailure: 100,
       }),
     );
+  });
+
+  it("Expo가 30초 안에 응답하지 않으면 기다리기를 멈추고 미확인 재시도 오류로 넘긴다", async () => {
+    // Given
+    vi.useFakeTimers();
+    nativeFetch.mockImplementationOnce(() => new Promise<Response>(() => {}));
+    const sending = provider.sendBatch([payload()]).catch((cause: unknown) => cause);
+    // When
+    await vi.advanceTimersByTimeAsync(30_000);
+    const failure = await sending;
+    // Then
+    expect(failure).toBeInstanceOf(RetryablePushProviderTransportError);
+    expect(failure).toMatchObject({
+      metadata: { providerName: "expo", unconfirmedPayloadCount: 1 },
+      cause: { name: "OutboundTimeoutError", policy: "expo", timeoutMs: 30_000 },
+    });
   });
 
   it("ticket 수가 맞지 않으면 SDK 오류를 재시도 가능한 transport 오류로 감싼다", async () => {

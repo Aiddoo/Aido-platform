@@ -18,6 +18,9 @@
     "length": "Hashtags are 8 characters long",
     "pattern": "Hashtags can only contain uppercase letters and numbers"
   },
+  "todoTitle": {
+    "tooLong": "Titles must be 200 characters or fewer"
+  },
   "categoryName": {
     "required": "Please enter a category name",
     "tooLong": "Category names must be 50 characters or fewer"
@@ -32,8 +35,5 @@
   "comment": {
     "required": "Please enter a comment",
     "tooLong": "Comments must be 500 characters or fewer"
-  },
-  "reportDetail": {
-    "tooLong": "Details must be 500 characters or fewer"
   }
 }

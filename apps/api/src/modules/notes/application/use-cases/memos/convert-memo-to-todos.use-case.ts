@@ -1,5 +1,6 @@
-import type { DayOfWeek, Todo } from "@aido/api";
+import type { Todo, TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -9,27 +10,22 @@ import {
   type SavepointRunnerPort,
   type AfterCommitTaskRegistryPort,
 } from "#api/shared/application/ports/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
+import type { MemoTodoCreatorPort } from "../../ports/memos/memo-todo-creator.port.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
-import type { StagedTodoCreatorPort } from "../../ports/memos/staged-todo-creator.port.js";
 
 export interface ConvertMemoToSingleTodoData {
   readonly title: string;
   readonly categoryId: number;
   readonly startDate: Date;
   readonly endDate?: Date | null;
-  readonly scheduledTime?: Date | null;
+  readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
-  readonly visibility?: "PUBLIC" | "PRIVATE";
-  readonly isRecurring?: boolean;
-  readonly recurrence?: {
-    daysOfWeek: DayOfWeek[];
-    endDate: Date;
-  };
+  readonly visibility?: TodoVisibility;
+  readonly repeat?: TodoRepeat | null;
+  readonly usesLegacySeriesLimit?: boolean;
   readonly items?: { title: string }[];
 }
 
@@ -46,12 +42,12 @@ export interface ConvertMemoToTodosInput {
   readonly userId: string;
   readonly memoId: number;
   readonly data: ConvertMemoToTodosData;
-  readonly timezone: string;
+  readonly timezone: string | undefined;
 }
 
 interface ConvertMemoToTodosDependencies {
   readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
-  readonly todoCreator: StagedTodoCreatorPort;
+  readonly todoCreator: MemoTodoCreatorPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly savepointRunner: SavepointRunnerPort;
@@ -82,41 +78,24 @@ export class ConvertMemoToTodos {
         throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       }
       const todos: Todo[] = [];
-      for (const todoData of data.todos) {
+      for (const todoDraft of data.todos) {
         try {
-          const staged = await this.#dependencies.savepointRunner.run(() => {
-            if (todoData.isRecurring === true && todoData.recurrence != null) {
-              return this.#dependencies.todoCreator.stageRecurringTodos(
-                {
-                  userId,
-                  title: todoData.title,
-                  categoryId: todoData.categoryId,
-                  startDate: toDateString(todoData.startDate),
-                  endDate: toDateString(todoData.recurrence.endDate),
-                  daysOfWeek: todoData.recurrence.daysOfWeek,
-                  scheduledTime:
-                    todoData.scheduledTime == null
-                      ? null
-                      : toLocalTimeString(todoData.scheduledTime, timezone),
-                  isAllDay: todoData.isAllDay ?? true,
-                  visibility: todoData.visibility ?? "PUBLIC",
-                  items: todoData.items,
-                },
-                timezone,
-              );
-            }
-            return this.#dependencies.todoCreator.stageTodo({
+          const staged = await this.#dependencies.savepointRunner.run(() =>
+            this.#dependencies.todoCreator.stage({
               userId,
-              title: todoData.title,
-              categoryId: todoData.categoryId,
-              startDate: todoData.startDate,
-              endDate: todoData.endDate,
-              scheduledTime: todoData.scheduledTime,
-              isAllDay: todoData.isAllDay ?? true,
-              visibility: todoData.visibility ?? "PUBLIC",
-              items: todoData.items,
-            });
-          });
+              title: todoDraft.title,
+              categoryId: todoDraft.categoryId,
+              startDate: todoDraft.startDate,
+              endDate: todoDraft.endDate,
+              scheduledTime: todoDraft.scheduledTime,
+              timezone,
+              isAllDay: todoDraft.isAllDay ?? true,
+              visibility: todoDraft.visibility ?? "PUBLIC",
+              items: todoDraft.items,
+              repeat: todoDraft.repeat,
+              usesLegacySeriesLimit: todoDraft.usesLegacySeriesLimit,
+            }),
+          );
           this.#dependencies.afterCommit.register(staged.afterCommit);
           todos.push(...staged.todos);
         } catch (error) {

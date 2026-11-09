@@ -1,3 +1,4 @@
+import { range } from 'es-toolkit';
 import { type ReactNode, useCallback, useState } from 'react';
 import { type ColorValue, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -13,17 +14,22 @@ export interface ScallopedContainerProps {
 
 export function ScallopedContainer({ children }: ScallopedContainerProps) {
   const [width, setWidth] = useState(0);
-  const { backgroundColor: fill } = useResolveClassNames('bg-white');
+  const { backgroundColor: fill } = useResolveClassNames('bg-gray-1');
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
-    setWidth(e.nativeEvent.layout.width);
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    setWidth(event.nativeEvent.layout.width);
   }, []);
 
   return (
     <Box onLayout={onLayout}>
-      {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}
+      {/* 폭을 재기 전에도 물결 자리를 잡아 첫 프레임 뒤에 내용이 밀리지 않게 한다 */}
+      <Box style={{ height: SCALLOP_RADIUS }}>
+        {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}
+      </Box>
       <Box style={{ backgroundColor: fill }}>{children}</Box>
-      {width > 0 && <ScallopEdge width={width} position="bottom" fill={fill} />}
+      <Box style={{ height: SCALLOP_RADIUS }}>
+        {width > 0 && <ScallopEdge width={width} position="bottom" fill={fill} />}
+      </Box>
     </Box>
   );
 }
@@ -37,32 +43,26 @@ function ScallopEdge({
   position: 'top' | 'bottom';
   fill: ColorValue | undefined;
 }) {
-  const r = SCALLOP_RADIUS;
-  const count = Math.floor(width / (r * 2));
-  const actualWidth = count * r * 2;
+  const radius = SCALLOP_RADIUS;
+  const count = Math.floor(width / (radius * 2));
+  const actualWidth = count * radius * 2;
   const offset = (width - actualWidth) / 2;
 
-  let d: string;
-
-  if (position === 'top') {
-    d = `M 0,${r} L 0,0 L ${offset},0`;
-    for (let i = 0; i < count; i++) {
-      const x = offset + (i + 1) * r * 2;
-      d += ` A ${r},${r} 0 0,0 ${x},0`;
-    }
-    d += ` L ${width},0 L ${width},${r} Z`;
-  } else {
-    d = `M 0,0 L 0,${r} L ${offset},${r}`;
-    for (let i = 0; i < count; i++) {
-      const x = offset + (i + 1) * r * 2;
-      d += ` A ${r},${r} 0 0,1 ${x},${r}`;
-    }
-    d += ` L ${width},${r} L ${width},0 Z`;
-  }
+  const { innerY, outerY, sweepFlag } =
+    position === 'top'
+      ? { innerY: radius, outerY: 0, sweepFlag: 0 }
+      : { innerY: 0, outerY: radius, sweepFlag: 1 };
+  const arcs = range(count)
+    .map((index) => {
+      const x = offset + (index + 1) * radius * 2;
+      return ` A ${radius},${radius} 0 0,${sweepFlag} ${x},${outerY}`;
+    })
+    .join('');
+  const pathData = `M 0,${innerY} L 0,${outerY} L ${offset},${outerY}${arcs} L ${width},${outerY} L ${width},${innerY} Z`;
 
   return (
-    <Svg width={width} height={r} viewBox={`0 0 ${width} ${r}`}>
-      <Path d={d} fill={fill} />
+    <Svg width={width} height={radius} viewBox={`0 0 ${width} ${radius}`}>
+      <Path d={pathData} fill={fill} />
     </Svg>
   );
 }

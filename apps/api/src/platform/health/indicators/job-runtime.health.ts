@@ -2,14 +2,17 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 import { withTimeout } from "es-toolkit";
 
+import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-jobs.public";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/billing-subscriptions-jobs.public";
 import {
   NOTIFICATION_DEAD_LETTER_QUEUE,
   NOTIFICATION_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
 } from "#api/modules/notification/notification-delivery-jobs.public";
+import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/notification-email-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { RETENTION_QUEUE } from "#api/modules/notification/notification-retention-jobs.public";
 import {
@@ -17,6 +20,8 @@ import {
   BROADCAST_FAN_OUT_QUEUE,
 } from "#api/modules/operations/operations-admin-jobs.public";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/operations-notifications-jobs.public";
+import { TODO_SERIES_MATERIALIZATION_QUEUE } from "#api/modules/planning/planning-todo-series-jobs.public";
+import { TODO_TIMEZONE_REBASE_QUEUE } from "#api/modules/planning/planning-todo-timezone-jobs.public";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
@@ -24,6 +29,7 @@ const MONITORED_QUEUES = [
   AI_SUGGESTION_QUEUE,
   AI_REPORT_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
+  EMAIL_DELIVERY_QUEUE,
   TODO_REMINDER_QUEUE,
   NOTIFICATION_QUEUE,
   NOTIFICATION_DEAD_LETTER_QUEUE,
@@ -32,6 +38,10 @@ const MONITORED_QUEUES = [
   RETENTION_QUEUE,
   BROADCAST_FAN_OUT_QUEUE,
   BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
+  TODO_SERIES_MATERIALIZATION_QUEUE,
+  TODO_TIMEZONE_REBASE_QUEUE,
+  QUOTA_ABANDONED_REFUND_QUEUE,
+  STORE_SUBSCRIPTION_RECONCILE_QUEUE,
 ] as const;
 
 /**

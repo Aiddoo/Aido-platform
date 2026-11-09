@@ -1,22 +1,8 @@
-import type { WeatherRescheduleReason } from '@aido/api';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback } from 'react';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 
-import {
-  rescheduleReasonParamSchema,
-  rescheduleTodoIdsParamSchema,
-  toRescheduleTodoIdsParam,
-} from '../utils/navigation/weather-reschedule-href';
+import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
 
-export function useRescheduleReasonParam(): readonly [WeatherRescheduleReason] {
-  return [rescheduleReasonParamSchema.parse(useLocalSearchParams()).reason] as const;
-}
-
-export function useRescheduleTodoIdsParam() {
-  const { todoIds } = rescheduleTodoIdsParamSchema.parse(useLocalSearchParams());
-  const setTodoIds = useCallback(
-    (next: readonly number[]) => router.setParams({ todoIds: toRescheduleTodoIdsParam(next) }),
-    [],
-  );
-  return [todoIds, setTodoIds] as const;
+/** 옮기기 시트 URL의 할 일 id 목록과 이유를 `[values, setValues]`로 읽고, 시트 안에서 고른 목록을 URL에 되돌려 쓴다. */
+export function useWeatherRescheduleParams() {
+  return useRouteParams(weatherRescheduleParamsSchema);
 }

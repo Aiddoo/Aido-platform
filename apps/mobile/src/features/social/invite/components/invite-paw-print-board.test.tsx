@@ -1,0 +1,92 @@
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
+import '@src/shared/i18n/init';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import {
+  createHapticsGatewayStub,
+  createMemorySyncStorage,
+  createTestQueryClient,
+  renderUi,
+} from '@src/shared/__tests__';
+import { screen } from '@testing-library/react-native';
+import { Suspense } from 'react';
+
+import { createInvite } from '../__tests__/invite.fixtures';
+import { createPawPrintCelebrationRepository } from '../apis/paw-print-celebration.repository';
+import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
+import { InvitePawPrintBoard } from './invite-paw-print-board';
+
+const USER_ID = 'user-1';
+
+async function renderBoard({
+  qualifiedCount,
+  celebratedCount,
+}: {
+  qualifiedCount: number;
+  celebratedCount: number;
+}) {
+  const pawPrintCelebrationRepository =
+    createPawPrintCelebrationRepository(createMemorySyncStorage());
+  pawPrintCelebrationRepository.saveCelebratedCount(USER_ID, celebratedCount);
+  const haptics = createHapticsGatewayStub();
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: USER_ID }));
+  queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite({ qualifiedCount }));
+
+  await renderUi(
+    <Suspense fallback={null}>
+      <InvitePawPrintBoard />
+    </Suspense>,
+    {
+      queryClient,
+      withLocalDate: true,
+      di: {
+        pawPrintCelebrationRepository,
+        haptics,
+      },
+    },
+  );
+  await screen.findAllByRole('image');
+
+  return { pawPrintCelebrationRepository, haptics };
+}
+
+describe('InvitePawPrintBoard 새 발자국 축하', () => {
+  it('새 발자국이 있으면 진동을 한 번 주고 본 수를 저장한다', async () => {
+    // When
+    const { pawPrintCelebrationRepository, haptics } = await renderBoard({
+      qualifiedCount: 3,
+      celebratedCount: 1,
+    });
+
+    // Then
+    expect(haptics.notify).toHaveBeenCalledTimes(1);
+    expect(haptics.notify).toHaveBeenCalledWith('success');
+    expect(pawPrintCelebrationRepository.getCelebratedCount(USER_ID)).toBe(3);
+  });
+
+  it('이미 본 수와 같으면 진동 없이 그대로 둔다', async () => {
+    // When
+    const { pawPrintCelebrationRepository, haptics } = await renderBoard({
+      qualifiedCount: 2,
+      celebratedCount: 2,
+    });
+
+    // Then
+    expect(haptics.notify).not.toHaveBeenCalled();
+    expect(pawPrintCelebrationRepository.getCelebratedCount(USER_ID)).toBe(2);
+  });
+
+  it('발자국이 줄었으면 진동 없이 본 수만 맞춘다', async () => {
+    // When
+    const { pawPrintCelebrationRepository, haptics } = await renderBoard({
+      qualifiedCount: 1,
+      celebratedCount: 3,
+    });
+
+    // Then
+    expect(haptics.notify).not.toHaveBeenCalled();
+    expect(pawPrintCelebrationRepository.getCelebratedCount(USER_ID)).toBe(1);
+  });
+});

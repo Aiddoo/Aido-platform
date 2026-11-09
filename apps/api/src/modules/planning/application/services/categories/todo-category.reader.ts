@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import type { TodoCategoryCountReaderPort } from "../../ports/categories/todo-category-count-reader.port.js";
 import type { TodoCategoryReaderPort } from "../../ports/categories/todo-category-reader.port.js";
 import {
   type TodoCategoryRepositoryPort,
@@ -9,10 +10,13 @@ import {
 } from "../../ports/categories/todo-category.repository.port.js";
 
 interface TodoCategoryReaderDependencies {
-  readonly repository: Pick<TodoCategoryRepositoryPort, "findManyByUserId" | "findByIdAndUserId">;
+  readonly repository: Pick<
+    TodoCategoryRepositoryPort,
+    "findManyByUserId" | "findByIdAndUserId" | "countByUserId"
+  >;
 }
 
-export class TodoCategoryReader implements TodoCategoryReaderPort {
+export class TodoCategoryReader implements TodoCategoryReaderPort, TodoCategoryCountReaderPort {
   readonly #dependencies: TodoCategoryReaderDependencies;
 
   constructor(dependencies: TodoCategoryReaderDependencies) {
@@ -21,6 +25,10 @@ export class TodoCategoryReader implements TodoCategoryReaderPort {
 
   listForUser(userId: string): Promise<TodoCategoryWithCountView[]> {
     return this.#dependencies.repository.findManyByUserId(userId);
+  }
+
+  countCategories(userId: string): Promise<number> {
+    return this.#dependencies.repository.countByUserId(userId);
   }
 
   async validateOwnership(id: number, userId: string): Promise<void> {

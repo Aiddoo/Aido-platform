@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule as NestConfigModule } from "@nestjs/config";
 
+import { processEnv } from "./env.js";
 import { validateEnv } from "./schemas/index.js";
 import { TypedConfigService } from "./services/config.service.js";
 
@@ -37,7 +38,7 @@ export class AppConfigModule {}
  * - development → .env.development
  */
 function getEnvFilePath(): string {
-  const env = process.env.NODE_ENV || "development";
+  const env = processEnv.NODE_ENV ?? "development";
   if (env === "production") {
     return ".env";
   }

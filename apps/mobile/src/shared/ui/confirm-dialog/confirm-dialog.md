@@ -11,7 +11,7 @@
 ### 취소 + 확인 (기본)
 
 ```tsx
-import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
+import { ConfirmDialog } from '@src/shared/ui';
 
 <ConfirmDialog
   isOpen={isOpen}
@@ -85,17 +85,18 @@ interface PushPermissionDialogProps extends Omit<
 
 ## 파일 구조
 
-| 파일                     | 역할                    |
-| ------------------------ | ----------------------- |
-| `ConfirmDialog.tsx`      | 컴포넌트 + 서브컴포넌트 |
-| `ConfirmDialog.types.ts` | Props 인터페이스        |
-| `index.ts`               | Barrel export           |
-| `ConfirmDialog.md`       | 이 문서                 |
+| 파일                      | 역할                       |
+| ------------------------- | -------------------------- |
+| `confirm-dialog.tsx`      | 컴포넌트 + 서브컴포넌트    |
+| `confirm-dialog.types.ts` | Props 인터페이스           |
+| `use-confirm-dialog.tsx`  | Overlay로 띄우고 결과 받기 |
+| `index.ts`                | Barrel export              |
+| `confirm-dialog.md`       | 이 문서                    |
 
 ## useConfirmDialog — Overlay로 띄우고 결과 받기
 
 화면 상태 없이 확인 여부만 필요하면 `useConfirmDialog`를 쓴다. 닫기·취소는 `false`,
-확인은 `true`로 resolve된다. `close`·`exit` 호출을 사용처에서 반복하지 않는다.
+확인은 `true`로 resolve된다. `close`·`unmount` 호출을 사용처에서 반복하지 않는다.
 
 ```tsx
 import { useConfirmDialog } from '@src/shared/ui';
@@ -103,7 +104,7 @@ import { useConfirmDialog } from '@src/shared/ui';
 const confirmDialog = useConfirmDialog();
 
 const handleLogoutPress = async () => {
-  const isConfirmed = await confirmDialog.open({
+  const isConfirmed = await confirmDialog.openAsync({
     title: t('logout.confirmTitle'),
     description: t('logout.confirmDescription'),
     cancelLabel: t('common:actions.cancel'),
@@ -116,4 +117,4 @@ const handleLogoutPress = async () => {
 ```
 
 다이얼로그 안에서 진행 상태를 보여 줘야 하면 Overlay 스냅샷 규칙에 따라 내용 컴포넌트가
-자기 상태를 갖도록 직접 `overlay.open`을 쓴다.
+자기 상태를 갖도록 직접 `overlay.openAsync`를 쓴다.

@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a169f555-f856-4425-8cb0-88b3411eb5a1",
+  "prevIds": [
+    "53824a13-4ef8-4c11-a484-14aaf5128d0d"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Todo",
+        "scheduledLocalTime"
+      ],
+      "writes": [
+        "s|col|public.Todo.scheduledLocalTime",
+        "n|col|public.Todo.scheduledLocalTime",
+        "e|col|public.Todo.scheduledLocalTime"
+      ],
+      "reads": [
+        "n|tbl|public.Todo",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Todo",
+        "name": "scheduledLocalTime",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

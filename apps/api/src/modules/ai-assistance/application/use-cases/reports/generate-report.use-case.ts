@@ -2,11 +2,6 @@ import type { AiReport as AiReportDto } from "@aido/api";
 import dayjs from "dayjs";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  type AiProvider,
-  canRunScheduledAi,
-  type ScheduledAiConsentReaders,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -22,30 +17,32 @@ import type {
   ReportType,
 } from "../../../domain/types/reports/ai-report.types.js";
 import {
-  generationCompletedLog,
-  generationFailedLog,
-  providerFailure,
-} from "../../observability/parsing/ai-generation-log.events.js";
+  buildGenerationCompletedLog,
+  buildGenerationFailedLog,
+  toGenerationFailure,
+} from "../../observability/generation/ai-generation-log.events.js";
 import { AiReportLogEvent } from "../../observability/reports/ai-report-log.events.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
+import {
+  AiGenerationError,
+  isTransientAiFailure,
+  isWithheldAiFailure,
+} from "../../ports/generation/ai-generation.errors.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../../ports/reports/todo-stats.reader.port.js";
-import { reportPrompts, type ReportPromptInput } from "../../prompts/reports/report/index.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { reportPrompt, type ReportPromptInput } from "../../prompts/reports/report/index.js";
 import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
+import {
+  findScheduledAiConsent,
+  type ScheduledAiConsentReaders,
+} from "../../services/parsing/scheduled-ai-consent.js";
 import {
   buildNoAiConsentContent,
   buildFallbackContent,
   buildNoActivityContent,
 } from "../../services/reports/report-fallback.js";
-
-/** 잡 재시도로 회복될 수 있는 공급자 오류 */
-const TRANSIENT_PROVIDER_ERRORS: ReadonlySet<string> = new Set([
-  "RATE_LIMITED",
-  "UPSTREAM",
-  "TIMEOUT",
-]);
 
 interface ReportWindow {
   year: number;
@@ -68,14 +65,13 @@ interface ReportWindow {
 interface GenerateReportDependencies {
   readonly aiReportRepository: Pick<AiReportRepositoryPort, "exists" | "findLatest" | "create">;
   readonly todoStatsReader: Pick<TodoStatsReaderPort, "fetchAggregationInputs">;
-  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
   readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
   readonly logger: Pick<ApplicationLogger, "log" | "debug" | "warn" | "error">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly settings: AiTaskSettings;
 }
 
 export class GenerateReport {
@@ -202,15 +198,15 @@ export class GenerateReport {
     ]);
 
     // 다른 언어로 쓰인 지난 팁은 반복 판단 근거가 되지 못하고 언어를 섞게 한다.
-    const prevTips =
+    const previousTips =
       prevReport == null || prevReport.snapshot.locale !== locale ? null : prevReport.aiTips;
 
     const content = await this.#generateContent(
       {
-        data: aggregatedData,
+        reportData: aggregatedData,
         type,
         periodLabel,
-        prevTips,
+        previousTips,
         period: { start: window.periodStart, end: window.periodEnd },
       },
       { userId, locale, isFinalAttempt },
@@ -282,7 +278,7 @@ export class GenerateReport {
 
   /**
    * 요약·팁 생성. 활동이 없으면 LLM 없이 템플릿을 쓴다.
-   * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AI_PROVIDER 직접 사용).
+   * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AI_GENERATOR 직접 사용).
    * AI 일시 오류는 마지막 시도 전까지 다시 던지고, 그 밖의 실패만 폴백으로 저장한다.
    */
   async #generateContent(
@@ -290,49 +286,47 @@ export class GenerateReport {
     options: { userId: string; locale: SupportedLocale; isFinalAttempt: boolean },
   ): Promise<ReportContent> {
     const { userId, locale, isFinalAttempt } = options;
-    if (!input.data.hasActivity) {
+    if (!input.reportData.hasActivity) {
       return buildNoActivityContent(input, locale);
     }
 
-    if (!(await canRunScheduledAi(this.#dependencies, userId))) {
+    const consent = await findScheduledAiConsent(this.#dependencies, userId);
+    if (!consent.allowed) {
       this.#dependencies.logger.debug({ event: AiReportLogEvent.AI_SKIPPED_NO_CONSENT, userId });
       return buildNoAiConsentContent(input, locale);
     }
 
-    if (!this.#dependencies.aiProvider.isAvailable("report")) {
-      this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
-      return buildFallbackContent(input, locale);
-    }
-
-    const definition = reportPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = reportPrompt;
     const logBase = {
-      task: "report",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
       quotaCharged: false,
     } as const;
     const startedAt = Date.now();
     try {
-      const { system, prompt } = definition.build(input);
-      const { value, meta } = await definition.output.generate(
-        this.#dependencies.aiProvider,
-        {
-          task: "report",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          policy: resolveGenerationPolicy("report", this.#dependencies.settings),
-        },
-        input,
+      const { value, meta } = await generateWithPrompt(
+        this.#dependencies.generator,
+        definition,
+        definition.build(input, locale),
+        { input, locale },
+        { agreedConsentVersion: consent.agreedVersion, userId },
       );
       this.#dependencies.logger.log(
-        generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
+        buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
       );
-      return { ...value, contentSource: "AI", promptVersion: definition.promptVersion };
+      return { ...value, contentSource: "AI", promptVersion: definition.version };
     } catch (error) {
-      const failure = providerFailure(error);
-      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(failure.errorType);
-      const failedLog = generationFailedLog({
+      if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
+        this.#dependencies.logger.warn({
+          event: AiReportLogEvent.PROVIDER_UNAVAILABLE,
+          errorType: error.kind,
+        });
+        return buildFallbackContent(input, locale);
+      }
+      const failure = toGenerationFailure(error);
+      const retrying = !isFinalAttempt && isTransientAiFailure(failure.errorType);
+      const failedLog = buildGenerationFailedLog({
         ...logBase,
         ...failure,
         outcome: retrying ? "RETRYING" : "FALLBACK",

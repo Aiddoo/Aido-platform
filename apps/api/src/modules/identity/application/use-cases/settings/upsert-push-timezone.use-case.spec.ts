@@ -26,11 +26,23 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
       );
       expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
       expect(fixture.reminderEnqueuer.jobs).toEqual([]);
+      expect(fixture.todoTimezoneRebase.enqueued).toEqual([fixture.userId]);
       if (existing) {
         expect(fixture.preferenceRepository.records.get(fixture.userId)?.currentStreak).toBe(7);
       }
     },
   );
+  it("같은 시간대를 다시 보고하면 재계산 작업을 등록하지 않는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ preference: { timezone: "Asia/Seoul" } });
+    // When
+    await new UpsertPushTimezone(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+    });
+    // Then
+    expect(fixture.todoTimezoneRebase.enqueued).toEqual([]);
+  });
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
     // Given: 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();

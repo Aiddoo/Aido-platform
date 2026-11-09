@@ -1,10 +1,10 @@
-import { AddSubTodoBottomSheet } from '@src/features/todo/components/add-sub-todo-bottom-sheet';
-import { todoScreenParamsSchema } from '@src/features/todo/hooks/use-todo-screen-params';
+import { AddSubTodoBottomSheet } from '@src/features/planning/composer/components/add-sub-todo-bottom-sheet';
+import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { SheetRouteScreen } from '@src/shared/ui';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function SubTodoCreateSheetRoute() {
-  const params = todoScreenParamsSchema.safeParse(useLocalSearchParams());
+  const params = todoParamsSchema.safeParse(useLocalSearchParams());
 
   if (!params.success) {
     return <Redirect href="/feed" />;
@@ -12,7 +12,7 @@ export default function SubTodoCreateSheetRoute() {
 
   return (
     <SheetRouteScreen>
-      <AddSubTodoBottomSheet mode="create" />
+      <AddSubTodoBottomSheet />
     </SheetRouteScreen>
   );
 }

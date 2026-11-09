@@ -1,28 +1,13 @@
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
-import { useEffect } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { SUN_COLORS } from '../constants/weather-colors';
-import { useOnSkyColor } from '../hooks/use-on-sky-color';
-import { useWeatherSceneClock } from '../hooks/use-weather-scene-clock';
-import { SUN_ARC_VIEWBOX } from '../utils/view-models/sun-arc.view-model';
-import type { DialPoint } from '../utils/view-models/weather-dial.view-model';
+import { SUN_COLORS } from '../constants/weather-colors.constants';
+import { useIsWeatherSceneRunning } from '../hooks/use-is-weather-scene-running';
+import { SUN_ARC_HORIZON_Y, SUN_ARC_PATHS, SUN_ARC_VIEWBOX } from '../utils/sun-arc.geometry';
+import type { DialPoint } from '../utils/weather-dial.geometry';
 
-/** 시안의 해 궤적 path. 낮 구간은 밝게, 밤 구간은 흐리게 긋는다. */
-const SUN_ARC_PATHS = {
-  dayFill: 'M58 70 C100 70 130 14 163 14 C196 14 226 70 268 70z',
-  nightBefore: 'M0 84 C30 84 40 92 58 70',
-  day: 'M58 70 C100 70 130 14 163 14 C196 14 226 70 268 70',
-  nightAfter: 'M268 70 C286 92 296 84 326 84',
-} as const;
 const SUN_DOT_SIZE = 14;
 const NIGHT_SUN_DOT_SIZE = 10;
 const SUN_DOT_RING = 2;
@@ -30,6 +15,18 @@ const NIGHT_SUN_OPACITY = 0.45;
 const PULSE_DURATION_MS = 2600;
 const PULSE_MAX_SCALE = 2.6;
 const PULSE_START_OPACITY = 0.7;
+
+const SUN_PULSE = css.keyframes({
+  from: { opacity: PULSE_START_OPACITY, transform: [{ scale: 1 }] },
+  to: { opacity: 0, transform: [{ scale: PULSE_MAX_SCALE }] },
+});
+
+const SUN_PULSE_STYLE = {
+  animationName: SUN_PULSE,
+  animationDuration: PULSE_DURATION_MS,
+  animationTimingFunction: 'ease-out',
+  animationIterationCount: 'infinite',
+} as const;
 
 /** viewBox를 부모 폭에 맞춰 늘리고, 해 점은 늘어나도 둥글도록 퍼센트 자리에 따로 올린다. */
 export function WeatherSunArc({
@@ -41,12 +38,12 @@ export function WeatherSunArc({
   isNight: boolean;
 }) {
   const dotSize = isNight ? NIGHT_SUN_DOT_SIZE : SUN_DOT_SIZE;
-  const dayColor = useOnSkyColor('text-on-sky/85');
-  const nightColor = useOnSkyColor('text-on-sky/28');
-  const horizonColor = useOnSkyColor('text-on-sky/35');
+  const dayColor = useResolvedColor('text-on-sky/85');
+  const nightColor = useResolvedColor('text-on-sky/28');
+  const horizonColor = useResolvedColor('text-on-sky/35');
 
   return (
-    <Box className="relative mt-2" style={{ height: SUN_ARC_VIEWBOX.height }}>
+    <Box className="relative" style={{ height: SUN_ARC_VIEWBOX.height }}>
       <Svg
         width="100%"
         height={SUN_ARC_VIEWBOX.height}
@@ -88,8 +85,8 @@ export function WeatherSunArc({
         <Line
           x1={0}
           x2={SUN_ARC_VIEWBOX.width}
-          y1={70}
-          y2={70}
+          y1={SUN_ARC_HORIZON_Y}
+          y2={SUN_ARC_HORIZON_Y}
           stroke={horizonColor}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
@@ -121,32 +118,13 @@ export function WeatherSunArc({
 
 /** 시안 wxPulse: 해 점에서 퍼지는 빛. 동작 줄이기·화면 밖·앱 비활성에서는 멈춘다. */
 function SunPulse() {
-  const isRunning = useWeatherSceneClock();
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    if (!isRunning) {
-      cancelAnimation(progress);
-      progress.value = 0;
-      return;
-    }
-    progress.value = withRepeat(
-      withTiming(1, { duration: PULSE_DURATION_MS, easing: Easing.out(Easing.ease) }),
-      -1,
-    );
-    return () => cancelAnimation(progress);
-  }, [isRunning, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: isRunning ? PULSE_START_OPACITY * (1 - progress.value) : 0,
-    transform: [{ scale: 1 + (PULSE_MAX_SCALE - 1) * progress.value }],
-  }));
+  const isAnimating = useIsWeatherSceneRunning();
 
   return (
     <Animated.View
       pointerEvents="none"
       className="absolute inset-0 rounded-full"
-      style={[{ backgroundColor: SUN_COLORS.glow }, animatedStyle]}
+      style={[{ backgroundColor: SUN_COLORS.glow }, isAnimating ? SUN_PULSE_STYLE : { opacity: 0 }]}
     />
   );
 }
