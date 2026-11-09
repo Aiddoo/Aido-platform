@@ -10,6 +10,7 @@ import { WeatherBriefing } from '@src/features/weather/components/weather-briefi
 import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
+import { WeatherReportGate } from '@src/features/weather/components/weather-report-gate';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon';
 import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
@@ -43,7 +44,7 @@ const CARD_GAP = 12;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_STYLE = { maxWidth: 560 };
 
-/** 위치 확인 중에도 서버 저장 위치로 리포트를 바로 받는다. 모든 카드가 한 요청을 공유해 오류는 경계 하나에서 한 번만 보이고 로딩은 카드마다 따로 풀린다. 넓은 창은 두 단으로 나눠 각각 스크롤한다 */
+/** 위치 확인 중에도 서버 저장 위치로 리포트를 바로 받는다. 모든 카드가 한 요청을 공유해 오류는 경계 하나에서 한 번만 보이고(위치 미등록은 경계 대신 WeatherReportGate가 안내한다) 로딩은 카드마다 따로 풀린다. 넓은 창은 두 단으로 나눠 각각 스크롤한다 */
 export default function WeatherScreen() {
   const location = useWeatherLocation();
   useWeatherScreenTracking(location.status);
@@ -61,53 +62,55 @@ export default function WeatherScreen() {
         ))
         .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
           <QueryErrorBoundary fallback={WeatherScreen.Error} resetKeys={[locationRevision]}>
-            <AdaptivePane
-              primary={
-                <WeatherScrollView>
-                  <ReadableContent style={COLUMN_STYLE}>
-                    <Box px={SCREEN_GUTTER}>
-                      <WeatherLocationPrompt.SavedLocationNotice />
-                    </Box>
-                    <Box pt={HERO_TOP} px={HERO_GUTTER}>
-                      <Suspense fallback={<WeatherHero.Loading />}>
-                        <WeatherHero />
-                      </Suspense>
-                    </Box>
-                    <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
-                      {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
-                      <Suspense fallback={null}>
-                        <WeatherAlerts />
-                      </Suspense>
-                      <QueryErrorBoundary fallback={WeatherBriefing.Error}>
-                        <Suspense fallback={<WeatherBriefing.Loading />}>
-                          <WeatherBriefing />
-                        </Suspense>
-                      </QueryErrorBoundary>
-                      {/* 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
-                      <Suspense fallback={null}>
-                        <NextHourPrecipitation />
-                      </Suspense>
-                      <Suspense fallback={<HourlyForecast.Loading />}>
-                        <HourlyForecast />
-                      </Suspense>
-                    </VStack>
-                    {isCompact && (
-                      <>
-                        <Spacing size={CARD_GAP} />
-                        <ForecastCards />
-                      </>
-                    )}
-                  </ReadableContent>
-                </WeatherScrollView>
-              }
-              secondary={
-                <WeatherScrollView>
-                  <ReadableContent style={COLUMN_STYLE}>
-                    <ForecastCards />
-                  </ReadableContent>
-                </WeatherScrollView>
-              }
-            />
+            <WeatherReportGate fallback={WeatherScreen.Error}>
+              <AdaptivePane
+                primary={
+                  <WeatherScrollView>
+                    <ReadableContent style={COLUMN_STYLE}>
+                      <Box px={SCREEN_GUTTER}>
+                        <WeatherLocationPrompt.SavedLocationNotice />
+                      </Box>
+                      <Box pt={HERO_TOP} px={HERO_GUTTER}>
+                        <WeatherReportGate.Suspense fallback={<WeatherHero.Loading />}>
+                          <WeatherHero />
+                        </WeatherReportGate.Suspense>
+                      </Box>
+                      <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
+                        {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                        <WeatherReportGate.Suspense fallback={null}>
+                          <WeatherAlerts />
+                        </WeatherReportGate.Suspense>
+                        <QueryErrorBoundary fallback={WeatherBriefing.Error}>
+                          <Suspense fallback={<WeatherBriefing.Loading />}>
+                            <WeatherBriefing />
+                          </Suspense>
+                        </QueryErrorBoundary>
+                        {/* 분 단위 예보가 없는 지역이 많아 카드 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
+                        <WeatherReportGate.Suspense fallback={null}>
+                          <NextHourPrecipitation />
+                        </WeatherReportGate.Suspense>
+                        <WeatherReportGate.Suspense fallback={<HourlyForecast.Loading />}>
+                          <HourlyForecast />
+                        </WeatherReportGate.Suspense>
+                      </VStack>
+                      {isCompact && (
+                        <>
+                          <Spacing size={CARD_GAP} />
+                          <ForecastCards />
+                        </>
+                      )}
+                    </ReadableContent>
+                  </WeatherScrollView>
+                }
+                secondary={
+                  <WeatherScrollView>
+                    <ReadableContent style={COLUMN_STYLE}>
+                      <ForecastCards />
+                    </ReadableContent>
+                  </WeatherScrollView>
+                }
+              />
+            </WeatherReportGate>
           </QueryErrorBoundary>
         ))
         .exhaustive()}
@@ -119,21 +122,21 @@ export default function WeatherScreen() {
 function ForecastCards() {
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
-      <Suspense fallback={<DailyForecast.Loading />}>
+      <WeatherReportGate.Suspense fallback={<DailyForecast.Loading />}>
         <DailyForecast />
-      </Suspense>
-      <Suspense fallback={<WeatherDetailGrid.Loading />}>
+      </WeatherReportGate.Suspense>
+      <WeatherReportGate.Suspense fallback={<WeatherDetailGrid.Loading />}>
         <WeatherDetailGrid />
-      </Suspense>
-      <Suspense fallback={<WeatherSunMoon.Loading />}>
+      </WeatherReportGate.Suspense>
+      <WeatherReportGate.Suspense fallback={<WeatherSunMoon.Loading />}>
         <WeatherSunMoon />
-      </Suspense>
-      <Suspense fallback={<WeatherAirQuality.Loading />}>
+      </WeatherReportGate.Suspense>
+      <WeatherReportGate.Suspense fallback={<WeatherAirQuality.Loading />}>
         <WeatherAirQuality />
-      </Suspense>
-      <Suspense fallback={<WeatherAttribution.Loading />}>
+      </WeatherReportGate.Suspense>
+      <WeatherReportGate.Suspense fallback={<WeatherAttribution.Loading />}>
         <WeatherAttribution background="dark" />
-      </Suspense>
+      </WeatherReportGate.Suspense>
     </VStack>
   );
 }
