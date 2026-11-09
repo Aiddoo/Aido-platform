@@ -3,7 +3,8 @@ import type { ComponentProps } from 'react';
 
 import {
   type MyPageMenuPathname,
-  useMyPageMenuNavigation,
+  useIsMyPageMenuItemSelected,
+  useMyPageMenuNavigate,
 } from '../hooks/use-my-page-menu-navigation';
 
 type MyPageMenuItemProps = Omit<
@@ -15,13 +16,14 @@ type MyPageMenuItemProps = Omit<
 };
 
 export function MyPageMenuItem({ pathname, Icon, ...props }: MyPageMenuItemProps) {
-  const { navigate, isSelected } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
+  const isSelected = useIsMyPageMenuItemSelected(pathname);
 
   return (
     <SettingsListGroup.Item
       {...props}
       icon={<SettingsListGroup.Icon Icon={Icon} />}
-      isSelected={isSelected(pathname)}
+      isSelected={isSelected}
       onPress={() => navigate(pathname)}
     />
   );

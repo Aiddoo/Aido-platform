@@ -1,4 +1,4 @@
-import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
+import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { formatDateLabel } from '@src/shared/date/date-format';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -28,7 +28,7 @@ const SUBSCRIPTION_PATHNAME = '/settings/subscription';
 export function PlanSummary() {
   const { t } = useTranslation('subscription');
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { navigate } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
 
   return match(EntitlementPolicy.hasFullAccess(entitlements))
     .with(false, () => (
@@ -51,7 +51,7 @@ export function PlanSummary() {
 
 PlanSummary.Premium = function Premium() {
   const { t } = useTranslation('subscription');
-  const { navigate } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
   const dateFormatContext = useDateFormatContext();
   const { headline, dateLabel, period, note } = toPlanSummary(useSubscriptionReceipt());
   const formatDate = (date: Instant) => formatDateLabel(date, dateLabel, dateFormatContext);

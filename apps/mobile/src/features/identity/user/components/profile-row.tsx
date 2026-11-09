@@ -20,7 +20,10 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 
 import { USER_LOG_EVENT } from '../constants/user-log-events';
-import { useMyPageMenuNavigation } from '../hooks/use-my-page-menu-navigation';
+import {
+  useIsMyPageMenuItemSelected,
+  useMyPageMenuNavigate,
+} from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
@@ -32,7 +35,8 @@ interface ProfileRowProps {
 
 export function ProfileRow({ tierChip }: ProfileRowProps) {
   const fontScaledSize = useFontScaledSize();
-  const { navigate, isSelected } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
+  const isSelected = useIsMyPageMenuItemSelected('/settings/profile');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { t } = useTranslation('user');
@@ -53,7 +57,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
     <PressableFeedback
       accessibilityRole="button"
       onPress={() => navigate('/settings/profile')}
-      className={cn('rounded-2xl px-4 py-3', isSelected('/settings/profile') && 'bg-gray-2')}
+      className={cn('rounded-2xl px-4 py-3', isSelected && 'bg-gray-2')}
     >
       <HStack gap={12} align="center">
         <UserAvatar

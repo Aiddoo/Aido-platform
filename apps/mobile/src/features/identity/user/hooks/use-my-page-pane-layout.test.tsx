@@ -24,7 +24,7 @@ async function renderPane() {
     () => maxOffset,
     (y) => {
       offset = y;
-      view.result.current.handleScroll(createScrollEvent(y));
+      view.result.current.handleScrollEnd(createScrollEvent(y));
     },
   );
   Object.assign(view.result.current.scrollRef, { current: scrollView });
@@ -40,7 +40,7 @@ async function renderPane() {
     userScrollTo: (y: number) => {
       view.result.current.handleScrollBeginDrag();
       offset = y;
-      view.result.current.handleScroll(createScrollEvent(y));
+      view.result.current.handleScrollEnd(createScrollEvent(y));
     },
   };
 }
@@ -66,7 +66,7 @@ describe('useMyPagePaneLayout 스크롤 복원', () => {
 
     // When
     // 회전으로 아래 칸의 내용이 줄어 위치가 잘린다
-    tabPane.view.result.current.handleScroll(createScrollEvent(40));
+    tabPane.view.result.current.handleScrollEnd(createScrollEvent(40));
 
     // Then
     // 돌아오면 저장된 위치로 간다

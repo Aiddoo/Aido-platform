@@ -1,5 +1,5 @@
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
-import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
+import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -19,7 +19,7 @@ import {
 } from '../queries/auth.mutations';
 
 export function AccountActionButtons() {
-  const { navigate } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
   const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const logout = useMutation(useLogoutMutationOptions());

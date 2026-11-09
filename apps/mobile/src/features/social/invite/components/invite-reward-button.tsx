@@ -1,4 +1,7 @@
-import { useMyPageMenuNavigation } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
+import {
+  useIsMyPageMenuItemSelected,
+  useMyPageMenuNavigate,
+} from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -36,7 +39,8 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
-  const { navigate, isSelected } = useMyPageMenuNavigation();
+  const navigate = useMyPageMenuNavigate();
+  const isSelected = useIsMyPageMenuItemSelected('/friends/invite');
   const remaining = InvitePolicy.getRemainingToNextMilestone(invite);
   const [firstRow] = createPawPrintBoard(invite, {
     columns: PREVIEW_COLUMNS,
@@ -50,7 +54,7 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
       onPress={() => openMyInvite('mypage_card', navigate)}
       className={cn(
         'rounded-[20px] p-4',
-        isSelected('/friends/invite') ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
+        isSelected ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
         className,
       )}
       {...props}

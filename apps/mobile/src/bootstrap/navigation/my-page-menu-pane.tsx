@@ -8,6 +8,7 @@ import { AccountActionButtons } from '@src/features/identity/auth/components/acc
 import { MyPageMenuItem } from '@src/features/identity/user/components/my-page-menu-item';
 import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page-pane-layout';
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
+import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { PushStatusValue } from '@src/features/notification/components/push-status-value';
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
@@ -49,149 +50,151 @@ export function MyPageMenuPane() {
   const isInviteAvailable = useIsInviteAvailable();
 
   return (
-    <MyPagePaneLayout>
-      <H3>{t('mypage.header')}</H3>
+    <MyPageMenuNavigationProvider>
+      <MyPagePaneLayout>
+        <H3>{t('mypage.header')}</H3>
 
-      <Spacing size={20} />
+        <Spacing size={20} />
 
-      <VStack gap={12}>
-        <QueryErrorBoundary fallback={ProfileRow.Error}>
-          <Suspense fallback={<ProfileRow.Loading />}>
-            <ProfileRow tierChip={<AccessTierChip />} />
-          </Suspense>
-        </QueryErrorBoundary>
-
-        <QueryErrorBoundary fallback={PlanSummary.Error}>
-          <Suspense fallback={<PlanSummary.Loading />}>
-            <PlanSummary />
-          </Suspense>
-        </QueryErrorBoundary>
-
-        {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
-        {isInviteAvailable && (
-          <QueryErrorBoundary fallback={InviteRewardButton.Error}>
-            <Suspense fallback={<InviteRewardButton.Loading />}>
-              <InviteRewardButton />
+        <VStack gap={12}>
+          <QueryErrorBoundary fallback={ProfileRow.Error}>
+            <Suspense fallback={<ProfileRow.Loading />}>
+              <ProfileRow tierChip={<AccessTierChip />} />
             </Suspense>
           </QueryErrorBoundary>
-        )}
 
-        <SettingsListGroup label={t('mypage.sections.friends')}>
-          <MyPageMenuItem
-            Icon={FriendsDuoIcon}
-            label={t('mypage.items.friends')}
-            pathname="/friends"
-            value={<FriendCountValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={BlockedDuoIcon}
-            label={t('mypage.items.blockedUsers')}
-            pathname="/settings/blocked-users"
-          />
-        </SettingsListGroup>
+          <QueryErrorBoundary fallback={PlanSummary.Error}>
+            <Suspense fallback={<PlanSummary.Loading />}>
+              <PlanSummary />
+            </Suspense>
+          </QueryErrorBoundary>
 
-        <SettingsListGroup label={t('mypage.sections.records')}>
-          <MyPageMenuItem
-            Icon={BadgeDuoIcon}
-            label={t('mypage.items.achievements')}
-            pathname="/achievements"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={ReportDuoIcon}
-            label={t('mypage.items.aiReports')}
-            pathname="/reports"
-          />
-        </SettingsListGroup>
+          {/* 사용 가능 여부를 모르거나 묻지 못했으면 카드를 그리지 않아 꺼진 기능의 스켈레톤·오류가 번쩍이지 않는다 */}
+          {isInviteAvailable && (
+            <QueryErrorBoundary fallback={InviteRewardButton.Error}>
+              <Suspense fallback={<InviteRewardButton.Loading />}>
+                <InviteRewardButton />
+              </Suspense>
+            </QueryErrorBoundary>
+          )}
 
-        <SettingsListGroup label={t('mypage.sections.settings')}>
-          <MyPageMenuItem
-            Icon={BellDuoIcon}
-            label={t('mypage.items.notifications')}
-            pathname="/settings/notifications"
-            value={<PushStatusValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={CategoryDuoIcon}
-            label={t('mypage.items.categories')}
-            pathname="/settings/category-settings"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={ThemeDuoIcon}
-            label={t('mypage.items.theme')}
-            pathname="/settings/theme"
-            value={<ThemeValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={FontSizeDuoIcon}
-            label={t('mypage.items.fontSize')}
-            pathname="/settings/font-size"
-            value={<FontScaleValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={LanguageDuoIcon}
-            label={t('settings:titles.language')}
-            pathname="/settings/language"
-            value={<LanguageValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={VoiceDuoIcon}
-            label={t('settings:titles.voiceStorage')}
-            pathname="/settings/voice-storage"
-          />
-        </SettingsListGroup>
+          <SettingsListGroup label={t('mypage.sections.friends')}>
+            <MyPageMenuItem
+              Icon={FriendsDuoIcon}
+              label={t('mypage.items.friends')}
+              pathname="/friends"
+              value={<FriendCountValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={BlockedDuoIcon}
+              label={t('mypage.items.blockedUsers')}
+              pathname="/settings/blocked-users"
+            />
+          </SettingsListGroup>
 
-        <SettingsListGroup label={t('mypage.sections.subscription')}>
-          <MyPageMenuItem
-            Icon={CrownDuoIcon}
-            label={t('mypage.items.subscription')}
-            pathname="/settings/subscription"
-            value={<PlanTypeValue />}
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={AppIconDuoIcon}
-            label={t('mypage.items.appIcon')}
-            pathname="/settings/app-icon"
-            value={<AppIconValue />}
-          />
-        </SettingsListGroup>
+          <SettingsListGroup label={t('mypage.sections.records')}>
+            <MyPageMenuItem
+              Icon={BadgeDuoIcon}
+              label={t('mypage.items.achievements')}
+              pathname="/achievements"
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={ReportDuoIcon}
+              label={t('mypage.items.aiReports')}
+              pathname="/reports"
+            />
+          </SettingsListGroup>
 
-        <SettingsListGroup label={t('mypage.sections.support')}>
-          <WhatsNewMenuItem />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={InquiryDuoIcon}
-            label={t('mypage.items.inquiry')}
-            pathname="/settings/inquiry"
-          />
-          <SettingsListGroup.Separator />
-          <MyPageMenuItem
-            Icon={TermsDuoIcon}
-            label={t('mypage.items.terms')}
-            pathname="/settings/terms"
-          />
-        </SettingsListGroup>
+          <SettingsListGroup label={t('mypage.sections.settings')}>
+            <MyPageMenuItem
+              Icon={BellDuoIcon}
+              label={t('mypage.items.notifications')}
+              pathname="/settings/notifications"
+              value={<PushStatusValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={CategoryDuoIcon}
+              label={t('mypage.items.categories')}
+              pathname="/settings/category-settings"
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={ThemeDuoIcon}
+              label={t('mypage.items.theme')}
+              pathname="/settings/theme"
+              value={<ThemeValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={FontSizeDuoIcon}
+              label={t('mypage.items.fontSize')}
+              pathname="/settings/font-size"
+              value={<FontScaleValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={LanguageDuoIcon}
+              label={t('settings:titles.language')}
+              pathname="/settings/language"
+              value={<LanguageValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={VoiceDuoIcon}
+              label={t('settings:titles.voiceStorage')}
+              pathname="/settings/voice-storage"
+            />
+          </SettingsListGroup>
 
-        <AppVersionCheck />
-      </VStack>
+          <SettingsListGroup label={t('mypage.sections.subscription')}>
+            <MyPageMenuItem
+              Icon={CrownDuoIcon}
+              label={t('mypage.items.subscription')}
+              pathname="/settings/subscription"
+              value={<PlanTypeValue />}
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={AppIconDuoIcon}
+              label={t('mypage.items.appIcon')}
+              pathname="/settings/app-icon"
+              value={<AppIconValue />}
+            />
+          </SettingsListGroup>
 
-      <Spacing size={32} />
+          <SettingsListGroup label={t('mypage.sections.support')}>
+            <WhatsNewMenuItem />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={InquiryDuoIcon}
+              label={t('mypage.items.inquiry')}
+              pathname="/settings/inquiry"
+            />
+            <SettingsListGroup.Separator />
+            <MyPageMenuItem
+              Icon={TermsDuoIcon}
+              label={t('mypage.items.terms')}
+              pathname="/settings/terms"
+            />
+          </SettingsListGroup>
 
-      <QueryErrorBoundary fallback={AccountActionButtons.Error}>
-        <Suspense fallback={<AccountActionButtons.Loading />}>
-          <AccountActionButtons />
-        </Suspense>
-      </QueryErrorBoundary>
+          <AppVersionCheck />
+        </VStack>
 
-      <Spacing size={40} />
-    </MyPagePaneLayout>
+        <Spacing size={32} />
+
+        <QueryErrorBoundary fallback={AccountActionButtons.Error}>
+          <Suspense fallback={<AccountActionButtons.Loading />}>
+            <AccountActionButtons />
+          </Suspense>
+        </QueryErrorBoundary>
+
+        <Spacing size={40} />
+      </MyPagePaneLayout>
+    </MyPageMenuNavigationProvider>
   );
 }
 

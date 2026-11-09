@@ -6,12 +6,18 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
 import { toUser } from '../apis/user.mapper';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
+import { MyPageMenuNavigationProvider } from '../hooks/use-my-page-menu-navigation';
 import { ProfileRow } from './profile-row';
 
 async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGatewayStub>) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
-  await renderUi(<ProfileRow tierChip={null} />, { queryClient, di: { clipboard } });
+  await renderUi(
+    <MyPageMenuNavigationProvider>
+      <ProfileRow tierChip={null} />
+    </MyPageMenuNavigationProvider>,
+    { queryClient, di: { clipboard } },
+  );
 }
 
 describe('해시태그 복사', () => {

@@ -5,7 +5,7 @@ import { ScrollView } from 'react-native';
 import { useMyPagePaneLayout } from '../hooks/use-my-page-pane-layout';
 
 export function MyPagePaneLayout({ children }: PropsWithChildren) {
-  const { scrollRef, handleScroll, handleContentSizeChange, handleScrollBeginDrag } =
+  const { scrollRef, handleScrollEnd, handleContentSizeChange, handleScrollBeginDrag } =
     useMyPagePaneLayout();
 
   return (
@@ -15,8 +15,8 @@ export function MyPagePaneLayout({ children }: PropsWithChildren) {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 16 }}
         contentInsetAdjustmentBehavior="automatic"
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEnd}
+        onMomentumScrollEnd={handleScrollEnd}
         onContentSizeChange={handleContentSizeChange}
         onScrollBeginDrag={handleScrollBeginDrag}
       >
