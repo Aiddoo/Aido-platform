@@ -343,10 +343,15 @@ describe("HandleWebhookEvent", () => {
   ])(
     "일반 취소의 만료 grace 경계 $offset ms에서 상태 $status 를 보존한다",
     async ({ offset, status }) => {
-      // Given
-      givenSubscription();
+      // Given 저장된 기간과 같은 기간의 해지다(더 이른 만료 시각은 지난 기간의 늦은 해지로 무시한다)
+      const periodExpiresAt = SUBSCRIPTION_TIME.getTime() + offset;
+      fixture = createSubscriptionFixture({
+        existing: true,
+        subscription: { expiresAt: new Date(periodExpiresAt) },
+      });
+      useCase = new HandleWebhookEvent(fixture);
       const body = payloadFor(SubscriptionEventBuilder.cancellation());
-      body.event.expiration_at_ms = SUBSCRIPTION_TIME.getTime() + offset;
+      body.event.expiration_at_ms = periodExpiresAt;
       // When
       await useCase.execute({ body });
       // Then

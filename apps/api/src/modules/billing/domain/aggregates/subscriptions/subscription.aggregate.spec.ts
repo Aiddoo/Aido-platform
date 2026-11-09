@@ -144,6 +144,47 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
     expect(aggregate.wasProcessedWith("renewal")).toBe(true);
   });
 
+  describe("갱신 뒤 늦게 온 지난 기간의 이벤트", () => {
+    const earlier = new Date(expiresAt.getTime() - 1);
+
+    it.each([
+      [
+        "해지",
+        (s: Subscription) =>
+          s.cancel({ refunded: false, cancelledAt: at, eventExpiresAt: earlier, eventId: "late" }),
+      ],
+      ["해지 철회", (s: Subscription) => s.uncancel(earlier, "late")],
+      ["기간 연장", (s: Subscription) => s.extend(earlier, "late")],
+    ])("만료 시각이 1ms라도 이른 %s은 상태·상품·기간을 바꾸지 않는다", (_name, apply) => {
+      // Given
+      const aggregate = subscription();
+      const before = aggregate.persistenceState;
+
+      // When
+      const applied = apply(aggregate);
+
+      // Then
+      expect(applied).toBe(false);
+      expect(aggregate.persistenceState).toEqual(before);
+    });
+
+    it("같은 기간의 해지는 적용하고, 환불은 만료 시각이 일러도 즉시 끝낸다", () => {
+      // Given
+      const cancelled = subscription();
+      const refunded = subscription();
+
+      // When
+      const results = [
+        cancelled.cancel({ refunded: false, cancelledAt: at, eventExpiresAt: expiresAt }),
+        refunded.cancel({ refunded: true, cancelledAt: at, eventExpiresAt: earlier }),
+      ];
+
+      // Then
+      expect(results).toEqual([true, true]);
+      expect([cancelled.status, refunded.status]).toEqual(["CANCELLED", "EXPIRED"]);
+    });
+  });
+
   describe("결제 유예", () => {
     const graceEndsAt = new Date("2027-01-19T12:00:00.000Z");
 

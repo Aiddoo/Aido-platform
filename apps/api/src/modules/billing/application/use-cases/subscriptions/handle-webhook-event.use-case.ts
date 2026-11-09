@@ -656,6 +656,7 @@ export class HandleWebhookEvent {
             cancelledAt: now(),
             eventId,
             eventPeriodType: lifecycleEventOf(event).periodType,
+            eventExpiresAt: expiresAt,
           })
         ) {
           return null;
@@ -671,10 +672,11 @@ export class HandleWebhookEvent {
           chainExpiresAt: cancellationExpiresAt,
         } satisfies SubscriptionTransition;
       })
-      .with("UNCANCELLATION", () => {
-        subscription.uncancel(expiresAt, eventId);
-        return { userState: activeUserState, payload: payloadWithExpiry() };
-      })
+      .with("UNCANCELLATION", () =>
+        subscription.uncancel(expiresAt, eventId)
+          ? { userState: activeUserState, payload: payloadWithExpiry() }
+          : null,
+      )
       .with("EXPIRATION", () => {
         if (!subscription.expire(nullableExpiresAt(event.expiration_at_ms), eventId, now())) {
           return null;
@@ -688,10 +690,11 @@ export class HandleWebhookEvent {
         subscription.changeProduct(event.product_id, expiresAt, eventId);
         return { userState: activeUserState, payload: payloadWithExpiry() };
       })
-      .with("SUBSCRIPTION_EXTENDED", () => {
-        subscription.extend(expiresAt, eventId);
-        return { userState: activeUserState, payload: payloadWithExpiry() };
-      })
+      .with("SUBSCRIPTION_EXTENDED", () =>
+        subscription.extend(expiresAt, eventId)
+          ? { userState: activeUserState, payload: payloadWithExpiry() }
+          : null,
+      )
       .otherwise(() => null);
   }
 }

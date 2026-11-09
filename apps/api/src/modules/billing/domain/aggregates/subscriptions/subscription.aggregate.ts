@@ -166,19 +166,22 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
 
   /**
    * 해지·환불을 기록한다. 이미 결제로 넘어간 체인에 늦게 온 체험 기간의 해지(이벤트 기간 유형이 TRIAL인데
-   * 행은 더 이상 체험이 아님)는 갱신된 상태를 되돌리지 않고 false다. 환불은 기간과 관계없이 끝낸다.
+   * 행은 더 이상 체험이 아님)나 갱신 뒤 늦게 온 지난 기간의 해지는 갱신된 상태를 되돌리지 않고 false다.
+   * 환불은 기간과 관계없이 끝낸다.
    */
   cancel(input: {
     refunded: boolean;
     cancelledAt: Date;
     eventId?: string;
     eventPeriodType?: StorePeriodType | null;
+    eventExpiresAt?: Date | null;
   }): boolean {
     if (
       !input.refunded &&
-      input.eventPeriodType === STORE_PERIOD_TYPE.TRIAL &&
-      this.props.periodType != null &&
-      !this.isTrial()
+      ((input.eventPeriodType === STORE_PERIOD_TYPE.TRIAL &&
+        this.props.periodType != null &&
+        !this.isTrial()) ||
+        this.#isPreviousPeriod(input.eventExpiresAt))
     ) {
       return false;
     }
@@ -191,11 +194,16 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return true;
   }
 
-  uncancel(expiresAt: Date | undefined, eventId?: string): void {
+  /** 갱신 뒤 늦게 온 지난 기간의 해지 철회는 갱신된 기간을 앞당기지 않고 false다. */
+  uncancel(expiresAt: Date | undefined, eventId?: string): boolean {
+    if (this.#isPreviousPeriod(expiresAt)) {
+      return false;
+    }
     this.props.status = "ACTIVE";
     this.props.cancelledAt = null;
     this.#changeExpiry(expiresAt);
     this.#recordEvent(eventId);
+    return true;
   }
 
   /**
@@ -226,10 +234,20 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     this.#recordEvent(eventId);
   }
 
-  extend(expiresAt: Date | undefined, eventId?: string): void {
+  /** 갱신 뒤 늦게 온 지난 기간의 연장은 갱신된 기간을 앞당기지 않고 false다. */
+  extend(expiresAt: Date | undefined, eventId?: string): boolean {
+    if (this.#isPreviousPeriod(expiresAt)) {
+      return false;
+    }
     this.props.status = "ACTIVE";
     this.#changeExpiry(expiresAt);
     this.#recordEvent(eventId);
+    return true;
+  }
+
+  /** 이벤트의 만료 시각이 지금 기간보다 이르면 이미 지난 기간의 이벤트다. 만료 시각이 없으면 판단하지 않는다. */
+  #isPreviousPeriod(eventExpiresAt: Date | null | undefined): boolean {
+    return eventExpiresAt != null && eventExpiresAt.getTime() < this.props.expiresAt.getTime();
   }
 
   #changeExpiry(expiresAt: Date | undefined): void {
