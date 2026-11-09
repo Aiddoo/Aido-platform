@@ -2,7 +2,6 @@ import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -15,13 +14,13 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
 import type { ComponentType } from 'react';
 import { match } from 'ts-pattern';
 
 import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import type { PremiumQuickstartAction } from '../constants/subscription.events';
 import type { SubscriptionPlan } from '../domains/subscription.model';
+import { useCheckoutRoute } from '../hooks/use-checkout-route';
 import { toTrialScheduleSteps } from '../utils/trial-schedule.view-model';
 
 const CROWN_CIRCLE_SIZE = 72;
@@ -148,22 +147,22 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function QuickstartRow({ action }: { action: PremiumQuickstartAction }) {
   const { t } = useTranslation('subscription');
   const { trackEvent } = useTrack();
-  const push = useSingleTap(router.push);
+  const { leaveTo } = useCheckoutRoute();
   const { title, description, open } = match(action)
     .with('voice_note', () => ({
       title: t('welcome.quickstart.voiceNote.title'),
       description: t('welcome.quickstart.voiceNote.description'),
-      open: () => push('/voice-notes/record'),
+      open: () => leaveTo('/voice-notes/record'),
     }))
     .with('ai_report', () => ({
       title: t('welcome.quickstart.aiReport.title'),
       description: t('welcome.quickstart.aiReport.description'),
-      open: () => push('/reports'),
+      open: () => leaveTo('/reports'),
     }))
     .with('app_icon', () => ({
       title: t('welcome.quickstart.appIcon.title'),
       description: t('welcome.quickstart.appIcon.description'),
-      open: () => push('/settings/app-icon'),
+      open: () => leaveTo('/settings/app-icon'),
     }))
     .exhaustive();
 

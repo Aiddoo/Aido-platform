@@ -151,7 +151,7 @@ describe('useEntitlementGate', () => {
     // Then
     await waitFor(() => expect(router.navigate).toHaveBeenCalledTimes(1));
     expect(router.navigate).toHaveBeenCalledWith({
-      pathname: '/settings/subscription',
+      pathname: '/paywall',
       params: { feature: 'AI_PARSE' },
     });
     expect(countEvents('premium_gate_cta_tapped')).toBe(1);
@@ -187,7 +187,7 @@ describe('useEntitlementGate', () => {
       await user.press(toastAction);
     }
     expect(router.navigate).toHaveBeenCalledWith({
-      pathname: '/settings/subscription',
+      pathname: '/paywall',
       params: { feature: 'AI_PARSE' },
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith('premium_gate_cta_tapped', {

@@ -51,7 +51,7 @@ export default function ReportDetailScreen() {
                     size="medium"
                     onPress={() =>
                       push({
-                        pathname: '/settings/subscription',
+                        pathname: '/paywall',
                         params: { feature: 'AI_REPORT' },
                       })
                     }

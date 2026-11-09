@@ -31,6 +31,7 @@ import { AdaptivePane } from '@src/shared/ui';
 - `(mypage)/_layout`은 `primary`에 `MyPageMenuPane`(`bootstrap/navigation/my-page-menu-pane.tsx`), `secondary`에 마이 탭 `Stack`, `compactPane="secondary"`로 쓴다. 좁은 화면은 Stack 첫 화면(`mypage/index`)이 메뉴를 그리고 하위 화면은 일반 push + 네이티브 뒤로 가기다. 넓은 화면은 첫 화면이 빈 안내다.
 - `unstable_settings.anchor = 'mypage/index'`라 푸시·링크로 하위 화면을 바로 열어도 아래에 메뉴가 깔려 뒤로 가면 메뉴다. 탭 레이아웃은 `anchor = 'feed'`로 탭을 정하지 않은 링크가 할 일 탭에 열리게 한다.
 - 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
+- 업셀 결제는 예외로 지금 맥락 위 모달(`/paywall`, `(app)/paywall.tsx`)로 연다. 마이 탭 메뉴·푸시는 `/settings/subscription` 그대로이고, 두 라우트는 `bootstrap/navigation/subscription-checkout.tsx`를 함께 그린다. 모든 탭에서 같은 화면을 탭 안에 여는 공유 라우트(`(feed,mypage)`)는 다음 릴리스에 검토한다.
 - 넓은 화면 오른쪽 칸의 첫 상세는 `getSplitDetailRootOptions`로 뒤로 가기·스와이프를 두지 않고 애니메이션 없이 바꾼다(옆 목록이 고른다). 두 번째 단계부터는 네이티브 헤더의 뒤로 가기다.
 - 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 좁은 화면은 push, 넓은 화면은 오른쪽 칸에 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다.
 - 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다.

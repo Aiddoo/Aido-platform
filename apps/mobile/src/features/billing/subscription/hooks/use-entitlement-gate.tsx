@@ -104,7 +104,7 @@ export function useEntitlementGate(
           trackEvent('limit_reached_cta_tapped', { feature: analyticsFeature, surface });
         }
         onSubscribe?.();
-        router.navigate({ pathname: '/settings/subscription', params: { feature: target } });
+        router.navigate({ pathname: '/paywall', params: { feature: target } });
       };
 
       trackEvent('premium_gate_shown', { feature: analyticsFeature, surface, presentation });

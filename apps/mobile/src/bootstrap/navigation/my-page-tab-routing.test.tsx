@@ -77,6 +77,7 @@ async function renderApp(initialUrl: string) {
       ...myPageScreens,
       '(app)/todo/[todoId]/index': createScreen('todo'),
       '(app)/whats-new/index': createScreen('whats-new'),
+      '(app)/paywall': createScreen('paywall'),
     },
     { initialUrl, wrapper: TestUiProvider },
   );
@@ -176,6 +177,46 @@ describe('마이 탭 라우팅', () => {
     expect(route.getPathname()).toBe('/mypage');
 
     // When
+    await act(() => router.back());
+
+    // Then
+    expect(route.getPathname()).toBe('/feed');
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('할 일 탭에서 연 업셀 결제는 탭 위 모달로 열리고 닫으면 할 일 탭 그대로다', async () => {
+    // Given
+    const route = await renderApp('/feed?date=2026-11-09');
+
+    // When
+    await act(() => router.push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } }));
+
+    // Then
+    expect(route.getSegments()).toEqual(['(app)', 'paywall']);
+    expect(route.getSearchParams()).toEqual({ feature: 'AI_SUGGESTION' });
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(route.getPathname()).toBe('/feed');
+    expect(route.getSearchParams()).toEqual({ date: '2026-11-09' });
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('결제 모달에서 마이 탭 기능으로 떠나면 모달을 닫고 탭을 새로 쌓지 않는다', async () => {
+    // Given
+    const route = await renderApp('/feed');
+    await act(() => router.push('/paywall'));
+
+    // When
+    await act(() => router.dismissTo('/reports'));
+
+    // Then
+    expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(mypage)', 'reports']);
+
+    // When
+    await act(() => router.back());
     await act(() => router.back());
 
     // Then

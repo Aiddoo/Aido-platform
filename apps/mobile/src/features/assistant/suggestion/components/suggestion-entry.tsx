@@ -63,9 +63,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}
-        onPress={() =>
-          push({ pathname: '/settings/subscription', params: { feature: 'AI_SUGGESTION' } })
-        }
+        onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } })}
       />
     );
   }

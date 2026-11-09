@@ -129,7 +129,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 - **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
 - **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일과 순수 변환인 `planning/todo/apis/todo-repeat.mapper`만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
-- **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 route 파일에서 export하지 않고 5층인 `bootstrap/navigation/`에 컴포넌트로 둔다(`(tabs)/(mypage)/_layout`과 `(tabs)/(mypage)/mypage/index`가 `MyPageMenuPane`을 쓴다).
+- **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 route 파일에서 export하지 않고 5층인 `bootstrap/navigation/`에 컴포넌트로 둔다(`(tabs)/(mypage)/_layout`과 `(tabs)/(mypage)/mypage/index`가 `MyPageMenuPane`을, `/settings/subscription`과 `/paywall`이 `SubscriptionCheckout`을 쓴다).
 
 **끊는 방법**
 

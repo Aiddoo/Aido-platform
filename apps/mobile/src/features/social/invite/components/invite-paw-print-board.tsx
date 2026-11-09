@@ -594,7 +594,7 @@ function KeepPremiumButton() {
       size="medium"
       display="inline"
       accessibilityHint={t('pawPrintBoard.keepPremiumHint')}
-      onPress={() => navigate('/settings/subscription')}
+      onPress={() => navigate('/paywall')}
     >
       {t('pawPrintBoard.keepPremium')}
     </Button>

@@ -51,9 +51,7 @@ ReportList.Free = function Free() {
 
       <Button
         size="medium"
-        onPress={() =>
-          push({ pathname: '/settings/subscription', params: { feature: 'AI_REPORT' } })
-        }
+        onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } })}
       >
         {t('report.list.subscribeCta')}
       </Button>
