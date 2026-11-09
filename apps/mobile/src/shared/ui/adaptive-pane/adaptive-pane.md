@@ -34,7 +34,7 @@ import { AdaptivePane } from '@src/shared/ui';
   - Stack `screenLayout`이 모든 화면을 같은 두 칸 틀로 감싼다. 좁은 화면은 화면만, 넓은 화면은 메뉴 칸(320/400, 접힘선이 있으면 그 위치)과 상세 칸이다. 화면은 size class와 무관하게 같은 트리 슬롯이라 접고 펴도 다시 마운트되지 않는다.
   - Stack 바깥 `SafeAreaProvider`가 탭 안 영역의 inset을 한 번 재고, 넓은 화면의 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다(`getPaneEdgeInsets`, RTL 포함). 칸마다 네이티브로 다시 재지 않아 헤더 아래 화면에서도 위 inset이 예전과 같다. 이 값은 JS context뿐이라 칸 안은 [칸 안의 safe area](#칸-안의-safe-area) 규칙으로 피한다.
   - 메뉴 칸(`MyPagePaneLayout`)은 `SafeAreaScrollView`로 칸 폭을 다 쓰고 내용이 홈 인디케이터 밑까지 스크롤된다. 위 inset은 좁은 화면 첫 화면만 지금 모양대로 주고, 넓은 화면은 전체 폭 헤더 바로 아래에서 상세 칸과 같은 높이로 시작한다.
-- 좁은 화면은 Stack 첫 화면(`mypage/index`)이 메뉴를 그리고 하위 화면은 일반 push + 네이티브 뒤로 가기다. 넓은 화면의 첫 화면은 빈 안내이고, 헤더 제목(`내 정보`)을 둔다. 모든 화면의 헤더 높이가 같아야 메뉴 칸이 같은 자리에 있다.
+- 좁은 화면은 Stack 첫 화면(`mypage/index`)이 메뉴를 그리고 하위 화면은 일반 push + 네이티브 뒤로 가기다. 넓은 화면의 첫 화면은 빈 안내이고, 헤더 제목(`내 정보`)을 둔다. 모든 화면의 헤더 높이가 같아야 메뉴 칸이 같은 자리에 있다. iPadOS는 위 탭 바가 헤더에 있으면 탭 첫 화면의 제목 글자를 숨겨 헤더가 한 줄 낮아지므로, iPad의 첫 화면은 제목을 `StackHeaderTitle` 뷰로 그려 하위 화면처럼 탭 바 아래 줄에 둔다. iPhone Duo·Android는 네이티브 제목이 보여 그대로 둔다.
 - `unstable_settings.anchor = 'mypage/index'`라 푸시·링크로 하위 화면을 바로 열어도 아래에 메뉴가 깔려 뒤로 가면 메뉴다. 탭 레이아웃은 `anchor = 'feed'`로 탭을 정하지 않은 링크가 할 일 탭에 열리게 한다.
 - 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
 - 업셀 결제는 예외로 지금 맥락 위 모달(`/paywall`, `(app)/paywall.tsx`)로 연다. 마이 탭 메뉴·푸시는 `/settings/subscription` 그대로이고, 두 라우트는 `bootstrap/navigation/subscription-checkout.tsx`를 함께 그린다.

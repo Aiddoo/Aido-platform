@@ -44,6 +44,11 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
 `fallbackHref`는 돌아갈 화면이 없을 때(푸시·딥링크로 바로 연 경우) `router.replace`로 여는 화면입니다.
 아래로 닫는 화면은 `icon={STACK_CLOSE_ICON}`과 `accessibilityLabel`로 닫기 모양을 줍니다.
 
+## StackHeaderTitle
+
+네이티브 제목과 같은 글자(b2 bold, gray-9, 앱 글자 크기 설정)로 그리는 제목 뷰입니다. `headerTitle: StackHeaderTitle`로 넘깁니다.
+네이티브 제목 글자가 그려지지 않는 곳에만 씁니다. iPadOS는 위 탭 바가 헤더에 있으면 탭 첫 화면의 제목 글자를 숨기지만 제목 뷰는 탭 바 아래 줄에 그립니다(마이 탭 첫 화면).
+
 ## 화면별 버튼
 
 데이터나 폼 상태에 따라 바뀌는 버튼은 화면 컴포넌트에서 `Stack.Toolbar`를 렌더합니다. 화면에서 렌더한
@@ -80,6 +85,7 @@ stack-header/
 ├── stack-back-icon.ts            # 플랫폼별 뒤로가기 아이콘
 ├── stack-close-icon.ts           # 플랫폼별 닫기 아이콘
 ├── stack-more-icon.ts            # 플랫폼별 더 보기·메뉴 항목 아이콘
+├── stack-header-title.tsx        # 네이티브 제목과 같은 글자의 제목 뷰
 ├── stack-header.md               # 이 문서
 └── index.ts                      # 배럴
 ```

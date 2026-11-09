@@ -2,6 +2,8 @@ import { MyPageMenuPane } from '@src/bootstrap/navigation/my-page-menu-pane';
 import { MyPageStack } from '@src/bootstrap/navigation/my-page-stack';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
+import { IS_IPAD } from '@src/shared/infra/device/device-info';
+import { StackHeaderTitle } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 // 푸시·링크로 하위 화면을 바로 열어도 뒤로 가면 내 정보 메뉴가 나온다
@@ -24,9 +26,13 @@ export default function MyPageTabLayout() {
 
   return (
     <MyPageStack menu={<MyPageMenuPane />}>
+      {/* iPadOS는 위 탭 바가 헤더에 있으면 탭 첫 화면의 제목 글자를 숨겨 헤더가 낮아지고, 메뉴를 고르면 메뉴 칸이 내려간다. 제목 뷰는 하위 화면 제목처럼 탭 바 아래 줄에 그린다 */}
       <Stack.Screen
         name="mypage/index"
-        options={{ title: isCompact ? '' : t('user:mypage.header') }}
+        options={{
+          title: isCompact ? '' : t('user:mypage.header'),
+          ...(!isCompact && IS_IPAD && { headerTitle: StackHeaderTitle }),
+        }}
       />
 
       <Stack.Screen name="friends/index" options={{ title: t('friend:screenTitle') }} />

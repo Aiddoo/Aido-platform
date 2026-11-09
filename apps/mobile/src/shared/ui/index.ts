@@ -162,6 +162,7 @@ export {
   STACK_CLOSE_ICON,
   STACK_MENU_ICON,
   STACK_MORE_ICON,
+  StackHeaderTitle,
   useStackBackToolbar,
   useStackScreenOptions,
 } from './stack-header';
