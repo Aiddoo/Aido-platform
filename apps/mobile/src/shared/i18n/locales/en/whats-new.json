@@ -8,17 +8,83 @@
   },
   "v1_15_0": {
     "summary": "Speak to add, voice notes",
+    "intro": {
+      "title": "Talk, and Aido sorts it out",
+      "description": "Here are two new things, one at a time"
+    },
     "voiceTodo": {
       "title": "Speak to add",
-      "description": "Say it all at once, and we'll split it into to-dos",
-      "action": "Try speaking now",
-      "mediaLabel": "Screen for making to-dos by voice"
+      "description": "Say it all at once, and we'll split it into to-dos"
     },
     "voiceNote": {
-      "title": "Make a voice note",
-      "description": "Let it hear your meeting for a summary and to-dos",
-      "action": "Start a note",
-      "mediaLabel": "Screen for making a voice note"
+      "title": "Voice notes",
+      "description": "Let it hear your meeting for a summary and to-dos"
+    },
+    "capture": {
+      "title": "Say everything on your mind",
+      "description": "What you say shows up as text right away"
+    },
+    "review": {
+      "title": "AI splits it into to-dos",
+      "description": "Just check the ones to add. Try tapping them",
+      "hint": "Check only the ones you want to add."
+    },
+    "list": {
+      "title": "They go straight to your list",
+      "description": "With the times you mentioned filled in",
+      "justAdded": "Just added"
+    },
+    "record": {
+      "title": "Let it hear a meeting or class",
+      "description": "Mark the moments that matter as you go"
+    },
+    "result": {
+      "title": "Get a summary and to-dos",
+      "description": "Switch tabs to see key points and to-dos"
+    },
+    "quota": {
+      "title": "Here's what you get for free",
+      "description": "If it fails, it doesn't count",
+      "voiceNote": "Voice notes",
+      "voiceNoteMinutes": "Up to {{minutes}} min per recording",
+      "fullAccess": "You have plenty to use right now"
+    },
+    "finish": {
+      "title": "Ready to try it?",
+      "description": "You can find this again in Me > What's new",
+      "voiceTodo": "Speak to add",
+      "voiceNote": "Make a voice note",
+      "later": "Maybe later",
+      "bubble": "Go ahead, talk"
+    },
+    "demo": {
+      "transcript": "I need to call the dentist at 3 grab milk and eggs on the way home and finish the weekly report before bed",
+      "category": "Daily",
+      "todos": {
+        "dentist": "Call the dentist",
+        "groceries": "Buy milk and eggs",
+        "report": "Finish the weekly report",
+        "water": "Drink 2L of water"
+      },
+      "note": {
+        "title": "Weekly launch meeting",
+        "summary": "We'll lock the launch date this week, share design drafts by Wednesday, and run QA together on Thursday.",
+        "sentences": {
+          "goal": "This week's goal is to lock the launch date.",
+          "design": "Please share the design drafts by Wednesday.",
+          "qa": "Let's go through QA together Thursday afternoon.",
+          "retro": "We'll wrap up with a retro on Friday."
+        },
+        "keyPoints": {
+          "schedule": "Lock the launch date this week",
+          "design": "Share design drafts by Wednesday",
+          "qa": "QA together Thursday afternoon"
+        },
+        "todos": {
+          "design": "Share the design drafts",
+          "qa": "Schedule QA"
+        }
+      }
     }
   },
   "v1_14_0": {
@@ -33,5 +99,8 @@
     "title": "What's new",
     "newBadge": "New",
     "unseenLabel": "Not viewed yet"
+  },
+  "stage": {
+    "badge": "Example"
   }
 }

@@ -14,9 +14,10 @@ import {
   createSpeechRecognizerStub,
   createTestQueryClient,
   renderUi,
+  setupFakeTimersPerTest,
 } from '@src/shared/__tests__';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { createWhatsNewRepository } from '../apis/whats-new.repository';
@@ -68,7 +69,26 @@ async function renderSteps() {
   return { ...view, analytics, storage };
 }
 
+const STEPS_BEFORE_FINISH = 7;
+/** 다음 버튼은 연타를 한 번으로 본다(useSingleTap) */
+const TAP_GUARD_MS = 600;
+
+async function goToFinish() {
+  for (let index = 0; index < STEPS_BEFORE_FINISH; index += 1) {
+    await fireEvent.press(screen.getByText('다음'));
+    await act(() => jest.advanceTimersByTimeAsync(TAP_GUARD_MS));
+  }
+}
+
+function getStepViews(analytics: ReturnType<typeof createAnalyticsStub>) {
+  return jest
+    .mocked(analytics.trackEvent)
+    .mock.calls.filter(([eventName]) => eventName === 'whats_new_step_viewed');
+}
+
 describe('Release1150Steps', () => {
+  setupFakeTimersPerTest();
+
   beforeEach(() => {
     jest.mocked(router.dismissTo).mockClear();
     jest.mocked(router.push).mockClear();
@@ -85,7 +105,7 @@ describe('Release1150Steps', () => {
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_step_viewed', {
       release_id: RELEASE_1_15_0.id,
-      step: 'voiceTodo',
+      step: 'intro',
       index: 0,
       source: 'auto',
     });
@@ -97,12 +117,46 @@ describe('Release1150Steps', () => {
     ).toBe(true);
   });
 
-  it('말로 할 일 CTA는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
+  it('소개에서 말로 메모하기를 고르면 녹음 장면으로 건너뛰고 흐름 안의 자리로 조회를 남긴다', async () => {
     // Given
-    const { analytics, unmount } = await renderSteps();
+    const { analytics } = await renderSteps();
 
     // When
-    await fireEvent.press(screen.getByTestId('whats-new-step-action'));
+    await fireEvent.press(screen.getByTestId('whats-new-intro-voice-note'));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_step_viewed', {
+      release_id: RELEASE_1_15_0.id,
+      step: 'voiceNoteRecord',
+      index: 4,
+      source: 'auto',
+    });
+  });
+
+  it('고르기에서 체크를 끈 할 일은 목록 장면에 들어가지 않는다', async () => {
+    // Given
+    await renderSteps();
+    await fireEvent.press(screen.getByTestId('whats-new-intro-voice-todo'));
+    await fireEvent.press(screen.getByText('다음'));
+    await act(() => jest.runAllTimersAsync());
+    await fireEvent(screen.getByLabelText('우유랑 계란 사기 추가하기'), 'selectedChange', false);
+
+    // When
+    await fireEvent.press(screen.getByText('할 일 2개 추가'));
+    await act(() => jest.runAllTimersAsync());
+
+    // Then
+    expect(screen.getByText('치과에 전화하기')).toBeOnTheScreen();
+    expect(screen.queryByText('우유랑 계란 사기')).toBeNull();
+  });
+
+  it('마무리의 말로 할 일 만들기는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
+    // Given
+    const { analytics, unmount } = await renderSteps();
+    await goToFinish();
+
+    // When
+    await fireEvent.press(screen.getByTestId('whats-new-start-voice-todo'));
     await unmount();
 
     // Then
@@ -117,7 +171,7 @@ describe('Release1150Steps', () => {
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_cta_pressed', {
       release_id: RELEASE_1_15_0.id,
-      step: 'voiceTodo',
+      step: 'finish',
     });
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
       'feature_hub_dismissed',
@@ -125,13 +179,13 @@ describe('Release1150Steps', () => {
     );
   });
 
-  it('둘째 단계의 말로 메모 CTA는 동의·권한을 묻기 전에 흐름을 닫고 메모 탭에서 시작하게 한다', async () => {
+  it('마무리의 말로 메모하기는 동의·권한을 묻기 전에 흐름을 닫고 메모 탭에서 시작하게 한다', async () => {
     // Given
     await renderSteps();
+    await goToFinish();
 
     // When
-    await fireEvent.press(screen.getByText('다음'));
-    await fireEvent.press(screen.getByTestId('whats-new-step-action'));
+    await fireEvent.press(screen.getByTestId('whats-new-start-voice-note'));
 
     // Then
     expect(router.dismissTo).toHaveBeenCalledWith({
@@ -147,26 +201,21 @@ describe('Release1150Steps', () => {
 
     // When
     await fireEvent.press(screen.getByText('다음'));
+    await act(() => jest.advanceTimersByTimeAsync(TAP_GUARD_MS));
     await fireEvent.press(screen.getByText('이전'));
 
     // Then
-    const stepViews = jest
-      .mocked(analytics.trackEvent)
-      .mock.calls.filter(([eventName]) => eventName === 'whats_new_step_viewed');
-    expect(stepViews).toHaveLength(2);
+    expect(getStepViews(analytics)).toHaveLength(2);
   });
 
-  it('마지막 단계에서 완료하면 완료를 남기고 닫은 것으로 세지 않는다', async () => {
+  it('마무리에서 나중에를 누르면 완료를 남기고 닫은 것으로 세지 않는다', async () => {
     // Given
     const { analytics, unmount } = await renderSteps();
-    const now = jest.spyOn(Date, 'now');
-    await fireEvent.press(screen.getByText('다음'));
+    await goToFinish();
 
     // When
-    now.mockReturnValue(Date.now() + 60_000);
-    await fireEvent.press(screen.getByText('완료'));
+    await fireEvent.press(screen.getByTestId('whats-new-later'));
     await unmount();
-    now.mockRestore();
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_completed', {

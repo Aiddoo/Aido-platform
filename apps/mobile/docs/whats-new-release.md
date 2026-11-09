@@ -8,11 +8,11 @@
 2. `constants/releases.ts`에 `RELEASE_x_y_z`와 `RELEASES` 항목을 더한다. 캠페인 id가 새로 생기면 `feature-campaign.constants.ts`에도 더한다. 활성화가 그 캠페인을 이어야 하면 `ACTIVATION_CAMPAIGN_IDS`에 올린다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. id를 더하면 `exhaustive()`가 컴파일 에러로 알려 준다.
 4. `app/(app)/(tabs)/(mypage)/whats-new/releases.tsx`에 `<ReleaseRow />` 한 줄을 더한다.
-5. `assets/whats-new/{version}/`에 WebP를 넣는다. 파일 이름은 `{step}.{ko|en}.{light|dark}.webp`다. 개인정보 없는 샘플 데이터로 찍는다.
+5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
 8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다.
-9. 최근 2개 출시만 WebP를 번들에 둔다. 지난 출시의 파일을 지우고 Steps는 글과 그림 없는 미디어로 줄인다.
+9. 지난 출시의 Steps는 예시를 지우고 글과 간단한 그림으로 줄인다.
 
 ## 동작 규칙
 

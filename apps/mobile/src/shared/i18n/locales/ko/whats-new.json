@@ -8,17 +8,83 @@
   },
   "v1_15_0": {
     "summary": "말로 할 일 만들기, 말로 메모하기",
+    "intro": {
+      "title": "말하면 아이두가 정리해요",
+      "description": "새로 생긴 두 가지를 하나씩 보여드릴게요"
+    },
     "voiceTodo": {
       "title": "말로 할 일 만들기",
-      "description": "길게 말하면 할 일로 나눠 드려요",
-      "action": "지금 말해 보기",
-      "mediaLabel": "말로 할 일을 만드는 화면"
+      "description": "길게 말하면 할 일로 나눠드려요"
     },
     "voiceNote": {
       "title": "말로 메모하기",
-      "description": "회의를 들려주면 요약과 할 일을 찾아 드려요",
-      "action": "메모 시작",
-      "mediaLabel": "말로 메모하는 화면"
+      "description": "회의를 들려주면 요약과 할 일을 찾아드려요"
+    },
+    "capture": {
+      "title": "생각나는 대로 길게 말해보세요",
+      "description": "말하는 동안 들은 내용이 바로 글자로 보여요"
+    },
+    "review": {
+      "title": "AI가 할 일로 나눠드려요",
+      "description": "추가할 것만 체크하면 돼요. 직접 눌러보세요",
+      "hint": "추가할 것만 체크해주세요."
+    },
+    "list": {
+      "title": "할 일 목록에 바로 들어가요",
+      "description": "말한 시간까지 채워서 넣어드려요",
+      "justAdded": "방금 추가"
+    },
+    "record": {
+      "title": "회의나 수업을 들려주세요",
+      "description": "중요한 순간에는 표시를 남길 수 있어요"
+    },
+    "result": {
+      "title": "요약과 할 일을 찾아드려요",
+      "description": "핵심 포인트와 할 일을 탭에서 골라 보세요"
+    },
+    "quota": {
+      "title": "무료로 이만큼 쓸 수 있어요",
+      "description": "잘 안 되면 횟수는 차감되지 않아요",
+      "voiceNote": "말로 메모하기",
+      "voiceNoteMinutes": "한 번에 {{minutes}}분까지 녹음해요",
+      "fullAccess": "지금은 넉넉하게 쓸 수 있어요"
+    },
+    "finish": {
+      "title": "이제 직접 말해볼까요?",
+      "description": "마이 > 새로운 기능에서 언제든 다시 볼 수 있어요",
+      "voiceTodo": "말로 할 일 만들기",
+      "voiceNote": "말로 메모하기",
+      "later": "나중에 할게요",
+      "bubble": "말해보세요"
+    },
+    "demo": {
+      "transcript": "오늘 3시에 치과에 전화하고 퇴근길에 우유랑 계란 사고 자기 전에 주간 보고서 마무리해야 해",
+      "category": "일상",
+      "todos": {
+        "dentist": "치과에 전화하기",
+        "groceries": "우유랑 계란 사기",
+        "report": "주간 보고서 마무리하기",
+        "water": "물 2L 마시기"
+      },
+      "note": {
+        "title": "이번 주 출시 회의",
+        "summary": "이번 주에 출시 일정을 정하고, 수요일까지 디자인 시안을 공유한 뒤 목요일에 함께 QA를 하기로 했어요.",
+        "sentences": {
+          "goal": "이번 주 목표는 출시 일정을 정하는 거예요.",
+          "design": "디자인 시안은 수요일까지 공유해주세요.",
+          "qa": "QA는 목요일 오후에 같이 봐요.",
+          "retro": "금요일에는 회고하고 마무리할게요."
+        },
+        "keyPoints": {
+          "schedule": "이번 주 안에 출시 일정 확정",
+          "design": "디자인 시안은 수요일까지 공유",
+          "qa": "목요일 오후 함께 QA"
+        },
+        "todos": {
+          "design": "디자인 시안 공유하기",
+          "qa": "QA 일정 잡기"
+        }
+      }
     }
   },
   "v1_14_0": {
@@ -33,5 +99,8 @@
     "title": "새로운 기능",
     "newBadge": "새 기능",
     "unseenLabel": "아직 보지 않음"
+  },
+  "stage": {
+    "badge": "예시"
   }
 }

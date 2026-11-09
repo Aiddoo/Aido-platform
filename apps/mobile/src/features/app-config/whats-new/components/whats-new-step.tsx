@@ -2,19 +2,16 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useLanguage } from '@src/shared/providers/language-provider';
-import { Box, FeatureMedia, H3, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
+import { Box, H3, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { Stack } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
-import { type ReactNode, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
-import { ScrollView, StyleSheet } from 'react-native';
+import type { ComponentProps, ReactNode } from 'react';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { useUniwind } from 'uniwind';
 
-/** 화면 캡처 WebP의 가로 ÷ 세로 */
-const MEDIA_RATIO = 3 / 4;
-const MEDIA_MIN_HEIGHT = 160;
+/** 큰 글꼴에서도 예시 화면이 알아볼 만큼 남는 높이. 더 줄면 글이 아니라 스크롤로 넘긴다 */
+const MEDIA_MIN_HEIGHT = 240;
 
 interface WhatsNewStepProps {
   media: ReactNode;
@@ -103,37 +100,33 @@ WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onCl
   );
 };
 
-// 세로 공간이 글꼴·기기마다 달라 폭을 세로에서 거꾸로 구하고, 폴드를 펴거나 접을 때만 다시 잰다
-WhatsNewStep.Media = function Media({
-  sources,
-  alt,
-}: {
-  sources: Record<'ko' | 'en', Record<'light' | 'dark', number>>;
-  alt: string;
-}) {
-  const { resolvedLanguage } = useLanguage();
-  const { theme } = useUniwind();
-  const [width, setWidth] = useState<number | null>(null);
+interface StageProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+  children: ReactNode;
+}
 
-  const handleLayout = ({ nativeEvent: { layout } }: LayoutChangeEvent) => {
-    setWidth(Math.min(layout.width, layout.height * MEDIA_RATIO));
-  };
+WhatsNewStep.Stage = function Stage({ children, className, ...boxProps }: StageProps) {
+  const { t } = useTranslation('whatsNew');
 
   return (
-    <Box flex={1} onLayout={handleLayout}>
-      {/* 흐름에 넣으면 잰 크기가 다음 측정의 최소 높이가 되어 자리가 줄어도 미디어가 줄지 않는다 */}
-      {width != null && (
-        <Box className="items-center justify-center" style={StyleSheet.absoluteFill}>
-          <FeatureMedia
-            ratio={MEDIA_RATIO}
-            source={sources[resolvedLanguage][theme === 'dark' ? 'dark' : 'light']}
-            alt={alt}
-            contentFit="contain"
-            className="rounded-3xl"
-            style={{ width }}
-          />
+    <Box
+      flex={1}
+      className={cn('overflow-hidden rounded-3xl bg-highlight px-3 pt-3', className)}
+      {...boxProps}
+    >
+      <Chip size="sm" variant="secondary" className="self-start bg-white/70">
+        <Text size="e2" weight="semibold" shade={7}>
+          {t('stage.badge')}
+        </Text>
+      </Chip>
+      <Spacing size={8} />
+      <Box flex={1} className="overflow-hidden rounded-t-3xl bg-white">
+        {/* 예시가 길어도 무대 높이를 늘리지 않고 잘린다. 늘면 큰 글꼴에서 제목·설명이 화면 밖으로 밀린다 */}
+        <Box className="absolute inset-0 px-4 pt-2">
+          <Box className="h-1 w-9 self-center rounded-full bg-gray-3" />
+          <Spacing size={12} />
+          {children}
         </Box>
-      )}
+      </Box>
     </Box>
   );
 };
