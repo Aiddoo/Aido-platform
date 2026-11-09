@@ -1730,3 +1730,31 @@ test('테스트 fixture의 Zod import는 스키마 폴더 규칙에 걸리지 �
     },
   );
 });
+
+test('마이 탭 메뉴 칸이 그리는 항목이 router로 직접 이동하면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/bootstrap/navigation/my-page-menu-pane.tsx': `
+        import { ReleasesItem } from '@src/features/app-config/whats-new/components/releases-item';
+        import { ThemeItem } from '@src/features/identity/user/components/theme-item';
+        export function MyPageMenuPane() { return null; }
+      `,
+      'apps/mobile/src/features/app-config/whats-new/components/releases-item.tsx': `
+        export function ReleasesItem() {
+          const push = useSingleTap(router.push);
+          return null;
+        }
+      `,
+      'apps/mobile/src/features/identity/user/components/theme-item.tsx': `
+        export function ThemeItem() {
+          const navigate = useMyPageMenuNavigate();
+          return null;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /releases-item\.tsx:3:.*router\.push 대신 useMyPageMenuNavigate/u);
+    },
+  );
+});

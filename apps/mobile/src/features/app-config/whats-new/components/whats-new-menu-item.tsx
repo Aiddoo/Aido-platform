@@ -1,13 +1,19 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import {
+  useIsMyPageMenuItemSelected,
+  useMyPageMenuNavigate,
+} from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, SettingsListGroup, WhatsNewDuoIcon } from '@src/shared/ui';
-import { router } from 'expo-router';
 
 import { useHasUnseenRelease } from '../hooks/use-has-unseen-release';
 
+const RELEASES_PATHNAME = '/whats-new/releases';
+
+/** 다른 메뉴처럼 넓은 화면에서는 오른쪽 칸을 이 화면 하나로 바꾼다 */
 export function WhatsNewMenuItem() {
   const { t } = useTranslation('whatsNew');
-  const push = useSingleTap(router.push);
+  const navigate = useMyPageMenuNavigate();
+  const isSelected = useIsMyPageMenuItemSelected(RELEASES_PATHNAME);
   const hasUnseenRelease = useHasUnseenRelease();
   const label = t('entry.mypage');
 
@@ -17,12 +23,13 @@ export function WhatsNewMenuItem() {
       icon={<SettingsListGroup.Icon Icon={WhatsNewDuoIcon} />}
       label={label}
       accessibilityLabel={hasUnseenRelease ? `${label}, ${t('list.unseenLabel')}` : label}
+      isSelected={isSelected}
       value={
         hasUnseenRelease ? (
           <Box testID="whats-new-unseen-dot" className="size-2 rounded-full bg-main" />
         ) : undefined
       }
-      onPress={() => push('/whats-new/releases')}
+      onPress={() => navigate(RELEASES_PATHNAME)}
     />
   );
 }

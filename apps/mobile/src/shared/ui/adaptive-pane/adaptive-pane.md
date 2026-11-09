@@ -33,7 +33,7 @@ import { AdaptivePane } from '@src/shared/ui';
 - 다른 탭이나 탭 위 화면에서 이 화면들을 열면 마이 탭으로 바뀌어 열린다(NativeTabs는 처음부터 모든 탭을 띄워 메뉴가 아래에 있다). 탭 위 흐름에서 탭 안 화면으로 떠날 때는 `router.dismissTo`로 탭을 새로 쌓지 않는다.
 - 업셀 결제는 예외로 지금 맥락 위 모달(`/paywall`, `(app)/paywall.tsx`)로 연다. 마이 탭 메뉴·푸시는 `/settings/subscription` 그대로이고, 두 라우트는 `bootstrap/navigation/subscription-checkout.tsx`를 함께 그린다. 모든 탭에서 같은 화면을 탭 안에 여는 공유 라우트(`(feed,mypage)`)는 다음 릴리스에 검토한다.
 - 넓은 화면 오른쪽 칸의 첫 상세는 `getSplitDetailRootOptions`로 뒤로 가기·스와이프를 두지 않고 애니메이션 없이 바꾼다(옆 목록이 고른다). 두 번째 단계부터는 네이티브 헤더의 뒤로 가기다.
-- 메뉴 이동은 `useMyPageMenuNavigation`이 정한다. 좁은 화면은 push, 넓은 화면은 오른쪽 칸에 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다.
+- 메뉴 이동은 메뉴 칸의 `MyPageMenuNavigationProvider`가 정한다(`useMyPageMenuNavigate`·`useIsMyPageMenuItemSelected`). 좁은 화면은 push, 넓은 화면은 오른쪽 칸에 쌓인 화면을 걷고(`dismissAll`) 고른 화면 하나를 연다. 메뉴 칸이 그리는 항목이 `router.push` 등으로 직접 이동하면 `check:conventions`가 거부한다.
 - 종은 마이 탭 첫 화면 헤더의 `NotificationBellToolbar`(`Stack.Toolbar`) 한 곳이다.
 - 메뉴는 한 번에 한 곳(좁은 화면 첫 화면 또는 넓은 화면 왼쪽 칸)에만 그린다. `useMyPagePaneLayout`이 스크롤 위치를 넘겨 접고 펼 때 메뉴가 같은 자리다.
 

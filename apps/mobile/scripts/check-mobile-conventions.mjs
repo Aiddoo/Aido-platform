@@ -514,6 +514,68 @@ function checkSdkImports(sourceFile, repositoryRoot, errors) {
   }
 }
 
+const MY_PAGE_MENU_PANE = 'apps/mobile/src/bootstrap/navigation/my-page-menu-pane.tsx';
+const ROUTER_NAVIGATION_METHODS = new Set(['push', 'navigate', 'replace', 'dismissTo']);
+
+/** 마이 탭 메뉴 칸이 그리는 기능 컴포넌트는 useMyPageMenuNavigate로만 이동한다. 직접 push하면 넓은 화면에서 오른쪽 칸을 바꾸지 않고 위에 쌓인다 */
+function checkMyPageMenuNavigation(repositoryRoot, errors) {
+  const panePath = resolve(repositoryRoot, MY_PAGE_MENU_PANE);
+  if (!existsSync(panePath)) {
+    return;
+  }
+  const pane = ts.createSourceFile(
+    panePath,
+    readFileSync(panePath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const componentFiles = pane.statements
+    .filter(ts.isImportDeclaration)
+    .map((statement) => statement.moduleSpecifier)
+    .filter(ts.isStringLiteral)
+    .map((specifier) => specifier.text)
+    .filter(
+      (moduleName) =>
+        moduleName.startsWith('@src/features/') && moduleName.includes('/components/'),
+    )
+    .flatMap((moduleName) =>
+      ['.tsx', '.ts']
+        .map((extension) =>
+          resolve(
+            repositoryRoot,
+            `apps/mobile/src/${moduleName.slice('@src/'.length)}${extension}`,
+          ),
+        )
+        .filter((file) => existsSync(file))
+        .slice(0, 1),
+    );
+
+  for (const file of componentFiles) {
+    const sourceFile = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    const visit = (node) => {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'router' &&
+        ROUTER_NAVIGATION_METHODS.has(node.name.text)
+      ) {
+        errors.push(
+          `${getLocation(sourceFile, node, repositoryRoot)} 마이 탭 메뉴 칸의 항목은 router.${node.name.text} 대신 useMyPageMenuNavigate로 엽니다. 넓은 화면에서 오른쪽 칸을 바꾸고 선택 표시를 맞춥니다.`,
+        );
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+  }
+}
+
 function getSourceFiles(root, relativeDirectory) {
   const directory = resolve(root, relativeDirectory);
   if (!existsSync(directory)) {
@@ -2435,6 +2497,7 @@ export function checkMobileConventions(
 
   checkFeatureFilePrefixes(repositoryRoot, errors);
   checkSchemaFileNames(repositoryRoot, errors);
+  checkMyPageMenuNavigation(repositoryRoot, errors);
 
   applyAllowlist(collectArchitectureFindings(repositoryRoot, errors), allowlist, errors);
 
