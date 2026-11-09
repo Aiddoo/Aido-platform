@@ -18,7 +18,7 @@
     "remaining": "{{amount}} left this month",
     "notCharged": "If it fails, it doesn't count",
     "typeStillFree": "Typing is still free",
-    "usedUpChipHint": "Shows this month’s AI usage and Premium"
+    "usedUpChipHint": "Opens this month's AI usage and Premium info"
   },
   "coach": {
     "quickStart": {

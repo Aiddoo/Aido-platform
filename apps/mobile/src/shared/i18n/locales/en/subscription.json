@@ -92,8 +92,8 @@
     "subscribeButton": "Subscribe",
     "startAnnual": "Start annual plan",
     "startMonthly": "Start monthly plan",
-    "startFreeTrial": "Start {{period}} free",
-    "trialDisclosure": "{{price}} from {{date}} · Cancel anytime",
+    "startFreeTrial": "Start free for {{period}}",
+    "trialDisclosure": "Billed {{price}} from {{date}} · Cancel anytime",
     "renewalNotice": {
       "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
       "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
@@ -133,7 +133,7 @@
       "description": "You're enjoying all Premium features"
     },
     "trial": {
-      "title": "Free trial",
+      "title": "Free trial active",
       "description": "You get every Premium feature during your trial"
     },
     "reward": {
@@ -152,7 +152,7 @@
       "nextBillingDate": "Next billing date",
       "renewalPending": "Confirming renewal",
       "trialEndsOn": "Trial ends",
-      "firstBillingDate": "First payment",
+      "firstBillingDate": "First billing date",
       "dateWithPrice": "{{date}} · {{price}}",
       "subscriptionEndsOn": "Subscription ends",
       "subscriptionStatus": "Subscription status",
@@ -213,11 +213,11 @@
     "friendTitle": "You've reached your friend limit",
     "categoryTitle": "You can't add more categories",
     "aiReportTitle": "AI reports are a Premium feature",
-    "aiReportDescription": "Get weekly and monthly reports analyzed by AI.",
+    "aiReportDescription": "Get weekly and monthly AI reports.",
     "aiSuggestionTitle": "AI repeat suggestions are a Premium feature",
     "aiSuggestionDescription": "AI suggests the to-dos you keep repeating.",
     "reminderTimeTitle": "Custom reminder times are a Premium feature",
-    "reminderTimeDescription": "Get reminders at the times you choose. Default-time reminders keep coming.",
+    "reminderTimeDescription": "Get reminders at the times you choose. You'll still get reminders at your default time.",
     "appIconTitle": "Custom app icons are a Premium feature",
     "appIconDescription": "Give the app icon your own style.",
     "refillToday": "Resets to {{amount}} later today",

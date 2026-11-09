@@ -8,16 +8,16 @@
   },
   "marketingOptIn": {
     "title": "Get offers and news too?",
-    "description": "We'll send events, offers, and picks for you",
-    "notice": "This is consent to promotional messages. Turn it off anytime in Settings",
+    "description": "We'll send you events, offers, and picks just for you",
+    "notice": "This is consent to receive promotional messages. You can turn it off anytime in Settings",
     "agree": "Yes, please",
     "later": "Not now"
   },
   "consentResult": {
     "marketingAgreed": "You agreed to Aido marketing messages on {{date}}",
-    "marketingPushAgreed": "You agreed to Aido promotional push on {{date}}",
+    "marketingPushAgreed": "You agreed to Aido promotional push notifications on {{date}}",
     "marketingWithdrawn": "You withdrew consent to Aido marketing messages on {{date}}",
-    "marketingPushWithdrawn": "You withdrew consent to Aido promotional push on {{date}}"
+    "marketingPushWithdrawn": "You withdrew consent to Aido promotional push notifications on {{date}}"
   },
   "titles": {
     "notifications": "Notifications",
@@ -97,7 +97,7 @@
     },
     "deviceOff": {
       "title": "Device notifications are off",
-      "description": "Turn them on to get the alerts below"
+      "description": "Turn them on to get the notifications below"
     },
     "todoTime": {
       "off": "Notifications are off, so we can't remind you"

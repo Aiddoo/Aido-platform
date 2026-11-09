@@ -90,7 +90,7 @@ toast.error(t('friend:toast.sendFailed'));
   | 앱 이름 (코드 식별자·개발 문서는 대상 아님)           | 아이두                                 | Aido                                   |
   | 탭 / 머리글                                           | 마이 / 내 정보                         | Me / My account                        |
   | 녹음 관리 화면                                        | 녹음 저장 공간                         | Recording storage                      |
-  | 마이 탭 횟수 요약 제목                                | 이번 달 남은 AI 횟수                   | AI uses left this month                |
+  | 마이 탭 횟수 요약 제목                                | 이번 달 AI 사용량                      | AI usage this month                    |
   | 초대 보상 도장                                        | 발자국                                 | paw prints                             |
   | 친구 재촉                                             | 콕 / 콕 찌르기                         | nudge                                  |
   | 초대 보상 기간                                        | 프리미엄 7일                           | 7 days of Premium                      |

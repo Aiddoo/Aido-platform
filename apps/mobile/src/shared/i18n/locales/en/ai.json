@@ -120,7 +120,7 @@
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "What you type or say, your to-dos, and the date and time zone. Never your name, email, friends, or audio files."
+        "description": "What you type or say, your to-dos, and the date and time zone. We don't send your name, email, friends, or audio files."
       },
       "processor": {
         "title": "Who processes it",
