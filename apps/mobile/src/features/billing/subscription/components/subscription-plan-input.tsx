@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { ChoiceRadio, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Chip, RadioGroup } from 'heroui-native';
+import { Card, Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -14,6 +14,8 @@ import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { formatPlanAmount } from '../utils/plan-price.view-model';
+
+const AnimatedCard = Animated.createAnimatedComponent(Card);
 
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 
@@ -61,14 +63,14 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   return (
     <RadioGroup.Item value={plan.identifier} className="rounded-2xl">
       {({ isSelected }) => (
-        // 고른 테두리 색이 끊기지 않고 바뀌게 UI 스레드 CSS 전환으로 칠한다
-        <Animated.View
-          className="flex-1 overflow-hidden rounded-3xl border-2 bg-white p-4 dark:bg-gray-2"
+        // heroui Card가 style·ref를 넘겨 그대로 애니메이션 컴포넌트로 감싸고, 고른 테두리 색만 UI 스레드 CSS 전환으로 바꾼다
+        <AnimatedCard
+          className="flex-1 border-2 bg-white dark:bg-gray-2"
           style={{
             borderColor: isSelected ? selectedBorderColor : idleBorderColor,
             transitionProperty: 'borderColor',
             transitionDuration: ANIMATION.duration.fast,
-            transitionTimingFunction: 'ease-out',
+            transitionTimingFunction: ANIMATION.easing.easeOut,
           }}
         >
           <VStack gap={8}>
@@ -116,7 +118,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                 : '\u00A0'}
             </Text>
           </VStack>
-        </Animated.View>
+        </AnimatedCard>
       )}
     </RadioGroup.Item>
   );
