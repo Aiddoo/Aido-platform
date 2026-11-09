@@ -8,13 +8,15 @@ import {
 } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
-import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
+import {
+  type TodoRepeat,
+  TodoRepeatPolicy,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
 } from '@src/features/voice/domains/voice-plan.model';
-import { diffDateKeysInDays } from '@src/shared/date/date-key';
 import { toDateKey, toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
@@ -66,23 +68,14 @@ export function toConvertMemoToTodosRequest(
   });
 }
 
-/** 출시된 서버는 "이번 주말 X"를 토·일 + 그 주 일요일까지로 준다. 끝이 다음 날까지인 반복은 한 번으로 본다 */
-function isSingleWeekend(repeat: TodoRepeat, startDate: string): boolean {
-  return (
-    repeat.frequency === 'WEEKLY' &&
-    repeat.weekdays?.includes('SAT') === true &&
-    repeat.weekdays.includes('SUN') &&
-    repeat.end.type === 'UNTIL' &&
-    diffDateKeysInDays(startDate, repeat.end.date) <= 1
-  );
-}
-
 function toParsedMemoRepeat({
   repeat,
   startDate,
 }: ParseMemoPlanResponse['data']['todos'][number]): TodoRepeat | null {
   const parsed = repeat == null ? null : toRepeat(repeat);
-  return parsed != null && isSingleWeekend(parsed, startDate) ? null : parsed;
+  return parsed != null && TodoRepeatPolicy.isSingleWeekendRepeat(parsed, startDate)
+    ? null
+    : parsed;
 }
 
 export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
