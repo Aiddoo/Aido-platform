@@ -78,6 +78,7 @@ describe("카테고리 수정", () => {
     expect(repository.updates).toEqual([]);
     expect(cache.invalidatedUserIds).toEqual([]);
     expect(eventPublisher.events).toEqual([]);
+    expect(eventPublisher.publishedEvents).toEqual([]);
   });
 
   it("수정한 이름과 색상을 저장하고 커밋 뒤에 캐시를 무효화하고 이벤트를 낸다", async () => {
@@ -114,6 +115,14 @@ describe("카테고리 수정", () => {
     expect(context.eventPublisher.events).toEqual([
       { eventName: "todo-category.updated", userId: USER_ID, categoryId: 1 },
     ]);
+    expect(
+      context.eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
+    ).toEqual([
+      [
+        "planning.todo-category.updated",
+        { categoryId: 1, userId: USER_ID, occurredAt: "2026-11-10T01:00:00.000Z" },
+      ],
+    ]);
   });
 
   it("이름이 기존과 같으면 중복 검사를 건너뛴다", async () => {
@@ -143,5 +152,6 @@ describe("카테고리 수정", () => {
     expect(result.toPrimitives()).toMatchObject({ name: "기존", updatedAt: TODO_FIXTURE_NOW });
     expect(repository.updates).toEqual([]);
     expect(eventPublisher.events).toEqual([]);
+    expect(eventPublisher.publishedEvents).toEqual([]);
   });
 });

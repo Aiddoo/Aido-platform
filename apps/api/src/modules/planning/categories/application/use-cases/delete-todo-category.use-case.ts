@@ -1,7 +1,10 @@
+import { randomUUID } from "node:crypto";
+
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type DomainEventPublisherPort,
@@ -9,6 +12,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import { TodoCategoryDeletedEvent } from "../../domain/todo-category-deleted.event.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -39,6 +43,7 @@ interface DeleteTodoCategoryDependencies {
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -101,6 +106,15 @@ export class DeleteTodoCategoryUseCase {
       }
 
       await this.#dependencies.repository.delete(categoryId);
+      await this.#dependencies.eventPublisher.publish([
+        new CategoryChangedEvent({
+          eventName: "planning.todo-category.deleted",
+          eventId: randomUUID(),
+          occurredAt: this.#dependencies.clock.now(),
+          categoryId,
+          userId,
+        }),
+      ]);
     });
 
     await this.#dependencies.cache.invalidate(userId);

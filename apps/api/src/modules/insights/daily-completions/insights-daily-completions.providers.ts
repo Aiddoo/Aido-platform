@@ -1,4 +1,5 @@
 import type { Provider } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
@@ -18,6 +19,7 @@ export const INSIGHTS_DAILY_COMPLETIONS_PROVIDERS = [
   { provide: FriendshipReaderPort, useExisting: FollowReaderPort },
   provideUseCase(DailyCompletionCacheEventHandler, {
     dailyCompletionCache: DailyCompletionCachePort,
+    eventEmitter: EventEmitter2,
     logger: loggerFor(DailyCompletionCacheEventHandler),
   }),
   provideUseCase(GetDailyCompletionsUseCase, {

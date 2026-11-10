@@ -24,6 +24,8 @@ export {
   todoChangedPayloadSchema,
   todoSeriesChangedPayloadSchema,
 } from "./application/todo-published-events.constants.js";
+export { TODO_CHANGE_EVENT_NAMES } from "../shared/domain/todo-changed.event.js";
+export { TODO_SERIES_CHANGE_EVENT_NAMES } from "../shared/domain/todo-series-changed.event.js";
 export { TodoOccurrencesChangedEvent } from "../todo-series/domain/todo-occurrences-changed.event.js";
 export { TodoOccurrencesCreatedEvent } from "../todo-series/domain/todo-occurrences-created.event.js";
 export { TodoCategoryChangedEvent } from "../shared/domain/todo-category-changed.event.js";

@@ -4,13 +4,14 @@ import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-s
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
-import { TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
+import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
 import { DeleteTodoCategoryUseCase } from "./delete-todo-category.use-case.js";
@@ -50,6 +51,7 @@ function setUp(
     cache,
     mutationLock,
     unitOfWork: input.unitOfWork ?? new ImmediateUnitOfWork(),
+    clock: new FixedClock(TODO_FIXTURE_NOW),
     eventPublisher,
     logger: new SilentLogger(),
   });
@@ -111,6 +113,7 @@ describe("카테고리 삭제", () => {
     );
     expect(cache.invalidatedUserIds).toEqual([]);
     expect(eventPublisher.events).toEqual([]);
+    expect(eventPublisher.publishedEvents).toEqual([]);
   });
 
   it("할 일 없이 진행 중 규칙만 있어도 옮길 곳을 묻고 상세에는 할 일 수만 싣는다", async () => {
@@ -145,6 +148,14 @@ describe("카테고리 삭제", () => {
     expect(cache.invalidatedUserIds).toEqual([USER_ID]);
     expect(eventPublisher.events).toEqual([
       { eventName: "todo-category.deleted", userId: USER_ID, categoryId: 1 },
+    ]);
+    expect(
+      eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
+    ).toEqual([
+      [
+        "planning.todo-category.deleted",
+        { categoryId: 1, userId: USER_ID, occurredAt: "2026-11-10T00:00:00.000Z" },
+      ],
     ]);
   });
 

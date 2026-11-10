@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -10,6 +12,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -70,13 +73,23 @@ export class UpdateTodoCategoryUseCase {
         }
       }
 
-      if (!category.updateDetails(data, this.#dependencies.clock.now())) {
+      const now = this.#dependencies.clock.now();
+      if (!category.updateDetails(data, now)) {
         return { updated: category, events: [] };
       }
       const updated = await this.#dependencies.repository.update(id, {
         name: data.name == null ? undefined : category.name.value,
         color: data.color == null ? undefined : category.color.value,
       });
+      await this.#dependencies.eventPublisher.publish([
+        new CategoryChangedEvent({
+          eventName: "planning.todo-category.updated",
+          eventId: randomUUID(),
+          occurredAt: now,
+          categoryId: id,
+          userId,
+        }),
+      ]);
       return { updated, events: category.pullDomainEvents() };
     });
 

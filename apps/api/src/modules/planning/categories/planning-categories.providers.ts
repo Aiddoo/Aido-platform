@@ -70,6 +70,7 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     cache: TodoCategoryCachePort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,
+    clock: ClockPort,
     eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(DeleteTodoCategoryUseCase),
   }),
