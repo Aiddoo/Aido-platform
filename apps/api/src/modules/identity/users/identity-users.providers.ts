@@ -8,10 +8,7 @@ import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notif
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import {
-  USAGE_METER,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -51,7 +48,7 @@ export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoComme
 
 export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPort> = {
   provide: AccountUsageCleanupPort,
-  inject: [USAGE_METER],
+  inject: [UsageMeterPort],
   useFactory: (meter: Pick<UsageMeterPort, "deleteSubject">): AccountUsageCleanupPort => ({
     cleanupInTransaction: async (userId) => {
       await meter.deleteSubject(userId.value);

@@ -12,4 +12,4 @@ export * from "./adapters/redis-dedup.adapter.js";
 // Module
 export * from "./dedup.module.js";
 // Interfaces
-export * from "./interfaces/dedup.interface.js";
+export * from "./dedup-provider.port.js";

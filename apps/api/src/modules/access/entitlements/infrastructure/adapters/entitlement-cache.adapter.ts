@@ -2,7 +2,7 @@ import { GRANTABLE_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { EntitlementCacheInvalidatorPort } from "../../application/ports/entitlement-cache-invalidator.port.js";
@@ -28,9 +28,9 @@ export class EntitlementCacheAdapter
   extends EntitlementCachePort
   implements EntitlementCacheInvalidatorPort
 {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     super();
     this.#cacheService = cacheService;
   }

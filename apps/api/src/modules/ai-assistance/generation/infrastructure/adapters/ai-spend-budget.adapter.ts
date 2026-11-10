@@ -2,11 +2,10 @@ import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import {
-  USAGE_METER,
+  UsageMeterPort,
   USAGE_SUBJECT_ALL,
   type UsageKey,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -73,7 +72,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
 
   constructor(
     @Inject(aiAssistanceGenerationConfig.KEY) config: SpendBudgetConfig,
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "add" | "read">,
     alert: OperationalAlertPort,
     clock: ClockPort,
   ) {

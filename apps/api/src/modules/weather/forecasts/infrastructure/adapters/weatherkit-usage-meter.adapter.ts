@@ -1,10 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-  USAGE_METER,
-  USAGE_SUBJECT_ALL,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -30,7 +26,7 @@ export class WeatherKitUsageMeterAdapter {
   readonly #clock: ClockPort;
 
   constructor(
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add">,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "add">,
     alert: OperationalAlertPort,
     clock: ClockPort,
   ) {

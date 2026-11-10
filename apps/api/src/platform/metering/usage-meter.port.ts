@@ -1,5 +1,3 @@
-export const USAGE_METER = Symbol("USAGE_METER");
-
 /** 모든 사용자를 합친 사용량의 subject */
 export const USAGE_SUBJECT_ALL = "*";
 
@@ -26,16 +24,16 @@ export interface UsageReservation {
  * 외부 호출의 누적 사용량(비용·호출 수·발송 수). 같은 키는 원자적으로 더하므로 여러 요청이
  * 동시에 더해도 각자 받은 누적값이 서로 다르고, 기준선을 넘긴 요청은 정확히 하나다.
  */
-export interface UsageMeterPort {
+export abstract class UsageMeterPort {
   /** 더한 뒤 누적값을 입력 순서대로 돌려준다 */
-  add(increments: readonly UsageIncrement[]): Promise<readonly number[]>;
+  abstract add(increments: readonly UsageIncrement[]): Promise<readonly number[]>;
   /** 누적값이 limit을 넘지 않을 때만 더한다 */
-  tryReserve(key: UsageKey, amount: number, limit: number): Promise<UsageReservation>;
+  abstract tryReserve(key: UsageKey, amount: number, limit: number): Promise<UsageReservation>;
   /** 예약을 되돌린다. 0 밑으로 내려가지 않는다. */
-  release(key: UsageKey, amount: number): Promise<void>;
-  read(keys: readonly UsageKey[]): Promise<readonly number[]>;
+  abstract release(key: UsageKey, amount: number): Promise<void>;
+  abstract read(keys: readonly UsageKey[]): Promise<readonly number[]>;
   /** cutoff 전에 마지막으로 바뀐 기간을 지운다 */
-  prune(cutoff: Temporal.Instant): Promise<number>;
+  abstract prune(cutoff: Temporal.Instant): Promise<number>;
   /** 사용자 id를 대상으로 한 모든 기간을 지운다(계정 영구 삭제) */
-  deleteSubject(subject: string): Promise<number>;
+  abstract deleteSubject(subject: string): Promise<number>;
 }

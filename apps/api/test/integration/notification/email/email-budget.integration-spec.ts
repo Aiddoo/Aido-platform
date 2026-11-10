@@ -1,9 +1,5 @@
 import { MeteredEmailBudgetAdapter } from "#api/modules/notification/email/infrastructure/adapters/metered-email-budget.adapter";
-import {
-  USAGE_METER,
-  USAGE_SUBJECT_ALL,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { usagePeriod } from "#api/platform/metering/usage-period";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -27,7 +23,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 12 }) });
     await database.start();
     context = await createE2eApp({ testDatabase: database });
-    meter = context.module.get(USAGE_METER);
+    meter = context.module.get(UsageMeterPort);
   });
 
   afterAll(async () => {

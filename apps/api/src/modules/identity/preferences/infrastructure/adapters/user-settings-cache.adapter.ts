@@ -5,7 +5,7 @@ import {
   UserSettingsCacheKey,
   USER_SETTINGS_CACHE_TTL_MS,
 } from "#api/modules/identity/preferences/infrastructure/cache/user-settings-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserSettingsCachePort } from "../../application/ports/user-settings-cache.port.js";
@@ -31,9 +31,9 @@ const PREFERENCE_SNAPSHOT_SCHEMA = z.looseObject({
 
 @Injectable()
 export class UserSettingsCacheAdapter implements UserSettingsCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 

@@ -8,7 +8,7 @@ import { notificationEmailConfig } from "#api/modules/notification/email/notific
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
@@ -45,7 +45,7 @@ const alerts = new RecordingOperationalAlert();
 @Module({
   providers: [
     { provide: JobQueuePort, useValue: jobQueue },
-    { provide: USAGE_METER, useValue: meter },
+    { provide: UsageMeterPort, useValue: meter },
     { provide: OperationalAlertPort, useValue: alerts },
     { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
@@ -59,7 +59,7 @@ const alerts = new RecordingOperationalAlert();
   ],
   exports: [
     JobQueuePort,
-    USAGE_METER,
+    UsageMeterPort,
     OperationalAlertPort,
     ClockPort,
     OutboundPolicyRegistry,

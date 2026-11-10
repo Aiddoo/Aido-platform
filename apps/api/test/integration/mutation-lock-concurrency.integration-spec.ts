@@ -36,7 +36,7 @@ import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -707,7 +707,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         }),
         TodoCategoryLimitReaderAdapter,
         {
-          provide: CacheService,
+          provide: CacheStorePort,
           useValue: {
             wrap: () => {
               throw new Error("category mutation integration test used cached entitlement");

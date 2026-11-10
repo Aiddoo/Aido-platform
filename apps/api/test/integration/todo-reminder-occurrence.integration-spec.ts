@@ -29,7 +29,7 @@ import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/applicati
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -176,7 +176,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       providers: [
         DrizzleSchedulerReader,
         { provide: TransactionHost, useValue: txHost },
-        { provide: CacheService, useValue: {} },
+        { provide: CacheStorePort, useValue: {} },
         { provide: ClockPort, useValue: new DateClock() },
         {
           provide: notificationRetentionConfig.KEY,

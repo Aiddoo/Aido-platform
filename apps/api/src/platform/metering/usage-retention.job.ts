@@ -11,7 +11,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
-import { USAGE_METER, type UsageMeterPort } from "./interfaces/usage-meter.interface.js";
+import { UsageMeterPort } from "./usage-meter.port.js";
 
 /** 월 예산·공급자 월 한도를 넘는 기간만 남긴다. */
 const USAGE_RETENTION_DAYS = 90;
@@ -50,7 +50,7 @@ export class UsageRetentionJob implements OnModuleInit {
   readonly #clock: ClockPort;
 
   constructor(
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "prune">,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "prune">,
     jobQueue: JobQueuePort,
     clock: ClockPort,
   ) {

@@ -5,7 +5,7 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -35,13 +35,13 @@ const FRIEND_TODOS_PAGE_SCHEMA = z.object({
 }) satisfies z.ZodType<CursorPaginatedResponse<FriendTodoReadModel, number>>;
 
 /**
- * Todo 캐시 포트 어댑터 — CacheService에 위임
+ * Todo 캐시 포트 어댑터 — CacheStorePort에 위임
  */
 @Injectable()
 export class TodoCacheAdapter implements TodoCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 

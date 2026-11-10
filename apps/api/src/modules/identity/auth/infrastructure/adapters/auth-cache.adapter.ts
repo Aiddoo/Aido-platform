@@ -10,7 +10,7 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
@@ -64,10 +64,10 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
 @Injectable()
 // 사용자 프로필 무효화 포트로도 같은 인스턴스를 쓴다(useExisting)
 export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
   readonly #clock: ClockPort;
 
-  constructor(cacheService: CacheService, clock: ClockPort) {
+  constructor(cacheService: CacheStorePort, clock: ClockPort) {
     this.#cacheService = cacheService;
     this.#clock = clock;
   }

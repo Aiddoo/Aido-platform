@@ -5,16 +5,16 @@ import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
 } from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FollowCachePort } from "../../application/ports/follow-cache.port.js";
 
 @Injectable()
 export class FollowCacheAdapter implements FollowCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 

@@ -43,7 +43,7 @@ import {
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   notification,
   pushDispatch,
@@ -52,8 +52,8 @@ import {
   userPreference,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
-import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -183,13 +183,13 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: UserPreferenceReaderPort,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
-            cache: CacheService,
+            cache: CacheStorePort,
           ) =>
             new ReadUserPreferencesUseCase({
               preferenceRepository,
               cache: new UserSettingsCacheAdapter(cache),
             }),
-          inject: [DrizzleUserPreferenceRepository, CacheService],
+          inject: [DrizzleUserPreferenceRepository, CacheStorePort],
         },
         UserSettingsCacheAdapter,
         { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
@@ -241,19 +241,19 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         },
         { provide: NoCacheStore, useValue: new NoCacheStore() },
         {
-          provide: CacheService,
+          provide: CacheStorePort,
           inject: [NoCacheStore],
-          useFactory: (store: NoCacheStore) => new CacheService(store),
+          useFactory: (store: NoCacheStore) => store,
         },
         {
-          provide: LOCK_PROVIDER,
+          provide: LockProviderPort,
           useValue: {
             acquire: vi.fn().mockResolvedValue(vi.fn().mockResolvedValue(undefined)),
             isLocked: vi.fn().mockResolvedValue(false),
           },
         },
         {
-          provide: DEDUP_PROVIDER,
+          provide: DedupProviderPort,
           useValue: {
             filterMembers: vi.fn().mockResolvedValue(new Set()),
             isMember: vi.fn().mockResolvedValue(false),

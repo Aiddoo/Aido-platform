@@ -39,7 +39,7 @@ import { NotificationQueueAdapter } from "#api/modules/notification/notification
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/index";
@@ -212,8 +212,8 @@ export async function createAuthTestModule(
         useValue: fakeEmailService,
       },
       {
-        provide: CacheService,
-        useValue: new CacheService(new NoCacheStore()),
+        provide: CacheStorePort,
+        useValue: new NoCacheStore(),
       },
       {
         provide: ConfigService,

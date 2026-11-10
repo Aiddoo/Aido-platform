@@ -9,6 +9,6 @@
 export * from "./adapters/in-memory-lock.adapter.js";
 export * from "./adapters/redis-lock.adapter.js";
 // Interfaces
-export * from "./interfaces/lock.interface.js";
+export * from "./lock-provider.port.js";
 // Module
 export * from "./lock.module.js";

@@ -12,7 +12,7 @@ import {
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
@@ -107,7 +107,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     @Module({
       providers: [
         { provide: JobQueuePort, useValue: jobQueue },
-        { provide: USAGE_METER, useValue: new InMemoryUsageMeterAdapter() },
+        { provide: UsageMeterPort, useValue: new InMemoryUsageMeterAdapter() },
         { provide: OperationalAlertPort, useValue: alerts },
         { provide: ClockPort, useClass: DateClock },
         OutboundPolicyRegistry,
@@ -121,7 +121,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       ],
       exports: [
         JobQueuePort,
-        USAGE_METER,
+        UsageMeterPort,
         OperationalAlertPort,
         ClockPort,
         OutboundPolicyRegistry,

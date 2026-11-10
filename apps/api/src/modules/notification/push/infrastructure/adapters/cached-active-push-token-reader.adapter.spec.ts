@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
@@ -15,7 +14,7 @@ import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-r
 const TOKENS_SCHEMA = z.array(z.string());
 
 function createFixture(tokens: Parameters<typeof createPushTokenFixture>[0][] = []) {
-  const cache = new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }));
+  const cache = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
   const pushTokenRepository = new InMemoryPushTokenRepository(
     tokens.map((overrides, index) => createPushTokenFixture({ id: index + 1, ...overrides })),
   );
