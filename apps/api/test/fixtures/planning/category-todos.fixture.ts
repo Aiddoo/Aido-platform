@@ -16,7 +16,7 @@ import {
 } from "#api/platform/database/schema/index";
 
 // 한 문장의 바인딩 값은 65,535개까지라 묶어서 넣는다
-const INSERT_BATCH_SIZE = 1_000;
+const INSERT_BATCH_SIZE = 1000;
 const SEOUL = "Asia/Seoul";
 const SEEDED_AT = Temporal.Instant.from("2026-01-01T00:00:00Z");
 

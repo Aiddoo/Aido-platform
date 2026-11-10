@@ -13,7 +13,7 @@ import { todo, todoSeries, user as userTable } from "#api/platform/database/sche
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const PASSWORD = "Test1234!";
 const LONG_AGO = Temporal.Instant.from("2026-01-01T00:00:00Z");
 
