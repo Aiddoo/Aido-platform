@@ -163,6 +163,9 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     ['좁은 바깥 화면', DEVICE_WINDOW.narrowFoldedOuter, 'portrait'],
     ['펼친 안쪽 화면', DEVICE_WINDOW.unfoldedInner, 'unlocked'],
     ['태블릿', DEVICE_WINDOW.tablet, 'unlocked'],
+    ['Surface Duo 한 화면', DEVICE_WINDOW.duoSingleScreen, 'portrait'],
+    ['Surface Duo 두 화면에 펼침', DEVICE_WINDOW.duoSpanned, 'unlocked'],
+    ['휴대폰 분할 화면 한쪽 창', DEVICE_WINDOW.phoneSplitScreenHalf, 'portrait'],
   ] as const)('Android %s는 %s다', (_device, size, expected) => {
     // Given
     const window = createAppWindow(size);

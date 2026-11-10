@@ -16,6 +16,12 @@ export const DEVICE_WINDOW = {
   unfoldedInner: { width: 841, height: 701 },
   /** 10인치 Android 태블릿 */
   tablet: { width: 1280, height: 800 },
+  /** Surface Duo 한 화면 */
+  duoSingleScreen: { width: 540, height: 720 },
+  /** Surface Duo 두 화면에 걸쳐 편 앱(가운데 힌지 34 포함) */
+  duoSpanned: { width: 1114, height: 720 },
+  /** Pixel 9 위아래 분할 화면의 한쪽 창 */
+  phoneSplitScreenHalf: { width: 412, height: 440 },
   /** iPad Air 11인치 세로 */
   iPadPortrait: { width: 820, height: 1180 },
   /** iPad Air 11인치 가로 */

@@ -25,6 +25,23 @@ describe('useOrientationLock (Android)', () => {
     expect(screenOrientation.unlock).not.toHaveBeenCalled();
   });
 
+  it('분할 화면에서 시스템이 세로 요청을 무시해 창이 그대로여도 다시 요청하지 않는다', async () => {
+    // Given
+    const screenOrientation = createScreenOrientationGatewayStub();
+    const { width, height } = DEVICE_WINDOW.phoneSplitScreenHalf;
+    stubWindowDimensions(width, height);
+    const { rerender } = await renderUiHook(() => useOrientationLock(), {
+      di: { screenOrientation },
+    });
+
+    // When
+    await rerender({});
+    await rerender({});
+
+    // Then
+    expect(screenOrientation.lockPortrait).toHaveBeenCalledTimes(1);
+  });
+
   it('펼치면 풀고 다시 접으면 세로로 묶는다', async () => {
     // Given
     const screenOrientation = createScreenOrientationGatewayStub();

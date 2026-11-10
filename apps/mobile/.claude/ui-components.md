@@ -218,7 +218,19 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
   - 예외는 마이 탭 하나다. 상세 칸이 Stack이라 헤더를 전체 폭으로 두고 메뉴를 화면마다 본문 왼쪽 칸에 그린다(`MyPageStack`). iPadOS 세로의 떠 있는 탭 바가 칸 안 헤더의 뒤로 가기를 가리기 때문이다. [내 정보 메뉴](../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸).
 - **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
-- **방향은 화면이 정하지 않는다.** iPhone은 세로(Info.plist), iPad는 네 방향이다. Android는 앱 설정에서 방향을 묶지 않고, 짧은 변이 600dp 미만인 창(휴대폰·접은 바깥 화면)만 실행 중에 세로로 묶는다(`WindowLayoutPolicy.getOrientationLock`, `useOrientationLock`). 펼친 폴더블·태블릿은 가로로도 쓰므로 화면은 세로를 가정한 고정 높이를 두지 않고 창 높이에 맞춰 줄인다. [Android 큰 화면 방향 권장](https://developer.android.com/develop/adaptive-apps/cookbook/orientation-restriction)
+- **방향은 화면이 정하지 않는다.** 휴대폰은 가로를 지원하지 않고, 태블릿과 펼친 폴더블·두 화면은 돌릴 수 있다. Android는 앱 설정에서 방향을 묶지 않고 창의 짧은 변이 600dp 미만이면 실행 중에 세로로 묶는다(`WindowLayoutPolicy.getOrientationLock`, `useOrientationLock`, [Android 큰 화면 방향 권장](https://developer.android.com/develop/adaptive-apps/cookbook/orientation-restriction)). 펼친 폴더블·태블릿은 가로로도 쓰므로 화면은 세로를 가정한 고정 높이를 두지 않고 창 높이에 맞춰 줄인다.
+
+| 기기·자세                     | 창 짧은 변 | 방향                                                                                                |
+| ----------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| iPhone                        | -          | 세로(Info.plist). 앱은 실행 중에 바꾸지 않는다                                                      |
+| iPad                          | -          | 네 방향(Info.plist, 분할 화면·Stage Manager). 앱은 실행 중에 바꾸지 않는다                          |
+| Android 휴대폰                | 600dp 미만 | 세로로 묶는다. 기기를 돌려도 세로다                                                                 |
+| 폴더블 접은 바깥 화면         | 600dp 미만 | 세로로 묶는다                                                                                       |
+| 폴더블 펼친 안쪽 화면·태블릿  | 600dp 이상 | 푼다                                                                                                |
+| Surface Duo 한 화면 / 두 화면 | 540 / 720  | 한 화면은 세로, 두 화면에 펼치면 푼다                                                               |
+| Android 분할 화면·여러 창     | 창 기준    | 좁으면 세로를 요청하지만 여러 창에서는 시스템이 무시한다. 결정이 바뀔 때만 요청해 되풀이하지 않는다 |
+
+- Android 16+은 짧은 변 600dp 이상 화면에서 앱의 방향 요청을 받지 않는다. 접었을 때 건 세로 요청이 펼친 뒤에도 기록에 남지만(`dumpsys activity`의 `requestedOrientation`) 그 화면에서는 무시돼 돌릴 수 있다(Pixel Fold 에뮬레이터 API 36.1 확인).
 - **`SplitView`·`ArrangementView`는 쓰지 않는다.** [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).
 
 ## 시트
