@@ -15,7 +15,25 @@
 
 목록 줄은 데이터만 갖는다: `id`(route·지표 키), `version`·`releasedOn`(패치 노트), `titleKey`·`descriptionKey`, `requiresInvite`, 선택 `cta`, 서버가 자동으로 열 수 있는 출시에만 `campaignId`. 줄은 기능이 주인공이고 버전·날짜(`v1.13.0 · 10월 27일 업데이트`)는 아래 조용한 글자다. 쓸 수 없는 기능(초대 꺼짐)의 줄은 누를 수 없게 두지 않고 `WhatsNewPolicy.canViewRelease`로 숨긴다. 소개는 `WhatsNewPolicy.findTourId`가 `TOUR_RELEASE_IDS`로 찾는다. 소개가 없는 id로 `/whats-new`에 들어오면 최신 소개를 연다.
 
-## 출시마다 할 일
+## 운영이 띄울 소개를 고르는 법
+
+서버 `GET /v1/app-config/feature-discovery`가 env로 정하고, 앱은 응답의 `campaignId`와 같은 `campaignId`를 가진 출시를 찾는다. 앱이 모르는 id면 띄우지 않는다. 그래서 1.15.1 앱에서도 운영이 1.15.0 소개를 계속 띄울 수 있다. v1 응답 계약은 바꾸지 않는다(구 앱이 엄격하게 검사한다).
+
+| env                                 | 뜻                                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------- |
+| `FEATURE_DISCOVERY_ENABLED`         | 끄면 자동 열기, 새 기능 표시, 피드 카드가 모두 없다. 목록과 소개는 그대로 열린다   |
+| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(지금 `feature-discovery-2026-12` = 1.15.0)                |
+| `FEATURE_DISCOVERY_MIN_APP_VERSION` | 그 소개를 번들한 첫 앱 버전. 낮은 앱은 열지 않는다                                 |
+| `FEATURE_DISCOVERY_AUTO_OPEN`       | 끄면 자동으로 열지 않고 목록에서만 연다                                            |
+| `FEATURE_DISCOVERY_LAUNCHED_AT`     | 켜면 필수. 1.15.0 이하 앱만 읽고(그 전 가입자에게만 자동), 1.15.1 앱은 읽지 않는다 |
+
+## 출시 체크리스트
+
+1. 소개 파일(`components/release-x-y-z-steps.tsx`)과 `RELEASES` 줄을 더한다. 버전·날짜는 패치 노트, 자동으로 열 출시면 `campaignId`를 둔다.
+2. 출시 때 운영 env `FEATURE_DISCOVERY_CAMPAIGN_ID`·`FEATURE_DISCOVERY_MIN_APP_VERSION`을 새 값으로 바꾼다. 서버를 먼저 배포한다.
+3. 다음 출시에서 최근 두 출시 밖으로 밀린 소개 코드를 지운다. 목록 줄은 남기고 누르면 `cta` 화면으로 간다.
+
+## 자세한 순서
 
 1. `constants/whats-new.constants.ts`의 `RELEASE_ID`에 한 줄 더하고 `TOUR_RELEASE_IDS` 맨 앞에 넣는다. 세 개가 되면 맨 뒤를 빼고 그 소개 파일, `app/(app)/whats-new/index.tsx`의 `match` 갈래, 소개에만 쓰던 문구(`v{x_y_z}.{단계}`)를 지운다. 목록 줄 문구(`v{x_y_z}.release`)는 남긴다.
 2. `constants/releases.ts`에 `RELEASE_x_y_z`를 더하고 `RELEASES` 맨 앞에 넣는다. `version`과 `releasedOn`은 [패치 노트](https://aido.kr/ko/patch-notes)에서 그 기능이 나온 버전·날짜를 그대로 쓴다. `id`는 route·지표·stepper 키라 한 번 정하면 바꾸지 않고 버전을 읽어 내지도 않는다(1.14 앱에 처음 넣은 친구 초대 소개는 id `1.14.0`, 버전 `1.13.0`). `cta`는 그 기능을 바로 쓸 화면이다. 자동으로 열 출시에만 `campaignId`(운영 `FEATURE_DISCOVERY_CAMPAIGN_ID` 값)를 둔다. 캠페인 id는 이 한 곳에만 있다. `releases.test.ts`가 버전 순서, 최근 두 출시의 소개, 캠페인 출시의 소개를 확인한다.
