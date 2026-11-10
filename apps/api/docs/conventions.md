@@ -94,7 +94,7 @@
 | DB 행                                  | Drizzle 테이블                           | `$inferSelect`/`$inferInsert`                                     |
 
 - `pgEnum`을 튜플로 바꿀 때 값 목록·순서가 지금 DB와 같아야 하고 `db:generate`가 빈 diff여야 한다. 계약 튜플과 순서만 다르면(`AccountProvider`) 소유 slice에 DB 순서 튜플을 두고 `satisfies`로 같은 값만 담게 한다.
-- 리터럴 배열 `pgEnum`은 `check:conventions`가 막는다. notification이 튜플을 아직 export하지 않은 5개만 `PENDING_LITERAL_ENUMS`에 있고, 옮기면 목록에서 지워야 검사가 통과한다.
+- 리터럴 배열 `pgEnum`은 `check:conventions`가 막는다.
 - vocabulary에는 Zod를 넣지 않는다. 도메인 모델은 계약·DB 타입과 독립이고 변환은 매퍼 한 곳이다.
 
 ## 서버에서 지키는 코드 규칙
