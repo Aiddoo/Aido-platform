@@ -250,6 +250,11 @@ async function resetAccounts(target: Target): Promise<void> {
         'DELETE FROM "Follow" WHERE ("followerId" = $1 AND "followingId" = $2) OR ("followerId" = $2 AND "followingId" = $1)',
         [main, second],
       );
+      // 서버는 같은 친구의 친구 요청·수락 알림을 24시간 안에 다시 만들지 않는다. 알림함 흐름을 다시 돌릴 수 있게 두 계정 사이 알림을 지운다
+      await db.query(
+        `DELETE FROM "Notification" WHERE "userId" = ANY($1::text[]) AND "type" IN ('FOLLOW_NEW', 'FOLLOW_ACCEPTED')`,
+        [both],
+      );
       // 기기·신원 해시에는 사용자 연결이 없어, 같은 시뮬레이터에서 다시 보상을 받으려면 로컬 기록을 모두 지운다
       await db.query('DELETE FROM "RewardClaim"');
       await db.query('COMMIT');

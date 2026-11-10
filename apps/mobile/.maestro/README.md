@@ -83,7 +83,7 @@ pnpm --filter @aido/mobile e2e                    # 전체
 pnpm --filter @aido/mobile e2e:smoke              # smoke만
 pnpm --filter @aido/mobile e2e:feature category   # 한 기능(태그)만
 pnpm --filter @aido/mobile e2e --device <udid> --exclude-tags android-only
-pnpm --filter @aido/mobile e2e:accounts reset     # 초대 수락 기록 지우기 (e2e가 시작할 때 자동으로 부른다)
+pnpm --filter @aido/mobile e2e:accounts reset     # 초대 수락 기록·두 계정 사이 친구 알림 지우기 (e2e가 시작할 때 자동으로 부른다)
 ```
 
 `run-e2e.ts`는 `.env.maestro`를 환경으로 올리고(Maestro가 `MAESTRO_*`를 바로 읽어 비밀번호가 `-e` 인자에 남지 않는다,
@@ -98,6 +98,14 @@ pnpm --filter @aido/mobile e2e:accounts reset     # 초대 수락 기록 지우�
 set -a; source apps/mobile/.maestro/.env.maestro; set +a
 maestro test --test-output-dir apps/mobile/maestro-output apps/mobile/.maestro/flows/todo/create-complete-delete.yaml
 maestro check-syntax apps/mobile/.maestro/flows/todo/create-complete-delete.yaml   # 기기 없이 문법만
+```
+
+iOS 시뮬레이터는 영어 키보드를 첫 번째로 둔다. 병음·한글 입력기가 앞에 있으면 Maestro가 넣은 영문이 조합 중으로 남아 이메일 형식 오류나
+저장되지 않은 메모로 실패한다. 알림 권한은 iOS 시뮬레이터에서 미리 줄 수 없어 새 계정은 로그인 뒤 알림 안내 화면이 뜨고, 로그인 subflow가 닫는다.
+
+```bash
+xcrun simctl spawn <udid> defaults write -g AppleKeyboards -array "en_US@sw=QWERTY;hw=Automatic" "ko_KR@sw=Korean;hw=Automatic" "emoji@sw=Emoji"
+xcrun simctl shutdown <udid> && xcrun simctl boot <udid>
 ```
 
 Maestro MCP(`maestro mcp`)로 기기를 볼 때는 `inspect_screen`으로 testID가 화면 트리에 있는지 확인하고 `take_screenshot`으로 상태를 남긴다
@@ -179,11 +187,6 @@ Maestro는 기기 밖 서비스와 시간 경과를 흉내 내지 못한다. 출
 코드 형식 오류, 없는 코드(INVITE_2101), 바뀐 링크(INVITE_2102), 본인 초대(INVITE_2103), 다른 초대 수락 뒤(INVITE_2104), 서버 플래그 꺼짐(INVITE_2105),
 친구 한도(INVITE_2106·REQUESTED), 로그인 보류 이어 가기·다른 계정, 친구 끊은 뒤 재수락, 진입점 3곳, 내 초대 공유·발자국 판, 보상 프리미엄 영수증,
 친구 줄 전환, 아바타·날짜 복귀.
-
-## 대기 중인 testID
-
-- `category-delete-with-todos`: 카테고리 삭제 대화상자의 "할 일도 함께 삭제" 선택지. 카테고리 삭제 개편과 함께 그 선택지에 단다.
-  그 전까지 `category/delete-with-todos`는 실패한다.
 
 ## 버전
 
