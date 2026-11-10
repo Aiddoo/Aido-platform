@@ -20,6 +20,7 @@
 - 어댑터: `InMemoryCacheStore`는 `lru-cache`(크기 상한·TTL), `RedisCacheStore`는 ioredis(Valkey는 URL만 바꾼다). 패턴 삭제는 `KEYS`가 아니라 `SCAN`이다.
 - 같은 계약 suite를 in-memory(unit)와 Redis·Valkey 컨테이너(Testcontainers)에서 돌린다.
 - 값은 읽을 때 Zod로 검증하고 다르면 miss다(배포 사이 값 모양이 달라도 안전). 직렬화는 JSON 하나이고 Temporal은 문자열로 저장한다.
+- 범용 `wrap`은 미스 뒤 factory 값을 그대로 저장한다. 쓰기의 커밋 뒤 무효화보다 늦게 끝난 읽기가 커밋 전 값을 다시 저장해 TTL 동안 남길 수 있으므로, 그러면 안 되는 캐시는 세대를 쓴다. 일간 완료·친구 화면 할 일은 세대를 키에 넣고, 권한(`subscription:status:v2`)·프로필(`auth:user-profile`)은 키를 두고 [GenerationGuardedCache](../src/platform/cache/generation-guarded-cache.ts)로 factory 전에 읽은 세대가 그대로일 때만 저장한다.
 - 전환: `CACHE_TYPE=redis`, `REDIS_URL`. 같은 Redis 클라이언트를 throttler·lock·dedup·푸시 rate limit 어댑터가 함께 쓴다.
 
 ## 인스턴스를 2대 이상으로 늘릴 때

@@ -1706,9 +1706,10 @@ describe("인증 E2E", () => {
       expect(response1.body.success).toBe(true);
       expect(response1.body.data.email).toBe("cache-test@example.com");
 
-      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다
+      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다. 프로필·권한은 저장 전후로 세대 키를 세 번씩 읽고
+      // 무효화 전에는 세대 키가 없어 미스로 센다
       const statsAfterFirst = cacheService.getStats();
-      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3);
+      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3 + 2 * 3);
 
       // When
       const response2 = await request(ctx.app.getHttpServer())
@@ -1817,7 +1818,8 @@ describe("인증 E2E", () => {
 
       // Then
       const finalStats = cacheService.getStats();
-      expect(finalStats.misses).toBe(initialStats.misses + 3);
+      // 첫 호출만 세션·프로필·권한 미스와 프로필·권한의 세대 키 읽기(각 3번)다
+      expect(finalStats.misses).toBe(initialStats.misses + 3 + 2 * 3);
       expect(finalStats.hits).toBe(initialStats.hits + 12);
     });
   });
