@@ -1,48 +1,44 @@
 import { Module } from "@nestjs/common";
 
-import { AuthCacheAdapter } from "../auth/infrastructure/adapters/auth-cache.adapter.js";
-import {
-  USER_ACTIVITY_READER,
-  UserActivityReaderPort,
-} from "./application/ports/user-activity.reader.port.js";
-import {
-  USER_APP_VERSION_READER,
-  UserAppVersionReaderPort,
-} from "./application/ports/user-app-version.reader.port.js";
-import {
-  USER_MUTATION_LOCK,
-  UserMutationLockPort,
-} from "./application/ports/user-mutation-lock.port.js";
-import {
-  USER_PROFILE_INVALIDATOR,
-  UserProfileInvalidatorPort,
-} from "./application/ports/user-profile-invalidator.port.js";
-import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
-import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
+import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
+import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
+import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 
-// 옛 Symbol 토큰은 access·billing·ai·notification이 옮길 때까지 클래스 토큰과 같은 인스턴스를 가리킨다
+import { IdentityAuthModule } from "../auth/identity-auth.module.js";
+import { IdentityUserAccessModule } from "./identity-user-access.module.js";
+import { IDENTITY_USERS_PROVIDERS } from "./identity-users.providers.js";
+import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
+import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
+import { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
+import { EntitlementController } from "./presentation/http/v1/entitlement.controller.js";
+import { UserAccountController } from "./presentation/http/v1/user-account.controller.js";
+
+// users → auth 한 방향이다. auth는 이 모듈이 아니라 IdentityUserAccessModule만 import한다
 @Module({
+  imports: [
+    IdentityAuthModule,
+    IdentityUserAccessModule,
+    AccessModule,
+    BillingSubscriptionsModule,
+    EngagementCommentsModule,
+    NotificationDeliveryModule,
+    PlanningCategoriesModule,
+    SocialCheersModule,
+    SocialFriendsModule,
+    SocialNudgesModule,
+  ],
+  controllers: [UserAccountController, EntitlementController],
   providers: [
-    DrizzleUserRepository,
-    AuthCacheAdapter,
-    { provide: UserMutationLockPort, useClass: UserMutationLockAdapter },
-    { provide: USER_MUTATION_LOCK, useExisting: UserMutationLockPort },
-    { provide: UserProfileInvalidatorPort, useExisting: AuthCacheAdapter },
-    { provide: USER_PROFILE_INVALIDATOR, useExisting: UserProfileInvalidatorPort },
-    { provide: UserAppVersionReaderPort, useExisting: DrizzleUserRepository },
-    { provide: USER_APP_VERSION_READER, useExisting: UserAppVersionReaderPort },
-    { provide: UserActivityReaderPort, useExisting: DrizzleUserRepository },
-    { provide: USER_ACTIVITY_READER, useExisting: UserActivityReaderPort },
+    ...IDENTITY_USERS_PROVIDERS,
+    AccountPurgeScheduler,
+    AccountPurgeProcessor,
+    LastActiveInterceptor,
   ],
-  exports: [
-    UserMutationLockPort,
-    USER_MUTATION_LOCK,
-    UserProfileInvalidatorPort,
-    USER_PROFILE_INVALIDATOR,
-    UserAppVersionReaderPort,
-    USER_APP_VERSION_READER,
-    UserActivityReaderPort,
-    USER_ACTIVITY_READER,
-  ],
+  exports: [IdentityUserAccessModule, LastActiveInterceptor],
 })
 export class IdentityUsersModule {}

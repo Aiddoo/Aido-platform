@@ -6,11 +6,6 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
-import {
-  AccountNotificationCleanupPort,
-  AccountTodoCommentCleanupPort,
-  AccountUsageCleanupPort,
-} from "#api/modules/identity/auth/application/ports/account-cleanup.port";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -41,6 +36,11 @@ import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastruct
 import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import {
+  AccountNotificationCleanupPort,
+  AccountTodoCommentCleanupPort,
+  AccountUsageCleanupPort,
+} from "#api/modules/identity/users/application/ports/account-cleanup.port";
 import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
@@ -68,8 +68,6 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import {
   registerProvider,
   loginWithPasswordProvider,
-  deleteAccountProvider,
-  purgeDeletedAccountsProvider,
   restoreAccountProvider,
   issueLoginProvider,
   requestPasswordResetProvider,
@@ -79,6 +77,10 @@ import {
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../src/modules/identity/auth/identity-auth.providers.js";
+import {
+  deleteAccountProvider,
+  purgeDeletedAccountsProvider,
+} from "../../src/modules/identity/users/identity-users.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";

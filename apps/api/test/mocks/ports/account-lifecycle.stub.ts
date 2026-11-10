@@ -1,12 +1,12 @@
+import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AccountNotificationCleanupPort,
   AccountNotificationCleanupResult,
   AccountTodoCommentCleanupPort,
   AccountTodoCommentCleanupResult,
   AccountUsageCleanupPort,
-} from "#api/modules/identity/auth/application/ports/account-cleanup.port";
-import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+} from "#api/modules/identity/users/application/ports/account-cleanup.port";
 
 import { StubAuthSessionCache } from "./auth-session.stub.js";
 

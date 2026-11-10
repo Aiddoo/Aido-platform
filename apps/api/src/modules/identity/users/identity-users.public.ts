@@ -14,6 +14,6 @@ export {
   USER_PROFILE_INVALIDATOR,
   UserProfileInvalidatorPort,
 } from "./application/ports/user-profile-invalidator.port.js";
-export { IdentityUsersModule } from "./identity-users.module.js";
+export { IdentityUserAccessModule } from "./identity-user-access.module.js";
 export { ACCOUNT_PURGE_QUEUE } from "./infrastructure/jobs/account-purge.queue.js";
 export { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";

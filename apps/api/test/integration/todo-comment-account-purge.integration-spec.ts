@@ -52,8 +52,8 @@ import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
   accountUsageCleanupProvider,
-} from "../../src/modules/identity/auth/identity-auth-account-cleanup.providers.js";
-import { purgeDeletedAccountsProvider } from "../../src/modules/identity/auth/identity-auth.providers.js";
+  purgeDeletedAccountsProvider,
+} from "../../src/modules/identity/users/identity-users.providers.js";
 import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 

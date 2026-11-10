@@ -1,26 +1,7 @@
-import type { FactoryProvider } from "@nestjs/common";
-
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
-import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
-import { TODO_CATEGORY_COUNT_READER } from "#api/modules/planning/planning-categories.public";
-import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
-import { FRIEND_COUNT_READER } from "#api/modules/social/social-friends.public";
-import { NUDGE_USAGE_READER } from "#api/modules/social/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { DeleteAccountUseCase } from "../users/application/use-cases/delete-account.use-case.js";
-import { GetCurrentUserUseCase } from "../users/application/use-cases/get-current-user.use-case.js";
-import { GetEntitlementSnapshotUseCase } from "../users/application/use-cases/get-entitlement-snapshot.use-case.js";
-import { PurgeDeletedAccountsUseCase } from "../users/application/use-cases/purge-deleted-accounts.use-case.js";
-import { UpdateProfileUseCase } from "../users/application/use-cases/update-profile.use-case.js";
-import {
-  AccountNotificationCleanupPort,
-  AccountTodoCommentCleanupPort,
-  AccountUsageCleanupPort,
-} from "./application/ports/account-cleanup.port.js";
 import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthEmailSenderPort,
@@ -77,67 +58,6 @@ import { SetPasswordUseCase } from "./application/use-cases/set-password.use-cas
 import { StartOAuthAuthorizationUseCase } from "./application/use-cases/start-oauth-authorization.use-case.js";
 import { UnlinkOAuthAccountUseCase } from "./application/use-cases/unlink-oauth-account.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
-
-// 아직 Symbol 토큰인 다른 Context 포트(billing·access·social)를 받아 provideUseCase 대신 factory로 조립한다
-type GetCurrentUserDependencies = ConstructorParameters<typeof GetCurrentUserUseCase>[0];
-export const getCurrentUserProvider: FactoryProvider<GetCurrentUserUseCase> = {
-  provide: GetCurrentUserUseCase,
-  inject: [
-    AuthUserRepositoryPort,
-    AuthCachePort,
-    PREMIUM_ACCESS_READER,
-    ENTITLEMENT_READER,
-    QUOTA_LEDGER,
-    CHEER_USAGE_READER,
-    NUDGE_USAGE_READER,
-  ],
-  useFactory: (
-    userRepository: GetCurrentUserDependencies["userRepository"],
-    cacheService: GetCurrentUserDependencies["cacheService"],
-    premiumAccessReader: GetCurrentUserDependencies["premiumAccessReader"],
-    entitlementReader: GetCurrentUserDependencies["entitlementReader"],
-    quotaLedger: GetCurrentUserDependencies["quotaLedger"],
-    cheerUsageReader: GetCurrentUserDependencies["cheerUsageReader"],
-    nudgeUsageReader: GetCurrentUserDependencies["nudgeUsageReader"],
-  ) =>
-    new GetCurrentUserUseCase({
-      userRepository,
-      cacheService,
-      premiumAccessReader,
-      entitlementReader,
-      quotaLedger,
-      cheerUsageReader,
-      nudgeUsageReader,
-    }),
-};
-
-type GetEntitlementSnapshotDependencies = ConstructorParameters<
-  typeof GetEntitlementSnapshotUseCase
->[0];
-export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshotUseCase> = {
-  provide: GetEntitlementSnapshotUseCase,
-  inject: [
-    QUOTA_LEDGER,
-    CHEER_USAGE_READER,
-    NUDGE_USAGE_READER,
-    FRIEND_COUNT_READER,
-    TODO_CATEGORY_COUNT_READER,
-  ],
-  useFactory: (
-    quotaLedger: GetEntitlementSnapshotDependencies["quotaLedger"],
-    cheerUsageReader: GetEntitlementSnapshotDependencies["cheerUsageReader"],
-    nudgeUsageReader: GetEntitlementSnapshotDependencies["nudgeUsageReader"],
-    friendCountReader: GetEntitlementSnapshotDependencies["friendCountReader"],
-    categoryCountReader: GetEntitlementSnapshotDependencies["categoryCountReader"],
-  ) =>
-    new GetEntitlementSnapshotUseCase({
-      quotaLedger,
-      cheerUsageReader,
-      nudgeUsageReader,
-      friendCountReader,
-      categoryCountReader,
-    }),
-};
 
 export const getOAuthRedirectUriProvider = provideUseCase(GetOAuthRedirectUriUseCase, {
   oauthStateRepository: AuthOAuthStateRepositoryPort,
@@ -209,33 +129,9 @@ export const completeOAuthAuthorizationProvider = provideUseCase(
   },
 );
 
-export const deleteAccountProvider = provideUseCase(DeleteAccountUseCase, {
-  pushDevices: SessionPushDeviceReleaserPort,
-  userRepository: AuthUserRepositoryPort,
-  accountRepository: AuthAccountRepositoryPort,
-  sessionRepository: AuthSessionRepositoryPort,
-  passwordService: AuthPasswordHasherPort,
-  securityLogRepository: AuthSecurityLogRepositoryPort,
-  unitOfWork: UnitOfWorkPort,
-  cacheService: AuthCachePort,
-  clock: ClockPort,
-  logger: loggerFor(DeleteAccountUseCase),
-});
-
 export const restoreAccountProvider = provideUseCase(RestoreAccountUseCase, {
   userRepository: AuthUserRepositoryPort,
   securityLogRepository: AuthSecurityLogRepositoryPort,
-});
-
-export const purgeDeletedAccountsProvider = provideUseCase(PurgeDeletedAccountsUseCase, {
-  userRepository: AuthUserRepositoryPort,
-  unitOfWork: UnitOfWorkPort,
-  securityLogRepository: AuthSecurityLogRepositoryPort,
-  notificationCleanup: AccountNotificationCleanupPort,
-  todoCommentCleanup: AccountTodoCommentCleanupPort,
-  usageCleanup: AccountUsageCleanupPort,
-  clock: ClockPort,
-  logger: loggerFor(PurgeDeletedAccountsUseCase),
 });
 
 export const exchangeOAuthCodeProvider = provideUseCase(ExchangeOAuthCodeUseCase, {
@@ -433,12 +329,6 @@ export const unlinkOAuthAccountProvider = provideUseCase(UnlinkOAuthAccountUseCa
   unitOfWork: UnitOfWorkPort,
   cacheService: AuthCachePort,
   logger: loggerFor(UnlinkOAuthAccountUseCase),
-});
-
-export const updateProfileProvider = provideUseCase(UpdateProfileUseCase, {
-  userRepository: AuthUserRepositoryPort,
-  cacheService: AuthCachePort,
-  logger: loggerFor(UpdateProfileUseCase),
 });
 
 export const verifyEmailProvider = provideUseCase(VerifyEmailUseCase, {

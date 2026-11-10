@@ -3,9 +3,6 @@ import { ConfigModule, type ConfigType } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
-import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
@@ -17,19 +14,12 @@ import {
   OperationsNotificationsModule,
 } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
-import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
-import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
-import { IdentityUsersModule } from "../users/identity-users.module.js";
-import { AccountPurgeProcessor } from "../users/infrastructure/jobs/account-purge.processor.js";
-import { AccountPurgeScheduler } from "../users/infrastructure/jobs/account-purge.scheduler.js";
+import { IdentityUserAccessModule } from "../users/identity-user-access.module.js";
 import { DrizzleUserRepository } from "../users/infrastructure/persistence/drizzle-user.repository.js";
-import { LastActiveInterceptor } from "../users/presentation/http/interceptors/last-active.interceptor.js";
-import { EntitlementController } from "../users/presentation/http/v1/entitlement.controller.js";
 import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthCachePort,
@@ -53,19 +43,11 @@ import { RetentionEnrollerPort } from "./application/ports/retention-enroller.po
 import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 import { UserProvisioningSeederPort } from "./application/ports/user-provisioning-seeder.port.js";
 import { VerificationCodeSecurityPort } from "./application/ports/verification-code-security.port.js";
-import {
-  accountNotificationCleanupProvider,
-  accountTodoCommentCleanupProvider,
-  accountUsageCleanupProvider,
-} from "./identity-auth-account-cleanup.providers.js";
 import { identityAuthConfig } from "./identity-auth.config.js";
 import {
   changePasswordProvider,
   completeOAuthAuthorizationProvider,
-  deleteAccountProvider,
   exchangeOAuthCodeProvider,
-  getCurrentUserProvider,
-  getEntitlementSnapshotProvider,
   getOAuthRedirectUriProvider,
   issueLoginProvider,
   linkOAuthAccountProvider,
@@ -80,7 +62,6 @@ import {
   linkOAuthIdentityProvider,
   oauthSignupNotifierProvider,
   provisionUserProvider,
-  purgeDeletedAccountsProvider,
   restoreAccountProvider,
   refreshTokensProvider,
   registerProvider,
@@ -94,7 +75,6 @@ import {
   setPasswordProvider,
   startOAuthAuthorizationProvider,
   unlinkOAuthAccountProvider,
-  updateProfileProvider,
   issueVerificationCodeProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
@@ -149,25 +129,12 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
     IdentityPreferencesModule,
-    IdentityUsersModule,
+    IdentityUserAccessModule,
     PlanningCategoriesModule,
     NotificationRetentionModule,
-    EngagementCommentsModule,
-    BillingSubscriptionsModule,
-    AccessModule,
-    SocialCheersModule,
-    SocialFriendsModule,
-    SocialNudgesModule,
   ],
-  controllers: [
-    AuthController,
-    OAuthController,
-    SessionController,
-    AccountController,
-    EntitlementController,
-  ],
+  controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
-    DrizzleUserRepository,
     DrizzleAccountRepository,
     DrizzleSessionRepository,
     DrizzleVerificationRepository,
@@ -207,15 +174,11 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: SessionPushDeviceReleaserPort,
       useClass: SessionPushDeviceReleaserAdapter,
     },
-    accountNotificationCleanupProvider,
-    accountTodoCommentCleanupProvider,
-    accountUsageCleanupProvider,
     Argon2PasswordHasherAdapter,
     createSessionProvider,
     JwtTokenIssuerAdapter,
     { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
     { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-    AuthCacheAdapter,
     { provide: AuthCachePort, useExisting: AuthCacheAdapter },
     { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
     {
@@ -235,7 +198,6 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,
     restoreAccountProvider,
-    purgeDeletedAccountsProvider,
     provisionUserProvider,
     registerProvider,
     verifyEmailProvider,
@@ -249,10 +211,6 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     requestPasswordSetupCodeProvider,
     setPasswordProvider,
     changePasswordProvider,
-    getCurrentUserProvider,
-    getEntitlementSnapshotProvider,
-    updateProfileProvider,
-    deleteAccountProvider,
     listLinkedAccountsProvider,
     unlinkOAuthAccountProvider,
     listActiveSessionsProvider,
@@ -273,10 +231,19 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     authenticateSessionProvider,
     JwtAuthGuard,
     JwtRefreshGuard,
-    LastActiveInterceptor,
-    AccountPurgeScheduler,
-    AccountPurgeProcessor,
   ],
-  exports: [JwtAuthGuard, JwtRefreshGuard, LastActiveInterceptor],
+  // 사용자 slice(IdentityUsersModule)가 탈퇴·프로필 UseCase에 쓴다. auth는 users 모듈을 import하지 않는다
+  exports: [
+    JwtAuthGuard,
+    JwtRefreshGuard,
+    AuthUserRepositoryPort,
+    AuthUserActivityWriterPort,
+    AuthAccountRepositoryPort,
+    AuthSessionRepositoryPort,
+    AuthSecurityLogRepositoryPort,
+    AuthPasswordHasherPort,
+    AuthCachePort,
+    SessionPushDeviceReleaserPort,
+  ],
 })
 export class IdentityAuthModule {}

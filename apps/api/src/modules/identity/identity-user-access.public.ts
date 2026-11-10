@@ -8,5 +8,5 @@ export {
   UserMutationLockPort,
   USER_PROFILE_INVALIDATOR,
   UserProfileInvalidatorPort,
-  IdentityUsersModule as IdentityUserAccessModule,
+  IdentityUserAccessModule,
 } from "./users/identity-users.public.js";

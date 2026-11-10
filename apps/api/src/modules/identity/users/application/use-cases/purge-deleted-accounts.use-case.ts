@@ -6,13 +6,13 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
+import type { AuthSecurityLogRepositoryPort } from "../../../auth/application/ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
 import type {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
-} from "../../../auth/application/ports/account-cleanup.port.js";
-import type { AuthSecurityLogRepositoryPort } from "../../../auth/application/ports/auth-security-log.repository.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
+} from "../ports/account-cleanup.port.js";
 
 interface PurgeDeletedAccountsDependencies {
   readonly userRepository: Pick<
