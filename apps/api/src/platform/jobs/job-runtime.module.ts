@@ -15,6 +15,9 @@ import { DrizzleSweepCursorAdapter } from "./drizzle-sweep-cursor.adapter.js";
 import { JobQueueRegistry } from "./job-queue.registry.js";
 import { PgBossJobQueueAdapter } from "./pg-boss-job-queue.adapter.js";
 import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter.js";
+import { PgBossScheduleRunReader } from "./pg-boss-schedule-run.reader.js";
+import { ScheduleWatchdogProcessor } from "./schedule-watchdog.processor.js";
+import { ScheduleWatchdogScheduler } from "./schedule-watchdog.scheduler.js";
 
 @Injectable()
 export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
@@ -48,6 +51,9 @@ export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplic
     JobQueueRegistry,
     { provide: SweepCursorPort, useClass: DrizzleSweepCursorAdapter },
     JobRuntimeLifecycle,
+    PgBossScheduleRunReader,
+    ScheduleWatchdogProcessor,
+    ScheduleWatchdogScheduler,
   ],
   exports: [JOB_RUNTIME, JobRuntimePort, JobQueuePort, JobQueueRegistry, SweepCursorPort],
 })

@@ -6,10 +6,14 @@ import type {
   OperationalAlert,
   OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 /** 같은 원인이 한 Sentry 이슈로 모이도록 큐·스케줄·오류 종류만으로 key를 만든다. */
 export const JobAlertKey = {
   failed: (queue: string, errorType: string) => `job.failed:${queue}:${errorType}`,
+  scheduleOverdue: (scheduleKey: string) => `schedule.overdue:${scheduleKey}`,
+  scheduleFailing: (scheduleKey: string) => `schedule.failing:${scheduleKey}`,
+  deadLetter: (queue: string) => `queue.dead-letter:${queue}`,
 } as const;
 
 // payload가 schema에 맞지 않아 handler에 넘기지 못한 실패의 오류 종류
@@ -79,5 +83,60 @@ function jobFailedAlert(failure: FailedJobAttempt): OperationalAlert {
       "error.type": failure.errorType,
     },
     details: { retryLimit: failure.retryLimit },
+  };
+}
+
+export interface WatchedScheduleRef {
+  readonly queue: string;
+  readonly scheduleKey: string;
+  readonly cron: string;
+  readonly timezone: string;
+}
+
+export function scheduleOverdueAlert(
+  schedule: WatchedScheduleRef,
+  latestDueAt: Temporal.Instant,
+): OperationalAlert {
+  return {
+    key: JobAlertKey.scheduleOverdue(schedule.scheduleKey),
+    severity: "error",
+    message: `예정 실행 두 번이 지나도록 끝난 실행이 없다 (${schedule.scheduleKey})`,
+    tags: { queue: schedule.queue, "schedule.key": schedule.scheduleKey },
+    details: {
+      cron: schedule.cron,
+      timezone: schedule.timezone,
+      latestDueAt: toIsoString(latestDueAt),
+    },
+  };
+}
+
+export function scheduleFailingAlert(
+  schedule: WatchedScheduleRef,
+  failedRuns: number,
+): OperationalAlert {
+  return {
+    key: JobAlertKey.scheduleFailing(schedule.scheduleKey),
+    severity: "error",
+    message: `최근 예정 실행이 모두 실패했다 (${schedule.scheduleKey})`,
+    tags: { queue: schedule.queue, "schedule.key": schedule.scheduleKey },
+    details: { cron: schedule.cron, timezone: schedule.timezone, failedRuns },
+  };
+}
+
+export function deadLetterAlert({
+  queue,
+  arrivals,
+  windowMinutes,
+}: {
+  readonly queue: string;
+  readonly arrivals: number;
+  readonly windowMinutes: number;
+}): OperationalAlert {
+  return {
+    key: JobAlertKey.deadLetter(queue),
+    severity: "warning",
+    message: `DLQ에 작업이 들어왔다 (${queue})`,
+    tags: { queue },
+    details: { arrivals, windowMinutes },
   };
 }

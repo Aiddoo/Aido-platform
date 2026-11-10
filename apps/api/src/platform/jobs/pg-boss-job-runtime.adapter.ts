@@ -10,8 +10,10 @@ import {
   type InsertOptions,
   type JobInsert,
   type JobWithMetadata,
+  type PreviewScheduleOptions,
   type QueueOptions,
   type QueueResult,
+  type Schedule,
   type ScheduleOptions,
   type SendOptions,
   type StopOptions,
@@ -70,6 +72,9 @@ export interface PgBossClient {
     handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string>;
   getQueues(names?: string[]): Promise<PgBossQueueCounts[]>;
+  getSchedules(): Promise<Schedule[]>;
+  // pg-boss는 동기 계산이지만 지연 시작 client는 시작을 기다린 뒤 계산한다
+  previewSchedule(cron: string, options: PreviewScheduleOptions): Date[] | Promise<Date[]>;
 }
 
 type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
@@ -144,6 +149,14 @@ export class LazyPgBossClient implements PgBossClient {
 
   async getQueues(names?: string[]): Promise<PgBossQueueCounts[]> {
     return (await this.ensureStarted()).getQueues(names);
+  }
+
+  async getSchedules(): Promise<Schedule[]> {
+    return (await this.ensureStarted()).getSchedules();
+  }
+
+  async previewSchedule(cron: string, options: PreviewScheduleOptions): Promise<Date[]> {
+    return (await this.ensureStarted()).previewSchedule(cron, options);
   }
 
   private async ensureStarted(): Promise<PgBossClient> {

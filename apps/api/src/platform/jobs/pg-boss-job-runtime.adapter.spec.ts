@@ -3,7 +3,9 @@ import type {
   InsertOptions,
   JobInsert,
   JobWithMetadata,
+  PreviewScheduleOptions,
   QueueOptions,
+  Schedule,
   ScheduleOptions,
   SendOptions,
   StopOptions,
@@ -140,6 +142,14 @@ class FakePgBossClient implements PgBossClient {
 
   async getQueues(_names?: string[]): Promise<PgBossQueueCounts[]> {
     return this.queues;
+  }
+
+  async getSchedules(): Promise<Schedule[]> {
+    return [];
+  }
+
+  previewSchedule(_cron: string, _options: PreviewScheduleOptions): Date[] {
+    return [];
   }
 }
 
