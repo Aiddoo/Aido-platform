@@ -1,3 +1,5 @@
+import { EVENING_REMINDER_HOUR_RANGE, MORNING_REMINDER_HOUR_RANGE } from '@aido/api/vocabulary';
+
 import type { NotificationType } from '../domains/notification.model';
 import type { PushPermissionPrompt } from '../domains/push-permission.model';
 
@@ -7,15 +9,18 @@ export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3000;
 /** 페이로드에 수신자 ID가 없어 읽음의 403·404가 다른 계정 알림을 막는 유일한 방어다(Release 측정 전 초깃값) */
 export const NOTIFICATION_READ_BUDGET_MS = 800;
 
-/** 서버가 마케팅 푸시에 싣는 categoryId. 앱의 푸시 카테고리 등록이 같은 값을 쓴다 */
-export const MARKETING_CATEGORY_ID = 'MARKETING';
-
 /** 마케팅 푸시의 수신 거부 버튼. 서버 categoryId MARKETING과 앱 카테고리 등록이 함께 쓴다 */
 export const MARKETING_OPT_OUT_ACTION = 'MARKETING_OPT_OUT';
 
 export const SETTINGS_TIME_RANGE = {
-  morning: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
-  evening: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+  morning: {
+    minimumTime: { hour: MORNING_REMINDER_HOUR_RANGE.MIN, minute: 0 },
+    maximumTime: { hour: MORNING_REMINDER_HOUR_RANGE.MAX, minute: 59 },
+  },
+  evening: {
+    minimumTime: { hour: EVENING_REMINDER_HOUR_RANGE.MIN, minute: 0 },
+    maximumTime: { hour: EVENING_REMINDER_HOUR_RANGE.MAX, minute: 59 },
+  },
 } as const;
 
 export const PUSH_PERMISSION_STEP = {

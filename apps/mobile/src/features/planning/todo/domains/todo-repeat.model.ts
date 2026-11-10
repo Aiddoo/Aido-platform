@@ -1,6 +1,7 @@
 import {
   DAYS_OF_WEEK,
   TODO_EDIT_SCOPES,
+  TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
@@ -24,7 +25,6 @@ import { z } from 'zod';
 
 import {
   TODO_REPEAT_COUNT,
-  TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_WEEKDAYS as WEEKDAYS,
   TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';

@@ -27,8 +27,7 @@ const BEST_TIME_TOLERANCE = 1;
 /** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
 /** 새벽, 오전, 오후가 시작하는 시각(기기 시간대. 위치 벽시계가 기기와 다르면 브리핑을 숨긴다). 저녁은 EVENING_HOUR부터다. */
-const MORNING_START_HOUR = 6;
-const AFTERNOON_START_HOUR = 12;
+const { MORNING_START_HOUR, AFTERNOON_START_HOUR } = WEATHER_BRIEFING_RULES;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
 const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
   'CLOUDY',
