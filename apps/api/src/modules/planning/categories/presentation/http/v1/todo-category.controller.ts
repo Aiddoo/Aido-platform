@@ -33,6 +33,7 @@ import {
 
 import { CreateTodoCategoryUseCase } from "../../../application/use-cases/create-todo-category.use-case.js";
 import { DeleteTodoCategoryUseCase } from "../../../application/use-cases/delete-todo-category.use-case.js";
+import { GetTodoCategoryDeletionPreviewUseCase } from "../../../application/use-cases/get-todo-category-deletion-preview.use-case.js";
 import { GetTodoCategoryResourceLimitUseCase } from "../../../application/use-cases/get-todo-category-resource-limit.use-case.js";
 import { GetTodoCategoryUseCase } from "../../../application/use-cases/get-todo-category.use-case.js";
 import { ListTodoCategoriesUseCase } from "../../../application/use-cases/list-todo-categories.use-case.js";
@@ -46,6 +47,7 @@ import {
   DeleteTodoCategoryResponseDto,
   ReorderTodoCategoryDto,
   ReorderTodoCategoryResponseDto,
+  TodoCategoryDeletionPreviewDto,
   TodoCategoryIdParamDto,
   TodoCategoryListResponseDto,
   TodoCategoryResourceLimitResponseDto,
@@ -60,6 +62,7 @@ import {
 export class TodoCategoryController {
   readonly #getTodoCategoriesUseCase: ListTodoCategoriesUseCase;
   readonly #getTodoCategoryUseCase: GetTodoCategoryUseCase;
+  readonly #getTodoCategoryDeletionPreviewUseCase: GetTodoCategoryDeletionPreviewUseCase;
   readonly #getTodoCategoryResourceLimitUseCase: GetTodoCategoryResourceLimitUseCase;
   readonly #createTodoCategoryUseCase: CreateTodoCategoryUseCase;
   readonly #updateTodoCategoryUseCase: UpdateTodoCategoryUseCase;
@@ -74,9 +77,11 @@ export class TodoCategoryController {
     updateTodoCategoryUseCase: UpdateTodoCategoryUseCase,
     reorderTodoCategoryUseCase: ReorderTodoCategoryUseCase,
     deleteTodoCategoryUseCase: DeleteTodoCategoryUseCase,
+    getTodoCategoryDeletionPreviewUseCase: GetTodoCategoryDeletionPreviewUseCase,
   ) {
     this.#getTodoCategoriesUseCase = getTodoCategoriesUseCase;
     this.#getTodoCategoryUseCase = getTodoCategoryUseCase;
+    this.#getTodoCategoryDeletionPreviewUseCase = getTodoCategoryDeletionPreviewUseCase;
     this.#getTodoCategoryResourceLimitUseCase = getTodoCategoryResourceLimitUseCase;
     this.#createTodoCategoryUseCase = createTodoCategoryUseCase;
     this.#updateTodoCategoryUseCase = updateTodoCategoryUseCase;
@@ -188,6 +193,34 @@ export class TodoCategoryController {
     return {
       category: TodoCategoryMapper.toResponseWithCount(category),
     };
+  }
+
+  @Get(":id/deletion-preview")
+  @ApiDoc({
+    summary: "카테고리 삭제 미리보기",
+    operationId: "getTodoCategoryDeletionPreview",
+    description: `카테고리를 지우기 전에 안의 할 일을 옮길지 함께 지울지 고르는 데 필요한 수를 조회합니다.
+삭제(\`DELETE /todo-categories/{id}\`)와 같은 기준으로 셉니다.
+
+## 응답 필드
+- \`todoCount\`: 카테고리 안의 할 일 수 (완료 포함, 목록의 \`todoCount\`와 같은 값)
+- \`completedTodoCount\`: 그중 완료한 할 일 수. 함께 삭제하면 날짜별 완료 기록에서도 빠집니다
+- \`activeSeriesCount\`: 진행 중 반복 규칙 수. 할 일이 0이어도 이 값이 있으면 옮기거나 함께 지울지 골라야 합니다
+- \`isLastCategory\`: 마지막 남은 카테고리면 \`true\`이고 삭제할 수 없습니다(\`TODO_CATEGORY_0854\`)`,
+  })
+  @ApiSuccessResponse({ type: TodoCategoryDeletionPreviewDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  async getDeletionPreview(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+  ): Promise<TodoCategoryDeletionPreviewDto> {
+    const preview = await this.#getTodoCategoryDeletionPreviewUseCase.execute({
+      userId: user.userId,
+      categoryId: params.id,
+    });
+
+    return TodoCategoryMapper.toDeletionPreview(preview);
   }
 
   @Patch(":id")

@@ -15,6 +15,7 @@ import { TodoCategoryReaderPort } from "./application/ports/todo-category.reader
 import { TodoCategoryRepositoryPort } from "./application/ports/todo-category.repository.port.js";
 import { CreateTodoCategoryUseCase } from "./application/use-cases/create-todo-category.use-case.js";
 import { DeleteTodoCategoryUseCase } from "./application/use-cases/delete-todo-category.use-case.js";
+import { GetTodoCategoryDeletionPreviewUseCase } from "./application/use-cases/get-todo-category-deletion-preview.use-case.js";
 import { GetTodoCategoryResourceLimitUseCase } from "./application/use-cases/get-todo-category-resource-limit.use-case.js";
 import { GetTodoCategoryUseCase } from "./application/use-cases/get-todo-category.use-case.js";
 import { ListTodoCategoriesUseCase } from "./application/use-cases/list-todo-categories.use-case.js";
@@ -39,6 +40,9 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     cache: TodoCategoryCachePort,
   }),
   provideUseCase(GetTodoCategoryUseCase, { repository: TodoCategoryRepositoryPort }),
+  provideUseCase(GetTodoCategoryDeletionPreviewUseCase, {
+    repository: TodoCategoryRepositoryPort,
+  }),
   provideUseCase(GetTodoCategoryResourceLimitUseCase, {
     repository: TodoCategoryRepositoryPort,
     limitReader: TodoCategoryLimitReaderPort,

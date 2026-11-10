@@ -4,12 +4,16 @@
 import type {
   CategoryDeletionResult,
   TodoCategory as TodoCategoryDto,
+  TodoCategoryDeletionPreview,
   TodoCategoryWithCount as TodoCategoryWithCountDto,
 } from "@aido/api";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { TodoCategoryDeletionReadModel } from "../../../application/read-models/todo-category-deletion.read-model.js";
+import type {
+  TodoCategoryDeletionPreviewReadModel,
+  TodoCategoryDeletionReadModel,
+} from "../../../application/read-models/todo-category-deletion.read-model.js";
 import type { TodoCategoryWithCountReadModel } from "../../../application/read-models/todo-category-with-count.read-model.js";
 import type { TodoCategory } from "../../../domain/todo-category.aggregate.js";
 
@@ -42,6 +46,16 @@ export const TodoCategoryMapper = {
 
   toManyResponseWithCount(views: TodoCategoryWithCountReadModel[]): TodoCategoryWithCountDto[] {
     return views.map((view) => TodoCategoryMapper.toResponseWithCount(view));
+  },
+
+  toDeletionPreview(preview: TodoCategoryDeletionPreviewReadModel): TodoCategoryDeletionPreview {
+    return {
+      categoryId: preview.categoryId,
+      todoCount: preview.todoCount,
+      completedTodoCount: preview.completedTodoCount,
+      activeSeriesCount: preview.activeSeriesCount,
+      isLastCategory: preview.isLastCategory,
+    };
   },
 
   toDeletionResult(deletion: TodoCategoryDeletionReadModel): CategoryDeletionResult {
