@@ -126,10 +126,11 @@ export class PushDeviceService {
     const epoch = this.#sessionEpoch.current();
     const unregisterCount = this.#unregisterCount;
     const permission = await this.getPermission();
-    const isDeliverable = PushPermissionPolicy.isPushDeliverable(permission);
-    const token = isDeliverable ? await this.#issueToken() : null;
-    // 허용된 기기의 token null은 1.15.0 서버가 등록된 토큰을 지운다. 보내지 않고 다음 복귀·토큰 변경 때 다시 받는다
-    if (isDeliverable && token == null) {
+    const token = PushPermissionPolicy.isPushDeliverable(permission)
+      ? await this.#issueToken()
+      : null;
+    // 보내지 않은 보고는 다음 복귀·토큰 변경 때 토큰을 다시 받아 보낸다
+    if (!PushPermissionPolicy.shouldReportPushDevice(permission, { token })) {
       return ok(null);
     }
     const deviceId = await this.#deviceIdService.get();

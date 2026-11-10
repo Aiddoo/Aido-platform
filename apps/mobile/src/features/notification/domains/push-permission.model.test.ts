@@ -85,6 +85,25 @@ describe('isPushDeliverable', () => {
   });
 });
 
+describe('shouldReportPushDevice', () => {
+  it.each([
+    ['GRANTED', 'ExponentPushToken[a]', true],
+    ['GRANTED', null, false],
+    ['PROVISIONAL', null, false],
+    ['DENIED', null, true],
+    ['NOT_DETERMINED', null, true],
+  ] as const)('권한이 %s이고 토큰이 %s면 보고할지는 %s다', (status, token, expected) => {
+    // Given
+    const permission = createPushPermission({ status });
+
+    // When
+    const result = PushPermissionPolicy.shouldReportPushDevice(permission, { token });
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('canRequestSystemDialog', () => {
   it('이미 허용했으면 시스템 창을 다시 띄우지 않는다', () => {
     // Given
