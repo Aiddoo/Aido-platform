@@ -1,6 +1,5 @@
-import dayjs from "dayjs";
-
 import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 export interface RetentionPushEligibilityInput {
   readonly pushEnabled: boolean;
@@ -29,5 +28,5 @@ export function retentionPushSkipReason(input: RetentionPushEligibilityInput): s
 
 function localHour(date: Date, timezone: string): number {
   // 마케팅 quiet-hours는 지역 기준 — 미상(UTC) 유저는 KST로 폴백해 판정
-  return dayjs(date).tz(resolveDeliveryTimezone(timezone)).hour();
+  return instantFromDate(date).toZonedDateTimeISO(resolveDeliveryTimezone(timezone)).hour;
 }

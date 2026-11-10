@@ -1,8 +1,7 @@
-import dayjs from "dayjs";
-
 import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
 import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type { RetentionStageName } from "./retention.constants.js";
 
@@ -119,6 +118,6 @@ function localDayDifference(from: Date, to: Date, timezone: string): number {
 }
 
 function isAtOrAfterLocalTime(date: Date, timezone: string, hour: number, minute: number): boolean {
-  const local = dayjs(date).tz(resolveTimezone(timezone));
-  return local.hour() > hour || (local.hour() === hour && local.minute() >= minute);
+  const local = instantFromDate(date).toZonedDateTimeISO(resolveTimezone(timezone));
+  return local.hour > hour || (local.hour === hour && local.minute >= minute);
 }

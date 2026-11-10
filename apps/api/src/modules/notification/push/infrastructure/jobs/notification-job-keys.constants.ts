@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
 
-import dayjs from "dayjs";
 import { sortBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
 import { NotificationJobName, type NotificationRuntimeJob } from "./notification.queue.js";
@@ -36,7 +38,7 @@ export function notificationEventJobKey(
     .with(
       { name: NotificationJobName.FRIEND_COMPLETED },
       ({ data }) =>
-        `friend-completed-${data.friendId}-${dayjs(occurredAt).tz(resolveTimezone(data.timezone)).format("YYYY-MM-DD")}`,
+        `friend-completed-${data.friendId}-${localDateOf(instantFromDate(occurredAt), TimeZone.reconstitute(resolveTimezone(data.timezone))).toString()}`,
     )
     .with(
       { name: NotificationJobName.MILESTONE_REACHED },
