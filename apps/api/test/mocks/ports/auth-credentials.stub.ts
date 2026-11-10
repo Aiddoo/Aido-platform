@@ -1,3 +1,4 @@
+import type { AuthAccountRecord } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import type {
   AuthCachedUserProfile,
   AuthCachePort,
@@ -5,14 +6,13 @@ import type {
   AuthUserRegisteredNotification,
 } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import type { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
 import type {
-  AuthLoginAttemptRepositoryPort,
-  AuthAccountRecord,
   AuthUserProfileRecord,
   AuthUserRecord,
   AuthUserRepositoryPort,
-  AuthVerificationRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
+import type { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";

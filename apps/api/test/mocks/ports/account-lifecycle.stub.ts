@@ -5,14 +5,16 @@ import type {
   AccountTodoCommentCleanupResult,
   AccountUsageCleanupPort,
 } from "#api/modules/identity/auth/application/ports/account-cleanup.port";
-import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import type {
   AuthAccountRecord,
   AuthAccountRepositoryPort,
+} from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
+import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import type {
   AuthUserRecord,
   AuthUserRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
 import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";

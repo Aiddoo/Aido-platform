@@ -20,10 +20,8 @@ import type {
   AuthUserRegisteredNotification,
 } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
-import {
-  type AuthUserRepositoryPort,
-  type AuthSecurityLogRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import { type AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 import type { ProvisionUserUseCase } from "./provision-user.use-case.js";
 

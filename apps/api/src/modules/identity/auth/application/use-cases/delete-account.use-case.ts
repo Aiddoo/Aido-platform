@@ -10,14 +10,12 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { accountDeleted } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
-import type {
-  AuthAccountRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type {
   DeleteAccountResult,

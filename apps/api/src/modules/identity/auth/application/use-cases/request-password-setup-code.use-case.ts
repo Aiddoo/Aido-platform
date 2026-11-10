@@ -3,10 +3,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type {
-  AuthUserRepositoryPort,
-  AuthAccountRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
 export interface RequestPasswordSetupCodeCommand {

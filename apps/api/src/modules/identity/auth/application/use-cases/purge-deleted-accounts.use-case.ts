@@ -11,10 +11,8 @@ import type {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "../ports/account-cleanup.port.js";
-import type {
-  AuthSecurityLogRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 
 interface PurgeDeletedAccountsDependencies {
   readonly userRepository: Pick<

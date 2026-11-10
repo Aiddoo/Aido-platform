@@ -11,6 +11,7 @@ import {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "#api/modules/identity/auth/application/ports/account-cleanup.port";
+import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
   AuthEmailSenderPort,
@@ -20,14 +21,11 @@ import {
   AuthPasswordHasherPort,
   AuthTokenIssuerPort,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import {
-  AuthAccountRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-  AuthUserRepositoryPort,
-  AuthVerificationRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
+import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
+import { AuthSessionRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
+import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
+import { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { DeleteAccountUseCase } from "#api/modules/identity/auth/application/use-cases/delete-account.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";

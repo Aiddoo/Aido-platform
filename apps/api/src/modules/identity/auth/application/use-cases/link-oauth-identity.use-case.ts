@@ -9,10 +9,8 @@ import {
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import {
-  type AuthAccountRepositoryPort,
-  type AuthSecurityLogRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import { type AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
+import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
 export interface LinkOAuthIdentityCommand {

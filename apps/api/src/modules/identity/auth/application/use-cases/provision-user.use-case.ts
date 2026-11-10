@@ -3,10 +3,8 @@ import type { UserRole } from "@aido/api/vocabulary";
 import type { AccountProvider, UserStatus } from "#api/modules/identity/auth/domain/auth.constants";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import {
-  type AuthAccountRepositoryPort,
-  type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import { type AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
+import { type AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import { type RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
 import { type UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port.js";
 

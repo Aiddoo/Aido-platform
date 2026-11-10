@@ -5,7 +5,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 import type { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";

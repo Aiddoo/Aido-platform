@@ -11,10 +11,8 @@ import { getSessionValidity } from "../../domain/session-validity.domain-service
 import { sessionRejection } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachedSession, AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type {
-  AuthSessionRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 
 // 서명·만료를 검증한 access 토큰의 claim. 타입·세션 확인은 이 UseCase가 한다
 export interface AccessTokenClaims {

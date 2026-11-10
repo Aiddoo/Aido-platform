@@ -5,12 +5,12 @@ import type {
   AuthTokenIssuerPort,
   TokenPair,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import type { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
 import type {
-  AuthSecurityLogRepositoryPort,
   AuthSessionRecord,
   AuthSessionRepositoryPort,
   NewAuthSession,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
 import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/auth/application/ports/session-push-device-releaser.port";
 import {
   AuthSession,

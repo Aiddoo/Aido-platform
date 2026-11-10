@@ -8,14 +8,12 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
-import type {
-  AuthUserRepositoryPort,
-  AuthAccountRepositoryPort,
-  AuthSessionRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 

@@ -7,10 +7,8 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type {
-  AuthOAuthStateRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
 

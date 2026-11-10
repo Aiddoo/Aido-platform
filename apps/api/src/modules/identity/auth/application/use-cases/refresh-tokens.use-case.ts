@@ -11,10 +11,8 @@ import { AUTH_DEFAULTS, TOKEN_REUSE_GRACE_PERIOD_MS } from "../../domain/auth.co
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthTokenIssuerPort } from "../ports/auth-crypto.port.js";
-import type {
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type {
   RefreshTokensResult,

@@ -11,7 +11,7 @@ import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import { type AuthEmailSenderPort } from "../ports/auth-collaboration.port.js";
-import { type AuthVerificationRepositoryPort } from "../ports/auth-persistence.port.js";
+import { type AuthVerificationRepositoryPort } from "../ports/auth-verification.repository.port.js";
 import { type VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
 
 export interface VerificationCodeResult {

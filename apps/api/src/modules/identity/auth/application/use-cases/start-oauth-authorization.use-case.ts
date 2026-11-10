@@ -6,7 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
-import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 import type {
   OAuthIdentityProviderRegistryPort,
   OAuthMode,

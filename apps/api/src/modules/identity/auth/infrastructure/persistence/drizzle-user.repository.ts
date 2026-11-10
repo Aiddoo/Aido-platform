@@ -9,7 +9,7 @@ import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-ev
 import {
   type AuthUserProfileRecord,
   AuthUserRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import type { UserActivity } from "#api/modules/identity/auth/application/ports/user-activity.reader.port";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";

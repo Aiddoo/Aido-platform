@@ -2,7 +2,7 @@ import type {
   AuthOAuthStateRecord,
   AuthOAuthStateRepositoryPort,
   ConsumeAuthOAuthStateInput,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
 import type {
   GenerateAuthUrlParams,
   OAuthIdentityProviderPort,

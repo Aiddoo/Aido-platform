@@ -12,7 +12,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 
 export interface GetCurrentUserQuery {
   readonly userId: string;

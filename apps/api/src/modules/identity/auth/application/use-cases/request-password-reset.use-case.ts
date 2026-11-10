@@ -5,10 +5,8 @@ import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants"
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type {
-  AuthUserRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
 export interface RequestPasswordResetCommand {

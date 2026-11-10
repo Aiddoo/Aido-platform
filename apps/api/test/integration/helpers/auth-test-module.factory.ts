@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
+import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
   AuthEmailSenderPort,
@@ -13,15 +14,12 @@ import {
   AuthPasswordHasherPort,
   AuthTokenIssuerPort,
 } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import {
-  AuthAccountRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthOAuthStateRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-  AuthUserRepositoryPort,
-  AuthVerificationRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
+import { AuthOAuthStateRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
+import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
+import { AuthSessionRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
+import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
+import { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import { OAuthIdentityProviderRegistryPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";

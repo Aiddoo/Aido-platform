@@ -15,10 +15,8 @@ import { TodoCommentAccountCleanup } from "#api/modules/engagement/application/s
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement-comments.public";
 import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
-import {
-  AuthUserRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
+import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/auth/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-user.repository";

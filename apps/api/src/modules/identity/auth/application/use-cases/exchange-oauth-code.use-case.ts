@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 import type { ExchangeCodeResult, RequestDevice } from "../read-models/auth-result.read-model.js";
 import type { NotifyOAuthSignupUseCase } from "./notify-oauth-signup.use-case.js";
 

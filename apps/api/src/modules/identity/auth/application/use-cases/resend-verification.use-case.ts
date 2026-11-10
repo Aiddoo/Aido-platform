@@ -6,7 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { VerificationService } from "./issue-verification-code.use-case.js";
 
 export interface ResendVerificationCommand {

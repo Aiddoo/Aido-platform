@@ -1,4 +1,4 @@
-import type { AuthOAuthStateRecord } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import type { AuthOAuthStateRecord } from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
 
 export const OAuthStateFixture = {
   create(overrides: Partial<AuthOAuthStateRecord> = {}): AuthOAuthStateRecord {

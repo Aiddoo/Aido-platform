@@ -6,7 +6,7 @@ import {
   accountAlreadyExists,
   AuthPersistenceConflict,
 } from "#api/modules/identity/auth/application/auth.errors";
-import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   isUniqueConstraintViolation,
   requireRecord,

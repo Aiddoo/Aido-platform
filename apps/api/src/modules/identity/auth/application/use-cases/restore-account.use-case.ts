@@ -4,10 +4,8 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
-import type {
-  AuthSecurityLogRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 
 export interface RestoreAccountCommand {

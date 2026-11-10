@@ -4,11 +4,9 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 
 import type { TokenPair } from "../ports/auth-crypto.port.js";
-import {
-  type AuthLoginAttemptRepositoryPort,
-  type AuthSecurityLogRepositoryPort,
-  type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import { type AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
+import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import { type AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { CreateSessionUseCase } from "./create-session.use-case.js";
 
 export interface IssueLoginCommand {

@@ -18,14 +18,12 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
-import type {
-  AuthUserRepositoryPort,
-  AuthAccountRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
 import type { RestoreAccountUseCase } from "./restore-account.use-case.js";
 

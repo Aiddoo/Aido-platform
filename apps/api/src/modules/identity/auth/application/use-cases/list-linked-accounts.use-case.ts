@@ -1,6 +1,6 @@
 import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import type { AuthAccountRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 
 export interface ListLinkedAccountsQuery {
   readonly userId: string;

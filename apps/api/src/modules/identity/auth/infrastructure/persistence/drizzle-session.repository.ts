@@ -7,7 +7,7 @@ import { and, eq, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 import {
   AuthSessionRepositoryPort,
   type NewAuthSession,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
 import type {
   AuthSession,
   AuthSessionRotation,

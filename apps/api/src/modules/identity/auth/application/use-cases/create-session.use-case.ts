@@ -3,7 +3,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { AuthTokenIssuerPort, TokenPair } from "../ports/auth-crypto.port.js";
-import type { AuthSessionRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 
 export interface CreateSessionCommand {
   readonly userId: string;

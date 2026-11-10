@@ -5,7 +5,7 @@ import { and, eq, gt, gte, isNull, lt, sql } from "drizzle-orm";
 import {
   AuthVerificationRepositoryPort,
   type ConsumeAuthVerificationInput,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   type Database,

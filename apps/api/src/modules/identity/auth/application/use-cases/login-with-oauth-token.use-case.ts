@@ -18,13 +18,11 @@ import { now } from "#api/shared/domain/date/utils/core";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AuthLogEvent } from "../auth.log-events.js";
+import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type {
-  AuthAccountRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type {
   OAuthIdentityProviderRegistryPort,
   SocialLoginOptions,

@@ -8,10 +8,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type {
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-} from "../ports/auth-persistence.port.js";
+import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
+import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { RequestMetadata } from "../read-models/auth-result.read-model.js";
 

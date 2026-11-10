@@ -7,7 +7,7 @@ import { and, eq, gt, isNull, or } from "drizzle-orm";
 import {
   AuthOAuthStateRepositoryPort,
   type ConsumeAuthOAuthStateInput,
-} from "#api/modules/identity/auth/application/ports/auth-persistence.port";
+} from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
 import type { OAuthMode } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";

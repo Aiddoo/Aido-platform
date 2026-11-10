@@ -25,6 +25,7 @@ import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import { LastActiveInterceptor } from "../presentation/interceptors/auth/last-active.interceptor.js";
+import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthCachePort,
   AuthEmailSenderPort,
@@ -36,15 +37,12 @@ import {
   AuthPasswordHasherPort,
   AuthTokenIssuerPort,
 } from "./application/ports/auth-crypto.port.js";
-import {
-  AuthAccountRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthOAuthStateRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthSessionRepositoryPort,
-  AuthUserRepositoryPort,
-  AuthVerificationRepositoryPort,
-} from "./application/ports/auth-persistence.port.js";
+import { AuthLoginAttemptRepositoryPort } from "./application/ports/auth-login-attempt.repository.port.js";
+import { AuthOAuthStateRepositoryPort } from "./application/ports/auth-oauth-state.repository.port.js";
+import { AuthSecurityLogRepositoryPort } from "./application/ports/auth-security-log.repository.port.js";
+import { AuthSessionRepositoryPort } from "./application/ports/auth-session.repository.port.js";
+import { AuthUserRepositoryPort } from "./application/ports/auth-user.repository.port.js";
+import { AuthVerificationRepositoryPort } from "./application/ports/auth-verification.repository.port.js";
 import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
 import { RetentionEnrollerPort } from "./application/ports/retention-enroller.port.js";
 import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";

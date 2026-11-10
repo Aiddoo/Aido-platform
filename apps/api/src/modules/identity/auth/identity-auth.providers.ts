@@ -16,6 +16,7 @@ import {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "./application/ports/account-cleanup.port.js";
+import { AuthAccountRepositoryPort } from "./application/ports/auth-account.repository.port.js";
 import {
   AuthEmailSenderPort,
   AuthCachePort,
@@ -26,15 +27,12 @@ import {
   AuthTokenIssuerPort,
   AuthPasswordHasherPort,
 } from "./application/ports/auth-crypto.port.js";
-import {
-  AuthSessionRepositoryPort,
-  AuthVerificationRepositoryPort,
-  AuthLoginAttemptRepositoryPort,
-  AuthSecurityLogRepositoryPort,
-  AuthUserRepositoryPort,
-  AuthAccountRepositoryPort,
-  AuthOAuthStateRepositoryPort,
-} from "./application/ports/auth-persistence.port.js";
+import { AuthLoginAttemptRepositoryPort } from "./application/ports/auth-login-attempt.repository.port.js";
+import { AuthOAuthStateRepositoryPort } from "./application/ports/auth-oauth-state.repository.port.js";
+import { AuthSecurityLogRepositoryPort } from "./application/ports/auth-security-log.repository.port.js";
+import { AuthSessionRepositoryPort } from "./application/ports/auth-session.repository.port.js";
+import { AuthUserRepositoryPort } from "./application/ports/auth-user.repository.port.js";
+import { AuthVerificationRepositoryPort } from "./application/ports/auth-verification.repository.port.js";
 import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
 import { RetentionEnrollerPort } from "./application/ports/retention-enroller.port.js";
 import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";

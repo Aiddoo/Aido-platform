@@ -8,7 +8,7 @@ import type {
   AuthRegistrationNotifierPort,
   AuthUserRegisteredNotification,
 } from "../ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { RequestDevice } from "../read-models/auth-result.read-model.js";
 
 const ACCOUNT_PROVIDER_TO_EVENT: Record<

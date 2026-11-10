@@ -3,7 +3,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 
 export interface UpdateProfileCommand {
   readonly userId: string;

@@ -1,4 +1,4 @@
-import type { AuthOAuthStateRepositoryPort } from "../ports/auth-persistence.port.js";
+import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 
 export interface GetOAuthRedirectUriQuery {
   readonly state: string;
