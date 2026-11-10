@@ -6,14 +6,14 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { WeeklyAchievementStrategy } from "../../../application/strategies/reminders/weekly-achievement.strategy.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import * as en from "./locales/en.messages.js";
-import * as ko from "./locales/ko.messages.js";
+import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import { createMorningReminderNotificationMessage } from "./scheduler-notification.messages.js";
 import {
   createEveningReminderNotificationMessage,
   createStreakAtRiskNotificationMessage,
   createWeeklyAchievementNotificationMessage,
 } from "./scheduler-notification.messages.js";
+import { getNotificationFriendFallback } from "./social-notification.messages.js";
 import {
   createOnboardingNotificationMessage,
   createWeeklyReportNotificationMessage,
@@ -204,17 +204,17 @@ describe("완료 수와 기간을 실제 입력으로 안내한다", () => {
     ["친구", "친구와"],
   ])("닉네임 %s에는 님을 붙이고 이름을 모르는 친구에는 붙이지 않는다", (senderName, expected) => {
     // Given / When
-    const message = ko.SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.variants[1]({ senderName });
+    const message = SOCIAL_COPY.FOLLOW_ACCEPTED.render("v2", { senderName }, "ko");
     // Then
-    expect(message.title).toBe(`${expected} 친구가 됐어요 🎉`);
+    expect(message?.title).toBe(`${expected} 친구가 됐어요 🎉`);
   });
 
   it("영어는 이름을 모르는 친구를 문장 중간에서 your friend로 부른다", () => {
     // Given
-    const friendName = en.SOCIAL_SENDER_FALLBACK;
+    const friendName = getNotificationFriendFallback("en");
     // When
-    const message = en.SOCIAL_TEMPLATES.NUDGE_SUGGEST.variants[0]({ friendName });
+    const message = SOCIAL_COPY.NUDGE_SUGGEST.render("v1", { friendName }, "en");
     // Then
-    expect(message.title).toBe("Check in on your friend?");
+    expect(message?.title).toBe("Check in on your friend?");
   });
 });

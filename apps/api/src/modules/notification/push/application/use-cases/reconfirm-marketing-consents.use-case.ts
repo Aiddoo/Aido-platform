@@ -141,6 +141,8 @@ export class ReconfirmMarketingConsentsUseCase {
         type: "SYSTEM_NOTICE",
         title: message.title,
         body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         // 동의 사실을 알리는 법정 고지라 광고성 동의 없이 보낸다
         purpose: "TRANSACTIONAL",
         campaignKey: SCHEDULER_CAMPAIGN_KEY.MARKETING_CONSENT_RECONFIRM,

@@ -59,6 +59,8 @@ export class SendNudgeNotificationUseCase {
       type: "NUDGE_RECEIVED",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       nudgeId: input.nudgeId,
       friendId: input.senderId,
       todoId: input.todoId,

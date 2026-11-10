@@ -1,20 +1,13 @@
-import { notificationContentSchema } from "@aido/api";
-
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
-import * as en from "./locales/en.messages.js";
-import * as ko from "./locales/ko.messages.js";
 import type {
   NotificationMessage,
   RetentionNotificationCopySelection,
   RetentionTemplateKey,
 } from "./notification-copy-catalog.messages.js";
-
-const LOCALE_TEMPLATES = { ko, en } satisfies Record<
-  SupportedLocale,
-  Pick<typeof ko, "RETENTION_TEMPLATES">
->;
+import { RETENTION_COPY } from "./notification-copy-templates.messages.js";
+import { renderNotificationVariant } from "./notification-copy.messages.js";
 
 export type RetentionNotificationInput = RetentionNotificationCopySelection & {
   readonly locale?: SupportedLocale;
@@ -29,17 +22,15 @@ export function createRetentionNotificationMessage(
 ): NotificationMessage {
   const locale = input.locale ?? DEFAULT_LOCALE;
   const templateKey = retentionTemplateKey(input);
-  const template = LOCALE_TEMPLATES[locale].RETENTION_TEMPLATES[templateKey];
-  const variants = template.variants;
+  const template = RETENTION_COPY[templateKey];
 
   const index = deterministicIndex(
     `${templateKey}\u0000${input.selectionContext.recipientId}\u0000${input.selectionContext.occurrenceKey}`,
-    variants.length,
+    template.variantNames.length,
   );
-  const selectedCopy = notificationContentSchema.parse((variants[index] ?? variants[0])(undefined));
 
   return {
-    ...selectedCopy,
+    ...renderNotificationVariant(template, index, {}, locale),
     variantId: `${input.copyKey}.v${index + 1}`,
   };
 }

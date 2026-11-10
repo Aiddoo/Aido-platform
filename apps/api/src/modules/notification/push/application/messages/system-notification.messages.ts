@@ -1,25 +1,15 @@
 import type { SubscriptionPlanType } from "@aido/api/vocabulary";
 
-import {
-  calendarDaysBetween,
-  localDateInTimezone,
-  resolveTimezone,
-} from "#api/shared/domain/date/utils/timezone";
+import { calendarDaysBetween, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
-import * as en from "./locales/en.messages.js";
-import * as ko from "./locales/ko.messages.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "./notification-copy-catalog.messages.js";
-import { renderLocalizedNotification } from "./notification-copy.messages.js";
-
-const LOCALE_TEMPLATES = { ko, en } satisfies Record<
-  SupportedLocale,
-  Pick<typeof ko, "SYSTEM_TEMPLATES">
->;
+import { SYSTEM_COPY } from "./notification-copy-templates.messages.js";
+import { renderNotificationTemplate } from "./notification-copy.messages.js";
 
 interface LocalizedVariantInput {
   readonly locale?: SupportedLocale;
@@ -49,9 +39,9 @@ export function createWeeklyReportNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: LocalizedVariantInput = {}): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.WEEKLY_REPORT,
-    variables: undefined,
+  return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_REPORT, {
+    facts: {},
+    locale,
     variantContext,
   });
 }
@@ -60,9 +50,9 @@ export function createMonthlyReportNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: LocalizedVariantInput = {}): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.MONTHLY_REPORT,
-    variables: undefined,
+  return renderNotificationTemplate(SYSTEM_COPY.MONTHLY_REPORT, {
+    facts: {},
+    locale,
     variantContext,
   });
 }
@@ -70,28 +60,19 @@ export function createMonthlyReportNotificationMessage({
 export function createAiSuggestionNotificationMessage({
   locale = DEFAULT_LOCALE,
 }: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.AI_SUGGESTION,
-    variables: undefined,
-  });
+  return renderNotificationTemplate(SYSTEM_COPY.AI_SUGGESTION, { facts: {}, locale });
 }
 
 export function createBillingIssueNotificationMessage({
   locale = DEFAULT_LOCALE,
 }: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.BILLING_ISSUE,
-    variables: undefined,
-  });
+  return renderNotificationTemplate(SYSTEM_COPY.BILLING_ISSUE, { facts: {}, locale });
 }
 
 export function createPremiumGrantEndingNotificationMessage({
   locale = DEFAULT_LOCALE,
 }: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.PREMIUM_GRANT_ENDING,
-    variables: undefined,
-  });
+  return renderNotificationTemplate(SYSTEM_COPY.PREMIUM_GRANT_ENDING, { facts: {}, locale });
 }
 
 export interface PremiumTrialEndingNotificationInput {
@@ -108,25 +89,16 @@ export interface PremiumTrialEndingNotificationInput {
   readonly variantContext?: NotificationVariantContext;
 }
 
-const BILLING_DATE_FORMAT = {
-  ko: { month: "long", day: "numeric" },
-  en: { month: "short", day: "numeric" },
-} as const satisfies Record<SupportedLocale, Intl.DateTimeFormatOptions>;
-
-/** 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). 날짜도 그 달력으로 쓴다. */
-function billingDayVariables(input: {
-  readonly locale: SupportedLocale;
+/** 남은 일수는 ms가 아니라 받는 사람 달력 날짜 차이로 센다(0 = 오늘, 1 = 내일). 날짜는 렌더링 때 그 달력으로 쓴다. */
+function billingDayFacts(input: {
   readonly timezone: string;
   readonly at: Date;
   readonly now: Date;
 }) {
-  const timeZone = resolveTimezone(input.timezone);
   return {
-    days: calendarDaysBetween(input.now, input.at, timeZone),
-    date: new Intl.DateTimeFormat(input.locale, {
-      ...BILLING_DATE_FORMAT[input.locale],
-      timeZone,
-    }).format(input.at),
+    days: calendarDaysBetween(input.now, input.at, resolveTimezone(input.timezone)),
+    at: input.at.toISOString(),
+    timezone: input.timezone,
   };
 }
 
@@ -134,18 +106,17 @@ function billingDayVariables(input: {
 export function createPremiumTrialEndingNotificationMessage(
   input: PremiumTrialEndingNotificationInput,
 ): NotificationMessage {
-  const templates = LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES;
-  const variables = billingDayVariables({ ...input, at: input.endsAt });
+  const facts = billingDayFacts({ ...input, at: input.endsAt });
   return input.willRenew
-    ? renderLocalizedNotification({
-        template: templates.PREMIUM_TRIAL_ENDING_RENEWING,
-        variables: { ...variables, planType: input.planType },
+    ? renderNotificationTemplate(SYSTEM_COPY.PREMIUM_TRIAL_ENDING_RENEWING, {
+        facts: { ...facts, planType: input.planType },
+        locale: input.locale,
         variantContext: input.variantContext,
         templateKey: "premium_trial_ending.renewing",
       })
-    : renderLocalizedNotification({
-        template: templates.PREMIUM_TRIAL_ENDING_CANCELLED,
-        variables,
+    : renderNotificationTemplate(SYSTEM_COPY.PREMIUM_TRIAL_ENDING_CANCELLED, {
+        facts,
+        locale: input.locale,
         variantContext: input.variantContext,
         templateKey: "premium_trial_ending.cancelled",
       });
@@ -165,9 +136,9 @@ export interface PremiumRenewalUpcomingNotificationInput {
 export function createPremiumRenewalUpcomingNotificationMessage(
   input: PremiumRenewalUpcomingNotificationInput,
 ): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.PREMIUM_RENEWAL_UPCOMING,
-    variables: billingDayVariables({ ...input, at: input.renewsAt }),
+  return renderNotificationTemplate(SYSTEM_COPY.PREMIUM_RENEWAL_UPCOMING, {
+    facts: billingDayFacts({ ...input, at: input.renewsAt }),
+    locale: input.locale,
     variantContext: input.variantContext,
   });
 }
@@ -178,19 +149,9 @@ export function createMarketingConsentReconfirmNotificationMessage(input: {
   readonly timezone: string;
   readonly agreedAt: Date;
 }): NotificationMessage {
-  const timeZone = resolveTimezone(input.timezone);
-  const agreedOn =
-    input.locale === "ko"
-      ? localDateInTimezone(input.agreedAt, timeZone).replaceAll("-", ".")
-      : new Intl.DateTimeFormat("en", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          timeZone,
-        }).format(input.agreedAt);
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[input.locale].SYSTEM_TEMPLATES.MARKETING_CONSENT_RECONFIRM,
-    variables: { agreedOn },
+  return renderNotificationTemplate(SYSTEM_COPY.MARKETING_CONSENT_RECONFIRM, {
+    facts: { agreedAt: input.agreedAt.toISOString(), timezone: input.timezone },
+    locale: input.locale,
   });
 }
 
@@ -199,22 +160,22 @@ export function createWinbackNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: WinbackNotificationInput): NotificationMessage {
-  const templates = LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES;
   const selection =
     inactiveDays >= 30
-      ? { template: templates.WINBACK_DAY30, templateKey: "winback.day_30" }
+      ? { template: SYSTEM_COPY.WINBACK_DAY30, templateKey: "winback.day_30" }
       : inactiveDays >= 21
-        ? { template: templates.WINBACK_DAY21, templateKey: "winback.day_21" }
+        ? { template: SYSTEM_COPY.WINBACK_DAY21, templateKey: "winback.day_21" }
         : inactiveDays >= 14
-          ? { template: templates.WINBACK_DAY14, templateKey: "winback.day_14" }
+          ? { template: SYSTEM_COPY.WINBACK_DAY14, templateKey: "winback.day_14" }
           : inactiveDays >= 7
-            ? { template: templates.WINBACK_DAY7, templateKey: "winback.day_7" }
-            : { template: templates.WINBACK_DAY3, templateKey: "winback.day_3" };
+            ? { template: SYSTEM_COPY.WINBACK_DAY7, templateKey: "winback.day_7" }
+            : { template: SYSTEM_COPY.WINBACK_DAY3, templateKey: "winback.day_3" };
 
-  return renderLocalizedNotification({
-    ...selection,
-    variables: undefined,
+  return renderNotificationTemplate(selection.template, {
+    facts: {},
+    locale,
     variantContext,
+    templateKey: selection.templateKey,
   });
 }
 
@@ -222,66 +183,59 @@ export function createOnboardingNotificationMessage(
   input: OnboardingNotificationInput,
 ): NotificationMessage {
   const { day, locale = DEFAULT_LOCALE, variantContext } = input;
-  const templates = LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES;
+  const options = { locale, variantContext };
   switch (day) {
     case 0:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY0,
-        variables: undefined,
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY0, {
+        ...options,
+        facts: {},
         templateKey: "onboarding.day_0",
       });
     case 1:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY1,
-        variables: undefined,
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY1, {
+        ...options,
+        facts: {},
         templateKey: "onboarding.day_1",
       });
     case 2:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY2,
-        variables: undefined,
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY2, {
+        ...options,
+        facts: {},
         templateKey: "onboarding.day_2",
       });
     case 3:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY3,
-        variables: undefined,
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY3, {
+        ...options,
+        facts: {},
         templateKey: "onboarding.day_3",
       });
     case 5:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY5,
-        variables: { completedCount: input.completedCount },
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY5, {
+        ...options,
+        facts: { completedCount: input.completedCount },
         templateKey: "onboarding.day_5",
       });
     case 7:
-      return renderLocalizedNotification({
-        template: templates.ONBOARDING_DAY7,
-        variables: { completedCount: input.completedCount },
-        variantContext,
+      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY7, {
+        ...options,
+        facts: { completedCount: input.completedCount },
         templateKey: "onboarding.day_7",
       });
   }
 }
 
+const MILESTONE_COPY = {
+  FIRST_COMPLETE: SYSTEM_COPY.MILESTONE_FIRST_COMPLETE,
+  COUNT_10: SYSTEM_COPY.MILESTONE_10,
+  COUNT_50: SYSTEM_COPY.MILESTONE_50,
+  COUNT_100: SYSTEM_COPY.MILESTONE_100,
+  STREAK_3: SYSTEM_COPY.MILESTONE_STREAK_3,
+  FIRST_FRIEND: SYSTEM_COPY.MILESTONE_FIRST_FRIEND,
+} satisfies Record<NotificationMilestone, unknown>;
+
 export function createMilestoneNotificationMessage({
   milestone,
   locale = DEFAULT_LOCALE,
 }: MilestoneNotificationInput): NotificationMessage {
-  const templates = LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES;
-  const template = {
-    FIRST_COMPLETE: templates.MILESTONE_FIRST_COMPLETE,
-    COUNT_10: templates.MILESTONE_10,
-    COUNT_50: templates.MILESTONE_50,
-    COUNT_100: templates.MILESTONE_100,
-    STREAK_3: templates.MILESTONE_STREAK_3,
-    FIRST_FRIEND: templates.MILESTONE_FIRST_FRIEND,
-  }[milestone];
-
-  return renderLocalizedNotification({ template, variables: undefined });
+  return renderNotificationTemplate(MILESTONE_COPY[milestone], { facts: {}, locale });
 }

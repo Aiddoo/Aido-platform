@@ -46,6 +46,8 @@ export class SendCheerNotificationUseCase {
       type: "CHEER_RECEIVED",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       cheerId: input.cheerId,
       friendId: input.senderId,
       // 보낸 사람은 받은 사람이 응원을 신고·차단할 때 확인 문구에 이름을 보여 주는 데 쓴다

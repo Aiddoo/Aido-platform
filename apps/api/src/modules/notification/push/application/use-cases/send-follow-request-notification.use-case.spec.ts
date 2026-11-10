@@ -47,6 +47,8 @@ describe("SendFollowRequestNotificationUseCase", () => {
       type: "FOLLOW_NEW",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       friendId: "u1",
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,

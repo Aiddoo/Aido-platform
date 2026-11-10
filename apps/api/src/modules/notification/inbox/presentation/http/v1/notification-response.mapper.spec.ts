@@ -1,9 +1,17 @@
 import { NotificationBuilder } from "#test/builders/index";
 
+import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/notification.messages.js";
 import {
+  renderInboxCopy,
   toNotificationInboxResponse,
   toNotificationResponse,
 } from "./notification-response.mapper.js";
+
+const FOLLOW_ACCEPTED_VARIANT_CONTEXT = {
+  campaignKey: "FOLLOW_ACCEPTED",
+  recipientId: "user-1",
+  occurrenceKey: "friend-1:user-1",
+};
 
 describe("notification-response.mapper — 알림 응답", () => {
   describe("toNotificationResponse", () => {
@@ -124,6 +132,72 @@ describe("notification-response.mapper — 알림 응답", () => {
 
       // Then
       expect(result).not.toHaveProperty("navigation");
+    });
+  });
+
+  describe("renderInboxCopy", () => {
+    it("copyKey가 없는 옛 알림은 저장한 문구를 그대로 준다", () => {
+      // Given
+      const source = { title: "저장 제목", body: "저장 본문", copyKey: null, copyFacts: null };
+
+      // When
+      const result = renderInboxCopy(source, "en");
+
+      // Then
+      expect(result).toEqual({ title: "저장 제목", body: "저장 본문" });
+    });
+
+    it("한국어로 저장한 알림을 요청 언어(en)로 다시 그린다", () => {
+      // Given
+      const stored = createFollowAcceptedNotificationMessage({
+        senderName: "민재",
+        locale: "ko",
+        variantContext: FOLLOW_ACCEPTED_VARIANT_CONTEXT,
+      });
+      const english = createFollowAcceptedNotificationMessage({
+        senderName: "민재",
+        locale: "en",
+        variantContext: FOLLOW_ACCEPTED_VARIANT_CONTEXT,
+      });
+
+      // When
+      const result = renderInboxCopy(stored, "en");
+
+      // Then
+      expect(english.copyKey).toBe(stored.copyKey);
+      expect(result).toEqual({ title: english.title, body: english.body });
+      expect(result.title).not.toBe(stored.title);
+    });
+
+    it("모르는 copyKey면 저장한 문구를 준다", () => {
+      // Given
+      const source = {
+        title: "저장 제목",
+        body: "저장 본문",
+        copyKey: "social.REMOVED_TEMPLATE.v1",
+        copyFacts: { sender: "민재" },
+      };
+
+      // When
+      const result = renderInboxCopy(source, "en");
+
+      // Then
+      expect(result).toEqual({ title: "저장 제목", body: "저장 본문" });
+    });
+
+    it("Accept-Language가 없는 요청은 저장한 문구를 준다", () => {
+      // Given
+      const stored = createFollowAcceptedNotificationMessage({
+        senderName: "민재",
+        locale: "en",
+        variantContext: FOLLOW_ACCEPTED_VARIANT_CONTEXT,
+      });
+
+      // When
+      const result = renderInboxCopy(stored, null);
+
+      // Then
+      expect(result).toEqual({ title: stored.title, body: stored.body });
     });
   });
 

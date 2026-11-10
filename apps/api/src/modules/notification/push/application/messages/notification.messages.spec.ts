@@ -372,6 +372,8 @@ describe("알림 문구 생성", () => {
       title: "결제 정보 확인이 필요해요",
       body: "구독을 이어가려면 결제 수단을 확인해주세요",
       variantId: "default",
+      copyKey: "system.BILLING_ISSUE.default",
+      copyFacts: {},
     };
 
     // When

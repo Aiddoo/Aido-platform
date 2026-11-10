@@ -140,6 +140,9 @@ export class ProcessRetentionStages {
         type: "SYSTEM_NOTICE",
         title: message.title,
         body: message.body,
+        // 리텐션 선택의 copyKey(단계별 문구 묶음)와 달리 알림함을 다시 그릴 카탈로그 키다
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         action: { type: "DEEP_LINK", url: decision.route },
         campaignKey: RETENTION_CAMPAIGN_KEY,
         variantId: message.variantId,

@@ -2,25 +2,20 @@ import type { NudgeReplyKind, TodoCommentKind } from "@aido/api/vocabulary";
 
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
-import * as en from "./locales/en.messages.js";
-import * as ko from "./locales/ko.messages.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "./notification-copy-catalog.messages.js";
+import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import {
-  createNotificationLabelPreview,
-  renderLocalizedNotification,
+  notificationFriendFallback,
+  renderNotificationTemplate,
+  toNameFact,
 } from "./notification-copy.messages.js";
-
-const LOCALE_TEMPLATES = { ko, en } satisfies Record<
-  SupportedLocale,
-  Pick<typeof ko, "SOCIAL_TEMPLATES"> & { readonly SOCIAL_SENDER_FALLBACK: string }
->;
 
 /** 친구 이름이 없을 때에도 사용자 언어에 맞는 중립적인 라벨을 쓴다. */
 export function getNotificationFriendFallback(locale: SupportedLocale = DEFAULT_LOCALE): string {
-  return LOCALE_TEMPLATES[locale].SOCIAL_SENDER_FALLBACK;
+  return notificationFriendFallback(locale);
 }
 
 interface LocalizedVariantInput {
@@ -39,13 +34,13 @@ export function createNudgeReplyNotificationMessage(
   },
 ): NotificationMessage {
   const locale = input.locale ?? DEFAULT_LOCALE;
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_REPLIED,
-    variables: {
-      senderName: createNotificationLabelPreview({ label: input.senderName, locale }),
-      todoTitle: createNotificationLabelPreview({ label: input.todoTitle, locale }),
+  return renderNotificationTemplate(SOCIAL_COPY.NUDGE_REPLIED, {
+    facts: {
+      senderName: toNameFact(input.senderName, locale),
+      todoTitle: input.todoTitle,
       replyKind: input.replyKind,
     },
+    locale,
     variantContext: input.variantContext,
     templateKey: "nudge.reply",
   });
@@ -57,12 +52,9 @@ export function createNudgeThanksNotificationMessage(
   },
 ): NotificationMessage {
   const locale = input.locale ?? DEFAULT_LOCALE;
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_THANKED,
-    variables: {
-      senderName: createNotificationLabelPreview({ label: input.senderName, locale }),
-      todoTitle: createNotificationLabelPreview({ label: input.todoTitle, locale }),
-    },
+  return renderNotificationTemplate(SOCIAL_COPY.NUDGE_THANKED, {
+    facts: { senderName: toNameFact(input.senderName, locale), todoTitle: input.todoTitle },
+    locale,
     variantContext: input.variantContext,
     templateKey: "nudge.thanks",
   });
@@ -116,9 +108,9 @@ export function createFollowRequestNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: FollowRequestNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.FOLLOW_NEW,
-    variables: { senderName },
+  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
+    facts: { senderName: toNameFact(senderName, locale) },
+    locale,
     variantContext,
     templateKey: "follow.request",
   });
@@ -129,9 +121,9 @@ export function createFollowAcceptedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: FollowAcceptedNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.FOLLOW_ACCEPTED,
-    variables: { senderName },
+  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
+    facts: { senderName: toNameFact(senderName, locale) },
+    locale,
     variantContext,
     templateKey: "follow.accepted",
   });
@@ -146,11 +138,9 @@ export function createInviteJoinedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: InviteJoinedNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_JOINED,
-    variables: {
-      inviteeName: createNotificationLabelPreview({ label: inviteeName, locale }),
-    },
+  return renderNotificationTemplate(SOCIAL_COPY.INVITE_JOINED, {
+    facts: { inviteeName: toNameFact(inviteeName, locale) },
+    locale,
     variantContext,
     templateKey: "invite.joined",
   });
@@ -165,11 +155,9 @@ export function createInviteProgressNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: InviteProgressNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_PROGRESS,
-    variables: {
-      inviteeName: createNotificationLabelPreview({ label: inviteeName, locale }),
-    },
+  return renderNotificationTemplate(SOCIAL_COPY.INVITE_PROGRESS, {
+    facts: { inviteeName: toNameFact(inviteeName, locale) },
+    locale,
     variantContext,
     templateKey: "invite.progress",
   });
@@ -184,11 +172,9 @@ export function createInviteQualifyReminderNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: InviteQualifyReminderNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_QUALIFY_REMINDER,
-    variables: {
-      inviterName: createNotificationLabelPreview({ label: inviterName, locale }),
-    },
+  return renderNotificationTemplate(SOCIAL_COPY.INVITE_QUALIFY_REMINDER, {
+    facts: { inviterName: toNameFact(inviterName, locale) },
+    locale,
     variantContext,
     templateKey: "invite.qualify-reminder",
   });
@@ -205,9 +191,9 @@ export function createInviteRewardedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: InviteRewardedNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_REWARDED,
-    variables: { premiumDays, friendSlots },
+  return renderNotificationTemplate(SOCIAL_COPY.INVITE_REWARDED, {
+    facts: { premiumDays, friendSlots },
+    locale,
     variantContext,
     templateKey: "invite.rewarded",
   });
@@ -220,23 +206,20 @@ export function createNudgeReceivedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: NudgeReceivedNotificationInput): NotificationMessage {
-  const variables = {
-    senderName,
-    todoTitle: todoTitle ? createNotificationLabelPreview({ label: todoTitle, locale }) : null,
-  };
+  const facts = { senderName: toNameFact(senderName, locale), todoTitle: todoTitle || null };
 
   if (message) {
-    return renderLocalizedNotification({
-      template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE,
-      variables: { ...variables, message },
+    return renderNotificationTemplate(SOCIAL_COPY.NUDGE_RECEIVED_WITH_MESSAGE, {
+      facts: { ...facts, message },
+      locale,
       variantContext,
       templateKey: "nudge.message",
     });
   }
 
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_RECEIVED,
-    variables,
+  return renderNotificationTemplate(SOCIAL_COPY.NUDGE_RECEIVED, {
+    facts,
+    locale,
     variantContext,
     templateKey: "nudge.standard",
   });
@@ -249,17 +232,17 @@ export function createTodoCreationNudgeNotificationMessage({
   variantContext,
 }: TodoCreationNudgeNotificationInput): NotificationMessage {
   if (message) {
-    return renderLocalizedNotification({
-      template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE,
-      variables: { senderName, message },
+    return renderNotificationTemplate(SOCIAL_COPY.REMIND_NUDGE_RECEIVED_WITH_MESSAGE, {
+      facts: { senderName: toNameFact(senderName, locale), message },
+      locale,
       variantContext,
       templateKey: "nudge.todo_creation_message",
     });
   }
 
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED,
-    variables: { senderName },
+  return renderNotificationTemplate(SOCIAL_COPY.REMIND_NUDGE_RECEIVED, {
+    facts: { senderName: toNameFact(senderName, locale) },
+    locale,
     variantContext,
     templateKey: "nudge.todo_creation",
   });
@@ -272,17 +255,17 @@ export function createCheerReceivedNotificationMessage({
   variantContext,
 }: CheerReceivedNotificationInput): NotificationMessage {
   if (message) {
-    return renderLocalizedNotification({
-      template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.CHEER_RECEIVED,
-      variables: { senderName, message },
+    return renderNotificationTemplate(SOCIAL_COPY.CHEER_RECEIVED, {
+      facts: { senderName: toNameFact(senderName, locale), message },
+      locale,
       variantContext,
       templateKey: "cheer.message",
     });
   }
 
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE,
-    variables: { senderName },
+  return renderNotificationTemplate(SOCIAL_COPY.CHEER_RECEIVED_NO_MESSAGE, {
+    facts: { senderName: toNameFact(senderName, locale) },
+    locale,
     variantContext,
     templateKey: "cheer.standard",
   });
@@ -293,9 +276,9 @@ export function createFriendCompletedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: FriendCompletedNotificationInput): NotificationMessage {
-  return renderLocalizedNotification({
-    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.FRIEND_COMPLETED,
-    variables: { friendName },
+  return renderNotificationTemplate(SOCIAL_COPY.FRIEND_COMPLETED, {
+    facts: { friendName: toNameFact(friendName, locale) },
+    locale,
     variantContext,
     templateKey: "friend_completed",
   });
@@ -305,14 +288,13 @@ export function createTodoCommentNotificationMessage(
   input: TodoCommentNotificationCopyInput,
 ): NotificationMessage {
   const locale = input.locale ?? DEFAULT_LOCALE;
-  const templates = LOCALE_TEMPLATES[locale];
-  const senderName = input.senderName?.trim() || templates.SOCIAL_SENDER_FALLBACK;
+  const options = { locale, variantContext: input.variantContext };
+  const senderName = toNameFact(input.senderName?.trim() || null, locale);
 
   if (input.activityKind === "LIKE") {
-    return renderLocalizedNotification({
-      template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_LIKE,
-      variables: { senderName },
-      variantContext: input.variantContext,
+    return renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_LIKE, {
+      ...options,
+      facts: { senderName },
       templateKey: "todo_comment.like",
     });
   }
@@ -323,40 +305,35 @@ export function createTodoCommentNotificationMessage(
   const isChain = input.commentCount > 1;
   if (input.activityKind === "COMMENT") {
     return isChain
-      ? renderLocalizedNotification({
-          template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_CHAIN,
-          variables: { senderName, count: input.commentCount },
-          variantContext: input.variantContext,
+      ? renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_CHAIN, {
+          ...options,
+          facts: { senderName, count: input.commentCount },
           templateKey: "todo_comment.comment_chain",
         })
-      : renderLocalizedNotification({
-          template: templates.SOCIAL_TEMPLATES.TODO_COMMENT,
-          variables: { senderName },
-          variantContext: input.variantContext,
+      : renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT, {
+          ...options,
+          facts: { senderName },
           templateKey: "todo_comment.comment",
         });
   }
 
   if (isChain) {
-    return renderLocalizedNotification({
-      template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY_CHAIN,
-      variables: { senderName, count: input.commentCount },
-      variantContext: input.variantContext,
+    return renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_REPLY_CHAIN, {
+      ...options,
+      facts: { senderName, count: input.commentCount },
       templateKey: "todo_comment.reply_chain",
     });
   }
 
   return input.replyTarget === "REPLY"
-    ? renderLocalizedNotification({
-        template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY_TO_REPLY,
-        variables: { senderName },
-        variantContext: input.variantContext,
+    ? renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_REPLY_TO_REPLY, {
+        ...options,
+        facts: { senderName },
         templateKey: "todo_comment.reply_to_reply",
       })
-    : renderLocalizedNotification({
-        template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY,
-        variables: { senderName },
-        variantContext: input.variantContext,
+    : renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_REPLY, {
+        ...options,
+        facts: { senderName },
         templateKey: "todo_comment.reply",
       });
 }

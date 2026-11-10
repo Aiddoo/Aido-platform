@@ -101,6 +101,8 @@ export class SendFriendCompletionNotificationsUseCase {
         type: "FRIEND_COMPLETED" as const,
         title: message.title,
         body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         friendId: input.friendId,
         notificationDate,
         campaignKey: variantContext.campaignKey,

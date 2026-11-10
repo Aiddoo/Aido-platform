@@ -155,6 +155,7 @@ export class WeatherMorningStrategy implements TimezoneReminderStrategy {
           briefing,
           locale,
           variantContext,
+          timezone: ctx.tz,
           formatTime: (instant) =>
             formatWeatherNotificationTime(instant, { locale, timezone: ctx.tz }),
         }),

@@ -55,6 +55,7 @@ import {
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,
   formatWeatherNotificationTime,
+  renderNotificationCopy,
 } from "./notification.messages.js";
 import { getNotificationFriendFallback } from "./social-notification.messages.js";
 
@@ -244,6 +245,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
             precipitationChance: 70,
           },
           formatTime: formatTimeFor(locale),
+          timezone: TIMEZONE,
           locale,
           variantContext,
         }),
@@ -260,6 +262,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
           peakApparentTemperature: 35.4,
         },
         formatTime: formatTimeFor(locale),
+        timezone: TIMEZONE,
         locale,
         variantContext,
       }),
@@ -271,6 +274,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
         createWeatherMorningNotificationMessage({
           briefing: { kind: "wetLater", startsAt, isSnow },
           formatTime: formatTimeFor(locale),
+          timezone: TIMEZONE,
           locale,
           variantContext,
         }),
@@ -282,6 +286,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
       createWeatherMorningNotificationMessage({
         briefing: { kind: "summary", day: weatherDay(condition) },
         formatTime: formatTimeFor(locale),
+        timezone: TIMEZONE,
         locale,
         variantContext,
       }),
@@ -721,5 +726,65 @@ describe.each(LOCALES)("%s 푸시 문구 렌더 스냅샷", (locale) => {
 
     // Then
     expect(rendered).toMatchSnapshot();
+  });
+});
+
+describe.each(LOCALES)("%s 알림함 다시 렌더링", (locale) => {
+  const otherLocale: SupportedLocale = locale === "ko" ? "en" : "ko";
+
+  it.each(NOTIFICATION_COPY_CASES)("%s", (_name, create) => {
+    for (const { seed, message } of renderEveryVariant(create, locale)) {
+      // Given - 저장했다 읽은 것처럼 JSON을 거친 사실
+      const other = create(otherLocale, variantContextOf(seed));
+      const stored = {
+        copyKey: message.copyKey,
+        copyFacts: JSON.parse(JSON.stringify(message.copyFacts)),
+      };
+
+      // When
+      const sameLocale = renderNotificationCopy(stored, locale);
+      const switchedLocale = renderNotificationCopy(stored, otherLocale);
+
+      // Then - 같은 언어는 푸시 문구 그대로, 다른 언어는 그 언어로 만든 푸시 문구와 같다
+      expect(other.copyKey).toBe(message.copyKey);
+      expect(other.copyFacts).toEqual(message.copyFacts);
+      expect(sameLocale).toEqual({ title: message.title, body: message.body });
+      expect(switchedLocale).toEqual({ title: other.title, body: other.body });
+    }
+  });
+});
+
+describe("renderNotificationCopy — 저장 문구로 되돌아가는 경우", () => {
+  it.each([
+    ["모르는 템플릿", { copyKey: "scheduler.UNKNOWN.v1", copyFacts: {} }],
+    ["모르는 variant", { copyKey: "scheduler.MORNING_REMINDER.v9", copyFacts: { count: 1 } }],
+    ["점이 없는 키", { copyKey: "MORNING_REMINDER", copyFacts: {} }],
+    ["맞지 않는 사실", { copyKey: "scheduler.MORNING_REMINDER.v1", copyFacts: { count: "3" } }],
+    ["사실 없음", { copyKey: "scheduler.MORNING_REMINDER.v1", copyFacts: null }],
+    [
+      "시간대 없는 날씨 사실",
+      {
+        copyKey: "weather.MORNING_RAIN_LATER.default",
+        copyFacts: { startsAt: "2026-07-16T06:00:00.000Z", timezone: null },
+      },
+    ],
+  ] as const)("%s이면 null을 돌려준다", (_label, stored) => {
+    // When
+    const copy = renderNotificationCopy(stored, "en");
+
+    // Then
+    expect(copy).toBeNull();
+  });
+
+  it("광고성 표기 같은 푸시 전용 장식을 붙이지 않는다", () => {
+    // Given
+    const message = createWeeklyReportNotificationMessage({ locale: "ko" });
+
+    // When
+    const copy = renderNotificationCopy(message, "ko");
+
+    // Then
+    expect(copy?.title.startsWith("(광고)")).toBe(false);
+    expect(copy).toEqual({ title: message.title, body: message.body });
   });
 });

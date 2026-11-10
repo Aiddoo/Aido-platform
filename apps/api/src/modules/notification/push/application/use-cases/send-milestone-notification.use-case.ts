@@ -67,6 +67,8 @@ export class SendMilestoneNotificationUseCase {
         type: "WEEKLY_ACHIEVEMENT",
         title: message.title,
         body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         metadata: { milestone: input.milestone },
       });
       this.#dependencies.logger.log({

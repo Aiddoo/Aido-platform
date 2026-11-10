@@ -135,6 +135,8 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       variantId: message.variantId,
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       todoId,
       metadata: { stage: stageLabel },
       reminderOccurrenceKey: createReminderOccurrenceKey(todo.startDate, todo.scheduledLocalTime),
@@ -173,6 +175,8 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       variantId: message.variantId,
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       todoId,
       metadata: { stage: "series-paused" },
     });

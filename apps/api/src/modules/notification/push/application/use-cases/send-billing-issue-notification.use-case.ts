@@ -32,6 +32,8 @@ export class SendBillingIssueNotificationUseCase {
       type: "SYSTEM_NOTICE",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       action: { type: "DEEP_LINK", url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION },
     });
     this.#dependencies.logger.log({

@@ -10,6 +10,7 @@ import type { CursorPage } from "#api/shared/application/cursor-page";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import { renderNotificationCopy } from "../../../../push/application/messages/notification.messages.js";
 import { toWireNotificationType } from "../../../../push/domain/notification-client-capability.domain-service.js";
 import { toNotificationNavigation } from "../../../../push/domain/notification-navigation.domain-service.js";
 import { toNotificationRouting } from "../../../../push/domain/notification-routing.domain-service.js";
@@ -33,9 +34,19 @@ export interface InboxCopy {
   readonly body: string;
 }
 
-// 요청 언어로 카피를 다시 그리는 자리다. 아직은 저장한 문구를 그대로 준다
-export function renderInboxCopy(source: InboxCopySource, _locale: SupportedLocale): InboxCopy {
-  return { title: source.title, body: source.body };
+// Accept-Language가 없는 옛 앱은 받는 사람의 저장 언어로 만든 문구를 그대로 받는다
+export function renderInboxCopy(
+  source: InboxCopySource,
+  locale: SupportedLocale | null,
+): InboxCopy {
+  const stored = { title: source.title, body: source.body };
+  if (locale == null || source.copyKey == null) {
+    return stored;
+  }
+  return (
+    renderNotificationCopy({ copyKey: source.copyKey, copyFacts: source.copyFacts }, locale) ??
+    stored
+  );
 }
 
 function toNotificationContext(notification: InboxNotification): NotificationContext | undefined {
@@ -62,7 +73,7 @@ function toNotificationMetadata(metadata: unknown): NotificationMetadata {
 
 export function toNotificationResponse(
   notification: InboxNotification,
-  locale: SupportedLocale,
+  locale: SupportedLocale | null,
 ): NotificationInboxItem {
   const context = toNotificationContext(notification);
   const action = {
@@ -99,7 +110,7 @@ export function toNotificationResponse(
 export function toNotificationInboxResponse(
   page: CursorPage<InboxNotification, number>,
   unreadCount: number,
-  locale: SupportedLocale,
+  locale: SupportedLocale | null,
 ): NotificationInboxResponse {
   return {
     notifications: page.items.map((notification) => toNotificationResponse(notification, locale)),

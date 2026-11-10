@@ -43,6 +43,8 @@ export class SendFollowAcceptedNotificationUseCase {
       type: "FOLLOW_ACCEPTED",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       friendId: input.friendId,
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,

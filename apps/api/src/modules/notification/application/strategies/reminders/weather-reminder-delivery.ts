@@ -92,6 +92,8 @@ export function buildWeatherNotification(input: {
     variantId: message.variantId,
     title: message.title,
     body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
     ...(action != null && { action }),
     notificationDate: today,
   };

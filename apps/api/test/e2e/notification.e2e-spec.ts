@@ -24,6 +24,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
+import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/notification.messages";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -1246,6 +1247,56 @@ describe("알림 E2E", () => {
         ).toEqual(["SYSTEM_NOTICE"]);
       },
     );
+  });
+
+  describe("알림함 요청 언어", () => {
+    it("한국어로 만든 알림은 Accept-Language: en 알림함에 영어로 보이고 copyKey 없는 옛 알림은 저장 문구를 준다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("notif-locale@test.com", password);
+      await ctx.module.get(SendBillingIssueNotificationUseCase).execute({ userId: user.userId });
+      await ctx.testDatabase.getClient().insert(notification).values({
+        userId: user.userId,
+        type: "FOLLOW_NEW",
+        title: "옛 알림 제목",
+        body: "옛 알림 본문",
+      });
+      const korean = createBillingIssueNotificationMessage({ locale: "ko" });
+      const english = createBillingIssueNotificationMessage({ locale: "en" });
+      const get = (path: string) =>
+        request(ctx.app.getHttpServer())
+          .get(path)
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set("X-App-Version", "1.13.0")
+          .set("Accept-Language", "en")
+          .expect(200);
+
+      // When
+      const [inbox, list] = await Promise.all([
+        get("/v1/notifications/inbox"),
+        get("/v1/notifications"),
+      ]);
+
+      // Then
+      const stored = await ctx.testDatabase
+        .getClient()
+        .select({ title: notification.title, copyKey: notification.copyKey })
+        .from(notification)
+        .where(eq(notification.type, "SYSTEM_NOTICE"));
+      expect(stored).toEqual([{ title: korean.title, copyKey: korean.copyKey }]);
+      for (const items of [
+        notificationInboxResponseSchema.parse(inbox.body.data).notifications,
+        notificationListResponseSchema.parse(list.body.data).notifications,
+      ]) {
+        expect(items.find((item) => item.type === "SYSTEM_NOTICE")).toMatchObject({
+          title: english.title,
+          body: english.body,
+        });
+        expect(items.find((item) => item.type === "FOLLOW_NEW")).toMatchObject({
+          title: "옛 알림 제목",
+          body: "옛 알림 본문",
+        });
+      }
+    });
   });
 
   describe("할 일 알림의 이동 재료", () => {

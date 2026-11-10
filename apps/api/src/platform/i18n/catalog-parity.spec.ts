@@ -61,6 +61,15 @@ describe("findCatalogMismatches — 언어 짝 검사", () => {
   });
 });
 
+// 출시 문구를 그대로 옮긴 차이. 문구를 바꾸려면 Before/After 검토를 따로 거친다
+const KNOWN_MISMATCHES: Readonly<Partial<Record<string, readonly string[]>>> = {
+  en: [
+    // en은 할 일 수를 제목에, ko는 본문에 쓴다(알림 하나로는 같은 자리표시자)
+    "notification.scheduler.MORNING_REMINDER.v5.title: 자리표시자가 다르다",
+    "notification.scheduler.MORNING_REMINDER.v5.body: 자리표시자나 모양이 다르다",
+  ],
+};
+
 describe("서버 i18n 카탈로그", () => {
   it.each(SUPPORTED_LOCALES.filter((locale) => locale !== "ko"))(
     "%s 카탈로그는 기준 ko와 짝이 맞다",
@@ -69,7 +78,7 @@ describe("서버 i18n 카탈로그", () => {
       const mismatches = findCatalogMismatches(readCatalog("ko"), readCatalog(locale), locale);
 
       // Then
-      expect(mismatches).toEqual([]);
+      expect(mismatches).toEqual(KNOWN_MISMATCHES[locale] ?? []);
     },
   );
 

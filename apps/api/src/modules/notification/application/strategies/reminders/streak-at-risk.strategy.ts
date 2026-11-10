@@ -116,6 +116,8 @@ export class StreakAtRiskStrategy implements TimezoneReminderStrategy {
         variantId: message.variantId,
         title: message.title,
         body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         notificationDate: today,
       };
     });

@@ -1,4 +1,21 @@
-import type { NudgeReplyKind, SubscriptionPlanType } from "@aido/api/vocabulary";
+import type { SupportedLocale } from "#api/shared/domain/locale";
+
+import enNotification from "../../../../../i18n/en/notification.json" with { type: "json" };
+import koNotification from "../../../../../i18n/ko/notification.json" with { type: "json" };
+
+/** 기준 언어 ko 카탈로그(`src/i18n/ko/notification.json`) 모양. */
+export type NotificationCopyCatalog = typeof koNotification;
+
+/** `@nestjs/i18n`이 읽는 카탈로그와 같은 JSON. 어느 언어든 ko의 키가 빠지면 컴파일 오류다. */
+export const NOTIFICATION_COPY_CATALOG = {
+  ko: koNotification,
+  en: enNotification,
+} satisfies Record<SupportedLocale, NotificationCopyCatalog>;
+
+/** 카탈로그 문구 하나. 복수형은 `count` 인자로 CLDR 범주를 고른다. */
+export type NotificationCopyText = string | { readonly other: string };
+
+export type NotificationCopyArgs = Readonly<Record<string, string | number>>;
 
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {
@@ -6,197 +23,29 @@ export interface NotificationCopy {
   readonly body: string;
 }
 
-/** 입력 변수를 정확히 받는 순수 카피 함수. */
-export type NotificationCopyFactory<TVariables> = (
-  variables: Readonly<TVariables>,
-) => NotificationCopy;
+/** 다른 언어로 다시 렌더링할 원본 사실. 언어로 다듬은 값(조사·말줄임·날짜 문자열)은 넣지 않는다. */
+export type NotificationCopyFactValue = string | number | boolean | null;
+export type NotificationCopyFacts = Readonly<Record<string, NotificationCopyFactValue>>;
 
-/** 단일 기본 카피 또는 결정적으로 선택할 non-empty variant 풀. */
-export type LocalizedNotificationTemplate<TVariables> =
-  | {
-      readonly copy: NotificationCopyFactory<TVariables>;
-      readonly variants?: never;
-    }
-  | {
-      readonly copy?: never;
-      readonly variants: readonly [
-        NotificationCopyFactory<TVariables>,
-        ...NotificationCopyFactory<TVariables>[],
-      ];
-    };
+/** 이름 자리 표기. ko는 조사, en은 문장 첫 주어(`A friend`)·문장 중간(`your friend`)이 달라진다. */
+export const NOTIFICATION_NAME_FORMS = [
+  "name",
+  "subject",
+  "actor",
+  "with",
+  "topic",
+  "author",
+  "partner",
+] as const;
+export type NotificationNameForm = (typeof NOTIFICATION_NAME_FORMS)[number];
 
-type ExactCatalog<TVariablesByKey> = {
-  readonly [TKey in keyof TVariablesByKey]: LocalizedNotificationTemplate<TVariablesByKey[TKey]>;
-};
-
-export interface SchedulerCopyVariablesByKey {
-  readonly TODO_REMINDER_60MIN: { readonly todoTitle: string };
-  readonly TODO_REMINDER_10MIN: { readonly todoTitle: string };
-  readonly TODO_SERIES_PAUSED: undefined;
-  readonly MORNING_REMINDER: { readonly count: number };
-  readonly EVENING_COMPLETE: undefined;
-  readonly EVENING_PARTIAL: { readonly remaining: number };
-  readonly EVENING_NONE: undefined;
-  readonly MORNING_NO_TODO: undefined;
-  readonly EVENING_STREAK: { readonly streak: number; readonly next: number };
-  readonly EVENING_STREAK_7: undefined;
-  readonly EVENING_STREAK_14: undefined;
-  readonly EVENING_STREAK_30: { readonly streak: number };
-  readonly EVENING_STREAK_RISK_PARTIAL: {
-    readonly streak: number;
-    readonly remaining: number;
-  };
-  readonly EVENING_STREAK_RISK_NONE: { readonly streak: number };
-  readonly LUNCH_NUDGE: undefined;
-  readonly STREAK_AT_RISK: { readonly streak: number };
+export interface NotificationLocaleGrammar {
+  /** 이름 하나를 자리별 표기로 만든다. 이름을 모르면 `name`은 그 언어의 대체 이름이다. */
+  readonly nameForms: (
+    name: string,
+    names: NotificationCopyCatalog["parts"]["name"],
+  ) => Readonly<Record<NotificationNameForm, string>>;
 }
-
-export type SchedulerNotificationCopyCatalog = ExactCatalog<SchedulerCopyVariablesByKey>;
-
-interface TodoWeatherCopyVariables {
-  /** 알림 시간대·언어로 만든 할 일 시각 ("오후 3시", "3 PM") */
-  readonly time: string;
-  readonly todoTitle: string;
-}
-
-export interface WeatherCopyVariablesByKey {
-  readonly MORNING_TODO_RAIN: TodoWeatherCopyVariables & {
-    readonly precipChance: number;
-    /** 같은 비와 겹친 다른 할 일 수 */
-    readonly otherCount: number;
-  };
-  readonly MORNING_TODO_STORM: TodoWeatherCopyVariables;
-  readonly MORNING_TODO_SNOW: TodoWeatherCopyVariables;
-  readonly MORNING_TODO_HEAT: TodoWeatherCopyVariables & { readonly apparentTemp: number };
-  readonly MORNING_RAIN_LATER: { readonly time: string };
-  readonly MORNING_SNOW_LATER: { readonly time: string };
-  readonly MORNING_SUMMARY: {
-    readonly conditionLabel: string;
-    readonly tempMin: number;
-    readonly tempMax: number;
-    readonly precipChance: number;
-  };
-  readonly EVENING_RAIN: {
-    /** 비가 시작하는 내일의 때. 모르면 null */
-    readonly dayPartLabel: string | null;
-    /** 쌀쌀하면 내일 최저 기온, 아니면 null */
-    readonly chillyTemp: number | null;
-  };
-  readonly EVENING_SNOW: {
-    readonly dayPartLabel: string | null;
-    readonly chillyTemp: number | null;
-  };
-  readonly EVENING_SUMMARY: {
-    readonly conditionLabel: string;
-    readonly tempMin: number;
-    readonly tempMax: number;
-    readonly isChilly: boolean;
-  };
-}
-
-export type WeatherNotificationCopyCatalog = ExactCatalog<WeatherCopyVariablesByKey>;
-
-export interface SocialCopyVariablesByKey {
-  readonly NUDGE_REPLIED: {
-    readonly senderName: string;
-    readonly todoTitle: string;
-    readonly replyKind: NudgeReplyKind;
-  };
-  readonly NUDGE_THANKED: { readonly senderName: string; readonly todoTitle: string };
-  readonly FOLLOW_NEW: { readonly senderName: string };
-  readonly FOLLOW_ACCEPTED: { readonly senderName: string };
-  readonly INVITE_JOINED: { readonly inviteeName: string };
-  readonly INVITE_REWARDED: { readonly premiumDays: number; readonly friendSlots: number };
-  readonly INVITE_PROGRESS: { readonly inviteeName: string };
-  readonly INVITE_QUALIFY_REMINDER: { readonly inviterName: string };
-  readonly NUDGE_RECEIVED: {
-    readonly senderName: string;
-    readonly todoTitle: string | null;
-  };
-  readonly NUDGE_RECEIVED_WITH_MESSAGE: {
-    readonly senderName: string;
-    readonly todoTitle: string | null;
-    readonly message: string;
-  };
-  readonly REMIND_NUDGE_RECEIVED: { readonly senderName: string };
-  readonly REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-    readonly senderName: string;
-    readonly message: string;
-  };
-  readonly CHEER_RECEIVED: { readonly senderName: string; readonly message: string };
-  readonly CHEER_RECEIVED_NO_MESSAGE: { readonly senderName: string };
-  readonly FRIEND_COMPLETED: { readonly friendName: string };
-  readonly SOCIAL_DIGEST_MULTI: { readonly completedFriendCount: number };
-  readonly SOCIAL_DIGEST_SINGLE: { readonly friendName: string };
-  readonly NUDGE_SUGGEST: { readonly friendName: string };
-  readonly TODO_COMMENT: { readonly senderName: string };
-  readonly TODO_COMMENT_CHAIN: { readonly senderName: string; readonly count: number };
-  readonly TODO_COMMENT_REPLY: { readonly senderName: string };
-  readonly TODO_COMMENT_REPLY_TO_REPLY: { readonly senderName: string };
-  readonly TODO_COMMENT_REPLY_CHAIN: { readonly senderName: string; readonly count: number };
-  readonly TODO_COMMENT_LIKE: { readonly senderName: string };
-}
-
-export type SocialNotificationCopyCatalog = ExactCatalog<SocialCopyVariablesByKey>;
-
-/** 체험이 끝나기까지 남은 사용자 달력 일수(0 = 오늘)와 그 시간대·언어로 쓴 끝나는 날짜 */
-export interface PremiumTrialEndingCopyVariables {
-  readonly days: number;
-  readonly date: string;
-}
-
-/** 체험 뒤 이어질 요금제. 모르는 상품이면 null이라 요금제 없이 "구독"이라고 쓴다. */
-export interface PremiumTrialRenewingCopyVariables extends PremiumTrialEndingCopyVariables {
-  readonly planType: SubscriptionPlanType | null;
-}
-
-export interface SystemCopyVariablesByKey {
-  readonly WINBACK_DAY3: undefined;
-  readonly WINBACK_DAY7: undefined;
-  readonly WINBACK_DAY14: undefined;
-  readonly WINBACK_DAY21: undefined;
-  readonly WINBACK_DAY30: undefined;
-  readonly WEEKLY_ACHIEVEMENT: { readonly completedCount: number };
-  readonly WEEKLY_ACHIEVEMENT_PERFECT: undefined;
-  readonly WEEKLY_ACHIEVEMENT_ALMOST: { readonly rate: number };
-  readonly WEEKLY_REPORT: undefined;
-  readonly MONTHLY_REPORT: undefined;
-  readonly AI_SUGGESTION: undefined;
-  readonly BILLING_ISSUE: undefined;
-  readonly PREMIUM_GRANT_ENDING: undefined;
-  readonly PREMIUM_TRIAL_ENDING_RENEWING: PremiumTrialRenewingCopyVariables;
-  readonly PREMIUM_TRIAL_ENDING_CANCELLED: PremiumTrialEndingCopyVariables;
-  /** 연간 구독 갱신까지 남은 사용자 달력 일수와 결제 날짜 */
-  readonly PREMIUM_RENEWAL_UPCOMING: PremiumTrialEndingCopyVariables;
-  /** 처음 동의한 날을 받는 사람 시간대·언어로 쓴 값 */
-  readonly MARKETING_CONSENT_RECONFIRM: { readonly agreedOn: string };
-  readonly ONBOARDING_DAY0: undefined;
-  readonly ONBOARDING_DAY1: undefined;
-  readonly ONBOARDING_DAY2: undefined;
-  readonly ONBOARDING_DAY3: undefined;
-  readonly ONBOARDING_DAY5: { readonly completedCount: number };
-  readonly ONBOARDING_DAY7: { readonly completedCount: number };
-  readonly MILESTONE_FIRST_COMPLETE: undefined;
-  readonly MILESTONE_10: undefined;
-  readonly MILESTONE_50: undefined;
-  readonly MILESTONE_100: undefined;
-  readonly MILESTONE_STREAK_3: undefined;
-  readonly MILESTONE_FIRST_FRIEND: undefined;
-}
-
-export type SystemNotificationCopyCatalog = ExactCatalog<SystemCopyVariablesByKey>;
-
-export type RetentionTemplateKey =
-  | "D0:d0_no_todo"
-  | "D1:d1_no_todo"
-  | "D1:d1_has_todo_no_completion"
-  | "D3:d3_restart"
-  | "D7:d7_has_progress"
-  | "D7:d7_restart";
-
-export type RetentionNotificationCopyCatalog = {
-  readonly [TKey in RetentionTemplateKey]: LocalizedNotificationTemplate<undefined>;
-};
 
 export type RetentionNotificationCopySelection =
   | { readonly stage: "D0"; readonly copyKey: "d0_no_todo" }
@@ -207,14 +56,7 @@ export type RetentionNotificationCopySelection =
   | { readonly stage: "D3"; readonly copyKey: "d3_restart" }
   | { readonly stage: "D7"; readonly copyKey: "d7_has_progress" | "d7_restart" };
 
-export interface WeatherFallbackCopyCatalog {
-  /** 날씨 위치가 없을 때 */
-  readonly MORNING: LocalizedNotificationTemplate<undefined>;
-  readonly EVENING: LocalizedNotificationTemplate<undefined>;
-  /** 위치는 있지만 예보를 받지 못했을 때 */
-  readonly MORNING_UNAVAILABLE: LocalizedNotificationTemplate<undefined>;
-  readonly EVENING_UNAVAILABLE: LocalizedNotificationTemplate<undefined>;
-}
+export type RetentionTemplateKey = keyof NotificationCopyCatalog["retention"];
 
 /** 재시도에도 같은 카피를 선택하기 위한 결정적 variant seed. */
 export interface NotificationVariantContext {
@@ -224,7 +66,14 @@ export interface NotificationVariantContext {
   readonly occurrenceKey: string;
 }
 
+/** 저장해 두었다가 다른 언어로 다시 렌더링할 문구 식별자와 원본 사실. */
+export interface NotificationCopyReference {
+  /** `<그룹>.<템플릿>.<variant>`(예: `scheduler.MORNING_REMINDER.v2`). 언어와 무관하다 */
+  readonly copyKey: string;
+  readonly copyFacts: NotificationCopyFacts;
+}
+
 /** 분석 가능한 variant 식별자를 포함한 최종 푸시 문구. */
-export interface NotificationMessage extends NotificationCopy {
+export interface NotificationMessage extends NotificationCopy, NotificationCopyReference {
   readonly variantId: string;
 }

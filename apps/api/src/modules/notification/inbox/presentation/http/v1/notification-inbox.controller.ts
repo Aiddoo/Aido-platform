@@ -13,7 +13,6 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
@@ -74,7 +73,7 @@ export class NotificationInboxController {
       }),
       this.#getUnreadNotificationCount.execute({ userId: user.userId, appVersion }),
     ]);
-    return toNotificationInboxResponse(page, unreadCount, client.locale ?? DEFAULT_LOCALE);
+    return toNotificationInboxResponse(page, unreadCount, client.locale);
   }
 
   @Get("unread-count")

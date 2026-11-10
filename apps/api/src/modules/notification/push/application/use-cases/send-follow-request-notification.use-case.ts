@@ -43,6 +43,8 @@ export class SendFollowRequestNotificationUseCase {
       type: "FOLLOW_NEW",
       title: message.title,
       body: message.body,
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
       friendId: input.followerId,
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,

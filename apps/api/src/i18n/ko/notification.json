@@ -1,0 +1,683 @@
+{
+  "scheduler": {
+    "TODO_REMINDER_60MIN": {
+      "v1": { "title": "1시간 뒤에 할 일이 있어요 ⏰", "body": "‘{todoTitle}’ 미리 챙겨둘까요?" },
+      "v2": { "title": "한 시간 남았어요", "body": "‘{todoTitle}’ 준비할 시간은 충분해요" },
+      "v3": { "title": "다음 할 일을 미리 알려드려요", "body": "1시간 뒤 ‘{todoTitle}’ 시작이에요" }
+    },
+    "TODO_REMINDER_10MIN": {
+      "v1": { "title": "10분 뒤 시작이에요 ⏰", "body": "‘{todoTitle}’ 준비됐나요?" },
+      "v2": { "title": "곧 시작할 시간이에요", "body": "‘{todoTitle}’까지 10분 남았어요" },
+      "v3": { "title": "슬슬 준비해볼까요?", "body": "10분 뒤 ‘{todoTitle}’ 시작이에요" }
+    },
+    "TODO_SERIES_PAUSED": {
+      "v1": { "title": "반복 할 일 알림을 잠시 멈췄어요", "body": "앱을 열면 다시 시작돼요" }
+    },
+    "MORNING_REMINDER": {
+      "v1": {
+        "title": { "other": "오늘 할 일 {count}개 ☀️" },
+        "body": "제일 쉬운 것부터 하나 끝내봐요"
+      },
+      "v2": {
+        "title": { "other": "좋은 아침이에요, 할 일 {count}개" },
+        "body": "첫 체크를 하면 하루가 가벼워져요"
+      },
+      "v3": {
+        "title": { "other": "오늘 할 일 {count}개 준비됐어요" },
+        "body": "순서만 정해도 반은 끝난 거예요"
+      },
+      "v4": {
+        "title": { "other": "할 일 {count}개, 천천히 가요" },
+        "body": "아이두도 옆에서 같이 걸을게요 🐾"
+      },
+      "v5": {
+        "title": { "other": "오늘도 같이 시작해요" },
+        "body": "할 일 {count}개 중 하나만 끝내도 좋은 출발이에요"
+      }
+    },
+    "EVENING_COMPLETE": {
+      "v1": { "title": "오늘 할 일 전부 끝! 🎉", "body": "이제 마음 편히 쉬어도 돼요" },
+      "v2": { "title": "오늘도 해냈어요", "body": "체크 표시가 빈틈없이 꽉 찼어요" },
+      "v3": { "title": "완벽한 하루였어요", "body": "아이두가 골골송 불러드려요 🐾" },
+      "v4": { "title": "계획한 일, 다 마쳤어요", "body": "오늘 해낸 기록을 한번 구경해봐요" },
+      "v5": { "title": "오늘 하루 수고 많았어요", "body": "끝낸 일들이 오늘을 꽉 채웠어요" }
+    },
+    "EVENING_PARTIAL": {
+      "v1": {
+        "title": { "other": "오늘 할 일 {count}개 남았어요" },
+        "body": "여유 있으면 하나만 더 해볼까요?"
+      },
+      "v2": {
+        "title": { "other": "아직 체크 전인 일 {count}개" },
+        "body": "할 일 목록에서 다음 걸 골라봐요"
+      },
+      "v3": {
+        "title": { "other": "남은 할 일은 {count}개" },
+        "body": "가벼운 것부터 마무리해봐요 🐾"
+      },
+      "v4": {
+        "title": "할 일 목록에 {count}개 남았어요",
+        "body": "할 수 있는 만큼만 해도 충분해요"
+      }
+    },
+    "EVENING_NONE": {
+      "v1": { "title": "오늘 할 일 목록 볼까요? 🌙", "body": "자기 전에 하나만 끝내도 충분해요" },
+      "v2": { "title": "오늘 계획, 다시 살펴볼까요?", "body": "내일로 미룰 일은 미뤄도 괜찮아요" },
+      "v3": { "title": "가볍게 하나만 해볼까요?", "body": "5분이면 끝나는 일부터 골라봐요" },
+      "v4": { "title": "오늘은 쉬어가도 괜찮아요", "body": "내일 할 일만 살짝 정리해둬요" }
+    },
+    "MORNING_NO_TODO": {
+      "v1": { "title": "오늘 할 일 하나 적어볼까요? ☀️", "body": "작은 일 하나면 하루가 정리돼요" },
+      "v2": { "title": "오늘 할 일 목록이 비어 있어요", "body": "떠오르는 일 하나만 적어봐요" },
+      "v3": { "title": "오늘 첫 할 일은 뭐예요?", "body": "아이두랑 하나씩 정해봐요 🐾" }
+    },
+    "EVENING_STREAK": {
+      "v1": { "title": "{streak}일 연속 전부 완료 🔥", "body": "내일도 이어가면 {next}일째예요" },
+      "v2": { "title": "{streak}일째 꾸준히 해냈어요", "body": "내일 {next}일째도 같이 가봐요" },
+      "v3": { "title": "연속 기록 {streak}일 달성", "body": "오늘도 끝까지 해낸 거 다 봤어요 🐾" }
+    },
+    "EVENING_STREAK_7": {
+      "default": { "title": "일주일 연속 전부 완료 🎉", "body": "7일 내내 해낸 거, 진짜 대단해요" }
+    },
+    "EVENING_STREAK_14": {
+      "default": { "title": "2주 연속 전부 완료 🏆", "body": "14일의 꾸준함, 이제 습관이 됐어요" }
+    },
+    "EVENING_STREAK_30": {
+      "default": { "title": "{streak}일 연속 완료 🐾", "body": "이쯤 되면 꾸준함이 특기예요" }
+    },
+    "EVENING_STREAK_RISK_PARTIAL": {
+      "v1": {
+        "title": "연속 {streak}일, {remaining}개 남았어요",
+        "body": "남은 일을 끝내면 기록이 이어져요"
+      },
+      "v2": {
+        "title": "{remaining}개 끝내면 연속 기록 유지",
+        "body": "{streak}일 쌓아온 기록, 천천히 이어가요 🔥"
+      },
+      "v3": { "title": "오늘 남은 할 일 {remaining}개", "body": "가벼운 것부터 하나씩 끝내봐요" }
+    },
+    "EVENING_STREAK_RISK_NONE": {
+      "v1": {
+        "title": "연속 {streak}일, 오늘도 이어갈까요?",
+        "body": "할 일 목록에서 남은 일을 확인해봐요"
+      },
+      "v2": {
+        "title": "{streak}일 연속 기록이 기다려요 🐾",
+        "body": "남은 일을 모두 끝내면 이어져요"
+      },
+      "v3": {
+        "title": "{streak}일 동안 잘 해왔어요",
+        "body": "오늘 할 일을 다 끝내면 기록이 이어져요"
+      }
+    },
+    "LUNCH_NUDGE": {
+      "v1": {
+        "title": "점심 먹고 하나 해볼까요?",
+        "body": "할 일 목록에서 지금 할 수 있는 걸 골라봐요"
+      },
+      "v2": { "title": "오후 첫 체크, 뭐로 할까요?", "body": "제일 쉬운 할 일 하나면 충분해요" },
+      "v3": { "title": "잠깐 할 일 목록 볼까요? 🐾", "body": "하나 끝내면 오후가 가벼워져요" },
+      "v4": { "title": "오늘 첫 체크는 작게", "body": "하나 끝내면 흐름이 붙어요" }
+    },
+    "STREAK_AT_RISK": {
+      "v1": {
+        "title": "연속 {streak}일, 오늘도 이어가요 🔥",
+        "body": "할 일 목록에서 남은 일을 확인해봐요"
+      },
+      "v2": {
+        "title": "오늘 남은 일, 같이 끝내볼까요?",
+        "body": "다 끝내면 {streak}일 연속 기록이 이어져요"
+      },
+      "v3": { "title": "{streak}일 쌓은 기록이 있어요", "body": "자기 전에 남은 일을 정리해봐요" }
+    }
+  },
+  "weather": {
+    "MORNING_TODO_RAIN": {
+      "default": {
+        "title": "{time} ‘{todoTitle}’ 때 비 소식이 있어요 ☔",
+        "body": "강수 확률 {precipChance}% · 시간 옮기기",
+        "bodyWithOthers": { "other": "할 일 {count}개도 비와 겹쳐요 · 시간 옮기기" }
+      }
+    },
+    "MORNING_TODO_STORM": {
+      "default": {
+        "title": "{time} ‘{todoTitle}’ 때 낙뢰가 칠 수 있어요 ⚡",
+        "body": "실내에서 하거나 시간을 옮겨보세요"
+      }
+    },
+    "MORNING_TODO_SNOW": {
+      "default": {
+        "title": "{time} ‘{todoTitle}’ 때 눈 소식이 있어요 ❄️",
+        "body": "눈길이라 20분 일찍 나가는 게 좋아요"
+      }
+    },
+    "MORNING_TODO_HEAT": {
+      "default": {
+        "title": "{time} ‘{todoTitle}’ 때 체감 {apparentTemp}°C예요 ☀️",
+        "body": "더 선선한 시간으로 옮겨보세요"
+      }
+    },
+    "MORNING_RAIN_LATER": {
+      "default": {
+        "title": "오늘 {time}부터 비 소식이 있어요 ☔",
+        "body": "나갈 땐 우산을 챙겨주세요"
+      }
+    },
+    "MORNING_SNOW_LATER": {
+      "default": {
+        "title": "오늘 {time}부터 눈 소식이 있어요 ❄️",
+        "body": "길이 미끄러울 수 있어요. 따뜻하게 입어요"
+      }
+    },
+    "MORNING_SUMMARY": {
+      "default": {
+        "title": "오늘은 {condition}, {tempMin}~{tempMax}°C예요",
+        "body": "강수 확률 {precipChance}%예요. 좋은 하루 보내요"
+      }
+    },
+    "EVENING_RAIN": {
+      "default": {
+        "title": "내일 비 소식이 있어요 ☔",
+        "titleWithDayPart": "내일 {dayPart}부터 비 소식이 있어요 ☔",
+        "body": "우산을 미리 챙겨두세요",
+        "bodyChilly": "아침엔 {chillyTemp}°C로 쌀쌀해요. 우산과 겉옷을 챙겨주세요"
+      }
+    },
+    "EVENING_SNOW": {
+      "default": {
+        "title": "내일 눈 소식이 있어요 ❄️",
+        "titleWithDayPart": "내일 {dayPart}부터 눈 소식이 있어요 ❄️",
+        "body": "이동 시간을 여유 있게 잡아두세요",
+        "bodyChilly": "아침엔 {chillyTemp}°C예요. 따뜻하게 입고 여유 있게 나가세요"
+      }
+    },
+    "EVENING_SUMMARY": {
+      "default": {
+        "title": "내일은 {condition}, {tempMin}~{tempMax}°C예요 🌙",
+        "body": "내일 계획에 참고해보세요",
+        "titleChilly": "내일 아침은 {tempMin}°C로 쌀쌀해요 🌙",
+        "bodyChilly": "겉옷을 챙겨주세요. 낮에는 {tempMax}°C까지 올라요"
+      }
+    }
+  },
+  "weatherFallback": {
+    "MORNING": {
+      "default": {
+        "title": "오늘 날씨를 함께 챙겨볼까요? ☀️",
+        "body": "날씨 위치를 정하면 매일 알려드릴게요"
+      }
+    },
+    "EVENING": {
+      "default": {
+        "title": "내일 날씨도 미리 챙겨보세요 🌙",
+        "body": "날씨 위치를 정하면 내일 예보를 알려드려요"
+      }
+    },
+    "MORNING_UNAVAILABLE": {
+      "default": {
+        "title": "오늘 날씨를 확인해보세요 ☀️",
+        "body": "앱에서 시간대별 예보를 볼 수 있어요"
+      }
+    },
+    "EVENING_UNAVAILABLE": {
+      "default": {
+        "title": "내일 날씨를 미리 확인해보세요 🌙",
+        "body": "앱에서 내일 예보를 볼 수 있어요"
+      }
+    }
+  },
+  "social": {
+    "NUDGE_REPLIED": {
+      "default": { "title": "{senderSubject} 콕에 답했어요", "body": "‘{todoTitle}’ · “{reply}”" }
+    },
+    "NUDGE_THANKED": {
+      "default": {
+        "title": "{senderSubject} 고맙대요 🐾",
+        "body": "‘{todoTitle}’ 끝냈대요. 응원이 통했어요"
+      }
+    },
+    "FOLLOW_NEW": {
+      "v1": {
+        "title": "{senderSubject} 친구 요청을 보냈어요",
+        "body": "수락하면 서로의 할 일을 보고 응원할 수 있어요"
+      },
+      "v2": {
+        "title": "{senderSubject} 친구가 되고 싶대요",
+        "body": "같이 하면 할 일이 더 잘 끝나요 🐾"
+      },
+      "v3": { "title": "새 친구 요청이 왔어요", "body": "{senderWith} 서로 응원해볼까요?" }
+    },
+    "FOLLOW_ACCEPTED": {
+      "v1": {
+        "title": "{senderSubject} 친구 요청을 수락했어요",
+        "body": "이제 서로의 할 일을 보고 응원할 수 있어요"
+      },
+      "v2": { "title": "{senderWith} 친구가 됐어요 🎉", "body": "첫 응원을 먼저 보내볼까요?" },
+      "v3": { "title": "친구가 한 명 늘었어요", "body": "{sender}에게 콕으로 인사해봐요 🐾" }
+    },
+    "INVITE_PROGRESS": {
+      "default": {
+        "title": "{inviteeSubject} 첫날 할 일을 끝냈어요 🐾",
+        "body": "내일도 해낼 수 있게 콕 찔러 응원해줘요"
+      }
+    },
+    "INVITE_QUALIFY_REMINDER": {
+      "default": {
+        "title": "오늘 하루만 더 해볼까요? 🐾",
+        "body": "오늘 할 일을 끝내면 {inviterActor}에게 발자국을 선물할 수 있어요"
+      }
+    },
+    "INVITE_JOINED": {
+      "default": {
+        "title": "{inviteeSubject} 내 초대로 친구가 됐어요 🐾",
+        "body": "환영 인사로 첫 응원을 보내봐요"
+      }
+    },
+    "INVITE_REWARDED": {
+      "default": {
+        "title": "발자국이 찍혔어요 🐾",
+        "premium": { "other": "프리미엄 {count}일" },
+        "friends": { "other": "{count}명 더 추가할 수 있어요" },
+        "bodyBoth": "{premium}을 받았고, 친구도 {friends}",
+        "bodyPremium": "{premium}을 받았어요",
+        "bodyFriends": "이제 친구를 {friends}"
+      }
+    },
+    "NUDGE_RECEIVED": {
+      "v1": {
+        "title": "{senderSubject} 콕 찔렀어요 🐾",
+        "bodyWithTodo": "‘{todoTitle}’ 같이 시작해보재요",
+        "body": "오늘 할 일, 같이 시작해보재요"
+      },
+      "v2": {
+        "title": "{sender}의 콕이 도착했어요",
+        "bodyWithTodo": "‘{todoTitle}’, 지금 시작해볼까요?",
+        "body": "지금 할 수 있는 일 하나만 골라봐요"
+      },
+      "v3": {
+        "title": "친구가 콕 찔렀어요",
+        "bodyWithTodo": "{senderSubject} ‘{todoTitle}’ 응원하고 있어요",
+        "body": "{senderSubject} 오늘 하루를 응원하고 있어요"
+      }
+    },
+    "NUDGE_RECEIVED_WITH_MESSAGE": {
+      "default": {
+        "title": "{senderActor}의 콕과 한마디가 왔어요",
+        "bodyWithTodo": "‘{todoTitle}’ · {message}",
+        "body": "{message}"
+      }
+    },
+    "REMIND_NUDGE_RECEIVED": {
+      "v1": {
+        "title": "{senderSubject} 같이 시작하재요 🐾",
+        "body": "오늘 할 일을 하나 적어볼까요?"
+      },
+      "v2": { "title": "{sender}의 콕이 도착했어요", "body": "떠오르는 일 하나만 적어봐요" },
+      "v3": {
+        "title": "친구가 오늘의 시작을 응원해요",
+        "body": "{senderSubject} 콕으로 안부를 전했어요"
+      }
+    },
+    "REMIND_NUDGE_RECEIVED_WITH_MESSAGE": {
+      "default": { "title": "{sender}의 콕과 한마디가 왔어요", "body": "{message}" }
+    },
+    "CHEER_RECEIVED": {
+      "default": { "title": "{sender}의 응원이 도착했어요", "body": "{message}" }
+    },
+    "CHEER_RECEIVED_NO_MESSAGE": {
+      "v1": {
+        "title": "{senderSubject} 응원을 보냈어요 🐾",
+        "body": "오늘도 나만의 속도로 가봐요"
+      },
+      "v2": { "title": "{senderActor}의 응원이 왔어요", "body": "오늘 할 일, 힘내서 끝내봐요" },
+      "v3": { "title": "친구가 응원하고 있어요", "body": "{senderSubject} 오늘 하루를 응원한대요" }
+    },
+    "FRIEND_COMPLETED": {
+      "v1": {
+        "title": "{friendSubject} 할 일을 다 끝냈어요 ✨",
+        "body": "축하 한마디 보내볼까요?"
+      },
+      "v2": {
+        "title": "{friendActor}, 오늘 할 일 전부 완료",
+        "body": "응원 한마디가 큰 힘이 돼요"
+      },
+      "v3": {
+        "title": "친구가 오늘 할 일을 다 끝냈어요",
+        "body": "{friend}에게 잘했다고 말해줘요 🐾"
+      }
+    },
+    "SOCIAL_DIGEST_MULTI": {
+      "v1": {
+        "title": { "other": "친구 {count}명이 할 일을 다 끝냈어요 ✨" },
+        "body": "나도 하나 끝내고 응원 보내볼까요?"
+      },
+      "v2": {
+        "title": { "other": "친구 {count}명이 오늘 완료했어요" },
+        "body": "축하 한마디 건네봐요"
+      },
+      "v3": {
+        "title": { "other": "오늘 {count}명이 할 일을 다 끝냈어요" },
+        "body": "친구들 기록 구경하고 나도 하나 해봐요 🐾"
+      }
+    },
+    "SOCIAL_DIGEST_SINGLE": {
+      "v1": {
+        "title": "{friendSubject} 할 일을 다 끝냈어요 ✨",
+        "body": "축하 보내고 나도 하나 끝내볼까요?"
+      },
+      "v2": {
+        "title": "{friendActor}의 완료 소식이 왔어요",
+        "body": "잘했다고 한마디 건네볼까요?"
+      },
+      "v3": {
+        "title": "친구가 오늘 할 일을 다 끝냈어요",
+        "body": "{friend}에게 응원 보내고 같이 달려봐요 🐾"
+      }
+    },
+    "NUDGE_SUGGEST": {
+      "v1": {
+        "title": "{friend}에게 안부 콕 어때요?",
+        "body": "가벼운 콕 하나가 큰 응원이 돼요 🐾"
+      },
+      "v2": { "title": "친구에게 응원을 보내볼까요?", "body": "{friend}에게 콕으로 인사해봐요" },
+      "v3": { "title": "{friendTopic} 요즘 어떻게 지낼까요?", "body": "콕 하나로 안부를 전해봐요" }
+    },
+    "TODO_COMMENT": {
+      "v1": { "title": "{senderSubject} 댓글을 남겼어요", "body": "할 일에 새 댓글이 달렸어요" },
+      "v2": { "title": "{sender}의 새 댓글", "body": "무슨 이야기인지 확인해봐요 🐾" },
+      "v3": { "title": "할 일에 새 댓글이 달렸어요", "body": "{sender}의 댓글을 확인해봐요" }
+    },
+    "TODO_COMMENT_CHAIN": {
+      "v1": {
+        "title": { "other": "{senderAuthor} 댓글 {count}개를 남겼어요" },
+        "body": "새 댓글을 한 번에 확인해봐요"
+      },
+      "v2": {
+        "title": { "other": "{senderActor}의 댓글 {count}개" },
+        "body": "할 일에 이야기가 이어지고 있어요 🐾"
+      },
+      "v3": {
+        "title": { "other": "새 댓글 {count}개가 달렸어요" },
+        "body": "{sender}의 이야기를 확인해봐요"
+      }
+    },
+    "TODO_COMMENT_REPLY": {
+      "v1": { "title": "{senderSubject} 답글을 남겼어요", "body": "내 댓글에 새 답글이 달렸어요" },
+      "v2": { "title": "{sender}의 답글이 왔어요", "body": "이어서 대화해볼까요? 🐾" },
+      "v3": { "title": "내 댓글에 답글이 달렸어요", "body": "{sender}의 답글을 확인해봐요" }
+    },
+    "TODO_COMMENT_REPLY_TO_REPLY": {
+      "v1": { "title": "{senderSubject} 답글을 남겼어요", "body": "내 답글에 새 답글이 달렸어요" },
+      "v2": { "title": "{sender}의 답글이 왔어요", "body": "이어서 대화해볼까요? 🐾" },
+      "v3": { "title": "내 답글에 답글이 달렸어요", "body": "{sender}의 답글을 확인해봐요" }
+    },
+    "TODO_COMMENT_REPLY_CHAIN": {
+      "v1": {
+        "title": { "other": "{senderAuthor} 답글 {count}개를 남겼어요" },
+        "body": "이어진 대화를 확인해봐요"
+      },
+      "v2": {
+        "title": { "other": "{senderActor}의 답글 {count}개" },
+        "body": "새 답글을 한 번에 읽어봐요 🐾"
+      },
+      "v3": {
+        "title": { "other": "새 답글 {count}개가 달렸어요" },
+        "body": "{senderPartner} 대화가 이어지고 있어요"
+      }
+    },
+    "TODO_COMMENT_LIKE": {
+      "v1": { "title": "{senderSubject} 내 댓글을 좋아해요", "body": "댓글에 하트를 남겼어요 ❤️" },
+      "v2": {
+        "title": "{senderSubject} 내 댓글에 공감했어요",
+        "body": "내 이야기에 마음을 보탰어요"
+      },
+      "v3": { "title": "내 댓글에 하트가 달렸어요", "body": "{senderAuthor} 하트를 보냈어요" }
+    }
+  },
+  "system": {
+    "WINBACK_DAY3": {
+      "v1": { "title": "다시 가볍게 시작해볼까요?", "body": "오늘 할 일 하나만 적어봐요" },
+      "v2": { "title": "오늘 계획, 같이 세워볼까요?", "body": "작은 일 하나면 충분해요" },
+      "v3": { "title": "아이두랑 한 걸음만 가봐요 🐾", "body": "오늘 첫 할 일을 정해봐요" }
+    },
+    "WINBACK_DAY7": {
+      "v1": {
+        "title": "오늘 필요한 일, 하나 적어볼까요?",
+        "body": "다시 시작하는 데 큰 계획은 필요 없어요"
+      },
+      "v2": { "title": "다시 천천히 시작해요", "body": "작은 할 일 하나면 충분해요" },
+      "v3": { "title": "빈 할 일 목록도 새 출발이에요 🐾", "body": "지금 떠오르는 일을 적어봐요" }
+    },
+    "WINBACK_DAY14": {
+      "v1": { "title": "새 계획 세우기 좋은 날이에요", "body": "오늘 필요한 일부터 적어봐요" },
+      "v2": { "title": "다시 시작하는 날도 소중해요", "body": "작은 할 일 하나면 좋은 출발이에요" },
+      "v3": { "title": "아이두랑 오늘을 계획해봐요 🐾", "body": "지난 일 말고 오늘 할 일부터요" }
+    },
+    "WINBACK_DAY21": {
+      "v1": { "title": "언제든 다시 와도 괜찮아요", "body": "지금 할 수 있는 일 하나만 적어봐요" },
+      "v2": {
+        "title": "새 계획을 적을 자리가 있어요",
+        "body": "오늘 나에게 필요한 일부터 시작해요"
+      },
+      "v3": { "title": "아이두는 늘 여기 있어요 🐾", "body": "작은 계획 하나로 다시 만나요" }
+    },
+    "WINBACK_DAY30": {
+      "v1": {
+        "title": "오늘부터 다시 계획해볼까요?",
+        "body": "한 달 전 말고, 지금 필요한 일부터요"
+      },
+      "v2": { "title": "익숙한 곳에서 새로 시작해요", "body": "할 일 하나 적고 천천히 가봐요" },
+      "v3": {
+        "title": "새 출발, 아이두가 함께할게요 🐾",
+        "body": "오늘 할 수 있는 만큼만 계획해요"
+      }
+    },
+    "WEEKLY_ACHIEVEMENT": {
+      "v1": {
+        "title": { "other": "지난주 할 일 {count}개 끝냈어요 🐾" },
+        "body": "차곡차곡 쌓인 기록을 확인해봐요"
+      },
+      "v2": {
+        "title": { "other": "지난주 완료 {count}개" },
+        "body": "이번 주도 이 흐름 그대로 가봐요"
+      },
+      "v3": {
+        "title": { "other": "지난주에 {count}개를 해냈어요" },
+        "body": "작은 성취들을 한눈에 모아봤어요"
+      }
+    },
+    "WEEKLY_ACHIEVEMENT_PERFECT": {
+      "v1": { "title": "지난주 할 일 100% 완료 🏆", "body": "계획한 일을 모두 해냈어요, 최고예요" },
+      "v2": { "title": "지난주 계획을 모두 끝냈어요", "body": "이번 주도 이 기세 그대로 가요" },
+      "v3": { "title": "지난주 할 일 모두 완료", "body": "아이두도 깜짝 놀랐어요 🐾" }
+    },
+    "WEEKLY_ACHIEVEMENT_ALMOST": {
+      "v1": { "title": "지난주 완료율 {rate}%", "body": "거의 다 해냈어요! 기록을 확인해봐요" },
+      "v2": { "title": "지난주 {rate}% 해냈어요 🐾", "body": "이번 주엔 100%도 노려봐요" },
+      "v3": { "title": "지난주 기록 {rate}% 완료", "body": "잘 해낸 일부터 돌아봐요" }
+    },
+    "WEEKLY_REPORT": {
+      "default": {
+        "title": "지난주의 나, 어땠을까요? 📊",
+        "body": "리포트에서 지난주 흐름을 살펴봐요"
+      }
+    },
+    "MONTHLY_REPORT": {
+      "default": {
+        "title": "지난달의 나, 어땠을까요? 📈",
+        "body": "리포트에서 지난달 흐름을 살펴봐요"
+      }
+    },
+    "AI_SUGGESTION": {
+      "default": {
+        "title": "맞춤 할 일 제안이 도착했어요 ✨",
+        "body": "최근 기록에 맞춰 골라봤어요"
+      }
+    },
+    "BILLING_ISSUE": {
+      "default": {
+        "title": "결제 정보 확인이 필요해요",
+        "body": "구독을 이어가려면 결제 수단을 확인해주세요"
+      }
+    },
+    "PREMIUM_GRANT_ENDING": {
+      "default": {
+        "title": "내일 프리미엄이 끝나요",
+        "body": "남은 기간은 구독 화면에서 볼 수 있어요"
+      }
+    },
+    "PREMIUM_TRIAL_ENDING_RENEWING": {
+      "default": {
+        "title": "{day} {plan}이 시작돼요",
+        "body": "{date} 결제 예정 · 해지는 스토어에서"
+      }
+    },
+    "PREMIUM_TRIAL_ENDING_CANCELLED": {
+      "default": {
+        "titleToday": "오늘 무료 체험이 끝나요",
+        "titleTomorrow": "내일 무료 체험이 끝나요",
+        "title": "무료 체험이 {days}일 뒤 끝나요",
+        "body": "{date}까지 이용 · 결제는 없어요"
+      }
+    },
+    "PREMIUM_RENEWAL_UPCOMING": {
+      "default": {
+        "title": "{day} 연간 구독이 갱신돼요",
+        "body": "{date} 결제 예정 · 해지는 스토어에서"
+      }
+    },
+    "MARKETING_CONSENT_RECONFIRM": {
+      "default": {
+        "title": "광고성 알림 수신에 동의 중이에요",
+        "body": "{agreedOn} 동의 · 설정에서 바꿀 수 있어요"
+      }
+    },
+    "ONBOARDING_DAY0": {
+      "default": {
+        "title": "첫 할 일을 적어볼까요? 🌱",
+        "body": "지금 떠오르는 작은 일 하나면 충분해요"
+      }
+    },
+    "ONBOARDING_DAY1": {
+      "default": {
+        "title": "오늘 할 일 하나로 시작해요",
+        "body": "적고, 끝내고, 체크하면 끝이에요 🐾"
+      }
+    },
+    "ONBOARDING_DAY2": {
+      "default": {
+        "title": "친구랑 같이 하면 더 잘 돼요",
+        "body": "서로의 할 일을 보고 콕 찔러줄 수 있어요"
+      }
+    },
+    "ONBOARDING_DAY3": {
+      "default": { "title": "필요할 때 알려드릴게요 ⏰", "body": "알림 설정을 내 하루에 맞춰봐요" }
+    },
+    "ONBOARDING_DAY5": {
+      "default": {
+        "titleNone": "내 할 일 목록 볼까요? 🐾",
+        "bodyNone": "목록에서 다음에 할 일을 정해봐요",
+        "title": { "other": "지금까지 {count}개 해냈어요" },
+        "body": "끝낸 일들을 한눈에 확인해봐요 🐾"
+      }
+    },
+    "ONBOARDING_DAY7": {
+      "default": {
+        "title": "아이두와 함께한 첫 일주일 🎉",
+        "bodyNone": "첫 주 기록을 확인해봐요",
+        "body": { "other": "완료한 할 일 {count}개를 돌아봐요" }
+      }
+    },
+    "MILESTONE_FIRST_COMPLETE": {
+      "default": { "title": "첫 할 일 완료! ✨", "body": "시작이 제일 어려운데, 해냈어요" }
+    },
+    "MILESTONE_10": {
+      "default": { "title": "할 일 10개 완료 🐾", "body": "작은 성취가 차곡차곡 쌓이고 있어요" }
+    },
+    "MILESTONE_50": {
+      "default": { "title": "벌써 50개나 끝냈어요 🎉", "body": "꾸준함이 눈에 보이기 시작했어요" }
+    },
+    "MILESTONE_100": {
+      "default": { "title": "할 일 100개 달성 🏆", "body": "하나씩 해내서 여기까지 왔어요" }
+    },
+    "MILESTONE_STREAK_3": {
+      "default": { "title": "3일 연속 완료 🔥", "body": "좋은 흐름이에요. 내일도 이어가봐요" }
+    },
+    "MILESTONE_FIRST_FRIEND": {
+      "default": { "title": "첫 친구가 생겼어요 🐾", "body": "이제 서로 응원하며 같이 해봐요" }
+    }
+  },
+  "retention": {
+    "D0:d0_no_todo": {
+      "v1": { "title": "첫 할 일은 작게 시작해요 🌱", "body": "지금 떠오르는 일 하나면 충분해요" },
+      "v2": { "title": "아이두랑 첫 계획 세워볼까요?", "body": "기억해둘 일 하나만 적어봐요 🐾" },
+      "v3": { "title": "첫 할 일을 만들어봐요", "body": "물 마시기처럼 작은 일도 좋아요" }
+    },
+    "D1:d1_no_todo": {
+      "v1": { "title": "오늘 할 일, 뭐가 있을까요?", "body": "하고 싶은 일 하나만 적어봐요" },
+      "v2": { "title": "거창한 계획은 필요 없어요", "body": "떠오르는 일부터 하나 적어봐요 🐾" },
+      "v3": { "title": "잊으면 안 될 일, 있나요?", "body": "적어두면 머리가 한결 가벼워져요" }
+    },
+    "D1:d1_has_todo_no_completion": {
+      "v1": { "title": "첫 체크, 해볼까요? ✅", "body": "제일 쉬운 할 일 하나만 골라봐요" },
+      "v2": {
+        "title": "적어둔 일부터 가볍게",
+        "body": "할 일 목록에서 지금 할 수 있는 걸 골라봐요"
+      },
+      "v3": { "title": "첫 체크의 기분, 느껴볼까요? 🐾", "body": "하나만 끝내도 하루가 달라져요" }
+    },
+    "D3:d3_restart": {
+      "v1": { "title": "오늘 다시 시작해봐요 🌱", "body": "지금 필요한 일 하나만 적어봐요" },
+      "v2": { "title": "오늘 계획은 가볍게", "body": "작은 일 하나부터 다시 해도 괜찮아요" },
+      "v3": { "title": "아이두랑 다시 한 걸음 🐾", "body": "할 수 있는 만큼만 시작해봐요" }
+    },
+    "D7:d7_has_progress": {
+      "v1": { "title": "첫 주 기록이 모였어요 🎉", "body": "일주일 동안 해낸 일을 구경해봐요" },
+      "v2": {
+        "title": "첫 주에 해낸 일을 모아봤어요",
+        "body": "기록을 보며 이번 주를 계획해봐요 🐾"
+      },
+      "v3": { "title": "일주일 동안의 나, 어땠을까요?", "body": "기록 보고 다음 계획도 세워봐요" }
+    },
+    "D7:d7_restart": {
+      "v1": { "title": "오늘 필요한 작은 계획부터", "body": "지금 할 수 있는 일 하나만 적어봐요" },
+      "v2": {
+        "title": "언제 다시 시작해도 괜찮아요",
+        "body": "할 일 하나면 다시 시작할 수 있어요"
+      },
+      "v3": { "title": "아이두랑 오늘 계획해볼까요? 🐾", "body": "지금 필요한 할 일을 정해봐요" }
+    }
+  },
+  "parts": {
+    "name": { "known": "{name}님", "unknownActor": "친구", "unknownMention": "친구" },
+    "nudgeReply": {
+      "STARTING": "시작해볼게",
+      "THANKFUL": "응원 고마워",
+      "LATER": "조금 뒤에 할게"
+    },
+    "weatherCondition": {
+      "CLEAR": "맑음",
+      "MOSTLY_CLEAR": "대체로 맑음",
+      "PARTLY_CLOUDY": "구름 조금",
+      "MOSTLY_CLOUDY": "구름 많음",
+      "CLOUDY": "흐림",
+      "FOGGY": "안개",
+      "HAZY": "뿌연 하늘",
+      "WINDY": "강한 바람",
+      "DRIZZLE": "이슬비",
+      "RAIN": "비",
+      "HEAVY_RAIN": "폭우",
+      "THUNDERSTORMS": "천둥번개",
+      "SLEET": "진눈깨비",
+      "SNOW": "눈",
+      "HEAVY_SNOW": "폭설",
+      "HAIL": "우박",
+      "HOT": "무더위",
+      "FRIGID": "강추위"
+    },
+    "weatherDayPart": { "dawn": "새벽", "morning": "오전", "afternoon": "오후", "evening": "저녁" },
+    "remainingDays": { "today": "오늘", "tomorrow": "내일", "later": "{days}일 뒤" },
+    "plan": { "ANNUAL": "연간 구독", "MONTHLY": "월간 구독", "UNKNOWN": "구독" },
+    "marketing": { "titlePrefix": "(광고) ", "optOut": "수신 거부: 설정 > 알림" }
+  }
+}

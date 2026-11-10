@@ -121,6 +121,8 @@ export class OnboardingStrategy implements TimezoneReminderStrategy {
         variantId: message.variantId,
         title: message.title,
         body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
         action: { type: "DEEP_LINK", url: resolveOnboardingDeepLinkPath(day, completedCount) },
         notificationDate: today,
         metadata: { onboardingDay: day },

@@ -16,7 +16,6 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { GetUnreadNotificationCountUseCase } from "../../../application/use-cases/get-unread-notification-count.use-case.js";
 import { ListNotificationsUseCase } from "../../../application/use-cases/list-notifications.use-case.js";
@@ -110,7 +109,7 @@ export class NotificationController {
     ]);
     // 옛 앱 계약이라 알림함 전용 필드(navigation)와 새 타입은 parse가 걸러 낸다
     return NotificationListResponseDto.parse(
-      toNotificationInboxResponse(page, unreadCount, client.locale ?? DEFAULT_LOCALE),
+      toNotificationInboxResponse(page, unreadCount, client.locale),
     );
   }
 
