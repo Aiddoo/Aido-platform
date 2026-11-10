@@ -1,8 +1,8 @@
 import { ConfigService } from "@nestjs/config";
 
 import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
-import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/entitlements/infrastructure/persistence/premium-access-condition.reader";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
@@ -41,8 +41,8 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   let client: TestDatabaseClient;
   let memory: InMemoryCacheStore;
   let reader: DrizzleSchedulerReader;
-  let entitlement: EntitlementService;
-  let entitlementReader: DrizzleEntitlementReader;
+  let entitlement: EntitlementReaderAdapter;
+  let entitlementReader: DrizzleAccessStateReader;
   let userIds: Record<Scenario, string>;
 
   beforeAll(async () => {
@@ -54,8 +54,8 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       new CacheService(memory),
       new TypedConfigService(new ConfigService<EnvConfig, true>({})),
     );
-    entitlementReader = new DrizzleEntitlementReader(txHost);
-    entitlement = new EntitlementService({
+    entitlementReader = new DrizzleAccessStateReader(txHost);
+    entitlement = new EntitlementReaderAdapter({
       cacheService: { wrapSubscription: (_userId, factory) => factory() },
       database: entitlementReader,
     });
@@ -159,7 +159,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     );
   });
 
-  it("SQL 조건은 모든 경우에 EntitlementService의 프리미엄 판단과 같다", async () => {
+  it("SQL 조건은 모든 경우에 EntitlementReaderAdapter의 프리미엄 판단과 같다", async () => {
     // When
     const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
     const decisions = await Promise.all(

@@ -3,7 +3,7 @@ import type { PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
 
-import type { EntitlementDatabasePort } from "../../application/ports/access-state.reader.port.js";
+import type { AccessStateReaderPort } from "../../application/ports/access-state.reader.port.js";
 import type { EntitlementCachePort } from "../../application/ports/entitlement-cache.port.js";
 import type {
   AccessSnapshot,
@@ -22,9 +22,9 @@ import {
   type ResourceBonuses,
 } from "../../domain/entitlement.domain-service.js";
 
-interface EntitlementServiceDependencies {
+interface EntitlementReaderAdapterDependencies {
   readonly cacheService: EntitlementCachePort;
-  readonly database: EntitlementDatabasePort;
+  readonly database: AccessStateReaderPort;
 }
 
 /** 판단 시각의 접근 주체. 캐시도 기한을 함께 담아 TTL 안에서도 끝나는 시각을 넘기지 않는다. */
@@ -33,10 +33,10 @@ interface ResolvedAccess {
   readonly resourceBonuses: ResourceBonuses;
 }
 
-export class EntitlementService implements EntitlementReaderPort {
-  readonly #dependencies: EntitlementServiceDependencies;
+export class EntitlementReaderAdapter implements EntitlementReaderPort {
+  readonly #dependencies: EntitlementReaderAdapterDependencies;
 
-  constructor(dependencies: EntitlementServiceDependencies) {
+  constructor(dependencies: EntitlementReaderAdapterDependencies) {
     this.#dependencies = dependencies;
   }
 

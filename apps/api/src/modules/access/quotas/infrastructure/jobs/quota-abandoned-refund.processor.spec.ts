@@ -4,10 +4,10 @@ import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import {
   QUOTA_ABANDONED_REFUND_QUEUE,
-  QuotaAbandonedRefundJob,
+  QuotaAbandonedRefundProcessor,
 } from "./quota-abandoned-refund.processor.js";
 
-describe("QuotaAbandonedRefundJob", () => {
+describe("QuotaAbandonedRefundProcessor", () => {
   beforeEach(() => {
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
   });
@@ -20,7 +20,7 @@ describe("QuotaAbandonedRefundJob", () => {
     // Given
     const runtime = new FakeJobRuntime();
     const refundAbandonedReservations = vi.fn(async () => undefined);
-    const job = new QuotaAbandonedRefundJob({ refundAbandonedReservations }, runtime);
+    const job = new QuotaAbandonedRefundProcessor({ refundAbandonedReservations }, runtime);
     // When
     await job.onModuleInit();
     await job.schedulerRegistration;
@@ -39,7 +39,7 @@ describe("QuotaAbandonedRefundJob", () => {
     // Given
     const runtime = new FakeJobRuntime();
     vi.spyOn(runtime, "work").mockRejectedValueOnce(new Error("queue unavailable"));
-    const job = new QuotaAbandonedRefundJob(
+    const job = new QuotaAbandonedRefundProcessor(
       { refundAbandonedReservations: async () => undefined },
       runtime,
     );
@@ -52,7 +52,7 @@ describe("QuotaAbandonedRefundJob", () => {
   it("원장을 읽지 못하면 원인 종류를 남기고 잡 재시도를 위해 다시 던진다", async () => {
     // Given
     const failure = new TypeError("db down");
-    const job = new QuotaAbandonedRefundJob(
+    const job = new QuotaAbandonedRefundProcessor(
       { refundAbandonedReservations: () => Promise.reject(failure) },
       new FakeJobRuntime(),
     );

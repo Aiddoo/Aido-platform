@@ -3,8 +3,8 @@ import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
 import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
-import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
@@ -77,7 +77,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let client: TestDatabaseClient;
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let memory: InMemoryCacheStore;
-  let entitlement: EntitlementService;
+  let entitlement: EntitlementReaderAdapter;
   let suggestions: DrizzleAiSuggestionRepository;
   let reports: DrizzleAiReportRepository;
   let users: DrizzleUserRepository;
@@ -94,8 +94,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     vi.setSystemTime(CURRENT_TIME);
     fixture = createDatabaseTransactionFixture(client);
     memory = new InMemoryCacheStore({ defaultTtlMs: 600_000, maxItems: 20 });
-    entitlement = new EntitlementService({
-      database: new DrizzleEntitlementReader(fixture.txHost),
+    entitlement = new EntitlementReaderAdapter({
+      database: new DrizzleAccessStateReader(fixture.txHost),
       cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
     });
     suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);

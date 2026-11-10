@@ -1,5 +1,5 @@
 /** 원장 이벤트. 필드는 chargeId·meter·reason(·tier)만 남기고 사용자 내용은 남기지 않는다. */
-export const AccessQuotaLogEvent = {
+export const QuotaLogEvent = {
   RESERVED: "access.quota.reserved",
   COMMITTED: "access.quota.committed",
   REFUNDED: "access.quota.refunded",

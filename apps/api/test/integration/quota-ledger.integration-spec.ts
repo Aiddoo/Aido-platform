@@ -20,7 +20,7 @@ import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
-import { QuotaLedgerService } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
+import { QuotaLedgerAdapter } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
@@ -50,7 +50,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let ledger: QuotaLedgerPort;
-  let service: QuotaLedgerService;
+  let service: QuotaLedgerAdapter;
   let repository: QuotaLedgerRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
   let entitlement: EntitlementReaderPort;
@@ -61,7 +61,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     ledger = context.module.get(QUOTA_LEDGER);
-    service = context.module.get(QuotaLedgerService, { strict: false });
+    service = context.module.get(QuotaLedgerAdapter, { strict: false });
     repository = context.module.get(QUOTA_LEDGER_REPOSITORY);
     unitOfWork = context.module.get(UNIT_OF_WORK);
     entitlement = context.module.get(ENTITLEMENT_READER);

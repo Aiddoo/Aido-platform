@@ -1,6 +1,6 @@
 import type { ResourceBonuses } from "../../domain/entitlement.domain-service.js";
 
-export interface EntitlementUserState {
+export interface ActiveUserAccessState {
   readonly role: string;
   /** User의 구독 projection 그대로의 상태 */
   readonly subscriptionStatus: string;
@@ -8,10 +8,10 @@ export interface EntitlementUserState {
   readonly accessDeadline: Date | null;
 }
 
-export const ENTITLEMENT_DATABASE = Symbol("ENTITLEMENT_DATABASE");
+export const ACCESS_STATE_READER = Symbol("ACCESS_STATE_READER");
 
-export interface EntitlementDatabasePort {
-  findUserState(userId: string): Promise<EntitlementUserState | null>;
+export interface AccessStateReaderPort {
+  findUserState(userId: string): Promise<ActiveUserAccessState | null>;
   /** 리소스별 보너스 합계. 없으면 0이다. */
   findResourceBonuses(userId: string): Promise<ResourceBonuses>;
 }

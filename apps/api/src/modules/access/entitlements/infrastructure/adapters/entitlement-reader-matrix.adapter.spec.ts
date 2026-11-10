@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스", () => {
+describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트릭스", () => {
   it.each([
     { subject: "FREE", aiParse: 10, friend: 5, aiReport: false, isPremium: false },
     { subject: "PREMIUM", aiParse: null, friend: null, aiReport: true, isPremium: true },

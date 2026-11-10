@@ -1,4 +1,4 @@
-import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { StubEntitlementDatabase, StubEntitlementCache } from "#test/mocks/ports/entitlement.stub";
 
@@ -20,6 +20,6 @@ export function createEntitlementFixture(
       accessDeadline: input.accessDeadline ?? null,
     });
   }
-  const service = new EntitlementService({ database, cacheService: cache });
+  const service = new EntitlementReaderAdapter({ database, cacheService: cache });
   return { userId: user.id, database, cache, service };
 }

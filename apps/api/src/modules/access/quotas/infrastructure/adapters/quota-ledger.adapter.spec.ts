@@ -27,7 +27,7 @@ function reserve(
   });
 }
 
-describe("QuotaLedgerService", () => {
+describe("QuotaLedgerAdapter", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(QUOTA_LEDGER_TIME);

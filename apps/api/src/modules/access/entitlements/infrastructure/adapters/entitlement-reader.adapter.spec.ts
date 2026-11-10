@@ -4,7 +4,7 @@ import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
 
 import { NO_RESOURCE_BONUSES } from "../../domain/entitlement.domain-service.js";
 
-describe("EntitlementService", () => {
+describe("EntitlementReaderAdapter", () => {
   it.each(["CHEER", "NUDGE", "AI_PARSE", "FRIEND", "TODO_CATEGORY"] as const)(
     "ADMIN의 %s 한도는 무료 구독에서도 무제한이다",
     async (feature) => {

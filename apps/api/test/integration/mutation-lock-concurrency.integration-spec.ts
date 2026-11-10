@@ -13,9 +13,9 @@ import { mock } from "vitest-mock-extended";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { ENTITLEMENT_CACHE } from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
-import { ENTITLEMENT_DATABASE } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import { ACCESS_STATE_READER } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
 import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
@@ -58,7 +58,7 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { entitlementServiceProvider } from "../../src/modules/access/entitlements/access-entitlements.providers.js";
+import { entitlementReaderAdapterProvider } from "../../src/modules/access/entitlements/access-entitlements.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const CONCURRENCY = 20;
@@ -578,7 +578,7 @@ function createNudgeNotifier(): NudgeNotifierPort {
   };
 }
 
-/** 고정 일일 한도의 한도 오류 featureQuota. 실제 계산은 EntitlementService 단위 테스트가 검증한다. */
+/** 고정 일일 한도의 한도 오류 featureQuota. 실제 계산은 EntitlementReaderAdapter 단위 테스트가 검증한다. */
 function fixedDailyQuota(
   feature: "CHEER" | "NUDGE",
   limit: number | null,
@@ -712,10 +712,10 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         DrizzleTodoCategoryRepository,
         PostgresMutationLockAdapter,
-        { ...entitlementServiceProvider, provide: ENTITLEMENT_READER },
+        { ...entitlementReaderAdapterProvider, provide: ENTITLEMENT_READER },
         EntitlementCacheAdapter,
         { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
-        { provide: ENTITLEMENT_DATABASE, useClass: DrizzleEntitlementReader },
+        { provide: ACCESS_STATE_READER, useClass: DrizzleAccessStateReader },
         TodoCategoryLimitReaderAdapter,
         {
           provide: CacheService,

@@ -1,6 +1,6 @@
 import type {
-  EntitlementDatabasePort,
-  EntitlementUserState,
+  AccessStateReaderPort,
+  ActiveUserAccessState,
 } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
 import type {
   EntitlementCachePort,
@@ -12,13 +12,13 @@ import {
 } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 
 /** 기한을 생략하면 웹훅이 바꿀 때까지 유지하는 기존 projection으로 본다. */
-type StubEntitlementUserState = Omit<EntitlementUserState, "accessDeadline"> &
-  Partial<Pick<EntitlementUserState, "accessDeadline">>;
+type StubEntitlementUserState = Omit<ActiveUserAccessState, "accessDeadline"> &
+  Partial<Pick<ActiveUserAccessState, "accessDeadline">>;
 
-export class StubEntitlementDatabase implements EntitlementDatabasePort {
+export class StubEntitlementDatabase implements AccessStateReaderPort {
   readonly users = new Map<string, StubEntitlementUserState>();
   readonly resourceBonuses = new Map<string, ResourceBonuses>();
-  async findUserState(userId: string): Promise<EntitlementUserState | null> {
+  async findUserState(userId: string): Promise<ActiveUserAccessState | null> {
     const user = this.users.get(userId);
     if (user == null) {
       return null;

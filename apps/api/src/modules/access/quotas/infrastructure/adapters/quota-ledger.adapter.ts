@@ -17,7 +17,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import type { EntitlementDatabasePort } from "../../../entitlements/application/ports/access-state.reader.port.js";
+import type { AccessStateReaderPort } from "../../../entitlements/application/ports/access-state.reader.port.js";
 import { toFeatureQuota } from "../../../entitlements/application/read-models/feature-quota.read-model.js";
 import {
   NO_RESOURCE_BONUSES,
@@ -41,8 +41,8 @@ import type {
 } from "../../application/ports/quota-ledger.port.js";
 import type { QuotaLedgerRepositoryPort } from "../../application/ports/quota-ledger.repository.port.js";
 import type { QuotaUserMutationLockPort } from "../../application/ports/quota-user-mutation-lock.port.js";
-import { AccessQuotaAlertKey } from "../../application/quotas.alerts.js";
-import { AccessQuotaLogEvent } from "../../application/quotas.log-events.js";
+import { QuotaAlertKey } from "../../application/quotas.alerts.js";
+import { QuotaLogEvent } from "../../application/quotas.log-events.js";
 import { QuotaCharge } from "../../domain/quota-charge.aggregate.js";
 import { QuotaWindow } from "../../domain/quota-window.vo.js";
 import {
@@ -53,10 +53,10 @@ import {
   QUOTA_STALE_RESERVATION_ALERT_AFTER_MS,
 } from "../../domain/quotas.constants.js";
 
-interface QuotaLedgerServiceDependencies {
+interface QuotaLedgerAdapterDependencies {
   readonly repository: QuotaLedgerRepositoryPort;
   readonly userMutationLock: QuotaUserMutationLockPort;
-  readonly resourceBonuses: Pick<EntitlementDatabasePort, "findResourceBonuses">;
+  readonly resourceBonuses: Pick<AccessStateReaderPort, "findResourceBonuses">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly alert: OperationalAlertPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
@@ -81,10 +81,10 @@ interface QuotaDecisionContext {
   readonly at: Date;
 }
 
-export class QuotaLedgerService implements QuotaLedgerPort {
-  readonly #dependencies: QuotaLedgerServiceDependencies;
+export class QuotaLedgerAdapter implements QuotaLedgerPort {
+  readonly #dependencies: QuotaLedgerAdapterDependencies;
 
-  constructor(dependencies: QuotaLedgerServiceDependencies) {
+  constructor(dependencies: QuotaLedgerAdapterDependencies) {
     this.#dependencies = dependencies;
   }
 
@@ -118,7 +118,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       }
       if (!existing.isSameRequest({ reason: input.reason, requestHash })) {
         this.#dependencies.logger.warn({
-          event: AccessQuotaLogEvent.KEY_REUSED,
+          event: QuotaLogEvent.KEY_REUSED,
           chargeId: existing.id,
           meter,
         });
@@ -151,7 +151,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         return this.#rejectInFlight(context, charge);
       }
       this.#dependencies.logger.log({
-        event: AccessQuotaLogEvent.REOPENED,
+        event: QuotaLogEvent.REOPENED,
         chargeId,
         meter: charge.meter,
         reason: charge.reason,
@@ -179,7 +179,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         return false;
       }
       this.#dependencies.logger.log({
-        event: AccessQuotaLogEvent.COMMITTED,
+        event: QuotaLogEvent.COMMITTED,
         chargeId: charge.id,
         meter,
         reason: charge.reason,
@@ -187,7 +187,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       return true;
     } catch (error) {
       this.#dependencies.logger.error({
-        event: AccessQuotaLogEvent.COMMIT_FAILED,
+        event: QuotaLogEvent.COMMIT_FAILED,
         chargeId: reservation.chargeId,
         meter,
         errorType: toErrorType(error),
@@ -208,7 +208,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       );
       if (refunded) {
         this.#dependencies.logger.log({
-          event: AccessQuotaLogEvent.REFUNDED,
+          event: QuotaLogEvent.REFUNDED,
           chargeId: reservation.chargeId,
           meter,
           reason,
@@ -217,7 +217,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       return refunded;
     } catch (error) {
       this.#dependencies.logger.error({
-        event: AccessQuotaLogEvent.REFUND_FAILED,
+        event: QuotaLogEvent.REFUND_FAILED,
         chargeId: reservation.chargeId,
         meter,
         errorType: toErrorType(error),
@@ -249,7 +249,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       } catch (error) {
         failedCount += 1;
         logger.error({
-          event: AccessQuotaLogEvent.REFUND_FAILED,
+          event: QuotaLogEvent.REFUND_FAILED,
           chargeId: candidate.id,
           meter: candidate.meter,
           errorType: toErrorType(error),
@@ -264,7 +264,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       QUOTA_ABANDONED_REFUND_BATCH_SIZE,
     );
     logger.log({
-      event: AccessQuotaLogEvent.ABANDONED_REFUND_COMPLETED,
+      event: QuotaLogEvent.ABANDONED_REFUND_COMPLETED,
       candidateCount: candidates.length,
       refundedCount,
       failedCount,
@@ -274,7 +274,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     if (failedCount > 0 || staleCount > 0) {
       // 돌려주지 못한 예약은 그 사용자의 한도를 월말까지 깎는다.
       this.#dependencies.alert.raise({
-        key: AccessQuotaAlertKey.STALE_RESERVATION,
+        key: QuotaAlertKey.STALE_RESERVATION,
         severity: "error",
         message: "횟수 예약을 돌려주지 못하고 있습니다.",
         details: { failedCount, staleCount },
@@ -394,7 +394,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
 
   async #rejectInFlight(context: QuotaDecisionContext, charge: QuotaCharge): Promise<never> {
     this.#dependencies.logger.warn({
-      event: AccessQuotaLogEvent.IN_FLIGHT,
+      event: QuotaLogEvent.IN_FLIGHT,
       chargeId: charge.id,
       meter: charge.meter,
     });
@@ -417,7 +417,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     if (added) {
       return;
     }
-    logger.warn({ event: AccessQuotaLogEvent.EXHAUSTED, meter, tier: context.tier });
+    logger.warn({ event: QuotaLogEvent.EXHAUSTED, meter, tier: context.tier });
     throw new ApplicationException(QUOTA_EXHAUSTED_ERROR[context.feature], {
       charged: false,
       featureQuota: toFeatureQuota(await this.#featureQuota(context)),
@@ -431,7 +431,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
   ): QuotaReservation {
     if (!isAlreadyCommitted) {
       this.#dependencies.logger.log({
-        event: AccessQuotaLogEvent.RESERVED,
+        event: QuotaLogEvent.RESERVED,
         chargeId: charge.id,
         meter: charge.meter,
         reason: charge.reason,
