@@ -3,7 +3,7 @@ import { maxBy } from "es-toolkit";
 import {
   storeEntitlementEndsAt,
   type StoreEntitlementWindow,
-} from "#api/shared/domain/store-renewal-grace";
+} from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 
 /** User 구독 projection과 그 projection이 끝나는 시각 */
 export interface PaidAccessState {

@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
+import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";

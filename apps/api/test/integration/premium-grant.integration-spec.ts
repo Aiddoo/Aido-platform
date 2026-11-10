@@ -5,23 +5,23 @@ import type { EntitlementReaderPort } from "#api/modules/access/access-entitleme
 import {
   PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
   type PremiumGrantEndingNoticeSourcePort,
-} from "#api/modules/billing/application/ports/subscriptions/premium-grant-ending-notice.source.port";
-import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import type { SubscriptionRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import { NotifyEndingPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/notify-ending-premium-grants.use-case";
-import { RevokePremiumGrant } from "#api/modules/billing/application/use-cases/subscriptions/revoke-premium-grant.use-case";
-import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
+} from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
+import { NotifyEndingPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
+import { RevokePremiumGrant } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
+import { SweepPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import {
   PREMIUM_ACCESS_READER,
   PREMIUM_GRANTER,
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

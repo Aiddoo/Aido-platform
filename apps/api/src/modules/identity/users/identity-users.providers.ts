@@ -2,7 +2,7 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
-import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
+import { PREMIUM_ACCESS_READER } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import {
   TODO_COMMENT_ACCOUNT_CLEANUP,
   type TodoCommentAccountCleanupPort,

@@ -5,11 +5,11 @@ import request from "supertest";
 import {
   SUBSCRIPTION_WEBHOOK_LOCK,
   type SubscriptionWebhookLockPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";

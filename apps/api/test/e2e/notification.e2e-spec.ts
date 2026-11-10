@@ -26,7 +26,7 @@ import request from "supertest";
 import {
   UPCOMING_RENEWAL_NOTIFIER,
   type UpcomingRenewalNotifierPort,
-} from "#api/modules/billing/application/ports/subscriptions/upcoming-renewal-notifier.port";
+} from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,

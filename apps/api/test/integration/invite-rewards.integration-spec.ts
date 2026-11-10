@@ -6,8 +6,8 @@ import type { EntitlementReaderPort } from "#api/modules/access/access-entitleme
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
 import {
   INVITE_NOTIFIER,

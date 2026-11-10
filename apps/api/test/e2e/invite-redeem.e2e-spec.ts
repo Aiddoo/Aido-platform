@@ -11,8 +11,8 @@ import request from "supertest";
 import {
   SUBSCRIPTION_REPOSITORY,
   type SubscriptionRepositoryPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
+} from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import {
   follow,

@@ -1,12 +1,12 @@
 import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import request from "supertest";
 
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { subscription } from "#api/platform/database/schema/index";
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

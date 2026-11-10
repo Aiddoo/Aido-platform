@@ -4,18 +4,18 @@ import { and, eq, sql } from "drizzle-orm";
 import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import {
   TRIAL_ENDING_NOTICE_SOURCE,
   type TrialEndingNoticeSourcePort,
-} from "#api/modules/billing/application/ports/subscriptions/trial-ending-notice.source.port";
-import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
-import { NotifyEndingTrials } from "#api/modules/billing/application/use-cases/subscriptions/notify-ending-trials.use-case";
+} from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
+import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
+import { NotifyEndingTrials } from "#api/modules/billing/subscriptions/application/use-cases/notify-ending-trials.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,

@@ -24,7 +24,7 @@ import { QuotaWindow } from "#api/modules/access/domain/value-objects/quotas/quo
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";

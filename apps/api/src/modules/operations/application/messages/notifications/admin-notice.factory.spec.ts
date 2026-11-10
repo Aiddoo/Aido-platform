@@ -1,4 +1,4 @@
-import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
+import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 
 import type { SubscriptionNoticeEvent } from "../../read-models/notifications/admin-notice.read-model.js";
 import {

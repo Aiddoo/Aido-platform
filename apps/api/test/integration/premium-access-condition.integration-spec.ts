@@ -4,6 +4,7 @@ import { EntitlementService } from "#api/modules/access/application/services/ent
 import { hasPaidAccess } from "#api/modules/access/domain/policies/entitlement/paid-access.policy";
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/infrastructure/persistence/entitlement/premium-access.condition";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -11,7 +12,6 @@ import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";

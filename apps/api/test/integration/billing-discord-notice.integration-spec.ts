@@ -4,7 +4,7 @@
  */
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import type { AdminNotice } from "#api/modules/operations/application/read-models/notifications/admin-notice.read-model";
 import { DispatchDailySignupSummary } from "#api/modules/operations/application/use-cases/notifications/dispatch-daily-signup-summary.use-case";

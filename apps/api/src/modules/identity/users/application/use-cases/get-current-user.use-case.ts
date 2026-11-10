@@ -4,7 +4,7 @@ import { pick } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
+import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";

@@ -1,20 +1,26 @@
 import { ErrorCode } from "@aido/api/errors";
 import { pickBy } from "es-toolkit";
 
-import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
-import type { StoreSubscriptionReconcileSchedulerPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-reconcile.scheduler.port";
-import type { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/application/ports/subscriptions/store-subscription-status.reader.port";
-import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
+import type { SubscriptionUserMutationLockPort } from "#api/modules/billing/premium-grants/application/ports/billing-user-lock.port";
+import type { SubscriptionCachePort } from "#api/modules/billing/premium-grants/application/ports/premium-access-cache.port";
+import type { PremiumGrantRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant.repository.port";
+import {
+  PremiumGrant,
+  type PremiumGrantCreationPlan,
+  type PremiumGrantProps,
+} from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
+import type { StoreSubscriptionEntitlement } from "#api/modules/billing/shared/premium-access.domain-service";
+import type { StoreSubscriptionReconcileSchedulerPort } from "#api/modules/billing/subscriptions/application/ports/store-subscription-reconcile-scheduler.port";
+import type { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/subscriptions/application/ports/store-subscription-status.reader.port";
 import type {
   SubscriptionEventNotifierPort,
   StoreSubscriptionEventFailureContext,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import type {
   ClaimSubscriptionEventReceiptInput,
   SubscriptionEventReceiptRepositoryPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-receipt.repository.port";
-import type { SubscriptionUserMutationLockPort } from "#api/modules/billing/application/ports/subscriptions/subscription-user-mutation-lock.port";
-import type { SubscriptionWebhookLockPort } from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";
+import type { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import type {
   CreateSubscriptionData,
   FindLapsedPremiumUsersParams,
@@ -22,20 +28,14 @@ import type {
   SubscriptionUser,
   UpdateSubscriptionStatusData,
   UpdateUserSubscriptionStatusData,
-} from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
-import {
-  PremiumGrant,
-  type PremiumGrantCreationPlan,
-  type PremiumGrantProps,
-} from "#api/modules/billing/domain/aggregates/subscriptions/premium-grant.aggregate";
+} from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
+import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import {
   type StoreSubscriptionState,
   Subscription,
   type SubscriptionProps,
-} from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
-import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/policies/subscriptions/premium-access.policy";
-import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
+} from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /** 저장소 대역의 사용자. appUserAlias는 스토어가 User.id 대신 쓰는 별칭(DB 칸 User.revenueCatUserId)이다. */

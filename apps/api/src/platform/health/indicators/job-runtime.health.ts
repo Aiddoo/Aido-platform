@@ -8,7 +8,7 @@ import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-su
 import {
   PREMIUM_GRANT_SWEEP_QUEUE,
   STORE_SUBSCRIPTION_RECONCILE_QUEUE,
-} from "#api/modules/billing/billing-subscriptions-jobs.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions-jobs.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
 import {
   MARKETING_CONSENT_RECONFIRM_QUEUE,

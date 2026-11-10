@@ -4,7 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { RewardApplier } from "../../../application/ports/invites/reward-applier.port.js";

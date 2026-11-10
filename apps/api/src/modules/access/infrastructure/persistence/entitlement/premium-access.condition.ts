@@ -1,8 +1,8 @@
 import { and, eq, exists, gt, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
+import { storeRenewalCutoff } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { subscription, type user } from "#api/platform/database/schema/index";
-import { storeRenewalCutoff } from "#api/shared/domain/store-renewal-grace";
 
 type PremiumUserColumns = Pick<
   typeof user,

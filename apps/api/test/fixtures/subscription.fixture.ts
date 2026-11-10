@@ -1,9 +1,9 @@
 import { mock } from "vitest-mock-extended";
 
-import type { SubscriptionUser } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import { PremiumAccessProjector } from "#api/modules/billing/application/services/subscriptions/premium-access-projector.service";
-import type { SubscriptionProps } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
-import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
+import { PremiumAccessProjector } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
+import type { SubscriptionUser } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
+import type { SubscriptionProps } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {

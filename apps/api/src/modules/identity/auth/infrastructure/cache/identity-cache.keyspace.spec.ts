@@ -1,4 +1,4 @@
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 
 import { IDENTITY_CACHE_TTL_MS, userProfileTtlMs } from "./identity-cache.keyspace.js";
 

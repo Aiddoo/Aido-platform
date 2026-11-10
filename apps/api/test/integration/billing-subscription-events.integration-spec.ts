@@ -4,26 +4,26 @@ import { sortBy } from "es-toolkit";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import {
   SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,
   type SubscriptionEventReceiptRepositoryPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-receipt.repository.port";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";
 import {
   SUBSCRIPTION_REPOSITORY,
   type SubscriptionRepositoryPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
-import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
-import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
+import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscriptionEventReceipt, user as userTable } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

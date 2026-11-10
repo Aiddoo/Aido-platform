@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { PREMIUM_GRANTER } from "#api/modules/billing/billing-subscriptions.public";
+import { PREMIUM_GRANTER } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { USER_BLOCK_READER } from "#api/modules/social/social-blocks.public";
 import { FOLLOW_READER, FRIENDSHIP_ESTABLISHER } from "#api/modules/social/social-friends.public";
 import {

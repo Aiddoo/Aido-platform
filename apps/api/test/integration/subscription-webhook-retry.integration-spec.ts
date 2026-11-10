@@ -3,8 +3,8 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";

@@ -10,11 +10,11 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
+import { SweepPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
 

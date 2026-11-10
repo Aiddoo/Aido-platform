@@ -4,13 +4,13 @@ import { and, eq } from "drizzle-orm";
 import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
-} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
-import { NotifyUpcomingRenewals } from "#api/modules/billing/application/use-cases/subscriptions/notify-upcoming-renewals.use-case";
+} from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
+import { NotifyUpcomingRenewals } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,

@@ -4,8 +4,8 @@ import { and, count as countRows, eq, inArray } from "drizzle-orm";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/infrastructure/revenuecat/revenuecat-webhook.receiver";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";

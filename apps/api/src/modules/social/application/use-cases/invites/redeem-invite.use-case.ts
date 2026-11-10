@@ -8,7 +8,7 @@ import {
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { PremiumGranterPort } from "#api/modules/billing/billing-subscriptions.public";
+import type { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type {
   FollowReaderPort,
   FriendshipEstablisherPort,
