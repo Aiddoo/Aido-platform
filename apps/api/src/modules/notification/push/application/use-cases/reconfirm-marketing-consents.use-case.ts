@@ -25,7 +25,7 @@ import type { NotificationRecipientTimezoneReaderPort } from "../ports/notificat
 import type { PushQuietHoursReaderPort } from "../ports/push-quiet-hours.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
-export const MARKETING_CONSENT_RECONFIRM = {
+const MARKETING_CONSENT_RECONFIRM = {
   BATCH_SIZE: 500,
   /** 표시와 알림 기록을 한 트랜잭션에 남기는 수 */
   CLAIM_CHUNK_SIZE: 100,

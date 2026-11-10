@@ -4,7 +4,7 @@ import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-e
 import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
-import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
+import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notification-delivery.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
@@ -35,8 +35,8 @@ import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use
 
 export const accountNotificationCleanupProvider: FactoryProvider<AccountNotificationCleanupPort> = {
   provide: AccountNotificationCleanupPort,
-  inject: [NotificationAccountCleanup],
-  useFactory: (cleanup: NotificationAccountCleanup): AccountNotificationCleanupPort => ({
+  inject: [DeleteActorNotificationsUseCase],
+  useFactory: (cleanup: DeleteActorNotificationsUseCase): AccountNotificationCleanupPort => ({
     cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(userId.value),
     settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
   }),

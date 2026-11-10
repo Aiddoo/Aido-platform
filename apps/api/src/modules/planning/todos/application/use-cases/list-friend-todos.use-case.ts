@@ -11,7 +11,7 @@ import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.
 import type { FindFriendTodosParams } from "../ports/todo-read.repository.port.js";
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
-export interface GetFriendTodosParams {
+interface GetFriendTodosParams {
   readonly userId: string;
   readonly friendUserId: string;
   readonly cursor?: number;

@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 
 import { BillingUserLockPort } from "./application/ports/billing-user-lock.port.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
@@ -15,7 +15,7 @@ import { SweepPremiumGrantsUseCase } from "./application/use-cases/sweep-premium
 import { BILLING_PREMIUM_GRANTS_PROVIDERS } from "./billing-premium-grants.providers.js";
 
 @Module({
-  imports: [IdentityUserAccessModule, AccessEntitlementsModule, NotificationDeliveryModule],
+  imports: [IdentityUserAccessModule, AccessEntitlementsModule, NotificationPushModule],
   providers: [...BILLING_PREMIUM_GRANTS_PROVIDERS],
   exports: [
     PremiumGranterPort,

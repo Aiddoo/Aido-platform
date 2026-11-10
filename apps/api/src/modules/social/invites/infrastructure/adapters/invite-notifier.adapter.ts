@@ -5,7 +5,7 @@ import {
   createInviteProgressNotificationMessage,
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   PushQuietHoursReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
@@ -22,12 +22,12 @@ import {
 
 @Injectable()
 export class InviteNotifierAdapter extends InviteNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #quietHoursReader: PushQuietHoursReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(PushQuietHoursReaderPort)

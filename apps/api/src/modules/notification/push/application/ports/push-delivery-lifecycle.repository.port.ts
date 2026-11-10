@@ -6,7 +6,7 @@ import type {
 import type { PushDeliveryMode } from "./push-dispatch-staging.repository.port.js";
 import type { PushResult } from "./push-provider.port.js";
 
-export interface PushDeliveryFence {
+interface PushDeliveryFence {
   readonly dispatchId: number;
   readonly publishAttempt: number;
   readonly processingJobId: string;

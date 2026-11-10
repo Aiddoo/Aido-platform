@@ -4,7 +4,7 @@ import type { RetentionStageCandidate } from "#api/modules/notification/retentio
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-export interface RetentionD7Result {
+interface RetentionD7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
   readonly measuredAt: Temporal.Instant;

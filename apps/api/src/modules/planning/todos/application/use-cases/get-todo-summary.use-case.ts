@@ -18,7 +18,7 @@ export interface GetTodoSummaryInput {
   readonly requestedDate?: Temporal.PlainDate;
 }
 
-export interface TodoSummaryTodoResult {
+interface TodoSummaryTodoResult {
   readonly id: number;
   readonly title: string;
   readonly completed: boolean;

@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   type CreateNotificationData,
   NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
@@ -21,13 +21,13 @@ import {
 
 @Injectable()
 export class NudgeNotifierAdapter extends NudgeNotifierPort {
-  readonly #notificationQueue: NotificationQueueService;
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationQueue: NotificationQueueAdapter;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationQueue: NotificationQueueService,
-    notificationPublisher: NotificationPublisher,
+    notificationQueue: NotificationQueueAdapter,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {

@@ -17,7 +17,7 @@ export const REMINDER_STAGES: readonly ReminderStage[] = [
 ] as const;
 
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
-export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
+const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
 
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {

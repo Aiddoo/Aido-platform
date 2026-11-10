@@ -20,7 +20,7 @@ import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
 
-export interface UpdateTodoCategoryData {
+interface UpdateTodoCategoryData {
   name?: string;
   color?: string;
 }

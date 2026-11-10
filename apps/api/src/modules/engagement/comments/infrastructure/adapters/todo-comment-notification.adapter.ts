@@ -4,7 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createTodoCommentNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
@@ -26,11 +26,11 @@ type TodoCommentNotificationActivity = TodoCommentNotificationCopyInput extends 
 
 @Injectable()
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #recipientLocaleReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {

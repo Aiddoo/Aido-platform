@@ -3,7 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 
 import { aiAssistanceGenerationConfig } from "./ai-assistance-generation.config.js";
 import { AI_ASSISTANCE_GENERATION_PROVIDERS } from "./ai-assistance-generation.providers.js";
@@ -20,7 +20,7 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
     ConfigModule.forFeature(aiAssistanceGenerationConfig),
     IdentitySettingsModule,
     IdentityUserAccessModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
   ],
   providers: [...AI_ASSISTANCE_GENERATION_PROVIDERS],
   exports: [AiGeneratorPort, UserLocalePreferenceReaderPort, ScheduledAiConsentReader],
