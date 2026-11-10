@@ -3,6 +3,7 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { GetFeatureDiscoveryUseCase } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
+import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -50,7 +51,14 @@ describe("기능 발견 설정 (E2E)", () => {
       launchedAt: "2026-08-01T00:00:00.000Z",
       autoOpen: true,
     };
-    vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(response);
+    vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(
+      createFeatureDiscoveryCampaignFixture({
+        campaignId: response.campaignId,
+        minAppVersion: response.minAppVersion,
+        launchedAt: Temporal.Instant.from(response.launchedAt),
+        autoOpen: response.autoOpen,
+      }),
+    );
 
     // When
     const result = await request(ctx.app.getHttpServer())

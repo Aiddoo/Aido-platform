@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from "@aido/api";
+import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
@@ -7,6 +7,7 @@ import { RawResponse } from "#api/platform/http/decorators/index";
 import { ApiDoc } from "#api/platform/http/swagger/index";
 
 import { GetFeatureDiscoveryUseCase } from "../../../application/use-cases/get-feature-discovery.use-case.js";
+import { toFeatureDiscoveryResponse } from "./feature-discovery-response.mapper.js";
 import {
   FeatureDiscoveryDisabledResponseDto,
   FeatureDiscoveryEnabledResponseDto,
@@ -48,6 +49,6 @@ export class FeatureDiscoveryController {
     schema: featureDiscoveryResponseOpenApiSchema,
   })
   getFeatureDiscovery(): FeatureDiscoveryResponse {
-    return this.#getFeatureDiscovery.execute();
+    return toFeatureDiscoveryResponse(this.#getFeatureDiscovery.execute());
   }
 }

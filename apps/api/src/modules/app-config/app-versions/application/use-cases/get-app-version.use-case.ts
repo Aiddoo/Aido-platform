@@ -1,8 +1,8 @@
-import { type AppVersionConfigPort } from "../ports/app-version-config.port.js";
-import type { AppVersionConfig } from "../read-models/app-version.read-model.js";
+import type { AppRelease } from "../../domain/app-release.entity.js";
+import type { AppReleaseReaderPort } from "../ports/app-release.reader.port.js";
 
-interface GetAppVersionDependencies {
-  readonly config: AppVersionConfigPort;
+export interface GetAppVersionDependencies {
+  readonly appReleaseReader: Pick<AppReleaseReaderPort, "listLatestReleases">;
 }
 
 export class GetAppVersionUseCase {
@@ -12,7 +12,7 @@ export class GetAppVersionUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): AppVersionConfig {
-    return this.#dependencies.config.getAppVersion();
+  execute(): AppRelease[] {
+    return this.#dependencies.appReleaseReader.listLatestReleases();
   }
 }

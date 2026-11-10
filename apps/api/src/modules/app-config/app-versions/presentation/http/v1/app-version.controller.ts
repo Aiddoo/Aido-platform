@@ -1,4 +1,4 @@
-import type { AppVersionResponse } from "@aido/api";
+import type { AppVersionResponse } from "@aido/api/contracts/app-config";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
@@ -7,6 +7,7 @@ import { RawResponse } from "#api/platform/http/decorators/index";
 import { ApiDoc } from "#api/platform/http/swagger/index";
 
 import { GetAppVersionUseCase } from "../../../application/use-cases/get-app-version.use-case.js";
+import { toAppVersionResponse } from "./app-version-response.mapper.js";
 import {
   AppVersionDisabledResponseDto,
   AppVersionEnabledResponseDto,
@@ -39,6 +40,6 @@ export class AppVersionController {
     schema: appVersionResponseOpenApiSchema,
   })
   getAppVersion(): AppVersionResponse {
-    return this.#getAppVersion.execute();
+    return toAppVersionResponse(this.#getAppVersion.execute());
   }
 }

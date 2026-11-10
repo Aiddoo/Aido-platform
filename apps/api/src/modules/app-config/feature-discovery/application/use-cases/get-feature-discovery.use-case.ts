@@ -1,10 +1,8 @@
-import {
-  type FeatureDiscoveryConfig,
-  type FeatureDiscoveryConfigPort,
-} from "../ports/feature-discovery-config.port.js";
+import type { FeatureDiscoveryCampaign } from "../../domain/feature-discovery-campaign.entity.js";
+import type { FeatureDiscoveryCampaignReaderPort } from "../ports/feature-discovery-campaign.reader.port.js";
 
-interface GetFeatureDiscoveryDependencies {
-  readonly config: FeatureDiscoveryConfigPort;
+export interface GetFeatureDiscoveryDependencies {
+  readonly campaignReader: Pick<FeatureDiscoveryCampaignReaderPort, "findActiveCampaign">;
 }
 
 export class GetFeatureDiscoveryUseCase {
@@ -14,7 +12,7 @@ export class GetFeatureDiscoveryUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): FeatureDiscoveryConfig {
-    return this.#dependencies.config.getFeatureDiscovery();
+  execute(): FeatureDiscoveryCampaign | null {
+    return this.#dependencies.campaignReader.findActiveCampaign();
   }
 }
