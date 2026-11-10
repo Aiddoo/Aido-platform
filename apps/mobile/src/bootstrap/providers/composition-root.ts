@@ -1,4 +1,5 @@
 import { setGlobalLogger } from '@src/shared/infra/logger';
+import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { openEncryptedStorage } from '@src/shared/infra/storage/encrypted-draft-storage';
 
 import { createAppQueryClient } from '../query/create-app-query-client';
@@ -15,9 +16,10 @@ export const compositionRoot = createCompositionRoot({
   createQueryClient: createAppQueryClient,
 });
 
-/** DI 밖에서 쓰는 전역 `logger`도 같은 구현을 보게 한다 */
+/** 프로세스에 한 번 거는 설정도 여기서 한다. 앱 트리는 포트가 열린 뒤에 그려져 첫 알림 전에 걸린다 */
 function createProcessDevicePorts(): DevicePorts {
   const ports = createDevicePorts();
   setGlobalLogger(ports.logger);
+  registerForegroundNotificationPresentation();
   return ports;
 }
