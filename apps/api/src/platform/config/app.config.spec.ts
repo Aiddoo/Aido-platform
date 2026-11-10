@@ -26,7 +26,6 @@ describe("appConfig — 배포 환경 판정", () => {
     // Then
     expect(config.environment).toBe(environment);
     expect(config.isProduction).toBe(environment === "production");
-    expect(config.isDevelopment).toBe(environment === "development");
   });
 
   it("런타임 모드는 NODE_ENV 그대로 둔다", () => {
@@ -43,5 +42,44 @@ describe("appConfig — 배포 환경 판정", () => {
 
     // Then
     expect(parse).toThrow();
+  });
+});
+
+describe("appConfig — 개발 도구 스위치", () => {
+  const allOn = {
+    exposeErrorDetails: true,
+    swaggerUi: true,
+    oauthDevRedirects: true,
+    localCorsOrigins: true,
+  };
+  const allOff = {
+    exposeErrorDetails: false,
+    swaggerUi: false,
+    oauthDevRedirects: false,
+    localCorsOrigins: false,
+  };
+
+  it.each([
+    { name: "로컬 개발", env: { NODE_ENV: "development" }, devTools: allOn },
+    {
+      name: "배포된 개발서버",
+      env: { NODE_ENV: "production", APP_ENV: "development" },
+      devTools: allOn,
+    },
+    { name: "테스트 실행", env: { NODE_ENV: "test" }, devTools: allOff },
+    { name: "스테이징", env: { NODE_ENV: "production", APP_ENV: "staging" }, devTools: allOff },
+    { name: "운영", env: { NODE_ENV: "production", APP_ENV: "production" }, devTools: allOff },
+    { name: "APP_ENV 없는 운영", env: { NODE_ENV: "production" }, devTools: allOff },
+    {
+      name: "소스로 띄운 운영 설정",
+      env: { NODE_ENV: "development", APP_ENV: "production" },
+      devTools: allOff,
+    },
+  ])("$name은 개발 도구를 정해진 대로 켜고 끈다", ({ env, devTools }) => {
+    // When
+    const config = appConfig.parse(env);
+
+    // Then
+    expect(config.devTools).toEqual(devTools);
   });
 });
