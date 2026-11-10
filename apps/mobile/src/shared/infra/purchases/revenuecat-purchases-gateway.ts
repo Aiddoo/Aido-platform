@@ -10,6 +10,7 @@ import {
   type PurchaseStore,
 } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
+import { LogBox } from 'react-native';
 import Purchases, {
   type CustomerInfo,
   INTRO_ELIGIBILITY_STATUS,
@@ -214,6 +215,8 @@ export function createRevenueCatPurchasesGateway({
         return 'missing-api-key';
       }
       if (isLogEnabled) {
+        // 개발 빌드의 테스트 스토어 키는 상품·권한 매핑 갱신이 실패해 SDK 오류 로그가 LogBox로 로그인 화면을 덮는다. 터미널에는 그대로 찍힌다
+        LogBox.ignoreLogs(['[RevenueCat]']);
         Purchases.setLogLevel(LOG_LEVEL.WARN);
       }
       Purchases.configure({ apiKey });
