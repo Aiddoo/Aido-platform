@@ -121,7 +121,7 @@
 - **AI 키**: 운영 env에 키 3개를 넣고 `AI_PROVIDER_ORDER`를 정한다. 값은 문서에 쓰지 않는다. Claude 키는 워크스페이스 키로 새로 발급한다.
 - **마이그레이션**: 위 8개를 적용한다. 건수 확인 쿼리는 서버 배포 문서를 따른다.
 - **기능 소개 캠페인**: `FEATURE_DISCOVERY_CAMPAIGN_ID`를 앱에 번들된 `feature-discovery-2026-12`로, `FEATURE_DISCOVERY_MIN_APP_VERSION`을 `1.15.0`으로, `FEATURE_DISCOVERY_LAUNCHED_AT`을 1.15.0 배포 시각으로 맞춘다. `.env.example`의 `FEATURE_DISCOVERY_LAUNCHED_AT`은 예시 값이다.
-- **경보**: [관측 문서](../../../apps/api/docs/observability.md#경보-전달)의 태그로 Sentry 알림 규칙을 만든다. 없으면 경보가 사람에게 가지 않는다.
+- **경보**: [관측 문서](../../../apps/api/docs/observability.md#sentry-무료-플랜-운영)의 태그로 Sentry 알림 규칙을 만든다. 없으면 경보가 사람에게 가지 않는다.
 - **권한**: 최종 Release APK를 `aapt2 dump permissions`로, Production `Info.plist`를 직접 확인한다. `app.config.ts` 평가 결과는 [개인정보 라벨](privacy-label.md#권한-점검)에 있다.
 - **무료 체험**: 앱은 스토어가 준 기간을 그대로 보이므로 콘솔 값이 곧 화면 문구다. 1.14.2 결제창에 고지 없이 체험이 뜨지 않도록 1.15.0 승인 직후에 켠다. 켜기 전에는 앱이 일반 가격만 보인다.
   1. App Store Connect 연간 구독 > 구독 가격 > 소개 혜택: 모든 국가·지역, 종료일 없음, 신규 구독자, 유형 "무료", 기간 "2주".

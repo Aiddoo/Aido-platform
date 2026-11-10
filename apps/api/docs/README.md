@@ -14,6 +14,7 @@
 | Controller·DTO·페이지네이션·Swagger·요청 헤더 | [HTTP 계약](http-contracts.md)      |
 | 무엇을 어느 층에서 테스트하나, 실행·격리      | [테스트](testing.md)                |
 | 로그 키·경보·예외 보고·지연·포화도            | [관측](observability.md)            |
+| 경보 key·조건·첫 대응                         | [경보 카탈로그](alerts.md)          |
 | JWT·서명 키·TLS·웹훅·AI 데이터 처리           | [보안](security.md)                 |
 | env 규칙·운영 env 목록                        | [설정](configuration.md)            |
 | 캐시·잠금·메모리·인스턴스·DB 확장             | [확장](scaling.md)                  |

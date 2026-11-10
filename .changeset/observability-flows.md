@@ -1,0 +1,5 @@
+---
+'@aido/server': patch
+---
+
+운영 경보를 slice `*.alerts.ts`의 `defineAlerts` 카탈로그(39개, key·심각도·한 줄 요약·첫 대응) 하나로 모으고, Sentry 이슈에 고정 태그 `alert_key`·`alert_context`·`severity`와 extra `runbook`을 싣는다(fingerprint는 key, 큐·스케줄처럼 원인을 나누면 `key:subject`). 새 경보는 계정 영구 삭제 일부 실패, 푸시 receipt 공급자 실패 비율 20% 이상(20건 이상), AI 인증 회로·모든 업체 회로 열림·비용 배경·전체 중단 기준선 분리, 늦어서 버린 리마인더 1시간 20건, 시간대 sweep 15분 상한 초과, refresh token 재사용(warning)이고, 런타임 포화 경보는 넘기 시작한 표본에서 한 번만 올린다. 운영(APP_ENV)에 DSN이 있을 때만 Sentry 경보·예외·작업 heartbeat 어댑터를 쓰고 그 밖의 환경은 경보·5xx를 콘솔 로그로 남기며 heartbeat는 no-op이다(경보 중복 제거는 모든 환경). 배포 환경 판정은 `appConfig` 한 곳이고 작업 모니터 slug는 env 없이 `aido-job-worker` 상수다. Sentry 11 기본 수집(요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·쿼리)을 모두 끄고, 요청에는 `request_id`·`app_version`·`app_platform`·경로 템플릿·`user.id`만, 작업에는 큐·작업 이름·id·시도를 태그로 싣는다. 표본은 경로·큐별 비율(`tracesSampler`, 상태 확인·폴링 0, 결제 웹훅·계정 삭제 1, 기본 0.1)이고 앱이 보낸 `sentry-trace`·`baggage`를 CORS에서 받는다. 코드로 분류한 5xx는 코드별 한 이슈로 모으고 같은 경로·코드 예외는 시간당 10건까지만 보낸다. 4xx 업무 거부는 웹훅·`@OnEvent`·작업 경로에서도 Sentry 오류로 보내지 않는다(운영의 `SUBSCRIPTION_1602` 오류 이슈). HTTP 계약·오류 코드·큐 이름·잡 키는 그대로다.
