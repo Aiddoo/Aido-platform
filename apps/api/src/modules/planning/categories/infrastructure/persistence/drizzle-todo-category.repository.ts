@@ -131,7 +131,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   async findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]> {
     const rows = await this.#selectWithCount()
       .where(eq(todoCategory.userId, userId))
-      .orderBy(asc(todoCategory.sortOrder));
+      .orderBy(asc(todoCategory.sortOrder), asc(todoCategory.id));
     return rows.map((row) => toTodoCategoryWithCountView(row));
   }
 

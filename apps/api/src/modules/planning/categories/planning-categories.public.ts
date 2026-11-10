@@ -1,14 +1,14 @@
 export {
   TODO_CATEGORY_READER,
-  type TodoCategoryReaderPort,
+  TodoCategoryReaderPort,
 } from "./application/ports/todo-category.reader.port.js";
 export {
   TODO_CATEGORY_COUNT_READER,
-  type TodoCategoryCountReaderPort,
+  TodoCategoryCountReaderPort,
 } from "./application/ports/todo-category-count.reader.port.js";
 export {
   TODO_CATEGORY_PROVISIONER,
-  type TodoCategoryProvisionerPort,
+  TodoCategoryProvisionerPort,
 } from "./application/ports/todo-category-provisioner.port.js";
 export { TODO_CATEGORY_EVENTS } from "./domain/todo-category-event-names.constants.js";
 export { TodoCategoryUpdatedEvent } from "./domain/todo-category-updated.event.js";

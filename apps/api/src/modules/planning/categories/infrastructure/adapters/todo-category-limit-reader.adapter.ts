@@ -1,4 +1,3 @@
-import type { FeatureQuota } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
@@ -6,29 +5,38 @@ import {
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 
-import type { TodoCategoryLimitReaderPort } from "../../application/ports/todo-category-limit.reader.port.js";
+import type {
+  CategoryFeatureQuota,
+  TodoCategoryLimitReaderPort,
+} from "../../application/ports/todo-category-limit.reader.port.js";
 
-/**
- * 활성 카테고리 생성 트랜잭션에서 실시간 entitlement를 읽는 어댑터.
- */
+/** 카테고리 보유 한도를 access entitlement에서 읽는다. 생성 트랜잭션에서는 캐시 없는 실시간 값을 쓴다. */
 @Injectable()
 export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPort {
-  readonly #entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx" | "readFeatureQuotaInTx">;
+  readonly #entitlementReader: Pick<
+    EntitlementReaderPort,
+    "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
+  >;
 
   constructor(
-    @Inject(ENTITLEMENT_READER) entitlementReader: Pick<
+    @Inject(ENTITLEMENT_READER)
+    entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimitInTx" | "readFeatureQuotaInTx"
+      "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
     >,
   ) {
     this.#entitlementReader = entitlementReader;
   }
 
-  async getMaxCountInTx(userId: string): Promise<number | null> {
+  getMaxCount(userId: string): Promise<number | null> {
+    return this.#entitlementReader.getLimit(userId, "TODO_CATEGORY");
+  }
+
+  getMaxCountInTx(userId: string): Promise<number | null> {
     return this.#entitlementReader.getLimitInTx(userId, "TODO_CATEGORY");
   }
 
-  async readQuotaInTx(userId: string, count: number): Promise<FeatureQuota> {
+  readQuotaInTx(userId: string, count: number): Promise<CategoryFeatureQuota> {
     return this.#entitlementReader.readFeatureQuotaInTx(userId, "TODO_CATEGORY", {
       used: count,
       resetsAt: null,

@@ -27,28 +27,30 @@ export interface UpdateCategoryInput {
   sortOrder?: number;
 }
 
-export const TODO_CATEGORY_REPOSITORY = Symbol("TODO_CATEGORY_REPOSITORY");
+export abstract class TodoCategoryRepositoryPort {
+  abstract create(input: CreateCategoryInput): Promise<TodoCategory>;
+  abstract update(id: number, input: UpdateCategoryInput): Promise<TodoCategory>;
+  abstract delete(id: number): Promise<void>;
 
-export interface TodoCategoryRepositoryPort {
-  create(input: CreateCategoryInput): Promise<TodoCategory>;
-  update(id: number, input: UpdateCategoryInput): Promise<TodoCategory>;
-  delete(id: number): Promise<void>;
+  abstract findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null>;
+  abstract findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null>;
+  abstract findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]>;
 
-  findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null>;
-  findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null>;
-  findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]>;
-
-  countByUserId(userId: string): Promise<number>;
-  existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean>;
-  getMaxSortOrder(userId: string): Promise<number>;
-  shiftSortOrders(
+  abstract countByUserId(userId: string): Promise<number>;
+  abstract existsByUserIdAndName(
+    userId: string,
+    name: string,
+    excludeId?: number,
+  ): Promise<boolean>;
+  abstract getMaxSortOrder(userId: string): Promise<number>;
+  abstract shiftSortOrders(
     userId: string,
     fromSortOrder: number,
     toSortOrder: number | null,
     delta: number,
   ): Promise<number>;
 
-  getTodoCount(categoryId: number): Promise<number>;
-  countActiveSeries(categoryId: number): Promise<number>;
-  moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void>;
+  abstract getTodoCount(categoryId: number): Promise<number>;
+  abstract countActiveSeries(categoryId: number): Promise<number>;
+  abstract moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void>;
 }

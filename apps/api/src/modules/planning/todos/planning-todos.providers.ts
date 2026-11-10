@@ -23,6 +23,7 @@ import {
 } from "./application/ports/staged-todo-creator.port.js";
 import { StreakPort } from "./application/ports/streak.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
+import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoNotificationPort } from "./application/ports/todo-notification.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
@@ -64,6 +65,7 @@ import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notifica
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
 import { TodoCompletionEffectsEventHandler } from "./infrastructure/event-handlers/todo-completion-effects.event-handler.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
+import { DrizzleTodoEngagementCounterAdapter } from "./infrastructure/persistence/drizzle-todo-engagement-counter.adapter.js";
 
 const MUTATION = {
   unitOfWork: UnitOfWorkPort,
@@ -74,6 +76,7 @@ export const PLANNING_TODOS_PROVIDERS = [
   { provide: FriendPort, useClass: FriendAdapter },
   { provide: StreakPort, useClass: StreakAdapter },
   { provide: TodoNotificationPort, useClass: TodoNotificationAdapter },
+  { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },
   provideUseCase(WriteTodoCreationUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,

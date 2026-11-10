@@ -201,6 +201,30 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       expect(day16?.completed).toBe(2);
     });
 
+    it("카테고리 색은 중복 없이 문자열 오름차순으로 내려준다(앱 정렬과 같은 순서)", async () => {
+      // Given
+      const user = await createTestUser();
+      const colors = ["#FFB3B3", "#00AA00", "#FF6B43"];
+      for (const [sortOrder, color] of colors.entries()) {
+        const [category] = await client
+          .insert(todoCategory)
+          .values({ userId: user.id, name: `색 ${color}`, color, sortOrder: sortOrder + 1 })
+          .returning();
+        await createTestTodo(user.id, category?.id ?? 0, "2026-01-15");
+      }
+      await createTestTodo(user.id, user.defaultCategoryId, "2026-01-15", true);
+
+      // When
+      const result = await repository.aggregateByDateRange({
+        userId: user.id,
+        startDate: new Date("2026-01-01"),
+        endDate: new Date("2026-02-01"),
+      });
+
+      // Then
+      expect(result.map((day) => day.categoryColors)).toEqual([["#00AA00", "#FF6B43", "#FFB3B3"]]);
+    });
+
     it("다른 사용자의 Todo는 포함하지 않아야 한다", async () => {
       // Given - 두 사용자가 같은 날짜에 Todo를 가짐
       const user1 = await createTestUser("user1@example.com");

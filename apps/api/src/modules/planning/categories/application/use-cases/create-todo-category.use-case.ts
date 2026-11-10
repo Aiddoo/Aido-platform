@@ -47,8 +47,8 @@ export class CreateTodoCategoryUseCase {
 
   async execute(input: CreateTodoCategoryInput): Promise<TodoCategory> {
     const { userId } = input;
-    const name = CategoryName.of(input.name).value;
-    const color = CategoryColor.of(input.color).value;
+    const name = CategoryName.create(input.name).value;
+    const color = CategoryColor.create(input.color).value;
 
     const created = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);

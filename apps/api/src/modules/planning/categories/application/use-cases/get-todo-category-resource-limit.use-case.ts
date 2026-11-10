@@ -1,10 +1,9 @@
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-
+import type { TodoCategoryLimitReaderPort } from "../ports/todo-category-limit.reader.port.js";
 import type { TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
 
 interface GetTodoCategoryResourceLimitDependencies {
   readonly repository: Pick<TodoCategoryRepositoryPort, "countByUserId">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
+  readonly limitReader: Pick<TodoCategoryLimitReaderPort, "getMaxCount">;
 }
 
 export class GetTodoCategoryResourceLimitUseCase {
@@ -18,7 +17,7 @@ export class GetTodoCategoryResourceLimitUseCase {
     readonly userId: string;
   }): Promise<{ categoryCount: number; maxCount: number | null }> {
     const [maxCount, categoryCount] = await Promise.all([
-      this.#dependencies.entitlementReader.getLimit(input.userId, "TODO_CATEGORY"),
+      this.#dependencies.limitReader.getMaxCount(input.userId),
       this.#dependencies.repository.countByUserId(input.userId),
     ]);
     return { categoryCount, maxCount };

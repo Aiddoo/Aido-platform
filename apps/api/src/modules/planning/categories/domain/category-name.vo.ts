@@ -1,30 +1,20 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
+// DB VarChar(50)·계약과 같은 상한이다
 const MAX_LENGTH = 50;
 
-/**
- * CategoryName — 카테고리 이름 값 객체.
- *
- * 1~50자 불변식(DB VarChar(50)·zod와 동일 상한)을 소유한다. 프레젠테이션(zod)에서 이미 검증되지만
- * 도메인 경계에서도 방어한다(동일 상한이라 유효 입력은 통과).
- */
-export class CategoryName {
-  readonly #text: string;
-
-  constructor(text: string) {
-    this.#text = text;
-  }
-
-  static of(value: string): CategoryName {
-    if (value.length < 1 || value.length > MAX_LENGTH) {
+export class CategoryName extends ValueObject<string> {
+  static create(raw: string): CategoryName {
+    if (raw.length < 1 || raw.length > MAX_LENGTH) {
       throw new DomainException(ErrorCode.SYS_0002, { maxLength: MAX_LENGTH });
     }
-    return new CategoryName(value);
+    return new CategoryName(raw);
   }
 
-  get value(): string {
-    return this.#text;
+  static reconstitute(raw: string): CategoryName {
+    return new CategoryName(raw);
   }
 }

@@ -2,32 +2,20 @@ import { ErrorCode } from "@aido/api/errors";
 import { hexColorRegex } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
-/** HEX 색상 코드 형식 (#RRGGBB) — @aido/api의 hexColorRegex와 동일 */
-
-/**
- * CategoryColor — 카테고리 색상 값 객체.
- *
- * HEX 색상 코드(#RRGGBB) 형식 불변식을 소유한다. 프레젠테이션(zod)에서 이미 검증되지만 도메인
- * 경계에서도 방어한다(동일 정규식이라 유효 입력은 통과).
- */
-export class CategoryColor {
-  readonly #hex: string;
-
-  constructor(hex: string) {
-    this.#hex = hex;
-  }
-
-  static of(value: string): CategoryColor {
-    if (!hexColorRegex.test(value)) {
+// 계약(zod)과 같은 정규식이라 유효한 요청은 통과한다. 도메인 경계에서도 한 번 더 막는다
+export class CategoryColor extends ValueObject<string> {
+  static create(raw: string): CategoryColor {
+    if (!hexColorRegex.test(raw)) {
       throw new DomainException(ErrorCode.SYS_0002, {
         message: "HEX 색상 코드 형식이 아닙니다",
       });
     }
-    return new CategoryColor(value);
+    return new CategoryColor(raw);
   }
 
-  get value(): string {
-    return this.#hex;
+  static reconstitute(raw: string): CategoryColor {
+    return new CategoryColor(raw);
   }
 }

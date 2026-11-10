@@ -10,6 +10,7 @@ import {
   STAGED_TODO_CREATOR,
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
+import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import {
   TODO_VIEW_CACHE_INVALIDATOR,
   TodoViewCacheInvalidatorPort,
@@ -33,6 +34,7 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     PlanningTodoPortsModule,
     StagedTodoCreatorPort,
     STAGED_TODO_CREATOR,
+    TodoEngagementCounterPort,
     TodoViewCacheInvalidatorPort,
     TODO_VIEW_CACHE_INVALIDATOR,
   ],

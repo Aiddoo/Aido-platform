@@ -40,8 +40,8 @@ export class TodoCategory extends AggregateRoot<{
       id: props.id,
       userId: props.userId,
       sortOrder: props.sortOrder,
-      name: CategoryName.of(props.name),
-      color: CategoryColor.of(props.color),
+      name: CategoryName.reconstitute(props.name),
+      color: CategoryColor.reconstitute(props.color),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     });
@@ -76,8 +76,8 @@ export class TodoCategory extends AggregateRoot<{
   }
 
   updateDetails(changes: { name?: string; color?: string }): void {
-    const name = changes.name == null ? this.props.name : CategoryName.of(changes.name);
-    const color = changes.color == null ? this.props.color : CategoryColor.of(changes.color);
+    const name = changes.name == null ? this.props.name : CategoryName.create(changes.name);
+    const color = changes.color == null ? this.props.color : CategoryColor.create(changes.color);
     const changed = name.value !== this.name || color.value !== this.color;
     this.props.name = name;
     this.props.color = color;

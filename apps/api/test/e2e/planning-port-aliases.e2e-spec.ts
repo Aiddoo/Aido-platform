@@ -1,4 +1,12 @@
 import {
+  TODO_CATEGORY_COUNT_READER,
+  TODO_CATEGORY_PROVISIONER,
+  TODO_CATEGORY_READER,
+  TodoCategoryCountReaderPort,
+  TodoCategoryProvisionerPort,
+  TodoCategoryReaderPort,
+} from "#api/modules/planning/categories/planning-categories.public";
+import {
   STAGED_TODO_CREATOR,
   StagedTodoCreatorPort,
   TODO_PLAN_READER,
@@ -26,6 +34,9 @@ describe("planning 공개 포트 별칭 (E2E)", () => {
       [StagedTodoCreatorPort, STAGED_TODO_CREATOR],
       [TodoPlanReaderPort, TODO_PLAN_READER],
       [TodoViewCacheInvalidatorPort, TODO_VIEW_CACHE_INVALIDATOR],
+      [TodoCategoryReaderPort, TODO_CATEGORY_READER],
+      [TodoCategoryCountReaderPort, TODO_CATEGORY_COUNT_READER],
+      [TodoCategoryProvisionerPort, TODO_CATEGORY_PROVISIONER],
     ] as const;
 
     // When
@@ -34,6 +45,6 @@ describe("planning 공개 포트 별칭 (E2E)", () => {
     );
 
     // Then
-    expect(isSameInstance).toEqual([true, true, true]);
+    expect(isSameInstance).toEqual(tokenPairs.map(() => true));
   });
 });

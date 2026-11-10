@@ -104,12 +104,13 @@ export class DrizzleTodoCompletionRepository implements TodoCompletionRepository
       date: new Date(time),
       total: sumBy(rows, (row) => row.count),
       completed: sumBy(rows, (row) => (row.completed ? row.count : 0)),
+      // GROUP BY 순서는 보장되지 않는다. 앱의 정렬(uniq 후 문자열 오름차순)과 같은 순서로 내려준다
       categoryColors: uniq(
         rows.flatMap((row) => {
           const color = colors.get(row.categoryId);
           return color == null ? [] : [color];
         }),
-      ),
+      ).toSorted(),
     }));
   }
 }

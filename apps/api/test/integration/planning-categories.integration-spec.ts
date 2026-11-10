@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { asc, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import {
-  TODO_CATEGORY_REPOSITORY,
-  type TodoCategoryRepositoryPort,
-} from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
+import { TodoCategoryRepositoryPort } from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { GetTodoCategoryResourceLimitUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category-resource-limit.use-case";
 import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category.use-case";
@@ -37,7 +34,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   beforeAll(async () => {
     context = await createE2eApp();
-    repository = context.module.get(TODO_CATEGORY_REPOSITORY);
+    repository = context.module.get(TodoCategoryRepositoryPort);
     update = context.module.get(UpdateTodoCategoryUseCase);
   });
 

@@ -4,6 +4,10 @@ export {
   type StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
+export {
+  TodoEngagementCounterPort,
+  type TodoViewRecord,
+} from "./application/ports/todo-engagement-counter.port.js";
 export { TODO_PLAN_READER, TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 export type { TodoReadModel } from "./application/read-models/todo.read-model.js";
 /** 다른 Context가 할 일을 응답에 담을 때 planning과 같은 계약 모양을 만든다. */
