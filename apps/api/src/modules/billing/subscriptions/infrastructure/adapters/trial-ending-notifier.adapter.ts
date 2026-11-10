@@ -8,9 +8,9 @@ import {
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
 import type { TrialEndingNotice } from "../../application/ports/trial-ending-notice.repository.port.js";
 import { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
