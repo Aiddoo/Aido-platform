@@ -17,7 +17,6 @@ import { RELEASE_1_15_0 } from '../constants/releases';
 import { RELEASE_ID } from '../constants/whats-new.constants';
 import { useWhatsNewFeed } from './use-whats-new-feed';
 
-const LAUNCHED_AT = toInstant('2026-11-05T00:00:00.000Z');
 const USER_ID = 'user-1';
 
 async function renderFeed({
@@ -40,7 +39,6 @@ async function renderFeed({
     enabled: true,
     campaignId: RELEASE_1_15_0.campaignId,
     minAppVersion: '1.15.0',
-    launchedAt: LAUNCHED_AT,
     autoOpen: true,
   };
   queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);

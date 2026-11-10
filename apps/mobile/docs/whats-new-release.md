@@ -24,7 +24,7 @@
 5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 음량을 받는 음성 부품(`VoiceVisual`·`RecognizerWaveform`)에는 `useDemoVoiceLevel`의 UI 스레드 예시 음량을 넣고, 말이 끝나면 `isActive`를 꺼 프레임 콜백을 멈춘다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
-8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. 1.15.1부터 새로운 기능과 시작 체크리스트는 `LAUNCHED_AT`을 보지 않는다(1.15.0 이하 앱만 읽는다). 시작 체크리스트는 캠페인과 상관없이 가입 7일 동안 보인다.
+8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. `LAUNCHED_AT`은 켜면 필수라 계속 채우지만 1.15.0 이하 앱만 읽는다. 1.15.1부터 앱 모델(`FeatureCampaignConfig`)에 옮기지 않는다. 시작 체크리스트는 캠페인과 상관없이 가입 7일 동안 보인다.
 9. 지난 캠페인 출시의 `campaignId`를 지워 목록에서만 열리게 한다. 그 캠페인의 본 기록·재진입 키는 다음 시작 때 지워진다.
 
 ## 동작 규칙

@@ -11,7 +11,6 @@ const createEnabledConfig = (
   enabled: true,
   campaignId: RELEASE_1_15_0.campaignId,
   minAppVersion: '1.15.0',
-  launchedAt: toInstant('2026-11-10T00:00:00.000Z'),
   autoOpen: true,
   ...overrides,
 });
