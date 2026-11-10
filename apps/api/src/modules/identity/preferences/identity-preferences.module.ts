@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule, ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/planning-todo-timezone-jobs.public";
@@ -9,7 +9,6 @@ import {
   AI_DATA_SHARING_CONSENT_READER,
   AiDataSharingConsentReaderPort,
 } from "./application/ports/ai-data-sharing-consent.reader.port.js";
-import { PREFERENCE_ENTITLEMENT } from "./application/ports/preference-entitlement.port.js";
 import {
   REMINDER_SCHEDULE_ENQUEUER,
   ReminderScheduleEnqueuerPort,
@@ -54,25 +53,7 @@ import {
 } from "./application/ports/user-settings-cache.port.js";
 import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
 import { ReadUserPreferencesUseCase } from "./application/use-cases/read-user-preferences.use-case.js";
-import {
-  userPreferenceReaderProvider,
-  getConsentRecordsProvider,
-  getConsentRecordProvider,
-  getConsentProvider,
-  getPreferenceRecordsProvider,
-  getPreferenceRecordProvider,
-  getPreferenceProvider,
-  onTodoToggledProvider,
-  refreshPushTimezoneProvider,
-  seedUserSettingsProvider,
-  aiDataSharingConsentReaderProvider,
-  updateAiDataSharingConsentProvider,
-  updateMarketingConsentProvider,
-  updateMarketingPushConsentProvider,
-  updatePreferenceProvider,
-  upsertPushLocaleProvider,
-  upsertPushTimezoneProvider,
-} from "./identity-preferences.providers.js";
+import { IDENTITY_PREFERENCES_PROVIDERS } from "./identity-preferences.providers.js";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter.js";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter.js";
 import { TodoTimezoneRebaseEnqueuerAdapter } from "./infrastructure/adapters/todo-timezone-rebase-enqueuer.adapter.js";
@@ -93,30 +74,13 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
   ],
   controllers: [SettingsController],
   providers: [
+    ...IDENTITY_PREFERENCES_PROVIDERS,
     UserSettingsAccessAdapter,
-    userPreferenceReaderProvider,
     { provide: UserPreferenceReaderPort, useExisting: ReadUserPreferencesUseCase },
     { provide: USER_PREFERENCE_READER, useExisting: UserPreferenceReaderPort },
-    { provide: PREFERENCE_ENTITLEMENT, useExisting: ENTITLEMENT_READER },
-    getPreferenceProvider,
-    updatePreferenceProvider,
-    getConsentProvider,
-    updateMarketingConsentProvider,
-    updateMarketingPushConsentProvider,
-    updateAiDataSharingConsentProvider,
-    aiDataSharingConsentReaderProvider,
     { provide: AiDataSharingConsentReaderPort, useExisting: GetAiDataSharingConsentUseCase },
     { provide: AI_DATA_SHARING_CONSENT_READER, useExisting: AiDataSharingConsentReaderPort },
-    onTodoToggledProvider,
-    seedUserSettingsProvider,
-    upsertPushTimezoneProvider,
-    refreshPushTimezoneProvider,
-    upsertPushLocaleProvider,
     TimezoneSelfHealInterceptor,
-    getPreferenceRecordProvider,
-    getPreferenceRecordsProvider,
-    getConsentRecordProvider,
-    getConsentRecordsProvider,
     DrizzleUserPreferenceRepository,
     DrizzleUserConsentRepository,
     DrizzleTodoCompletionStatsReader,

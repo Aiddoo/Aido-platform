@@ -1,7 +1,7 @@
-import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
+import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";

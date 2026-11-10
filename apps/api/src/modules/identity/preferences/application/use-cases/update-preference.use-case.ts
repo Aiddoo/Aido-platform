@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { assertEntitled } from "#api/modules/access/access-entitlement.public";
-import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -11,6 +10,7 @@ import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
 import { type ReminderScheduleEnqueuerPort } from "../ports/reminder-schedule-enqueuer.port.js";
+import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";

@@ -1,6 +1,6 @@
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { PlanFeature } from "@aido/api/vocabulary";
 
-export type PreferenceEntitlementPort = Pick<EntitlementReaderPort, "can">;
-
-/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
-export const PREFERENCE_ENTITLEMENT = Symbol("PREFERENCE_ENTITLEMENT");
+/** 설정 기능(사용자 지정 알림 시각 등)을 쓸 수 있는지 묻는다. access의 권한 판단을 그대로 쓴다 */
+export abstract class PreferenceEntitlementPort {
+  abstract can(userId: string, feature: PlanFeature): Promise<boolean>;
+}

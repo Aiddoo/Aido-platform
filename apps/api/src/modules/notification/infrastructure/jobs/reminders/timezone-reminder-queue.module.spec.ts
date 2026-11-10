@@ -3,8 +3,9 @@ import { Test } from "@nestjs/testing";
 import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 
-import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
+import { PreferenceEntitlementPort } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
 import { ReminderScheduleEnqueuerPort } from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
+import { ReminderTimezoneCachePort as PreferenceReminderTimezoneCachePort } from "#api/modules/identity/preferences/application/ports/reminder-timezone-cache.port";
 import { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
 import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
@@ -60,7 +61,8 @@ async function createFixture() {
       upsertPushTimezoneProvider,
       { provide: UserPreferenceRepositoryPort, useValue: settings.preferenceRepository },
       { provide: UserSettingsCachePort, useValue: settings.cache },
-      { provide: PREFERENCE_ENTITLEMENT, useValue: settings.entitlement },
+      { provide: PreferenceEntitlementPort, useValue: settings.entitlement },
+      { provide: PreferenceReminderTimezoneCachePort, useExisting: REMINDER_TIMEZONE_CACHE },
       { provide: ReminderScheduleEnqueuerPort, useValue: settings.reminderEnqueuer },
       { provide: TodoTimezoneRebaseEnqueuerPort, useValue: settings.todoTimezoneRebase },
       { provide: UnitOfWorkPort, useValue: settings.unitOfWork },
