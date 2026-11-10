@@ -1,8 +1,7 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from "@aido/api/vocabulary";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 
@@ -24,6 +23,10 @@ import {
   type TodoCommentPageDirection,
   type TodoConversationScope,
 } from "../../application/todo-comment-page.constants.js";
+import {
+  type EngagementCommentsConfig,
+  engagementCommentsConfig,
+} from "../../engagement-comments.config.js";
 
 const CURSOR_DOMAIN = {
   legacyPrefix: "todo-comment-cursor:v1:",
@@ -68,11 +71,10 @@ const repliesCursorSchema = z.strictObject({
 export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodecPort {
   readonly #signer: HmacTokenSigner;
 
-  constructor(config: TypedConfigService) {
-    const ring = SigningKeyRing.fromEnv({
-      configured: config.cursorSigningKeys,
-      legacySecret: config.jwtSecret,
-    });
+  constructor(
+    @Inject(engagementCommentsConfig.KEY) config: Pick<EngagementCommentsConfig, "cursorSigning">,
+  ) {
+    const ring = SigningKeyRing.fromEnv(config.cursorSigning);
     this.#signer = new HmacTokenSigner(ring, CURSOR_DOMAIN);
   }
 

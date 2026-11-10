@@ -13,13 +13,13 @@ import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/
 import { matchTodoCommentChainReplay } from "#api/modules/engagement/comments/domain/todo-comment-chain.domain-service";
 import { TodoCommentContent } from "#api/modules/engagement/comments/domain/todo-comment-content.vo";
 import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import { engagementCommentsConfig } from "#api/modules/engagement/comments/engagement-comments.config";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { toTodoConversationResponse } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment-response.mapper";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   todo,
   todoCategory,
@@ -76,8 +76,13 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       providers: [
         HmacTodoCommentCursorCodecAdapter,
         {
-          provide: TypedConfigService,
-          useValue: { jwtSecret: "integration-jwt-secret-at-least-32-characters" },
+          provide: engagementCommentsConfig.KEY,
+          useValue: {
+            cursorSigning: {
+              configured: undefined,
+              legacySecret: "integration-jwt-secret-at-least-32-characters",
+            },
+          },
         },
       ],
     }).compile();

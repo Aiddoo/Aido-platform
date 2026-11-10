@@ -4,11 +4,11 @@ import { eq, sql } from "drizzle-orm";
 
 import { ListTodoCommentRepliesUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-replies.use-case";
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
+import { engagementCommentsConfig } from "#api/modules/engagement/comments/engagement-comments.config";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -76,8 +76,13 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
       providers: [
         HmacTodoCommentCursorCodecAdapter,
         {
-          provide: TypedConfigService,
-          useValue: { jwtSecret: "integration-jwt-secret-at-least-32-characters" },
+          provide: engagementCommentsConfig.KEY,
+          useValue: {
+            cursorSigning: {
+              configured: undefined,
+              legacySecret: "integration-jwt-secret-at-least-32-characters",
+            },
+          },
         },
       ],
     }).compile();
