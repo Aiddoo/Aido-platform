@@ -1,7 +1,7 @@
 import { mock, type MockProxy } from "vitest-mock-extended";
 
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
@@ -16,7 +16,7 @@ const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
 describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로 읽기", () => {
   const now = new Date("2026-11-02T06:20:00.000Z");
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
   let logger: MockProxy<ApplicationLoggerPort>;
@@ -25,7 +25,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     logger = mock<ApplicationLoggerPort>();
@@ -37,11 +37,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
     });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("같은 칸의 사용자 여러 명은 공급자를 한 번만 부르고 모두 같은 리포트를 받는다", async () => {

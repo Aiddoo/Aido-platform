@@ -113,9 +113,9 @@ import {
   failBroadcastCampaignProvider,
   fanOutBroadcastCampaignProvider,
 } from "#api/modules/operations/operations-admin-application.providers";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import {
   type Database,
@@ -322,9 +322,9 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
       },
     },
     {
-      provide: CACHE_SERVICE,
+      provide: CacheStorePort,
       useFactory: () =>
-        new InMemoryCacheAdapter({
+        new InMemoryCacheStore({
           defaultTtlMs: 60_000,
           maxItems: 100,
         }),

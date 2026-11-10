@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
@@ -34,7 +34,7 @@ function createResolver(responses: readonly (() => Response)[]) {
   };
   const http = new HttpClient({ retry: false, throwOnHttpError: false, fetch });
   const cacheService = new CacheService(
-    new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 }),
+    new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
   );
   const { policies, usage } = createWeatherOutbound();
   return {

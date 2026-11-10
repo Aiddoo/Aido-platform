@@ -4,7 +4,7 @@ import { HttpClient } from "@nestjs/http-client";
 import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { WeatherReportCacheKey } from "#api/modules/weather/infrastructure/cache/forecast/weather-report.keyspace";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
 import {
@@ -70,7 +70,7 @@ function pathKind(request: Request | undefined): string | undefined {
 
 describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류", () => {
   const cell = GeoCell.fromCoordinate(USER_COORDINATE);
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cacheService: CacheService;
   let tokenResolver: StubWeatherKitTokenResolver;
   let logSpy: ReturnType<typeof vi.spyOn>;
@@ -79,7 +79,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(WeatherKitReportFixture.fetchedAt));
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cacheService = new CacheService(memory);
     tokenResolver = new StubWeatherKitTokenResolver();
     logSpy = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
@@ -87,11 +87,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
     vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined);
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   function createProvider(responses: readonly StubResponse[]) {

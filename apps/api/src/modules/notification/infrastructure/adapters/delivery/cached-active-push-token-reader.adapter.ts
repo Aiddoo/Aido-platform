@@ -73,7 +73,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
       missedUserIds.map((userId) => ({
         key: NotificationCacheKey.pushTokens(userId),
         value: loadedTokensByUserId.get(userId) ?? [],
-        ttl: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
+        ttlMs: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
       })),
     );
 

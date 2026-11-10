@@ -18,7 +18,7 @@ import {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,
 } from "#api/modules/notification/notification-reminders-cache.public";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
@@ -35,55 +35,44 @@ import { TimezoneReminderQueueModule } from "./timezone-reminder-queue.module.js
 class ReminderCacheDependenciesTestModule {}
 
 async function createFixture() {
-  const underlyingCache = new InMemoryCacheAdapter({
+  const underlyingCache = new InMemoryCacheStore({
     defaultTtlMs: REMINDER_CACHE_TTL_MS,
     maxItems: 10,
   });
   const cache = new CacheService(underlyingCache);
   const runtime = mock<JobRuntimePort>();
   const settings = createUserSettingsFixture();
-  try {
-    const module = await Test.createTestingModule({
-      imports: [
-        {
-          module: ReminderCacheDependenciesTestModule,
-          providers: [
-            { provide: CacheService, useValue: cache },
-            { provide: JOB_RUNTIME, useValue: runtime },
-          ],
-          exports: [CacheService, JOB_RUNTIME],
-        },
-        TimezoneReminderQueueModule,
-      ],
-      providers: [
-        refreshPushTimezoneProvider,
-        updatePreferenceProvider,
-        upsertPushTimezoneProvider,
-        { provide: USER_PREFERENCE_REPOSITORY, useValue: settings.preferenceRepository },
-        { provide: USER_SETTINGS_CACHE, useValue: settings.cache },
-        { provide: PREFERENCE_ENTITLEMENT, useValue: settings.entitlement },
-        { provide: REMINDER_SCHEDULE_ENQUEUER, useValue: settings.reminderEnqueuer },
-        { provide: TODO_TIMEZONE_REBASE_ENQUEUER, useValue: settings.todoTimezoneRebase },
-        { provide: UNIT_OF_WORK, useValue: settings.unitOfWork },
-      ],
-    }).compile();
-    return {
-      cache,
-      settings,
-      upsertTimezone: module.get(UpsertPushTimezone),
-      timezoneCache: module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE),
-      async close() {
-        try {
-          await module.close();
-        } finally {
-          underlyingCache.onModuleDestroy();
-        }
+  const module = await Test.createTestingModule({
+    imports: [
+      {
+        module: ReminderCacheDependenciesTestModule,
+        providers: [
+          { provide: CacheService, useValue: cache },
+          { provide: JOB_RUNTIME, useValue: runtime },
+        ],
+        exports: [CacheService, JOB_RUNTIME],
       },
-    };
-  } catch (error) {
-    underlyingCache.onModuleDestroy();
-    throw error;
-  }
+      TimezoneReminderQueueModule,
+    ],
+    providers: [
+      refreshPushTimezoneProvider,
+      updatePreferenceProvider,
+      upsertPushTimezoneProvider,
+      { provide: USER_PREFERENCE_REPOSITORY, useValue: settings.preferenceRepository },
+      { provide: USER_SETTINGS_CACHE, useValue: settings.cache },
+      { provide: PREFERENCE_ENTITLEMENT, useValue: settings.entitlement },
+      { provide: REMINDER_SCHEDULE_ENQUEUER, useValue: settings.reminderEnqueuer },
+      { provide: TODO_TIMEZONE_REBASE_ENQUEUER, useValue: settings.todoTimezoneRebase },
+      { provide: UNIT_OF_WORK, useValue: settings.unitOfWork },
+    ],
+  }).compile();
+  return {
+    cache,
+    settings,
+    upsertTimezone: module.get(UpsertPushTimezone),
+    timezoneCache: module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE),
+    close: () => module.close(),
+  };
 }
 
 describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", () => {

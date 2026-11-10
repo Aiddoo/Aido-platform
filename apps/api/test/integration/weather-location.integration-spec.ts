@@ -7,7 +7,7 @@ import { KmaWeatherGridResolver } from "#api/modules/weather/infrastructure/adap
 import { TzLookupTimezoneResolver } from "#api/modules/weather/infrastructure/adapters/forecast/tz-lookup-timezone.resolver";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { DrizzleWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/drizzle-weather-location.repository";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -252,7 +252,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
 
   it("실제 위치 변경은 이전 격자 캐시를 무효화하고 해외 좌표는 격자 없이 저장한다", async () => {
     // Given
-    const memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    const memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     const cache = new WeatherCacheAdapter(new CacheService(memory));
     const update = new UpsertLocation({
       weatherLocationRepository: repository,
@@ -269,30 +269,26 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
       pm10: 10,
       pm25: 5,
     };
-    try {
-      await repository.upsert(location(userId));
-      await cache.setConditions(60, 127, date, weatherConditions);
+    await repository.upsert(location(userId));
+    await cache.setConditions(60, 127, date, weatherConditions);
 
-      // When
-      await update.execute({ userId, latitude: 35.1796, longitude: 129.0756 });
+    // When
+    await update.execute({ userId, latitude: 35.1796, longitude: 129.0756 });
 
-      // Then
-      expect(await cache.getConditions(60, 127, date)).toBeUndefined();
-      expect(coordinates(await repository.findByUserId(userId))).toEqual(
-        coordinates(location(userId, 35.1796, 129.0756)),
-      );
-      await cache.setConditions(98, 76, date, weatherConditions);
-      await update.execute({ userId, latitude: 48.8566, longitude: 2.3522 });
-      expect(await cache.getConditions(98, 76, date)).toBeUndefined();
-      expect(coordinates(await repository.findByUserId(userId))).toEqual({
-        latitude: 48.8566,
-        longitude: 2.3522,
-        gridX: null,
-        gridY: null,
-      });
-    } finally {
-      memory.onModuleDestroy();
-    }
+    // Then
+    expect(await cache.getConditions(60, 127, date)).toBeUndefined();
+    expect(coordinates(await repository.findByUserId(userId))).toEqual(
+      coordinates(location(userId, 35.1796, 129.0756)),
+    );
+    await cache.setConditions(98, 76, date, weatherConditions);
+    await update.execute({ userId, latitude: 48.8566, longitude: 2.3522 });
+    expect(await cache.getConditions(98, 76, date)).toBeUndefined();
+    expect(coordinates(await repository.findByUserId(userId))).toEqual({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      gridX: null,
+      gridY: null,
+    });
   });
 
   it("시간대와 빈 격자를 저장하고 그대로 읽는다", async () => {

@@ -1,4 +1,4 @@
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 import { FakeWeatherProvider } from "#test/mocks/fake-weather.provider";
@@ -19,7 +19,7 @@ const conditions: WeatherConditions = {
 };
 
 describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: CacheService;
   let weather: WeatherCacheAdapter;
 
@@ -27,13 +27,12 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     suppressLogger();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new CacheService(memory);
     weather = new WeatherCacheAdapter(cache);
   });
 
   afterEach(() => {
-    memory.onModuleDestroy();
     vi.useRealTimers();
   });
 

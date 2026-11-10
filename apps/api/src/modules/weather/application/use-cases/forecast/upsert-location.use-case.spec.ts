@@ -1,7 +1,7 @@
 import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 import {
@@ -19,7 +19,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { UpsertLocation } from "./upsert-location.use-case.js";
 
 describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: WeatherCacheAdapter;
   let repository: StubWeatherLocationRepository;
   let resolver: StubWeatherGridResolver;
@@ -30,7 +30,7 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
 
   beforeEach(() => {
     suppressLogger();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherCacheAdapter(new CacheService(memory));
     repository = new StubWeatherLocationRepository();
     resolver = new StubWeatherGridResolver();
@@ -42,7 +42,6 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
       timezoneResolver,
     });
   });
-  afterEach(() => memory.onModuleDestroy());
 
   it("최초 위치를 해결한 격자와 함께 저장하고 같은 격자의 캐시는 보존한다", async () => {
     // Given

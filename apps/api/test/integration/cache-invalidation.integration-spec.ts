@@ -471,12 +471,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         expect(smallCache.getStats().keys).toBe(5);
         expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");
 
-        // When - 6번째 항목 추가 (LRU로 key_1 퇴출)
+        // When - 6번째 항목 추가 (방금 읽은 key_1 대신 가장 오래 쓰지 않은 key_2 퇴출)
         await smallCache.set("key_6", "value_6");
 
-        // Then - key_1은 퇴출, key_6은 존재
+        // Then - key_2는 퇴출, key_1·key_6은 존재
         expect(smallCache.getStats().keys).toBe(5);
-        expect(await smallCache.get("key_1", z.unknown())).toBeUndefined();
+        expect(await smallCache.get("key_2", z.unknown())).toBeUndefined();
+        expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");
         expect(await smallCache.get("key_6", z.unknown())).toBe("value_6");
       } finally {
         await smallCacheApp.close();

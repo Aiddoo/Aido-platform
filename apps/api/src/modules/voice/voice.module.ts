@@ -8,7 +8,7 @@ import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/ai-assist
 import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 
 import { PLAN_APPLICATION_REPOSITORY } from "./application/ports/plans/plan-application.repository.port.js";
 import {
@@ -41,7 +41,7 @@ const replayProviders: Provider[] = [
   {
     provide: PLAN_RESULT_CACHE,
     useFactory: () =>
-      new InMemoryCacheAdapter({
+      new InMemoryCacheStore({
         defaultTtlMs: PLAN_RESULT_REPLAY_TTL_MS,
         maxItems: PLAN_RESULT_REPLAY_MAX_ITEMS,
       }),
@@ -49,7 +49,7 @@ const replayProviders: Provider[] = [
   {
     provide: QUICK_PLAN_RESULT_REPLAY,
     inject: [PLAN_RESULT_CACHE],
-    useFactory: (cache: InMemoryCacheAdapter) =>
+    useFactory: (cache: InMemoryCacheStore) =>
       new InMemoryPlanResultReplayAdapter(
         cache,
         "quick-plan",
@@ -59,7 +59,7 @@ const replayProviders: Provider[] = [
   {
     provide: VOICE_NOTE_DIGEST_RESULT_REPLAY,
     inject: [PLAN_RESULT_CACHE],
-    useFactory: (cache: InMemoryCacheAdapter) =>
+    useFactory: (cache: InMemoryCacheStore) =>
       new InMemoryPlanResultReplayAdapter(
         cache,
         "voice-note-digest",

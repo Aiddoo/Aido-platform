@@ -3,7 +3,7 @@ import { mock, type MockProxy } from "vitest-mock-extended";
 import type { ReminderWeatherReport } from "#api/modules/notification/application/ports/reminders/reminder-weather-report.reader.port";
 import { WeatherReportReader } from "#api/modules/weather/application/services/forecast/weather-report.reader";
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
@@ -206,7 +206,7 @@ describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
 });
 
 describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예산", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let reader: StubWeatherReminderReader;
   let publisher: StubNotificationBatchPublisher;
@@ -215,7 +215,7 @@ describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
     provider.report = weatherReportFixture(NOW);
     reader = new StubWeatherReminderReader();
@@ -234,11 +234,7 @@ describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예
     });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("같은 칸의 사용자 30명에게 보내도 WeatherKit은 한 번만 부른다", async () => {

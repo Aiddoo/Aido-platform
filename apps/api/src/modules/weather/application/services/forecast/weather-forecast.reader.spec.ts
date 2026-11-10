@@ -3,7 +3,7 @@ import { mock } from "vitest-mock-extended";
 
 import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
@@ -17,7 +17,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { WeatherForecastReader } from "./weather-forecast.reader.js";
 
 describe("WeatherForecastReader — cache·latest fallback·격자 batch", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: WeatherCacheAdapter;
   let weatherProvider: StubWeatherProvider;
   let reader: WeatherForecastReader;
@@ -28,7 +28,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(date);
     suppressLogger();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherCacheAdapter(new CacheService(memory));
     weatherProvider = new StubWeatherProvider();
     reader = new WeatherForecastReader({
@@ -38,11 +38,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
@@ -227,7 +223,7 @@ class ConcurrencyTrackingWeatherProvider extends StubWeatherProvider {
 }
 
 describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: WeatherCacheAdapter;
   let weatherProvider: StubWeatherProvider;
   let reader: WeatherForecastReader;
@@ -238,7 +234,7 @@ describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now);
     suppressLogger();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherCacheAdapter(new CacheService(memory));
     weatherProvider = new StubWeatherProvider();
     reader = new WeatherForecastReader({
@@ -248,11 +244,7 @@ describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
     });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("아침 발표 전 오늘 날짜 요청은 지금의 발표로 조회해 정상 예보를 준다", async () => {

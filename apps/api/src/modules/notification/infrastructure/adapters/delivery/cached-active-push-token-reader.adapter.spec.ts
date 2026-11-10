@@ -105,12 +105,12 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       {
         key: NotificationCacheKey.pushTokens(loadedUserId),
         value: ["ExponentPushToken[loaded-first]", "ExponentPushToken[loaded-second]"],
-        ttl: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
+        ttlMs: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
       },
       {
         key: NotificationCacheKey.pushTokens(tokenlessUserId),
         value: [],
-        ttl: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
+        ttlMs: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
       },
     ]);
     expect([...result]).toEqual([

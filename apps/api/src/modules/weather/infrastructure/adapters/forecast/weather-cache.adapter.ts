@@ -144,12 +144,12 @@ export class WeatherCacheAdapter implements WeatherCachePort {
       {
         key: forecastKey(entry.gridX, entry.gridY, timing),
         value: entry.forecast,
-        ttl: WEATHER_CACHE_TTL_MS.FORECAST,
+        ttlMs: WEATHER_CACHE_TTL_MS.FORECAST,
       },
       {
         key: WeatherCacheKey.latestForecast(entry.gridX, entry.gridY),
         value: entry.forecast,
-        ttl: WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
+        ttlMs: WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
       },
     ]);
     await this.cacheService.mset(cacheEntries);

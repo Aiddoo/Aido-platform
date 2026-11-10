@@ -5,7 +5,7 @@ import { WeatherReportReader } from "#api/modules/weather/application/services/f
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
 import { WeatherKitNotConfiguredError } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-token.resolver";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
@@ -25,7 +25,7 @@ import { GetWeatherReport } from "./get-weather-report.use-case.js";
 
 describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", () => {
   const now = new Date("2026-11-02T06:20:00.000Z");
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: WeatherReportCacheAdapter;
   let repository: StubWeatherLocationRepository;
   let provider: StubWeatherReportProvider;
@@ -44,7 +44,7 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherReportCacheAdapter(new CacheService(memory));
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     provider = new StubWeatherReportProvider();
@@ -67,11 +67,7 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("위치가 없으면 공급자를 부르지 않고 WEATHER_1902다", async () => {

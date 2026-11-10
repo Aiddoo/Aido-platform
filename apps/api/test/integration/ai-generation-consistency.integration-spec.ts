@@ -26,7 +26,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/pers
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -76,7 +76,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 8 }) });
   let client: TestDatabaseClient;
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let entitlement: EntitlementService;
   let suggestions: DrizzleAiSuggestionRepository;
   let reports: DrizzleAiReportRepository;
@@ -93,7 +93,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(CURRENT_TIME);
     fixture = createDatabaseTransactionFixture(client);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 600_000, maxItems: 20 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 600_000, maxItems: 20 });
     entitlement = new EntitlementService({
       database: new DrizzleEntitlementReader(fixture.txHost),
       cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
@@ -123,7 +123,6 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     );
   });
   afterEach(() => {
-    memory?.onModuleDestroy();
     vi.useRealTimers();
   });
   afterAll(async () => {

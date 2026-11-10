@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { DailyCompletionsRange } from "../../../domain/records/daily-completions/daily-completion.record.js";
@@ -21,20 +21,19 @@ const RANGE: DailyCompletionsRange = {
 };
 
 describe("DailyCompletionCacheAdapter — 완료 집계 generation", () => {
-  let backend: InMemoryCacheAdapter;
+  let backend: InMemoryCacheStore;
   let cacheService: CacheService;
   let adapter: DailyCompletionCacheAdapter;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2028-02-29T12:00:00Z"));
-    backend = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    backend = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cacheService = new CacheService(backend);
     adapter = new DailyCompletionCacheAdapter(cacheService);
   });
 
   afterEach(() => {
-    backend.onModuleDestroy();
     vi.useRealTimers();
   });
 

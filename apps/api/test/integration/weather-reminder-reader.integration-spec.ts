@@ -1,7 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -22,14 +22,14 @@ const UNTIL = new Date("2026-11-02T15:00:00.000Z");
 describe("날씨 알림 할 일 조회 (실제 PostgreSQL)", () => {
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 2 }) });
   let client: TestDatabaseClient;
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let reader: DrizzleSchedulerReader;
   let userId: string;
   let otherUserId: string;
 
   beforeAll(async () => {
     client = await database.start();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 10 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     reader = new DrizzleSchedulerReader(
       createDatabaseTransactionFixture(client).txHost,
       new CacheService(memory),
@@ -53,7 +53,6 @@ describe("날씨 알림 할 일 조회 (실제 PostgreSQL)", () => {
   });
 
   afterAll(async () => {
-    memory.onModuleDestroy();
     await database.stop();
   });
 

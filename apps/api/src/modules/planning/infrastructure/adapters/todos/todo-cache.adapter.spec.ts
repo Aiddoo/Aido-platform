@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import {
@@ -29,20 +29,15 @@ function createDeferred(): Deferred {
 }
 
 describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
-  let backend: InMemoryCacheAdapter;
+  let backend: InMemoryCacheStore;
   let adapter: TodoCacheAdapter;
 
   beforeEach(() => {
-    backend = new InMemoryCacheAdapter({
+    backend = new InMemoryCacheStore({
       defaultTtlMs: 60_000,
       maxItems: 100,
-      cleanupIntervalMs: 60_000,
     });
     adapter = new TodoCacheAdapter(new CacheService(backend));
-  });
-
-  afterEach(() => {
-    backend.onModuleDestroy();
   });
 
   it("cache miss의 DB 조회 중 무효화되면 이전 응답을 stale-fill하지 않는다", async () => {

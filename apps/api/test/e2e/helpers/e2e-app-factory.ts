@@ -50,8 +50,8 @@ import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
 import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
 import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/index";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
@@ -157,10 +157,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeJobRuntime = new FakeJobRuntime();
 
   const redisMock = new RedisMock();
-  const cacheAdapter = new InMemoryCacheAdapter({
+  const cacheAdapter = new InMemoryCacheStore({
     defaultTtlMs: 60000,
     maxItems: 1000,
-    cleanupIntervalMs: 30000,
   });
   let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
   let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
@@ -182,7 +181,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 
     const results = await Promise.allSettled([
       Promise.resolve().then(() => redisMock.disconnect()),
-      Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
     ]);
     errors.push(
       ...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
@@ -219,7 +217,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
     .useValue(new InMemoryJobQueue())
-    .overrideProvider(CACHE_SERVICE)
+    .overrideProvider(CacheStorePort)
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)
     .useValue(testDatabase.getClient())

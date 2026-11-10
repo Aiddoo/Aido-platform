@@ -1,83 +1,72 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import {
-  CACHE_SERVICE,
+  type CacheEntry,
   type CacheStats,
+  CacheStorePort,
   type CacheValueSchema,
-  type ICacheService,
-  type TtlValue,
-  type WrapTtl,
-} from "./interfaces/cache.interface.js";
+  type CacheWrapTtlMs,
+} from "./cache-store.port.js";
 
+/** 옮기지 않은 Context가 주입받는 옛 진입점. CacheStorePort에 그대로 위임하고 Context를 옮기면 지운다. */
 @Injectable()
 export class CacheService {
-  constructor(@Inject(CACHE_SERVICE) private readonly cache: ICacheService) {}
+  readonly #store: CacheStorePort;
 
-  get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
-    return this.cache.get(key, schema);
+  constructor(store: CacheStorePort) {
+    this.#store = store;
   }
 
-  set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
-    return this.cache.set(key, value, ttl);
+  get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
+    return this.#store.get(key, schema);
+  }
+
+  set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+    return this.#store.set(key, value, ttlMs);
   }
 
   del(key: string): Promise<void> {
-    return this.cache.del(key);
+    return this.#store.del(key);
   }
 
   delByPattern(pattern: string): Promise<number> {
-    return this.cache.delByPattern(pattern);
+    return this.#store.delByPattern(pattern);
   }
 
   reset(): Promise<void> {
-    return this.cache.reset();
+    return this.#store.reset();
   }
 
   getStats(): CacheStats {
-    return this.cache.getStats();
+    return this.#store.getStats();
   }
 
-  /**
-   * Cache-aside 패턴 (wrap)
-   *
-   * 캐시에 데이터가 있으면 반환, 없으면 factory 실행 후 캐싱
-   */
   wrap<T>(
     key: string,
     schema: CacheValueSchema<T>,
     factory: () => Promise<T>,
-    ttl?: WrapTtl<T>,
+    ttlMs?: CacheWrapTtlMs<T>,
   ): Promise<T> {
-    return this.cache.wrap(key, schema, factory, ttl);
+    return this.#store.wrap(key, schema, factory, ttlMs);
   }
 
-  mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
-    return this.cache.mget(keys, schema);
+  mget<T>(keys: readonly string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
+    return this.#store.mget(keys, schema);
   }
 
-  mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
-    return this.cache.mset(entries);
+  mset<T>(entries: readonly CacheEntry<T>[]): Promise<void> {
+    return this.#store.mset(entries);
   }
 
   has(key: string): Promise<boolean> {
-    return this.cache.has(key);
+    return this.#store.has(key);
   }
 
-  /**
-   * 키의 남은 TTL 조회 (밀리초)
-   *
-   * @returns 남은 밀리초, -1 (TTL 없음), -2 (키 없음)
-   */
   ttl(key: string): Promise<number> {
-    return this.cache.ttl(key);
+    return this.#store.ttl(key);
   }
 
-  /**
-   * 키의 TTL 갱신
-   *
-   * @returns 성공 시 true, 키가 없으면 false
-   */
-  touch(key: string, ttl: TtlValue): Promise<boolean> {
-    return this.cache.touch(key, ttl);
+  touch(key: string, ttlMs: number): Promise<boolean> {
+    return this.#store.touch(key, ttlMs);
   }
 }

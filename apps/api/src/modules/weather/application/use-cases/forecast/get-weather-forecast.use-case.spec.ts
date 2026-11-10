@@ -3,7 +3,7 @@ import { mock } from "vitest-mock-extended";
 
 import { WeatherForecastReader } from "#api/modules/weather/application/services/forecast/weather-forecast.reader";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherLocationFixture } from "#test/fixtures/weather.fixture";
@@ -13,7 +13,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { GetWeatherForecast } from "./get-weather-forecast.use-case.js";
 
 describe("GetWeatherForecast — 사용자 위치와 예보", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let repository: StubWeatherLocationRepository;
   let weatherProvider: StubWeatherProvider;
   let useCase: GetWeatherForecast;
@@ -24,7 +24,7 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(date);
     suppressLogger();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     weatherProvider = new StubWeatherProvider();
     const cache = new WeatherCacheAdapter(new CacheService(memory));
@@ -36,11 +36,7 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     useCase = new GetWeatherForecast({ weatherLocationRepository: repository, forecastReader });
   });
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("사용자의 저장 좌표와 예보 결과를 함께 반환한다", async () => {

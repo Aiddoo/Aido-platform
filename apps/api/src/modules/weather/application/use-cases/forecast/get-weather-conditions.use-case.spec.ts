@@ -3,7 +3,7 @@ import { mock } from "vitest-mock-extended";
 
 import { WeatherForecastReader } from "#api/modules/weather/application/services/forecast/weather-forecast.reader";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherConditionsFixture, weatherLocationFixture } from "#test/fixtures/weather.fixture";
@@ -19,7 +19,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { GetWeatherConditions } from "./get-weather-conditions.use-case.js";
 
 describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () => {
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let cache: WeatherCacheAdapter;
   let repository: StubWeatherLocationRepository;
   let weatherProvider: StubWeatherProvider;
@@ -33,7 +33,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
     suppressLogger();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(date);
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherCacheAdapter(new CacheService(memory));
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
     weatherProvider = new StubWeatherProvider();
@@ -59,11 +59,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
   });
 
   afterEach(() => {
-    try {
-      memory.onModuleDestroy();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.useRealTimers();
   });
 
   it("위치가 없으면 WEATHER_1902이며 공급자에 접근하지 않는다", async () => {

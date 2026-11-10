@@ -26,13 +26,14 @@ import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
 } from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
 
-import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
+import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
 describe("CacheModule 통합 테스트", () => {
   describe("인메모리 어댑터 (기본 설정)", () => {
@@ -365,19 +366,6 @@ describe("CacheModule 통합 테스트", () => {
         expect(stats.misses).toBe(2);
         expect(stats.keys).toBe(2);
       });
-
-      it("인메모리 어댑터에서 메모리 사용량을 포함한다", async () => {
-        // Given
-        const largeObject = { large: "object".repeat(100) };
-
-        // When
-        await cacheService.set("key_1", largeObject);
-        const stats = cacheService.getStats();
-
-        // Then
-        expect(stats.memoryUsage).toBeDefined();
-        expect(stats.memoryUsage).toBeGreaterThan(0);
-      });
     });
 
     describe("리셋 작업", () => {
@@ -418,30 +406,6 @@ describe("CacheModule 통합 테스트", () => {
         const cachedResult = await cacheService.wrap(key, z.unknown(), factory);
         expect(cachedResult).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1); // factory는 다시 호출되지 않음
-      });
-
-      it("TTL shorthand를 지원한다", async () => {
-        // Given
-        const baseTime = Date.now();
-        const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
-        const key = "wrap-ttl-test";
-        const factory = vi.fn().mockResolvedValue("value");
-
-        try {
-          // When
-          await cacheService.wrap(key, z.unknown(), factory, "1s");
-
-          // Then - 즉시 조회
-          const beforeExpiry = await cacheService.get(key, z.unknown());
-          expect(beforeExpiry).toBe("value");
-
-          // TTL 만료 후로 시간 이동
-          now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.get(key, z.unknown());
-          expect(afterExpiry).toBeUndefined();
-        } finally {
-          now.mockRestore();
-        }
       });
 
       it("wrapSession이 실제로 캐시에 저장한다", async () => {
@@ -558,32 +522,6 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(results).toEqual(["value-1", "value-2", undefined]);
       });
-
-      it("mset에서 TTL shorthand를 지원한다", async () => {
-        // Given
-        const baseTime = Date.now();
-        const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
-        const entries = [
-          { key: "mset-ttl-1", value: "value-1", ttl: "1s" as const },
-          { key: "mset-ttl-2", value: "value-2", ttl: "1s" as const },
-        ];
-
-        try {
-          // When
-          await cacheService.mset(entries);
-
-          // Then - 즉시 조회
-          const beforeExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
-          expect(beforeExpiry).toEqual(["value-1", "value-2"]);
-
-          // TTL 만료 후로 시간 이동
-          now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
-          expect(afterExpiry).toEqual([undefined, undefined]);
-        } finally {
-          now.mockRestore();
-        }
-      });
     });
 
     describe("TTL 관리 메서드 (has/ttl/touch)", () => {
@@ -636,26 +574,13 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(result).toBe(false);
       });
-
-      it("touch에서 TTL shorthand를 지원한다", async () => {
-        // Given
-        await cacheService.set("touch-shorthand", "value", 1000);
-
-        // When
-        const success = await cacheService.touch("touch-shorthand", "1m");
-
-        // Then
-        expect(success).toBe(true);
-        const newTtl = await cacheService.ttl("touch-shorthand");
-        expect(newTtl).toBeGreaterThan(50000); // 약 1분
-      });
     });
   });
 
   describe("forTesting 헬퍼", () => {
     it("커스텀 어댑터를 주입할 수 있다", async () => {
       // Given
-      const mockAdapter = new MockCacheAdapter();
+      const mockAdapter = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
@@ -668,7 +593,7 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(result).toBe("value");
-        expect(mockAdapter.hasKey("key")).toBe(true);
+        expect(await mockAdapter.has("key")).toBe(true);
       } finally {
         await module.close();
       }
@@ -731,11 +656,11 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         const factory = vi.fn();
-        const result = await service.wrap("key", z.unknown(), factory, "5m");
+        const result = await service.wrap("key", z.unknown(), factory, 300_000);
 
         // Then
         expect(result).toBe("wrapped-value");
-        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, "5m");
+        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, 300_000);
       } finally {
         await module.close();
       }

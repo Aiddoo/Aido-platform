@@ -2,7 +2,6 @@ import { ErrorCode, type ErrorCodeType, Errors } from "@aido/api/errors";
 import request, { type Response } from "supertest";
 
 import enErrors from "../../src/i18n/en/errors.json" with { type: "json" };
-
 import {
   createE2eApp,
   destroyE2eApp,

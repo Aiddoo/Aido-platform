@@ -5,7 +5,7 @@ import { hasPaidAccess } from "#api/modules/access/domain/policies/entitlement/p
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/infrastructure/persistence/entitlement/premium-access.condition";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
-import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -38,7 +38,7 @@ type Scenario =
 describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreSQL)", () => {
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 2 }) });
   let client: TestDatabaseClient;
-  let memory: InMemoryCacheAdapter;
+  let memory: InMemoryCacheStore;
   let reader: DrizzleSchedulerReader;
   let entitlement: EntitlementService;
   let entitlementReader: DrizzleEntitlementReader;
@@ -46,7 +46,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
 
   beforeAll(async () => {
     client = await database.start();
-    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 10 });
+    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     const { txHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleSchedulerReader(
       txHost,
@@ -121,7 +121,6 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   });
 
   afterAll(async () => {
-    memory.onModuleDestroy();
     await database.stop();
   });
 
