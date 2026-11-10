@@ -247,7 +247,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | `ModalBottomSheet`                  | 시트 위에 시트 (`BottomSheet` + `useOverlay`) | X             |
 | `SheetRouteScreen`, `useSheetRoute` | 대상이 있는 시트를 Expo Router route로 띄움   | 안쪽 시트대로 |
 
-- **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
+- **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `@src/shared/ui/bottom-sheet`의 `usePortalTarget()`을 펼쳐 넘긴다.
 - **Context:** Portal은 Context를 잇지 못한다. 시트 안에서 읽는 Context는 시트 안에 둔다. 폼은 Context 없이 `form`·`control`을 props로 넘기고, `footer`에서 읽을 때도 그렇다.
 - **스크롤:** 내용은 시트 안에서 스크롤되므로 세로 스크롤 컨테이너를 또 두지 않는다(가로 스크롤은 무방).
 - **내용과 `footer`:** 내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 두고, 작은 화면·큰 글자·키보드에 가려도 보여야 할 주 동작 버튼만 `footer`에 둔다. gorhom 동적 크기는 흐름의 내용만 재므로 시트가 첫 프레임부터 최종 높이로 올라온다.
