@@ -34,7 +34,7 @@ test/
 - 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다.
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit)와 Drizzle(integration)이 같이 통과한다.
 - UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts), 같은 계약을 InMemory·Drizzle에서 돌리는 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts).
-- 테스트 더블은 손으로 쓴 InMemory·Fake·Stub 하나로 모은다. Nest가 주는 실제 객체(`ExecutionContextHost`, `TransactionHost`)가 있으면 그것을 쓴다. `vitest-mock-extended`는 새로 쓰지 않는다(ai-assistance·voice spec만 남았다). 기존 mock 테스트는 그 Context를 옮길 때 의미 있는 assertion만 옮기고 전달 확인뿐인 테스트는 지운다.
+- 테스트 더블은 손으로 쓴 InMemory·Fake·Stub 하나로 모은다. Nest가 주는 실제 객체(`ExecutionContextHost`, `TransactionHost`)가 있으면 그것을 쓴다. mock 라이브러리(`vitest-mock-extended`·`@suites`)는 쓰지 않는다. 기존 mock 테스트는 그 Context를 옮길 때 의미 있는 assertion만 옮기고 전달 확인뿐인 테스트는 지운다.
 
 ```ts
 describe("CreateMemoUseCase — 메모 만들기", () => {
@@ -121,4 +121,4 @@ DB 프로젝트는 파일을 직렬로 돌리고 순서를 섞는다. 결과에�
 
 ## 전환 중
 
-아직 옮기지 않은 Context(ai-assistance·voice)의 spec은 `test/mocks`·`test/builders`, `vitest-mock-extended`, `createUnitOfWorkMock()`을 쓴다. 기존 테스트를 일괄 교체하지 않고 Context를 옮길 때 그 Context의 spec만 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합치고 mock 라이브러리 의존성을 지운다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+옛 spec 일부가 아직 `test/mocks`·`test/builders`, `createUnitOfWorkMock()`을 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다. mock 라이브러리 의존성은 지웠다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
