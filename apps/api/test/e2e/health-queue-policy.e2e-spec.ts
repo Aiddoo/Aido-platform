@@ -36,7 +36,8 @@ describe("영속 job runtime 상태 확인 E2E", () => {
       backend: "postgres",
       degraded: false,
       queues: {
-        "ai-suggestion-analysis.v1": {
+        // defineQueue 큐는 실제 pg-boss 어댑터가 등록할 때 목록에 들어가므로 옛 목록의 큐로 본다
+        "ai-report-generation.v1": {
           active: 0,
           waiting: 0,
           failed: 0,
