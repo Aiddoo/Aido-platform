@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.constants";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
@@ -14,6 +14,8 @@ import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructur
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import type {
   DomainEventPublisherPort,
@@ -69,7 +71,12 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
     await runtime.start();
-    reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
+    reminderAdapter = new ReminderSchedulerAdapter(
+      new TodoReminderSchedulerAdapter(
+        new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
+        new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
+      ),
+    );
     publisher = new SwitchablePublisher();
     const todoRepository = new DrizzleTodoRepository(txHost);
     const todoReadRepository = new DrizzleTodoReadRepository(txHost);
