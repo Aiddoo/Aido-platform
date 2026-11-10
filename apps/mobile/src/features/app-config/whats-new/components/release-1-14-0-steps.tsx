@@ -49,7 +49,7 @@ export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
 
   return (
     <>
-      <WhatsNewStep.Header isNew={false} onClose={flow.close} />
+      <WhatsNewStep.Header isNew={false} version={RELEASE_1_14_0.version} onClose={flow.close} />
 
       <Spacing size={8} />
 

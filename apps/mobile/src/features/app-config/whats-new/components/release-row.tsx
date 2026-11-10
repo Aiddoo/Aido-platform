@@ -13,7 +13,7 @@ import { useHasUnseenRelease } from '../hooks/use-has-unseen-release';
 import type { ReleaseEntry } from '../schemas/release-entry.schema';
 
 type ReleaseRowProps = {
-  release: Pick<ReleaseEntry, 'id' | 'releasedOn' | 'titleKey' | 'descriptionKey'>;
+  release: Pick<ReleaseEntry, 'id' | 'version' | 'releasedOn' | 'titleKey' | 'descriptionKey'>;
 };
 
 export function ReleaseRow({ release }: ReleaseRowProps) {
@@ -25,14 +25,16 @@ export function ReleaseRow({ release }: ReleaseRowProps) {
   const isLatest = WhatsNewPolicy.getLatestRelease(RELEASES).id === release.id;
   const isUnseen = isLatest && hasUnseenRelease;
   const title = t(release.titleKey);
-  const updatedOn = t('list.updatedOn', {
+  const updatedOn = {
+    version: release.version,
     date: formatYearAwareDateKeyLabel(release.releasedOn, todayKey, dateFormatContext),
-  });
+  };
+  const label = `${title}, ${t('list.updatedOnLabel', updatedOn)}`;
 
   return (
     <PressableFeedback
       accessibilityRole="button"
-      accessibilityLabel={isUnseen ? `${title}, ${t('list.unseenLabel')}` : title}
+      accessibilityLabel={isUnseen ? `${label}, ${t('list.unseenLabel')}` : label}
       testID={`whats-new-release-${release.id}`}
       className="rounded-2xl bg-gray-1 p-4"
       onPress={() =>
@@ -51,7 +53,7 @@ export function ReleaseRow({ release }: ReleaseRowProps) {
               </Chip>
             )}
             <Text size="e1" shade={6}>
-              {updatedOn}
+              {t('list.updatedOn', updatedOn)}
             </Text>
           </HStack>
           <VStack gap={4}>

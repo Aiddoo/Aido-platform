@@ -121,7 +121,10 @@
   "list": {
     "title": "What's new",
     "newBadge": "New",
-    "updatedOn": "Updated {{date}}",
+    "updatedOn": "v{{version}} · Updated {{date}}",
+    "updatedOnLabel": "Version {{version}}, updated {{date}}",
+    "version": "v{{version}}",
+    "versionLabel": "Version {{version}}",
     "unseenLabel": "Not viewed yet"
   },
   "stage": {

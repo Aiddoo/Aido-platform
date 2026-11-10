@@ -104,6 +104,7 @@ export function Release1150Steps() {
     <>
       <WhatsNewStep.Header
         isNew={WhatsNewPolicy.getLatestRelease(RELEASES).id === RELEASE_1_15_0.id}
+        version={RELEASE_1_15_0.version}
         onClose={flow.close}
       />
 
