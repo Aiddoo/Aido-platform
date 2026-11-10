@@ -17,11 +17,11 @@ import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 
 import { AppModule } from "#api/app.module";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/jobs/reports/report-generation.job";
-import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
-import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
+import { ReportGenerationJob } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
+import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
+import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
 import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
@@ -46,8 +46,8 @@ import { AdminNotificationProcessor } from "#api/modules/operations/admin-notice
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.processor";
 import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
-import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";
-import { PlanApplicationCleanupProcessor } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.processor";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.processor";
+import { PlanApplicationCleanupJob } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.scheduler";
 import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
 import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";

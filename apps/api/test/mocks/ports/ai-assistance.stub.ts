@@ -9,33 +9,33 @@ import type { EntitlementReaderPort } from "#api/modules/access/access-entitleme
 import type {
   AiDataSharingConsent,
   AiDataSharingConsentDecisionReaderPort,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-data-sharing-consent.reader.port";
-import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/client-app-version.reader.port";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-data-sharing-consent.reader.port";
+import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/generation/application/ports/client-app-version.reader.port";
 import type {
   AiReportRepositoryPort,
   CreateAiReportInput,
   FindReportsParams,
-} from "#api/modules/ai-assistance/application/ports/reports/ai-report.repository.port";
-import type { TodoStatsReaderPort } from "#api/modules/ai-assistance/application/ports/reports/todo-stats.reader.port";
+} from "#api/modules/ai-assistance/reports/application/ports/ai-report.repository.port";
+import type { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
+import type {
+  AggregateParams,
+  AggregationInputs,
+} from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+import { AiReport } from "#api/modules/ai-assistance/reports/domain/ai-report.entity";
 import type {
   AiSuggestionRepositoryPort,
   CreateSuggestionInput,
-} from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
-import type { WeeklyReportReaderPort } from "#api/modules/ai-assistance/application/ports/suggestions/weekly-report-reader.port";
+} from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
+import type { WeeklyReportReaderPort } from "#api/modules/ai-assistance/suggestions/application/ports/weekly-report.reader.port";
 import {
   Suggestion,
   type SuggestionProps,
   type SuggestionStatus,
-} from "#api/modules/ai-assistance/domain/aggregates/suggestions/suggestion.aggregate";
-import { AiReport } from "#api/modules/ai-assistance/domain/entities/reports/ai-report.entity";
-import type {
-  AggregateParams,
-  AggregationInputs,
-} from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
+} from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type {
   TodoSummaryForAnalysis,
   SuggestionHistoryItem,
-} from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
+} from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type {
   WeatherForecastReaderPort,

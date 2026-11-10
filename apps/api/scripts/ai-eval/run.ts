@@ -23,23 +23,24 @@ import { ConfigService } from "@nestjs/config";
 import { omit } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { AiGenerationError } from "../../src/modules/ai-assistance/application/ports/generation/ai-generation.errors.js";
+import { AiGenerationError } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
+import { generateWithPrompt } from "#api/modules/ai-assistance/generation/application/messages/prompt-definition.messages";
 import type {
   AiGenerationMeta,
   AiGeneratorPort,
-} from "../../src/modules/ai-assistance/application/ports/generation/ai-generator.port.js";
-import { generateWithPrompt } from "../../src/modules/ai-assistance/application/prompts/kit/prompt-definition.js";
-import { parseMemoPrompt } from "../../src/modules/ai-assistance/application/prompts/parsing/parse-memo/index.js";
-import { parseTodoPrompt } from "../../src/modules/ai-assistance/application/prompts/parsing/parse-todo/index.js";
-import { quickPlanPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/quick-plan/index.js";
-import { voiceNoteDigestPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/voice-note-digest/index.js";
-import type { NormalizedActionPlan } from "../../src/modules/ai-assistance/domain/types/planning/action-plan-draft.types.js";
-import { AiSdkGenerator } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator.js";
-import { AiSpendBudget } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget.js";
-import type { AiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter.js";
-import { AnthropicProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/anthropic.provider-adapter.js";
-import { GoogleProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/google.provider-adapter.js";
-import { OpenAiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/openai.provider-adapter.js";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
+import { AiSdkGenerator } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
+import { AnthropicProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/anthropic-provider.adapter";
+import { GoogleProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/google-provider.adapter";
+import { OpenAiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/openai-provider.adapter";
+import { parseMemoPrompt } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-prompt.messages";
+import { parseTodoPrompt } from "#api/modules/ai-assistance/parsing/application/messages/parse-todo-prompt.messages";
+import { quickPlanPrompt } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-prompt.messages";
+import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-prompt.messages";
+import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
+
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";

@@ -4,9 +4,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
-import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
-import type { AggregateParams } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
+import type { AggregateParams } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/reports/domain/report-aggregation.domain-service";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { parseLocalDateTime, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";

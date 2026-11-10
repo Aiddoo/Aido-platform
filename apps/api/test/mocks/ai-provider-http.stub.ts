@@ -6,9 +6,9 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { AiSdkGenerator } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator";
-import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
-import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
+import type { AiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
+import { AiSdkGenerator } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";

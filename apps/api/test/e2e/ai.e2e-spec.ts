@@ -6,7 +6,7 @@ import request from "supertest";
 import { assert } from "vitest";
 
 import { QUOTA_LEDGER, type QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 /**
  * AI 모듈 E2E 테스트
  *

@@ -3,15 +3,15 @@ import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
 import { and, eq } from "drizzle-orm";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import {
   TODO_PLAN_READER,
   type TodoPlanReaderPort,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { DigestVoiceNote } from "#api/modules/voice/application/use-cases/notes/digest-voice-note.use-case";
-import { ApplyActionPlan } from "#api/modules/voice/application/use-cases/plans/apply-action-plan.use-case";
-import { PurgePlanApplications } from "#api/modules/voice/application/use-cases/plans/purge-plan-applications.use-case";
-import { CreateQuickPlan } from "#api/modules/voice/application/use-cases/quick-plans/create-quick-plan.use-case";
+import { ApplyActionPlan } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
+import { CreateQuickPlan } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
+import { PurgePlanApplications } from "#api/modules/voice/action-plans/application/use-cases/purge-plan-applications.use-case";
+import { DigestVoiceNote } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   memo as memoTable,

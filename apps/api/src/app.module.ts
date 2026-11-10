@@ -8,9 +8,9 @@ import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
 import { AccessModule } from "#api/modules/access/access.module";
-import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
-import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/reports/ai-assistance-reports.public";
+import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/suggestions/ai-assistance-suggestions.public";
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementModule } from "#api/modules/engagement/engagement.module";

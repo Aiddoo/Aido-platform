@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

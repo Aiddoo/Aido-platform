@@ -8,7 +8,7 @@
 import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import {

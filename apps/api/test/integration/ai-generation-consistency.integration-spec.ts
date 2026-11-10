@@ -9,20 +9,20 @@ import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infra
 import type {
   AiGenerationRequest,
   AiGenerationResult,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
-import type { SuggestionTodoCreatorPort } from "#api/modules/ai-assistance/application/ports/suggestions/suggestion-todo-creator.port";
-import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
-import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
-import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
-import { HandleSuggestionAction } from "#api/modules/ai-assistance/application/use-cases/suggestions/handle-suggestion-action.use-case";
-import { AiReportJobName } from "#api/modules/ai-assistance/infrastructure/jobs/reports/ai-report-queue";
-import { AiSuggestionJobName } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/ai-suggestion-queue";
-import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-ai-report.repository";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
-import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
-import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import { GenerateReport } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { AiReportJobName } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
+import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-ai-report.repository";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
+import type { SuggestionTodoCreatorPort } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion-todo-creator.port";
+import type { CreateSuggestionInput } from "#api/modules/ai-assistance/suggestions/application/ports/suggestion.repository.port";
+import { SuggestionContextBuilder } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
+import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { HandleSuggestionAction } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { AiSuggestionJobName } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
+import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
+import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";

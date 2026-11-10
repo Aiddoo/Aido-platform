@@ -1,8 +1,8 @@
 import { type FactoryProvider, Logger } from "@nestjs/common";
 
 import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
-import { USER_LOCALE_PREFERENCE_READER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { ACTION_PLAN_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-planning.public";
+import { USER_LOCALE_PREFERENCE_READER } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+import { ACTION_PLAN_GENERATOR } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
 import { PlanMemoWriterPort } from "#api/modules/notes/memos/notes-memos.public";
 import {
   STAGED_TODO_CREATOR,
@@ -17,17 +17,17 @@ import {
   UNIT_OF_WORK,
 } from "#api/shared/application/ports/index";
 
-import { PLAN_APPLICATION_REPOSITORY } from "./application/ports/plans/plan-application.repository.port.js";
+import { PLAN_APPLICATION_REPOSITORY } from "./action-plans/application/ports/plan-application.repository.port.js";
 import {
   QUICK_PLAN_RESULT_REPLAY,
   VOICE_NOTE_DIGEST_RESULT_REPLAY,
-} from "./application/ports/plans/plan-result-replay.port.js";
-import { PLANNING_CONTEXT_READER } from "./application/ports/plans/planning-context.reader.port.js";
-import { ChargedPlanRunner } from "./application/services/plans/charged-plan-runner.js";
-import { DigestVoiceNote } from "./application/use-cases/notes/digest-voice-note.use-case.js";
-import { ApplyActionPlan } from "./application/use-cases/plans/apply-action-plan.use-case.js";
-import { PurgePlanApplications } from "./application/use-cases/plans/purge-plan-applications.use-case.js";
-import { CreateQuickPlan } from "./application/use-cases/quick-plans/create-quick-plan.use-case.js";
+} from "./action-plans/application/ports/plan-result-replay.port.js";
+import { PLANNING_CONTEXT_READER } from "./action-plans/application/ports/planning-context.reader.port.js";
+import { ApplyActionPlan } from "./action-plans/application/use-cases/apply-action-plan.use-case.js";
+import { CreateQuickPlan } from "./action-plans/application/use-cases/create-quick-plan.use-case.js";
+import { PurgePlanApplications } from "./action-plans/application/use-cases/purge-plan-applications.use-case.js";
+import { ChargedPlanRunner } from "./action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter.js";
+import { DigestVoiceNote } from "./voice-notes/application/use-cases/digest-voice-note.use-case.js";
 
 type RunnerDependencies = ConstructorParameters<typeof ChargedPlanRunner>[0];
 type QuickPlanDependencies = ConstructorParameters<typeof CreateQuickPlan>[0];

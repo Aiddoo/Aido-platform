@@ -13,11 +13,11 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";

@@ -27,13 +27,13 @@ import { vi } from "vitest";
 import {
   TODO_STATS_READER,
   type TodoStatsReaderPort,
-} from "#api/modules/ai-assistance/application/ports/reports/todo-stats.reader.port";
-import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
+} from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
 import type {
   AggregatedReportData,
   AggregateParams,
-} from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
+} from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/reports/domain/report-aggregation.domain-service";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";

@@ -2,8 +2,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 import { uniq, withTimeout } from "es-toolkit";
 
-import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
-import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/reports/ai-assistance-reports.public";
+import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/suggestions/ai-assistance-suggestions.public";
 import { ACCOUNT_PURGE_QUEUE } from "#api/modules/identity/users/identity-users.public";
 import {
   INVITE_MAINTENANCE_QUEUE,

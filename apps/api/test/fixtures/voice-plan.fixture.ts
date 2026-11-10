@@ -1,12 +1,12 @@
 import { mock } from "vitest-mock-extended";
 
-import { ActionPlanGenerator } from "#api/modules/ai-assistance/application/services/planning/action-plan-generator.service";
-import type { PlanResultReplayPort } from "#api/modules/voice/application/ports/plans/plan-result-replay.port";
+import { ActionPlanGenerator } from "#api/modules/ai-assistance/planning/infrastructure/adapters/ai-action-plan-generator.adapter";
+import type { PlanResultReplayPort } from "#api/modules/voice/action-plans/application/ports/plan-result-replay.port";
 import type {
   PlanningContext,
   PlanningContextReaderPort,
-} from "#api/modules/voice/application/ports/plans/planning-context.reader.port";
-import { ChargedPlanRunner } from "#api/modules/voice/application/services/plans/charged-plan-runner";
+} from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
+import { ChargedPlanRunner } from "#api/modules/voice/action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 

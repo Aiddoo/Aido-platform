@@ -4,17 +4,17 @@ import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
 import { DAYS_OF_WEEK, TODO_VISIBILITIES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { memoDraftSchema } from "#api/modules/ai-assistance/application/prompts/parsing/parse-memo/schema";
-import { todoDraftSchema } from "#api/modules/ai-assistance/application/prompts/parsing/parse-todo/schema";
-import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/application/prompts/parsing/schedule/schedule-expression.schema";
-import { quickPlanDraftSchema } from "#api/modules/ai-assistance/application/prompts/planning/quick-plan/schema";
-import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/application/prompts/planning/voice-note-digest/schema";
+import { memoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-draft.wire";
+import { todoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-todo-draft.wire";
+import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/parsing/application/messages/schedule-expression.wire";
+import { quickPlanDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-draft.wire";
+import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-draft.wire";
+import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
 import {
   resolvePlanSchedule,
   resolveTodoSchedule,
   type ScheduleClock,
-} from "#api/modules/ai-assistance/domain/services/parsing/resolve-todo-schedule";
-import type { NormalizedActionPlan } from "#api/modules/ai-assistance/domain/types/planning/action-plan-draft.types";
+} from "#api/modules/ai-assistance/shared/domain/todo-schedule.domain-service";
 import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
 
 /** golden 묶음. mixed는 한국어·영어를 섞어 말한 입력이고 locale은 앱 언어다. */

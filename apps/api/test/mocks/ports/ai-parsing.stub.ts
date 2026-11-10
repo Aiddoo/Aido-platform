@@ -1,9 +1,9 @@
-import type { UpcomingTodoReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/upcoming-todo-reader.port";
-import type { UserCategoryReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/user-category-reader.port";
 import type {
   UserLocalePreference,
   UserLocalePreferenceReaderPort,
-} from "#api/modules/ai-assistance/application/ports/parsing/user-locale-preference.reader.port";
+} from "#api/modules/ai-assistance/generation/application/ports/user-locale-preference.reader.port";
+import type { UpcomingTodoReaderPort } from "#api/modules/ai-assistance/parsing/application/ports/upcoming-todo.reader.port";
+import type { UserCategoryReaderPort } from "#api/modules/ai-assistance/parsing/application/ports/user-category.reader.port";
 
 export class StubAiUserCategoryReader implements UserCategoryReaderPort {
   readonly categories = new Map<string, Array<{ id: number; name: string }>>();

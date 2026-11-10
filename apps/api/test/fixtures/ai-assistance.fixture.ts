@@ -5,12 +5,12 @@ import type {
   AiGenerationRequest,
   AiGenerationResult,
   AiGeneratorPort,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
-import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
-import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
-import type { SuggestionPick } from "#api/modules/ai-assistance/domain/services/suggestions/suggestion-candidates";
-import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import { GenerateReport } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { SuggestionContextBuilder } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
+import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
+import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {

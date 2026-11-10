@@ -3,31 +3,30 @@ import { Module, type Provider } from "@nestjs/common";
 import { z } from "zod";
 
 import { AccessModule } from "#api/modules/access/access-quota.public";
-import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/ai-assistance-planning.public";
+import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
 import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 
-import { PLAN_APPLICATION_REPOSITORY } from "./application/ports/plans/plan-application.repository.port.js";
+import { PLAN_APPLICATION_REPOSITORY } from "./action-plans/application/ports/plan-application.repository.port.js";
 import {
   QUICK_PLAN_RESULT_REPLAY,
   VOICE_NOTE_DIGEST_RESULT_REPLAY,
-} from "./application/ports/plans/plan-result-replay.port.js";
-import { PLANNING_CONTEXT_READER } from "./application/ports/plans/planning-context.reader.port.js";
+} from "./action-plans/application/ports/plan-result-replay.port.js";
+import { PLANNING_CONTEXT_READER } from "./action-plans/application/ports/planning-context.reader.port.js";
 import {
   InMemoryPlanResultReplayAdapter,
   PLAN_RESULT_REPLAY_MAX_ITEMS,
   PLAN_RESULT_REPLAY_TTL_MS,
-} from "./infrastructure/adapters/plans/in-memory-plan-result-replay.adapter.js";
-import { PlanningContextReader } from "./infrastructure/adapters/plans/planning-context.reader.js";
-import { PlanApplicationCleanupJob } from "./infrastructure/jobs/plans/plan-application-cleanup.job.js";
-import { PlanApplicationCleanupProcessor } from "./infrastructure/jobs/plans/plan-application-cleanup.processor.js";
-import { DrizzlePlanApplicationRepository } from "./infrastructure/persistence/plans/drizzle-plan-application.repository.js";
-import { ActionPlanController } from "./presentation/controllers/action-plans/v1/action-plan.controller.js";
-import { QuickPlanController } from "./presentation/controllers/quick-plans/v1/quick-plan.controller.js";
-import { VoiceNoteController } from "./presentation/controllers/voice-notes/v1/voice-note.controller.js";
+} from "./action-plans/infrastructure/adapters/in-memory-plan-result-replay.adapter.js";
+import { PlanningContextReader } from "./action-plans/infrastructure/adapters/planning-context-reader.adapter.js";
+import { PlanApplicationCleanupProcessor } from "./action-plans/infrastructure/jobs/plan-application-cleanup.processor.js";
+import { PlanApplicationCleanupJob } from "./action-plans/infrastructure/jobs/plan-application-cleanup.scheduler.js";
+import { DrizzlePlanApplicationRepository } from "./action-plans/infrastructure/persistence/drizzle-plan-application.repository.js";
+import { ActionPlanController } from "./action-plans/presentation/http/v1/action-plan.controller.js";
+import { QuickPlanController } from "./action-plans/presentation/http/v1/quick-plan.controller.js";
 import {
   applyActionPlanProvider,
   chargedPlanRunnerProvider,
@@ -35,6 +34,7 @@ import {
   digestVoiceNoteProvider,
   purgePlanApplicationsProvider,
 } from "./voice-application.providers.js";
+import { VoiceNoteController } from "./voice-notes/presentation/http/v1/voice-note.controller.js";
 import { PLAN_RESULT_CACHE } from "./voice.constants.js";
 
 const replayProviders: Provider[] = [

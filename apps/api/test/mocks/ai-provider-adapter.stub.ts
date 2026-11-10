@@ -4,12 +4,12 @@ import type { AiProviderId } from "@aido/api/vocabulary";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 
-import type { AiFailureKind } from "#api/modules/ai-assistance/application/ports/generation/ai-generation.errors";
+import type { AiFailureKind } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
 import type {
   AiProviderAdapter,
   AiProviderModel,
-} from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
-import { classifyAiSdkError } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-sdk-failure";
+} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
+import { classifyAiSdkError } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-failure.mapper";
 
 /** 한 번의 모델 호출 결과. status는 그 HTTP 상태의 업체 오류다. */
 export type StubModelStep =

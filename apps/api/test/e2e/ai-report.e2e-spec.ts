@@ -3,8 +3,8 @@ import request from "supertest";
 import { assert } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { GenerateReport } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
 /**
  * AI 리포트 모듈 E2E 테스트
  *

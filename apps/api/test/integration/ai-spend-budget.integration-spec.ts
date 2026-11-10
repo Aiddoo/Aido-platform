@@ -4,7 +4,7 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
+import { AiSpendBudget } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";

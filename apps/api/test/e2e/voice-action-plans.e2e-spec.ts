@@ -9,8 +9,8 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { VOICE_NOTE_THROTTLE } from "#api/modules/voice/presentation/controllers/voice-notes/v1/voice-note.controller";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { VOICE_NOTE_THROTTLE } from "#api/modules/voice/voice-notes/presentation/http/v1/voice-note.controller";
 import { user } from "#api/platform/database/schema/index";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";

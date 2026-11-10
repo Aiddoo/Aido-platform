@@ -49,3 +49,5 @@ ignore:
   - apps/api/src/modules/*/application
   - apps/api/src/modules/*/infrastructure
   - apps/api/src/modules/*/presentation
+  - apps/api/src/modules/ai-assistance
+  - apps/api/src/modules/voice

@@ -1,13 +1,13 @@
 import {
   AiGenerationError,
   type AiFailureKind,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generation.errors";
+} from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
   AiGeneratorPort,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import type { TodoDraft } from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import type { TodoDraft } from "#api/modules/ai-assistance/shared/domain/todo-draft.constants";
 import { createTodoDraftResponse, type TodoDraftInput } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiGeneratorOptions {
