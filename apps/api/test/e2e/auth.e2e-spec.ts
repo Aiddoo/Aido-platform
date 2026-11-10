@@ -17,7 +17,6 @@ import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/port
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
 import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   loginAttempt,
@@ -31,14 +30,12 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 describe("인증 E2E", () => {
   let ctx: E2eTestContext;
   let cacheService: CacheService;
-  let _cacheAdapter: ICacheService;
 
   beforeAll(async () => {
     ctx = await createE2eApp();
 
     // CacheService 인스턴스 가져오기
     cacheService = ctx.module.get<CacheService>(CacheService);
-    _cacheAdapter = ctx.module.get<ICacheService>(CACHE_SERVICE);
   }, 60_000);
 
   afterAll(async () => {

@@ -8,7 +8,7 @@ import {
   type CacheWrapTtlMs,
 } from "./cache-store.port.js";
 
-/** 옮기지 않은 Context가 주입받는 옛 진입점. CacheStorePort에 그대로 위임하고 Context를 옮기면 지운다. */
+/** CacheStorePort에 그대로 위임한다. planning·notification·identity·access·social 어댑터가 CacheStorePort로 옮기면 지운다. */
 @Injectable()
 export class CacheService {
   readonly #store: CacheStorePort;

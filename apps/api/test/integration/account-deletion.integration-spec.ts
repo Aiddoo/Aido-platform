@@ -49,7 +49,6 @@ import { SendTransactionalEmailUseCase } from "#api/modules/notification/notific
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
@@ -224,14 +223,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         {
           provide: CacheService,
           useValue: new CacheService(new NoCacheStore()),
-        },
-        {
-          provide: CACHE_SERVICE,
-          useValue: {
-            get: async () => undefined,
-            set: async () => {},
-            del: async () => {},
-          },
         },
         {
           provide: ConfigService,

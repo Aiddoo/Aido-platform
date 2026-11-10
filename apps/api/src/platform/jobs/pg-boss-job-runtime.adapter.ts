@@ -50,6 +50,7 @@ import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
 import { jobKindOf, reportFailedJobAttempt } from "./jobs.alerts.js";
 import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
+// 업무 포트가 아니라 pg-boss 클라이언트 인스턴스라 Symbol 토큰으로 둔다(platform/jobs 어댑터만 주입받는다)
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
 /** health가 읽는 큐 수만 받는다. */

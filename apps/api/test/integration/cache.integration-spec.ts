@@ -27,9 +27,9 @@ import {
   FOLLOW_CACHE_TTL_MS,
 } from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
 
@@ -39,7 +39,7 @@ describe("CacheModule 통합 테스트", () => {
   describe("인메모리 어댑터 (기본 설정)", () => {
     let module: TestingModule;
     let cacheService: CacheService;
-    let cacheAdapter: ICacheService;
+    let cacheStore: CacheStorePort;
 
     beforeAll(async () => {
       module = await Test.createTestingModule({
@@ -61,7 +61,7 @@ describe("CacheModule 통합 테스트", () => {
       }).compile();
 
       cacheService = module.get<CacheService>(CacheService);
-      cacheAdapter = module.get<ICacheService>(CACHE_SERVICE);
+      cacheStore = module.get(CacheStorePort);
     });
 
     afterAll(async () => {
@@ -84,12 +84,12 @@ describe("CacheModule 통합 테스트", () => {
         expect(service).toBeDefined();
       });
 
-      it("ICacheService 어댑터가 제공된다", () => {
+      it("CacheStorePort 저장소가 제공된다", () => {
         // Given
         // 모듈이 컴파일되었음
 
         // When
-        const adapter = cacheAdapter;
+        const adapter = cacheStore;
 
         // Then
         expect(adapter).toBeDefined();
@@ -601,7 +601,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn().mockResolvedValue("mocked-value"),
         set: vi.fn(),
         del: vi.fn(),
@@ -634,7 +634,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn(),
         set: vi.fn(),
         del: vi.fn(),
@@ -747,7 +747,7 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         const service = module.get<CacheService>(CacheService);
-        const adapter = module.get<ICacheService>(CACHE_SERVICE);
+        const adapter = module.get(CacheStorePort);
 
         // Then
         expect(service).toBeDefined();
