@@ -21,6 +21,15 @@ export interface RegisterPushTokenData {
   readonly registeredAt: Temporal.Instant;
 }
 
+export interface KeepPushTokenData {
+  readonly userId: UserId;
+  readonly deviceId: PushDeviceId;
+  readonly sessionId: string | null;
+  readonly payloadVersion: number;
+  readonly appVersion: string | null;
+  readonly keptAt: Temporal.Instant;
+}
+
 // 같은 토큰이 동시에 등록돼 다른 트랜잭션이 먼저 그 토큰을 가져갔다. 원인 DB 오류는 cause로 남긴다
 export class PushTokenRegistrationConflictError extends Error {
   constructor(options?: ErrorOptions) {
@@ -38,6 +47,8 @@ export abstract class PushTokenRepositoryPort {
     readonly token: string | null;
   }): Promise<{ readonly userIds: readonly string[] }>;
   abstract registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord>;
+  // 토큰 없이 온 허용 보고에서 이 기기의 기존 토큰을 그대로 두고 세션·앱 버전만 이번 보고로 맞춘다. 로그아웃 정리가 세션으로 찾기 때문이다
+  abstract keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }>;
   abstract findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]>;
   abstract findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenRecord[]>;
   abstract deletePushTokensByDevice(

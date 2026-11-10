@@ -372,6 +372,51 @@ describe("알림 E2E", () => {
         expect(device).toMatchObject({ permissionStatus: "DENIED", permissionCanAskAgain: false });
       });
 
+      it("기존 등록 기기는 1.15.0 앱의 보고 형태 그대로 와도 토큰을 잃지 않는다", async () => {
+        // Given 1.15.0 앱이 허용 권한과 토큰으로 보고한 기기
+        const user = await ctx.helpers.createVerifiedUser("push-device-keep@test.com", password);
+        const token = "ExponentPushToken[push-device-keep]";
+        const report = (reportedToken: string | null) =>
+          request(ctx.app.getHttpServer())
+            .put("/v1/notifications/push-devices/ios_e2e-keep")
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .set("X-App-Version", "1.15.0")
+            .set("X-App-Build", "150")
+            .set("X-Device-Type", "IOS")
+            .set("X-Timezone", "Asia/Seoul")
+            .set("Accept-Language", "ko")
+            .send({
+              permission: { status: "GRANTED", canAskAgain: false },
+              token: reportedToken,
+              payloadVersion: 2,
+            });
+        await report(token).expect(200);
+
+        // When 토큰 발급이 시간 초과로 실패해 null로 보고한 뒤 같은 토큰으로 두 번 다시 보고한다
+        const failed = await report(null).expect(200);
+        await report(token).expect(200);
+        await report(token).expect(200);
+
+        // Then
+        expect(pushDeviceResponseSchema.parse(failed.body.data)).toMatchObject({
+          hasActiveToken: true,
+          permission: { status: "GRANTED", canAskAgain: false },
+        });
+        const rows = await ctx.testDatabase
+          .getClient()
+          .select()
+          .from(pushToken)
+          .where(eq(pushToken.userId, user.userId));
+        expect(rows).toEqual([
+          expect.objectContaining({
+            deviceId: "ios_e2e-keep",
+            token,
+            isActive: true,
+            appVersion: "1.15.0",
+          }),
+        ]);
+      });
+
       it("deviceId 접두어로 플랫폼을 알 수 없으면 400 NOTIFICATION_1006을 돌려준다", async () => {
         const user = await ctx.helpers.createVerifiedUser("push-device-3@test.com", password);
 

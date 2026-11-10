@@ -104,6 +104,38 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     ]);
   });
 
+  it("허용 기기가 토큰 발급 실패로 null을 보고해도 토큰 행을 지우지 않고 지금 세션으로 옮긴다", async () => {
+    // Given 이전 세션에서 토큰을 등록하고 다시 로그인한 기기
+    const [oldSession, newSession] = [
+      SessionFixture.create({ userId: firstUserId }),
+      SessionFixture.create({ userId: firstUserId }),
+    ];
+    await client.insert(session).values([oldSession, newSession]);
+    const { reportPushDevice } = createReportPushDevice();
+    await reportPushDevice.execute(command({ sessionId: oldSession.id, appVersion: "1.14.2" }));
+
+    // When
+    const report = await reportPushDevice.execute(
+      command({ sessionId: newSession.id, appVersion: "1.15.0", token: null }),
+    );
+
+    // Then
+    expect(report.hasActiveToken).toBe(true);
+    expect(await client.select().from(pushToken)).toEqual([
+      expect.objectContaining({
+        userId: firstUserId,
+        deviceId: "ios_first",
+        token: TOKEN,
+        isActive: true,
+        sessionId: newSession.id,
+        appVersion: "1.15.0",
+      }),
+    ]);
+    expect(await client.select().from(pushDevice)).toEqual([
+      expect.objectContaining({ sessionId: newSession.id, permissionStatus: "GRANTED" }),
+    ]);
+  });
+
   it("계정을 바꿔 로그인한 기기는 이전 사용자의 기기·토큰 행을 지운다", async () => {
     const { reportPushDevice } = createReportPushDevice();
     await reportPushDevice.execute(command({ userId: firstUserId }));
@@ -163,6 +195,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
         return released;
       },
       registerPushToken: (data) => repository.registerPushToken(data),
+      keepPushToken: (data) => repository.keepPushToken(data),
       deletePushTokensByDevice: (userId, deviceId) =>
         repository.deletePushTokensByDevice(userId, deviceId),
     };

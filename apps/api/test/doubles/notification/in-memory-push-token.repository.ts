@@ -1,5 +1,6 @@
 import {
   type FindPushTokensParams,
+  type KeepPushTokenData,
   PushTokenRegistrationConflictError,
   PushTokenRepositoryPort,
   type RegisterPushTokenData,
@@ -50,6 +51,10 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return stored == null ? undefined : toRecord(stored);
   }
 
+  sessionOf(userId: string, deviceId: string): string | null | undefined {
+    return this.#find((row) => row.userId === userId && row.deviceId === deviceId)?.sessionId;
+  }
+
   async releasePushTokenHeldElsewhere(data: {
     readonly userId: UserId;
     readonly deviceId: PushDeviceId;
@@ -96,6 +101,23 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     };
     this.#tokens.set(id, stored);
     return toRecord(stored);
+  }
+
+  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+    const existing = this.#find(
+      (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
+    );
+    if (existing == null) {
+      return { hasActiveToken: false };
+    }
+    this.#tokens.set(existing.id, {
+      ...existing,
+      sessionId: data.sessionId,
+      payloadVersion: data.payloadVersion,
+      appVersion: data.appVersion,
+      updatedAt: data.keptAt,
+    });
+    return { hasActiveToken: existing.isActive };
   }
 
   async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {

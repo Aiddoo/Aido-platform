@@ -13,6 +13,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindPushTokensParams,
+  type KeepPushTokenData,
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
   type RegisterPushTokenData,
@@ -109,6 +110,22 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       }
       throw error;
     }
+  }
+
+  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+    const kept = await this.#db
+      .update(pushToken)
+      .set({
+        sessionId: data.sessionId,
+        payloadVersion: data.payloadVersion,
+        appVersion: data.appVersion,
+        updatedAt: data.keptAt,
+      })
+      .where(
+        and(eq(pushToken.userId, data.userId.value), eq(pushToken.deviceId, data.deviceId.value)),
+      )
+      .returning({ isActive: pushToken.isActive });
+    return { hasActiveToken: kept.some((row) => row.isActive) };
   }
 
   findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {

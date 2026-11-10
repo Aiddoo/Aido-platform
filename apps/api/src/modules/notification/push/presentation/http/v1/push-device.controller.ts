@@ -119,7 +119,8 @@ export class PushDeviceController {
     description: `기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
 
 - 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
-- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
+- 권한이 GRANTED·PROVISIONAL인데 \`token\`이 null이면(발급 실패) 이미 등록된 토큰을 그대로 두고 권한·보고 시각만 갱신합니다.
+- 권한이 DENIED·NOT_DETERMINED면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
 - 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
 - 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.`,
   })
