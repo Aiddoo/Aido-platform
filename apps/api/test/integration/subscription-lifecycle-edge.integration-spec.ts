@@ -8,6 +8,7 @@ import {
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -51,8 +52,8 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
       id: createEntityId(),
       email: "lifecycle-edge@example.com",
       userTag: "EDGE0001",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;

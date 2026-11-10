@@ -58,8 +58,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       id: createEntityId(),
       email,
       userTag: "OTPTEST1",
-      createdAt: at,
-      updatedAt: at,
+      createdAt: atInstant,
+      updatedAt: atInstant,
     });
     await client.insert(userTable).values(user);
     userId = user.id;

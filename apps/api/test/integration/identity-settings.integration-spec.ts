@@ -39,7 +39,10 @@ type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0]
 
 const at = new Date("2027-01-01T12:00:00.000Z");
 const today = new Date("2027-01-01T00:00:00.000Z");
-const yesterday = new Date("2026-12-31T00:00:00.000Z");
+const now = Temporal.Instant.from("2027-01-01T12:00:00.000Z");
+const todayDate = Temporal.PlainDate.from("2027-01-01");
+const yesterdayDate = Temporal.PlainDate.from("2026-12-31");
+const yesterdayStart = Temporal.Instant.from("2026-12-31T00:00:00.000Z");
 const weather = {
   weatherMorningEnabled: false,
   weatherMorningHour: 9,
@@ -79,8 +82,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       id: createEntityId(),
       email: "settings-owner@example.com",
       userTag: "SETPG001",
-      createdAt: at,
-      updatedAt: at,
+      createdAt: now,
+      updatedAt: now,
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -239,7 +242,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await preferences.create(userId);
     await client
       .update(userPreference)
-      .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterday })
+      .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterdayDate })
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
     const notifier = context.module.get<StreakMilestoneNotifierPort>(StreakMilestoneNotifierPort);
@@ -268,7 +271,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
     expect(await preferences.findByUserId(userId)).toEqual(
-      expect.objectContaining({ currentStreak: 3, longestStreak: 3, lastCompletedDate: today }),
+      expect.objectContaining({ currentStreak: 3, longestStreak: 3, lastCompletedDate: todayDate }),
     );
     expect(notification).toHaveBeenCalledExactlyOnceWith(userId);
   });
@@ -278,7 +281,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await preferences.create(userId);
     await client
       .update(userPreference)
-      .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: today })
+      .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate })
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
 
@@ -287,7 +290,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect(await preferences.findByUserId(userId)).toEqual(
-      expect.objectContaining({ currentStreak: 3, longestStreak: 4, lastCompletedDate: today }),
+      expect.objectContaining({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate }),
     );
   });
 
@@ -338,8 +341,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   it("일반·push 마케팅 동의의 동시 부분 변경은 서로와 약관을 덮어쓰지 않는다", async () => {
     // Given
     await consents.create(userId, {
-      termsAgreedAt: yesterday,
-      privacyAgreedAt: yesterday,
+      termsAgreedAt: yesterdayStart,
+      privacyAgreedAt: yesterdayStart,
       agreedTermsVersion: "1.0.0",
     });
     const lock = await holdRowLock((transaction) =>
@@ -350,8 +353,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .for("update"),
     );
     const requests = Promise.allSettled([
-      consents.upsertMarketingConsent(userId, { agreedAt: at }),
-      consents.upsertMarketingPushConsent(userId, { agreedAt: at }),
+      consents.upsertMarketingConsent(userId, { agreedAt: now }),
+      consents.upsertMarketingPushConsent(userId, { agreedAt: now }),
     ]);
 
     // When
@@ -366,11 +369,11 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
     expect(await consents.findByUserId(userId)).toEqual(
       expect.objectContaining({
-        termsAgreedAt: yesterday,
-        privacyAgreedAt: yesterday,
+        termsAgreedAt: yesterdayStart,
+        privacyAgreedAt: yesterdayStart,
         agreedTermsVersion: "1.0.0",
-        marketingAgreedAt: at,
-        marketingPushAgreedAt: at,
+        marketingAgreedAt: now,
+        marketingPushAgreedAt: now,
       }),
     );
 
@@ -381,8 +384,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     expect(await consents.findByUserId(userId)).toEqual(
       expect.objectContaining({
         marketingAgreedAt: null,
-        marketingPushAgreedAt: at,
-        termsAgreedAt: yesterday,
+        marketingPushAgreedAt: now,
+        termsAgreedAt: yesterdayStart,
       }),
     );
   });
@@ -403,7 +406,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       await transaction.insert(userTable).values(user);
       await seed.execute({
         userId: user.id,
-        consent: { termsAgreedAt: at, privacyAgreedAt: at, agreedTermsVersion: "1.0.0" },
+        consent: { termsAgreedAt: now, privacyAgreedAt: now, agreedTermsVersion: "1.0.0" },
       });
       throw new Error("프로비저닝 후속 단계 실패");
     });

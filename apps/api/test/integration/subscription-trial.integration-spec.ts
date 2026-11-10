@@ -91,8 +91,8 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       email: `trial-${tag.toLowerCase()}@example.com`,
       userTag: tag,
       subscriptionStatus: "FREE",
-      createdAt: trialStartedAt,
-      updatedAt: trialStartedAt,
+      createdAt: instantFromDate(trialStartedAt),
+      updatedAt: instantFromDate(trialStartedAt),
     });
     await client.insert(userTable).values(user);
     await client
@@ -275,7 +275,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
           columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
           where: { id: userId },
         }),
-      ).toEqual({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: nextYear });
+      ).toEqual({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: instantFromDate(nextYear) });
       expect(events.map((event) => event.lifecycle)).toEqual(["trial_started", "trial_converted"]);
     });
   });

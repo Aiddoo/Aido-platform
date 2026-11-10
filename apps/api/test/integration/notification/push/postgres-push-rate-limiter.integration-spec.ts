@@ -30,6 +30,7 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
       .values({
         email: `rate-limit-${suffix}@example.com`,
         userTag: suffix.padEnd(8, "X").slice(0, 8),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "ACTIVE",
       })
       .returning({ id: user.id });

@@ -47,6 +47,7 @@ import {
 } from "#api/platform/database/schema/index";
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
@@ -118,7 +119,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     suggestions = new DrizzleSuggestionRepository(fixture.txHost);
     activity = new DrizzleSuggestionActivityReader(fixture.txHost);
     reports = new DrizzleAiReportRepository(fixture.txHost);
-    users = new DrizzleUserRepository(fixture.txHost);
+    users = new DrizzleUserRepository(fixture.txHost, new DateClock());
     userId = createEntityId();
     await client
       .insert(userTable)
@@ -377,7 +378,10 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     async ({ kind, offsetMs, expected }) => {
       // Given
       const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
-      await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
+      await patchUser({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: instantFromDate(grantEndsAt),
+      });
       vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
       const provider = new FakeAiGenerator();
 
@@ -431,8 +435,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   it.each([
     { subscriptionStatus: "FREE" },
     { subscriptionStatus: "EXPIRED" },
-    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: CURRENT_TIME },
-    { role: "ADMIN", status: "SUSPENDED", deletedAt: CURRENT_TIME },
+    { subscriptionStatus: "ACTIVE", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
+    { role: "ADMIN", status: "SUSPENDED", deletedAt: instantFromDate(CURRENT_TIME) },
   ] satisfies Partial<User>[])(
     "구독 캐시가 ACTIVE여도 현재 $subscriptionStatus/$status 사용자의 worker는 실행하지 않는다",
     async (patch) => {

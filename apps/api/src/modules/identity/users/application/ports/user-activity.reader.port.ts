@@ -1,7 +1,7 @@
 export interface UserActivity {
   readonly userId: string;
-  readonly lastActiveAt: Date | null;
-  readonly signedUpAt: Date;
+  readonly lastActiveAt: Temporal.Instant | null;
+  readonly signedUpAt: Temporal.Instant;
   /** UserPreference.timezone. 설정 행이 없으면 null이다. */
   readonly timezone: string | null;
 }

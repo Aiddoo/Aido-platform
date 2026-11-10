@@ -5,7 +5,6 @@ import { eq, sum } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { resourceBonus } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { AccessStateReaderPort } from "../../application/ports/access-state.reader.port.js";
 import type { AccessState } from "../../domain/entitlement.domain-service.js";
@@ -69,7 +68,7 @@ export class DrizzleAccessStateReader extends AccessStateReaderPort {
 function toAccessState(row: {
   readonly role: AccessState["role"];
   readonly subscriptionStatus: AccessState["subscriptionStatus"];
-  readonly subscriptionExpiresAt: Date | null;
+  readonly subscriptionExpiresAt: Temporal.Instant | null;
   readonly subscriptions: ReadonlyArray<{
     readonly status: string;
     readonly expiresAt: Temporal.Instant;
@@ -80,9 +79,7 @@ function toAccessState(row: {
     role: row.role,
     subscriptionStatus: row.subscriptionStatus,
     accessDeadline: resolvePremiumAccessDeadline({
-      // User 시각 칸은 identity가 아직 Date로 둔다
-      subscriptionExpiresAt:
-        row.subscriptionExpiresAt == null ? null : instantFromDate(row.subscriptionExpiresAt),
+      subscriptionExpiresAt: row.subscriptionExpiresAt,
       storeEntitlements: row.subscriptions,
     }),
   };

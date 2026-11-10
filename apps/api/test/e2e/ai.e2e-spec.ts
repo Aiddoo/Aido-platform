@@ -21,6 +21,7 @@ import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assist
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 import { user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import {
   createMemoDraftResponse,
   createTodoDraftResponse,
@@ -72,7 +73,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: 0,
-        aiUsageResetAt: new Date(),
+        aiUsageResetAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .where(eq(user.id, userId));
   }
@@ -86,7 +87,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: count,
-        aiUsageResetAt: new Date(),
+        aiUsageResetAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .where(eq(user.id, userId));
   }
@@ -100,7 +101,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: count,
-        aiUsageResetAt: resetAt,
+        aiUsageResetAt: instantFromDate(resetAt),
       })
       .where(eq(user.id, userId));
   }

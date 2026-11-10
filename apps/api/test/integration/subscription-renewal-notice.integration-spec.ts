@@ -83,8 +83,8 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       email: `renewal-${tag.toLowerCase()}@example.com`,
       userTag: tag,
       subscriptionStatus: "FREE",
-      createdAt: periodStartedAt,
-      updatedAt: periodStartedAt,
+      createdAt: instantFromDate(periodStartedAt),
+      updatedAt: instantFromDate(periodStartedAt),
     });
     await client.insert(userTable).values(user);
     await client

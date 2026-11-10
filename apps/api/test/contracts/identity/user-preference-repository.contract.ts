@@ -34,7 +34,7 @@ const INITIAL_STREAK: StreakState = { currentStreak: 0, longestStreak: 0, lastCo
 const SAVED_STREAK: StreakState = {
   currentStreak: 2,
   longestStreak: 5,
-  lastCompletedDate: new Date("2026-11-09T00:00:00.000Z"),
+  lastCompletedDate: Temporal.PlainDate.from("2026-11-09"),
 };
 
 export function describeUserPreferenceRepositoryContract(
@@ -254,7 +254,7 @@ export function describeUserPreferenceRepositoryContract(
       const next = {
         currentStreak: 3,
         longestStreak: 5,
-        lastCompletedDate: new Date("2026-11-10T00:00:00.000Z"),
+        lastCompletedDate: Temporal.PlainDate.from("2026-11-10"),
       };
 
       // When

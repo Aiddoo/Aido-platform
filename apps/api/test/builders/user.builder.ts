@@ -26,7 +26,7 @@ export class UserBuilder {
   private data: User;
 
   private constructor() {
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     this.data = {
       id: `user-${crypto.randomUUID().slice(0, 8)}`,
       email: `test-${Date.now()}@example.com`,
@@ -105,7 +105,7 @@ export class UserBuilder {
   /** 이메일 인증 완료 상태로 설정 */
   verified(): UserBuilder {
     this.data.status = "ACTIVE";
-    this.data.emailVerifiedAt = new Date();
+    this.data.emailVerifiedAt = Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 
@@ -123,7 +123,7 @@ export class UserBuilder {
 
   // === 구독 관련 ===
 
-  withSubscription(status: SubscriptionStatus, expiresAt?: Date): UserBuilder {
+  withSubscription(status: SubscriptionStatus, expiresAt?: Temporal.Instant): UserBuilder {
     this.data.subscriptionStatus = status;
     this.data.subscriptionExpiresAt = expiresAt ?? null;
     return this;
@@ -132,33 +132,35 @@ export class UserBuilder {
   /** 프리미엄 구독 사용자 */
   asPremium(expiresInDays = 30): UserBuilder {
     this.data.subscriptionStatus = "ACTIVE";
-    this.data.subscriptionExpiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    this.data.subscriptionExpiresAt = Temporal.Instant.fromEpochMilliseconds(Date.now()).add({
+      hours: expiresInDays * 24,
+    });
     return this;
   }
 
   // === AI 사용량 관련 ===
 
-  withAiUsage(count: number, resetAt?: Date): UserBuilder {
+  withAiUsage(count: number, resetAt?: Temporal.Instant): UserBuilder {
     this.data.aiUsageCount = count;
-    this.data.aiUsageResetAt = resetAt ?? new Date();
+    this.data.aiUsageResetAt = resetAt ?? Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 
   // === 타임스탬프 관련 ===
 
-  withCreatedAt(date: Date): UserBuilder {
+  withCreatedAt(date: Temporal.Instant): UserBuilder {
     this.data.createdAt = date;
     return this;
   }
 
-  withLastLoginAt(date: Date): UserBuilder {
+  withLastLoginAt(date: Temporal.Instant): UserBuilder {
     this.data.lastLoginAt = date;
     return this;
   }
 
   /** Soft delete 처리된 사용자 (status도 SUSPENDED로 설정) */
-  deleted(deletedAt?: Date): UserBuilder {
-    this.data.deletedAt = deletedAt ?? new Date();
+  deleted(deletedAt?: Temporal.Instant): UserBuilder {
+    this.data.deletedAt = deletedAt ?? Temporal.Instant.fromEpochMilliseconds(Date.now());
     this.data.status = "SUSPENDED";
     return this;
   }

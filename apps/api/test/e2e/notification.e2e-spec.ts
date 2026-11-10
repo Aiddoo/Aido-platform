@@ -1027,10 +1027,13 @@ describe("알림 E2E", () => {
       const client = ctx.testDatabase.getClient();
       await client
         .insert(userConsent)
-        .values({ userId: user.userId, marketingPushAgreedAt: new Date() })
+        .values({
+          userId: user.userId,
+          marketingPushAgreedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        })
         .onConflictDoUpdate({
           target: userConsent.userId,
-          set: { marketingPushAgreedAt: new Date() },
+          set: { marketingPushAgreedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()) },
         });
       const tokenPort = ctx.app.get(MarketingPushOptOutTokenPort);
 

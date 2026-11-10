@@ -13,6 +13,7 @@ import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/pl
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 
@@ -50,8 +51,8 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           id: userId,
           email: "planning-category-owner@example.com",
           userTag: "PLANCA01",
-          createdAt: at,
-          updatedAt: at,
+          createdAt: instantFromDate(at),
+          updatedAt: instantFromDate(at),
         }),
       );
     categoryId = (await insertCategory({ name: "기존", color: "#FFB3B3", sortOrder: 0 })).id.value;

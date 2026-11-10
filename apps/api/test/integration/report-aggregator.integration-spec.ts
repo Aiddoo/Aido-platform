@@ -386,7 +386,12 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     await createTodo({ startDate: params.endDate, completed: true, completedAt: params.endDate });
     const [otherUser] = await client
       .insert(user)
-      .values({ email: "other-aggregator@example.com", userTag: "OTHER001", status: "ACTIVE" })
+      .values({
+        email: "other-aggregator@example.com",
+        userTag: "OTHER001",
+        status: "ACTIVE",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (otherUser === undefined) {
       throw new Error("other user fixture 누락");

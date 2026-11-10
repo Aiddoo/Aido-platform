@@ -53,7 +53,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
           timezone: options.timezone ?? "Asia/Seoul",
           locale: "ko",
         },
-        consent: { id: createEntityId(), marketingPushAgreedAt: new Date() },
+        consent: {
+          id: createEntityId(),
+          marketingPushAgreedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
         ...(options.withPushToken === true && {
           pushTokens: {
             token: `ExponentPushToken[${email}]`,

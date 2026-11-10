@@ -35,7 +35,6 @@ import {
   user,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { createTestClient, type TestDatabaseClient } from "#test/setup/database-context";
 
 import { assertTodoCommentDevelopmentFixtureTarget } from "../setup/todo-comment-development-fixture-target.guard.js";
@@ -250,15 +249,17 @@ async function provisionFixtureActor(input: {
         email: input.person.email,
         userTag: input.person.userTag,
         status: "ACTIVE",
-        emailVerifiedAt: instantToDate(now),
+        emailVerifiedAt: now,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: user.email,
         set: {
           userTag: input.person.userTag,
           status: "ACTIVE",
-          emailVerifiedAt: instantToDate(now),
+          emailVerifiedAt: now,
           deletedAt: null,
+          updatedAt: now,
         },
       })
       .returning();

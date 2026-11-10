@@ -19,6 +19,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { digestDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -71,10 +72,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       email: "voice-plan@example.com",
       userTag: "VOICEP01",
       aiUsageCount: 0,
-      aiUsageResetAt: AT,
+      aiUsageResetAt: instantFromDate(AT),
       subscriptionStatus: "FREE",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -538,8 +539,8 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         id: createEntityId(),
         email: "voice-plan-other@example.com",
         userTag: "VOICEP02",
-        createdAt: AT,
-        updatedAt: AT,
+        createdAt: instantFromDate(AT),
+        updatedAt: instantFromDate(AT),
       });
       await client.insert(userTable).values(other);
       const memoId = await insertMemo(other.id);

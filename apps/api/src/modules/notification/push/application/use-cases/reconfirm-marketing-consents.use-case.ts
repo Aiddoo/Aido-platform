@@ -9,6 +9,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../reminders/domain/notification-campaign.constants.js";
@@ -32,7 +33,7 @@ export const MARKETING_CONSENT_RECONFIRM = {
 } as const;
 
 export interface ReconfirmMarketingConsentsInput {
-  readonly now: Date;
+  readonly now: Temporal.Instant;
 }
 
 export interface ReconfirmMarketingConsentsResult {
@@ -77,7 +78,7 @@ export class ReconfirmMarketingConsentsUseCase {
       });
       const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
         targets.map((target) => target.userId),
-        input.now,
+        instantToDate(input.now),
       );
       const daytimeUserIds = targets
         .map((target) => target.userId)
@@ -100,7 +101,11 @@ export class ReconfirmMarketingConsentsUseCase {
     return { notifiedCount, hasRemaining };
   }
 
-  async #claimAndNotify(userIds: readonly string[], cutoff: Date, now: Date): Promise<number> {
+  async #claimAndNotify(
+    userIds: readonly string[],
+    cutoff: Temporal.Instant,
+    now: Temporal.Instant,
+  ): Promise<number> {
     const [locales, timezones] = await Promise.all([
       this.#dependencies.localeReader.getLocales(userIds),
       this.#dependencies.timezoneReader.getTimezones(userIds),
@@ -134,7 +139,10 @@ export class ReconfirmMarketingConsentsUseCase {
     if (agreedAt == null) {
       return [];
     }
-    const message = createMarketingConsentReconfirmNotificationMessage({ ...context, agreedAt });
+    const message = createMarketingConsentReconfirmNotificationMessage({
+      ...context,
+      agreedAt: instantToDate(agreedAt),
+    });
     return [
       {
         userId: recipient.userId,

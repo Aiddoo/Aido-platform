@@ -57,7 +57,7 @@ export class UserNotificationSettingsAdapter
   }
 
   findMarketingReconfirmTargets(params: {
-    readonly cutoff: Date;
+    readonly cutoff: Temporal.Instant;
     readonly afterUserId?: string;
     readonly limit: number;
   }): Promise<MarketingReconfirmTarget[]> {
@@ -66,7 +66,7 @@ export class UserNotificationSettingsAdapter
 
   claimMarketingReconfirm(
     userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     return this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
   }

@@ -6,6 +6,7 @@ import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/
 import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -92,7 +93,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(profile.body.data.subscriptionStatus).toBe("ACTIVE");
     expect(await storedUser(user.userId)).toMatchObject({
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: futureExpiry,
+      subscriptionExpiresAt: instantFromDate(futureExpiry),
     });
     expect(
       await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
@@ -138,7 +139,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     await premiumPreference(user.accessToken).expect(200);
     expect(await storedUser(user.userId)).toMatchObject({
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: futureExpiry,
+      subscriptionExpiresAt: instantFromDate(futureExpiry),
     });
     expect(
       await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
@@ -178,7 +179,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       await premiumPreference(user.accessToken).expect(200);
       expect(await storedUser(user.userId)).toMatchObject({
         subscriptionStatus: "ACTIVE",
-        subscriptionExpiresAt: futureExpiry,
+        subscriptionExpiresAt: instantFromDate(futureExpiry),
       });
       expect(
         await context.testDatabase.getClient().select().from(subscriptionEventReceipt),

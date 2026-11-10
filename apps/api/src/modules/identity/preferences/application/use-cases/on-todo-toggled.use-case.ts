@@ -1,10 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { startOfDay } from "#api/shared/domain/date/utils/range";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
@@ -41,10 +38,10 @@ export class OnTodoToggledUseCase {
 
   async execute(input: OnTodoToggledCommand): Promise<void> {
     try {
-      const today = startOfDayInTimezone(
-        instantToDate(this.#dependencies.clock.now()),
-        input.timezone ?? "UTC",
-      );
+      const today = this.#dependencies.clock
+        .now()
+        .toZonedDateTimeISO(resolveTimezone(input.timezone ?? "UTC"))
+        .toPlainDate();
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
         const stats = await this.#statsForDay(input.userId, today);
         if (stats.total === 0) {
@@ -102,14 +99,14 @@ export class OnTodoToggledUseCase {
     }
   }
 
-  async #statsForDay(userId: string, date: Date) {
-    return this.#dependencies.statsReader.countForDay(userId, startOfDay(date));
+  async #statsForDay(userId: string, date: Temporal.PlainDate) {
+    return this.#dependencies.statsReader.countForDay(userId, date);
   }
 
   async #planTransition(
     userId: string,
     preference: UserPreference,
-    today: Date,
+    today: Temporal.PlainDate,
     allCompleted: boolean,
   ): Promise<StreakCompletionPlan | null> {
     if (allCompleted) {
@@ -119,7 +116,7 @@ export class OnTodoToggledUseCase {
       return null;
     }
 
-    const yesterdayStats = await this.#statsForDay(userId, subtractDays(1, today));
+    const yesterdayStats = await this.#statsForDay(userId, today.subtract({ days: 1 }));
     const hadYesterdayCompletion =
       yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
     const nextState = preference.planTodoUncompletion(today, hadYesterdayCompletion);

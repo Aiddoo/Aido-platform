@@ -77,7 +77,7 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,
-        createdAt: JOINED_AT,
+        createdAt: instantFromDate(JOINED_AT),
       }),
     );
     return id;

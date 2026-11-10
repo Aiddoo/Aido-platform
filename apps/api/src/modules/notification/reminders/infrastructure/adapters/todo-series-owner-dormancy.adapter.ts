@@ -9,6 +9,7 @@ import { UserActivityReaderPort } from "#api/modules/identity/identity-user-acce
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 
@@ -28,8 +29,17 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
   }
 
   async findDormantSince(userId: string): Promise<string | null> {
-    const [owner] = await this.#activityReader.findActiveAccounts([userId]);
-    if (owner == null || !isSeriesOwnerDormant(owner, now())) {
+    const [account] = await this.#activityReader.findActiveAccounts([userId]);
+    if (account == null) {
+      return null;
+    }
+    // 휴면 판정은 아직 Date로 계산한다
+    const owner = {
+      lastActiveAt: account.lastActiveAt == null ? null : instantToDate(account.lastActiveAt),
+      signedUpAt: instantToDate(account.signedUpAt),
+      timezone: account.timezone,
+    };
+    if (!isSeriesOwnerDormant(owner, now())) {
       return null;
     }
     const { tier } = await this.#entitlementReader.getAccessSnapshot(userId);

@@ -3,17 +3,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import { UserSettingsProvisionerPort } from "#api/modules/identity/identity-settings.public";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   ProvisioningConsent,
   UserProvisioningSeederPort,
 } from "../../application/ports/user-provisioning-seeder.port.js";
-
-// 설정 Context의 동의 칸은 아직 Date라 경계에서 바꾼다
-function dateOrUndefined(instant: Temporal.Instant | undefined): Date | undefined {
-  return instant == null ? undefined : instantToDate(instant);
-}
 
 /**
  * UserProvisioningSeederPort 어댑터 — 설정과 기본 카테고리 생성을 조정한다.
@@ -35,13 +29,7 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
   }
 
   seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
-    return this.#userSettingsProvisioner.seedDefaults(userId, {
-      termsAgreedAt: dateOrUndefined(consent.termsAgreedAt),
-      privacyAgreedAt: dateOrUndefined(consent.privacyAgreedAt),
-      agreedTermsVersion: consent.agreedTermsVersion,
-      marketingAgreedAt: dateOrUndefined(consent.marketingAgreedAt),
-      marketingPushAgreedAt: dateOrUndefined(consent.marketingPushAgreedAt),
-    });
+    return this.#userSettingsProvisioner.seedDefaults(userId, consent);
   }
 
   async seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void> {

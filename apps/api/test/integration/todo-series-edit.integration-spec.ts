@@ -33,7 +33,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
-import { toIsoString } from "#api/shared/domain/time/instant";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
@@ -250,7 +250,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         await start();
         await client
           .update(userTable)
-          .set({ ...patch, lastActiveAt: AT })
+          .set({ ...patch, lastActiveAt: instantFromDate(AT) })
           .where(eq(userTable.id, userId));
         vi.setSystemTime(new Date("2027-01-05T00:00:00.000Z"));
         // When

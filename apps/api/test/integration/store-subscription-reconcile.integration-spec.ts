@@ -8,6 +8,7 @@ import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscri
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -101,7 +102,10 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
 
   it("같은 1분 안의 웹훅은 대조 잡 하나로 묶이고, 대조가 놓친 갱신·해지 철회를 스토어 상태로 맞춘다", async () => {
     // Given
-    const user = UserFixture.create({ id: createEntityId(), createdAt: startedAt });
+    const user = UserFixture.create({
+      id: createEntityId(),
+      createdAt: instantFromDate(startedAt),
+    });
     await client.insert(userTable).values(user);
     await webhook.receive({
       body: storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),

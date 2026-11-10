@@ -2421,7 +2421,11 @@ describe("인증 E2E", () => {
       await ctx.testDatabase
         .getClient()
         .update(userTable)
-        .set({ deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) })
+        .set({
+          deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({
+            hours: 31 * 24,
+          }),
+        })
         .where(eq(userTable.email, deleteEmail));
 
       // When

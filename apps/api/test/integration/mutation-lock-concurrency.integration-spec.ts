@@ -642,6 +642,7 @@ async function createUser(
     id,
     email: `mutation-${suffix}@example.com`,
     userTag: `M${suffix}`,
+    updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     status: "ACTIVE",
     subscriptionStatus,
   });

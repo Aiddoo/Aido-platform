@@ -183,7 +183,7 @@ class StubDeliveryEligibility implements Pick<
           timezone: "Asia/Seoul",
           localDate: LOCAL_DATE,
           preference: createNotificationDeliveryPreferenceFixture(),
-          consent: { marketingPushAgreedAt: new Date("2026-08-01T00:00:00.000Z") },
+          consent: { marketingPushAgreedAt: Temporal.Instant.from("2026-08-01T00:00:00.000Z") },
         },
       ]),
     );

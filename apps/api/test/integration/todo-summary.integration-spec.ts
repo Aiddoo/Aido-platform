@@ -79,7 +79,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
     mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
       currentStreak: 7,
-      lastCompletedDate: today,
+      lastCompletedDate: Temporal.PlainDate.from("2026-07-12"),
     });
 
     // When

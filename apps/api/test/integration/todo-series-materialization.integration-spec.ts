@@ -27,6 +27,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
@@ -97,7 +98,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       clock: new DateClock(),
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
-        new DrizzleUserRepository(fixture.txHost),
+        new DrizzleUserRepository(fixture.txHost, new DateClock()),
         entitlements,
       ),
       dueRunner: new MaterializeTodoSeriesUseCase({
@@ -317,7 +318,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
 
   it.each([
     { name: "정지", patch: { status: "SUSPENDED" as const } },
-    { name: "탈퇴 대기", patch: { deletedAt: AT } },
+    { name: "탈퇴 대기", patch: { deletedAt: instantFromDate(AT) } },
   ])("$name 계정은 건너뛰고 커서를 그대로 둔다", async ({ patch }) => {
     // Given
     const other = await seedUser("series-job-other@example.com", "SERJOB02");

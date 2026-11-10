@@ -2,7 +2,6 @@ import { DrizzleSignupStatsReader } from "#api/modules/operations/admin-notices/
 import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { account, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -69,7 +68,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       .values([
         ...activeUsers,
         UserFixture.create({ status: "SUSPENDED" }),
-        UserFixture.create({ deletedAt: instantToDate(END) }),
+        UserFixture.create({ deletedAt: END }),
       ]);
 
     // When
@@ -97,7 +96,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     // Given
     const active = UserFixture.create();
     const suspended = UserFixture.create({ status: "SUSPENDED" });
-    const deleted = UserFixture.create({ deletedAt: instantToDate(END) });
+    const deleted = UserFixture.create({ deletedAt: END });
     await client.insert(user).values([active, suspended, deleted]);
 
     // When

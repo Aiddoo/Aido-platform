@@ -304,6 +304,7 @@ async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Pr
           email: `broadcast-${index}@example.com`,
           userTag: `B${String(index).padStart(7, "0")}`,
           status: "ACTIVE" as const,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })),
       )
       .returning({ id: user.id });
@@ -344,7 +345,7 @@ async function createPushReadyUser(
         timezone: input.timezone ?? "Asia/Seoul",
         locale: input.locale,
       },
-      consent: { marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z") },
+      consent: { marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00.000Z") },
       pushTokens: {
         token: input.token,
         deviceId: `${input.userTag}-device`,

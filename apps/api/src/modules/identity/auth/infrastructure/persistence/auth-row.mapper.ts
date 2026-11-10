@@ -5,7 +5,6 @@ import type {
   user as userTable,
   verification as verificationTable,
 } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
 import type { AuthAccountRecord } from "../../application/ports/auth-account.repository.port.js";
@@ -13,11 +12,6 @@ import { AuthOAuthState } from "../../domain/auth-oauth-state.aggregate.js";
 import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
-
-// User는 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
-function instantOrNull(date: Date | null): Temporal.Instant | null {
-  return date == null ? null : instantFromDate(date);
-}
 
 type SessionRow = typeof sessionTable.$inferSelect;
 type VerificationRow = typeof verificationTable.$inferSelect;
@@ -111,11 +105,11 @@ export function toIdentityUser(row: UserRow): IdentityUser {
     userTag: row.userTag,
     role: row.role,
     status: row.status,
-    emailVerifiedAt: instantOrNull(row.emailVerifiedAt),
+    emailVerifiedAt: row.emailVerifiedAt,
     subscriptionStatus: row.subscriptionStatus,
-    subscriptionExpiresAt: instantOrNull(row.subscriptionExpiresAt),
-    createdAt: instantFromDate(row.createdAt),
-    deletedAt: instantOrNull(row.deletedAt),
+    subscriptionExpiresAt: row.subscriptionExpiresAt,
+    createdAt: row.createdAt,
+    deletedAt: row.deletedAt,
   });
 }
 

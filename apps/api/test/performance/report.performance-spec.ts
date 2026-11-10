@@ -144,7 +144,12 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         (
           await client
             .insert(userTable)
-            .values({ email: "benchmark@test.aido.app", userTag: "BENCH001", status: "ACTIVE" })
+            .values({
+              email: "benchmark@test.aido.app",
+              userTag: "BENCH001",
+              status: "ACTIVE",
+              updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+            })
             .returning()
         )[0],
       );

@@ -3,18 +3,16 @@ import {
   pgTable,
   integer,
   text,
-  timestamp,
   varchar,
   boolean,
   serial,
-  date,
   jsonb,
   index,
   foreignKey,
   unique,
 } from "drizzle-orm/pg-core";
 
-import { instant } from "../columns/temporal-columns.js";
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   accountProvider,
@@ -30,30 +28,32 @@ export const user = pgTable(
   "User",
   {
     aiUsageCount: integer().default(0).notNull(),
-    aiUsageResetAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    deletedAt: timestamp({ precision: 3 }),
+    aiUsageResetAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    deletedAt: instant(),
     email: varchar({ length: 255 }).notNull(),
-    emailVerifiedAt: timestamp({ precision: 3 }),
+    emailVerifiedAt: instant(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    lastActiveAt: timestamp({ precision: 3 }),
-    lastLoginAt: timestamp({ precision: 3 }),
+    lastActiveAt: instant(),
+    lastLoginAt: instant(),
     revenueCatUserId: varchar({ length: 255 }),
     role: userRole().default("USER").notNull(),
     status: userStatus().default("PENDING_VERIFY").notNull(),
-    subscriptionExpiresAt: timestamp({ precision: 3 }),
+    subscriptionExpiresAt: instant(),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
     // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorEnabled: boolean().default(false).notNull(),
     // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
     twoFactorSecret: varchar({ length: 255 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // User를 바꾸는 저장소가 ClockPort 값으로 insert·update마다 명시한다
+    updatedAt: instant().notNull(),
     userTag: varchar({ length: 8 }).notNull(),
     lastSeenAppVersion: varchar({ length: 30 }),
-    lastSeenAppVersionAt: timestamp({ precision: 3 }),
+    lastSeenAppVersionAt: instant(),
   },
   (table) => [
     index("User_deletedAt_createdAt_idx").using(
@@ -315,7 +315,7 @@ export const userPreference = pgTable(
     eveningReminderHour: integer().default(19).notNull(),
     eveningReminderMinute: integer().default(0).notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
-    lastCompletedDate: date({ mode: "date" }),
+    lastCompletedDate: plainDate(),
     locale: varchar({ length: 10 }).default("ko").notNull(),
     longestStreak: integer().default(0).notNull(),
     morningReminderHour: integer().default(8).notNull(),
@@ -385,14 +385,14 @@ export const userConsent = pgTable(
   {
     agreedTermsVersion: varchar({ length: 20 }),
     id: text().primaryKey().$defaultFn(createEntityId),
-    marketingAgreedAt: timestamp({ precision: 3 }),
-    marketingPushAgreedAt: timestamp({ precision: 3 }),
+    marketingAgreedAt: instant(),
+    marketingPushAgreedAt: instant(),
     /** 광고성 수신 동의 사실을 2년마다 다시 알린 마지막 시각. 알린 적 없으면 null이다. */
-    marketingReconfirmedAt: timestamp({ precision: 3, withTimezone: true }),
-    privacyAgreedAt: timestamp({ precision: 3 }),
-    termsAgreedAt: timestamp({ precision: 3 }),
+    marketingReconfirmedAt: instant({ withTimezone: true }),
+    privacyAgreedAt: instant(),
+    termsAgreedAt: instant(),
     userId: text().notNull(),
-    aiDataSharingAgreedAt: timestamp({ precision: 3 }),
+    aiDataSharingAgreedAt: instant(),
     aiDataSharingVersion: varchar({ length: 20 }),
   },
   (table) => [
@@ -410,10 +410,14 @@ export const userConsent = pgTable(
 export const userActivityDay = pgTable(
   "UserActivityDay",
   {
-    firstSeenAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    firstSeenAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
-    lastSeenAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    localDate: date({ mode: "date" }).notNull(),
+    lastSeenAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    localDate: plainDate().notNull(),
     timezone: varchar({ length: 50 }).notNull(),
     userId: text().notNull(),
   },

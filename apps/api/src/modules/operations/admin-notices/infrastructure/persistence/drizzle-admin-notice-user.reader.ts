@@ -4,7 +4,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account, user, userProfile } from "#api/platform/database/schema/index";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AdminNoticeUserReaderPort } from "../../application/ports/admin-notice-user.reader.port.js";
 import type { AdminNoticeUser } from "../../application/read-models/admin-notice.read-model.js";
@@ -53,7 +53,7 @@ export class DrizzleAdminNoticeUserReader extends AdminNoticeUserReaderPort {
       email: row.email,
       ...(row.nickname != null && row.nickname !== "" && { nickname: row.nickname }),
       userTag: row.userTag,
-      joinedAt: toISOString(row.createdAt),
+      joinedAt: toIsoString(row.createdAt),
       ...(firstAccount != null && { signupMethod: firstAccount.provider }),
     };
   }

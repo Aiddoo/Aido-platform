@@ -31,15 +31,16 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    await client
-      .insert(user)
-      .values([
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
-        UserFixture.create({ id: DELETED_USER_ID, deletedAt: new Date("2026-11-01T00:00:00Z") }),
-        UserFixture.create({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
-      ]);
+    await client.insert(user).values([
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
+      UserFixture.create({
+        id: DELETED_USER_ID,
+        deletedAt: Temporal.Instant.from("2026-11-01T00:00:00Z"),
+      }),
+      UserFixture.create({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
+    ]);
   });
 
   afterAll(async () => {

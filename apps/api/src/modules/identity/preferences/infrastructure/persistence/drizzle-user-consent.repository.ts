@@ -5,7 +5,6 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userConsent } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
   type ConsentSeedInput,
@@ -15,7 +14,7 @@ import {
 } from "../../application/ports/user-consent.repository.port.js";
 
 /** 광고성 동의가 있고, 마지막 재확인(없으면 처음 동의)이 cutoff 이전이다. LEAST는 NULL을 건너뛴다 */
-function marketingReconfirmDue(cutoff: Date): SQL | undefined {
+function marketingReconfirmDue(cutoff: Temporal.Instant): SQL | undefined {
   return and(
     or(isNotNull(userConsent.marketingAgreedAt), isNotNull(userConsent.marketingPushAgreedAt)),
     sql`COALESCE(${userConsent.marketingReconfirmedAt}, LEAST(${userConsent.marketingAgreedAt}, ${userConsent.marketingPushAgreedAt})) <= ${sql.param(cutoff, userConsent.marketingReconfirmedAt)}`,
@@ -58,8 +57,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     });
     return AiDataSharingConsent.reconstitute({
       userId,
-      agreedAt:
-        row?.aiDataSharingAgreedAt == null ? null : instantFromDate(row.aiDataSharingAgreedAt),
+      agreedAt: row?.aiDataSharingAgreedAt ?? null,
       version: row?.aiDataSharingVersion ?? null,
     });
   }
@@ -88,14 +86,14 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
 
   async upsertMarketingConsent(
     userId: string,
-    data: { agreedAt: Date | null },
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRow> {
     return this.#upsert(userId, { marketingAgreedAt: data.agreedAt });
   }
 
   async upsertMarketingPushConsent(
     userId: string,
-    data: { agreedAt: Date | null },
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRow> {
     return this.#upsert(userId, { marketingPushAgreedAt: data.agreedAt });
   }
@@ -121,7 +119,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
 
   async claimMarketingReconfirm(
     userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     if (userIds.length === 0) {
       return [];
@@ -135,7 +133,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
 
   async upsertAiDataSharingConsent(
     userId: string,
-    data: { agreedAt: Date | null; version: string },
+    data: { agreedAt: Temporal.Instant | null; version: string },
   ): Promise<UserConsentRow> {
     return this.#upsert(userId, {
       aiDataSharingAgreedAt: data.agreedAt,

@@ -51,7 +51,11 @@ export function activeSubscriptionCondition(target: PremiumUserColumns, at: Date
   );
   return sql`(${and(
     eq(target.subscriptionStatus, "ACTIVE"),
-    or(isNull(target.subscriptionExpiresAt), gt(target.subscriptionExpiresAt, at), validStore),
+    or(
+      isNull(target.subscriptionExpiresAt),
+      gt(target.subscriptionExpiresAt, instantFromDate(at)),
+      validStore,
+    ),
   )})`;
 }
 

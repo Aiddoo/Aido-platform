@@ -71,8 +71,8 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       id: createEntityId(),
       email: "matthew@example.com",
       userTag: "MATT2025",
-      createdAt: JOINED_AT,
-      updatedAt: JOINED_AT,
+      createdAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await client.insert(userTable).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
@@ -262,7 +262,7 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
 
   it("탈퇴한 사용자는 찾지 않는다", async () => {
     // Given
-    const deleted = UserFixture.create({ deletedAt: AT });
+    const deleted = UserFixture.create({ deletedAt: instantFromDate(AT) });
     await client.insert(userTable).values(deleted);
 
     // When / Then
@@ -271,7 +271,7 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
 
   it("프로필·계정이 없는 사용자는 닉네임·가입 방식을 비운다", async () => {
     // Given
-    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: JOINED_AT });
+    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: instantFromDate(JOINED_AT) });
     await client.insert(userTable).values(bare);
 
     // When

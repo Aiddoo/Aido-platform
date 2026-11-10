@@ -96,9 +96,9 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       revenueCatUserId: "billing-owner-alias",
       userTag: "BILLBF01",
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: previousExpiry,
-      createdAt: at,
-      updatedAt: at,
+      subscriptionExpiresAt: instantFromDate(previousExpiry),
+      createdAt: instantFromDate(at),
+      updatedAt: instantFromDate(at),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -199,7 +199,8 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       storedSubscriptionExpiry:
         subscription == null ? undefined : toIsoString(subscription.expiresAt),
       userStatus: user?.subscriptionStatus,
-      userExpiry: user?.subscriptionExpiresAt?.toISOString() ?? null,
+      userExpiry:
+        user?.subscriptionExpiresAt == null ? null : toIsoString(user.subscriptionExpiresAt),
       premiumAccess: await entitlement.can(userId, "AI_REPORT"),
     };
   }

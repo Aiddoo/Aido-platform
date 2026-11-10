@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { subscription, user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -117,7 +118,7 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     const lapsed = await context.helpers.createVerifiedUser("me-lapsed@test.com", "Test1234!");
     await updateUser(lapsed.userId, {
       subscriptionStatus: "ACTIVE",
-      subscriptionExpiresAt: new Date(AT.getTime() - HOUR_MS),
+      subscriptionExpiresAt: instantFromDate(AT).subtract({ milliseconds: HOUR_MS }),
     });
 
     // When

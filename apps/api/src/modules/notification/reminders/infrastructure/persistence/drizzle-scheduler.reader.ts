@@ -19,7 +19,7 @@ import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import type {
@@ -60,6 +60,42 @@ import type {
   WeatherReminderUser,
   WinbackUser,
 } from "../../application/read-models/scheduler.read-model.js";
+
+// identity User·UserPreference 칸은 Temporal이지만 스케줄러 읽기 모델은 아직 Date다
+function toDateOrNull(instant: Temporal.Instant | null): Date | null {
+  return instant == null ? null : instantToDate(instant);
+}
+
+function toStreakUser<
+  T extends {
+    readonly preference: {
+      readonly currentStreak: number;
+      readonly lastCompletedDate: Temporal.PlainDate | null;
+      readonly locale: string;
+    } | null;
+  },
+>(row: T): Omit<T, "preference"> & Pick<UserWithTodosAndStreak, "preference"> {
+  const { preference } = row;
+  return {
+    ...row,
+    preference:
+      preference == null
+        ? null
+        : {
+            ...preference,
+            lastCompletedDate:
+              preference.lastCompletedDate == null
+                ? null
+                : instantToDate(preference.lastCompletedDate.toZonedDateTime("UTC").toInstant()),
+          },
+  };
+}
+
+function toFollowRelationUser<T extends { readonly lastActiveAt: Temporal.Instant | null }>(
+  user: T,
+): Omit<T, "lastActiveAt"> & { readonly lastActiveAt: Date | null } {
+  return { ...user, lastActiveAt: toDateOrNull(user.lastActiveAt) };
+}
 
 /**
  * 스케줄러 리더 어댑터 (Drizzle).
@@ -132,11 +168,11 @@ export class DrizzleSchedulerReader
     return rows.map(({ todoCount, ...row }) => ({ ...row, _count: { todos: todoCount } }));
   }
 
-  findPremiumEveningReminderUsers(
+  async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<UserWithTodosAndStreak[]> {
     const { tz, hour, minute, today, tomorrow, userId } = params;
-    return this.#db.query.user.findMany({
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         ...(userId && { id: userId }),
@@ -152,11 +188,14 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
+    return rows.map(toStreakUser);
   }
 
-  findFreeEveningReminderUsers(params: FixedTimeReminderParams): Promise<UserWithTodosAndStreak[]> {
+  async findFreeEveningReminderUsers(
+    params: FixedTimeReminderParams,
+  ): Promise<UserWithTodosAndStreak[]> {
     const { tz, today, tomorrow } = params;
-    return this.#db.query.user.findMany({
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         RAW: (target) => freeAccessCondition(target, now()),
@@ -171,6 +210,7 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
+    return rows.map(toStreakUser);
   }
 
   findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
@@ -212,35 +252,42 @@ export class DrizzleSchedulerReader
   // ReEngagementReaderPort — winback·온보딩·넛지추천·소셜다이제스트·스트릭
   // ─────────────────────────────────────────────────────────────
 
-  findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
+  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
     const { tz, inactiveSince, inactiveUntil } = params;
-    return this.#db.query.user.findMany({
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true, lastActiveAt: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz } },
-          { lastActiveAt: { gte: inactiveSince, lte: inactiveUntil } },
+          {
+            lastActiveAt: {
+              gte: instantFromDate(inactiveSince),
+              lte: instantFromDate(inactiveUntil),
+            },
+          },
         ],
       },
     });
+    return rows.map(toFollowRelationUser);
   }
 
-  findOnboardingCandidates(params: {
+  async findOnboardingCandidates(params: {
     tz: string;
     createdSince: Date;
   }): Promise<OnboardingCandidate[]> {
     const { tz, createdSince } = params;
-    return this.#db.query.user.findMany({
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true, createdAt: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { createdAt: { gte: createdSince } },
+          { createdAt: { gte: instantFromDate(createdSince) } },
           { preference: { timezone: tz } },
         ],
       },
     });
+    return rows.map((row) => ({ ...row, createdAt: instantToDate(row.createdAt) }));
   }
 
   countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
@@ -264,14 +311,16 @@ export class DrizzleSchedulerReader
     });
   }
 
-  findNudgeSuggestFollows(params: {
+  async findNudgeSuggestFollows(params: {
     candidateIds: string[];
     activeSince: Date;
     activeUntil: Date;
   }): Promise<NudgeSuggestFollow[]> {
     const { candidateIds, activeSince, activeUntil } = params;
-    const activeWindow = { lastActiveAt: { gte: activeSince, lte: activeUntil } };
-    return this.#db.query.follow.findMany({
+    const activeWindow = {
+      lastActiveAt: { gte: instantFromDate(activeSince), lte: instantFromDate(activeUntil) },
+    };
+    const rows = await this.#db.query.follow.findMany({
       columns: { followerId: true, followingId: true },
       where: {
         OR: [
@@ -290,6 +339,11 @@ export class DrizzleSchedulerReader
         },
       },
     });
+    return rows.map((row) => ({
+      ...row,
+      follower: toFollowRelationUser(row.follower),
+      following: toFollowRelationUser(row.following),
+    }));
   }
 
   findSocialDigestCandidates(
@@ -349,9 +403,9 @@ export class DrizzleSchedulerReader
     });
   }
 
-  findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
+  async findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
     const { tz, today, tomorrow } = params;
-    return this.#db.query.user.findMany({
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         AND: [
@@ -368,6 +422,7 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
+    return rows.map(toStreakUser);
   }
 
   // ─────────────────────────────────────────────────────────────

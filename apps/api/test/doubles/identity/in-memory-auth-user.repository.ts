@@ -9,15 +9,10 @@ import {
   IdentityUser,
   type IdentityUserPrimitives,
 } from "#api/modules/identity/users/domain/identity-user.aggregate";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 export const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 type UserProfile = NonNullable<AuthUserProfileRecord["profile"]>;
-
-function dateOrNull(instant: Temporal.Instant | null): Date | null {
-  return instant == null ? null : instantToDate(instant);
-}
 
 export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
   readonly #users = new Map<string, IdentityUserPrimitives>();
@@ -81,11 +76,11 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
       userTag: user.userTag,
       role: user.role,
       status: user.status,
-      emailVerifiedAt: dateOrNull(user.emailVerifiedAt),
+      emailVerifiedAt: user.emailVerifiedAt,
       subscriptionStatus: user.subscriptionStatus,
-      subscriptionExpiresAt: dateOrNull(user.subscriptionExpiresAt),
-      createdAt: instantToDate(user.createdAt),
-      deletedAt: dateOrNull(user.deletedAt),
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      createdAt: user.createdAt,
+      deletedAt: user.deletedAt,
       profile: this.#profiles.get(id) ?? null,
       accounts: accounts.map((account) => ({ provider: account.provider })),
     };

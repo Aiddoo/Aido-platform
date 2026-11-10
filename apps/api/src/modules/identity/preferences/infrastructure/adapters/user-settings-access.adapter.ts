@@ -122,7 +122,7 @@ export class UserSettingsAccessAdapter
 
   claimMarketingReconfirm(
     userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     return this.#consentRepository.claimMarketingReconfirm(userIds, params);
   }

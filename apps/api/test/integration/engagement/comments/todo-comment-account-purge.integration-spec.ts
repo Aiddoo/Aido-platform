@@ -64,7 +64,7 @@ import {
 import { TestDatabase } from "../../../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");
-const PURGE_ELIGIBLE_AT = new Date("2026-07-01T00:00:00.000Z");
+const PURGE_ELIGIBLE_AT = Temporal.Instant.from("2026-07-01T00:00:00.000Z");
 const COMMENT_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
 @Module({})
@@ -96,12 +96,14 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
         id: "account-purge-owner",
         email: "account-purge-owner@example.com",
         userTag: "PURGOWNR",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "ACTIVE",
       },
       {
         id: "account-purge-target",
         email: "account-purge-target@example.com",
         userTag: "PURGTARG",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "SUSPENDED",
         deletedAt: PURGE_ELIGIBLE_AT,
       },
@@ -109,6 +111,7 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
         id: "account-purge-other",
         email: "account-purge-other@example.com",
         userTag: "PURGOTHR",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "ACTIVE",
       },
     ])
@@ -284,6 +287,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
       id: DELETED_COMMENT_AUTHOR.id,
       email: DELETED_COMMENT_AUTHOR.email,
       userTag: DELETED_COMMENT_AUTHOR.userTag,
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       status: "LOCKED",
     });
   });
@@ -364,6 +368,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         id: "collision-owner",
         email: "collision-owner@example.com",
         userTag: "COLLOWNR",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "ACTIVE",
       })
       .returning();
@@ -374,6 +379,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
           id: `collision-user-${suffix}`,
           email: `collision-user-${suffix}@example.com`,
           userTag: `COLLUSR${suffix}`,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
           status: "SUSPENDED" as const,
           deletedAt: PURGE_ELIGIBLE_AT,
         })),

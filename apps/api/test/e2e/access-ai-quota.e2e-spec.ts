@@ -20,6 +20,7 @@ import type {
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -104,7 +105,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       .update(userTable)
       .set({
         aiUsageCount: input.count,
-        aiUsageResetAt: input.resetAt,
+        aiUsageResetAt: instantFromDate(input.resetAt),
         subscriptionStatus: input.subscriptionStatus,
       })
       .where(eq(userTable.id, user.userId));
@@ -311,7 +312,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       });
       expect(await storedQuota()).toMatchObject({
         aiUsageCount: 1,
-        aiUsageResetAt: newMonthAt,
+        aiUsageResetAt: instantFromDate(newMonthAt),
       });
       expect(provider.getCallCount()).toBe(2);
     } finally {

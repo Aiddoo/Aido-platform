@@ -9,11 +9,11 @@ interface AuthUserRecord {
   userTag: string;
   role: UserRole;
   status: UserStatus;
-  emailVerifiedAt: Date | null;
+  emailVerifiedAt: Temporal.Instant | null;
   subscriptionStatus: SubscriptionStatus;
-  subscriptionExpiresAt: Date | null;
-  createdAt: Date;
-  deletedAt: Date | null;
+  subscriptionExpiresAt: Temporal.Instant | null;
+  createdAt: Temporal.Instant;
+  deletedAt: Temporal.Instant | null;
 }
 
 export interface AuthUserProfileRecord extends AuthUserRecord {

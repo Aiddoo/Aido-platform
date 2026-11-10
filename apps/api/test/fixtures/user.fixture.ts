@@ -26,7 +26,7 @@ export const UserFixture = {
    */
   create: (overrides: Partial<User> = {}): User => {
     const id = ++userCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? `user-${id}`,
@@ -126,10 +126,7 @@ export const AccountFixture = {
    */
   create: (overrides: Partial<Account> = {}): Account => {
     const id = ++accountCounter;
-    const now = Temporal.Now.instant().round({
-      smallestUnit: "millisecond",
-      roundingMode: "floor",
-    });
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,

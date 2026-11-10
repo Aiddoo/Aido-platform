@@ -16,7 +16,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         weatherMorningMinute: 37,
         currentStreak: 3,
         longestStreak: 9,
-        lastCompletedDate: new Date("2026-01-16T00:00:00.000Z"),
+        lastCompletedDate: Temporal.PlainDate.from("2026-01-16"),
       },
     });
     const query = new GetPreferenceUseCase(fixture);

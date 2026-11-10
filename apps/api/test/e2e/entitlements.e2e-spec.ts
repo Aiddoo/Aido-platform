@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -58,7 +59,7 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
   it("FREE 사용자는 모든 기능의 무료 한도와 이번 달·오늘 사용량을 받는다", async () => {
     // Given
     const free = await context.helpers.createVerifiedUser("ent-free@test.com", "Test1234!");
-    await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: AT });
+    await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: instantFromDate(AT) });
 
     // When
     const snapshot = await entitlements(free.accessToken);

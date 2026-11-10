@@ -19,7 +19,7 @@ export interface NotificationDeliveryPreference {
 }
 
 export interface NotificationMarketingConsent {
-  readonly marketingPushAgreedAt: Date | null;
+  readonly marketingPushAgreedAt: Temporal.Instant | null;
 }
 
 type NotificationDeliveryPreferenceWithUserId = NotificationDeliveryPreference & {

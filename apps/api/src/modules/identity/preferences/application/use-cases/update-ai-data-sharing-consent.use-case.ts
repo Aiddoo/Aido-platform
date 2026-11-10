@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { resolveAiDataSharingAgreement } from "../../domain/ai-data-sharing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
@@ -35,10 +34,7 @@ export class UpdateAiDataSharingConsentUseCase {
     const updated = await this.#dependencies.consentRepository.upsertAiDataSharingConsent(
       input.userId,
       {
-        agreedAt: resolveAiDataSharingAgreement(
-          input.agreed,
-          instantToDate(this.#dependencies.clock.now()),
-        ),
+        agreedAt: resolveAiDataSharingAgreement(input.agreed, this.#dependencies.clock.now()),
         version: input.version,
       },
     );

@@ -31,13 +31,8 @@ const COLUMN_DEFAULTS: UserPreferenceRecord = {
   lastCompletedDate: null,
 };
 
-// lastCompletedDate는 DATE 열이라 시각을 버리고 UTC 자정으로 읽힌다
-function toCalendarDate(date: Date | null): Date | null {
-  return date == null ? null : new Date(`${date.toISOString().slice(0, 10)}T00:00:00.000Z`);
-}
-
 function copyOf(record: UserPreferenceRecordWithId): UserPreferenceRecordWithId {
-  return { ...record, lastCompletedDate: toCalendarDate(record.lastCompletedDate) };
+  return { ...record };
 }
 
 function definedFields(data: PreferenceWriteInput): PreferenceWriteInput {
@@ -75,7 +70,7 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
           userId,
           currentStreak: record.currentStreak,
           longestStreak: record.longestStreak,
-          lastCompletedDate: toCalendarDate(record.lastCompletedDate),
+          lastCompletedDate: record.lastCompletedDate,
         });
   }
 
@@ -132,8 +127,7 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
       existing == null ||
       existing.currentStreak !== expected.currentStreak ||
       existing.longestStreak !== expected.longestStreak ||
-      toCalendarDate(existing.lastCompletedDate)?.getTime() !==
-        toCalendarDate(expected.lastCompletedDate)?.getTime()
+      existing.lastCompletedDate?.toString() !== expected.lastCompletedDate?.toString()
     ) {
       return false;
     }

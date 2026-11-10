@@ -24,7 +24,7 @@ import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -77,10 +77,10 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       email: "quota-ledger@example.com",
       userTag: "QUOTLD01",
       aiUsageCount: FREE_AI_LIMIT - 1,
-      aiUsageResetAt: newMonthAt,
+      aiUsageResetAt: instantFromDate(newMonthAt),
       subscriptionStatus: "FREE",
-      createdAt: newMonthAt,
-      updatedAt: newMonthAt,
+      createdAt: instantFromDate(newMonthAt),
+      updatedAt: instantFromDate(newMonthAt),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -109,7 +109,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       .select({ count: userTable.aiUsageCount, resetAt: userTable.aiUsageResetAt })
       .from(userTable)
       .where(eq(userTable.id, userId));
-    return row;
+    return row == null ? row : { ...row, resetAt: instantToDate(row.resetAt) };
   }
 
   async function storedVoiceUsage(periodKey = periodKeyOf(newMonthAt)) {
@@ -421,7 +421,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       // Given
       await client
         .update(userTable)
-        .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: oldMonthAt })
+        .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: instantFromDate(oldMonthAt) })
         .where(eq(userTable.id, userId));
 
       // When
@@ -439,7 +439,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         email: "other-ledger@example.com",
         userTag: "QUOTLD02",
         aiUsageCount: 0,
-        aiUsageResetAt: newMonthAt,
+        aiUsageResetAt: instantFromDate(newMonthAt),
         subscriptionStatus: "FREE",
       });
       await client.insert(userTable).values(other);
@@ -504,7 +504,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       vi.setSystemTime(oldMonthAt);
       await client
         .update(userTable)
-        .set({ aiUsageCount: 0, aiUsageResetAt: oldMonthAt })
+        .set({ aiUsageCount: 0, aiUsageResetAt: instantFromDate(oldMonthAt) })
         .where(eq(userTable.id, userId));
       const previous = await ledger.reserve(input());
       const previousVoice = await ledger.reserve(input({ feature: "VOICE_NOTE" }));
@@ -655,7 +655,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         vi.setSystemTime(stalledAt);
         await client
           .update(userTable)
-          .set({ aiUsageCount: 0, aiUsageResetAt: stalledAt })
+          .set({ aiUsageCount: 0, aiUsageResetAt: instantFromDate(stalledAt) })
           .where(eq(userTable.id, userId));
         await ledger.reserve(reserveInput);
         vi.setSystemTime(newMonthAt);
@@ -736,7 +736,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       // Given
       await client
         .update(userTable)
-        .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: oldMonthAt })
+        .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: instantFromDate(oldMonthAt) })
         .where(eq(userTable.id, userId));
 
       // When

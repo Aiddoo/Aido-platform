@@ -67,8 +67,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       id: createEntityId(),
       email: "premium-grant@example.com",
       userTag: "PGRANT01",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -110,10 +110,13 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   }
 
   async function userProjection() {
-    return client.query.user.findFirst({
+    const row = await client.query.user.findFirst({
       columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
       where: { id: userId },
     });
+    return row == null
+      ? row
+      : { ...row, subscriptionExpiresAt: toDateOrNull(row.subscriptionExpiresAt) };
   }
 
   it("구독 중 받은 보상은 쌓아 두고 스토어 만료 웹훅이 오면 이어서 시작해 프리미엄을 유지한다", async () => {
@@ -273,8 +276,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       id: createEntityId(),
       email: "premium-grant-covered@example.com",
       userTag: "PGRANT02",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(coveredUser);
     await saveSubscriptionFixture(subscriptions, {
@@ -318,8 +321,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       id: createEntityId(),
       email: `${tag.toLowerCase()}@example.com`,
       userTag: tag,
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     return user.id;

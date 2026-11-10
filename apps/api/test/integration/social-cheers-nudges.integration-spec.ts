@@ -336,7 +336,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       { userId: deletedId, name: "민서 가나다" },
       { userId: inactiveId, name: "민서 가나다" },
     ]);
-    await client.update(userTable).set({ deletedAt: AT }).where(eq(userTable.id, deletedId));
+    await client
+      .update(userTable)
+      .set({ deletedAt: instantFromDate(AT) })
+      .where(eq(userTable.id, deletedId));
     await client.update(userTable).set({ status: "LOCKED" }).where(eq(userTable.id, inactiveId));
     const searchReader = context.module.get(FriendSearchReaderPort);
 

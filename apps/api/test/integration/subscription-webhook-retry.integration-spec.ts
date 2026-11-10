@@ -4,6 +4,7 @@ import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscription
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -91,7 +92,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
 
   it("트랜잭션 안의 일시 실패는 처리 원장까지 되돌리고 던져, 같은 웹훅을 다시 받으면 한 번만 반영한다", async () => {
     // Given
-    const user = UserFixture.create({ id: createEntityId(), createdAt: at });
+    const user = UserFixture.create({ id: createEntityId(), createdAt: instantFromDate(at) });
     await client.insert(userTable).values(user);
     await receiver.receive({
       body: storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),

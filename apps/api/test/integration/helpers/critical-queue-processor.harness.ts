@@ -395,7 +395,9 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
         ? []
         : database.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } }),
     updateMarketingPushConsent: async (userId, agreed) => {
-      const marketingPushAgreedAt = agreed ? new Date() : null;
+      const marketingPushAgreedAt = agreed
+        ? Temporal.Instant.fromEpochMilliseconds(Date.now())
+        : null;
       await database
         .insert(userConsent)
         .values({ userId, marketingPushAgreedAt })

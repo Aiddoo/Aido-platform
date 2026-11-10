@@ -70,7 +70,7 @@ export class DrizzleAdminUserDirectoryReader extends AdminUserDirectoryReaderPor
 
   #targetCondition(filter: BroadcastTargetFilter): SQL | undefined {
     const now = this.#clock.now();
-    const activeSince = (days: number) => instantToDate(now.subtract({ hours: days * 24 }));
+    const activeSince = (days: number) => now.subtract({ hours: days * 24 });
     return and(
       isNull(user.deletedAt),
       eq(user.status, "ACTIVE"),

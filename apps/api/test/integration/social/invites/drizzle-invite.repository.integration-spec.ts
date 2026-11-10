@@ -63,7 +63,7 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
     await repository.add(invite);
     await client
       .update(user)
-      .set({ deletedAt: new Date("2028-02-28T04:00:00Z") })
+      .set({ deletedAt: Temporal.Instant.from("2028-02-28T04:00:00Z") })
       .where(eq(user.id, INVITE_FIXTURE_INVITER_ID));
 
     // When

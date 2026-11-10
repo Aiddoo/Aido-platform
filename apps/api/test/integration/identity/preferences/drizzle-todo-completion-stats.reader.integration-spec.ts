@@ -1,8 +1,5 @@
-import { vi } from "vitest";
-
 import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserFixture } from "#test/fixtures/index";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -44,10 +41,6 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     categoryId = category.id;
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   async function givenTodo(startDate: string, endDate: string | null, completed: boolean) {
     await client.insert(todo).values({
       userId,
@@ -67,7 +60,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     // When
     const counts = await Promise.all(
       ["2026-11-27", "2026-11-28", "2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03"].map(
-        (date) => reader.countForDay(userId, day(date)),
+        (date) => reader.countForDay(userId, Temporal.PlainDate.from(date)),
       ),
     );
 
@@ -85,17 +78,16 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
   it("월 경계에 걸친 할 일은 서울 사용자의 12월 1일과 LA 사용자의 11월 30일 모두에 센다", async () => {
     // Given
     await givenTodo("2026-11-30", "2026-12-01", true);
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-30T16:30:00.000Z"));
+    const now = Temporal.Instant.from("2026-11-30T16:30:00.000Z");
 
     // When
-    const seoulToday = todayInTimezone("Asia/Seoul");
-    const laToday = todayInTimezone("America/Los_Angeles");
+    const seoulToday = now.toZonedDateTimeISO("Asia/Seoul").toPlainDate();
+    const laToday = now.toZonedDateTimeISO("America/Los_Angeles").toPlainDate();
     const seoul = await reader.countForDay(userId, seoulToday);
     const la = await reader.countForDay(userId, laToday);
 
     // Then
-    expect([seoulToday, laToday]).toEqual([day("2026-12-01"), day("2026-11-30")]);
+    expect([seoulToday.toString(), laToday.toString()]).toEqual(["2026-12-01", "2026-11-30"]);
     expect(seoul).toEqual({ total: 1, completed: 1 });
     expect(la).toEqual({ total: 1, completed: 1 });
   });
@@ -117,8 +109,8 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     });
 
     // When
-    const onDay = await reader.countForDay(userId, day("2026-12-01"));
-    const nextDay = await reader.countForDay(userId, day("2026-12-02"));
+    const onDay = await reader.countForDay(userId, Temporal.PlainDate.from("2026-12-01"));
+    const nextDay = await reader.countForDay(userId, Temporal.PlainDate.from("2026-12-02"));
 
     // Then
     expect(onDay).toEqual({ total: 1, completed: 1 });

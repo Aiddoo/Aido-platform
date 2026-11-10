@@ -69,8 +69,8 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       id: createEntityId(),
       email: "oauth-owner@example.com",
       userTag: "OAUTHPG1",
-      createdAt: at,
-      updatedAt: at,
+      createdAt: atInstant,
+      updatedAt: atInstant,
     });
     await client.insert(userTable).values(user);
     userId = user.id;

@@ -85,7 +85,12 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       free: createEntityId(),
     };
     const active = (id: string, subscriptionExpiresAt: Date | null) =>
-      UserFixture.create({ id, subscriptionStatus: "ACTIVE", subscriptionExpiresAt });
+      UserFixture.create({
+        id,
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt:
+          subscriptionExpiresAt == null ? null : instantFromDate(subscriptionExpiresAt),
+      });
     await client
       .insert(user)
       .values([

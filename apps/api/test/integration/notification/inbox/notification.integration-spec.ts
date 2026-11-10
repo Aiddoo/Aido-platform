@@ -227,7 +227,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
               consentRepository.findByUserIds(userIds),
             updateMarketingPushConsent: (userId: string, agreed: boolean) =>
               consentRepository
-                .upsertMarketingPushConsent(userId, { agreedAt: agreed ? new Date() : null })
+                .upsertMarketingPushConsent(userId, {
+                  agreedAt: agreed ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
+                })
                 .then(() => undefined),
           }),
           inject: [DrizzleUserPreferenceRepository, DrizzleUserConsentRepository],
@@ -309,6 +311,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         id,
         email: `notification-${index}@example.com`,
         userTag: `NOTIF${String(index).padStart(3, "0")}`,
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })),
     );
   });
@@ -818,7 +821,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Given
       await client.insert(userConsent).values({
         userId: mockUserId,
-        marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
+        marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00.000Z"),
       });
 
       // When

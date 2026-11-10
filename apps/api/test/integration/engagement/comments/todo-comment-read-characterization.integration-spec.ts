@@ -213,8 +213,8 @@ async function seed(client: TestDatabaseClient): Promise<void> {
         id,
         email: `${id}@example.com`,
         userTag: tag,
-        createdAt: at(0),
-        updatedAt: at(0),
+        createdAt: instantAt(0),
+        updatedAt: instantAt(0),
       }),
     ),
   );

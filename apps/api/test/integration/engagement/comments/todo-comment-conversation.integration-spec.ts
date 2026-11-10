@@ -117,17 +117,20 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         id: DELETED_COMMENT_AUTHOR.id,
         email: DELETED_COMMENT_AUTHOR.email,
         userTag: DELETED_COMMENT_AUTHOR.userTag,
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "LOCKED",
       },
       {
         id: "conversation-owner",
         email: "conversation-owner@example.com",
         userTag: "CONVOWNR",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       },
       {
         id: "conversation-author",
         email: "conversation-author@example.com",
         userTag: "CONVAUTH",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       },
     ]);
     const [category] = await client
@@ -238,11 +241,13 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         id: "conversation-participant-a",
         email: "conversation-participant-a@example.com",
         userTag: "CONVPARA",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       },
       {
         id: "conversation-participant-b",
         email: "conversation-participant-b@example.com",
         userTag: "CONVPARB",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       },
     ]);
     await client.insert(userProfile).values([

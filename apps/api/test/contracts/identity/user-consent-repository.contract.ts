@@ -2,7 +2,6 @@ import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
 import type { UserConsentRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
 import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import {
   USER_SETTINGS_FIXTURE_DELETED_USER_ID,
   USER_SETTINGS_FIXTURE_INACTIVE_USER_ID,
@@ -14,10 +13,10 @@ import {
 const USER_ID = USER_SETTINGS_FIXTURE_USER_ID;
 const OTHER_USER_ID = USER_SETTINGS_FIXTURE_OTHER_USER_ID;
 const NOW = USER_SETTINGS_FIXTURE_NOW;
-const CUTOFF = new Date("2024-11-10T00:00:00.000Z");
-const BEFORE_CUTOFF = new Date("2024-11-09T00:00:00.000Z");
-const AFTER_CUTOFF = new Date(CUTOFF.getTime() + 1);
-const TERMS_AGREED_AT = new Date("2024-01-02T03:04:05.678Z");
+const CUTOFF = Temporal.Instant.from("2024-11-10T00:00:00.000Z");
+const BEFORE_CUTOFF = Temporal.Instant.from("2024-11-09T00:00:00.000Z");
+const AFTER_CUTOFF = CUTOFF.add({ milliseconds: 1 });
+const TERMS_AGREED_AT = Temporal.Instant.from("2024-01-02T03:04:05.678Z");
 
 const EMPTY_CONSENT: UserConsentRecord = {
   termsAgreedAt: null,
@@ -162,13 +161,10 @@ export function describeUserConsentRepositoryContract(
         aiDataSharingVersion: version,
       });
       expect(agreedConsent.status()).toEqual({ decision: "AGREED", agreedVersion: version });
-      expect(agreedConsent.allowsAiProcessingAt(instantFromDate(NOW), version)).toBe(true);
-      expect(
-        agreedConsent.allowsAiProcessingAt(
-          instantFromDate(NOW).subtract({ milliseconds: 1 }),
-          version,
-        ),
-      ).toBe(false);
+      expect(agreedConsent.allowsAiProcessingAt(NOW, version)).toBe(true);
+      expect(agreedConsent.allowsAiProcessingAt(NOW.subtract({ milliseconds: 1 }), version)).toBe(
+        false,
+      );
       expect(declinedConsent.status()).toEqual({ decision: "DECLINED", agreedVersion: null });
       expect(await repository.findByUserId(USER_ID)).toMatchObject({
         agreedTermsVersion: "1.0",
@@ -264,7 +260,7 @@ export function describeUserConsentRepositoryContract(
       // Given
       const repository = await createRepository();
       await repository.create(USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
-      const reconfirmedAt = new Date(CUTOFF.getTime() + 60_000);
+      const reconfirmedAt = CUTOFF.add({ minutes: 1 });
       await repository.claimMarketingReconfirm([USER_ID], {
         cutoff: CUTOFF,
         at: reconfirmedAt,

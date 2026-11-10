@@ -87,8 +87,18 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
 
     await testDatabase.cleanup();
     await client.insert(user).values([
-      { id: OWNER_ID, email: "threads-owner@example.com", userTag: "THREADSO" },
-      { id: FRIEND_ID, email: "threads-friend@example.com", userTag: "THREADSF" },
+      {
+        id: OWNER_ID,
+        email: "threads-owner@example.com",
+        userTag: "THREADSO",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      },
+      {
+        id: FRIEND_ID,
+        email: "threads-friend@example.com",
+        userTag: "THREADSF",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      },
     ]);
     const [category] = await client
       .insert(todoCategory)

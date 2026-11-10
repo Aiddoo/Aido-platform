@@ -8,6 +8,7 @@ import type { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
@@ -58,12 +59,13 @@ export class GetCurrentUserUseCase {
           role: user.role,
           userTag: user.userTag,
           status: user.status,
-          emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
+          emailVerifiedAt: user.emailVerifiedAt == null ? null : toIsoString(user.emailVerifiedAt),
           subscriptionStatus: user.subscriptionStatus,
-          subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
+          subscriptionExpiresAt:
+            user.subscriptionExpiresAt == null ? null : toIsoString(user.subscriptionExpiresAt),
           name: user.profile?.name ?? null,
           profileImage: user.profile?.profileImage ?? null,
-          createdAt: toISOString(user.createdAt),
+          createdAt: toIsoString(user.createdAt),
           providers: user.accounts.map((a) => a.provider),
           premiumSource: premiumAccess.source,
           premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -63,7 +64,7 @@ describe("반복 할 일 복귀 E2E", () => {
     await ctx.testDatabase
       .getClient()
       .update(userTable)
-      .set({ lastActiveAt: lastMovedAt })
+      .set({ lastActiveAt: instantFromDate(lastMovedAt) })
       .where(eq(userTable.id, userId));
     return seriesId;
   }
@@ -123,7 +124,7 @@ describe("반복 할 일 복귀 E2E", () => {
 
   it.each([
     { name: "정지", patch: { status: "SUSPENDED" as const } },
-    { name: "탈퇴 대기", patch: { deletedAt: new Date() } },
+    { name: "탈퇴 대기", patch: { deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()) } },
   ])("$name 계정은 세션이 살아 있어도 회차를 만들지 않는다", async ({ patch }) => {
     // Given
     const seriesId = await seedAwaySeries();

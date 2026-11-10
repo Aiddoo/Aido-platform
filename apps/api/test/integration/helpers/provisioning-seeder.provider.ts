@@ -16,11 +16,6 @@ import {
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
-import { instantToDate } from "#api/shared/domain/time/instant";
-
-function dateOrUndefined(instant: Temporal.Instant | undefined): Date | undefined {
-  return instant == null ? undefined : instantToDate(instant);
-}
 
 export const provisioningSeederTestProvider: Provider = {
   provide: UserProvisioningSeederPort,
@@ -30,13 +25,7 @@ export const provisioningSeederTestProvider: Provider = {
     defaultTodoCategorySeeder: DefaultTodoCategoryProvisionerAdapter,
   ): UserProvisioningSeederPort => ({
     async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
-      await consentRepository.create(userId, {
-        termsAgreedAt: dateOrUndefined(consent.termsAgreedAt),
-        privacyAgreedAt: dateOrUndefined(consent.privacyAgreedAt),
-        agreedTermsVersion: consent.agreedTermsVersion,
-        marketingAgreedAt: dateOrUndefined(consent.marketingAgreedAt),
-        marketingPushAgreedAt: dateOrUndefined(consent.marketingPushAgreedAt),
-      });
+      await consentRepository.create(userId, consent);
       await preferenceRepository.create(userId, {
         pushEnabled: true,
         nightPushEnabled: true,

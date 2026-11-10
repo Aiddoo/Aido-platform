@@ -53,8 +53,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       id: createEntityId(),
       email: "timeline@example.com",
       userTag: "TLINE001",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -95,10 +95,13 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   }
 
   async function userProjection() {
-    return client.query.user.findFirst({
+    const row = await client.query.user.findFirst({
       columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
       where: { id: userId },
     });
+    return row == null
+      ? row
+      : { ...row, subscriptionExpiresAt: toDateOrNull(row.subscriptionExpiresAt) };
   }
 
   async function grantsOf() {

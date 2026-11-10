@@ -26,10 +26,7 @@ export const SessionFixture = {
    */
   create: (overrides: Partial<Session> = {}): Session => {
     const id = ++sessionCounter;
-    const now = Temporal.Now.instant().round({
-      smallestUnit: "millisecond",
-      roundingMode: "floor",
-    });
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     const expiresAt = now.add({ hours: 7 * 24 });
 
     return {
@@ -56,7 +53,7 @@ export const SessionFixture = {
    */
   createExpired: (overrides: Partial<Session> = {}): Session => {
     return SessionFixture.create({
-      expiresAt: Temporal.Now.instant().subtract({ hours: 24 }),
+      expiresAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({ hours: 24 }),
       ...overrides,
     });
   },
@@ -66,7 +63,7 @@ export const SessionFixture = {
    */
   createRevoked: (overrides: Partial<Session> = {}): Session => {
     return SessionFixture.create({
-      revokedAt: Temporal.Now.instant(),
+      revokedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       revokedReason: "USER_LOGOUT",
       ...overrides,
     });
@@ -93,10 +90,7 @@ export const SessionFixture = {
 export const VerificationFixture = {
   create: (overrides: Partial<Verification> = {}): Verification => {
     const id = ++verificationCounter;
-    const now = Temporal.Now.instant().round({
-      smallestUnit: "millisecond",
-      roundingMode: "floor",
-    });
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,

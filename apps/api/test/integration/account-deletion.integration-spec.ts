@@ -60,6 +60,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -330,7 +331,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     await client
       .update(userTable)
-      .set({ status: "ACTIVE", emailVerifiedAt: new Date() })
+      .set({
+        status: "ACTIVE",
+        emailVerifiedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .where(eq(userTable.id, registerResult.userId));
 
     return registerResult.userId;
@@ -353,7 +357,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       expect(result.deletedAt).toBeDefined();
 
       const user = await client.query.user.findFirst({ where: { id: userId } });
-      expect(user?.deletedAt?.toISOString()).toBe(result.deletedAt);
+      expect(user?.deletedAt).toEqual(Temporal.Instant.from(result.deletedAt));
       expect(user?.status).toBe("SUSPENDED");
 
       const sessions = await client.query.session.findMany({ where: { userId } });
@@ -375,7 +379,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "social-delete@example.com",
           userTag: "SODEL001",
           status: "ACTIVE",
-          emailVerifiedAt: new Date(),
+          emailVerifiedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);
@@ -430,7 +435,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
       await client
         .update(userTable)
-        .set({ deletedAt: pastDate, status: "SUSPENDED" })
+        .set({ deletedAt: instantFromDate(pastDate), status: "SUSPENDED" })
         .where(eq(userTable.id, userId));
 
       // When
@@ -449,7 +454,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "purge-test@example.com",
           userTag: "PURGE001",
           status: "SUSPENDED",
-          deletedAt: pastDate,
+          deletedAt: instantFromDate(pastDate),
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);
@@ -472,7 +478,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "keep-test@example.com",
           userTag: "KEEP0001",
           status: "SUSPENDED",
-          deletedAt: recentDate,
+          deletedAt: instantFromDate(recentDate),
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);

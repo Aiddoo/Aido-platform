@@ -35,7 +35,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -96,7 +96,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,
-        createdAt: JOINED_AT,
+        createdAt: instantFromDate(JOINED_AT),
       }),
     );
     return id;
@@ -394,7 +394,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
       });
       expect(projection?.subscriptionStatus).toBe("ACTIVE");
-      expect(projection?.subscriptionExpiresAt?.getTime()).toBeGreaterThan(storeExpiry.getTime());
+      expect(projection?.subscriptionExpiresAt?.epochMilliseconds).toBeGreaterThan(
+        storeExpiry.getTime(),
+      );
     }
   });
 

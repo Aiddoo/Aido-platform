@@ -12,9 +12,11 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
   readonly consentReadUserIds: string[] = [];
   readonly preferenceBatchReads: string[][] = [];
   readonly consentBatchReads: string[][] = [];
-  readonly #now: () => Date;
+  readonly #now: () => Temporal.Instant;
 
-  constructor(now: () => Date = () => new Date()) {
+  constructor(
+    now: () => Temporal.Instant = () => Temporal.Instant.fromEpochMilliseconds(Date.now()),
+  ) {
     super();
     this.#now = now;
   }

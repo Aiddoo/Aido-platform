@@ -16,7 +16,7 @@ export class UserConsentBuilder {
   private data: UserConsent;
 
   private constructor(userId: string) {
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     this.data = {
       id: `consent-${crypto.randomUUID().slice(0, 8)}`,
       userId,
@@ -40,12 +40,12 @@ export class UserConsentBuilder {
     return this;
   }
 
-  withTermsAgreedAt(date: Date): UserConsentBuilder {
+  withTermsAgreedAt(date: Temporal.Instant): UserConsentBuilder {
     this.data.termsAgreedAt = date;
     return this;
   }
 
-  withPrivacyAgreedAt(date: Date): UserConsentBuilder {
+  withPrivacyAgreedAt(date: Temporal.Instant): UserConsentBuilder {
     this.data.privacyAgreedAt = date;
     return this;
   }
@@ -57,7 +57,7 @@ export class UserConsentBuilder {
 
   /** 마케팅 동의 포함 */
   withMarketingConsent(): UserConsentBuilder {
-    this.data.marketingAgreedAt = new Date();
+    this.data.marketingAgreedAt = Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 

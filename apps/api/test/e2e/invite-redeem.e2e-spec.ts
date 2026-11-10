@@ -167,7 +167,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     await ctx.testDatabase
       .getClient()
       .update(user)
-      .set({ createdAt: subtractDays(8) })
+      .set({ createdAt: instantFromDate(subtractDays(8)) })
       .where(eq(user.id, veteran.userId));
     const code = await inviteCodeOf(inviter);
 
@@ -357,7 +357,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     await ctx.testDatabase
       .getClient()
       .update(user)
-      .set({ deletedAt: new Date() })
+      .set({ deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()) })
       .where(eq(user.id, inviter.userId));
 
     // When

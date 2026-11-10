@@ -116,7 +116,9 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
   it("단건 참여 유도는 동의 후 현지 날짜 engagement 제한을 별도로 판정한다", async () => {
     // Given
     const { useCase, userSettings, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
-    userSettings.consents.set("user-1", { marketingPushAgreedAt: new Date("2026-07-01") });
+    userSettings.consents.set("user-1", {
+      marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00Z"),
+    });
     rateLimiter.limitedEngagementUserIds.add("user-1");
     const recipient = await useCase.loadSingleRecipient("user-1");
 

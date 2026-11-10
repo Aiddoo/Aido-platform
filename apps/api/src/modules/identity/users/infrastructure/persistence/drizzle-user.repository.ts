@@ -20,9 +20,8 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { UserStatus } from "../../../auth/domain/auth.constants.js";
 import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
@@ -32,20 +31,26 @@ import { generateUserTag } from "./user-tag.adapter.js";
 type UserInsert = typeof user.$inferInsert;
 
 export interface UserWithProfile extends AuthUserProfileRecord {
-  lastLoginAt: Date | null;
+  lastLoginAt: Temporal.Instant | null;
 }
 
 const MAX_USER_TAG_RETRIES = 5;
+// 탈퇴 유예는 UTC 기준 일수다(UTC에는 일광 절약이 없어 24시간 단위와 같다)
+const PURGE_GRACE_PERIOD = Temporal.Duration.from({
+  hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+});
 
 @Injectable()
 export class DrizzleUserRepository extends AuthUserRepositoryPort {
   readonly #logger = new Logger(DrizzleUserRepository.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     super();
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -99,9 +104,9 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
         .values({
           email: data.email,
           status: data.status,
-          emailVerifiedAt:
-            data.emailVerifiedAt == null ? undefined : instantToDate(data.emailVerifiedAt),
+          emailVerifiedAt: data.emailVerifiedAt,
           userTag,
+          updatedAt: this.#clock.now(),
         })
         .returning();
       return toIdentityUser(requireRecord(row));
@@ -134,7 +139,7 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
   }
 
   async markEmailVerified(id: string, now: Temporal.Instant): Promise<void> {
-    await this.#update(id, { emailVerifiedAt: instantToDate(now), status: "ACTIVE" });
+    await this.#update(id, { emailVerifiedAt: now, status: "ACTIVE", updatedAt: now });
   }
 
   async findActiveAccounts(userIds: readonly string[]): Promise<readonly UserActivity[]> {
@@ -170,9 +175,8 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     readonly seenAt: Temporal.Instant;
     readonly appVersion?: string;
   }): Promise<void> {
-    const { userId: id, timezone, appVersion } = activity;
-    const seenAt = instantToDate(activity.seenAt);
-    const localDate = startOfDayInTimezone(seenAt, timezone);
+    const { userId: id, timezone, appVersion, seenAt } = activity;
+    const localDate = seenAt.toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
 
     await this.#db.execute(sql`
       WITH updated_user AS (
@@ -259,12 +263,13 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     const { status, deletedAt } = identityUser.toPrimitives();
     await this.#update(identityUser.id.value, {
       status,
-      deletedAt: deletedAt == null ? null : instantToDate(deletedAt),
+      deletedAt,
+      updatedAt: this.#clock.now(),
     });
   }
 
   async listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]> {
-    const cutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS, instantToDate(now));
+    const cutoff = now.subtract(PURGE_GRACE_PERIOD);
     const rows = await this.#db
       .select()
       .from(user)
@@ -288,7 +293,10 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     requireRecord(deleted[0]);
   }
 
-  async #update(id: string, patch: Partial<UserInsert>): Promise<void> {
+  async #update(
+    id: string,
+    patch: Partial<UserInsert> & Pick<UserInsert, "updatedAt">,
+  ): Promise<void> {
     const [row] = await this.#db
       .update(user)
       .set(patch)

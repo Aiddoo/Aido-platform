@@ -9,7 +9,6 @@ import {
 } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
 import { AiDataSharingConsent } from "#api/modules/identity/preferences/domain/ai-data-sharing-consent.entity";
 import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 const EMPTY_CONSENT: UserConsentRecord = {
   termsAgreedAt: null,
@@ -22,42 +21,30 @@ const EMPTY_CONSENT: UserConsentRecord = {
   marketingReconfirmedAt: null,
 };
 
-function copyDate(date: Date | null): Date | null {
-  return date == null ? null : new Date(date);
-}
-
 function copyOf(record: UserConsentRecordWithId): UserConsentRecordWithId {
-  return {
-    ...record,
-    termsAgreedAt: copyDate(record.termsAgreedAt),
-    privacyAgreedAt: copyDate(record.privacyAgreedAt),
-    marketingAgreedAt: copyDate(record.marketingAgreedAt),
-    marketingPushAgreedAt: copyDate(record.marketingPushAgreedAt),
-    aiDataSharingAgreedAt: copyDate(record.aiDataSharingAgreedAt),
-    marketingReconfirmedAt: copyDate(record.marketingReconfirmedAt),
-  };
+  return { ...record };
 }
 
 function toTarget(record: UserConsentRecordWithId): MarketingReconfirmTarget {
   return {
     userId: record.userId,
-    marketingAgreedAt: copyDate(record.marketingAgreedAt),
-    marketingPushAgreedAt: copyDate(record.marketingPushAgreedAt),
+    marketingAgreedAt: record.marketingAgreedAt,
+    marketingPushAgreedAt: record.marketingPushAgreedAt,
   };
 }
 
 // Drizzle 저장소의 COALESCE(재확인 시각, LEAST(두 동의 시각)) <= cutoff와 같다
-function isReconfirmDue(record: UserConsentRecord, cutoff: Date): boolean {
+function isReconfirmDue(record: UserConsentRecord, cutoff: Temporal.Instant): boolean {
   const earliestAgreedAt = minBy(
-    [record.marketingAgreedAt, record.marketingPushAgreedAt].flatMap((date) =>
-      date == null ? [] : [date],
+    [record.marketingAgreedAt, record.marketingPushAgreedAt].flatMap((instant) =>
+      instant == null ? [] : [instant],
     ),
-    (date) => date.getTime(),
+    (instant) => instant.epochMilliseconds,
   );
   if (earliestAgreedAt == null) {
     return false;
   }
-  return (record.marketingReconfirmedAt ?? earliestAgreedAt).getTime() <= cutoff.getTime();
+  return Temporal.Instant.compare(record.marketingReconfirmedAt ?? earliestAgreedAt, cutoff) <= 0;
 }
 
 export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
@@ -95,10 +82,7 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     const record = this.#records.get(userId);
     return AiDataSharingConsent.reconstitute({
       userId,
-      agreedAt:
-        record?.aiDataSharingAgreedAt == null
-          ? null
-          : instantFromDate(record.aiDataSharingAgreedAt),
+      agreedAt: record?.aiDataSharingAgreedAt ?? null,
       version: record?.aiDataSharingVersion ?? null,
     });
   }
@@ -124,14 +108,14 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
 
   async upsertMarketingConsent(
     userId: string,
-    data: { agreedAt: Date | null },
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRecordWithId> {
     return this.#upsert(userId, { marketingAgreedAt: data.agreedAt });
   }
 
   async upsertMarketingPushConsent(
     userId: string,
-    data: { agreedAt: Date | null },
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRecordWithId> {
     return this.#upsert(userId, { marketingPushAgreedAt: data.agreedAt });
   }
@@ -154,7 +138,7 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
 
   async claimMarketingReconfirm(
     userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     const claimed = [...this.#records.values()].filter(
       (record) => userIds.includes(record.userId) && isReconfirmDue(record, params.cutoff),
@@ -167,7 +151,7 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
 
   async upsertAiDataSharingConsent(
     userId: string,
-    data: { agreedAt: Date | null; version: string },
+    data: { agreedAt: Temporal.Instant | null; version: string },
   ): Promise<UserConsentRecordWithId> {
     return this.#upsert(userId, {
       aiDataSharingAgreedAt: data.agreedAt,

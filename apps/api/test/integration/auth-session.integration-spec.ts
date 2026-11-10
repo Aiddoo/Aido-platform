@@ -11,7 +11,6 @@ import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const now = Temporal.Instant.from("2026-12-31T23:59:00.000Z");
-const currentTime = new Date(now.epochMilliseconds);
 const expiresAt = Temporal.Instant.from("2027-01-08T00:00:00Z");
 const rotatedAt = Temporal.Instant.from("2026-12-31T23:59:00Z");
 
@@ -44,10 +43,10 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
           id: createEntityId(),
           email: "session-owner@example.com",
           userTag: "SESSION1",
-          createdAt: currentTime,
-          updatedAt: currentTime,
-          emailVerifiedAt: currentTime,
-          aiUsageResetAt: currentTime,
+          createdAt: now,
+          updatedAt: now,
+          emailVerifiedAt: now,
+          aiUsageResetAt: now,
         }),
       )
       .returning();

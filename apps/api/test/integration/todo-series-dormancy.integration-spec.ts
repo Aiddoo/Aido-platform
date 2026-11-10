@@ -28,6 +28,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -113,8 +114,11 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       email,
       userTag,
       status: "ACTIVE",
-      lastActiveAt: activity.lastActiveAt,
-      createdAt: activity.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: activity.lastActiveAt == null ? null : instantFromDate(activity.lastActiveAt),
+      createdAt:
+        activity.createdAt == null
+          ? Temporal.Instant.from("2026-01-01T00:00:00.000Z")
+          : instantFromDate(activity.createdAt),
     });
     await client.insert(userTable).values(user);
     if (activity.timezone != null) {
@@ -161,7 +165,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function seriesOwner() {
-    return new TodoSeriesOwnerAdapter(new DrizzleUserRepository(fixture.txHost), entitlements());
+    return new TodoSeriesOwnerAdapter(
+      new DrizzleUserRepository(fixture.txHost, new DateClock()),
+      entitlements(),
+    );
   }
 
   /** 서버 프로세스 하나. 메모리 캐시는 프로세스마다 따로다. */
@@ -577,7 +584,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   describe("리마인더 발송 시점의 휴면", () => {
     function dormancy() {
       return new TodoSeriesOwnerDormancyAdapter(
-        new DrizzleUserRepository(fixture.txHost),
+        new DrizzleUserRepository(fixture.txHost, new DateClock()),
         entitlements(),
       );
     }

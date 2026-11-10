@@ -8,6 +8,7 @@ import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/pl
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
 import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 
 import {
@@ -38,7 +39,10 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const owner = UserFixture.create({ createdAt: AT, updatedAt: AT });
+    const owner = UserFixture.create({
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
+    });
     await context.testDatabase.getClient().insert(user).values(owner);
     userId = owner.id;
   });
