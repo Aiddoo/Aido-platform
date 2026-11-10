@@ -48,7 +48,7 @@ export class RewardApplierAdapter extends RewardApplierPort {
 
   async #applyFriendSlot(grant: RewardGrant): Promise<void> {
     await this.#featureGranter.grant({
-      userId: grant.recipientId.value,
+      userId: grant.recipientId,
       feature: "FRIEND",
       quantity: grant.quantity,
       sourceKey: grant.benefitSourceKey,

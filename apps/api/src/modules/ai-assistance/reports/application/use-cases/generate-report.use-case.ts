@@ -97,7 +97,12 @@ export class GenerateReportUseCase {
     isFinalAttempt?: boolean;
   }): Promise<AiReport | null> {
     const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_REPORT"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_REPORT",
+      ))
+    ) {
       this.#dependencies.logger.debug({
         event: AiReportLogEvent.SKIPPED,
         userId,
@@ -270,7 +275,7 @@ export class GenerateReportUseCase {
       return await unitOfWork.run(async () => {
         if (
           !(await userMutationLock.lockById(userId)) ||
-          !(await entitlementReader.canInTx(userId, "AI_REPORT"))
+          !(await entitlementReader.canInTx(owner, "AI_REPORT"))
         ) {
           return null;
         }

@@ -15,6 +15,7 @@ import {
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
@@ -147,7 +148,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: new Date("2028-03-17T04:00:00.000Z"),
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("같은 보상을 동시에 여러 번 지급해도 한 번만 저장하고 다음 보상은 쌓아 두되 이어 붙인 끝까지 프리미엄이다", async () => {
@@ -366,8 +367,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
         where: { revenueCatId: TRANSACTION_ID },
       }),
     ).toEqual([{ userId: receiverId }]);
-    expect(await entitlement.canInTx(receiverId, "AI_REPORT")).toBe(true);
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+    expect(await entitlement.canInTx(UserId.reconstitute(receiverId), "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(false);
     expect(await userProjection()).toEqual({
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
@@ -419,7 +420,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(false);
     expect(
       await context.module
         .get<PremiumAccessReaderPort>(PremiumAccessReaderPort)
@@ -460,7 +461,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(await grantsOf(userId)).toEqual([
       { sourceKey: "invite:receiver", status: "BANKED", startsAt: null, endsAt: null },
     ]);
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
     expect(await premiumAccess()).toMatchObject({
       source: "STORE",
       periodEndsAt: STORE_EXPIRY,
@@ -486,11 +487,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     const endsAt = new Date("2028-03-04T04:00:00.000Z");
     vi.setSystemTime(new Date(endsAt.getTime() - 1));
-    const before = await entitlement.canInTx(userId, "AI_REPORT");
+    const before = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
 
     // When
     vi.setSystemTime(endsAt);
-    const atEnd = await entitlement.canInTx(userId, "AI_REPORT");
+    const atEnd = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
 
     // Then
     expect([before, atEnd]).toEqual([true, false]);
@@ -508,7 +509,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // When
     vi.setSystemTime(inGrace);
     const duringGrace = await sweep.execute({ now: instantFromDate(inGrace) });
-    const premiumDuringGrace = await entitlement.canInTx(userId, "AI_REPORT");
+    const premiumDuringGrace = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
     vi.setSystemTime(afterGrace);
     const pastGrace = await sweep.execute({ now: instantFromDate(afterGrace) });
 
@@ -675,9 +676,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       now: instantFromDate(new Date("2028-03-09T06:00:00.000Z")),
     });
     vi.setSystemTime(new Date(STORE_EXPIRY.getTime() - 1));
-    const premiumJustBefore = await entitlement.canInTx(userId, "AI_REPORT");
+    const premiumJustBefore = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
     vi.setSystemTime(STORE_EXPIRY);
-    const premiumAtHandoff = await entitlement.canInTx(userId, "AI_REPORT");
+    const premiumAtHandoff = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
     const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
     vi.setSystemTime(lateSweepAt);
     await sweep.execute({ now: instantFromDate(lateSweepAt) });
@@ -835,8 +836,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
-    expect(await entitlement.getFeatureLimitInTx(userId, "FRIEND")).toBeNull();
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
+    expect(await entitlement.getFeatureLimitInTx(UserId.reconstitute(userId), "FRIEND")).toBeNull();
   });
 
   it.each([
@@ -865,7 +866,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // Then
     expect(await roleOf(userId)).toBe("ADMIN");
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("종료 안내 후보는 endsAt·id keyset으로 앞 묶음 다음부터 읽는다", async () => {
@@ -921,7 +922,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionExpiresAt: null,
     });
     expect(rerun.lapsedUserCount).toBe(0);
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(false);
   });
 
   it("만료 웹훅을 잃은 구독자에게 쌓아 둔 보상이 있으면 sweep이 스토어가 끝난 시각부터 이어서 시작한다", async () => {
@@ -941,7 +942,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: new Date(afterGrace.getTime() + 7 * DAY_MS),
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
   it("잘못 준 보상을 취소하면 REVOKED로 남기고 프리미엄을 바로 끝내며 같은 취소는 바꾸지 않는다", async () => {
     // Given
@@ -962,6 +963,6 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(false);
   });
 });

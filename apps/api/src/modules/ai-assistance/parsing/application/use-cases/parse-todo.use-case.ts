@@ -113,7 +113,7 @@ export class ParseTodoUseCase {
     );
     const { quota } = this.#dependencies;
     const reservation = await quota.reserve({
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey: null,
       reason: "parse-todo",

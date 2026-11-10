@@ -120,11 +120,12 @@ export class GetCurrentUserUseCase {
   ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
+    const owner = UserId.reconstitute(userId);
     const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
-      entitlementReader.getEntitlements(userId),
-      quotaLedger.read(userId, "AI_PARSE"),
-      cheerUsageReader.readDailyUsage(UserId.reconstitute(userId), timezone),
-      nudgeUsageReader.readDailyUsage(UserId.reconstitute(userId), timezone),
+      entitlementReader.getEntitlements(owner),
+      quotaLedger.read(owner, "AI_PARSE"),
+      cheerUsageReader.readDailyUsage(owner, timezone),
+      nudgeUsageReader.readDailyUsage(owner, timezone),
     ]);
     // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
     const features = pick(userEntitlements.features, PREMIUM_FEATURE_KEYS);

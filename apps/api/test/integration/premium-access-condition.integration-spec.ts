@@ -174,8 +174,8 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       Object.entries(userIds).map(async ([scenario, id]) => ({
         scenario,
         sql: !freeIds.has(id),
-        service: await entitlement.canInTx(id, "AI_REPORT"),
-        plan: (await entitlement.getEntitlements(id)).plan === "premium",
+        service: await entitlement.canInTx(UserId.reconstitute(id), "AI_REPORT"),
+        plan: (await entitlement.getEntitlements(UserId.reconstitute(id))).plan === "premium",
       })),
     );
 
@@ -204,7 +204,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
           scenario,
           sql: sqlPaid.get(id),
           ts: state != null && hasPaidAccess({ state, now: instantFromDate(at) }),
-          isPremium: (await entitlement.getEntitlements(id)).isPremium,
+          isPremium: (await entitlement.getEntitlements(UserId.reconstitute(id))).isPremium,
         };
       }),
     );

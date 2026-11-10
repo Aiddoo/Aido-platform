@@ -157,7 +157,12 @@ export class HandleSuggestionActionUseCase {
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }

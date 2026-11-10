@@ -453,9 +453,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "구독 캐시가 ACTIVE여도 현재 $subscriptionStatus/$status 사용자의 worker는 실행하지 않는다",
     async (patch) => {
       // Given
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
       await patchUser(patch);
-      expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
 
       // When
       for (const kind of ["report", "suggestion"] as const) {

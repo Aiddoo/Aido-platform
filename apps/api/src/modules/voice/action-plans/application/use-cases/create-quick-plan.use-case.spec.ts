@@ -2,6 +2,7 @@ import { quickPlanResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
@@ -43,7 +44,8 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       locale: "ko",
       ...overrides,
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "AI_PARSE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used;
   return { ...fixture, replay, execute, used };
 }
 

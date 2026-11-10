@@ -48,10 +48,10 @@ export class EntitlementCacheAdapter
   }
 
   async invalidate(userId: UserId): Promise<void> {
-    await this.invalidateEntitlements(userId.value);
+    await this.invalidateEntitlements(userId);
   }
 
-  async invalidateEntitlements(userId: string): Promise<void> {
-    await this.#cacheService.del(EntitlementCacheKey.subscription(userId));
+  async invalidateEntitlements(userId: UserId): Promise<void> {
+    await this.#cacheService.del(EntitlementCacheKey.subscription(userId.value));
   }
 }

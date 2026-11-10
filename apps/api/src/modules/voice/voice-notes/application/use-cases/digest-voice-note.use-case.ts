@@ -145,7 +145,10 @@ export class DigestVoiceNoteUseCase {
 
   /** 등급별 상한은 access가 계산해 준 값만 쓴다. 차감 전에 막아 횟수를 쓰지 않는다. */
   async #assertWithinPerUseLimit(userId: string, transcript: VoiceTranscript): Promise<void> {
-    const featureQuota = await this.#dependencies.quota.read(userId, "VOICE_NOTE");
+    const featureQuota = await this.#dependencies.quota.read(
+      UserId.reconstitute(userId),
+      "VOICE_NOTE",
+    );
     if (
       featureQuota.perUse != null &&
       transcript.exceedsDuration({

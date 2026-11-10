@@ -200,7 +200,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       userStatus: user?.subscriptionStatus,
       userExpiry:
         user?.subscriptionExpiresAt == null ? null : toIsoString(user.subscriptionExpiresAt),
-      premiumAccess: await entitlement.can(userId, "AI_REPORT"),
+      premiumAccess: await entitlement.can(UserId.reconstitute(userId), "AI_REPORT"),
     };
   }
 
@@ -232,7 +232,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(stored?.environment).toBe("SANDBOX");
     expect(receipt?.environment).toBe("SANDBOX");
     expect(events.at(-1)?.environment).toBe("SANDBOX");
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("A 만료→B 갱신→동일 A 재전송은 최신 프리미엄 권한을 유지해야 한다", async () => {
@@ -357,7 +357,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     );
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
     expect(events).toHaveLength(1);
-    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("구독 INSERT의 실제 FK 오류는 처리 원장도 rollback하고 던져, 다시 보낸 같은 이벤트를 처리할 수 있다", async () => {
@@ -527,7 +527,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Given
     await givenActiveUserProjection();
     await givenOtherSubscription();
-    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
     const body = builder()
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)

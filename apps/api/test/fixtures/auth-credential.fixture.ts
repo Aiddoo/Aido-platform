@@ -170,12 +170,12 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEn
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getEntitlements(userId: string): Promise<UserEntitlements> {
-    const tier = this.tiers.get(userId) ?? "FREE";
+  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
+    const tier = this.tiers.get(userId.value) ?? "FREE";
     return {
       tier,
       plan: planOfTier(tier),
-      isPremium: this.activeSubscriptionUserIds.has(userId),
+      isPremium: this.activeSubscriptionUserIds.has(userId.value),
       features: createFeatureEntitlementsFixture(tier),
     };
   }
@@ -185,7 +185,7 @@ export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read">
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: string): Promise<MeteredFeatureQuota> {
+  async read(_userId: UserId): Promise<MeteredFeatureQuota> {
     return {
       feature: "AI_PARSE",
       allowed: true,

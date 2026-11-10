@@ -105,7 +105,7 @@ export class ParseMemoUseCase {
     );
     const { quota } = this.#dependencies;
     const reservation = await quota.reserve({
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey,
       ...(idempotencyKey != null && {

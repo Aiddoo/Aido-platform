@@ -107,7 +107,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     // Given
     const premium = entitlementAt(SUBJECTS.PREMIUM);
     const free = entitlementAt(SUBJECTS.FREE);
-    free.accessStateReader.featureGrants.seed(free.userId, { FRIEND: 2 });
+    free.accessStateReader.featureGrants.seed(free.userId.value, { FRIEND: 2 });
 
     // When
     const premiumCategory = await premium.reader.getFeatureLimit(premium.userId, "TODO_CATEGORY");

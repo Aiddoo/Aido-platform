@@ -14,6 +14,7 @@ import type {
   WeatherForecast,
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 /** 콜백 조립 Stub. 실제 PostgreSQL rollback/lock 보장은 Integration에서 검증한다. */
 export class StubAiGenerationUnitOfWork implements UnitOfWorkPort {
@@ -41,7 +42,7 @@ export class StubAiGenerationAccess
   readonly reads: Array<{ inUnitOfWork: boolean; eligible: boolean }> = [];
   readonly locks: boolean[] = [];
   constructor(readonly unitOfWork: StubAiGenerationUnitOfWork) {}
-  async canInTx(_userId: string, _feature: PremiumFeature): Promise<boolean> {
+  async canInTx(_userId: UserId, _feature: PremiumFeature): Promise<boolean> {
     const eligible =
       this.exists &&
       this.status === "ACTIVE" &&

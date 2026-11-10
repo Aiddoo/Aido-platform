@@ -5,6 +5,7 @@ import {
   isExemptFromDormancy,
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoSeriesOwnerPort } from "../../application/ports/todo-series-owner.port.js";
 import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-service.js";
@@ -42,7 +43,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   }
 
   async isExemptFromDormancy(userId: string): Promise<boolean> {
-    const { plan } = await this.#entitlementReader.getEntitlements(userId);
+    const { plan } = await this.#entitlementReader.getEntitlements(UserId.reconstitute(userId));
     return isExemptFromDormancy(plan);
   }
 }

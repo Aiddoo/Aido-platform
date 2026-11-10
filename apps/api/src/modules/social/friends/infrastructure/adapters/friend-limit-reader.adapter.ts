@@ -27,15 +27,15 @@ export class FriendLimitReaderAdapter extends FriendLimitReaderPort {
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId.value, "FRIEND");
+    return this.#entitlementReader.getFeatureLimit(userId, "FRIEND");
   }
 
   readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId.value, "FRIEND");
+    return this.#entitlementReader.getFeatureLimitInTx(userId, "FRIEND");
   }
 
   readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId.value, "FRIEND", {
+    return this.#entitlementReader.getFeatureQuotaInTx(userId, "FRIEND", {
       used: friendCount,
       resetsAt: null,
     });

@@ -14,6 +14,7 @@ import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/prefe
 import type { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
 import type { PreferenceSnapshot } from "#api/modules/identity/preferences/application/read-models/preference.read-model";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubUserSettingsCache implements UserSettingsCachePort {
   readonly snapshots = new Map<string, PreferenceSnapshot>();
@@ -46,8 +47,8 @@ export class StubReminderTimezoneCache implements ReminderTimezoneCachePort {
 
 export class StubPreferenceEntitlement implements PreferenceEntitlementPort {
   readonly premiumUserIds = new Set<string>();
-  async can(userId: string, _feature: PremiumFeature): Promise<boolean> {
-    return this.premiumUserIds.has(userId);
+  async can(userId: UserId, _feature: PremiumFeature): Promise<boolean> {
+    return this.premiumUserIds.has(userId.value);
   }
 }
 

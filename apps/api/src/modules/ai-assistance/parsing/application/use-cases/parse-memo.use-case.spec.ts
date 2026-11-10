@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
@@ -134,10 +135,12 @@ describe("ParseMemoUseCase", () => {
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({
-      used: 1,
-      limit: FREE_AI_LIMIT,
-    });
+    expect(await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).toMatchObject(
+      {
+        used: 1,
+        limit: FREE_AI_LIMIT,
+      },
+    );
     expect(result.featureQuota).toMatchObject({ feature: "AI_PARSE", used: 1 });
     expect(result.data.todos).toMatchObject([{ title: "팀 미팅", categoryId: 7 }]);
     expect(result.meta).toMatchObject({
@@ -187,7 +190,9 @@ describe("ParseMemoUseCase", () => {
       const pending = fixture.useCase.execute({ ...input, content: "다른 메모" });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
-      expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({ used: 1 });
+      expect(
+        await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE"),
+      ).toMatchObject({ used: 1 });
     });
 
     it("실패해 환불한 키로 다시 보내면 성공한 한 번만 차감한다", async () => {
@@ -250,7 +255,9 @@ describe("ParseMemoUseCase", () => {
       errorCode: "AI_1301",
       details: { charged: false },
     });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
   });
 
   it("한도가 소진된 요청은 provider를 호출하지 않고 AI_1303을 반환한다", async () => {
@@ -258,7 +265,7 @@ describe("ParseMemoUseCase", () => {
     const fixture = createFixture();
     for (let index = 0; index < FREE_AI_LIMIT; index += 1) {
       await fixture.quota.reserve({
-        userId: fixture.userId,
+        userId: UserId.reconstitute(fixture.userId),
         feature: "AI_PARSE",
         idempotencyKey: null,
         reason: "parse-todo",
@@ -290,7 +297,9 @@ describe("ParseMemoUseCase", () => {
       const execution = fixture.useCase.execute(fixture.input);
       // Then
       await expect(execution).rejects.toMatchObject({ errorCode, details: { charged: false } });
-      expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+      expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+        0,
+      );
     },
   );
 
@@ -302,7 +311,9 @@ describe("ParseMemoUseCase", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.logger.log).not.toHaveBeenCalled();
   });
 
@@ -315,7 +326,9 @@ describe("ParseMemoUseCase", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
@@ -326,7 +339,9 @@ describe("ParseMemoUseCase", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, timezone: "Invalid/Timezone" });
     // Then
     await expect(execution).rejects.toBeInstanceOf(RangeError);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
@@ -342,7 +357,9 @@ describe("ParseMemoUseCase", () => {
     });
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -375,7 +392,9 @@ describe("ParseMemoUseCase", () => {
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.data.todos[0]?.items).toHaveLength(5);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      1,
+    );
     expect(fixture.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "ai.generation.completed",
@@ -396,7 +415,9 @@ describe("ParseMemoUseCase", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1310 });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ event: "ai.generation.failed", errorType: "RATE_LIMITED" }),
@@ -584,7 +605,9 @@ describe("ParseMemoUseCase", () => {
     expect(result.data.todos).toEqual([
       expect.objectContaining({ title: "입력 확인 필요", categoryId: 1, items: [] }),
     ]);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      0,
+    );
     expect(result.featureQuota).toMatchObject({ used: 0 });
     expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "REFUNDED", refundReason: "NO_ACTION", reason: "parse-memo" },
@@ -601,7 +624,9 @@ describe("ParseMemoUseCase", () => {
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.data.todos.map((todo) => todo.title)).toEqual(["전기요금 납부"]);
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+    expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
+      1,
+    );
   });
 
   it("모델이 전체 할 일 수를 터무니없이 크게 주면 상한 100개 기준으로 남은 수를 알린다", async () => {

@@ -69,7 +69,12 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 
   async execute(command: AnalyzeAndCreateSuggestionsCommand): Promise<number> {
     const { userId, timezone, weatherGrid = null, locale = "ko" } = command;
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
@@ -173,7 +178,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       const { userMutationLock, entitlementReader } = this.#dependencies;
       if (
         !(await userMutationLock.lockById(userId)) ||
-        !(await entitlementReader.canInTx(userId, "AI_SUGGESTION"))
+        !(await entitlementReader.canInTx(owner, "AI_SUGGESTION"))
       ) {
         return 0;
       }

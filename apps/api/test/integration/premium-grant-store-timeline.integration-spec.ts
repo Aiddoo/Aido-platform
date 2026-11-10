@@ -9,6 +9,7 @@ import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/in
 import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
@@ -90,7 +91,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   }
 
   function isPremium() {
-    return entitlement.canInTx(userId, "AI_REPORT");
+    return entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
   }
 
   async function userProjection() {
@@ -202,7 +203,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       isTrial: false,
       planType: null,
     });
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   function billingIssue(eventId: string, graceEndsAt: Date) {

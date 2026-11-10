@@ -6,6 +6,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
@@ -54,7 +55,11 @@ export class UpdatePreferenceUseCase {
       input.eveningReminderMinute != null;
 
     if (changesReminder) {
-      await assertEntitled(this.#dependencies.entitlement, userId, "CUSTOM_REMINDER_TIME");
+      await assertEntitled(
+        this.#dependencies.entitlement,
+        UserId.reconstitute(userId),
+        "CUSTOM_REMINDER_TIME",
+      );
     }
 
     ReminderTime.create(input);
