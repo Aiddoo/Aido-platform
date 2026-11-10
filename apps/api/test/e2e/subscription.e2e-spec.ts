@@ -24,9 +24,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     // 웹훅 비밀은 시작할 때 한 번 읽으므로 앱을 만들 때 넣는다
     context = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
-          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
-        }),
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
     });
   });
 

@@ -5,7 +5,6 @@ import { StoreSubscriptionReconcileScheduler } from "./store-subscription-reconc
 
 const ENABLED = {
   revenuecat: {
-    webhookSecret: undefined,
     projectId: "proj_test",
     apiV2SecretKey: "sk_test",
   },

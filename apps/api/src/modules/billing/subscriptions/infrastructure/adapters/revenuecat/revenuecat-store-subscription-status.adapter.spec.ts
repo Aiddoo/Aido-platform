@@ -69,7 +69,6 @@ function createAdapter(revenuecat: { apiV2SecretKey?: string; projectId?: string
     new HttpClient({ retry: false, throwOnHttpError: false }),
     {
       revenuecat: {
-        webhookSecret: undefined,
         apiV2SecretKey: revenuecat.apiV2SecretKey,
         projectId: revenuecat.projectId,
       },

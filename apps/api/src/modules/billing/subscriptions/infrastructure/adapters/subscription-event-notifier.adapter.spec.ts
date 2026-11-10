@@ -24,7 +24,6 @@ function createAdapter(options: { projectId?: string } = {}) {
   const jobQueue = new InMemoryJobQueue();
   const config = {
     revenuecat: {
-      webhookSecret: undefined,
       projectId: options.projectId,
       apiV2SecretKey: undefined,
     },

@@ -1,10 +1,10 @@
 import { Logger } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 
-import { appConfig } from "#api/platform/config/app.config";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
+import { billingSubscriptionsConfig } from "../../../billing-subscriptions.config.js";
 import type { StoreSubscriptionEvent } from "../../../domain/store-subscription.event.js";
 import { RevenueCatWebhookReceiver } from "./revenuecat-webhook-receiver.adapter.js";
 
@@ -38,12 +38,11 @@ function purchase(store: string) {
   };
 }
 
-function receiverIn(environment: ConfigType<typeof appConfig>["environment"]) {
+function receiverIn(appEnv: AppEnvironment) {
   const applied: StoreSubscriptionEvent[] = [];
   const alert = new RecordingOperationalAlert();
-  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, {
-    environment,
-  });
+  const config = billingSubscriptionsConfig.parse({ NODE_ENV: "production", APP_ENV: appEnv });
+  const receiver = new RevenueCatWebhookReceiver(recordingApplyUseCase(applied), alert, config);
   return { receiver, applied, alert };
 }
 

@@ -14,6 +14,7 @@ import { ThrottlerGuard } from "@nestjs/throttler";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
+import { vi } from "vitest";
 
 import { setupApiDocs } from "#api/api-docs";
 import { AppModule } from "#api/app.module";
@@ -133,9 +134,14 @@ export interface E2eAppOptions {
   additionalResetters?: readonly TestStateResetter[];
   /** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
   testDatabase?: TestDatabase;
+  /** 설정은 앱이 시작할 때 env를 한 번 읽는다. 배포 환경·비밀처럼 suite마다 다른 값은 여기로 넣는다 */
+  env?: Readonly<Record<string, string>>;
 }
 
 export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestContext> {
+  for (const [key, value] of Object.entries(options?.env ?? {})) {
+    vi.stubEnv(key, value);
+  }
   const testDatabase = options?.testDatabase ?? new TestDatabase();
   if (!options?.testDatabase) {
     await testDatabase.start();

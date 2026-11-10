@@ -24,9 +24,12 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
   beforeAll(async () => {
     context = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
-          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
-        }),
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
     });
   });
 

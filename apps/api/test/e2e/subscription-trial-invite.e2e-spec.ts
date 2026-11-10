@@ -27,9 +27,12 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
   beforeAll(async () => {
     context = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
-          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
-        }),
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
     });
   });
 
