@@ -83,7 +83,7 @@ pnpm --filter @aido/mobile e2e                    # 전체
 pnpm --filter @aido/mobile e2e:smoke              # smoke만
 pnpm --filter @aido/mobile e2e:feature category   # 한 기능(태그)만
 pnpm --filter @aido/mobile e2e --device <udid> --exclude-tags android-only
-pnpm --filter @aido/mobile e2e:accounts reset     # 초대 수락 기록·두 계정 사이 친구 알림 지우기 (e2e가 시작할 때 자동으로 부른다)
+pnpm --filter @aido/mobile e2e:accounts reset     # 초대 수락 기록·두 계정 사이 친구 알림과 알림 작업 지우기 (e2e가 시작할 때 자동으로 부른다)
 ```
 
 `run-e2e.ts`는 `.env.maestro`를 환경으로 올리고(Maestro가 `MAESTRO_*`를 바로 읽어 비밀번호가 `-e` 인자에 남지 않는다,

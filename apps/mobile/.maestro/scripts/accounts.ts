@@ -5,7 +5,8 @@
  *
  * - create  main·second를 실제 가입 API로 만들고 로컬 DB에서 이메일 인증만 표시한다. 비밀번호는 무작위로 만들어
  *           git이 무시하는 `.maestro/.env.maestro`에만 쓴다(출력하지 않는다).
- * - reset   second의 초대 수락·두 계정의 친구 관계·보상·프리미엄을 지워 초대 흐름을 다시 돌릴 수 있게 한다.
+ * - reset   second의 초대 수락·두 계정의 친구 관계·친구 알림과 그 알림 작업·보상·프리미엄을 지워 초대·알림함 흐름을
+ *           다시 돌릴 수 있게 한다.
  *           초대 수락 기록은 공개 API로 지울 수 없어 이 스크립트만 DB를 만진다.
  * - delete  두 계정을 지우고 `.env.maestro`의 계정 줄을 비운다.
  *
@@ -30,6 +31,8 @@ const LOCAL_HOSTS = new Set([
 const DEFAULT_API_URL = 'http://localhost:8080';
 const DEFAULT_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5433/aido';
 const EMAIL_DOMAIN = 'example.test';
+// apps/api JOB_SCHEMA 기본값. 로컬 개발 서버는 바꾸지 않는다
+const JOB_SCHEMA = 'pgboss';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ENV_FILE = resolve(SCRIPT_DIR, '..', '.env.maestro');
@@ -218,6 +221,16 @@ async function createAccounts(target: Target): Promise<void> {
   );
 }
 
+/** apps/api `notificationEventJobKey`의 친구 요청·친구 됨 알림 작업 key를 두 방향 모두 */
+function followNotificationJobKeys(main: string, second: string): string[] {
+  return [
+    `follow-new-${main}-${second}`,
+    `follow-new-${second}-${main}`,
+    `follow-mutual-${main}-${second}`,
+    `follow-mutual-${second}-${main}`,
+  ];
+}
+
 async function resetAccounts(target: Target): Promise<void> {
   const entries = readEnvFile();
   const db = await connectDatabase(target.databaseUrl);
@@ -255,6 +268,10 @@ async function resetAccounts(target: Target): Promise<void> {
         `DELETE FROM "Notification" WHERE "userId" = ANY($1::text[]) AND "type" IN ('FOLLOW_NEW', 'FOLLOW_ACCEPTED')`,
         [both],
       );
+      // 알림 작업은 key에서 만든 결정적 id로 끝난 뒤에도 하루 남아, 지우지 않으면 같은 두 계정의 친구 요청 알림 작업이 다시 들어가지 않는다
+      await db.query(`DELETE FROM ${JOB_SCHEMA}.job WHERE "singleton_key" = ANY($1::text[])`, [
+        followNotificationJobKeys(main, second),
+      ]);
       // 기기·신원 해시에는 사용자 연결이 없어, 같은 시뮬레이터에서 다시 보상을 받으려면 로컬 기록을 모두 지운다
       await db.query('DELETE FROM "RewardClaim"');
       await db.query('COMMIT');
