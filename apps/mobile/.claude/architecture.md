@@ -146,49 +146,50 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 `pnpm --filter @aido/mobile check:conventions`(`scripts/check-mobile-conventions.mjs`)가 다음을 실패시킨다.
 
-| 검사                 | 내용                                                                                                                                                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                                                                                                                           |
-| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                                                                                                                                 |
-| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트·`__tests__` 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                           |
-| 스키마 파일 이름     | `features/**/schemas/` 파일이 `-form`·`-params`·`-draft`·`-query-key`·`-storage`·`-request`·`-response`·`-payload`·`-entry`(`.schema.ts`) 밖의 이름. 모델은 `domains/{entity}.model.ts`로 옮긴다                                                                                                       |
-| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                                                                                                                               |
-| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                                                                                                                           |
-| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                                                                                                                           |
-| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                                                                                                                         |
-| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                                                                                                                                        |
-| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다                                                                                                          |
-| `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                                                                                                                                     |
-| 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                                                                                                                                      |
-| 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                                                                                                                                    |
-| 시트 route           | `SheetRouteScreen`을 그리는 `app/` route가 `safeParse` 결과의 `.data`를 읽음. route는 검증과 `Redirect`만, 대상은 시트가 route 훅으로 읽는다                                                                                                                                                           |
-| 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                                                                                                                              |
-| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`)                                                                                                                                                               |
-| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                                                                                                                           |
-| 함수 이름            | 값을 만드는 동사 뒤에 출처를 붙인 `getXFromY`·`toXFromY`·`useXFromY`류와 `tryX`(테스트 제외). `removeXFromY`처럼 동작이 일어나는 곳을 말하는 이름은 통과한다                                                                                                                                           |
-| 파일 접두사          | feature 이름이 entity 이름을 줄인 것(`nudge`→`todo-nudge`)일 때 `schemas`·`domains`·`apis`·`queries`·`constants`·`__tests__`의 entity·feature 수준 파일(`*.model`·`*-cache`·`*.events` 등)이 줄인 이름으로 시작. 역할 이름 파일(`nudge-params.schema`)과 다른 entity(`nudge-interaction.*`)는 통과한다 |
-| 타입 이름            | 폼 값 `*FormInput`(`*FormValues`로), `queries/*.mutations.ts`의 `*Params`·`*Args`(`*Variables`로). `Params`는 route 값에만 쓴다                                                                                                                                                                        |
-| 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                                                                                                                                     |
-| 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                                                                                                                            |
-| mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                                                                                                                         |
-| 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                                                                                                                             |
-| 기기 저장 읽기       | feature와 `app/`의 `useSyncStorageString`. 값의 repository가 읽기·쓰기·`subscribe`를 갖고 `useSyncExternalStore`로 구독한다. `shared/providers`와 테스트는 예외                                                                                                                                        |
-| worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                                                                                                                            |
-| RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                                                                                                                           |
-| 단계 렌더러          | `X.Render(...)` 함수 호출. `useStepper`의 `Render`는 훅을 쓰는 컴포넌트라 `<X.Render … />` JSX로만 그린다(React Compiler가 호출을 건너뛰면 훅 수가 달라진다)                                                                                                                                           |
-| `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                                                                                                                               |
-| `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                                                                                                                            |
-| 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                                                                                                                              |
-| 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                                                                                                                          |
-| 폼 모양              | `FormProvider`·`useFormContext`·`FormField`, 변수 이름 `form` 아님, `useForm` 제네릭. 폼은 `form`을 props로 넘기고 `Controller`로 쓴다                                                                                                                                                                 |
-| 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                                                                                                                             |
-| 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                                                                                                                            |
-| 여백 표기            | 한 태그에 spacing prop(`p`, `px`, `pb` 등)과 `className`을 함께 씀. 여백은 `className`으로 쓴다(`gap`·`flex` prop은 대상이 아니다)                                                                                                                                                                     |
-| 아이콘 prop          | `StyledIcon`·`typeof XIcon` 타입 prop의 이름이 `Icon`(또는 `XIcon`)이 아님. 컴포넌트는 `Icon: StyledIcon`, 그려 둔 요소는 `icon: ReactNode`                                                                                                                                                            |
-| 로딩 조각 이름       | 네임스페이스에 거는 `X.YSkeleton`. `X.Loading`(행마다면 `X.Item.Loading`)으로 건다                                                                                                                                                                                                                     |
-| 조각 함수 이름       | `X.Y = function Z`에서 `Z`가 `Y`와 다름. `.Error`는 `ErrorFallback`, 가져온 이름을 가리면 다른 이름. 테스트 mock은 예외                                                                                                                                                                                |
+| 검사                 | 내용                                                                                                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                                                                                                                            |
+| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                                                                                                                                  |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트·`__tests__` 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                            |
+| 스키마 파일 이름     | `features/**/schemas/` 파일이 `-form`·`-params`·`-draft`·`-query-key`·`-storage`·`-request`·`-response`·`-payload`·`-entry`(`.schema.ts`) 밖의 이름. 모델은 `domains/{entity}.model.ts`로 옮긴다                                                                                                        |
+| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                                                                                                                                |
+| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                                                                                                                            |
+| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                                                                                                                            |
+| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                                                                                                                          |
+| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                                                                                                                                         |
+| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다                                                                                                           |
+| `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                                                                                                                                      |
+| 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                                                                                                                                       |
+| 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                                                                                                                                     |
+| 시트 route           | `SheetRouteScreen`을 그리는 `app/` route가 `safeParse` 결과의 `.data`를 읽음. route는 검증과 `Redirect`만, 대상은 시트가 route 훅으로 읽는다                                                                                                                                                            |
+| 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                                                                                                                               |
+| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. 멤버 첫 인자가 모델 일부(`Pick`·`Partial`·`Omit`·`Required`, 객체 리터럴 타입, 교차 타입, `Model['field']`, 그런 모양의 같은 파일 `type` 별칭·타입 인자 제약). feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`) |
+| 모델 import          | `domains/*.model.ts`가 `@aido/api` 루트·`contracts/*`, 문구(`@src/shared/i18n`·`i18next`·`react-i18next`), `@src/shared/ui`, `react-native`, `react`를 import. `@aido/api/vocabulary`·`errors`는 통과한다                                                                                               |
+| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                                                                                                                            |
+| 함수 이름            | 값을 만드는 동사 뒤에 출처를 붙인 `getXFromY`·`toXFromY`·`useXFromY`류와 `tryX`(테스트 제외). `removeXFromY`처럼 동작이 일어나는 곳을 말하는 이름은 통과한다                                                                                                                                            |
+| 파일 접두사          | feature 이름이 entity 이름을 줄인 것(`nudge`→`todo-nudge`)일 때 `schemas`·`domains`·`apis`·`queries`·`constants`·`__tests__`의 entity·feature 수준 파일(`*.model`·`*-cache`·`*.events` 등)이 줄인 이름으로 시작. 역할 이름 파일(`nudge-params.schema`)과 다른 entity(`nudge-interaction.*`)는 통과한다  |
+| 타입 이름            | 폼 값 `*FormInput`(`*FormValues`로), `queries/*.mutations.ts`의 `*Params`·`*Args`(`*Variables`로). `Params`는 route 값에만 쓴다                                                                                                                                                                         |
+| 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                                                                                                                                      |
+| 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                                                                                                                             |
+| mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                                                                                                                          |
+| 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                                                                                                                              |
+| 기기 저장 읽기       | feature와 `app/`의 `useSyncStorageString`. 값의 repository가 읽기·쓰기·`subscribe`를 갖고 `useSyncExternalStore`로 구독한다. `shared/providers`와 테스트는 예외                                                                                                                                         |
+| worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                                                                                                                             |
+| RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                                                                                                                            |
+| 단계 렌더러          | `X.Render(...)` 함수 호출. `useStepper`의 `Render`는 훅을 쓰는 컴포넌트라 `<X.Render … />` JSX로만 그린다(React Compiler가 호출을 건너뛰면 훅 수가 달라진다)                                                                                                                                            |
+| `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                                                                                                                                |
+| `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                                                                                                                             |
+| 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                                                                                                                               |
+| 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                                                                                                                           |
+| 폼 모양              | `FormProvider`·`useFormContext`·`FormField`, 변수 이름 `form` 아님, `useForm` 제네릭. 폼은 `form`을 props로 넘기고 `Controller`로 쓴다                                                                                                                                                                  |
+| 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                                                                                                                              |
+| 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                                                                                                                             |
+| 여백 표기            | 한 태그에 spacing prop(`p`, `px`, `pb` 등)과 `className`을 함께 씀. 여백은 `className`으로 쓴다(`gap`·`flex` prop은 대상이 아니다)                                                                                                                                                                      |
+| 아이콘 prop          | `StyledIcon`·`typeof XIcon` 타입 prop의 이름이 `Icon`(또는 `XIcon`)이 아님. 컴포넌트는 `Icon: StyledIcon`, 그려 둔 요소는 `icon: ReactNode`                                                                                                                                                             |
+| 로딩 조각 이름       | 네임스페이스에 거는 `X.YSkeleton`. `X.Loading`(행마다면 `X.Item.Loading`)으로 건다                                                                                                                                                                                                                      |
+| 조각 함수 이름       | `X.Y = function Z`에서 `Z`가 `Y`와 다름. `.Error`는 `ErrorFallback`, 가져온 이름을 가리면 다른 이름. 테스트 mock은 예외                                                                                                                                                                                 |
 
-**이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`) 하나(`planning/category <-> planning/todo`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
+**이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`) 하나(`planning/category <-> planning/todo`)와 `queries/*.mutations.ts`가 모델 일부로 부르는 Policy 멤버(`policy-facade`) 셋이 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 
 아래 규칙은 이 검사가 막지 않아 리뷰로 지킨다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import.
 
@@ -196,12 +197,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-08 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                    | 지금 코드                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                                                                                                         |
-| [모델](#모델과-policy)  | 모델 스키마는 모두 `domains/`에 있다(`schemas/`의 역할 접미사 밖 파일 0개). 모델 파일 4개가 `schemas/`의 폼·요청·푸시 모양을 import한다: `notification.model.ts`(`PushNotificationPayload`·`NotificationNavigation`), `voice-note.model.ts`(`planReviewDraftSchema`), `todo-comment-composer.model.ts`(`TodoCommentComposerMode`·`TodoCommentChainInput`), `todo-change.model.ts`(`TodoUpdateChanges`). 손댈 때 모델 모양으로 정의하고 mapper가 바꾼다 |
-| [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음                                                                                                                                                                                                                     |
-| 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                                                                                                       |
+| 규칙                             | 지금 코드                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [사용성](#사용성)                | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                                                                                                         |
+| [모델](#모델과-policy)           | 모델 스키마는 모두 `domains/`에 있다(`schemas/`의 역할 접미사 밖 파일 0개). 모델 파일 4개가 `schemas/`의 폼·요청·푸시 모양을 import한다: `notification.model.ts`(`PushNotificationPayload`·`NotificationNavigation`), `voice-note.model.ts`(`planReviewDraftSchema`), `todo-comment-composer.model.ts`(`TodoCommentComposerMode`·`TodoCommentChainInput`), `todo-change.model.ts`(`TodoUpdateChanges`). 손댈 때 모델 모양으로 정의하고 mapper가 바꾼다 |
+| [Policy 첫 인자](#모델과-policy) | `SubscriptionPolicy.hasFreeTrial`·`ConsentPolicy.getConsentResult`·`TodoPolicy.getVisibility`가 아직 모델 일부를 받는다. 모두 `queries/*.mutations.ts`가 일부 값으로 부른다. mutation을 고칠 때 Policy 밖 함수로 옮기거나 변수를 모델로 넓히고 허용 목록에서 지운다. `SubTodoPolicy`의 `withSubTodo*`는 할 일을 고치는 함수라 `TodoPolicy` 쪽이 맞는데 같은 이유로 그대로 둔다                                                                         |
+| [층과 의존](#층과-의존)          | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음                                                                                                                                                                                                                     |
+| 테스트·UI                        | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                                                                                                       |
 
 ---
 
@@ -233,13 +235,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 기준은 frontend-fundamentals-mock-exam-1이다. 파일 구조는 따르지 않고 서비스는 우리 DI로 받는다. 같은 역할의 앱 코드는 다음과 같다.
 
-| 참고 저장소                                | 앱                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------- |
-| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                       |
-| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                              |
-| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoId`로 읽음          |
-| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)         |
-| `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다 |
+| 참고 저장소                                | 앱                                                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                                            |
+| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                                                   |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoId`로 읽음                               |
+| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)                              |
+| `saving-product.model.ts`                  | `memo.model.ts`. Policy는 인라인 메서드 대신 모듈 함수를 모으고 첫 인자로 모델 전체를 받는다 |
 
 ```tsx
 // app/(app)/(tabs)/memo/index.tsx
@@ -819,7 +821,7 @@ export function canCreateMemo(limit: MemoResourceLimit) {
 }
 
 /** 저장은 앞뒤 공백을 빼고 하므로 공백만 고친 글자는 바뀐 것이 아니다 */
-export function hasContentChanged(memo: Pick<Memo, 'content'>, content: string) {
+export function hasContentChanged(memo: Memo, content: string) {
   return content.trim() !== memo.content;
 }
 
@@ -846,7 +848,42 @@ export function toMemo(dto: MemoDto): Memo {
 
 **이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정, 접두사 뜻은 [이름](#이름)의 표), `find*`(검색), `create*`(생성), `with*`(불변 갱신). 부정 이름은 쓰지 않는다. `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
 
-**첫 인자는 모델이다.** 값이 하나만 필요해도 `Pick<Memo, 'content'>`로 받아 필드가 바뀌면 타입이 알려 주게 한다. 흩어진 필드 나열이나 DTO를 받지 않는다.
+**Policy 멤버의 첫 인자는 모델 전체다.** 값이 하나만 필요해도 `category: TodoCategory`로 받고 `Pick<TodoCategory, …>`·`Partial`·객체 리터럴로 좁히지 않는다. 모델에 필드가 늘거나 줄어도 Policy 서명과 호출부가 그대로다. 목록 규칙은 `readonly TodoCategory[]`를 첫 인자로 받는다. 모델은 `domains/{entity}.model.ts`의 Zod 스키마와 `z.infer` 타입이고 흩어진 필드 나열이나 DTO를 받지 않는다.
+
+```typescript
+// Before: 필드가 바뀌면 Pick과 호출부의 객체 리터럴이 함께 바뀐다
+function canNudgeTodoInRange(
+  input: { canNudge: boolean; isCompleted: boolean; startDate: string; endDate: string | null },
+  targetDate: string,
+) {
+  return input.canNudge && !input.isCompleted && TodoPolicy.isTodoOnDate(input, targetDate);
+}
+TodoNudgePolicy.canNudgeTodoInRange(
+  {
+    canNudge: detail.permissions.canNudge,
+    isCompleted: detail.todo.completed,
+    startDate: detail.todo.startDate,
+    endDate: detail.todo.endDate,
+  },
+  todayKey,
+);
+
+// After: 모델 전체를 받고 호출부는 가진 모델을 그대로 넘긴다
+function canNudgeTodoInRange(details: TodoDetails, targetDate: string) {
+  return (
+    details.permissions.canNudge &&
+    !details.todo.completed &&
+    TodoPolicy.isTodoOnDate(details.todo, targetDate)
+  );
+}
+TodoNudgePolicy.canNudgeTodoInRange(detail, todayKey);
+```
+
+**모델 일부만 가진 곳의 규칙은 Policy 밖 함수다.** 폼 값, 입력한 검색어, route의 id, `select`로 일부만 구독한 조회 결과처럼 호출부가 모델 일부만 가지면 그 규칙은 엔티티 규칙이 아니다. 가짜 모델을 만들지 말고 필요한 값만 받는 순수 함수로 export한다(`isValidSearchQuery(query)`, `isPrivateVisibility(visibility)`, `getTodayKey(report, now)`). Policy 멤버도 그 함수를 직접 불러 조합한다(`isRecurringTodo(todo)`는 `isRecurring(todo.recurrenceGroupId)`). 아래 층의 순수 함수는 지금처럼 필요한 값만 받는다(`calculateExpectedAmount(monthlyAmount, term, annualRate)`).
+
+**Policy는 모듈 함수를 모은 객체다.** `export const TodoCategoryPolicy = { canReorder, findMoveTarget } as const`처럼 이름 있는 모듈 함수만 모은다. 인라인 메서드와 `this`를 쓰지 않아 콜백으로 넘겨도 안전하고(`filter(InvitedFriendPolicy.orderByWaitingFirst)`), 함수끼리는 서로를 직접 부른다. 한 Policy는 한 엔티티의 규칙만 둔다. 두 엔티티가 섞이면 엔티티마다 나눈다(`TodoCategoryPolicy`·`TodoCategoryDeletionPolicy`, `ReportPolicy`·`ReportStatusPolicy`, `PendingRedemptionPolicy`·`InviteRedemptionPolicy`). 같은 집합의 부분(보고서의 요일 패턴, 예보의 시간별 칸)은 한 Policy에 둔다.
+
+**모델 파일은 업무 규칙만 import한다.** `@aido/api` 루트·`contracts/*`, 문구(i18n), `shared/ui`, `react-native`, React를 import하지 않는다. 용어(`@aido/api/vocabulary`)와 오류 코드(`@aido/api/errors`), 날짜·상수 도구는 쓴다.
 
 **Policy가 하지 않는 것.**
 
