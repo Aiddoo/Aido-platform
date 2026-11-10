@@ -65,7 +65,7 @@
     "pushLabel": "Push notifications",
     "pushDescription": "Get to-do and billing alerts on every device signed in to this account",
     "nightPushLabel": "Night push notifications",
-    "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
+    "nightPushDescription": "Get offer and friend alerts from 9 PM to 8 AM too. Reminders you set always arrive on time",
     "marketingLabel": "Marketing communications",
     "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",
