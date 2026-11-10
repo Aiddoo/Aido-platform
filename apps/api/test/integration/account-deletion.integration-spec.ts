@@ -51,7 +51,6 @@ import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/cat
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { account, user as userTable } from "#api/platform/database/schema/index";
@@ -231,33 +230,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
             get: async () => undefined,
             set: async () => {},
             del: async () => {},
-          },
-        },
-        {
-          provide: TypedConfigService,
-          useValue: {
-            get: (key: string) => {
-              const config: Record<string, string> = {
-                JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-                JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
-                JWT_REFRESH_SECRET:
-                  process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-                JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-              };
-              return config[key];
-            },
-            jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-            jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-            jwtRefreshSecret:
-              process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-            jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            jwtConfig: {
-              secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-              expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-              refreshSecret:
-                process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-              refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            },
           },
         },
         {

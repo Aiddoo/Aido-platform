@@ -14,8 +14,8 @@ import {
   OperationsAdminNoticesModule,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { appConfig } from "#api/platform/config/app.config";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
 import { IdentityUserAccessModule } from "../users/identity-user-access.module.js";
@@ -185,7 +185,13 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: AuthRegistrationNotifierPort,
       useExisting: AdminEventNotifierPort,
     },
-    { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
+    {
+      provide: AuthRuntimeConfigPort,
+      inject: [appConfig.KEY],
+      useFactory: (app: ConfigType<typeof appConfig>): AuthRuntimeConfigPort => ({
+        isDevelopment: app.isDevelopment,
+      }),
+    },
     issueVerificationCodeProvider,
     sendVerificationCodeProvider,
     consumeVerificationCodeProvider,

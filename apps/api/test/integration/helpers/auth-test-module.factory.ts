@@ -42,7 +42,6 @@ import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/cat
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -119,7 +118,7 @@ export async function createAuthTestModule(
             unlinkOAuthAccountProvider,
             DrizzleOAuthStateRepository,
             { provide: AuthOAuthStateRepositoryPort, useExisting: DrizzleOAuthStateRepository },
-            { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
+            { provide: AuthRuntimeConfigPort, useValue: { isDevelopment: false } },
             { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,
@@ -227,27 +226,6 @@ export async function createAuthTestModule(
           get: async () => undefined,
           set: async () => {},
           del: async () => {},
-        },
-      },
-      {
-        provide: TypedConfigService,
-        useValue: {
-          get: (key: string) => {
-            const config: Record<string, string> = {
-              JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-              JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
-              JWT_REFRESH_SECRET:
-                process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-              JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            };
-            return config[key];
-          },
-          jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-          jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-          jwtRefreshSecret:
-            process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-          jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-          isDevelopment: false,
         },
       },
       {
