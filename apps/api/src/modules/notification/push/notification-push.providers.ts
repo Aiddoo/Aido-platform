@@ -158,7 +158,7 @@ export const NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS = [
   },
 ] satisfies Provider[];
 
-export const NOTIFICATION_PUSH_EXTERNAL_PROVIDERS = [
+const NOTIFICATION_PUSH_EXTERNAL_PROVIDERS = [
   { provide: PushProviderPort, useClass: ExpoPushSenderAdapter },
   pushRateLimiterProvider,
   { provide: MarketingPushOptOutTokenPort, useClass: HmacMarketingPushOptOutTokenAdapter },

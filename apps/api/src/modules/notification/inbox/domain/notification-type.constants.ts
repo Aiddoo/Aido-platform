@@ -1,5 +1,5 @@
 // DB NotificationType enum과 같은 값이다. 도메인·애플리케이션이 스키마에 묶이지 않도록 여기서 소유한다
-export const NOTIFICATION_TYPES = [
+const NOTIFICATION_TYPES = [
   "FOLLOW_NEW",
   "FOLLOW_ACCEPTED",
   "NUDGE_RECEIVED",

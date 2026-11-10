@@ -1,14 +1,9 @@
-import type { NotificationActionType, PushDevicePlatform } from "@aido/api/vocabulary";
+import type { NotificationActionType } from "@aido/api/vocabulary";
 
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 
 /** 알림 메타데이터 입력 (DB jsonb 컬럼에 저장) */
-export type NotificationMetadataInput = Record<string, unknown>;
-
-export interface FindPushTokensParams {
-  userId: string;
-  activeOnly?: boolean;
-}
+type NotificationMetadataInput = Record<string, unknown>;
 
 /**
  * 푸시 알림 액션 정보
@@ -209,14 +204,4 @@ export interface CreateNotificationData {
 
   /** 중복 방지용 알림 날짜 (DAILY_COMPLETE, FRIEND_COMPLETED에서 사용) */
   notificationDate?: Date | null;
-}
-
-export interface RegisterPushTokenData {
-  readonly userId: string;
-  readonly token: string;
-  readonly deviceId: string;
-  readonly platform: PushDevicePlatform;
-  readonly sessionId: string | null;
-  readonly payloadVersion: number;
-  readonly appVersion: string | null;
 }

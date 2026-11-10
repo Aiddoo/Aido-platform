@@ -30,7 +30,7 @@ import { DrizzleNotificationReader } from "./infrastructure/persistence/drizzle-
 import { DrizzleNotificationRepository } from "./infrastructure/persistence/drizzle-notification.repository.js";
 
 // 옛 Symbol 토큰은 아직 Symbol로 주입하는 push·reminders·테스트를 위해 같은 인스턴스로 묶는다
-export const NOTIFICATION_INBOX_LEGACY_TOKEN_PROVIDERS = [
+const NOTIFICATION_INBOX_LEGACY_TOKEN_PROVIDERS = [
   { provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepositoryPort },
   { provide: NOTIFICATION_INBOX_READER, useExisting: NotificationInboxReaderPort },
   { provide: NOTIFICATION_HISTORY_READER, useExisting: NotificationHistoryReaderPort },

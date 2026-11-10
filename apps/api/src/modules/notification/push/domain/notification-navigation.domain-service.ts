@@ -22,7 +22,7 @@ type ExternalUrlPresentation =
   | typeof NOTIFICATION_ACTION_TYPE.WEBVIEW;
 
 /** metadata에서 꺼낸 이동 재료. 계약 모양 검증은 매퍼가 먼저 한다. */
-export interface NotificationRoutingInput {
+interface NotificationRoutingInput {
   readonly commentId?: string;
   readonly threadRootId?: string;
   readonly activityKind?: NotificationActivityKind;

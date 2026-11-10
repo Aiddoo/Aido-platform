@@ -24,11 +24,11 @@ export interface NotificationCopy {
 }
 
 /** 다른 언어로 다시 렌더링할 원본 사실. 언어로 다듬은 값(조사·말줄임·날짜 문자열)은 넣지 않는다. */
-export type NotificationCopyFactValue = string | number | boolean | null;
+type NotificationCopyFactValue = string | number | boolean | null;
 export type NotificationCopyFacts = Readonly<Record<string, NotificationCopyFactValue>>;
 
 /** 이름 자리 표기. ko는 조사, en은 문장 첫 주어(`A friend`)·문장 중간(`your friend`)이 달라진다. */
-export const NOTIFICATION_NAME_FORMS = [
+const NOTIFICATION_NAME_FORMS = [
   "name",
   "subject",
   "actor",
@@ -67,7 +67,7 @@ export interface NotificationVariantContext {
 }
 
 /** 저장해 두었다가 다른 언어로 다시 렌더링할 문구 식별자와 원본 사실. */
-export interface NotificationCopyReference {
+interface NotificationCopyReference {
   /** `<그룹>.<템플릿>.<variant>`(예: `scheduler.MORNING_REMINDER.v2`). 언어와 무관하다 */
   readonly copyKey: string;
   readonly copyFacts: NotificationCopyFacts;

@@ -21,7 +21,7 @@ export const NotificationJobName = {
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-export const NOTIFICATION_RETRY = {
+const NOTIFICATION_RETRY = {
   retryLimit: 2,
   retryDelaySeconds: 1,
   retryBackoff: true,
@@ -31,7 +31,7 @@ export const NOTIFICATION_RETRY = {
 } as const satisfies JobRetryPolicy;
 
 // 재시도를 다 쓴 이벤트는 사람이 원인을 확인할 수 있게 더 오래 보관한다
-export const NOTIFICATION_DEAD_LETTER_RETRY = {
+const NOTIFICATION_DEAD_LETTER_RETRY = {
   ...NOTIFICATION_RETRY,
   retryLimit: 0,
   retentionSeconds: 14 * DAY_SECONDS,
@@ -45,7 +45,7 @@ export const NOTIFICATION_ENQUEUE_RETRY = {
 } as const;
 
 // receipt 정리는 실행 예산(45초) 안에서 끝나므로 1분마다 돌려도 겹치지 않는다
-export const PUSH_RECEIPT_SCHEDULE = {
+const PUSH_RECEIPT_SCHEDULE = {
   key: "push-receipts-scheduler",
   cron: "* * * * *",
 } as const;
@@ -130,13 +130,12 @@ export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
 ]);
 
 export type NotificationRuntimeJob = z.output<typeof NotificationRuntimeJobSchema>;
-export type NotificationJobNameValue = NotificationRuntimeJob["name"];
-export type NotificationJobOf<Name extends NotificationJobNameValue> = Extract<
+type NotificationJobNameValue = NotificationRuntimeJob["name"];
+type NotificationJobOf<Name extends NotificationJobNameValue> = Extract<
   NotificationRuntimeJob,
   { name: Name }
 >;
-export type NotificationJobData<Name extends NotificationJobNameValue> =
-  NotificationJobOf<Name>["data"];
+type NotificationJobData<Name extends NotificationJobNameValue> = NotificationJobOf<Name>["data"];
 
 export type FollowNewJobData = NotificationJobData<typeof NotificationJobName.FOLLOW_NEW>;
 export type FollowMutualJobData = NotificationJobData<typeof NotificationJobName.FOLLOW_MUTUAL>;

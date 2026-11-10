@@ -64,13 +64,15 @@ createBroadcastCampaignSchema = broadcastNotificationSchema.extend({
 | 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)    |
 | D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-growth-metrics.reader.ts`, 한 SQL 집계)                              |
 | stickiness       | DAU/MAU(%, 소수 둘째 자리, MAU가 0이면 0. 관리자 API 추가 필드 `stickiness`)                   |
-| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`readAt`)                |
+| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`openedAt`)              |
 
 - 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
-- 열람이 푸시 탭으로 기록되는지 앱 동작을 먼저 확인하고, 아니면 퍼널은 receipt까지만 둔다.
+- 열람은 앱이 푸시를 누를 때 부르는 `POST /v1/notifications/{id}/opened`의 `openedAt`이다. 집계는 notification push의 public `PushFunnelReaderPort`가 하고 operations metrics가 읽는다.
 - 문구·발송 시각 실험은 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 퍼널과 리텐션으로 읽는다.
 - SANDBOX 결제는 매출 지표에서 뺀다([결제](billing.md#sandbox-결제)).
 
 ## 전환 중
 
-관리자 캠페인의 언어별 문구·수신자 현지 시각 발송·마케팅 우선순위 0 차선은 operations `broadcasts` slice에 들어왔다. 거래성과 마케팅이 같은 `push-delivery.v1`에서 우선순위 없이 섞이는 문제, 방해 금지, 푸시 퍼널은 notification Context를 옮길 때 들어온다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+- notification은 inbox·push가 새 구조다. 수신자 언어는 push `resolveRecipientLocale`(지원하지 않는 언어 en), 방해 금지는 `isWithinQuietHours`, 우선순위 차선은 `push-delivery.v1` lane(거래성 10·광고성 0, `minPriority: 10` worker)이다.
+- 아직 옛 구조인 reminders 전략 일부는 `toSupportedLocale`(지원하지 않는 언어 ko)을 쓴다. reminders를 옮길 때 같은 규칙으로 맞춘다.
+- 관리자 캠페인의 언어별 문구·수신자 현지 시각 발송·마케팅 우선순위 0 차선은 operations `broadcasts` slice에 있다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

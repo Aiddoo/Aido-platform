@@ -9,7 +9,7 @@ import {
 import { PUSH_DELIVERY_JOB_MAX_PUBLICATIONS } from "../../application/read-models/push-delivery.read-model.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 
-export const PUSH_DELIVERY_RELAY_SCHEDULE = {
+const PUSH_DELIVERY_RELAY_SCHEDULE = {
   key: "push-delivery-outbox-relay-scheduler",
   cron: "* * * * *",
 } as const;
@@ -64,7 +64,7 @@ export const PushDeliveryRuntimeJobSchema = z.discriminatedUnion("name", [
 // Native DLQ는 원본 delivery payload만 받고 relay 작업은 받지 않는다
 export const PushDeliveryDeadLetterJobSchema = DeliverPushNotificationsJobSchema;
 
-export const PUSH_DELIVERY_RETRY = {
+const PUSH_DELIVERY_RETRY = {
   retryLimit: 5,
   retryDelaySeconds: 1,
   retryBackoff: true,
@@ -73,7 +73,7 @@ export const PUSH_DELIVERY_RETRY = {
   deleteAfterSeconds: 24 * 60 * 60,
 } as const satisfies JobRetryPolicy;
 
-export const PUSH_DELIVERY_DEAD_LETTER_RETRY = {
+const PUSH_DELIVERY_DEAD_LETTER_RETRY = {
   ...PUSH_DELIVERY_RETRY,
 } as const satisfies JobRetryPolicy;
 

@@ -13,19 +13,18 @@ import type { NotificationType } from "../../inbox/domain/notification-type.cons
  * 보상·체험 종료와 연간 갱신 안내(PREMIUM_GRANT_ENDING·PREMIUM_TRIAL_ENDING·PREMIUM_RENEWAL_UPCOMING)는
  * 이용 중인 혜택의 거래 정보라 넣지 않는다.
  */
-export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-  new Set<NotificationType>([
-    "AI_SUGGESTION",
-    "WINBACK",
-    "SOCIAL_DIGEST",
-    "NUDGE_SUGGEST",
-    "LUNCH_NUDGE",
-    "STREAK_AT_RISK",
-    // 초대받은 사람이 직접 한 행동의 결과가 아니라 사용 시작을 권하는 자동 알림이다
-    "INVITE_QUALIFY_REMINDER",
-  ]);
+const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<NotificationType>([
+  "AI_SUGGESTION",
+  "WINBACK",
+  "SOCIAL_DIGEST",
+  "NUDGE_SUGGEST",
+  "LUNCH_NUDGE",
+  "STREAK_AT_RISK",
+  // 초대받은 사람이 직접 한 행동의 결과가 아니라 사용 시작을 권하는 자동 알림이다
+  "INVITE_QUALIFY_REMINDER",
+]);
 
-export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TYPES;
+const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TYPES;
 
 /**
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
@@ -33,8 +32,10 @@ export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TY
  * - WEATHER_MORNING: 사용자가 직접 선택한 아침 시간, 못 받으면 무의미
  * - WEATHER_EVENING: 사용자가 직접 선택한 저녁 시간
  */
-export const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-  new Set<NotificationType>(["WEATHER_MORNING", "WEATHER_EVENING"]);
+const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<NotificationType>([
+  "WEATHER_MORNING",
+  "WEATHER_EVENING",
+]);
 
 /** 마케팅 동의가 필요한 알림 타입인지 */
 export function isMarketingNotification(type: NotificationType): boolean {
