@@ -1,5 +1,3 @@
-import { mock } from "vitest-mock-extended";
-
 import type {
   AccessSnapshot,
   EntitlementReaderPort,
@@ -14,74 +12,81 @@ import type {
   PremiumAccess,
   PremiumAccessReaderPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
-import { VerificationService } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
+import { IssueVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
 import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
 import { RestoreAccountUseCase } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
+import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/send-verification-code.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
 } from "#api/modules/social/social-cheers.public";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { DateNowClock } from "#test/doubles/platform/date-now-clock";
+import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
+import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
+import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
+import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
+import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
+import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-memory-auth-verification.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
-import { StubAccountRepository } from "#test/mocks/ports/account-lifecycle.stub";
 import {
-  StubAuthUserRepository,
   StubAuthPasswordHasher,
-  StubAuthLoginAttemptRepository,
   StubAuthProfileCache,
-  StubAuthVerificationRepository,
   StubVerificationCodeSecurity,
   StubAuthRegistrationNotifier,
   StubAuthRetentionEnroller,
   StubAuthProvisioningSeeder,
 } from "#test/mocks/ports/auth-credentials.stub";
 import {
-  StubAuthSessionRepository,
   StubSessionPushDeviceReleaser,
-  StubAuthSecurityLogRepository,
   StubAuthTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { AccountFixture, UserFixture } from "./user.fixture.js";
+import { createAuthAccountFixture } from "./identity/auth-credential.fixture.js";
+import { AUTH_FIXTURE_NOW, createIdentityUserFixture } from "./identity/auth-session.fixture.js";
 
-export const AUTH_CREDENTIAL_TIME = new Date("2026-12-31T23:59:00Z");
+export const AUTH_CREDENTIAL_NOW = AUTH_FIXTURE_NOW;
 export const AUTH_CREDENTIAL_PASSWORD = "CorrectPassword1!";
 
 export function createAuthCredentialFixture(
   input: { socialOnly?: boolean; pending?: boolean; empty?: boolean } = {},
 ) {
-  const user = UserFixture.create({
+  const user = createIdentityUserFixture({
     id: "credential-user",
     email: "credential@example.com",
+    userTag: "CRED0001",
     status: input.pending ? "PENDING_VERIFY" : "ACTIVE",
-    emailVerifiedAt: input.pending ? null : AUTH_CREDENTIAL_TIME,
-  });
-  const accountRepository = new StubAccountRepository(
+    emailVerifiedAt: input.pending ? null : AUTH_CREDENTIAL_NOW,
+  }).toPrimitives();
+  const accountRepository = new InMemoryAuthAccountRepository(
     input.empty
       ? []
       : [
-          AccountFixture.create({
+          createAuthAccountFixture({
             userId: user.id,
+            providerAccountId: user.id,
             provider: input.socialOnly ? "GOOGLE" : "CREDENTIAL",
             password: input.socialOnly ? null : `digest:${AUTH_CREDENTIAL_PASSWORD}`,
           }),
         ],
   );
-  const userRepository = new StubAuthUserRepository(
-    input.empty ? [] : [user],
-    accountRepository.accounts,
+  const userRepository = new InMemoryAuthUserRepository(
+    input.empty ? [] : [createIdentityUserFixture(user)],
+    {
+      accounts: accountRepository,
+      profiles: new Map(input.empty ? [] : [[user.id, { name: "사용자", profileImage: null }]]),
+    },
   );
-  userRepository.profiles.set(user.id, { name: "사용자", profileImage: null });
-  const sessionRepository = new StubAuthSessionRepository();
-  const securityLogRepository = new StubAuthSecurityLogRepository();
+  const sessionRepository = new InMemoryAuthSessionRepository();
+  const securityLogRepository = new InMemoryAuthSecurityLogRepository();
   const tokenService = new StubAuthTokenIssuer();
   const passwordService = new StubAuthPasswordHasher();
-  const loginAttemptRepository = new StubAuthLoginAttemptRepository();
-  const verificationRepository = new StubAuthVerificationRepository();
+  const loginAttemptRepository = new InMemoryAuthLoginAttemptRepository();
+  const verificationRepository = new InMemoryAuthVerificationRepository();
   const verificationCodeSecurity = new StubVerificationCodeSecurity();
   const cacheService = new StubAuthProfileCache();
   const pushDevices = new StubSessionPushDeviceReleaser();
@@ -89,14 +94,20 @@ export function createAuthCredentialFixture(
   const adminEventNotifier = new StubAuthRegistrationNotifier();
   const retentionEnroller = new StubAuthRetentionEnroller();
   const seeder = new StubAuthProvisioningSeeder();
-  const logger = mock<ApplicationLoggerPort>();
-  const unitOfWork = createUnitOfWorkMock();
-  const clock = new DateNowClock();
+  const logger = new SilentLogger();
+  const unitOfWork = new ImmediateUnitOfWork();
+  const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
   const sessionService = new CreateSessionUseCase({ sessionRepository, tokenService, clock });
-  const verificationService = new VerificationService({
+  const issueVerificationCode = new IssueVerificationCodeUseCase({
     verificationRepository,
     verificationCodeSecurity,
-    emailSender,
+    clock,
+    logger,
+  });
+  const sendVerificationCode = new SendVerificationCodeUseCase({ emailSender, logger });
+  const consumeVerificationCode = new ConsumeVerificationCodeUseCase({
+    verificationRepository,
+    verificationCodeSecurity,
     clock,
     logger,
   });
@@ -111,6 +122,7 @@ export function createAuthCredentialFixture(
     loginAttemptRepository,
     securityLogRepository,
     userRepository,
+    clock,
   });
   const restoreAccount = new RestoreAccountUseCase({ userRepository, securityLogRepository });
   return {
@@ -134,7 +146,9 @@ export function createAuthCredentialFixture(
     unitOfWork,
     clock,
     sessionService,
-    verificationService,
+    issueVerificationCode,
+    sendVerificationCode,
+    consumeVerificationCode,
     provisionUserUseCase,
     issueLoginUseCase,
     restoreAccount,

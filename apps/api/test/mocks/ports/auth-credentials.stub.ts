@@ -1,4 +1,3 @@
-import type { AuthAccountRecord } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import type {
   AuthCachedUserProfile,
   AuthCachePort,
@@ -6,112 +5,14 @@ import type {
   AuthUserRegisteredNotification,
 } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import type { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
-import type {
-  AuthUserProfileRecord,
-  AuthUserRecord,
-  AuthUserRepositoryPort,
-} from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
-import type { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
 import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
-import { AuthVerification } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
-import type { VerificationType } from "#api/modules/identity/auth/domain/auth.constants";
-import type { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
-import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 
 import {
   StubAccountLifecycleCache,
-  StubAccountLifecycleRepository,
   StubAccountPasswordVerifier,
-  toIdentityUser,
 } from "./account-lifecycle.stub.js";
-
-export class StubAuthUserRepository
-  extends StubAccountLifecycleRepository
-  implements
-    Pick<
-      AuthUserRepositoryPort,
-      | "findByEmail"
-      | "findById"
-      | "findByIdWithProfile"
-      | "create"
-      | "createProfile"
-      | "markEmailVerified"
-      | "updateProfile"
-      | "saveAccountStatus"
-    >
-{
-  readonly profiles = new Map<string, AuthUserProfileRecord["profile"]>();
-  readonly providers = new Map<string, AuthUserProfileRecord["accounts"]>();
-
-  constructor(
-    users: readonly AuthUserRecord[] = [],
-    readonly accounts: readonly AuthAccountRecord[] = [],
-  ) {
-    super(users);
-  }
-
-  async findByEmail(email: string): Promise<IdentityUser | null> {
-    const user = [...this.users.values()].find((candidate) => candidate.email === email);
-    return user === undefined ? null : toIdentityUser(user);
-  }
-
-  async findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null> {
-    const user = this.users.get(id);
-    if (user === undefined) {
-      return null;
-    }
-    return {
-      ...user,
-      profile: this.profiles.get(id) ?? null,
-      accounts:
-        this.providers.get(id) ??
-        this.accounts
-          .filter((account) => account.userId === id)
-          .map(({ provider }) => ({ provider })),
-    };
-  }
-
-  async create(input: Parameters<AuthUserRepositoryPort["create"]>[0]): Promise<IdentityUser> {
-    const user = UserFixture.create({ ...input, emailVerifiedAt: input.emailVerifiedAt ?? null });
-    this.users.set(user.id, user);
-    return toIdentityUser(user);
-  }
-
-  async createProfile(
-    userId: string,
-    input: Parameters<AuthUserRepositoryPort["createProfile"]>[1],
-  ): Promise<void> {
-    this.profiles.set(userId, {
-      name: input.name ?? null,
-      profileImage: input.profileImage ?? null,
-    });
-  }
-
-  async markEmailVerified(id: string): Promise<void> {
-    const user = this.users.get(id);
-    if (user === undefined) {
-      throw new Error(`사용자가 없습니다: ${id}`);
-    }
-    this.users.set(id, { ...user, status: "ACTIVE", emailVerifiedAt: new Date() });
-  }
-
-  async updateProfile(
-    userId: string,
-    input: Parameters<AuthUserRepositoryPort["updateProfile"]>[1],
-  ): Promise<NonNullable<AuthUserProfileRecord["profile"]>> {
-    const prior = this.profiles.get(userId) ?? { name: null, profileImage: null };
-    const profile = {
-      name: input.name === undefined ? prior.name : input.name,
-      profileImage: input.profileImage === undefined ? prior.profileImage : input.profileImage,
-    };
-    this.profiles.set(userId, profile);
-    return profile;
-  }
-}
 
 export class StubAuthPasswordHasher
   extends StubAccountPasswordVerifier
@@ -127,21 +28,6 @@ export class StubAuthPasswordHasher
 
   needsRehash(hash: string): boolean {
     return this.outdatedHashes.has(hash);
-  }
-}
-
-export class StubAuthLoginAttemptRepository implements AuthLoginAttemptRepositoryPort {
-  readonly attempts: (Parameters<AuthLoginAttemptRepositoryPort["create"]>[0] & { at: Date })[] =
-    [];
-
-  async create(input: Parameters<AuthLoginAttemptRepositoryPort["create"]>[0]): Promise<void> {
-    this.attempts.push({ ...input, at: new Date() });
-  }
-
-  async countRecentFailuresByEmail(email: string, since: Date): Promise<number> {
-    return this.attempts.filter(
-      (attempt) => attempt.email === email && !attempt.success && attempt.at >= since,
-    ).length;
   }
 }
 
@@ -170,125 +56,6 @@ export class StubAuthProfileCache
       this.userIds.add(userId);
     }
     return profile;
-  }
-}
-
-export interface AuthVerificationRecord {
-  id: number;
-  userId: string;
-  type: VerificationType;
-  token: string;
-  expiresAt: Date;
-  attempts: number;
-  usedAt: Date | null;
-  createdAt: Date;
-}
-
-export class StubAuthVerificationRepository implements AuthVerificationRepositoryPort {
-  readonly verifications: Map<number, AuthVerificationRecord>;
-
-  constructor(verifications: readonly AuthVerificationRecord[] = []) {
-    this.verifications = new Map(
-      verifications.map((verification) => [verification.id, { ...verification }]),
-    );
-  }
-
-  async create(input: Parameters<AuthVerificationRepositoryPort["create"]>[0]): Promise<void> {
-    const verification = VerificationFixture.create(input);
-    this.verifications.set(verification.id, verification);
-  }
-
-  async findValidByUserIdAndType(
-    userId: string,
-    type: VerificationType,
-    now: Temporal.Instant,
-  ): Promise<AuthVerification | null> {
-    const at = instantToDate(now);
-    const verification = [...this.verifications.values()]
-      .filter(
-        (verification) =>
-          verification.userId === userId &&
-          verification.type === type &&
-          verification.usedAt === null &&
-          verification.expiresAt > at,
-      )
-      .sort(
-        (left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id - left.id,
-      )[0];
-    return verification === undefined
-      ? null
-      : AuthVerification.reconstitute({
-          id: verification.id,
-          userId: verification.userId,
-          type: verification.type,
-          tokenHash: verification.token,
-          expiresAt: instantFromDate(verification.expiresAt),
-          attempts: verification.attempts,
-          usedAt: verification.usedAt == null ? null : instantFromDate(verification.usedAt),
-        });
-  }
-
-  async consume(input: {
-    id: number;
-    userId: string;
-    type: VerificationType;
-    tokenHash: string;
-    maxAttempts: number;
-    at: Temporal.Instant;
-  }): Promise<boolean> {
-    const at = instantToDate(input.at);
-    const verification = this.verifications.get(input.id);
-    if (
-      verification === undefined ||
-      verification.userId !== input.userId ||
-      verification.type !== input.type ||
-      verification.token !== input.tokenHash ||
-      verification.usedAt !== null ||
-      verification.expiresAt <= at ||
-      verification.attempts >= input.maxAttempts
-    ) {
-      return false;
-    }
-    this.verifications.set(input.id, { ...verification, usedAt: at });
-    return true;
-  }
-
-  async incrementAttempts(id: number): Promise<void> {
-    const verification = this.verifications.get(id);
-    if (verification === undefined) {
-      throw new Error(`인증 코드가 없습니다: ${id}`);
-    }
-    this.verifications.set(id, { ...verification, attempts: verification.attempts + 1 });
-  }
-
-  async invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number> {
-    let count = 0;
-    for (const [id, verification] of this.verifications) {
-      if (
-        verification.userId !== userId ||
-        verification.type !== type ||
-        verification.usedAt !== null ||
-        verification.expiresAt.getTime() <= Date.now()
-      ) {
-        continue;
-      }
-      this.verifications.set(id, { ...verification, expiresAt: new Date() });
-      count += 1;
-    }
-    return count;
-  }
-
-  async countRecentByUserIdAndType(
-    userId: string,
-    type: VerificationType,
-    since: Date,
-  ): Promise<number> {
-    return [...this.verifications.values()].filter(
-      (verification) =>
-        verification.userId === userId &&
-        verification.type === type &&
-        verification.createdAt >= since,
-    ).length;
   }
 }
 
