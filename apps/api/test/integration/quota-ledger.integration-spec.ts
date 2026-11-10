@@ -14,13 +14,13 @@ import {
 import {
   QUOTA_LEDGER_REPOSITORY,
   type QuotaLedgerRepositoryPort,
-} from "#api/modules/access/application/ports/quotas/quota-ledger.repository.port";
-import { QuotaLedgerService } from "#api/modules/access/application/services/quotas/quota-ledger.service";
+} from "#api/modules/access/quotas/application/ports/quota-ledger.repository.port";
+import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
 import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
-} from "#api/modules/access/domain/constants/quotas/quota.constants";
-import { QuotaWindow } from "#api/modules/access/domain/value-objects/quotas/quota-window.vo";
+} from "#api/modules/access/quotas/domain/quotas.constants";
+import { QuotaLedgerService } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,

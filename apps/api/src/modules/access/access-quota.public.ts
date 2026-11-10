@@ -4,5 +4,5 @@ export {
   type QuotaLedgerPort,
   type QuotaReservation,
   type QuotaReserveInput,
-} from "./application/ports/quotas/quota-ledger.port.js";
+} from "./quotas/application/ports/quota-ledger.port.js";
 export { AccessModule } from "./access.module.js";

@@ -4,4 +4,4 @@ export {
   freeAccessCondition,
   premiumAccessCondition,
   validStoreEntitlementCondition,
-} from "./infrastructure/persistence/entitlement/premium-access.condition.js";
+} from "./entitlements/infrastructure/persistence/premium-access-condition.reader.js";

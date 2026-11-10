@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type {
   AiGenerationRequest,
   AiGenerationResult,

@@ -1,10 +1,10 @@
 import { mock } from "vitest-mock-extended";
 
-import { QuotaLedgerService } from "#api/modules/access/application/services/quotas/quota-ledger.service";
 import {
   NO_RESOURCE_BONUSES,
   type ResourceBonuses,
-} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
+import { QuotaLedgerService } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import {

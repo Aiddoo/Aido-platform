@@ -17,7 +17,7 @@ import { z } from "zod";
 import {
   EntitlementCacheKey,
   ENTITLEMENT_CACHE_TTL_MS,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IdentityCacheKey,
   IDENTITY_CACHE_TTL_MS,

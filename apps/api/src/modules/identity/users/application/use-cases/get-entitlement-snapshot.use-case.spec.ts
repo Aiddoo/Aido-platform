@@ -1,6 +1,6 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import type { ResourceBonuses } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+import type { ResourceBonuses } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 import { createQuotaLedgerFixture } from "#test/fixtures/quota-ledger.fixture";
 import type { InMemoryQuotaUser } from "#test/mocks/ports/quota-ledger.stub";
 

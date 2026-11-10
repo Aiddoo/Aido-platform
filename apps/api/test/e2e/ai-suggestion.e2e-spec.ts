@@ -3,7 +3,7 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { STAGED_TODO_CREATOR } from "#api/modules/planning/todos/planning-todos.public";

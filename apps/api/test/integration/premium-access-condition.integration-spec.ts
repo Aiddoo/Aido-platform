@@ -1,9 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { hasPaidAccess } from "#api/modules/access/domain/policies/entitlement/paid-access.policy";
-import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
-import { activeSubscriptionCondition } from "#api/modules/access/infrastructure/persistence/entitlement/premium-access.condition";
+import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
+import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { activeSubscriptionCondition } from "#api/modules/access/entitlements/infrastructure/persistence/premium-access-condition.reader";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";

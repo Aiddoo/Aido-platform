@@ -1,4 +1,4 @@
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { EntitlementService } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { StubEntitlementDatabase, StubEntitlementCache } from "#test/mocks/ports/entitlement.stub";
 

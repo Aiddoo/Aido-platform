@@ -9,7 +9,7 @@ import {
   type AccessTier,
   NO_RESOURCE_BONUSES,
   resolveAllFeatureAccess,
-} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 import { AiSdkGenerator } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator";
 import { AiSpendBudget } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.budget";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";

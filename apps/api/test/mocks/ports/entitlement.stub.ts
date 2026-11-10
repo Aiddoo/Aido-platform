@@ -1,15 +1,15 @@
 import type {
-  EntitlementCachePort,
-  CachedSubscriptionState,
-} from "#api/modules/access/application/ports/entitlement/entitlement-cache.port";
-import type {
   EntitlementDatabasePort,
   EntitlementUserState,
-} from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
+} from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import type {
+  EntitlementCachePort,
+  CachedSubscriptionState,
+} from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
 import {
   NO_RESOURCE_BONUSES,
   type ResourceBonuses,
-} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 
 /** 기한을 생략하면 웹훅이 바꿀 때까지 유지하는 기존 projection으로 본다. */
 type StubEntitlementUserState = Omit<EntitlementUserState, "accessDeadline"> &

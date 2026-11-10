@@ -1,14 +1,14 @@
 import type { QuotaChargeStatus, QuotaMeter } from "@aido/api/vocabulary";
 
-import type { QuotaLedgerRepositoryPort } from "#api/modules/access/application/ports/quotas/quota-ledger.repository.port";
-import type { QuotaUserMutationLockPort } from "#api/modules/access/application/ports/quotas/quota-user-mutation-lock.port";
+import type { AccessState } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
+import type { QuotaLedgerRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-ledger.repository.port";
+import type { QuotaUserMutationLockPort } from "#api/modules/access/quotas/application/ports/quota-user-mutation-lock.port";
 import {
   QuotaCharge,
   type QuotaChargeDraft,
   type QuotaChargeProps,
-} from "#api/modules/access/domain/aggregates/quotas/quota-charge.aggregate";
-import type { AccessState } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
-import { QuotaWindow } from "#api/modules/access/domain/value-objects/quotas/quota-window.vo";
+} from "#api/modules/access/quotas/domain/quota-charge.aggregate";
+import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
 
 /** 원장 저장소에 보이는 사용자 행. AI_PLAN은 User.aiUsageCount·aiUsageResetAt과 같은 의미다. */
 export interface InMemoryQuotaUser extends AccessState {

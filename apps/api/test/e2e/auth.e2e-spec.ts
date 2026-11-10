@@ -11,7 +11,7 @@ import request from "supertest";
  */
 import { vi } from "vitest";
 
-import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";

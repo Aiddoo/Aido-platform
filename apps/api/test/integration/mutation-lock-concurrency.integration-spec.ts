@@ -12,10 +12,10 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { ENTITLEMENT_CACHE } from "#api/modules/access/application/ports/entitlement/entitlement-cache.port";
-import { ENTITLEMENT_DATABASE } from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
-import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
+import { ENTITLEMENT_CACHE } from "#api/modules/access/entitlements/application/ports/entitlement-cache.port";
+import { ENTITLEMENT_DATABASE } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { DrizzleEntitlementReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
@@ -58,7 +58,7 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import { entitlementServiceProvider } from "../../src/modules/access/access-entitlement-application.providers.js";
+import { entitlementServiceProvider } from "../../src/modules/access/entitlements/access-entitlements.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const CONCURRENCY = 20;
