@@ -17,8 +17,6 @@ catalogPrune: true
 
 allowBuilds:
   '@nestjs/core': true
-  '@suites/di.nestjs': true
-  '@suites/doubles.vitest': true
   '@swc/core': true
   argon2: true
   esbuild: true

@@ -818,15 +818,6 @@ importers:
       '@nestjs/testing':
         specifier: catalog:nest12
         version: 12.4.2(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.4.2)(@nestjs/platform-express@12.4.2)
-      '@suites/di.nestjs':
-        specifier: 3.1.0
-        version: 3.1.0(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(reflect-metadata@0.2.2)
-      '@suites/doubles.vitest':
-        specifier: 3.1.0
-        version: 3.1.0(@vitest/spy@5.1.0)(vitest@5.1.0)
-      '@suites/unit':
-        specifier: 3.1.1
-        version: 3.1.1
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1)
@@ -5658,39 +5649,6 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
-
-  '@suites/core.unit@3.1.0':
-    resolution: {integrity: sha512-2aG83BiIuOOVwu8Joisi4soSMI2isYBR8wJXWq+jInWOFCtQq+6cFwhXmpqRheMX0aKk7kb14HpclclMvpK3nQ==}
-    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
-
-  '@suites/di.nestjs@3.1.0':
-    resolution: {integrity: sha512-SKPdfqZRqjDKRfte8Id1xvmhCNOSSnDSFS68Qcw04IirnUEAAm/wjJBv3Bo8tH/YjzlZkAjzpapZTiWePSM9qg==}
-    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
-    peerDependencies:
-      '@nestjs/common': '>= 8.0'
-      reflect-metadata: <1.0.0
-
-  '@suites/doubles.vitest@3.1.0':
-    resolution: {integrity: sha512-SToF97cTcDjaMbzyUh+pLj33e/dHo2fqoPCcU0OXG2OX+hu+WACruS2xDwj5l/UruA3ckBJmtvVgOvpo1TKbUg==}
-    engines: {node: ^18.12.0 || >=20.0.0}
-    peerDependencies:
-      '@vitest/spy': '>= 1.0'
-      vitest: '>= 1.0'
-
-  '@suites/types.common@3.1.0':
-    resolution: {integrity: sha512-4OW/FKP78HZiUjSeAq6ix/lj2s4vEU4IqFr09LLmQC77v1Rv5vEW1LZLxrRVlP2jeWsxuVka6WX2k7k3HJDu9A==}
-    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
-
-  '@suites/types.di@3.1.0':
-    resolution: {integrity: sha512-ng/so6i2dbvSUyCAN/UhLO0N/72B08XycXBCUGmE6CK2OgzNGPjTjcIN1moljyUzZQBYHvYSdUju2aZ6Fh2tOA==}
-    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
-
-  '@suites/types.doubles@3.1.0':
-    resolution: {integrity: sha512-VhEtcgUPYe1L0xLie2VrqO8b+EPCdVnU30qS//nQA9UtRYA3dRqENNGI6ktmfKAvUKC9ToJdwE/B/TohZt290A==}
-
-  '@suites/unit@3.1.1':
-    resolution: {integrity: sha512-gHnAj4Xx5ckFjpo8jhHyriiqdpDXjFmwBTDht1T/czhTv1P3U2rZdEtwyWQISkgJFvxQjC6hfS7GftAKYgehjA==}
-    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0':
     resolution: {integrity: sha512-b9MIk7yhdS1pMCZM8VeNfUlSKVRhsHZNMl5O9SfaX0l0t5wjdgu4IDzGB8bpnGBBOjGST3rRFVsaaEtI4W6f7g==}
@@ -16475,45 +16433,6 @@ snapshots:
   '@standard-schema/spec@1.1.0': {}
 
   '@standard-schema/utils@0.3.0': {}
-
-  '@suites/core.unit@3.1.0':
-    dependencies:
-      '@suites/types.common': 3.1.0
-      '@suites/types.di': 3.1.0
-      '@suites/types.doubles': 3.1.0
-
-  '@suites/di.nestjs@3.1.0(@nestjs/common@12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(reflect-metadata@0.2.2)':
-    dependencies:
-      '@nestjs/common': 12.4.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@suites/types.common': 3.1.0
-      '@suites/types.di': 3.1.0
-      reflect-metadata: 0.2.2
-
-  '@suites/doubles.vitest@3.1.0(@vitest/spy@5.1.0)(vitest@5.1.0)':
-    dependencies:
-      '@suites/core.unit': 3.1.0
-      '@suites/types.common': 3.1.0
-      '@suites/types.di': 3.1.0
-      '@suites/types.doubles': 3.1.0
-      '@vitest/spy': 5.1.0
-      vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
-
-  '@suites/types.common@3.1.0': {}
-
-  '@suites/types.di@3.1.0':
-    dependencies:
-      '@suites/types.common': 3.1.0
-
-  '@suites/types.doubles@3.1.0':
-    dependencies:
-      '@suites/types.common': 3.1.0
-
-  '@suites/unit@3.1.1':
-    dependencies:
-      '@suites/core.unit': 3.1.0
-      '@suites/types.common': 3.1.0
-      '@suites/types.di': 3.1.0
-      '@suites/types.doubles': 3.1.0
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0(@babel/core@7.29.7(supports-color@8.1.1))':
     dependencies:
