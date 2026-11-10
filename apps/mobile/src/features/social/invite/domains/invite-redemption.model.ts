@@ -67,7 +67,7 @@ function isWithinDays(from: Instant, now: Instant, days: number) {
   return diffMs(now, from) < days * DAY_MS;
 }
 
-export function isFresh(pending: Pick<PendingRedemption, 'savedAt'>, now: Instant) {
+export function isFresh(pending: PendingRedemption, now: Instant) {
   return isWithinDays(pending.savedAt, now, INVITE_REDEEM_WINDOW_DAYS);
 }
 
@@ -127,18 +127,31 @@ export function getRewardStart(premiumAccess: PremiumAccess) {
 }
 
 // 가입한 지 며칠 안 된 계정만 보상을 기대할 수 있다. 최종 판정은 서버다
-export function isRewardExpected(user: Pick<User, 'createdAt'>, now: Instant) {
+export function isRewardExpected(user: User, now: Instant) {
   return isWithinDays(user.createdAt, now, INVITE_REDEEM_WINDOW_DAYS);
 }
 
-export const InviteRedemptionPolicy = {
+/** 기기에 저장해 둔 수락 대기 초대 */
+export const PendingRedemptionPolicy = {
   isFresh,
+} as const;
+
+/** 서버가 돌려준 수락 결과 */
+export const InviteRedemptionPolicy = {
   getFriendship,
   getGrantedPremiumDays,
   isAlreadyAccepted,
   isAlreadyFriends,
   isFriendRequestOnly,
   getMissingRewardReason,
+} as const;
+
+/** 초대받은 사람의 프리미엄 효력으로 보는 보상 시작 */
+export const InviteePremiumAccessPolicy = {
   getRewardStart,
+} as const;
+
+/** 초대받은 사람의 계정으로 보는 보상 기대 */
+export const InviteeUserPolicy = {
   isRewardExpected,
 } as const;

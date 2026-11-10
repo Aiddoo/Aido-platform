@@ -2,17 +2,17 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { INQUIRY_SHEET_EXIT, QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
 import { Suspense } from 'react';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
+import { TodoThanksPolicy } from '../../domains/nudge-interaction.model';
 import { ThanksSummaryRow } from './thanks-summary-row';
 
 interface TodoThanksSummaryProps {
-  todo: Pick<Todo, 'id' | 'completed' | 'visibility'>;
+  todo: Todo;
   onClose: (next?: SheetRouteExit) => void;
 }
 
 /** 내 완료한 공개 할 일에 받은 콕이 있으면 감사 요약 줄을 보여 준다. 할 일 동작 시트가 슬롯으로 받는다 */
 export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
-  if (!NudgeInteractionPolicy.canThankTodo(todo, { canEditTodo: true })) {
+  if (!TodoThanksPolicy.canThankTodo(todo, { canEditTodo: true })) {
     return null;
   }
 

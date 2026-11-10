@@ -29,7 +29,7 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import {
-  NudgeInteractionPolicy,
+  NudgeThanksPreviewPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
 import {
@@ -71,7 +71,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSu
     return null;
   }
 
-  const { state, pendingRecipientCount } = NudgeInteractionPolicy.getThanksSummary(preview);
+  const { state, pendingRecipientCount } = NudgeThanksPreviewPolicy.getThanksSummary(preview);
   const thanksButtonLabel = t('interaction.thanksQuickActionLabel', {
     count: pendingRecipientCount,
   });

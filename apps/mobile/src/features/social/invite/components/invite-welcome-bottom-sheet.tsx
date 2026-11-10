@@ -44,7 +44,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import {
+  InviteePremiumAccessPolicy,
+  InviteRedemptionPolicy,
+} from '../domains/invite-redemption.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
@@ -194,7 +197,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeCon
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {match(InviteRedemptionPolicy.getRewardStart(me.premiumAccess))
+              {match(InviteePremiumAccessPolicy.getRewardStart(me.premiumAccess))
                 .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
                 .with('after-subscription', () =>
                   t('welcome.rewardAfterSubscription', { count: premiumDays }),

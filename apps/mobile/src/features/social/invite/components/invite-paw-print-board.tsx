@@ -43,7 +43,7 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { InvitePolicy } from '../domains/invite.model';
+import { type Invite, InvitePolicy } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import {
   calculatePawPrintBoardWidth,
@@ -77,7 +77,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
-  const celebratedCount = useCelebrateNewPawPrints(me.id, myInvite.qualifiedCount);
+  const celebratedCount = useCelebrateNewPawPrints(me.id, myInvite);
   const estimatedWidth = useEstimatedBoardWidth();
   // 창 폭으로 어림한 폭은 첫 그림에만 쓰고, 그 뒤로는 판이 실제로 받은 폭으로 격자를 다시 만든다
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
@@ -339,14 +339,15 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
  * 지난번에 본 수보다 늘었으면 진동과 리뷰 요청으로 축하하고 본 수를 저장한다.
  * 돌려주는 값은 처음 그릴 때 본 수다. 저장한 뒤에도 이번 화면에서는 찍히는 애니메이션이 이어져야 한다
  */
-function useCelebrateNewPawPrints(userId: string, qualifiedCount: number) {
+function useCelebrateNewPawPrints(userId: string, invite: Invite) {
+  const { qualifiedCount } = invite;
   const haptics = useHaptics();
   const pawPrintCelebrationRepository = usePawPrintCelebrationRepository();
   const { requestReviewAt } = useStoreReviewMoment();
   const [celebratedCount] = useState(() =>
     pawPrintCelebrationRepository.getCelebratedCount(userId),
   );
-  const hasNewPawPrint = InvitePolicy.hasNewPawPrints({ qualifiedCount }, celebratedCount);
+  const hasNewPawPrint = InvitePolicy.hasNewPawPrints(invite, celebratedCount);
 
   useEffect(() => {
     if (qualifiedCount === celebratedCount) {

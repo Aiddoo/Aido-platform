@@ -24,7 +24,7 @@ import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import {
-  NudgeInteractionPolicy,
+  NudgeThanksPreviewPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
 import { isNudgeThanksChangedError } from '../../domains/todo-nudge.error';
@@ -104,7 +104,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     );
   }
 
-  if (preview == null || !NudgeInteractionPolicy.hasThankableRecipients(preview)) {
+  if (preview == null || !NudgeThanksPreviewPolicy.hasThankableRecipients(preview)) {
     return <NudgeThanksBottomSheet.Empty />;
   }
 

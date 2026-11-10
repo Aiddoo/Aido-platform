@@ -20,7 +20,7 @@ import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-re
 import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
-import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
+import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
 import { formatDateKeyRange, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -261,7 +261,7 @@ TodoDetailSummary.Thanks = function Thanks() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
-  const canThank = NudgeInteractionPolicy.canThankTodo(detail.todo, {
+  const canThank = TodoThanksPolicy.canThankTodo(detail.todo, {
     canEditTodo: detail.permissions.canEdit,
   });
 
