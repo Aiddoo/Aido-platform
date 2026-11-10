@@ -7,10 +7,11 @@ import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { DEFAULT_DELIVERY_TIMEZONE, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
+import { toUserTimeZone } from "../../../shared/domain/user-calendar.domain-service.js";
 import {
   isInSuggestionDispatchWindow,
   suggestionDispatchLocalDate,
@@ -101,7 +102,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
         }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timeZone = resolveTimezone(user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE);
+          const timeZone = toUserTimeZone(user.preference?.timezone ?? TimeZone.SEOUL.value).value;
           return isInSuggestionDispatchWindow({ at, timeZone }) ? [{ user, timeZone }] : [];
         });
         if (due.length === 0) {

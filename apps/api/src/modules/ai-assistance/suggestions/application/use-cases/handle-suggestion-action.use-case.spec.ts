@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
@@ -299,7 +298,7 @@ describe("HandleSuggestionActionUseCase", () => {
       // Then
       expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
-          startDate: parseDateOnly(startDate),
+          startDate: new Date(`${startDate}T00:00:00.000Z`),
           timezone,
           repeat: expect.objectContaining({ end: { type: "UNTIL", date: endDate } }),
         }),
@@ -326,7 +325,7 @@ describe("HandleSuggestionActionUseCase", () => {
       // Then
       expect(todoCreator.inputs).toEqual([
         expect.objectContaining({
-          startDate: parseDateOnly("2026-10-28"),
+          startDate: new Date("2026-10-28T00:00:00.000Z"),
           timezone: "Asia/Seoul",
         }),
       ]);

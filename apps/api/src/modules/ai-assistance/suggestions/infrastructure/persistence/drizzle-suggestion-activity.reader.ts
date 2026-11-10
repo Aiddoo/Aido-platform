@@ -6,19 +6,19 @@ import {
 } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import dayjs from "dayjs";
 import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import {
-  resolveTimezone,
-  startOfDayInTimezone,
-  toLocalTimeString,
-} from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
+import {
+  dateColumnOf,
+  localDateAt,
+  localDateTimeAt,
+  plainDateOfDateColumn,
+  sundayBasedDayIndex,
+} from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
 import type {
   CategoryCompletionRate,
@@ -29,13 +29,13 @@ import type {
   UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
+// planning Todo.startDate는 아직 UTC 자정 Date로 읽는 달력 날짜다
 function localDay(value: Date, timezone: string): Date {
-  return startOfDayInTimezone(value, timezone);
+  return dateColumnOf(localDateAt(value, timezone));
 }
 
-// insights DailyCompletion.date는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
-function localCalendarDay(value: Date, timezone: string): Temporal.PlainDate {
-  return instantFromDate(value).toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
+function toWallClock(local: Temporal.ZonedDateTime): string {
+  return local.toPlainTime().toString({ smallestUnit: "minute" });
 }
 
 /** 제안 분석용 활동 projection. planning·insights 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
@@ -62,14 +62,13 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       columns: { date: true, totalTodos: true, completedTodos: true },
       where: {
         userId,
-        date: { gte: localCalendarDay(from, timezone), lte: localCalendarDay(to, timezone) },
+        date: { gte: localDateAt(from, timezone), lte: localDateAt(to, timezone) },
       },
     });
 
     const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
       completions,
-      // Temporal은 월요일 1 ~ 일요일 7이라 dayjs의 일요일 0 기준으로 맞춘다
-      (c) => dayIndexToDayOfWeek(c.date.dayOfWeek % 7),
+      (c) => dayIndexToDayOfWeek(sundayBasedDayIndex(c.date)),
     );
 
     return DAY_OF_WEEK_ORDER.map((day) => {
@@ -100,7 +99,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     const { morning = 0, afternoon = 0 } = countBy(
       compact(todos.map((t) => t.completedAt)),
-      (completedAt) => (dayjs(completedAt).tz(timezone).hour() < 12 ? "morning" : "afternoon"),
+      (completedAt) => (localDateTimeAt(completedAt, timezone).hour < 12 ? "morning" : "afternoon"),
     );
 
     const total = morning + afternoon;
@@ -197,11 +196,11 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     return todos.toReversed().map((t) => ({
       title: t.title,
-      startDate: toDateString(t.startDate),
+      startDate: plainDateOfDateColumn(t.startDate).toString(),
       scheduledTime:
         t.scheduledTime == null
           ? null
-          : (t.scheduledLocalTime ?? toLocalTimeString(t.scheduledTime, timezone)),
+          : (t.scheduledLocalTime ?? toWallClock(localDateTimeAt(t.scheduledTime, timezone))),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,

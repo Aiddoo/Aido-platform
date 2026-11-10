@@ -1,15 +1,17 @@
 import { AI_SUGGESTION_LIMITS, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 
 import type { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { type GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { LatestReportStatsReaderPort } from "../../reports/application/ports/latest-report-stats.reader.port.js";
+import {
+  localDateAt,
+  sundayBasedDayIndex,
+} from "../../shared/domain/user-calendar.domain-service.js";
 import { collectRecordedActivities } from "../domain/recorded-activity-evidence.domain-service.js";
 import type {
   SuggestionHistoryItem,
@@ -59,13 +61,14 @@ export class SuggestionContextReader {
     weatherGrid: GridInput | null,
     locale: SupportedLocale = "ko",
   ): Promise<SuggestionContext> {
-    const at = instantToDate(this.#dependencies.clock.now());
-    const currentDate = dayjs.utc(at);
-    const analysisFrom = currentDate.subtract(AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS, "week").toDate();
-    const contextFrom = currentDate.subtract(AI_SUGGESTION_LIMITS.CONTEXT_WEEKS, "week").toDate();
-    const to = currentDate.toDate();
+    const now = this.#dependencies.clock.now();
+    // UTC 일수라 일광 절약 없이 24시간 단위다
+    const daysAgo = (days: number) => instantToDate(now.subtract({ hours: 24 * days }));
+    const analysisFrom = daysAgo(7 * AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS);
+    const contextFrom = daysAgo(7 * AI_SUGGESTION_LIMITS.CONTEXT_WEEKS);
+    const to = instantToDate(now);
 
-    const historySince = currentDate.subtract(30, "day").toDate();
+    const historySince = daysAgo(30);
 
     const [
       todos,
@@ -115,7 +118,7 @@ export class SuggestionContextReader {
       streak: this.#formatStreak(streakInfo, locale),
       missingRoutines,
       weather,
-      currentDate: this.#formatCurrentDate(currentDate, timezone, locale),
+      currentDate: this.#formatCurrentDate(now, timezone, locale),
       weeklyReportInsight,
       suggestionHistory,
     };
@@ -131,18 +134,18 @@ export class SuggestionContextReader {
     timezone: string,
     locale: SupportedLocale = "ko",
   ): string[] {
-    const currentDate = dayjs.utc(instantToDate(this.#dependencies.clock.now())).tz(timezone);
-    const weekStart = currentDate.startOf("isoWeek");
+    const today = localDateAt(this.#dependencies.clock.now(), timezone);
+    const weekStart = today.subtract({ days: today.dayOfWeek - 1 });
 
     // 제목+요일별 등장 횟수 집계 (이번 주 제외)
     const titleDayCount = new Map<string, Map<DayOfWeek, number>>();
     const thisWeekTitles = new Set<string>();
 
     for (const todo of todos) {
-      const todoDate = dayjs(parseLocalDateTime(todo.startDate, "00:00", timezone)).tz(timezone);
-      const dayName = dayIndexToDayOfWeek(todoDate.day());
+      const todoDate = Temporal.PlainDate.from(todo.startDate);
+      const dayName = dayIndexToDayOfWeek(sundayBasedDayIndex(todoDate));
 
-      if (!todoDate.isBefore(weekStart, "day")) {
+      if (Temporal.PlainDate.compare(todoDate, weekStart) >= 0) {
         thisWeekTitles.add(todo.title);
         continue;
       }
@@ -273,13 +276,13 @@ export class SuggestionContextReader {
     return suggestionContextTranslations[locale].streak(info.currentStreak, info.longestStreak);
   }
 
-  #formatCurrentDate(date: dayjs.Dayjs, timezone: string, locale: SupportedLocale): string {
-    const local = date.tz(timezone);
+  #formatCurrentDate(now: Temporal.Instant, timezone: string, locale: SupportedLocale): string {
+    const local = localDateAt(now, timezone);
     return suggestionContextTranslations[locale].currentDate(
-      local.format("YYYY-MM-DD"),
-      dayIndexToDayOfWeek(local.day()),
-      local.month() + 1,
-      local.date(),
+      local.toString(),
+      dayIndexToDayOfWeek(sundayBasedDayIndex(local)),
+      local.month,
+      local.day,
     );
   }
 }
