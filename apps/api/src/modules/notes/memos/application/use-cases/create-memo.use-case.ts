@@ -1,67 +1,67 @@
-import type { Memo as MemoResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { MemoContent } from "../../domain/memo-content.vo.js";
-import { NotesMemoLogEvent } from "../notes-memo-log.events.js";
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
-import { toMemoView } from "../read-models/memo.read-model.js";
+import { Memo } from "../../domain/memo.aggregate.js";
+import { memoLimitReached } from "../memos.errors.js";
+import { MemoLockKeys } from "../memos.lock-keys.js";
+import { MemoLogEvent } from "../memos.log-events.js";
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-export interface MemoMutationResult {
-  readonly message: string;
-  readonly memo: MemoResponse;
-}
-
-export interface CreateMemoInput {
+export interface CreateMemoCommand {
   readonly userId: string;
   readonly content: string;
 }
 
-interface CreateMemoDependencies {
+export interface CreateMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly repository: Pick<MemoRepositoryPort, "countByUserId" | "getMaxSortOrder" | "create">;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly memoRepository: Pick<
+    MemoRepositoryPort,
+    "nextId" | "countByUserId" | "findMaxSortOrder" | "save"
+  >;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class CreateMemo {
+export class CreateMemoUseCase {
   readonly #dependencies: CreateMemoDependencies;
 
   constructor(dependencies: CreateMemoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CreateMemoInput): Promise<MemoMutationResult> {
-    const memo = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.memoSortOrder(input.userId)]);
-      const count = await this.#dependencies.repository.countByUserId(input.userId);
-      if (count >= MEMO_LIMITS.MAX_PER_USER) {
-        throw new ApplicationException(ErrorCode.MEMO_2003, {
-          current: count,
-          limit: MEMO_LIMITS.MAX_PER_USER,
-        });
+  async execute(command: CreateMemoCommand): Promise<Memo> {
+    const { unitOfWork, mutationLock, memoRepository, clock, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+
+    const memo = await unitOfWork.run(async () => {
+      await mutationLock.acquire([MemoLockKeys.sortOrder(userId)]);
+      // 한도를 내용 검증보다 먼저 본다(출시 앱이 받는 오류 우선순위)
+      const memoCount = await memoRepository.countByUserId(userId);
+      if (memoCount >= MEMO_LIMITS.MAX_PER_USER) {
+        throw memoLimitReached(memoCount);
       }
 
-      const content = MemoContent.of(input.content);
-      const maxSortOrder = await this.#dependencies.repository.getMaxSortOrder(input.userId);
-
-      return this.#dependencies.repository.create(input.userId, content.value, maxSortOrder + 1);
+      const content = MemoContent.create(command.content);
+      const maxSortOrder = await memoRepository.findMaxSortOrder(userId);
+      const created = Memo.create({
+        id: await memoRepository.nextId(),
+        userId,
+        content,
+        sortOrder: maxSortOrder == null ? 0 : maxSortOrder + 1,
+        now: clock.now(),
+      });
+      await memoRepository.save(created);
+      return created;
     });
 
-    this.#dependencies.logger.log({
-      event: NotesMemoLogEvent.CREATED,
-      memoId: memo.id,
-      userId: input.userId,
-    });
-
-    return { message: "메모가 생성되었습니다.", memo: toMemoView(memo) };
+    logger.log({ event: MemoLogEvent.CREATED, memoId: memo.id.value, userId: command.userId });
+    return memo;
   }
 }

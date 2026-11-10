@@ -1,39 +1,35 @@
-import type { Memo as MemoResponse } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { MemoId } from "../../domain/memo-id.vo.js";
+import type { Memo } from "../../domain/memo.aggregate.js";
+import { memoNotFound } from "../memos.errors.js";
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
-import { toMemoView } from "../read-models/memo.read-model.js";
-
-export interface GetMemoInput {
+export interface GetMemoQuery {
   readonly userId: string;
   readonly memoId: number;
 }
 
-export interface GetMemoResult {
-  memo: MemoResponse;
+export interface GetMemoDependencies {
+  readonly memoRepository: Pick<MemoRepositoryPort, "findByIdAndUserId">;
 }
 
-interface GetMemoDependencies {
-  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId">;
-}
-
-export class GetMemo {
+export class GetMemoUseCase {
   readonly #dependencies: GetMemoDependencies;
 
   constructor(dependencies: GetMemoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetMemoInput): Promise<GetMemoResult> {
-    const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
+  async execute(query: GetMemoQuery): Promise<Memo> {
+    const memoId = MemoId.reconstitute(query.memoId);
+    const memo = await this.#dependencies.memoRepository.findByIdAndUserId(
+      memoId,
+      UserId.reconstitute(query.userId),
+    );
     if (memo == null) {
-      throw new ApplicationException(ErrorCode.MEMO_2001, {
-        memoId: input.memoId,
-      });
+      throw memoNotFound(memoId);
     }
-
-    return { memo: toMemoView(memo) };
+    return memo;
   }
 }

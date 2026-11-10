@@ -1,82 +1,78 @@
-import type { Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type {
+  CreateTodoData,
+  StagedTodoCreation,
+  StagedTodoCreatorPort,
+} from "#api/modules/planning/planning-todos.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type UnitOfWorkPort,
-  type AfterCommitTaskRegistryPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotesMemoLogEvent } from "../notes-memo-log.events.js";
-import type { MemoTodoCreatorPort } from "../ports/memo-todo-creator.port.js";
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
+import { MemoId } from "../../domain/memo-id.vo.js";
+import { memoNotFound } from "../memos.errors.js";
+import { MemoLockKeys } from "../memos.lock-keys.js";
+import { MemoLogEvent } from "../memos.log-events.js";
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-export interface ConvertMemoToTodoData {
-  readonly categoryId: number;
-  readonly startDate: Date;
-  readonly endDate?: Date | null;
-  readonly scheduledTime?: string | null;
-  readonly isAllDay?: boolean;
-  readonly visibility?: TodoVisibility;
-  readonly items?: { title: string }[];
-}
+type ConvertedTodo = StagedTodoCreation["todos"][number];
 
-export interface ConvertMemoToTodoResult {
-  readonly message: string;
-  readonly todo: Todo;
-}
-
-export interface ConvertMemoToTodoInput {
+export interface ConvertMemoToTodoCommand {
   readonly userId: string;
   readonly memoId: number;
-  readonly data: ConvertMemoToTodoData;
   readonly timezone: string | undefined;
+  readonly todo: Pick<
+    CreateTodoData,
+    "categoryId" | "startDate" | "endDate" | "scheduledTime" | "isAllDay" | "visibility" | "items"
+  >;
 }
 
-interface ConvertMemoToTodoDependencies {
-  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
-  readonly todoCreator: MemoTodoCreatorPort;
+export interface ConvertMemoToTodoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly afterCommit: AfterCommitTaskRegistryPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly memoRepository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
+  readonly todoCreator: Pick<StagedTodoCreatorPort, "stage">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class ConvertMemoToTodo {
+export class ConvertMemoToTodoUseCase {
   readonly #dependencies: ConvertMemoToTodoDependencies;
 
   constructor(dependencies: ConvertMemoToTodoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ConvertMemoToTodoInput): Promise<ConvertMemoToTodoResult> {
-    const { userId, memoId, data, timezone } = input;
-    const todo = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.memo(memoId),
-        MutationLockKeys.memoSortOrder(userId),
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
+  async execute(command: ConvertMemoToTodoCommand): Promise<ConvertedTodo> {
+    const { unitOfWork, mutationLock, afterCommit, memoRepository, todoCreator, logger } =
+      this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const memoId = MemoId.reconstitute(command.memoId);
+
+    const todo = await unitOfWork.run(async () => {
+      await mutationLock.acquire([
+        MemoLockKeys.memo(memoId),
+        MemoLockKeys.sortOrder(userId),
+        MutationLockKeys.todoCategory(command.userId),
+        MutationLockKeys.todoSortOrder(command.userId),
       ]);
-      const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
+      const memo = await memoRepository.findByIdAndUserId(memoId, userId);
       if (memo == null) {
-        throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+        throw memoNotFound(memoId);
       }
-      const staged = await this.#dependencies.todoCreator.stage({
-        userId,
+      const staged = await todoCreator.stage({
+        ...command.todo,
+        userId: command.userId,
         title: memo.toTodoTitle(),
-        categoryId: data.categoryId,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        scheduledTime: data.scheduledTime,
-        timezone,
-        isAllDay: data.isAllDay ?? true,
-        visibility: data.visibility ?? "PUBLIC",
-        items: data.items,
+        timezone: command.timezone,
+        isAllDay: command.todo.isAllDay ?? true,
+        visibility: command.todo.visibility ?? "PUBLIC",
       });
       const createdTodo = staged.todos.at(0);
       if (createdTodo == null) {
@@ -84,17 +80,17 @@ export class ConvertMemoToTodo {
           detail: "Staged todo creation returned no todo",
         });
       }
-      this.#dependencies.afterCommit.register(staged.afterCommit);
-      await this.#dependencies.repository.delete(memoId);
+      afterCommit.register(staged.afterCommit);
+      await memoRepository.delete(memo);
       return createdTodo;
     });
 
-    this.#dependencies.logger.log({
-      event: NotesMemoLogEvent.CONVERTED,
-      memoId,
-      userId,
+    logger.log({
+      event: MemoLogEvent.CONVERTED,
+      memoId: command.memoId,
+      userId: command.userId,
       todoCount: 1,
     });
-    return { message: "메모가 할 일로 변환되었습니다.", todo };
+    return todo;
   }
 }

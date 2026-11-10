@@ -1,29 +1,33 @@
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
 
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export interface GetMemoResourceLimitInput {
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
+
+export interface GetMemoResourceLimitQuery {
   readonly userId: string;
 }
 
 export interface MemoResourceLimit {
-  currentCount: number;
-  maxPerUser: number;
+  readonly currentCount: number;
+  readonly maxPerUser: number;
 }
 
-interface GetMemoResourceLimitDependencies {
-  readonly repository: Pick<MemoRepositoryPort, "countByUserId">;
+export interface GetMemoResourceLimitDependencies {
+  readonly memoRepository: Pick<MemoRepositoryPort, "countByUserId">;
 }
 
-export class GetMemoResourceLimit {
+export class GetMemoResourceLimitUseCase {
   readonly #dependencies: GetMemoResourceLimitDependencies;
 
   constructor(dependencies: GetMemoResourceLimitDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetMemoResourceLimitInput): Promise<MemoResourceLimit> {
-    const currentCount = await this.#dependencies.repository.countByUserId(input.userId);
+  async execute(query: GetMemoResourceLimitQuery): Promise<MemoResourceLimit> {
+    const currentCount = await this.#dependencies.memoRepository.countByUserId(
+      UserId.reconstitute(query.userId),
+    );
     return { currentCount, maxPerUser: MEMO_LIMITS.MAX_PER_USER };
   }
 }

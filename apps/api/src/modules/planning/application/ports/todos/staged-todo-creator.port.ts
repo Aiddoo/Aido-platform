@@ -19,6 +19,6 @@ export interface StagedTodoCreation {
  * 활성 UoW와 생성 잠금(todoCategory·todoSortOrder) 안에서 호출하고, 돌려받은 afterCommit은
  * 커밋 뒤에만 실행되도록 등록한다. 롤백되면 알림·캐시 효과가 남지 않는다.
  */
-export interface StagedTodoCreatorPort {
-  stage(input: CreateTodoData): Promise<StagedTodoCreation>;
+export abstract class StagedTodoCreatorPort {
+  abstract stage(input: CreateTodoData): Promise<StagedTodoCreation>;
 }

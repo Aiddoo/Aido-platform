@@ -161,7 +161,12 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
   async function insertMemo(ownerId: string) {
     const [row] = await client
       .insert(memoTable)
-      .values({ userId: ownerId, content: "원본 메모", sortOrder: 0, updatedAt: AT })
+      .values({
+        userId: ownerId,
+        content: "원본 메모",
+        sortOrder: 0,
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
+      })
       .returning({ id: memoTable.id });
     if (row == null) {
       throw new Error("memo insert failed");
@@ -409,7 +414,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
           userId,
           content: `메모 ${index}`,
           sortOrder: index,
-          updatedAt: AT,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
         })),
       );
       const memoAction = {

@@ -1,32 +1,23 @@
 import { ErrorCode } from "@aido/api/errors";
-import { MEMO_LIMITS } from "@aido/api/vocabulary";
+import { MEMO_LIMITS, TODO_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
-const TODO_TITLE_MAX_LENGTH = 200;
-
-export class MemoContent {
-  readonly #value: string;
-
-  constructor(value: string) {
-    this.#value = value;
-  }
-
-  static of(value: string): MemoContent {
-    if (value.length < 1 || value.length > MEMO_LIMITS.MAX_CONTENT_LENGTH) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "content",
-        length: value.length,
-      });
+export class MemoContent extends ValueObject<string> {
+  static create(raw: string): MemoContent {
+    const isWithinLimit = 1 <= raw.length && raw.length <= MEMO_LIMITS.MAX_CONTENT_LENGTH;
+    if (!isWithinLimit) {
+      throw new DomainException(ErrorCode.SYS_0002, { field: "content", length: raw.length });
     }
-    return new MemoContent(value);
+    return new MemoContent(raw);
   }
 
-  get value(): string {
-    return this.#value;
+  static reconstitute(raw: string): MemoContent {
+    return new MemoContent(raw);
   }
 
   toTodoTitle(): string {
-    return this.#value.substring(0, TODO_TITLE_MAX_LENGTH);
+    return this.value.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH);
   }
 }

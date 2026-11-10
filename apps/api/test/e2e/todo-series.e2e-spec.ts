@@ -602,7 +602,7 @@ describe("반복 할 일 생성 E2E", () => {
         const created = await ctx.testDatabase
           .getClient()
           .insert(memo)
-          .values({ userId, content: "메모", sortOrder: 0 })
+          .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
           .returning();
         // When
         const response = await post(`/v1/memos/${created[0]?.id}/convert-to-todos`, {
@@ -650,7 +650,7 @@ describe("반복 할 일 생성 E2E", () => {
         const created = await ctx.testDatabase
           .getClient()
           .insert(memo)
-          .values({ userId, content: "메모", sortOrder: 0 })
+          .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
           .returning();
         // When
         const response = await post(`/v1/memos/${created[0]?.id}/convert-to-todos`, {
@@ -673,7 +673,7 @@ describe("반복 할 일 생성 E2E", () => {
         const created = await ctx.testDatabase
           .getClient()
           .insert(memo)
-          .values({ userId, content: "메모", sortOrder: 0 })
+          .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
           .returning();
         // When
         const response = await post(`/v1/memos/${created[0]?.id}/convert-to-todos`, {
@@ -758,7 +758,7 @@ describe("반복 할 일 생성 E2E", () => {
       const [seeded] = await ctx.testDatabase
         .getClient()
         .insert(memo)
-        .values({ userId, content: "운동", sortOrder: 0 })
+        .values({ userId, content: "운동", sortOrder: 0, updatedAt: Temporal.Now.instant() })
         .returning();
       const startDate = dateAfter(1);
       // When

@@ -1,4 +1,4 @@
-export const NotesMemoLogEvent = {
+export const MemoLogEvent = {
   CREATED: "notes.memo.created",
   UPDATED: "notes.memo.updated",
   PIN_CHANGED: "notes.memo.pin.changed",

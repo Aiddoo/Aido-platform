@@ -92,7 +92,9 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   }
 
   async function createMemo(content: string, memoUserId = userId): Promise<void> {
-    await txHost.tx.insert(memo).values({ userId: memoUserId, content, sortOrder: 0 });
+    await txHost.tx
+      .insert(memo)
+      .values({ userId: memoUserId, content, sortOrder: 0, updatedAt: Temporal.Now.instant() });
   }
 
   it.each(["postgres", "application"])(

@@ -10,7 +10,10 @@ import { TODO_SERIES_OWNER } from "./application/ports/series/todo-series-owner.
 import { TODO_SERIES_REPOSITORY } from "./application/ports/series/todo-series.repository.port.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
-import { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creator.port.js";
+import {
+  STAGED_TODO_CREATOR,
+  StagedTodoCreatorPort,
+} from "./application/ports/todos/staged-todo-creator.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todos/todo-notification.port.js";
@@ -69,6 +72,7 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     { provide: TODO_OWNER_TIMEZONE, useClass: TodoOwnerTimezoneAdapter },
     ...TODO_PROVIDERS,
     { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreator },
+    { provide: StagedTodoCreatorPort, useExisting: StagedTodoCreator },
     {
       provide: TodoViewCacheInvalidator,
       inject: [TODO_READ_REPOSITORY, TODO_CACHE],
@@ -80,6 +84,11 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
       useExisting: TodoViewCacheInvalidator,
     },
   ],
-  exports: [STAGED_TODO_CREATOR, TODO_PLAN_READER, TODO_VIEW_CACHE_INVALIDATOR],
+  exports: [
+    STAGED_TODO_CREATOR,
+    StagedTodoCreatorPort,
+    TODO_PLAN_READER,
+    TODO_VIEW_CACHE_INVALIDATOR,
+  ],
 })
 export class PlanningTodosModule {}

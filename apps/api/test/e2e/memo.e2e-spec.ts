@@ -161,6 +161,7 @@ describe("메모 E2E", () => {
           userId: user.userId,
           content: `시딩 메모 ${i + 1}`,
           sortOrder: i,
+          updatedAt: Temporal.Now.instant(),
         })),
       );
 

@@ -1,64 +1,47 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotesMemoLogEvent } from "../notes-memo-log.events.js";
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
+import { MemoId } from "../../domain/memo-id.vo.js";
+import { memoNotFound } from "../memos.errors.js";
+import { MemoLockKeys } from "../memos.lock-keys.js";
+import { MemoLogEvent } from "../memos.log-events.js";
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-export interface DeleteMemoInput {
+export interface DeleteMemoCommand {
   readonly userId: string;
   readonly memoId: number;
 }
 
-export interface DeleteMemoResult {
-  readonly message: string;
-}
-
-interface DeleteMemoDependencies {
+export interface DeleteMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly memoRepository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class DeleteMemo {
+export class DeleteMemoUseCase {
   readonly #dependencies: DeleteMemoDependencies;
 
   constructor(dependencies: DeleteMemoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteMemoInput): Promise<DeleteMemoResult> {
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.memo(input.memoId),
-        MutationLockKeys.memoSortOrder(input.userId),
-      ]);
-      const memo = await this.#dependencies.repository.findByIdAndUserId(
-        input.memoId,
-        input.userId,
-      );
+  async execute(command: DeleteMemoCommand): Promise<void> {
+    const { unitOfWork, mutationLock, memoRepository, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const memoId = MemoId.reconstitute(command.memoId);
+
+    await unitOfWork.run(async () => {
+      await mutationLock.acquire([MemoLockKeys.memo(memoId), MemoLockKeys.sortOrder(userId)]);
+      const memo = await memoRepository.findByIdAndUserId(memoId, userId);
       if (memo == null) {
-        throw new ApplicationException(ErrorCode.MEMO_2001, {
-          memoId: input.memoId,
-        });
+        throw memoNotFound(memoId);
       }
-
-      await this.#dependencies.repository.delete(input.memoId);
+      await memoRepository.delete(memo);
     });
 
-    this.#dependencies.logger.log({
-      event: NotesMemoLogEvent.DELETED,
-      memoId: input.memoId,
-      userId: input.userId,
-    });
-
-    return { message: "메모가 삭제되었습니다." };
+    logger.log({ event: MemoLogEvent.DELETED, memoId: command.memoId, userId: command.userId });
   }
 }

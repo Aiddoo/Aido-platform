@@ -1,98 +1,101 @@
-import { ErrorCode } from "@aido/api/errors";
+import type { ReorderPosition } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { MemoId } from "../../domain/memo-id.vo.js";
 import {
-  planReorderRelativeTo,
-  planReorderToEdge,
-  type ReorderPlan,
-} from "../../domain/memo-reorder.policy.js";
-import { NotesMemoLogEvent } from "../notes-memo-log.events.js";
-import { type MemoRepositoryPort } from "../ports/memo.repository.port.js";
-import { toMemoView } from "../read-models/memo.read-model.js";
-import type { MemoMutationResult } from "./create-memo.use-case.js";
+  type MemoMovePlan,
+  planMoveRelativeTo,
+  planMoveToEdge,
+} from "../../domain/memo-ordering.domain-service.js";
+import type { Memo } from "../../domain/memo.aggregate.js";
+import { memoNotFound, reorderTargetNotFound } from "../memos.errors.js";
+import { MemoLockKeys } from "../memos.lock-keys.js";
+import { MemoLogEvent } from "../memos.log-events.js";
+import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-export interface ReorderMemoInput {
+export interface ReorderMemoCommand {
   readonly userId: string;
   readonly memoId: number;
-  readonly position: "before" | "after";
+  readonly position: ReorderPosition;
+  // 없으면 맨 앞(before)·맨 뒤(after)로 옮긴다
   readonly targetMemoId?: number;
 }
 
-interface ReorderMemoDependencies {
+export interface ReorderMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly repository: Pick<
-    MemoRepositoryPort,
-    "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "updateSortOrder"
-  >;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLoggerPort;
+  readonly memoRepository: Pick<
+    MemoRepositoryPort,
+    "findByIdAndUserId" | "findMaxSortOrder" | "shiftSortOrders" | "save"
+  >;
+  readonly clock: ClockPort;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class ReorderMemo {
+export class ReorderMemoUseCase {
   readonly #dependencies: ReorderMemoDependencies;
 
   constructor(dependencies: ReorderMemoDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ReorderMemoInput): Promise<MemoMutationResult> {
-    const { userId, memoId, targetMemoId } = input;
+  async execute(command: ReorderMemoCommand): Promise<Memo> {
+    const { unitOfWork, mutationLock, memoRepository, clock, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
+    const memoId = MemoId.reconstitute(command.memoId);
 
-    return this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.memoSortOrder(input.userId)]);
-      const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo == null) {
-        throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+    const { memo, isMoved } = await unitOfWork.run(async () => {
+      await mutationLock.acquire([MemoLockKeys.sortOrder(userId)]);
+      // 옮길 메모가 없으면 기준 메모보다 먼저 거절한다(출시 앱이 받는 오류 우선순위)
+      const found = await memoRepository.findByIdAndUserId(memoId, userId);
+      if (found == null) {
+        throw memoNotFound(memoId);
+      }
+      if (command.targetMemoId === command.memoId) {
+        return { memo: found, isMoved: false };
       }
 
-      if (targetMemoId === memoId) {
-        return { message: "메모 순서가 변경되었습니다.", memo: toMemoView(memo) };
+      const plan = await this.#planMove(found, userId, command);
+      const now = clock.now();
+      await memoRepository.shiftSortOrders(userId, plan.shift, now);
+      const hasMoved = found.moveTo(plan.sortOrder, now);
+      if (hasMoved) {
+        await memoRepository.save(found);
       }
-
-      const plan = await this.#planReorder(memo.sortOrder, input);
-
-      await this.#dependencies.repository.shiftSortOrders(
-        userId,
-        plan.shift.from,
-        plan.shift.to,
-        plan.shift.delta,
-      );
-      const updated = await this.#dependencies.repository.updateSortOrder(
-        memoId,
-        plan.newSortOrder,
-      );
-
-      this.#dependencies.logger.log({
-        event: NotesMemoLogEvent.REORDERED,
-        memoId: input.memoId,
-        userId: input.userId,
-      });
-
-      return { message: "메모 순서가 변경되었습니다.", memo: toMemoView(updated) };
+      return { memo: found, isMoved: hasMoved };
     });
+
+    if (isMoved) {
+      logger.log({ event: MemoLogEvent.REORDERED, memoId: command.memoId, userId: command.userId });
+    }
+    return memo;
   }
 
-  async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
-    const { userId, targetMemoId, position } = input;
+  async #planMove(memo: Memo, userId: UserId, command: ReorderMemoCommand): Promise<MemoMovePlan> {
+    const { memoRepository } = this.#dependencies;
+    const currentSortOrder = memo.sortOrder;
 
-    if (targetMemoId != null) {
-      const target = await this.#dependencies.repository.findByIdAndUserId(targetMemoId, userId);
+    if (command.targetMemoId != null) {
+      const targetMemoId = MemoId.reconstitute(command.targetMemoId);
+      const target = await memoRepository.findByIdAndUserId(targetMemoId, userId);
       if (target == null) {
-        throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
+        throw reorderTargetNotFound(targetMemoId);
       }
-      return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);
+      return planMoveRelativeTo({
+        currentSortOrder,
+        targetSortOrder: target.sortOrder,
+        position: command.position,
+      });
     }
 
-    // 맨 뒤 이동만 maxSortOrder가 필요하다 (맨 앞은 0 고정).
+    // 맨 뒤 이동만 최대 순서가 필요하다(맨 앞은 0)
     const maxSortOrder =
-      position === "after" ? await this.#dependencies.repository.getMaxSortOrder(userId) : 0;
-    return planReorderToEdge(currentSortOrder, position, maxSortOrder);
+      command.position === "after" ? ((await memoRepository.findMaxSortOrder(userId)) ?? 0) : 0;
+    return planMoveToEdge({ currentSortOrder, position: command.position, maxSortOrder });
   }
 }

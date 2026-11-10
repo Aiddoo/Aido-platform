@@ -1,17 +1,42 @@
 import {
   convertMemoToTodoResponseSchema,
+  convertMemoToTodoSchema,
   convertMemoToTodosResponseSchema,
+  convertMemoToTodosSchema,
+  createMemoSchema,
+  getMemosQuerySchema,
   memoDeleteResponseSchema,
   memoDetailResponseSchema,
+  memoIdParamSchema,
   memoListResponseSchema,
   memoMutationResponseSchema,
   memoResourceLimitResponseSchema,
-  memoSchema,
+  reorderMemoSchema,
+  toggleMemoPinSchema,
+  updateMemoSchema,
 } from "@aido/api";
 import type { z } from "zod";
 
-export const MemoResponseDto = memoSchema.meta({ id: "MemoResponseDto" });
-export type MemoResponseDto = z.infer<typeof MemoResponseDto>;
+export const CreateMemoDto = createMemoSchema.meta({ id: "CreateMemoDto" });
+export type CreateMemoDto = z.infer<typeof CreateMemoDto>;
+export const UpdateMemoDto = updateMemoSchema.meta({ id: "UpdateMemoDto" });
+export type UpdateMemoDto = z.infer<typeof UpdateMemoDto>;
+export const ToggleMemoPinDto = toggleMemoPinSchema.meta({ id: "ToggleMemoPinDto" });
+export type ToggleMemoPinDto = z.infer<typeof ToggleMemoPinDto>;
+export const ReorderMemoDto = reorderMemoSchema.meta({ id: "ReorderMemoDto" });
+export type ReorderMemoDto = z.infer<typeof ReorderMemoDto>;
+export const ConvertMemoToTodoDto = convertMemoToTodoSchema.meta({ id: "ConvertMemoToTodoDto" });
+export type ConvertMemoToTodoDto = z.infer<typeof ConvertMemoToTodoDto>;
+export const ConvertMemoToTodosDto = convertMemoToTodosSchema.meta({ id: "ConvertMemoToTodosDto" });
+export type ConvertMemoToTodosDto = z.infer<typeof ConvertMemoToTodosDto>;
+export const GetMemosQueryDto = getMemosQuerySchema.meta({
+  id: "GetMemosQueryDto",
+  apiParameter: true,
+});
+export type GetMemosQueryDto = z.infer<typeof GetMemosQueryDto>;
+export const MemoIdParamDto = memoIdParamSchema.meta({ id: "MemoIdParamDto", apiParameter: true });
+export type MemoIdParamDto = z.infer<typeof MemoIdParamDto>;
+
 export const MemoDetailResponseDto = memoDetailResponseSchema.meta({ id: "MemoDetailResponseDto" });
 export type MemoDetailResponseDto = z.infer<typeof MemoDetailResponseDto>;
 export const MemoMutationResponseDto = memoMutationResponseSchema.meta({

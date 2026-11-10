@@ -1,21 +1,15 @@
 import { Module } from "@nestjs/common";
 
-import { PlanningTodosModule } from "../../planning/planning-todos.public.js";
-import { MEMO_REPOSITORY } from "./application/ports/memo.repository.port.js";
-import { PLAN_MEMO_WRITER } from "./application/ports/plan-memo-writer.port.js";
-import { DrizzleMemoRepository } from "./infrastructure/persistence/drizzle-memo.repository.js";
-import { planMemoWriterProvider } from "./notes-memos-application.providers.js";
-import { MEMO_PROVIDERS } from "./notes-memos.providers.js";
+import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+
+import { PlanMemoWriterPort } from "./application/ports/plan-memo-writer.port.js";
+import { NOTES_MEMOS_PROVIDERS } from "./notes-memos.providers.js";
 import { MemoController } from "./presentation/http/v1/memo.controller.js";
 
 @Module({
   imports: [PlanningTodosModule],
   controllers: [MemoController],
-  providers: [
-    { provide: MEMO_REPOSITORY, useClass: DrizzleMemoRepository },
-    ...MEMO_PROVIDERS,
-    planMemoWriterProvider,
-  ],
-  exports: [PLAN_MEMO_WRITER],
+  providers: [...NOTES_MEMOS_PROVIDERS],
+  exports: [PlanMemoWriterPort],
 })
 export class NotesMemosModule {}

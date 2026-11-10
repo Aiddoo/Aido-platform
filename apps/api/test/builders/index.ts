@@ -21,7 +21,6 @@ export {
   type FollowWithUser,
 } from "./follow.builder.js";
 export { LoginAttemptBuilder } from "./login-attempt.builder.js";
-export { MemoBuilder } from "./memo.builder.js";
 export { NotificationBuilder } from "./notification.builder.js";
 export {
   NudgeBuilder,

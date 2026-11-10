@@ -4,28 +4,16 @@ import { and, desc, eq, gte, lte, max, sql } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { memo } from "#api/platform/database/schema/index";
+import { tupleLessThan } from "#api/platform/database/keyset";
+import { memo as memoTable } from "#api/platform/database/schema/notes.schema";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  FindMemosParams,
-  MemoRepositoryPort,
-} from "../../application/ports/memo.repository.port.js";
-import { Memo } from "../../domain/memo.aggregate.js";
-
-type MemoRow = typeof memo.$inferSelect;
-type MemoPatch = Partial<Pick<MemoRow, "content" | "isPinned" | "sortOrder">>;
-
-function toDomain(row: MemoRow): Memo {
-  return Memo.reconstitute({
-    id: row.id,
-    userId: row.userId,
-    content: row.content,
-    isPinned: row.isPinned,
-    sortOrder: row.sortOrder,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  });
-}
+import { MemoRepositoryPort } from "../../application/ports/memo.repository.port.js";
+import { MemoId } from "../../domain/memo-id.vo.js";
+import type { SortOrderShift } from "../../domain/memo-ordering.domain-service.js";
+import type { Memo } from "../../domain/memo.aggregate.js";
+import { toMemo, toMemoRow } from "./memo-row.mapper.js";
 
 @Injectable()
 export class DrizzleMemoRepository implements MemoRepositoryPort {
@@ -39,95 +27,104 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async create(userId: string, content: string, sortOrder: number): Promise<Memo> {
-    const [row] = await this.#db.insert(memo).values({ userId, content, sortOrder }).returning();
-    return toDomain(requireRecord(row));
+  async nextId(): Promise<MemoId> {
+    return MemoId.reconstitute(await nextSequenceValue(this.#db, memoTable.id));
   }
 
-  async findByIdAndUserId(memoId: number, userId: string): Promise<Memo | null> {
-    const row = await this.#db.query.memo.findFirst({ where: { id: memoId, userId } });
-    return row == null ? null : toDomain(row);
+  async findByIdAndUserId(memoId: MemoId, userId: UserId): Promise<Memo | null> {
+    const row = await this.#db.query.memo.findFirst({
+      where: { id: memoId.value, userId: userId.value },
+    });
+    return row == null ? null : toMemo(row);
   }
 
-  async findManyByUserId({ userId, cursor, size }: FindMemosParams): Promise<Memo[]> {
+  async listByUserId(params: {
+    readonly userId: UserId;
+    readonly afterMemoId: MemoId | null;
+    readonly limit: number;
+  }): Promise<Memo[]> {
+    const { userId, afterMemoId, limit } = params;
     const anchor =
-      cursor == null
-        ? undefined
+      afterMemoId == null
+        ? null
         : await this.#db.query.memo.findFirst({
             columns: { id: true, isPinned: true, sortOrder: true },
-            where: { id: cursor, userId },
+            where: { id: afterMemoId.value, userId: userId.value },
           });
-    if (cursor != null && anchor == null) {
+    if (afterMemoId != null && anchor == null) {
       return [];
     }
 
     const rows = await this.#db
       .select()
-      .from(memo)
+      .from(memoTable)
       .where(
         and(
-          eq(memo.userId, userId),
-          anchor &&
-            sql`(${memo.isPinned}, ${memo.sortOrder}, ${memo.id}) < (${anchor.isPinned}, ${anchor.sortOrder}, ${anchor.id})`,
+          eq(memoTable.userId, userId.value),
+          anchor == null
+            ? undefined
+            : tupleLessThan(
+                [memoTable.isPinned, memoTable.sortOrder, memoTable.id],
+                [anchor.isPinned, anchor.sortOrder, anchor.id],
+              ),
         ),
       )
-      .orderBy(desc(memo.isPinned), desc(memo.sortOrder), desc(memo.id))
-      .limit(size + 1);
-    return rows.map((row) => toDomain(row));
+      .orderBy(desc(memoTable.isPinned), desc(memoTable.sortOrder), desc(memoTable.id))
+      .limit(limit);
+    return rows.map(toMemo);
   }
 
-  countByUserId(userId: string): Promise<number> {
-    return this.#db.$count(memo, eq(memo.userId, userId));
+  countByUserId(userId: UserId): Promise<number> {
+    return this.#db.$count(memoTable, eq(memoTable.userId, userId.value));
   }
 
-  updateContent(memoId: number, content: string): Promise<Memo> {
-    return this.#update(memoId, { content });
-  }
-
-  updatePinned(memoId: number, isPinned: boolean): Promise<Memo> {
-    return this.#update(memoId, { isPinned });
-  }
-
-  updateSortOrder(memoId: number, sortOrder: number): Promise<Memo> {
-    return this.#update(memoId, { sortOrder });
-  }
-
-  async #update(memoId: number, patch: MemoPatch): Promise<Memo> {
-    const [row] = await this.#db.update(memo).set(patch).where(eq(memo.id, memoId)).returning();
-    return toDomain(requireRecord(row));
-  }
-
-  async getMaxSortOrder(userId: string): Promise<number> {
+  async findMaxSortOrder(userId: UserId): Promise<number | null> {
     const [result] = await this.#db
-      .select({ maximum: max(memo.sortOrder) })
-      .from(memo)
-      .where(eq(memo.userId, userId));
-    return result?.maximum ?? -1;
+      .select({ maxSortOrder: max(memoTable.sortOrder) })
+      .from(memoTable)
+      .where(eq(memoTable.userId, userId.value));
+    return result?.maxSortOrder ?? null;
   }
 
   async shiftSortOrders(
-    userId: string,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
+    userId: UserId,
+    shift: SortOrderShift,
+    now: Temporal.Instant,
   ): Promise<void> {
     await this.#db
-      .update(memo)
-      .set({ sortOrder: sql`${memo.sortOrder} + ${delta}` })
+      .update(memoTable)
+      // 밀린 메모도 수정 시각이 바뀐다(옮기기 전 $onUpdate 동작). 앱 초안은 이 시각으로 낡음을 판단한다
+      .set({ sortOrder: sql`${memoTable.sortOrder} + ${shift.delta}`, updatedAt: now })
       .where(
         and(
-          eq(memo.userId, userId),
-          gte(memo.sortOrder, fromSortOrder),
-          toSortOrder == null ? undefined : lte(memo.sortOrder, toSortOrder),
+          eq(memoTable.userId, userId.value),
+          gte(memoTable.sortOrder, shift.fromSortOrder),
+          shift.toSortOrder == null ? undefined : lte(memoTable.sortOrder, shift.toSortOrder),
         ),
       );
   }
 
-  async delete(memoId: number): Promise<void> {
-    const deleted = await this.#db
-      .delete(memo)
-      .where(eq(memo.id, memoId))
-      .returning({ id: memo.id });
-    requireRecord(deleted[0]);
+  async save(memo: Memo): Promise<void> {
+    const row = toMemoRow(memo);
+    await this.#db
+      .insert(memoTable)
+      .values(row)
+      .onConflictDoUpdate({
+        target: memoTable.id,
+        set: {
+          content: row.content,
+          isPinned: row.isPinned,
+          sortOrder: row.sortOrder,
+          updatedAt: row.updatedAt,
+        },
+      });
+  }
+
+  async delete(memo: Memo): Promise<void> {
+    const [deleted] = await this.#db
+      .delete(memoTable)
+      .where(eq(memoTable.id, memo.id.value))
+      .returning({ id: memoTable.id });
+    requireRecord(deleted);
   }
 }

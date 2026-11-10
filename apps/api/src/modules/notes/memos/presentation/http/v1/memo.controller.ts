@@ -18,6 +18,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiCreatedResponse,
@@ -31,16 +32,24 @@ import {
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
-import { ConvertMemoToTodo } from "../../../application/use-cases/convert-memo-to-todo.use-case.js";
-import { ConvertMemoToTodos } from "../../../application/use-cases/convert-memo-to-todos.use-case.js";
-import { CreateMemo } from "../../../application/use-cases/create-memo.use-case.js";
-import { DeleteMemo } from "../../../application/use-cases/delete-memo.use-case.js";
-import { GetMemoResourceLimit } from "../../../application/use-cases/get-memo-resource-limit.use-case.js";
-import { GetMemo } from "../../../application/use-cases/get-memo.use-case.js";
-import { GetMemos } from "../../../application/use-cases/get-memos.use-case.js";
-import { ReorderMemo } from "../../../application/use-cases/reorder-memo.use-case.js";
-import { ToggleMemoPin } from "../../../application/use-cases/toggle-memo-pin.use-case.js";
-import { UpdateMemo } from "../../../application/use-cases/update-memo.use-case.js";
+import { ConvertMemoToTodoUseCase } from "../../../application/use-cases/convert-memo-to-todo.use-case.js";
+import { ConvertMemoToTodosUseCase } from "../../../application/use-cases/convert-memo-to-todos.use-case.js";
+import { CreateMemoUseCase } from "../../../application/use-cases/create-memo.use-case.js";
+import { DeleteMemoUseCase } from "../../../application/use-cases/delete-memo.use-case.js";
+import { GetMemoResourceLimitUseCase } from "../../../application/use-cases/get-memo-resource-limit.use-case.js";
+import { GetMemoUseCase } from "../../../application/use-cases/get-memo.use-case.js";
+import { ListMemosUseCase } from "../../../application/use-cases/list-memos.use-case.js";
+import { ReorderMemoUseCase } from "../../../application/use-cases/reorder-memo.use-case.js";
+import { SetMemoPinnedUseCase } from "../../../application/use-cases/set-memo-pinned.use-case.js";
+import { UpdateMemoUseCase } from "../../../application/use-cases/update-memo.use-case.js";
+import {
+  MEMO_RESPONSE_MESSAGES,
+  toConvertMemoToTodoResponse,
+  toConvertMemoToTodosResponse,
+  toMemoListResponse,
+  toMemoMutationResponse,
+  toMemoResponse,
+} from "./memo-response.mapper.js";
 import {
   ConvertMemoToTodoDto,
   ConvertMemoToTodoResponseDto,
@@ -57,41 +66,41 @@ import {
   ReorderMemoDto,
   ToggleMemoPinDto,
   UpdateMemoDto,
-} from "./index.js";
+} from "./memo.dto.js";
 
 @ApiTags(SWAGGER_TAGS.MEMOS)
 @ApiBearerAuth()
-@Controller("memos")
+@Controller({ path: "memos", version: API_VERSION.V1 })
 export class MemoController {
-  readonly #getMemoResourceLimit: GetMemoResourceLimit;
-  readonly #createMemo: CreateMemo;
-  readonly #getMemos: GetMemos;
-  readonly #getMemo: GetMemo;
-  readonly #updateMemo: UpdateMemo;
-  readonly #toggleMemoPin: ToggleMemoPin;
-  readonly #reorderMemo: ReorderMemo;
-  readonly #deleteMemo: DeleteMemo;
-  readonly #convertMemoToTodo: ConvertMemoToTodo;
-  readonly #convertMemoToTodos: ConvertMemoToTodos;
+  readonly #getMemoResourceLimit: GetMemoResourceLimitUseCase;
+  readonly #createMemo: CreateMemoUseCase;
+  readonly #listMemos: ListMemosUseCase;
+  readonly #getMemo: GetMemoUseCase;
+  readonly #updateMemo: UpdateMemoUseCase;
+  readonly #setMemoPinned: SetMemoPinnedUseCase;
+  readonly #reorderMemo: ReorderMemoUseCase;
+  readonly #deleteMemo: DeleteMemoUseCase;
+  readonly #convertMemoToTodo: ConvertMemoToTodoUseCase;
+  readonly #convertMemoToTodos: ConvertMemoToTodosUseCase;
 
   constructor(
-    getMemoResourceLimit: GetMemoResourceLimit,
-    createMemo: CreateMemo,
-    getMemos: GetMemos,
-    getMemo: GetMemo,
-    updateMemo: UpdateMemo,
-    toggleMemoPin: ToggleMemoPin,
-    reorderMemo: ReorderMemo,
-    deleteMemo: DeleteMemo,
-    convertMemoToTodo: ConvertMemoToTodo,
-    convertMemoToTodos: ConvertMemoToTodos,
+    getMemoResourceLimit: GetMemoResourceLimitUseCase,
+    createMemo: CreateMemoUseCase,
+    listMemos: ListMemosUseCase,
+    getMemo: GetMemoUseCase,
+    updateMemo: UpdateMemoUseCase,
+    setMemoPinned: SetMemoPinnedUseCase,
+    reorderMemo: ReorderMemoUseCase,
+    deleteMemo: DeleteMemoUseCase,
+    convertMemoToTodo: ConvertMemoToTodoUseCase,
+    convertMemoToTodos: ConvertMemoToTodosUseCase,
   ) {
     this.#getMemoResourceLimit = getMemoResourceLimit;
     this.#createMemo = createMemo;
-    this.#getMemos = getMemos;
+    this.#listMemos = listMemos;
     this.#getMemo = getMemo;
     this.#updateMemo = updateMemo;
-    this.#toggleMemoPin = toggleMemoPin;
+    this.#setMemoPinned = setMemoPinned;
     this.#reorderMemo = reorderMemo;
     this.#deleteMemo = deleteMemo;
     this.#convertMemoToTodo = convertMemoToTodo;
@@ -139,10 +148,8 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateMemoDto }) dto: CreateMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.#createMemo.execute({
-      userId: user.userId,
-      content: dto.content,
-    });
+    const memo = await this.#createMemo.execute({ userId: user.userId, content: dto.content });
+    return toMemoMutationResponse(memo, MEMO_RESPONSE_MESSAGES.CREATED);
   }
 
   @Get()
@@ -151,7 +158,7 @@ export class MemoController {
     operationId: "getMemos",
     description: `메모 목록을 조회합니다. 고정된 메모가 먼저 표시됩니다.
 
-**정렬 순서**: 고정 여부(고정 우선) → 수동 순서(오름차순) → ID(오름차순)
+**정렬 순서**: 고정 여부(고정 우선) → 수동 순서(내림차순) → ID(내림차순)
 
 **페이지네이션**: 커서 기반. \`pagination.nextCursor\`를 다음 요청의 \`cursor\`에 전달합니다.`,
   })
@@ -161,11 +168,12 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetMemosQueryDto }) query: GetMemosQueryDto,
   ): Promise<MemoListResponseDto> {
-    return this.#getMemos.execute({
+    const page = await this.#listMemos.execute({
       userId: user.userId,
       cursor: query.cursor,
       size: query.size,
     });
+    return toMemoListResponse(page);
   }
 
   @Get(":id")
@@ -181,10 +189,8 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
   ): Promise<MemoDetailResponseDto> {
-    return this.#getMemo.execute({
-      userId: user.userId,
-      memoId: params.id,
-    });
+    const memo = await this.#getMemo.execute({ userId: user.userId, memoId: params.id });
+    return { memo: toMemoResponse(memo) };
   }
 
   @Patch(":id")
@@ -201,11 +207,12 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: UpdateMemoDto }) dto: UpdateMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.#updateMemo.execute({
+    const memo = await this.#updateMemo.execute({
       userId: user.userId,
       memoId: params.id,
       content: dto.content,
     });
+    return toMemoMutationResponse(memo, MEMO_RESPONSE_MESSAGES.UPDATED);
   }
 
   @Patch(":id/pin")
@@ -217,16 +224,20 @@ export class MemoController {
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.MEMO_2001)
-  async togglePin(
+  async setPinned(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ToggleMemoPinDto }) dto: ToggleMemoPinDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.#toggleMemoPin.execute({
+    const memo = await this.#setMemoPinned.execute({
       userId: user.userId,
       memoId: params.id,
       isPinned: dto.isPinned,
     });
+    return toMemoMutationResponse(
+      memo,
+      dto.isPinned ? MEMO_RESPONSE_MESSAGES.PINNED : MEMO_RESPONSE_MESSAGES.UNPINNED,
+    );
   }
 
   @Patch(":id/reorder")
@@ -246,12 +257,13 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ReorderMemoDto }) dto: ReorderMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.#reorderMemo.execute({
-      memoId: params.id,
+    const memo = await this.#reorderMemo.execute({
       userId: user.userId,
+      memoId: params.id,
       targetMemoId: dto.targetMemoId,
       position: dto.position,
     });
+    return toMemoMutationResponse(memo, MEMO_RESPONSE_MESSAGES.REORDERED);
   }
 
   @Delete(":id")
@@ -268,10 +280,8 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
   ): Promise<MemoDeleteResponseDto> {
-    return this.#deleteMemo.execute({
-      userId: user.userId,
-      memoId: params.id,
-    });
+    await this.#deleteMemo.execute({ userId: user.userId, memoId: params.id });
+    return { message: MEMO_RESPONSE_MESSAGES.DELETED };
   }
 
   @Post(":id/convert-to-todo")
@@ -309,10 +319,11 @@ export class MemoController {
     @Body({ schema: ConvertMemoToTodoDto }) dto: ConvertMemoToTodoDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodoResponseDto> {
-    return this.#convertMemoToTodo.execute({
+    const todo = await this.#convertMemoToTodo.execute({
       userId: user.userId,
       memoId: params.id,
-      data: {
+      timezone: tz,
+      todo: {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
         endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
@@ -321,8 +332,8 @@ export class MemoController {
         visibility: dto.visibility,
         items: dto.items,
       },
-      timezone: tz,
     });
+    return toConvertMemoToTodoResponse(todo);
   }
 
   @Post(":id/convert-to-todos")
@@ -364,34 +375,33 @@ export class MemoController {
     @Body({ schema: ConvertMemoToTodosDto }) dto: ConvertMemoToTodosDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ConvertMemoToTodosResponseDto> {
-    return this.#convertMemoToTodos.execute({
+    const todos = await this.#convertMemoToTodos.execute({
       userId: user.userId,
       memoId: params.id,
-      data: {
-        todos: dto.todos.map((todo) => ({
-          title: todo.title,
-          categoryId: todo.categoryId,
-          startDate: parseDateOnly(todo.startDate),
-          endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
-          scheduledTime: todo.scheduledTime,
-          isAllDay: todo.isAllDay,
-          visibility: todo.visibility,
-          // 출시 앱(1.14.x까지)은 isRecurring + recurrence(요일 + 종료일)만 보낸다.
-          repeat:
-            todo.repeat ??
-            (todo.isRecurring && todo.recurrence != null
-              ? {
-                  frequency: "WEEKLY",
-                  interval: 1,
-                  weekdays: todo.recurrence.daysOfWeek,
-                  end: { type: "UNTIL", date: todo.recurrence.endDate },
-                }
-              : undefined),
-          usesLegacySeriesLimit: todo.repeat == null,
-          items: todo.items,
-        })),
-      },
       timezone: tz,
+      todos: dto.todos.map((todo) => ({
+        title: todo.title,
+        categoryId: todo.categoryId,
+        startDate: parseDateOnly(todo.startDate),
+        endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
+        scheduledTime: todo.scheduledTime,
+        isAllDay: todo.isAllDay,
+        visibility: todo.visibility,
+        // 출시 앱(1.14.x까지)은 isRecurring + recurrence(요일 + 종료일)만 보낸다.
+        repeat:
+          todo.repeat ??
+          (todo.isRecurring && todo.recurrence != null
+            ? {
+                frequency: "WEEKLY",
+                interval: 1,
+                weekdays: todo.recurrence.daysOfWeek,
+                end: { type: "UNTIL", date: todo.recurrence.endDate },
+              }
+            : undefined),
+        usesLegacySeriesLimit: todo.repeat == null,
+        items: todo.items,
+      })),
     });
+    return toConvertMemoToTodosResponse(todos);
   }
 }
