@@ -8,6 +8,7 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
+// salt는 비밀이 아니고(비밀은 TOKEN_ENCRYPTION_KEY) 운영 암호문이 이 값으로 만들어져 바꾸면 복호할 수 없다.
 const DEFAULT_SALT = "aido-token-encryption";
 
 @Injectable()
