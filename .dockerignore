@@ -20,12 +20,23 @@
 **/coverage/
 **/test/
 **/*.spec.ts
+**/__snapshots__/
+**/.vitest/
 apps/api/scripts/ai-eval/
 apps/api/vitest.config.ts
 packages/api/vitest.config.ts
 
-# Environment & secrets
+# Environment & secrets (CI는 깨끗한 checkout으로 빌드하지만 로컬 빌드 문맥에도 들어가지 않게 막는다)
 **/.env*
+**/.secrets/
+**/credentials*.json
+**/*service-account*.json
+**/*.pem
+**/*.key
+**/*.p8
+**/*.p12
+**/*.keystore
+**/*.jks
 
 # Docs & agent guides
 **/*.md

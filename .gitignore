@@ -9,6 +9,7 @@ dist/
 
 # Tests & coverage
 coverage/
+.vitest/
 
 # Environment & secrets
 .env*
@@ -34,6 +35,7 @@ coverage/
 !.vscode/extensions.json
 !.vscode/settings.json
 .cursor/
+.zed/
 *.swp
 .DS_Store
 
