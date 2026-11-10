@@ -15,29 +15,29 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 설정 정본은 `src/platform/config/schemas`와 `.env*.example`이다. 운영은 OAuth 최소 1개, Resend key, WeatherKit 자격 네 값이 필요하다.
 
-| 설정                                                              | 기본/용도                                                                                                         |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| DATABASE_URL / PGBOSS_DATABASE_URL                                | API DB / 별도 미설정 시 같은 pg-boss DB                                                                           |
-| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS     | 10 / 비우면 pg 기본값(유휴 10초) / 연결 대기 5초                                                                  |
-| DATABASE_SSL_ALLOW_UNVERIFIED                                     | 기본 false. `sslmode`가 있으면 RDS CA(`NODE_EXTRA_CA_CERTS`)로 인증서를 검증하고, 비상시에만 true로 끈다          |
-| NODE_ENV / APP_ENV                                                | 런타임 / 배포 환경. production APP_ENV에서 Sentry를 보내고 RevenueCat Test Store 웹훅을 반영하지 않는다           |
-| PORT                                                              | host 기본 8080, API container 8080                                                                                |
-| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY            | 시작 검증에 필요한 32자 이상 값                                                                                   |
+| 설정                                                              | 기본/용도                                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| DATABASE_URL / PGBOSS_DATABASE_URL                                | API DB / 별도 미설정 시 같은 pg-boss DB                                                                                                    |
+| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS     | 10 / 비우면 pg 기본값(유휴 10초) / 연결 대기 5초                                                                                           |
+| DATABASE_SSL_ALLOW_UNVERIFIED                                     | 기본 false. `sslmode`가 있으면 RDS CA(`NODE_EXTRA_CA_CERTS`)로 인증서를 검증하고, 비상시에만 true로 끈다                                   |
+| NODE_ENV / APP_ENV                                                | 런타임 / 배포 환경. production APP_ENV에서 Sentry를 보내고 RevenueCat Test Store 웹훅을 반영하지 않는다                                    |
+| PORT                                                              | host 기본 8080, API container 8080                                                                                                         |
+| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY            | 시작 검증에 필요한 32자 이상 값                                                                                                            |
 | CURSOR_SIGNING_KEYS / OPT_OUT_TOKEN_SIGNING_KEYS                  | 선택. `kid:secret,…`(첫 항목이 서명 키, secret 32자 이상). 비우면 JWT_SECRET으로 서명, 기존 토큰은 계속 검증. 롤백 가능성이 없어진 뒤 설정 |
-| JOB_SCHEMA                                                        | pgboss                                                                                                            |
-| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                              | memory / postgres; 서로 다른 capability                                                                           |
-| REDIS_*                                                           | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                          |
-| EXPO_ACCESS_TOKEN / RESEND_API_KEY                                | Expo / 이메일 공급자                                                                                              |
-| EMAIL_PROVIDER / ADMIN_NOTIFIER_PROVIDER                          | 선택. 기본 `resend` / `discord`. `log`는 보내지 않고 로그만 남기며 운영은 `resend`+키 필수                        |
-| ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY / OPENAI_API_KEY | AI 업체 키(있는 업체만 사용). 1.13·1.14 동의 사용자는 Gemini만 쓰므로 Google 키는 계속 필요                       |
-| AI_PROVIDER_ORDER / AI_MODEL_{ANTHROPIC,GOOGLE,OPENAI}            | 선택. 기본 `anthropic,google,openai` / claude-haiku-5-5·gemini-3.1-flash-lite·gpt-6-luna                          |
-| AI_DEADLINE_<TASK>_MS / AI_BREAKER_*                              | 선택. 업체 체인 제한 시간·회로 차단 시간([AI](ai.md))                                                             |
-| AI_GENERATION_MODE / AI_BUDGET_*_USD                              | 선택. 킬 스위치(`off`·`interactive-only`, 재시작 필요)와 추정 비용 예산([AI](ai.md))                              |
-| WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY         | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
-| RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
-| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
-| REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID              | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다([결제](billing.md)). v2 비밀 키, 권한은 읽기 둘뿐              |
-| FEATURE_DISCOVERY_*                                               | 새 기능 소개. 규칙은 아래                                                                                         |
+| JOB_SCHEMA                                                        | pgboss                                                                                                                                     |
+| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                              | memory / postgres; 서로 다른 capability                                                                                                    |
+| REDIS_*                                                           | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                                                   |
+| EXPO_ACCESS_TOKEN / RESEND_API_KEY                                | Expo / 이메일 공급자                                                                                                                       |
+| EMAIL_PROVIDER / ADMIN_NOTIFIER_PROVIDER                          | 선택. 기본 `resend` / `discord`. `log`는 보내지 않고 로그만 남기며 운영은 `resend`+키 필수                                                 |
+| ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY / OPENAI_API_KEY | AI 업체 키(있는 업체만 사용). 1.13·1.14 동의 사용자는 Gemini만 쓰므로 Google 키는 계속 필요                                                |
+| AI_PROVIDER_ORDER / AI_MODEL_{ANTHROPIC,GOOGLE,OPENAI}            | 선택. 기본 `anthropic,google,openai` / claude-haiku-5-5·gemini-3.1-flash-lite·gpt-6-luna                                                   |
+| AI_DEADLINE_<TASK>_MS / AI_BREAKER_*                              | 선택. 업체 체인 제한 시간·회로 차단 시간([AI](ai.md))                                                                                      |
+| AI_GENERATION_MODE / AI_BUDGET_*_USD                              | 선택. 킬 스위치(`off`·`interactive-only`, 재시작 필요)와 추정 비용 예산([AI](ai.md))                                                       |
+| WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY         | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM                          |
+| RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                                                |
+| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                                                        |
+| REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID              | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다([결제](billing.md)). v2 비밀 키, 권한은 읽기 둘뿐                                       |
+| FEATURE_DISCOVERY_*                                               | 새 기능 소개. 규칙은 아래                                                                                                                  |
 
 ## 새 기능 소개 값
 
