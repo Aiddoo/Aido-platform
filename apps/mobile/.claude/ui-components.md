@@ -118,6 +118,8 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
 - `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. 네이티브 Stack 헤더, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
 - `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
+- 화면 가장자리까지 닿는 가로 스크롤은 레일 밑까지 밀리고 내용만 피한다. 스크롤 뷰를 inset 안에 가두지 않고 내용 앞뒤 여백에 `useSafeAreaInsets()`의 그쪽 inset을 더한다(RTL이면 left·right를 앞뒤로 바꿔 읽는다). 지금은 친구 줄(`FriendStrip`)이다. 페이지 넘김 목록(달력 `calendar-pager`, 결제 혜택 `benefit-carousel`)은 쪽 폭이 칸 폭과 같아야 해 inset 안에 두고, 카드 안 목록(시간별 예보)과 시트 안 칩 줄(`SheetChipRow`, 반복 프리셋)은 카드·시트 가장자리까지라 레일과 닿지 않는다. 시트는 레일을 덮어 그린다(`getSheetLayout`).
+- 화면 가장자리에 붙는 떠 있는 UI는 inset을 더한다. 토스트·Popover·Menu는 heroui가 `insets.left/right + 12`로 두고, 앱 토스트는 위 inset만 바꾼다. NativeTabs 위에서 `insets.bottom`에 탭 바 높이 상수를 더하지 않는다.
 - 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다. 이 값은 JS context라 네이티브 `SafeAreaView`에는 닿지 않는다. 칸 안에서는 `SafeAreaScrollView`·`useSafeAreaInsets`로 피한다([adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md#칸-안의-safe-area)).
 - Stack 화면 헤더는 네이티브 헤더와 `Stack.Toolbar` 네이티브 버튼을 쓴다. iOS가 레일·가로 바·Split View 바깥쪽으로 배치하고, 커스텀 뷰 버튼은 레일에서 빠진다([stack-header.md](../src/shared/ui/stack-header/stack-header.md)).
 
@@ -220,15 +222,16 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
 - **방향은 화면이 정하지 않는다.** 휴대폰은 가로를 지원하지 않고, 태블릿과 펼친 폴더블·두 화면은 돌릴 수 있다. Android는 앱 설정에서 방향을 묶지 않고 창의 짧은 변이 600dp 미만이면 실행 중에 세로로 묶는다(`WindowLayoutPolicy.getOrientationLock`, `useOrientationLock`, [Android 큰 화면 방향 권장](https://developer.android.com/develop/adaptive-apps/cookbook/orientation-restriction)). 펼친 폴더블·태블릿은 가로로도 쓰므로 화면은 세로를 가정한 고정 높이를 두지 않고 창 높이에 맞춰 줄인다.
 
-| 기기·자세                     | 창 짧은 변 | 방향                                                                                                |
-| ----------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| iPhone                        | -          | 세로(Info.plist). 앱은 실행 중에 바꾸지 않는다                                                      |
-| iPad                          | -          | 네 방향(Info.plist, 분할 화면·Stage Manager). 앱은 실행 중에 바꾸지 않는다                          |
-| Android 휴대폰                | 600dp 미만 | 세로로 묶는다. 기기를 돌려도 세로다                                                                 |
-| 폴더블 접은 바깥 화면         | 600dp 미만 | 세로로 묶는다                                                                                       |
-| 폴더블 펼친 안쪽 화면·태블릿  | 600dp 이상 | 푼다                                                                                                |
-| Surface Duo 한 화면 / 두 화면 | 540 / 720  | 한 화면은 세로, 두 화면에 펼치면 푼다                                                               |
-| Android 분할 화면·여러 창     | 창 기준    | 좁으면 세로를 요청하지만 여러 창에서는 시스템이 무시한다. 결정이 바뀔 때만 요청해 되풀이하지 않는다 |
+| 기기·자세                     | 창 짧은 변 | 방향                                                                                                    |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| iPhone                        | -          | 세로(Info.plist). 앱은 실행 중에 바꾸지 않는다                                                          |
+| iPad                          | -          | 네 방향(Info.plist, 분할 화면·Stage Manager). 앱은 실행 중에 바꾸지 않는다                              |
+| Android 휴대폰                | 600dp 미만 | 세로로 묶는다. 기기를 돌려도 세로다                                                                     |
+| 폴더블 접은 바깥 화면         | 600dp 미만 | 세로로 묶는다                                                                                           |
+| 폴더블 펼친 안쪽 화면·태블릿  | 600dp 이상 | 푼다                                                                                                    |
+| Surface Duo 한 화면 / 두 화면 | 540 / 720  | 한 화면은 세로, 두 화면에 펼치면 푼다                                                                   |
+| Android 분할 화면·여러 창     | 창 기준    | 좁으면 세로를 요청하지만 여러 창에서는 시스템이 무시한다. 결정이 바뀔 때만 요청해 되풀이하지 않는다     |
+| iPhone Duo                    | -          | 앱은 실행 중에 바꾸지 않는다. iOS 27은 지원 방향을 선호로만 보아 펼친 창이 가로일 수 있고 그대로 맞춘다 |
 
 - Android 16+은 짧은 변 600dp 이상 화면에서 앱의 방향 요청을 받지 않는다. 접었을 때 건 세로 요청이 펼친 뒤에도 기록에 남지만(`dumpsys activity`의 `requestedOrientation`) 그 화면에서는 무시돼 돌릴 수 있다(Pixel Fold 에뮬레이터 API 36.1 확인).
 - **`SplitView`·`ArrangementView`는 쓰지 않는다.** [이유](../src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유).

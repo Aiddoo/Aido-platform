@@ -80,18 +80,17 @@ export default function FeedScreen() {
       <AdaptivePane
         primary={
           <Box flex={1} className="bg-white">
-            <StyledSafeAreaView edges={['left', 'right']}>
-              <QueryErrorBoundary fallback={FriendStrip.Error}>
-                <Suspense fallback={<FriendStrip.Loading />}>
-                  <FriendStrip
-                    onInvite={
-                      isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
-                    }
-                    isHintDismissed={hasScrolledFeed}
-                  />
-                </Suspense>
-              </QueryErrorBoundary>
-            </StyledSafeAreaView>
+            {/* 친구 줄은 세로 레일 밑까지 밀리고 내용만 레일을 피해 스스로 inset을 둔다 */}
+            <QueryErrorBoundary fallback={FriendStrip.Error}>
+              <Suspense fallback={<FriendStrip.Loading />}>
+                <FriendStrip
+                  onInvite={
+                    isInviteAvailable ? () => openMyInvite('friend_strip_empty') : undefined
+                  }
+                  isHintDismissed={hasScrolledFeed}
+                />
+              </Suspense>
+            </QueryErrorBoundary>
 
             {match(friendId)
               .with(P.string, (id) => (
