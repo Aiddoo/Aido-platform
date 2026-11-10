@@ -63,7 +63,7 @@
     "off": "꺼짐",
     "deviceOff": "기기에서 꺼짐",
     "pushLabel": "푸시 알림",
-    "pushDescription": "할 일·결제 안내를 받아요. 광고성 알림은 따로 동의해요",
+    "pushDescription": "할 일·결제 알림을 이 계정의 모든 기기에서 받아요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00 시간대에도 알림을 받아요",
     "marketingLabel": "마케팅 수신 동의",
@@ -104,7 +104,7 @@
     },
     "deviceOff": {
       "title": "기기 알림이 꺼져 있어요",
-      "description": "켜야 아래 알림을 받을 수 있어요"
+      "description": "켜야 이 기기에서 아래 알림을 받을 수 있어요"
     },
     "todoTime": {
       "off": "알림이 꺼져 있어 알려드릴 수 없어요"
