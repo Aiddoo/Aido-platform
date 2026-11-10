@@ -18,7 +18,7 @@ import { ForecastAlertKey } from "../../application/forecasts.alerts.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_MONTHLY_CALL_ALERTS } from "./weather-outbound.policy.js";
 
-export const WEATHERKIT_CALL_METER = "weatherkit.call";
+const WEATHERKIT_CALL_METER = "weatherkit.call";
 
 /**
  * WeatherKit에 실제로 보낸 HTTP 호출을 월 단위로 센다. 캐시 밀림으로 호출이 늘어도 무료 한도에

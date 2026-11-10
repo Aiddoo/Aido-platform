@@ -12,9 +12,5 @@ export {
   WEATHER_REPORT_READER,
   WeatherReportReaderPort,
 } from "./application/ports/weather-report.reader.port.js";
-export type {
-  LocatedWeatherReport,
-  WeatherReportReadRequest,
-} from "./application/ports/weather-report.reader.port.js";
 export type { WeatherForecast } from "./application/read-models/weather-forecast.read-model.js";
 export { WeatherForecastsModule } from "./weather-forecasts.module.js";

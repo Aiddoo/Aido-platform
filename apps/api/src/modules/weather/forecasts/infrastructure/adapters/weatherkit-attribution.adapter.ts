@@ -46,7 +46,7 @@ const attributionLogoSchema = z.object({
 });
 
 /** attribution 응답이 2xx가 아닐 때. 응답 본문은 담지 않는다. */
-export class WeatherKitAttributionRequestError extends Error {
+class WeatherKitAttributionRequestError extends Error {
   readonly status: number;
 
   constructor(status: number) {

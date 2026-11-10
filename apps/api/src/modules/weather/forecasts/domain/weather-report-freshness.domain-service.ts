@@ -15,7 +15,7 @@ export const WEATHER_REPORT_FRESHNESS = {
   PRECIPITATION_CHANCE_THRESHOLD: WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE,
 } as const;
 
-export function isPrecipitationSoon(report: WeatherReport, now: Date): boolean {
+function isPrecipitationSoon(report: WeatherReport, now: Date): boolean {
   const horizon = now.getTime() + WEATHER_REPORT_FRESHNESS.PRECIPITATION_LOOKAHEAD_MS;
   if (report.current.precipitationIntensity > 0) {
     return true;

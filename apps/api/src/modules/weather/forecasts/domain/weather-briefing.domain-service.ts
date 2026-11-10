@@ -24,7 +24,7 @@ export interface WeatherBriefingTodo {
   readonly scheduledAt: Date;
 }
 
-export interface WeatherRescheduleOption {
+interface WeatherRescheduleOption {
   readonly startsAt: Date;
   readonly precipitationChance: number;
   readonly apparentTemperature: number;

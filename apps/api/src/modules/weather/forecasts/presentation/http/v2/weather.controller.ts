@@ -25,7 +25,7 @@ import { resolveWeatherReportLanguage } from "../../../domain/weather-report-lan
 import { toWeatherReportResponse } from "./weather-report-response.mapper.js";
 import { WeatherReportResponseDto } from "./weather-report.dto.js";
 
-export const WEATHER_REPORT_V2_THROTTLE = {
+const WEATHER_REPORT_V2_THROTTLE = {
   GET: { default: { ttl: 60_000, limit: 60 } },
 } as const;
 
