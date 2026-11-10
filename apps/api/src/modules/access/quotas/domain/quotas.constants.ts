@@ -21,7 +21,7 @@ export const QUOTA_STALE_RESERVATION_ALERT_AFTER_MS = 30 * 60 * 1000;
 export const QUOTA_REQUEST_HASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 환불 사유. FAILED는 AI 호출·검증 실패, NO_ACTION은 결과에 실행할 행동이 없던 요청이다. */
-export const QUOTA_REFUND_REASONS = ["FAILED", "NO_ACTION"] as const;
+const QUOTA_REFUND_REASONS = ["FAILED", "NO_ACTION"] as const;
 
 export type QuotaRefundReason = (typeof QUOTA_REFUND_REASONS)[number];
 
@@ -37,6 +37,6 @@ export const QUOTA_ABANDONED_REFUND_BATCH_SIZE = 500;
  * TAKE_OVER는 응답하지 못하고 멈춘 요청(이미 차감한 횟수로 이어받는다), RETRY는 환불한 요청(같은 행에서 다시
  * 차감한다)이다.
  */
-export const QUOTA_CHARGE_REPLAYS = ["COMMITTED", "IN_FLIGHT", "TAKE_OVER", "RETRY"] as const;
+const QUOTA_CHARGE_REPLAYS = ["COMMITTED", "IN_FLIGHT", "TAKE_OVER", "RETRY"] as const;
 
 export type QuotaChargeReplay = (typeof QUOTA_CHARGE_REPLAYS)[number];

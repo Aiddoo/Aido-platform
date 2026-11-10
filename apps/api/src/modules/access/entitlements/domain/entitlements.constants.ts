@@ -9,6 +9,3 @@ export type BonusResource = (typeof BONUS_RESOURCES)[number];
 export type ResourceBonuses = Readonly<Record<BonusResource, number>>;
 
 export const NO_RESOURCE_BONUSES: ResourceBonuses = { FRIEND: 0 };
-
-/** 같은 보상을 두 번 지급하지 않게 하는 출처 키의 최대 길이(ResourceBonus.sourceKey varchar) */
-export const RESOURCE_BONUS_SOURCE_KEY_MAX_LENGTH = 128;

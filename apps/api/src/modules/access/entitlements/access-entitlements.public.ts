@@ -1,9 +1,4 @@
-export { AccessEntitlementsModule } from "./access-entitlements.module.js";
-export {
-  assertEntitled,
-  assertEntitledInTx,
-  premiumFeatureDenied,
-} from "./application/entitlements.errors.js";
+export { assertEntitled, premiumFeatureDenied } from "./application/entitlements.errors.js";
 export {
   ENTITLEMENT_SUBSCRIPTION_INVALIDATOR,
   EntitlementSubscriptionInvalidatorPort,
@@ -17,7 +12,6 @@ export {
 export {
   RESOURCE_BONUS_GRANTER,
   ResourceBonusGranterPort,
-  type GrantResourceBonusInput,
 } from "./application/ports/resource-bonus-granter.port.js";
 export {
   calculateRemainingLimit,

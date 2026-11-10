@@ -4,7 +4,6 @@ export {
   ENTITLEMENT_SUBSCRIPTION_INVALIDATOR,
   RESOURCE_BONUS_GRANTER,
   assertEntitled,
-  assertEntitledInTx,
   calculateRemainingLimit,
   isExemptFromDormancy,
   isExemptFromUserSpendLimit,
@@ -13,7 +12,6 @@ export {
   type EntitlementReaderPort,
   type EntitlementSubscriptionInvalidatorPort,
   type FeatureAccess,
-  type GrantResourceBonusInput,
   type ResourceBonusGranterPort,
 } from "./entitlements/access-entitlements.public.js";
 // 옛 이름 AccessModule은 원장 모듈이다. 원장 모듈이 권한 모듈까지 다시 내보낸다
