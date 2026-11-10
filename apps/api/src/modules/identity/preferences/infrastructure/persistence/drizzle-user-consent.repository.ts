@@ -7,10 +7,10 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { user, userConsent } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
-import type {
-  ConsentSeedInput,
-  FindMarketingReconfirmTargetsParams,
-  MarketingReconfirmTarget,
+import {
+  type ConsentSeedInput,
+  type FindMarketingReconfirmTargetsParams,
+  type MarketingReconfirmTarget,
   UserConsentRepositoryPort,
 } from "../../application/ports/user-consent.repository.port.js";
 
@@ -34,10 +34,11 @@ type UserConsentPatch = Partial<Omit<typeof userConsent.$inferInsert, "id" | "us
 import { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
 
 @Injectable()
-export class DrizzleUserConsentRepository implements UserConsentRepositoryPort {
+export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 

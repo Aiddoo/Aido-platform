@@ -1,0 +1,189 @@
+import { minBy } from "es-toolkit";
+
+import {
+  type ConsentSeedInput,
+  type FindMarketingReconfirmTargetsParams,
+  type MarketingReconfirmTarget,
+  type UserConsentRecordWithId,
+  UserConsentRepositoryPort,
+} from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
+import { AiDataSharingConsent } from "#api/modules/identity/preferences/domain/ai-data-sharing-consent.entity";
+import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+
+const EMPTY_CONSENT: UserConsentRecord = {
+  termsAgreedAt: null,
+  privacyAgreedAt: null,
+  agreedTermsVersion: null,
+  marketingAgreedAt: null,
+  marketingPushAgreedAt: null,
+  aiDataSharingAgreedAt: null,
+  aiDataSharingVersion: null,
+  marketingReconfirmedAt: null,
+};
+
+function copyDate(date: Date | null): Date | null {
+  return date == null ? null : new Date(date);
+}
+
+function copyOf(record: UserConsentRecordWithId): UserConsentRecordWithId {
+  return {
+    ...record,
+    termsAgreedAt: copyDate(record.termsAgreedAt),
+    privacyAgreedAt: copyDate(record.privacyAgreedAt),
+    marketingAgreedAt: copyDate(record.marketingAgreedAt),
+    marketingPushAgreedAt: copyDate(record.marketingPushAgreedAt),
+    aiDataSharingAgreedAt: copyDate(record.aiDataSharingAgreedAt),
+    marketingReconfirmedAt: copyDate(record.marketingReconfirmedAt),
+  };
+}
+
+function toTarget(record: UserConsentRecordWithId): MarketingReconfirmTarget {
+  return {
+    userId: record.userId,
+    marketingAgreedAt: copyDate(record.marketingAgreedAt),
+    marketingPushAgreedAt: copyDate(record.marketingPushAgreedAt),
+  };
+}
+
+// Drizzle 저장소의 COALESCE(재확인 시각, LEAST(두 동의 시각)) <= cutoff와 같다
+function isReconfirmDue(record: UserConsentRecord, cutoff: Date): boolean {
+  const earliestAgreedAt = minBy(
+    [record.marketingAgreedAt, record.marketingPushAgreedAt].flatMap((date) =>
+      date == null ? [] : [date],
+    ),
+    (date) => date.getTime(),
+  );
+  if (earliestAgreedAt == null) {
+    return false;
+  }
+  return (record.marketingReconfirmedAt ?? earliestAgreedAt).getTime() <= cutoff.getTime();
+}
+
+export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
+  readonly #records = new Map<string, UserConsentRecordWithId>();
+  // Drizzle 저장소는 User 행과 조인해 탈퇴·비활성 사용자를 재확인 대상에서 뺀다
+  readonly #inactiveUserIds: ReadonlySet<string>;
+
+  constructor(
+    options: {
+      readonly records?: readonly UserConsentRecordWithId[];
+      readonly inactiveUserIds?: readonly string[];
+    } = {},
+  ) {
+    super();
+    for (const record of options.records ?? []) {
+      this.#records.set(record.userId, copyOf(record));
+    }
+    this.#inactiveUserIds = new Set(options.inactiveUserIds ?? []);
+  }
+
+  get all(): readonly UserConsentRecordWithId[] {
+    return [...this.#records.values()].map(copyOf);
+  }
+
+  stored(userId: string): UserConsentRecordWithId | undefined {
+    const record = this.#records.get(userId);
+    return record == null ? undefined : copyOf(record);
+  }
+
+  async findByUserId(userId: string): Promise<UserConsentRecordWithId | null> {
+    return this.stored(userId) ?? null;
+  }
+
+  async findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent> {
+    const record = this.#records.get(userId);
+    return AiDataSharingConsent.reconstitute({
+      userId,
+      agreedAt:
+        record?.aiDataSharingAgreedAt == null
+          ? null
+          : instantFromDate(record.aiDataSharingAgreedAt),
+      version: record?.aiDataSharingVersion ?? null,
+    });
+  }
+
+  async findByUserIds(userIds: readonly string[]): Promise<UserConsentRecordWithId[]> {
+    return this.all.filter((record) => userIds.includes(record.userId));
+  }
+
+  async create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecordWithId> {
+    if (this.#records.has(userId)) {
+      throw new Error(`UserConsent already exists for ${userId}`);
+    }
+    return this.#write({
+      ...EMPTY_CONSENT,
+      userId,
+      termsAgreedAt: data.termsAgreedAt ?? null,
+      privacyAgreedAt: data.privacyAgreedAt ?? null,
+      agreedTermsVersion: data.agreedTermsVersion ?? null,
+      marketingAgreedAt: data.marketingAgreedAt ?? null,
+      marketingPushAgreedAt: data.marketingPushAgreedAt ?? null,
+    });
+  }
+
+  async upsertMarketingConsent(
+    userId: string,
+    data: { agreedAt: Date | null },
+  ): Promise<UserConsentRecordWithId> {
+    return this.#upsert(userId, { marketingAgreedAt: data.agreedAt });
+  }
+
+  async upsertMarketingPushConsent(
+    userId: string,
+    data: { agreedAt: Date | null },
+  ): Promise<UserConsentRecordWithId> {
+    return this.#upsert(userId, { marketingPushAgreedAt: data.agreedAt });
+  }
+
+  async findMarketingReconfirmTargets(
+    params: FindMarketingReconfirmTargetsParams,
+  ): Promise<MarketingReconfirmTarget[]> {
+    const { cutoff, afterUserId, limit } = params;
+    return [...this.#records.values()]
+      .filter(
+        (record) =>
+          isReconfirmDue(record, cutoff) &&
+          !this.#inactiveUserIds.has(record.userId) &&
+          (afterUserId == null || record.userId > afterUserId),
+      )
+      .toSorted((left, right) => (left.userId < right.userId ? -1 : 1))
+      .slice(0, limit)
+      .map(toTarget);
+  }
+
+  async claimMarketingReconfirm(
+    userIds: readonly string[],
+    params: { readonly cutoff: Date; readonly at: Date },
+  ): Promise<MarketingReconfirmTarget[]> {
+    const claimed = [...this.#records.values()].filter(
+      (record) => userIds.includes(record.userId) && isReconfirmDue(record, params.cutoff),
+    );
+    for (const record of claimed) {
+      this.#write({ ...record, marketingReconfirmedAt: params.at });
+    }
+    return claimed.map(toTarget);
+  }
+
+  async upsertAiDataSharingConsent(
+    userId: string,
+    data: { agreedAt: Date | null; version: string },
+  ): Promise<UserConsentRecordWithId> {
+    return this.#upsert(userId, {
+      aiDataSharingAgreedAt: data.agreedAt,
+      aiDataSharingVersion: data.version,
+    });
+  }
+
+  #upsert(userId: string, patch: Partial<UserConsentRecord>): UserConsentRecordWithId {
+    return this.#write({
+      ...(this.#records.get(userId) ?? { ...EMPTY_CONSENT, userId }),
+      ...patch,
+    });
+  }
+
+  #write(record: UserConsentRecordWithId): UserConsentRecordWithId {
+    this.#records.set(record.userId, copyOf(record));
+    return copyOf(record);
+  }
+}

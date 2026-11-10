@@ -6,8 +6,8 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { userPreference } from "#api/platform/database/schema/index";
 
-import type {
-  PreferenceWriteInput,
+import {
+  type PreferenceWriteInput,
   UserPreferenceRepositoryPort,
 } from "../../application/ports/user-preference.repository.port.js";
 import type { StreakState } from "../../domain/streak.vo.js";
@@ -17,10 +17,11 @@ type UserPreferenceRow = typeof userPreference.$inferSelect;
 type UserPreferencePatch = Partial<Omit<typeof userPreference.$inferInsert, "id" | "userId">>;
 
 @Injectable()
-export class DrizzleUserPreferenceRepository implements UserPreferenceRepositoryPort {
+export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#txHost = txHost;
   }
 
