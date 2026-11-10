@@ -36,7 +36,7 @@ import { match } from 'ts-pattern';
 
 import { SubTodoPolicy } from '../../domains/sub-todo.model';
 import { type SubTodo } from '../../domains/sub-todo.model';
-import { TodoPolicy } from '../../domains/todo.model';
+import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
 import { type Todo } from '../../domains/todo.model';
 import { useFeedDate } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
@@ -237,8 +237,8 @@ TodoList.Item = function Item({
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
   // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
-  const isExpanded = userExpanded ?? SubTodoPolicy.hasSubTodos(todo);
-  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo);
+  const isExpanded = userExpanded ?? SubTodoPolicy.hasSubTodos(todo.subTodos);
+  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo.subTodos);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
@@ -320,7 +320,7 @@ TodoList.Item = function Item({
               {todo.title}
             </TodoLabel>
           }
-          isPrivate={TodoPolicy.isPrivate(todo)}
+          isPrivate={isPrivateVisibility(todo.visibility)}
         />
       }
       middle={
@@ -333,7 +333,7 @@ TodoList.Item = function Item({
         ) : undefined
       }
       bottom={
-        SubTodoPolicy.hasSubTodos(todo) ? (
+        SubTodoPolicy.hasSubTodos(todo.subTodos) ? (
           <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
         ) : undefined
       }
@@ -368,11 +368,14 @@ TodoList.Item = function Item({
       isDisabled={isOptimistic}
     >
       {isExpanded && (
-        <SubTodoList onAddPress={handleAddSubTodoPress} canAdd={SubTodoPolicy.canAddSubTodo(todo)}>
+        <SubTodoList
+          onAddPress={handleAddSubTodoPress}
+          canAdd={SubTodoPolicy.canAddSubTodo(todo.subTodos)}
+        >
           <NestedReorderableList
             {...subTodoReorderableList}
             dragEnabled={
-              subTodoReorderableList.dragEnabled && SubTodoPolicy.canReorderSubTodos(todo)
+              subTodoReorderableList.dragEnabled && SubTodoPolicy.canReorderSubTodos(todo.subTodos)
             }
             shouldUpdateActiveItem
             scrollEnabled={false}

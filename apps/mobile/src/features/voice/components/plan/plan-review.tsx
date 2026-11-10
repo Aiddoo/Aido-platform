@@ -8,7 +8,7 @@ import {
   TodoLabel,
   TodoTitleLine,
 } from '@src/features/planning/todo/components/todo-row';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -484,7 +484,7 @@ PlanReview.TodoRow = function TodoRow({
                   {todo.title}
                 </TodoLabel>
               }
-              isPrivate={TodoPolicy.isPrivate(todo)}
+              isPrivate={isPrivateVisibility(todo.visibility)}
             />
             {subtitle != null && (
               <Text size="e1" shade={6}>

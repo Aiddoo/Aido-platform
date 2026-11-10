@@ -66,7 +66,9 @@ function toBriefingTodo(
         ? null
         : fromWallClock(date, todo.localTime, timeZone),
     completed: todo.completed,
-    subTodoProgress: SubTodoPolicy.hasSubTodos(todo) ? SubTodoPolicy.getSubTodoStats(todo) : null,
+    subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
+      ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
+      : null,
   };
 }
 

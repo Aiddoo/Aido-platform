@@ -1,7 +1,13 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
-import { TodoPolicy } from './todo.model';
+import {
+  getShiftedEndDate,
+  hasScheduleChanged,
+  isPrivateVisibility,
+  TodoPolicy,
+  withVisibilityToggled,
+} from './todo.model';
 
 describe('isLastOpenTodo', () => {
   it('할 일이 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다', () => {
@@ -57,8 +63,8 @@ describe('getShiftedEndDate', () => {
     const oneDay = { startDate: '2026-11-05', endDate: null };
 
     // When
-    const shifted = TodoPolicy.getShiftedEndDate(multiDay, '2026-11-29');
-    const unchanged = TodoPolicy.getShiftedEndDate(oneDay, '2026-11-29');
+    const shifted = getShiftedEndDate(multiDay, '2026-11-29');
+    const unchanged = getShiftedEndDate(oneDay, '2026-11-29');
 
     // Then
     expect(shifted).toBe('2026-12-01');
@@ -71,7 +77,7 @@ describe('getLocalTime', () => {
 
   it('서버가 준 벽시계는 시간대를 바꿔도 같은 오전 10시다', () => {
     // Given
-    const todo = { isAllDay: false, localTime: '10:00', scheduledAt: instant };
+    const todo = createParentTodo({ isAllDay: false, localTime: '10:00', scheduledAt: instant });
 
     // When
     const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
@@ -84,7 +90,7 @@ describe('getLocalTime', () => {
 
   it('서버가 벽시계 칸을 비운 시간 행은 보는 순간의 시간대로 계산한다', () => {
     // Given
-    const todo = { isAllDay: false, localTime: null, scheduledAt: instant };
+    const todo = createParentTodo({ isAllDay: false, localTime: null, scheduledAt: instant });
 
     // When
     const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
@@ -97,11 +103,11 @@ describe('getLocalTime', () => {
 
   it('서머타임이 시작되는 날도 순간을 그 날의 오프셋으로 계산한다', () => {
     // Given
-    const todo = {
+    const todo = createParentTodo({
       isAllDay: false,
       localTime: null,
       scheduledAt: toInstant('2026-03-08T07:30:00.000Z'),
-    };
+    });
 
     // When
     const time = TodoPolicy.getLocalTime(todo, 'America/New_York');
@@ -112,8 +118,8 @@ describe('getLocalTime', () => {
 
   it('종일이거나 시간이 없으면 null이다', () => {
     // Given
-    const allDay = { isAllDay: true, localTime: '10:00', scheduledAt: instant };
-    const noTime = { isAllDay: false, localTime: null, scheduledAt: null };
+    const allDay = createParentTodo({ isAllDay: true, localTime: '10:00', scheduledAt: instant });
+    const noTime = createParentTodo({ isAllDay: false, localTime: null, scheduledAt: null });
 
     // When
     const allDayTime = TodoPolicy.getLocalTime(allDay, 'Asia/Seoul');
@@ -147,13 +153,13 @@ describe('hasUpcomingTimedTodo', () => {
   });
 });
 
-describe('isPrivate', () => {
+describe('isPrivateVisibility', () => {
   it('비공개로 정한 할 일만 비공개다', () => {
     // When
     const results = [
-      TodoPolicy.isPrivate({ visibility: 'PRIVATE' }),
-      TodoPolicy.isPrivate({ visibility: 'PUBLIC' }),
-      TodoPolicy.isPrivate({ visibility: null }),
+      isPrivateVisibility('PRIVATE'),
+      isPrivateVisibility('PUBLIC'),
+      isPrivateVisibility(null),
     ];
 
     // Then
@@ -179,8 +185,8 @@ describe('findTodo', () => {
 describe('getOptimisticListDate', () => {
   it('오늘이 기간 안인 여러 날 할 일은 오늘 목록을, 그 밖은 시작일 목록을 고친다', () => {
     // Given
-    const multiDay = { startDate: '2026-11-05', endDate: '2026-11-09' };
-    const pastOneDay = { startDate: '2026-11-01', endDate: null };
+    const multiDay = createParentTodo({ startDate: '2026-11-05', endDate: '2026-11-09' });
+    const pastOneDay = createParentTodo({ startDate: '2026-11-01', endDate: null });
 
     // When
     const dates = [
@@ -200,7 +206,7 @@ describe('withVisibilityToggled', () => {
     [null, 'PRIVATE'],
   ] as const)('공개 범위가 %s이면 %s로 바꾼다', (visibility, expected) => {
     // When
-    const toggled = TodoPolicy.withVisibilityToggled({ visibility });
+    const toggled = withVisibilityToggled({ visibility });
 
     // Then
     expect(toggled.visibility).toBe(expected);
@@ -260,7 +266,7 @@ describe('hasScheduleChanged', () => {
     const [previousTime, previousIsAllDay] = previous;
 
     // When
-    const result = TodoPolicy.hasScheduleChanged(
+    const result = hasScheduleChanged(
       { scheduledTime: nextTime, isAllDay: nextIsAllDay },
       { scheduledTime: previousTime, isAllDay: previousIsAllDay },
     );
@@ -310,7 +316,7 @@ describe('isTodoOnDate', () => {
     },
   ])('$title', ({ todo, date, expected }) => {
     // When
-    const result = TodoPolicy.isTodoOnDate(todo, date);
+    const result = TodoPolicy.isTodoOnDate(createParentTodo(todo), date);
 
     // Then
     expect(result).toBe(expected);
@@ -324,7 +330,7 @@ describe('isMultiDayTodo', () => {
     { title: '종료일이 시작일보다 늦으면 여러 날이다', endDate: '2026-11-06', expected: true },
   ])('$title', ({ endDate, expected }) => {
     // Given
-    const todo = { startDate: '2026-11-05', endDate };
+    const todo = createParentTodo({ startDate: '2026-11-05', endDate });
 
     // When
     const result = TodoPolicy.isMultiDayTodo(todo);
@@ -340,7 +346,7 @@ describe('isOptimisticTodo', () => {
     { title: 'id가 양수이면 저장된 행이다', id: 1, expected: false },
   ])('$title', ({ id, expected }) => {
     // When
-    const result = TodoPolicy.isOptimisticTodo({ id });
+    const result = TodoPolicy.isOptimisticTodo(createParentTodo({ id }));
 
     // Then
     expect(result).toBe(expected);
@@ -354,7 +360,7 @@ describe('canReorderTodos', () => {
     { title: '할 일이 둘이면 순서를 바꿀 수 있다', ids: [1, 2], expected: true },
   ])('$title', ({ ids, expected }) => {
     // Given
-    const todos = ids.map((id) => ({ id }));
+    const todos = ids.map((id) => createParentTodo({ id }));
 
     // When
     const result = TodoPolicy.canReorderTodos(todos);

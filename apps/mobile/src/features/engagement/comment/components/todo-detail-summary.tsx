@@ -192,10 +192,10 @@ TodoDetailSummary.SubTodos = function SubTodos() {
   const todayKey = useTodayKey();
   const { todo } = detail;
 
-  if (!SubTodoPolicy.hasSubTodos(todo)) {
+  if (!SubTodoPolicy.hasSubTodos(todo.subTodos)) {
     return null;
   }
-  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo);
+  const subTodoStats = SubTodoPolicy.getSubTodoStats(todo.subTodos);
 
   return (
     <VStack gap={4}>
@@ -236,15 +236,7 @@ TodoDetailSummary.Metrics = function Metrics() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const todayKey = useTodayKey();
-  const canNudge = TodoNudgePolicy.canNudgeTodoInRange(
-    {
-      canNudge: detail.permissions.canNudge,
-      isCompleted: detail.todo.completed,
-      startDate: detail.todo.startDate,
-      endDate: detail.todo.endDate,
-    },
-    todayKey,
-  );
+  const canNudge = TodoNudgePolicy.canNudgeTodoInRange(detail, todayKey);
 
   return (
     <HStack gap={16} align="center" wrap="wrap">

@@ -17,7 +17,7 @@ describe('getSubTodoStats', () => {
     });
 
     // When
-    const stats = SubTodoPolicy.getSubTodoStats(parentTodo);
+    const stats = SubTodoPolicy.getSubTodoStats(parentTodo.subTodos);
 
     // Then
     expect(stats).toEqual({ total: 4, completed: 2 });
@@ -31,7 +31,7 @@ describe('getSubTodoStats', () => {
     const parentTodo = createParentTodo({ subTodos: createSubTodos(count) });
 
     // When
-    const result = SubTodoPolicy.hasSubTodos(parentTodo);
+    const result = SubTodoPolicy.hasSubTodos(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(expected);
@@ -44,7 +44,7 @@ describe('canAddSubTodo', () => {
     const parentTodo = createParentTodo({ subTodos: createSubTodos(0) });
 
     // When
-    const result = SubTodoPolicy.canAddSubTodo(parentTodo);
+    const result = SubTodoPolicy.canAddSubTodo(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(true);
@@ -55,7 +55,7 @@ describe('canAddSubTodo', () => {
     const parentTodo = createParentTodo({ subTodos: createSubTodos(19) });
 
     // When
-    const result = SubTodoPolicy.canAddSubTodo(parentTodo);
+    const result = SubTodoPolicy.canAddSubTodo(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(true);
@@ -66,7 +66,7 @@ describe('canAddSubTodo', () => {
     const parentTodo = createParentTodo({ subTodos: createSubTodos(20) });
 
     // When
-    const result = SubTodoPolicy.canAddSubTodo(parentTodo);
+    const result = SubTodoPolicy.canAddSubTodo(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(false);
@@ -85,7 +85,7 @@ describe('withSubTodoCompleted', () => {
 
     // Then
     expect(result.subTodos.map((subTodo) => subTodo.completed)).toEqual([true, false]);
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 2, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 2, completed: 1 });
   });
 
   it('이미 완료한 서브투두를 다시 완료해도 1/1을 넘지 않는다', () => {
@@ -98,7 +98,7 @@ describe('withSubTodoCompleted', () => {
     const result = SubTodoPolicy.withSubTodoCompleted(parentTodo, 1, true);
 
     // Then
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 1, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 1, completed: 1 });
   });
 });
 
@@ -114,7 +114,7 @@ describe('withSubTodoAdded', () => {
 
     // Then
     expect(result.subTodos.map((subTodo) => subTodo.id)).toEqual([1, 2]);
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 2, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 2, completed: 1 });
   });
 
   it('완료한 부모에 항목을 더하면 남은 일이 생겨 완료가 풀린다', () => {
@@ -154,7 +154,7 @@ describe('withSubTodoRemoved', () => {
     const result = SubTodoPolicy.withSubTodoRemoved(parentTodo, 1);
 
     // Then
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 1, completed: 0 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 1, completed: 0 });
   });
 
   it('없는 서브투두를 지우려 하면 목록과 통계가 그대로다', () => {
@@ -168,7 +168,7 @@ describe('withSubTodoRemoved', () => {
 
     // Then
     expect(result.subTodos).toEqual(parentTodo.subTodos);
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 1, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 1, completed: 1 });
   });
 });
 
@@ -190,7 +190,7 @@ describe('withSubTodoRenamed', () => {
       createSubTodo({ id: 1, title: '장보기 끝', completed: true }),
       createSubTodo({ id: 2, title: '청소' }),
     ]);
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 2, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 2, completed: 1 });
   });
 
   it('없는 항목의 제목을 바꾸려 하면 목록이 그대로다', () => {
@@ -258,7 +258,7 @@ describe('withSubTodoRestored', () => {
 
     // Then
     expect(result.subTodos.map((subTodo) => subTodo.id)).toEqual([5, 6, 7]);
-    expect(SubTodoPolicy.getSubTodoStats(result)).toEqual({ total: 3, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(result.subTodos)).toEqual({ total: 3, completed: 1 });
   });
 
   it('같은 id의 항목이 이미 있으면 다시 넣지 않는다', () => {
@@ -305,8 +305,8 @@ describe('isOptimisticSubTodo', () => {
 describe('hasTitleChanged', () => {
   it('제목이 그대로면 바뀐 값이 없다', () => {
     // When
-    const same = SubTodoPolicy.hasTitleChanged({ title: '장보기' }, '장보기');
-    const changed = SubTodoPolicy.hasTitleChanged({ title: '장보기' }, '장보기 끝');
+    const same = SubTodoPolicy.hasTitleChanged(createSubTodo({ title: '장보기' }), '장보기');
+    const changed = SubTodoPolicy.hasTitleChanged(createSubTodo({ title: '장보기' }), '장보기 끝');
 
     // Then
     expect(same).toBe(false);
@@ -320,7 +320,7 @@ describe('canReorderSubTodos', () => {
     const parentTodo = createParentTodo({ subTodos: [] });
 
     // When
-    const result = SubTodoPolicy.canReorderSubTodos(parentTodo);
+    const result = SubTodoPolicy.canReorderSubTodos(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(true);
@@ -333,7 +333,7 @@ describe('canReorderSubTodos', () => {
     });
 
     // When
-    const result = SubTodoPolicy.canReorderSubTodos(parentTodo);
+    const result = SubTodoPolicy.canReorderSubTodos(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(true);
@@ -346,7 +346,7 @@ describe('canReorderSubTodos', () => {
     });
 
     // When
-    const result = SubTodoPolicy.canReorderSubTodos(parentTodo);
+    const result = SubTodoPolicy.canReorderSubTodos(parentTodo.subTodos);
 
     // Then
     expect(result).toBe(false);
