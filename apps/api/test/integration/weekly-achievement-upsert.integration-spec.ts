@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 
+import { WeeklyAchievement } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
 import { DrizzleWeeklyAchievementRepository } from "#api/modules/insights/weekly-achievements/infrastructure/persistence/drizzle-weekly-achievement.repository";
 import { user, weeklyAchievement } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
@@ -30,8 +31,22 @@ describe("주간 달성 일괄 upsert (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  function snapshot(week: number, completedTodos: number, achievedAt = new Date("2027-02-01Z")) {
-    return { userId, year: 2027, week, totalTodos: 5, completedTodos, achievedAt };
+  let nextId = 0;
+  function snapshot(
+    week: number,
+    completedTodos: number,
+    achievedAt = Temporal.Instant.from("2027-02-01T00:00:00Z"),
+  ) {
+    nextId += 1;
+    return WeeklyAchievement.reconstitute({
+      id: nextId,
+      userId,
+      year: 2027,
+      week,
+      totalTodos: 5,
+      completedTodos,
+      achievedAt,
+    });
   }
 
   function rows() {
@@ -47,19 +62,19 @@ describe("주간 달성 일괄 upsert (실제 PostgreSQL)", () => {
   }
 
   it("여러 주차를 한 번에 저장하고 같은 주차는 갱신하며 행 id는 유지한다", async () => {
-    await repository.upsertMany([snapshot(1, 2), snapshot(2, 3)]);
+    await repository.saveAll([snapshot(1, 2), snapshot(2, 3)]);
     const [first] = await client
       .select({ id: weeklyAchievement.id })
       .from(weeklyAchievement)
       .where(eq(weeklyAchievement.week, 1));
 
-    const later = new Date("2027-02-08Z");
-    await repository.upsertMany([snapshot(1, 5, later), snapshot(3, 1)]);
+    const later = Temporal.Instant.from("2027-02-08T00:00:00Z");
+    await repository.saveAll([snapshot(1, 5, later), snapshot(3, 1)]);
 
     expect(await rows()).toEqual([
       { week: 1, completedTodos: 5, achievedAt: later },
-      { week: 2, completedTodos: 3, achievedAt: new Date("2027-02-01Z") },
-      { week: 3, completedTodos: 1, achievedAt: new Date("2027-02-01Z") },
+      { week: 2, completedTodos: 3, achievedAt: Temporal.Instant.from("2027-02-01T00:00:00Z") },
+      { week: 3, completedTodos: 1, achievedAt: Temporal.Instant.from("2027-02-01T00:00:00Z") },
     ]);
     const [again] = await client
       .select({ id: weeklyAchievement.id })

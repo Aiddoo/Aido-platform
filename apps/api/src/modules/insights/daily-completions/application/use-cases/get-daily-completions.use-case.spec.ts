@@ -1,162 +1,169 @@
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryDailyCompletionRepository } from "#test/doubles/insights/in-memory-daily-completion.repository";
 import {
-  createInsightsFixture,
-  createTodoAggregateFixture,
-  INSIGHTS_TIME,
-} from "#test/fixtures/insights.fixture";
+  calendarDate,
+  createDateRangeFixture,
+  createTodoSeedFixture,
+  DAILY_COMPLETION_FIXTURE_FRIEND_ID,
+  DAILY_COMPLETION_FIXTURE_USER_ID,
+} from "#test/fixtures/insights/daily-completion.fixture";
 
+import { DailyCompletionCache } from "../../infrastructure/cache/daily-completion.cache.js";
+import type { DailyCompletionRange } from "../read-models/daily-completion-range.read-model.js";
 import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case.js";
 
-const RANGE = { startDate: "2028-02-01", endDate: "2028-02-29" };
+const QUERY = {
+  userId: DAILY_COMPLETION_FIXTURE_USER_ID,
+  startDate: calendarDate("2028-02-01"),
+  endDate: calendarDate("2028-02-29"),
+};
+
+function summariesOf(result: DailyCompletionRange) {
+  return result.completions.map((completion) => ({
+    date: completion.date.toString(),
+    totalTodos: completion.totalTodos,
+    completedTodos: completion.completedTodos,
+    isComplete: completion.isComplete,
+    completionRate: completion.completionRate,
+    categoryColors: completion.categoryColors,
+  }));
+}
+
+function setup() {
+  const dailyCompletionRepository = new InMemoryDailyCompletionRepository();
+  const dailyCompletionCache = new DailyCompletionCache(
+    new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
+  );
+  const useCase = new GetDailyCompletionsUseCase({
+    dailyCompletionRepository,
+    dailyCompletionCache,
+  });
+  return { dailyCompletionRepository, dailyCompletionCache, useCase };
+}
 
 describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
-  it("윤년 종료일을 포함하는 반열림 조회로 집계하고 날짜별 완료율·색상·완료일 수를 반환한다", async () => {
+  it("구간 양끝 날짜를 포함해 날짜별 완료율·색상과 완료일 수를 날짜 오름차순으로 돌려준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    fixture.repository.ownAggregates.set(fixture.userId, [
-      createTodoAggregateFixture(),
-      createTodoAggregateFixture({
-        date: new Date("2028-02-28T00:00:00Z"),
-        total: 4,
-        completed: 2,
-        categoryColors: ["#123456", "#654321"],
+    const { dailyCompletionRepository, useCase } = setup();
+    dailyCompletionRepository.add(
+      createTodoSeedFixture({ startDate: calendarDate("2028-02-29"), completed: true }),
+      createTodoSeedFixture({
+        startDate: calendarDate("2028-02-29"),
+        categoryColor: "#654321",
       }),
-    ]);
-    const query = vi.spyOn(fixture.repository, "aggregateByDateRange");
+      createTodoSeedFixture({ startDate: calendarDate("2028-02-01"), completed: true }),
+      createTodoSeedFixture({ startDate: calendarDate("2028-01-31"), completed: true }),
+      createTodoSeedFixture({ startDate: calendarDate("2028-03-01"), completed: true }),
+      createTodoSeedFixture({
+        userId: DAILY_COMPLETION_FIXTURE_FRIEND_ID,
+        startDate: calendarDate("2028-02-15"),
+      }),
+    );
+
     // When
-    const result = await new GetDailyCompletionsUseCase(fixture).execute({
-      userId: fixture.userId,
-      ...RANGE,
-    });
+    const result = await useCase.execute(QUERY);
+
     // Then
-    expect(query).toHaveBeenCalledWith({
-      userId: fixture.userId,
-      startDate: new Date("2028-02-01T00:00:00Z"),
-      endDate: new Date("2028-03-01T00:00:00Z"),
-    });
-    expect(result).toEqual({
-      dateRange: RANGE,
-      totalCompleteDays: 1,
-      multiDayTodos: [],
-      completions: [
-        {
-          date: "2028-02-28",
-          totalTodos: 4,
-          completedTodos: 2,
-          isComplete: false,
-          completionRate: 50,
-          categoryColors: ["#123456", "#654321"],
-        },
-        {
-          date: "2028-02-29",
-          totalTodos: 3,
-          completedTodos: 3,
-          isComplete: true,
-          completionRate: 100,
-          categoryColors: ["#123456"],
-        },
-      ],
-    });
+    expect(summariesOf(result)).toEqual([
+      {
+        date: "2028-02-01",
+        totalTodos: 1,
+        completedTodos: 1,
+        isComplete: true,
+        completionRate: 100,
+        categoryColors: ["#FF6B43"],
+      },
+      {
+        date: "2028-02-29",
+        totalTodos: 2,
+        completedTodos: 1,
+        isComplete: false,
+        completionRate: 50,
+        categoryColors: ["#FF6B43", "#654321"],
+      },
+    ]);
+    expect(result.totalCompleteDays).toBe(1);
+    expect(result.range.equals(createDateRangeFixture("2028-02-01", "2028-02-29"))).toBe(true);
   });
 
-  it("첫 조회를 캐싱한 뒤 저장소 준비 상태가 사라져도 같은 범위 결과를 반환한다", async () => {
+  it("첫 조회를 캐시에 담아 무효화 전에는 할 일이 바뀌어도 같은 결과를 주고 다른 사용자와 섞지 않는다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    fixture.repository.ownAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
-    const useCase = new GetDailyCompletionsUseCase(fixture);
-    const first = await useCase.execute({ userId: fixture.userId, ...RANGE });
-    fixture.repository.ownAggregates.clear();
+    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
+    dailyCompletionRepository.add(createTodoSeedFixture({ completed: true }));
+    const first = await useCase.execute(QUERY);
+    dailyCompletionRepository.clear();
+
     // When
-    const cached = await useCase.execute({ userId: fixture.userId, ...RANGE });
+    const cached = await useCase.execute(QUERY);
+    const other = await dailyCompletionCache.readRange(
+      UserId.reconstitute(DAILY_COMPLETION_FIXTURE_FRIEND_ID),
+      first.range,
+    );
+
     // Then
-    expect(cached).toEqual(first);
-    expect(
-      (await fixture.cache.readRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
-    ).toEqual(first);
-    expect(
-      (await fixture.cache.readRange("other-user", RANGE.startDate, RANGE.endDate)).value,
-    ).toBeUndefined();
+    expect(summariesOf(cached)).toEqual(summariesOf(first));
+    expect(other.value).toBeNull();
   });
 
   it("기간과 겹치는 여러 날 할 일을 집계와 따로 돌려준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const span = {
-      startDate: "2028-01-30",
-      endDate: "2028-02-02",
-      completed: false,
-      categoryColor: "#123456",
-    };
-    fixture.repository.ownMultiDayTodos.set(fixture.userId, [span]);
+    const { dailyCompletionRepository, useCase } = setup();
+    dailyCompletionRepository.add(
+      createTodoSeedFixture({
+        startDate: calendarDate("2028-01-30"),
+        endDate: calendarDate("2028-02-02"),
+        categoryColor: "#123456",
+      }),
+    );
+
     // When
-    const result = await new GetDailyCompletionsUseCase(fixture).execute({
-      userId: fixture.userId,
-      ...RANGE,
-    });
+    const result = await useCase.execute(QUERY);
+
     // Then
-    expect(result.multiDayTodos).toEqual([span]);
+    expect(result.multiDayTodos).toEqual([
+      {
+        startDate: calendarDate("2028-01-30"),
+        endDate: calendarDate("2028-02-02"),
+        completed: false,
+        categoryColor: "#123456",
+      },
+    ]);
     expect(result.completions).toEqual([]);
   });
 
-  it("집계가 없으면 범위를 보존한 빈 완료 현황을 반환한다", async () => {
+  it("할 일이 없으면 조회 구간을 그대로 둔 빈 완료 현황을 돌려준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
+    const { useCase } = setup();
+
     // When
-    const result = await new GetDailyCompletionsUseCase(fixture).execute({
-      userId: fixture.userId,
-      ...RANGE,
-    });
+    const result = await useCase.execute(QUERY);
+
     // Then
-    expect(result).toEqual({
-      completions: [],
-      totalCompleteDays: 0,
-      multiDayTodos: [],
-      dateRange: RANGE,
-    });
+    expect(result.completions).toEqual([]);
+    expect(result.totalCompleteDays).toBe(0);
+    expect(result.range.start.toString()).toBe("2028-02-01");
+    expect(result.range.end.toString()).toBe("2028-02-29");
   });
 
-  it("진행 중인 오래된 조회는 무효화 이후 캐시에 저장되지 않아 다음 조회가 새 완료 상태를 반환한다", async () => {
+  it("무효화 전에 시작한 늦은 조회는 캐시에 남지 않아 다음 조회가 새 완료 상태를 받는다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    fixture.repository.ownAggregates.set(fixture.userId, [
-      createTodoAggregateFixture({ completed: 0 }),
-    ]);
-    const entered = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    const aggregate = fixture.repository.aggregateByDateRange.bind(fixture.repository);
-    vi.spyOn(fixture.repository, "aggregateByDateRange").mockImplementationOnce(async (input) => {
-      const snapshot = await aggregate(input);
-      entered.resolve();
-      await release.promise;
-      return snapshot;
-    });
-    const useCase = new GetDailyCompletionsUseCase(fixture);
-    const staleRead = useCase.execute({ userId: fixture.userId, ...RANGE });
-    await Promise.race([
-      entered.promise,
-      staleRead.then(() => {
-        throw new Error("집계 gate 전에 요청이 끝났습니다.");
-      }),
-    ]);
+    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
+    dailyCompletionRepository.add(createTodoSeedFixture({ completed: false }));
+    const held = dailyCompletionRepository.holdNextRead();
+    const staleRead = useCase.execute(QUERY);
+    await held.entered;
+
     // When
-    try {
-      await fixture.cache.invalidate(fixture.userId);
-      fixture.repository.ownAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
-    } finally {
-      release.resolve();
-      await staleRead;
-    }
-    const fresh = await useCase.execute({ userId: fixture.userId, ...RANGE });
+    await dailyCompletionCache.invalidate(UserId.reconstitute(DAILY_COMPLETION_FIXTURE_USER_ID));
+    dailyCompletionRepository.clear();
+    dailyCompletionRepository.add(createTodoSeedFixture({ completed: true }));
+    held.release();
+    const stale = await staleRead;
+    const fresh = await useCase.execute(QUERY);
+
     // Then
-    expect((await staleRead).completions[0]?.completedTodos).toBe(0);
-    expect(fresh.completions[0]?.completedTodos).toBe(3);
-    expect(
-      (await fixture.cache.readRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
-    ).toEqual(fresh);
+    expect(stale.completions[0]?.completedTodos).toBe(0);
+    expect(fresh.completions[0]?.completedTodos).toBe(1);
   });
 });

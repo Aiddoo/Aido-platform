@@ -1,9 +1,11 @@
 import dayjs from "dayjs";
 
-import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
+import { DailyCompletionRepositoryPort } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
 import { GetDailyCompletionsUseCase } from "#api/modules/insights/daily-completions/application/use-cases/get-daily-completions.use-case";
-import type { DrizzleTodoCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-todo-completion.repository";
+import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
+import { toDailyCompletionsRangeResponse } from "#api/modules/insights/daily-completions/presentation/http/v1/daily-completion-response.mapper";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createE2eApp,
   destroyE2eApp,
@@ -17,7 +19,7 @@ import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   let context: E2eTestContext;
   let getDailyCompletionsUseCase: GetDailyCompletionsUseCase;
-  let repository: DrizzleTodoCompletionRepository;
+  let repository: DailyCompletionRepositoryPort;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
   beforeAll(async () => {
@@ -25,11 +27,35 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     client = await testDb.start();
     context = await createE2eApp({ testDatabase: testDb });
     getDailyCompletionsUseCase = context.module.get(GetDailyCompletionsUseCase);
-    repository = context.module.get(TODO_COMPLETION_REPOSITORY);
+    repository = context.module.get(DailyCompletionRepositoryPort);
   });
 
-  function getDailyCompletions(userId: string, startDate: string, endDate: string) {
-    return getDailyCompletionsUseCase.execute({ userId, startDate, endDate });
+  async function getDailyCompletions(userId: string, startDate: string, endDate: string) {
+    return toDailyCompletionsRangeResponse(
+      await getDailyCompletionsUseCase.execute({
+        userId,
+        startDate: Temporal.PlainDate.from(startDate),
+        endDate: Temporal.PlainDate.from(endDate),
+      }),
+    );
+  }
+
+  // 반열림 [startDate, endDate) Date 구간을 저장소의 양끝 포함 달력 구간으로 바꾼다
+  function rangeQuery(params: { userId: string; startDate: Date; endDate: Date }) {
+    const toDay = (date: Date) => Temporal.PlainDate.from(date.toISOString().slice(0, 10));
+    return {
+      userId: UserId.reconstitute(params.userId),
+      range: DateRange.create(toDay(params.startDate), toDay(params.endDate).subtract({ days: 1 })),
+    };
+  }
+
+  async function aggregateByDateRange(params: { userId: string; startDate: Date; endDate: Date }) {
+    const completions = await repository.listByDateRange(rangeQuery(params));
+    return completions.map((completion) => ({
+      date: completion.date.toString(),
+      total: completion.totalTodos,
+      completed: completion.completedTodos,
+    }));
   }
 
   beforeEach(async () => {
@@ -153,9 +179,13 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await createMultiDayTodo(user.id, categoryId, "2026-01-10", "2026-01-10");
       await createTestTodo(user.id, categoryId, "2026-01-15");
       // When
-      const result = await repository.findMultiDayTodos({ userId: user.id, ...JANUARY });
+      const result = await repository.listMultiDayTodoSpans(
+        rangeQuery({ userId: user.id, ...JANUARY }),
+      );
       // Then
-      expect(result.map(({ startDate, endDate }) => [startDate, endDate]).sort()).toEqual([
+      expect(
+        result.map(({ startDate, endDate }) => [startDate.toString(), endDate.toString()]).sort(),
+      ).toEqual([
         ["2025-12-30", "2026-01-02"],
         ["2026-01-30", "2026-02-03"],
       ]);
@@ -169,9 +199,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await createMultiDayTodo(user.id, categoryId, "2026-01-05", "2026-01-07");
       await createMultiDayTodo(user.id, categoryId, "2026-01-10", "2026-01-12", "PRIVATE");
       // When
-      const result = await repository.findPublicMultiDayTodos({ userId: user.id, ...JANUARY });
+      const result = await repository.listPublicMultiDayTodoSpans(
+        rangeQuery({ userId: user.id, ...JANUARY }),
+      );
       // Then
-      expect(result.map(({ startDate }) => startDate)).toEqual(["2026-01-05"]);
+      expect(result.map(({ startDate }) => startDate.toString())).toEqual(["2026-01-05"]);
     });
   });
 
@@ -183,7 +215,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-16", 2, 2);
 
       // When
-      const result = await repository.aggregateByDateRange({
+      const result = await aggregateByDateRange({
         userId: user.id,
         startDate: new Date("2026-01-01"),
         endDate: new Date("2026-02-01"),
@@ -192,8 +224,8 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       // Then
       expect(result).toHaveLength(2);
 
-      const day15 = result.find((r) => r.date.toISOString().includes("2026-01-15"));
-      const day16 = result.find((r) => r.date.toISOString().includes("2026-01-16"));
+      const day15 = result.find((r) => r.date === "2026-01-15");
+      const day16 = result.find((r) => r.date === "2026-01-16");
 
       expect(day15?.total).toBe(3);
       expect(day15?.completed).toBe(2);
@@ -233,7 +265,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await createTodosForDate(user2.id, user2.defaultCategoryId, "2026-01-15", 5, 1);
 
       // When - user1의 Todo만 집계
-      const result = await repository.aggregateByDateRange({
+      const result = await aggregateByDateRange({
         userId: user1.id,
         startDate: new Date("2026-01-01"),
         endDate: new Date("2026-02-01"),
@@ -253,7 +285,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await createTodosForDate(user.id, user.defaultCategoryId, "2026-02-01", 1, 1);
 
       // When - 1월 범위만 조회
-      const result = await repository.aggregateByDateRange({
+      const result = await aggregateByDateRange({
         userId: user.id,
         startDate: new Date("2026-01-01"),
         endDate: new Date("2026-02-01"),
@@ -269,7 +301,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       const user = await createTestUser();
 
       // When - 날짜 범위로 집계 조회
-      const result = await repository.aggregateByDateRange({
+      const result = await aggregateByDateRange({
         userId: user.id,
         startDate: new Date("2026-01-01"),
         endDate: new Date("2026-02-01"),

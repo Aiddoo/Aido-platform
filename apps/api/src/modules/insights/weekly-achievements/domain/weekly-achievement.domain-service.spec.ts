@@ -1,233 +1,83 @@
-import {
-  buildWeeklyAchievementSnapshot,
-  computeDateRange,
-  computeStreak,
-  computeSummary,
-} from "./weekly-achievement.domain-service.js";
-import type {
-  WeeklyAchievementRecord,
-  WeeklyAchievementRow,
-  WeeklyAchievementUpsert,
-} from "./weekly-achievement.read-model.js";
+import { createWeeklyAchievementFixture } from "#test/fixtures/insights/weekly-achievement.fixture";
 
-function row(overrides?: Partial<WeeklyAchievementRow>): WeeklyAchievementRow {
-  return {
-    id: 1,
-    year: 2026,
-    week: 1,
-    totalTodos: 10,
-    completedTodos: 8,
-    achievedAt: new Date("2026-01-05T11:00:00.000Z"),
-    ...overrides,
-  };
+import { IsoWeek } from "./iso-week.vo.js";
+import {
+  computeWeeklyStreak,
+  summarizeWeeklyAchievements,
+} from "./weekly-achievement.domain-service.js";
+
+function weeks(...pairs: ReadonlyArray<readonly [number, number]>): IsoWeek[] {
+  return pairs.map(([year, week]) => IsoWeek.create(year, week));
 }
 
-describe("weekly-achievement 도메인", () => {
-  describe("computeDateRange", () => {
-    it("월요일~일요일 범위를 반환한다", () => {
-      const range = computeDateRange(2026, 10);
-      expect(range.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(range.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-
-      const start = new Date(range.startDate);
-      const end = new Date(range.endDate);
-      const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-      expect(diffDays).toBe(6);
-    });
-
-    it.each(["2026-01-01T00:00:00Z", "2026-10-26T12:00:00Z", "2027-12-31T23:59:59Z"])(
-      "호출 시각(%s)과 관계없이 연초 1주차·53주차·DST 전환 주의 날짜가 같다",
-      (now) => {
-        // Given
-        vi.useFakeTimers({ toFake: ["Date"] });
-        vi.setSystemTime(new Date(now));
-        // When
-        const ranges = [1, 10, 44, 53].map((week) => computeDateRange(2026, week));
-        ranges.push(computeDateRange(2027, 1));
-        vi.useRealTimers();
-        // Then
-        expect(ranges).toEqual([
-          { startDate: "2025-12-29", endDate: "2026-01-04" },
-          // 미국 DST 시작(3/8)·종료(11/1) 주. LA 시간대로 실행해도 날짜가 하루 밀리지 않는다.
-          { startDate: "2026-03-02", endDate: "2026-03-08" },
-          { startDate: "2026-10-26", endDate: "2026-11-01" },
-          { startDate: "2026-12-28", endDate: "2027-01-03" },
-          { startDate: "2027-01-04", endDate: "2027-01-10" },
-        ]);
-      },
-    );
-
-    it("2026년 10주차의 정확한 날짜를 반환한다", () => {
-      const range = computeDateRange(2026, 10);
-      expect(range.startDate).toBe("2026-03-02");
-      expect(range.endDate).toBe("2026-03-08");
-    });
-  });
-
-  describe("computeStreak", () => {
-    it("빈 배열이면 0을 반환한다", () => {
-      expect(computeStreak([])).toEqual({ currentStreak: 0, bestStreak: 0 });
-    });
-
-    it("단일 레코드면 streak은 1이다", () => {
-      expect(computeStreak([{ year: 2026, week: 5 }])).toEqual({
-        currentStreak: 1,
-        bestStreak: 1,
-      });
-    });
-
-    it("연속 주차의 streak을 계산한다", () => {
-      const records: WeeklyAchievementRecord[] = [
-        { year: 2026, week: 5 },
-        { year: 2026, week: 6 },
-        { year: 2026, week: 7 },
-      ];
-      expect(computeStreak(records)).toEqual({
-        currentStreak: 3,
-        bestStreak: 3,
-      });
-    });
-
-    it("중간에 빈 주가 있으면 streak이 끊긴다", () => {
-      const records: WeeklyAchievementRecord[] = [
-        { year: 2026, week: 5 },
-        { year: 2026, week: 6 },
-        // week 7 missing
-        { year: 2026, week: 8 },
-        { year: 2026, week: 9 },
-        { year: 2026, week: 10 },
-      ];
-      const result = computeStreak(records);
-      expect(result.currentStreak).toBe(3); // 8, 9, 10
-      expect(result.bestStreak).toBe(3); // 8, 9, 10
-    });
-
-    it("연말→연초 경계를 처리한다", () => {
-      const records: WeeklyAchievementRecord[] = [
-        { year: 2025, week: 51 },
-        { year: 2025, week: 52 },
-        { year: 2026, week: 1 },
-        { year: 2026, week: 2 },
-      ];
-      const result = computeStreak(records);
-      expect(result.currentStreak).toBe(4);
-      expect(result.bestStreak).toBe(4);
-    });
-
-    it("bestStreak과 currentStreak이 다를 수 있다", () => {
-      const records: WeeklyAchievementRecord[] = [
-        { year: 2026, week: 1 },
-        { year: 2026, week: 2 },
-        { year: 2026, week: 3 },
-        { year: 2026, week: 4 }, // bestStreak = 4
-        // gap
-        { year: 2026, week: 8 },
-        { year: 2026, week: 9 }, // currentStreak = 2
-      ];
-      const result = computeStreak(records);
-      expect(result.currentStreak).toBe(2);
-      expect(result.bestStreak).toBe(4);
-    });
-
-    it("53주차 연도의 연말→연초 경계를 처리한다", () => {
-      // 2020년은 53 ISO weeks
-      const records: WeeklyAchievementRecord[] = [
-        { year: 2020, week: 52 },
-        { year: 2020, week: 53 },
-        { year: 2021, week: 1 },
-      ];
-      const result = computeStreak(records);
-      expect(result.currentStreak).toBe(3);
-      expect(result.bestStreak).toBe(3);
-    });
-  });
-
-  describe("computeSummary", () => {
-    it("빈 배열이면 모든 값이 0이다", () => {
-      expect(computeSummary([])).toEqual({
-        totalWeeks: 0,
-        perfectWeeks: 0,
-        currentStreak: 0,
-        bestStreak: 0,
-        averageRate: 0,
-      });
-    });
-
-    it("통계를 정확하게 계산한다", () => {
-      const rows = [
-        row({ year: 2026, week: 1, totalTodos: 10, completedTodos: 10 }), // 100%
-        row({ year: 2026, week: 2, totalTodos: 10, completedTodos: 8 }), // 80%
-        row({ year: 2026, week: 3, totalTodos: 10, completedTodos: 10 }), // 100%
-      ];
-      const summary = computeSummary(rows);
-      expect(summary.totalWeeks).toBe(3);
-      expect(summary.perfectWeeks).toBe(2);
-      expect(summary.averageRate).toBe(93); // (100+80+100)/3 = 93.33 → 93
-      expect(summary.currentStreak).toBe(3);
-      expect(summary.bestStreak).toBe(3);
-    });
-  });
-
-  describe("buildWeeklyAchievementSnapshot — 불변식", () => {
-    function upsert(overrides?: Partial<WeeklyAchievementUpsert>): WeeklyAchievementUpsert {
-      return {
-        userId: "user-1",
-        year: 2026,
-        week: 10,
-        totalTodos: 5,
-        completedTodos: 3,
-        achievedAt: new Date("2026-03-09T00:00:00.000Z"),
-        ...overrides,
-      };
-    }
-
-    it("유효한 입력은 그대로 통과시킨다", () => {
-      const input = upsert();
-      expect(buildWeeklyAchievementSnapshot(input)).toEqual(input);
-    });
-
-    it("완료 수가 전체 수를 초과하면 SYS_0002로 실패한다", () => {
-      expect(() =>
-        buildWeeklyAchievementSnapshot(upsert({ totalTodos: 2, completedTodos: 5 })),
-      ).toThrow();
-    });
-
-    it("주차가 ISO 범위를 벗어나면 SYS_0002로 실패한다", () => {
-      expect(() => buildWeeklyAchievementSnapshot(upsert({ week: 54 }))).toThrow();
-    });
-  });
-
-  it("입력의 Date를 변경해도 검증된 주간 스냅샷은 기존 시각을 유지한다", () => {
-    // Given
-    const achievedAt = new Date("2028-03-06T00:00:00Z");
-    const input = {
-      userId: "user-1",
-      year: 2028,
-      week: 9,
-      totalTodos: 2,
-      completedTodos: 1,
-      achievedAt,
-    };
-    const snapshot = buildWeeklyAchievementSnapshot(input);
+describe("주간 성취 요약", () => {
+  it.each([
+    { name: "기록이 없으면 0", records: weeks(), current: 0, best: 0 },
+    { name: "한 주면 1", records: weeks([2026, 5]), current: 1, best: 1 },
+    {
+      name: "가운데 빈 주에서 끊긴다",
+      records: weeks([2026, 5], [2026, 6], [2026, 8], [2026, 9], [2026, 10]),
+      current: 3,
+      best: 3,
+    },
+    {
+      name: "52주 해의 연말에서 다음 해 1주로 잇는다",
+      records: weeks([2025, 51], [2025, 52], [2026, 1], [2026, 2]),
+      current: 4,
+      best: 4,
+    },
+    {
+      name: "53주 해의 53주에서 다음 해 1주로 잇는다",
+      records: weeks([2020, 52], [2020, 53], [2021, 1]),
+      current: 3,
+      best: 3,
+    },
+    {
+      name: "최고 기록과 현재 연속이 다를 수 있다",
+      records: weeks([2026, 1], [2026, 2], [2026, 3], [2026, 4], [2026, 8], [2026, 9]),
+      current: 2,
+      best: 4,
+    },
+  ])("연속 주: $name", ({ records, current, best }) => {
     // When
-    achievedAt.setUTCDate(7);
+    const streak = computeWeeklyStreak(records);
+
     // Then
-    expect(snapshot.achievedAt.toISOString()).toBe("2028-03-06T00:00:00.000Z");
-    expect(snapshot).not.toBe(input);
+    expect(streak).toEqual({ currentStreak: current, bestStreak: best });
   });
 
-  it("윤년의 주차와 연말 53주에서 다음 해 1주까지의 연속 기록을 유지한다", () => {
+  it("완벽한 주 수·반올림 평균 완료율·연속 주를 순서와 상관없이 계산한다", () => {
     // Given
-    const records = [
-      { year: 2026, week: 53 },
-      { year: 2027, week: 1 },
+    const achievements = [
+      createWeeklyAchievementFixture({ id: 3, week: 3, totalTodos: 10, completedTodos: 10 }),
+      createWeeklyAchievementFixture({ id: 1, week: 1, totalTodos: 10, completedTodos: 10 }),
+      createWeeklyAchievementFixture({ id: 2, week: 2, totalTodos: 10, completedTodos: 8 }),
     ];
+
     // When
-    const range = computeDateRange(2028, 9);
-    const streak = computeStreak(records);
+    const summary = summarizeWeeklyAchievements(achievements);
+
+    // Then - (100 + 80 + 100) / 3 = 93.3 → 93
+    expect(summary).toEqual({
+      totalWeeks: 3,
+      perfectWeeks: 2,
+      currentStreak: 3,
+      bestStreak: 3,
+      averageRate: 93,
+    });
+  });
+
+  it("기록이 없으면 모든 값이 0이다", () => {
+    // When
+    const summary = summarizeWeeklyAchievements([]);
+
     // Then
-    expect(range).toEqual({ startDate: "2028-02-28", endDate: "2028-03-05" });
-    expect(computeDateRange(2026, 53)).toEqual({ startDate: "2026-12-28", endDate: "2027-01-03" });
-    expect(streak).toEqual({ currentStreak: 2, bestStreak: 2 });
+    expect(summary).toEqual({
+      totalWeeks: 0,
+      perfectWeeks: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      averageRate: 0,
+    });
   });
 });

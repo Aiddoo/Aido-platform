@@ -1,80 +1,93 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryWeeklyAchievementRepository } from "#test/doubles/insights/in-memory-weekly-achievement.repository";
 import {
-  createInsightsFixture,
-  createWeeklyAchievementWriteFixture,
-  INSIGHTS_TIME,
-} from "#test/fixtures/insights.fixture";
+  createWeeklyAchievementRecordInputFixture,
+  WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
+  WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+} from "#test/fixtures/insights/weekly-achievement.fixture";
 
+import { IsoWeek } from "../../domain/iso-week.vo.js";
 import { RecordWeeklyAchievementsUseCase } from "./record-weekly-achievements.use-case.js";
 
-describe("RecordWeeklyAchievementsUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+function setup() {
+  const weeklyAchievementRepository = new InMemoryWeeklyAchievementRepository();
+  const useCase = new RecordWeeklyAchievementsUseCase({ weeklyAchievementRepository });
+  return { weeklyAchievementRepository, useCase };
+}
 
-  it("빈 배치는 저장 요청을 만들지 않는다", async () => {
+function findWeek(repository: InMemoryWeeklyAchievementRepository, userId: string, week: number) {
+  return repository.findByWeek({
+    userId: UserId.reconstitute(userId),
+    isoWeek: IsoWeek.reconstitute(2026, week),
+  });
+}
+
+describe("RecordWeeklyAchievementsUseCase", () => {
+  it("빈 배치는 아무것도 저장하지 않는다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const save = vi.spyOn(fixture.weeklyRepository, "upsertMany");
-    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
+    const { weeklyAchievementRepository, useCase } = setup();
+
     // When
     await useCase.execute({ records: [] });
+
     // Then
-    expect(save).not.toHaveBeenCalled();
-    expect(fixture.weeklyRepository.rows.size).toBe(0);
+    expect(weeklyAchievementRepository.size).toBe(0);
   });
 
-  it("여러 사용자·주차를 저장하고 같은 주차의 재집계는 기존 기록을 갱신한다", async () => {
+  it("여러 사용자·주를 저장하고 같은 주를 다시 집계하면 처음 id를 둔 채 갱신한다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const first = createWeeklyAchievementWriteFixture();
-    const second = createWeeklyAchievementWriteFixture({ userId: fixture.viewerId, week: 11 });
-    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
-    // When
+    const { weeklyAchievementRepository, useCase } = setup();
+    const first = createWeeklyAchievementRecordInputFixture();
+    const second = createWeeklyAchievementRecordInputFixture({
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
+      week: 11,
+    });
     await useCase.execute({ records: [first, second] });
-    const before = await fixture.weeklyRepository.findByYearAndWeek(
-      first.userId,
-      first.year,
-      first.week,
-    );
-    await useCase.execute({ records: [{ ...first, completedTodos: 5 }] });
-    const after = await fixture.weeklyRepository.findByYearAndWeek(
-      first.userId,
-      first.year,
-      first.week,
-    );
+    const before = await findWeek(weeklyAchievementRepository, first.userId, 10);
+    const laterAt = new Date("2026-03-16T00:00:00.000Z");
+
+    // When
+    await useCase.execute({ records: [{ ...first, completedTodos: 5, achievedAt: laterAt }] });
+
     // Then
-    expect(fixture.weeklyRepository.rows.size).toBe(2);
-    expect(after).toEqual({
-      id: before?.id,
-      year: first.year,
-      week: first.week,
+    const after = await findWeek(
+      weeklyAchievementRepository,
+      WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+      10,
+    );
+    expect(weeklyAchievementRepository.size).toBe(2);
+    expect(after?.toPrimitives()).toEqual({
+      id: before?.id.value,
+      userId: first.userId,
+      year: 2026,
+      week: 10,
       totalTodos: 5,
       completedTodos: 5,
-      achievedAt: first.achievedAt,
+      achievedAt: Temporal.Instant.from("2026-03-16T00:00:00Z"),
     });
-    expect(
-      await fixture.weeklyRepository.findByYearAndWeek(second.userId, second.year, second.week),
-    ).toMatchObject({ completedTodos: 3, week: 11 });
+    expect((await findWeek(weeklyAchievementRepository, second.userId, 11))?.completedTodos).toBe(
+      3,
+    );
   });
 
-  it("배치 뒤쪽의 완료 수가 잘못되어도 앞쪽 기록을 저장 요청하지 않는다", async () => {
+  it("배치 뒤쪽의 완료 수가 전체보다 많으면 SYS_0002로 거절하고 앞쪽 기록도 남기지 않는다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const save = vi.spyOn(fixture.weeklyRepository, "upsertMany");
+    const { weeklyAchievementRepository, useCase } = setup();
     const records = [
-      createWeeklyAchievementWriteFixture(),
-      createWeeklyAchievementWriteFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
+      createWeeklyAchievementRecordInputFixture(),
+      createWeeklyAchievementRecordInputFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
     ];
-    const useCase = new RecordWeeklyAchievementsUseCase({ repository: fixture.weeklyRepository });
-    // When, Then
-    await expect(useCase.execute({ records })).rejects.toMatchObject({
+
+    // When
+    const execution = useCase.execute({ records });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({
       errorCode: ErrorCode.SYS_0002,
+      details: { field: "completedTodos", completedTodos: 5, totalTodos: 2 },
     });
-    expect(save).not.toHaveBeenCalled();
-    expect(fixture.weeklyRepository.rows.size).toBe(0);
+    expect(weeklyAchievementRepository.size).toBe(0);
   });
 });

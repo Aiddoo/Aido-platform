@@ -1,17 +1,28 @@
-import { Logger } from "@nestjs/common";
 import { EventEmitter2, EventEmitterModule } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 
 import { TODO_CATEGORY_EVENTS } from "#api/modules/planning/categories/planning-categories.public";
 import { TODO_EVENTS, TodoCreatedEvent } from "#api/modules/planning/todos/planning-todos.public";
-import { createInsightsFixture, INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import {
+  createDailyCompletionRangeFixture,
+  DAILY_COMPLETION_FIXTURE_FRIEND_ID,
+  DAILY_COMPLETION_FIXTURE_USER_ID,
+} from "#test/fixtures/insights/daily-completion.fixture";
 
 import { DailyCompletionLogEvent } from "../../application/daily-completions.log-events.js";
-import { DAILY_COMPLETION_CACHE } from "../../application/ports/daily-completion-cache.port.js";
+import { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port.js";
+import { DailyCompletionCache } from "../cache/daily-completion.cache.js";
 import { DailyCompletionCacheEventHandler } from "./daily-completion-cache.event-handler.js";
 
-const sourceEvents = [
+const OWNER = UserId.reconstitute(DAILY_COMPLETION_FIXTURE_USER_ID);
+const OTHER = UserId.reconstitute(DAILY_COMPLETION_FIXTURE_FRIEND_ID);
+const SOURCE_EVENTS = [
   TODO_EVENTS.CREATED,
+  TODO_EVENTS.OCCURRENCES_CREATED,
+  TODO_EVENTS.OCCURRENCES_CHANGED,
   TODO_EVENTS.DELETED,
   TODO_EVENTS.TOGGLED,
   TODO_EVENTS.RESCHEDULED,
@@ -21,88 +32,91 @@ const sourceEvents = [
   TODO_CATEGORY_EVENTS.UPDATED,
   TODO_CATEGORY_EVENTS.DELETED,
 ];
-const RANGE = { startDate: "2028-02-29", endDate: "2028-02-29" };
-const EMPTY_RANGE = { completions: [], totalCompleteDays: 0, dateRange: RANGE };
+
+class FailingDailyCompletionCache extends DailyCompletionCachePort {
+  readRange(): never {
+    throw new Error("not used");
+  }
+
+  storeRangeIfCurrent(): never {
+    throw new Error("not used");
+  }
+
+  readPublicRange(): never {
+    throw new Error("not used");
+  }
+
+  storePublicRangeIfCurrent(): never {
+    throw new Error("not used");
+  }
+
+  async invalidate(): Promise<void> {
+    throw new Error("private cache payload");
+  }
+}
 
 describe("DailyCompletionCacheEventHandler", () => {
   let module: TestingModule | undefined;
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
-  });
+
   afterEach(async () => {
-    try {
-      await module?.close();
-    } finally {
-      module = undefined;
-      vi.useRealTimers();
-    }
+    await module?.close();
+    module = undefined;
   });
 
-  it.each(sourceEvents)(
-    "%s 이벤트가 소유자의 일반·공개 집계를 함께 무효화한다",
-    async (eventName) => {
-      // Given
-      const fixture = createInsightsFixture();
-      await fixture.cache.storeRangeIfCurrent(
-        fixture.userId,
-        RANGE.startDate,
-        RANGE.endDate,
-        "0",
-        EMPTY_RANGE,
-      );
-      await fixture.cache.storePublicRangeIfCurrent(
-        fixture.userId,
-        RANGE.startDate,
-        RANGE.endDate,
-        "0",
-        EMPTY_RANGE,
-      );
-      await fixture.cache.storeRangeIfCurrent(
-        fixture.viewerId,
-        RANGE.startDate,
-        RANGE.endDate,
-        "0",
-        EMPTY_RANGE,
-      );
-      module = await Test.createTestingModule({
-        imports: [EventEmitterModule.forRoot()],
-        providers: [
-          DailyCompletionCacheEventHandler,
-          { provide: DAILY_COMPLETION_CACHE, useValue: fixture.cache },
-        ],
-      }).compile();
-      await module.init();
-      const emitter = module.get(EventEmitter2);
-      // When
-      await emitter.emitAsync(eventName, { userId: fixture.userId });
-      // Then
-      expect(
-        (await fixture.cache.readRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
-      ).toBeUndefined();
-      expect(
-        (await fixture.cache.readPublicRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
-      ).toBeUndefined();
-      expect(
-        (await fixture.cache.readRange(fixture.viewerId, RANGE.startDate, RANGE.endDate)).value,
-      ).toEqual(EMPTY_RANGE);
-    },
-  );
-
-  it("무효화 실패가 이벤트 발행으로 전파되지 않고 원문 없이 실패 맥락을 기록한다", async () => {
+  it.each(SOURCE_EVENTS)("%s 이벤트가 그 사용자의 본인·공개 집계만 버린다", async (eventName) => {
     // Given
-    const fixture = createInsightsFixture();
-    vi.spyOn(fixture.cache, "invalidate").mockRejectedValueOnce(new Error("private cache payload"));
-    const warning = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
-    const invalidator = new DailyCompletionCacheEventHandler(fixture.cache);
-    // When, Then
-    await expect(
-      invalidator.handle(new TodoCreatedEvent(1, fixture.userId, null)),
-    ).resolves.toBeUndefined();
-    expect(warning).toHaveBeenCalledWith({
-      event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
-      userId: fixture.userId,
-      errorType: "Error",
+    const cache = new DailyCompletionCache(
+      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
+    );
+    const value = createDailyCompletionRangeFixture();
+    for (const userId of [OWNER, OTHER]) {
+      const read = await cache.readRange(userId, value.range);
+      await cache.storeRangeIfCurrent(userId, read.generation, value);
+      await cache.storePublicRangeIfCurrent(userId, read.generation, value);
+    }
+    module = await Test.createTestingModule({
+      imports: [EventEmitterModule.forRoot()],
+      providers: [
+        {
+          provide: DailyCompletionCacheEventHandler,
+          useValue: new DailyCompletionCacheEventHandler({
+            dailyCompletionCache: cache,
+            logger: new SilentLogger(),
+          }),
+        },
+      ],
+    }).compile();
+    await module.init();
+
+    // When
+    await module.get(EventEmitter2).emitAsync(eventName, { userId: OWNER.value });
+
+    // Then
+    expect((await cache.readRange(OWNER, value.range)).value).toBeNull();
+    expect((await cache.readPublicRange(OWNER, value.range)).value).toBeNull();
+    expect((await cache.readRange(OTHER, value.range)).value).not.toBeNull();
+    expect((await cache.readPublicRange(OTHER, value.range)).value).not.toBeNull();
+  });
+
+  it("무효화가 실패해도 이벤트 발행으로 번지지 않고 오류 원문 없이 실패 맥락만 남긴다", async () => {
+    // Given
+    const logger = new SilentLogger();
+    const handler = new DailyCompletionCacheEventHandler({
+      dailyCompletionCache: new FailingDailyCompletionCache(),
+      logger,
     });
+
+    // When
+    const handled = handler.handle(new TodoCreatedEvent(1, OWNER.value, null));
+
+    // Then
+    await expect(handled).resolves.toBeUndefined();
+    expect(logger.messages).toEqual([
+      {
+        event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
+        userId: OWNER.value,
+        errorType: "Error",
+      },
+    ]);
   });
 });

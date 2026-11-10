@@ -1,23 +1,18 @@
-import { ErrorCode } from "@aido/api/errors";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-import type { SupportedLocale } from "#api/shared/domain/locale";
-
-import { type WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
-import {
-  toWeeklyAchievementView,
-  type WeeklyAchievementView,
-} from "../read-models/weekly-achievement.read-model.js";
+import { IsoWeek } from "../../domain/iso-week.vo.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+import { weeklyAchievementNotFound } from "../weekly-achievements.errors.js";
 
 export interface GetWeeklyAchievementQuery {
   readonly userId: string;
   readonly year: number;
   readonly week: number;
-  readonly locale: SupportedLocale;
 }
 
-interface GetWeeklyAchievementDependencies {
-  readonly repository: Pick<WeeklyAchievementRepositoryPort, "findByYearAndWeek">;
+export interface GetWeeklyAchievementDependencies {
+  readonly weeklyAchievementRepository: Pick<WeeklyAchievementRepositoryPort, "findByWeek">;
 }
 
 export class GetWeeklyAchievementUseCase {
@@ -27,18 +22,15 @@ export class GetWeeklyAchievementUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetWeeklyAchievementQuery): Promise<WeeklyAchievementView> {
-    const { userId, year, week, locale } = input;
-
-    const row = await this.#dependencies.repository.findByYearAndWeek(userId, year, week);
-
-    if (row == null) {
-      throw new ApplicationException(ErrorCode.ACHIEVEMENT_1801, {
-        year,
-        week,
-      });
+  async execute(query: GetWeeklyAchievementQuery): Promise<WeeklyAchievement> {
+    const isoWeek = IsoWeek.create(query.year, query.week);
+    const achievement = await this.#dependencies.weeklyAchievementRepository.findByWeek({
+      userId: UserId.reconstitute(query.userId),
+      isoWeek,
+    });
+    if (achievement == null) {
+      throw weeklyAchievementNotFound(isoWeek);
     }
-
-    return toWeeklyAchievementView(row, locale);
+    return achievement;
   }
 }

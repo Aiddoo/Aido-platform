@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
@@ -10,6 +11,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 
@@ -43,9 +45,11 @@ export const dailyCompletion = pgTable(
 export const weeklyAchievement = pgTable(
   "WeeklyAchievement",
   {
-    achievedAt: timestamp({ precision: 3 }).notNull(),
+    achievedAt: instant().notNull(),
     completedTodos: integer().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     totalTodos: integer().notNull(),
     userId: text().notNull(),

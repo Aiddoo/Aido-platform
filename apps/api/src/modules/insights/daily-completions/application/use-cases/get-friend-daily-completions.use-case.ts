@@ -1,30 +1,30 @@
-import { ErrorCode } from "@aido/api/errors";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-
-import { buildDailyCompletionsRange } from "../../domain/daily-completion.domain-service.js";
-import type { DailyCompletionsRange } from "../../domain/daily-completion.read-model.js";
-import { type DailyCompletionCachePort } from "../ports/daily-completion-cache.port.js";
-import { type DailyCompletionFollowReaderPort } from "../ports/daily-completion-follow-reader.port.js";
-import { type TodoCompletionRepositoryPort } from "../ports/todo-completion.repository.port.js";
+import { countCompleteDays } from "../../domain/daily-completion.domain-service.js";
+import { DateRange } from "../../domain/date-range.vo.js";
+import { notMutualFriend } from "../daily-completions.errors.js";
+import type { DailyCompletionCachePort } from "../ports/daily-completion-cache.port.js";
+import type { DailyCompletionRepositoryPort } from "../ports/daily-completion.repository.port.js";
+import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { DailyCompletionRange } from "../read-models/daily-completion-range.read-model.js";
 
 export interface GetFriendDailyCompletionsQuery {
   readonly userId: string;
   readonly friendUserId: string;
-  readonly startDate: string;
-  readonly endDate: string;
+  readonly startDate: Temporal.PlainDate;
+  readonly endDate: Temporal.PlainDate;
 }
 
-interface GetFriendDailyCompletionsDependencies {
-  readonly repository: Pick<
-    TodoCompletionRepositoryPort,
-    "aggregatePublicByDateRange" | "findPublicMultiDayTodos"
+export interface GetFriendDailyCompletionsDependencies {
+  readonly dailyCompletionRepository: Pick<
+    DailyCompletionRepositoryPort,
+    "listPublicByDateRange" | "listPublicMultiDayTodoSpans"
   >;
-  readonly cache: Pick<DailyCompletionCachePort, "readPublicRange" | "storePublicRangeIfCurrent">;
-  readonly followReader: Pick<DailyCompletionFollowReaderPort, "isMutualFriend">;
+  readonly dailyCompletionCache: Pick<
+    DailyCompletionCachePort,
+    "readPublicRange" | "storePublicRangeIfCurrent"
+  >;
+  readonly friendshipReader: Pick<FriendshipReaderPort, "isMutualFriend">;
 }
 
 export class GetFriendDailyCompletionsUseCase {
@@ -34,54 +34,34 @@ export class GetFriendDailyCompletionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetFriendDailyCompletionsQuery): Promise<DailyCompletionsRange> {
-    const { userId, friendUserId } = input;
+  async execute(query: GetFriendDailyCompletionsQuery): Promise<DailyCompletionRange> {
+    const { dailyCompletionRepository, dailyCompletionCache, friendshipReader } =
+      this.#dependencies;
+    const friendUserId = UserId.reconstitute(query.friendUserId);
 
-    const isMutualFriend = await this.#dependencies.followReader.isMutualFriend(
-      userId,
-      friendUserId,
-    );
-    if (!isMutualFriend) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0906, {
-        targetUserId: friendUserId,
-      });
+    // 친구가 아니면 날짜를 보기 전에 거절한다(기존 오류 우선순위)
+    if (!(await friendshipReader.isMutualFriend(query.userId, friendUserId.value))) {
+      throw notMutualFriend(friendUserId);
     }
 
-    const start = parseDateOnly(input.startDate);
-    const endInclusive = parseDateOnly(input.endDate);
-
-    const startKey = toDateString(start);
-    const endKey = toDateString(endInclusive);
-
-    const cacheRead = await this.#dependencies.cache.readPublicRange(
-      friendUserId,
-      startKey,
-      endKey,
-    );
-    if (cacheRead.value != null) {
-      return cacheRead.value;
+    const range = DateRange.create(query.startDate, query.endDate);
+    const cached = await dailyCompletionCache.readPublicRange(friendUserId, range);
+    if (cached.value != null) {
+      return cached.value;
     }
 
-    const range = { userId: friendUserId, startDate: start, endDate: addDays(1, endInclusive) };
-    const [aggregates, multiDayTodos] = await Promise.all([
-      this.#dependencies.repository.aggregatePublicByDateRange(range),
-      this.#dependencies.repository.findPublicMultiDayTodos(range),
+    const [completions, multiDayTodos] = await Promise.all([
+      dailyCompletionRepository.listPublicByDateRange({ userId: friendUserId, range }),
+      dailyCompletionRepository.listPublicMultiDayTodoSpans({ userId: friendUserId, range }),
     ]);
-
-    const result = buildDailyCompletionsRange(
-      aggregates,
-      { startDate: input.startDate, endDate: input.endDate },
+    const result: DailyCompletionRange = {
+      range,
+      completions,
+      totalCompleteDays: countCompleteDays(completions),
       multiDayTodos,
-    );
+    };
 
-    await this.#dependencies.cache.storePublicRangeIfCurrent(
-      friendUserId,
-      startKey,
-      endKey,
-      cacheRead.generation,
-      result,
-    );
-
+    await dailyCompletionCache.storePublicRangeIfCurrent(friendUserId, cached.generation, result);
     return result;
   }
 }

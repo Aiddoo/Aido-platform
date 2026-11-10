@@ -1,43 +1,36 @@
+import { InMemoryWeeklyAchievementRepository } from "#test/doubles/insights/in-memory-weekly-achievement.repository";
 import {
-  createInsightsFixture,
   createWeeklyAchievementFixture,
-  INSIGHTS_TIME,
-} from "#test/fixtures/insights.fixture";
+  WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+} from "#test/fixtures/insights/weekly-achievement.fixture";
 
 import { ListWeeklyAchievementsUseCase } from "./list-weekly-achievements.use-case.js";
 
-describe("ListWeeklyAchievementsUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
+function useCaseWith(weeks: readonly number[]) {
+  return new ListWeeklyAchievementsUseCase({
+    weeklyAchievementRepository: new InMemoryWeeklyAchievementRepository(
+      weeks.map((week) =>
+        createWeeklyAchievementFixture({ id: week, week, totalTodos: 5, completedTodos: 5 }),
+      ),
+    ),
   });
-  afterEach(() => vi.useRealTimers());
+}
 
-  it("페이지 밖의 주차도 연도 요약에 포함하고 다음 커서를 마지막 노출 주차로 반환한다", async () => {
+describe("ListWeeklyAchievementsUseCase", () => {
+  it("페이지 밖의 주도 연도 요약에 넣고 다음 커서를 마지막으로 보인 주로 준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const records = [1, 2, 3].map((week) =>
-      createWeeklyAchievementFixture({ id: week, week, totalTodos: 5, completedTodos: 5 }),
-    );
-    const key = JSON.stringify([fixture.userId, 2026]);
-    fixture.weeklyRepository.pages.set(key, [...records].reverse());
-    fixture.weeklyRepository.years.set(key, records);
-    const query = vi.spyOn(fixture.weeklyRepository, "findByYear");
-    const useCase = new ListWeeklyAchievementsUseCase({
-      repository: fixture.weeklyRepository,
-      paginationService: fixture.paginationService,
-    });
+    const useCase = useCaseWith([1, 2, 3]);
+
     // When
     const result = await useCase.execute({
-      userId: fixture.userId,
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
       year: 2026,
       size: 2,
-      locale: "ko",
     });
+
     // Then
-    expect(query).toHaveBeenCalledWith(fixture.userId, 2026, undefined, 3);
-    expect(result.items.map((item) => item.week)).toEqual([3, 2]);
-    expect(result.pagination).toEqual({ nextCursor: 2, hasNext: true, size: 2 });
+    expect(result.page.items.map((item) => item.isoWeek.week)).toEqual([3, 2]);
+    expect(result.page.pagination).toEqual({ nextCursor: 2, hasNext: true, size: 2 });
     expect(result.summary).toEqual({
       totalWeeks: 3,
       perfectWeeks: 3,
@@ -47,41 +40,36 @@ describe("ListWeeklyAchievementsUseCase", () => {
     });
   });
 
-  it("정확히 페이지 크기만큼 남으면 마지막 페이지로 반환한다", async () => {
+  it("커서 주 다음부터 이어 주고 정확히 페이지 크기만큼 남으면 마지막 페이지다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const records = [2, 1].map((week) => createWeeklyAchievementFixture({ id: week, week }));
-    const key = JSON.stringify([fixture.userId, 2026]);
-    fixture.weeklyRepository.pages.set(key, records);
-    fixture.weeklyRepository.years.set(key, records);
-    const useCase = new ListWeeklyAchievementsUseCase({
-      repository: fixture.weeklyRepository,
-      paginationService: fixture.paginationService,
-    });
+    const useCase = useCaseWith([1, 2, 3]);
+
     // When
     const result = await useCase.execute({
-      userId: fixture.userId,
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
       year: 2026,
+      cursor: 3,
       size: 2,
-      locale: "ko",
     });
+
     // Then
-    expect(result.items.map((item) => item.week)).toEqual([2, 1]);
-    expect(result.pagination).toEqual({ nextCursor: null, hasNext: false, size: 2 });
+    expect(result.page.items.map((item) => item.isoWeek.week)).toEqual([2, 1]);
+    expect(result.page.pagination).toEqual({ nextCursor: null, hasNext: false, size: 2 });
   });
 
-  it("기록 없는 연도는 기본 페이지 크기와 빈 요약을 반환한다", async () => {
+  it("기록 없는 연도는 기본 페이지 크기와 빈 요약을 준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    const useCase = new ListWeeklyAchievementsUseCase({
-      repository: fixture.weeklyRepository,
-      paginationService: fixture.paginationService,
-    });
+    const useCase = useCaseWith([]);
+
     // When
-    const result = await useCase.execute({ userId: fixture.userId, year: 2026, locale: "ko" });
+    const result = await useCase.execute({
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+      year: 2026,
+    });
+
     // Then
-    expect(result.items).toEqual([]);
-    expect(result.pagination).toEqual({ nextCursor: null, hasNext: false, size: 20 });
+    expect(result.page.items).toEqual([]);
+    expect(result.page.pagination).toEqual({ nextCursor: null, hasNext: false, size: 20 });
     expect(result.summary).toEqual({
       totalWeeks: 0,
       perfectWeeks: 0,

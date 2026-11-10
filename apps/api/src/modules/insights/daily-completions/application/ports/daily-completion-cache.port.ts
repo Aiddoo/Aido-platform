@@ -1,32 +1,30 @@
-import type { DailyCompletionsRange } from "../../domain/daily-completion.read-model.js";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export const DAILY_COMPLETION_CACHE = Symbol("DAILY_COMPLETION_CACHE");
+import type { DateRange } from "../../domain/date-range.vo.js";
+import type { DailyCompletionRange } from "../read-models/daily-completion-range.read-model.js";
 
 export interface DailyCompletionCacheRead {
+  /** 읽은 시점의 사용자 캐시 세대. 같은 세대일 때만 저장해 무효화 뒤 늦게 끝난 조회가 덮어쓰지 않는다 */
   readonly generation: string;
-  readonly value: DailyCompletionsRange | undefined;
+  readonly value: DailyCompletionRange | null;
 }
 
-export interface DailyCompletionCachePort {
-  readRange(userId: string, startDate: string, endDate: string): Promise<DailyCompletionCacheRead>;
-  storeRangeIfCurrent(
-    userId: string,
-    startDate: string,
-    endDate: string,
+/** 본인 조회와 친구(공개) 조회를 나눠 담고, 할 일이 바뀌면 사용자 단위로 모두 버린다 */
+export abstract class DailyCompletionCachePort {
+  abstract readRange(userId: UserId, range: DateRange): Promise<DailyCompletionCacheRead>;
+  abstract storeRangeIfCurrent(
+    userId: UserId,
     generation: string,
-    value: DailyCompletionsRange,
+    value: DailyCompletionRange,
   ): Promise<void>;
-  readPublicRange(
-    ownerUserId: string,
-    startDate: string,
-    endDate: string,
+  abstract readPublicRange(
+    ownerUserId: UserId,
+    range: DateRange,
   ): Promise<DailyCompletionCacheRead>;
-  storePublicRangeIfCurrent(
-    ownerUserId: string,
-    startDate: string,
-    endDate: string,
+  abstract storePublicRangeIfCurrent(
+    ownerUserId: UserId,
     generation: string,
-    value: DailyCompletionsRange,
+    value: DailyCompletionRange,
   ): Promise<void>;
-  invalidate(userId: string): Promise<void>;
+  abstract invalidate(userId: UserId): Promise<void>;
 }

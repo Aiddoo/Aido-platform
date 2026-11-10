@@ -1,36 +1,30 @@
-import type {
-  WeeklyAchievementRow,
-  WeeklyAchievementUpsert,
-} from "../../domain/weekly-achievement.read-model.js";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-/** WeeklyAchievementRepositoryPort DI 토큰 */
-export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol("WEEKLY_ACHIEVEMENT_REPOSITORY");
+import type { IsoWeek } from "../../domain/iso-week.vo.js";
+import type { WeeklyAchievementId } from "../../domain/weekly-achievement-id.vo.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
 
-/**
- * 주간 달성 저장소 포트.
- *
- * 조회(연도별 커서 페이지네이션·연도 전체·단일 주차)와 일괄 upsert를 추상화한다.
- * 영속 방식(트랜잭션)은 인프라 어댑터가 담당한다.
- */
-export interface WeeklyAchievementRepositoryPort {
-  /** 연도별 주간 달성 기록을 커서 기반 페이지네이션으로 조회 (week 내림차순) */
-  findByYear(
-    userId: string,
-    year: number,
-    cursor: number | undefined,
-    take: number,
-  ): Promise<WeeklyAchievementRow[]>;
-
-  /** 특정 연도의 모든 주간 달성 기록 (week 오름차순, summary 계산용) */
-  findAllByYear(userId: string, year: number): Promise<WeeklyAchievementRow[]>;
-
-  /** 특정 연도/주차의 달성 기록 (없으면 null) */
-  findByYearAndWeek(
-    userId: string,
-    year: number,
-    week: number,
-  ): Promise<WeeklyAchievementRow | null>;
-
-  /** 여러 주간 달성 기록을 트랜잭션으로 일괄 upsert */
-  upsertMany(snapshots: readonly WeeklyAchievementUpsert[]): Promise<void>;
+export abstract class WeeklyAchievementRepositoryPort {
+  abstract nextIds(count: number): Promise<WeeklyAchievementId[]>;
+  /** 주 내림차순. afterWeek 주가 그 사용자·연도에 없으면 빈 목록이다 */
+  abstract listByYear(params: {
+    readonly userId: UserId;
+    readonly year: number;
+    readonly afterWeek: number | null;
+    readonly limit: number;
+  }): Promise<WeeklyAchievement[]>;
+  /** 한 해 기록 전부(주 오름차순) */
+  abstract listAllByYear(params: {
+    readonly userId: UserId;
+    readonly year: number;
+  }): Promise<WeeklyAchievement[]>;
+  abstract findByWeek(params: {
+    readonly userId: UserId;
+    readonly isoWeek: IsoWeek;
+  }): Promise<WeeklyAchievement | null>;
+  /**
+   * 한 문장으로 모두 저장하고 하나라도 실패하면 아무것도 남기지 않는다.
+   * 같은 사용자·주가 이미 있으면 처음 id를 두고 할 일 수·달성 시각만 바꾸며, 묶음 안 같은 주는 마지막 값이 이긴다
+   */
+  abstract saveAll(achievements: readonly WeeklyAchievement[]): Promise<void>;
 }

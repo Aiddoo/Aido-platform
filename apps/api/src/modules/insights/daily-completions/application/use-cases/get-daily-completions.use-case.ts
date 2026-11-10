@@ -1,24 +1,26 @@
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { buildDailyCompletionsRange } from "../../domain/daily-completion.domain-service.js";
-import type { DailyCompletionsRange } from "../../domain/daily-completion.read-model.js";
-import { type DailyCompletionCachePort } from "../ports/daily-completion-cache.port.js";
-import { type TodoCompletionRepositoryPort } from "../ports/todo-completion.repository.port.js";
+import { countCompleteDays } from "../../domain/daily-completion.domain-service.js";
+import { DateRange } from "../../domain/date-range.vo.js";
+import type { DailyCompletionCachePort } from "../ports/daily-completion-cache.port.js";
+import type { DailyCompletionRepositoryPort } from "../ports/daily-completion.repository.port.js";
+import type { DailyCompletionRange } from "../read-models/daily-completion-range.read-model.js";
 
 export interface GetDailyCompletionsQuery {
   readonly userId: string;
-  readonly startDate: string;
-  readonly endDate: string;
+  readonly startDate: Temporal.PlainDate;
+  readonly endDate: Temporal.PlainDate;
 }
 
-interface GetDailyCompletionsDependencies {
-  readonly repository: Pick<
-    TodoCompletionRepositoryPort,
-    "aggregateByDateRange" | "findMultiDayTodos"
+export interface GetDailyCompletionsDependencies {
+  readonly dailyCompletionRepository: Pick<
+    DailyCompletionRepositoryPort,
+    "listByDateRange" | "listMultiDayTodoSpans"
   >;
-  readonly cache: Pick<DailyCompletionCachePort, "readRange" | "storeRangeIfCurrent">;
+  readonly dailyCompletionCache: Pick<
+    DailyCompletionCachePort,
+    "readRange" | "storeRangeIfCurrent"
+  >;
 }
 
 export class GetDailyCompletionsUseCase {
@@ -28,38 +30,28 @@ export class GetDailyCompletionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetDailyCompletionsQuery): Promise<DailyCompletionsRange> {
-    const start = parseDateOnly(input.startDate);
-    const endInclusive = parseDateOnly(input.endDate);
+  async execute(query: GetDailyCompletionsQuery): Promise<DailyCompletionRange> {
+    const { dailyCompletionRepository, dailyCompletionCache } = this.#dependencies;
+    const userId = UserId.reconstitute(query.userId);
+    const range = DateRange.create(query.startDate, query.endDate);
 
-    const startKey = toDateString(start);
-    const endKey = toDateString(endInclusive);
-
-    const cacheRead = await this.#dependencies.cache.readRange(input.userId, startKey, endKey);
-    if (cacheRead.value != null) {
-      return cacheRead.value;
+    const cached = await dailyCompletionCache.readRange(userId, range);
+    if (cached.value != null) {
+      return cached.value;
     }
 
-    const range = { userId: input.userId, startDate: start, endDate: addDays(1, endInclusive) };
-    const [aggregates, multiDayTodos] = await Promise.all([
-      this.#dependencies.repository.aggregateByDateRange(range),
-      this.#dependencies.repository.findMultiDayTodos(range),
+    const [completions, multiDayTodos] = await Promise.all([
+      dailyCompletionRepository.listByDateRange({ userId, range }),
+      dailyCompletionRepository.listMultiDayTodoSpans({ userId, range }),
     ]);
-
-    const result = buildDailyCompletionsRange(
-      aggregates,
-      { startDate: input.startDate, endDate: input.endDate },
+    const result: DailyCompletionRange = {
+      range,
+      completions,
+      totalCompleteDays: countCompleteDays(completions),
       multiDayTodos,
-    );
+    };
 
-    await this.#dependencies.cache.storeRangeIfCurrent(
-      input.userId,
-      startKey,
-      endKey,
-      cacheRead.generation,
-      result,
-    );
-
+    await dailyCompletionCache.storeRangeIfCurrent(userId, cached.generation, result);
     return result;
   }
 }

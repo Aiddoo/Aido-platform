@@ -1,34 +1,32 @@
-import { type FactoryProvider } from "@nestjs/common";
+import type { Provider } from "@nestjs/common";
 
-import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port.js";
-import { DAILY_COMPLETION_FOLLOW_READER } from "./application/ports/daily-completion-follow-reader.port.js";
-import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port.js";
+import { FOLLOW_READER } from "#api/modules/social/social-friends.public";
+import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+
+import { DailyCompletionCachePort } from "./application/ports/daily-completion-cache.port.js";
+import { DailyCompletionRepositoryPort } from "./application/ports/daily-completion.repository.port.js";
+import { FriendshipReaderPort } from "./application/ports/friendship.reader.port.js";
 import { GetDailyCompletionsUseCase } from "./application/use-cases/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletionsUseCase } from "./application/use-cases/get-friend-daily-completions.use-case.js";
+import { DailyCompletionCache } from "./infrastructure/cache/daily-completion.cache.js";
+import { DailyCompletionCacheEventHandler } from "./infrastructure/event-handlers/daily-completion-cache.event-handler.js";
+import { DrizzleDailyCompletionRepository } from "./infrastructure/persistence/drizzle-daily-completion.repository.js";
 
-export const getDailyCompletionsProvider: FactoryProvider<GetDailyCompletionsUseCase> = {
-  provide: GetDailyCompletionsUseCase,
-  inject: [TODO_COMPLETION_REPOSITORY, DAILY_COMPLETION_CACHE],
-  useFactory: (
-    repository: ConstructorParameters<typeof GetDailyCompletionsUseCase>[0]["repository"],
-    cache: ConstructorParameters<typeof GetDailyCompletionsUseCase>[0]["cache"],
-  ) => new GetDailyCompletionsUseCase({ repository, cache }),
-};
-
-export const getFriendDailyCompletionsProvider: FactoryProvider<GetFriendDailyCompletionsUseCase> =
-  {
-    provide: GetFriendDailyCompletionsUseCase,
-    inject: [TODO_COMPLETION_REPOSITORY, DAILY_COMPLETION_CACHE, DAILY_COMPLETION_FOLLOW_READER],
-    useFactory: (
-      repository: ConstructorParameters<typeof GetFriendDailyCompletionsUseCase>[0]["repository"],
-      cache: ConstructorParameters<typeof GetFriendDailyCompletionsUseCase>[0]["cache"],
-      followReader: ConstructorParameters<
-        typeof GetFriendDailyCompletionsUseCase
-      >[0]["followReader"],
-    ) =>
-      new GetFriendDailyCompletionsUseCase({
-        repository,
-        cache,
-        followReader,
-      }),
-  };
+export const INSIGHTS_DAILY_COMPLETIONS_PROVIDERS = [
+  { provide: DailyCompletionRepositoryPort, useClass: DrizzleDailyCompletionRepository },
+  { provide: DailyCompletionCachePort, useClass: DailyCompletionCache },
+  { provide: FriendshipReaderPort, useExisting: FOLLOW_READER },
+  provideUseCase(DailyCompletionCacheEventHandler, {
+    dailyCompletionCache: DailyCompletionCachePort,
+    logger: loggerFor(DailyCompletionCacheEventHandler),
+  }),
+  provideUseCase(GetDailyCompletionsUseCase, {
+    dailyCompletionRepository: DailyCompletionRepositoryPort,
+    dailyCompletionCache: DailyCompletionCachePort,
+  }),
+  provideUseCase(GetFriendDailyCompletionsUseCase, {
+    dailyCompletionRepository: DailyCompletionRepositoryPort,
+    dailyCompletionCache: DailyCompletionCachePort,
+    friendshipReader: FriendshipReaderPort,
+  }),
+] satisfies Provider[];

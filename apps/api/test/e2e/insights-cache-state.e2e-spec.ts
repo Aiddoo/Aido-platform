@@ -2,17 +2,14 @@ import { dailyCompletionsRangeResponseSchema } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  TODO_COMPLETION_REPOSITORY,
-  type TodoCompletionRepositoryPort,
-} from "#api/modules/insights/daily-completions/application/ports/todo-completion.repository.port";
+import { DailyCompletionRepositoryPort } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
 import { todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
+import { DAILY_COMPLETION_FIXTURE_NOW } from "#test/fixtures/insights/daily-completion.fixture";
 
 describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   let context: E2eTestContext;
@@ -22,7 +19,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   beforeEach(async () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
+    vi.setSystemTime(DAILY_COMPLETION_FIXTURE_NOW.epochMilliseconds);
   });
 
   afterEach(() => vi.useRealTimers());
@@ -112,14 +109,14 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   it("이전 집계 조회와 완료 쓰기가 겹쳐도 이후 응답은 새 완료 상태를 유지해야 한다", async () => {
     // Given
     const { user, todoId } = await prepare("insights-cache-race@example.com");
-    const repository = context.app.get<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY);
-    const original = repository.aggregateByDateRange.bind(repository);
+    const repository = context.app.get(DailyCompletionRepositoryPort);
+    const original = repository.listByDateRange.bind(repository);
     const entered = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const aggregate = vi
-      .spyOn(repository, "aggregateByDateRange")
-      .mockImplementationOnce(async (params) => {
-        const result = await original(params);
+      .spyOn(repository, "listByDateRange")
+      .mockImplementationOnce(async (query) => {
+        const result = await original(query);
         entered.resolve();
         await release.promise;
         return result;

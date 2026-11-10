@@ -1,14 +1,20 @@
-import { buildWeeklyAchievementSnapshot } from "../../domain/weekly-achievement.domain-service.js";
-import type { WeeklyAchievementUpsert } from "../../domain/weekly-achievement.read-model.js";
-import type { WeeklyAchievementWriterPort } from "../ports/weekly-achievement-writer.port.js";
-import { type WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+import { zip } from "es-toolkit";
 
-export interface RecordWeeklyAchievementsCommand {
-  readonly records: readonly WeeklyAchievementUpsert[];
-}
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
-interface RecordWeeklyAchievementsDependencies {
-  readonly repository: Pick<WeeklyAchievementRepositoryPort, "upsertMany">;
+import { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type {
+  RecordWeeklyAchievementsCommand,
+  WeeklyAchievementWriterPort,
+} from "../ports/weekly-achievement-writer.port.js";
+import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+
+export interface RecordWeeklyAchievementsDependencies {
+  readonly weeklyAchievementRepository: Pick<
+    WeeklyAchievementRepositoryPort,
+    "nextIds" | "saveAll"
+  >;
 }
 
 export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterPort {
@@ -18,12 +24,27 @@ export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterP
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RecordWeeklyAchievementsCommand): Promise<void> {
-    if (input.records.length === 0) {
+  async execute(command: RecordWeeklyAchievementsCommand): Promise<void> {
+    const { weeklyAchievementRepository } = this.#dependencies;
+    if (command.records.length === 0) {
       return;
     }
 
-    const snapshots = input.records.map(buildWeeklyAchievementSnapshot);
-    await this.#dependencies.repository.upsertMany(snapshots);
+    const ids = await weeklyAchievementRepository.nextIds(command.records.length);
+    const achievements = zip(command.records, ids).map(([record, id]) => {
+      if (record == null || id == null) {
+        throw new Error("weekly achievement id count must match record count");
+      }
+      return WeeklyAchievement.create({
+        id,
+        userId: UserId.reconstitute(record.userId),
+        year: record.year,
+        week: record.week,
+        totalTodos: record.totalTodos,
+        completedTodos: record.completedTodos,
+        achievedAt: instantFromDate(record.achievedAt),
+      });
+    });
+    await weeklyAchievementRepository.saveAll(achievements);
   }
 }

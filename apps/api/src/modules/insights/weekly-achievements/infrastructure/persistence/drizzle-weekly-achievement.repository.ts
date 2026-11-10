@@ -3,16 +3,19 @@ import { Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { weeklyAchievement } from "#api/platform/database/schema/index";
+import { weeklyAchievement as weeklyAchievementTable } from "#api/platform/database/schema/insights.schema";
+import { nextSequenceValues } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port.js";
-import type {
-  WeeklyAchievementRow,
-  WeeklyAchievementUpsert,
-} from "../../domain/weekly-achievement.read-model.js";
+import { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port.js";
+import type { IsoWeek } from "../../domain/iso-week.vo.js";
+import { WeeklyAchievementId } from "../../domain/weekly-achievement-id.vo.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import { toWeeklyAchievement, toWeeklyAchievementRow } from "./weekly-achievement-row.mapper.js";
 
-const rowColumns = {
+const ROW_COLUMNS = {
   id: true,
+  userId: true,
   year: true,
   week: true,
   totalTodos: true,
@@ -32,68 +35,87 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
     return this.#txHost.tx;
   }
 
-  async findByYear(
-    userId: string,
-    year: number,
-    cursor: number | undefined,
-    take: number,
-  ): Promise<WeeklyAchievementRow[]> {
-    if (cursor != null) {
+  async nextIds(count: number): Promise<WeeklyAchievementId[]> {
+    const values = await nextSequenceValues(this.#db, weeklyAchievementTable.id, count);
+    return values.map((value) => WeeklyAchievementId.reconstitute(value));
+  }
+
+  async listByYear(params: {
+    readonly userId: UserId;
+    readonly year: number;
+    readonly afterWeek: number | null;
+    readonly limit: number;
+  }): Promise<WeeklyAchievement[]> {
+    const { year, afterWeek, limit } = params;
+    const userId = params.userId.value;
+    if (afterWeek != null) {
       const anchor = await this.#db.query.weeklyAchievement.findFirst({
         columns: { id: true },
-        where: { userId, year, week: cursor },
+        where: { userId, year, week: afterWeek },
       });
       if (anchor == null) {
         return [];
       }
     }
 
-    return this.#db.query.weeklyAchievement.findMany({
-      columns: rowColumns,
-      where: { userId, year, ...(cursor == null ? {} : { week: { lt: cursor } }) },
+    const rows = await this.#db.query.weeklyAchievement.findMany({
+      columns: ROW_COLUMNS,
+      where: { userId, year, ...(afterWeek == null ? {} : { week: { lt: afterWeek } }) },
       orderBy: { week: "desc" },
-      limit: take,
+      limit,
     });
+    return rows.map(toWeeklyAchievement);
   }
 
-  findAllByYear(userId: string, year: number): Promise<WeeklyAchievementRow[]> {
-    return this.#db.query.weeklyAchievement.findMany({
-      columns: rowColumns,
-      where: { userId, year },
+  async listAllByYear(params: {
+    readonly userId: UserId;
+    readonly year: number;
+  }): Promise<WeeklyAchievement[]> {
+    const rows = await this.#db.query.weeklyAchievement.findMany({
+      columns: ROW_COLUMNS,
+      where: { userId: params.userId.value, year: params.year },
       orderBy: { week: "asc" },
     });
+    return rows.map(toWeeklyAchievement);
   }
 
-  async findByYearAndWeek(
-    userId: string,
-    year: number,
-    week: number,
-  ): Promise<WeeklyAchievementRow | null> {
+  async findByWeek(params: {
+    readonly userId: UserId;
+    readonly isoWeek: IsoWeek;
+  }): Promise<WeeklyAchievement | null> {
     const row = await this.#db.query.weeklyAchievement.findFirst({
-      columns: rowColumns,
-      where: { userId, year, week },
+      columns: ROW_COLUMNS,
+      where: {
+        userId: params.userId.value,
+        year: params.isoWeek.year,
+        week: params.isoWeek.week,
+      },
     });
-    return row ?? null;
+    return row == null ? null : toWeeklyAchievement(row);
   }
 
-  async upsertMany(snapshots: readonly WeeklyAchievementUpsert[]): Promise<void> {
-    if (snapshots.length === 0) {
+  async saveAll(achievements: readonly WeeklyAchievement[]): Promise<void> {
+    if (achievements.length === 0) {
       return;
     }
 
     // 한 문장에 같은 키가 둘이면 ON CONFLICT DO UPDATE가 실패하므로 마지막 값만 남긴다
     const latestByWeek = new Map(
-      snapshots.map((snapshot) => [
-        `${snapshot.userId}:${snapshot.year}:${snapshot.week}`,
-        snapshot,
+      achievements.map((achievement) => [
+        `${achievement.userId.value}:${achievement.isoWeek.year}:${achievement.isoWeek.week}`,
+        toWeeklyAchievementRow(achievement),
       ]),
     );
 
     await this.#db
-      .insert(weeklyAchievement)
+      .insert(weeklyAchievementTable)
       .values([...latestByWeek.values()])
       .onConflictDoUpdate({
-        target: [weeklyAchievement.userId, weeklyAchievement.year, weeklyAchievement.week],
+        target: [
+          weeklyAchievementTable.userId,
+          weeklyAchievementTable.year,
+          weeklyAchievementTable.week,
+        ],
         set: {
           totalTodos: sql`excluded."totalTodos"`,
           completedTodos: sql`excluded."completedTodos"`,

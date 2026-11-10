@@ -1,4 +1,3 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import {
@@ -18,13 +17,12 @@ import {
   type TodoUpdatedEvent,
   type TodoVisibilityChangedEvent,
 } from "#api/modules/planning/todos/planning-todos.public";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { DailyCompletionLogEvent } from "../../application/daily-completions.log-events.js";
-import {
-  DAILY_COMPLETION_CACHE,
-  type DailyCompletionCachePort,
-} from "../../application/ports/daily-completion-cache.port.js";
+import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port.js";
 
 type CompletionSourceChangedEvent =
   | TodoCreatedEvent
@@ -39,14 +37,17 @@ type CompletionSourceChangedEvent =
   | TodoCategoryUpdatedEvent
   | TodoCategoryDeletedEvent;
 
-@Injectable()
+export interface DailyCompletionCacheEventHandlerDependencies {
+  readonly dailyCompletionCache: Pick<DailyCompletionCachePort, "invalidate">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
+}
+
+// planning이 새 이벤트를 아직 내지 않아 옛 in-process 이벤트를 구독한다(delivery: "after-commit" 구독 전환은 후속)
 export class DailyCompletionCacheEventHandler {
-  readonly #logger = new Logger(DailyCompletionCacheEventHandler.name);
+  readonly #dependencies: DailyCompletionCacheEventHandlerDependencies;
 
-  readonly #cache: DailyCompletionCachePort;
-
-  constructor(@Inject(DAILY_COMPLETION_CACHE) cache: DailyCompletionCachePort) {
-    this.#cache = cache;
+  constructor(dependencies: DailyCompletionCacheEventHandlerDependencies) {
+    this.#dependencies = dependencies;
   }
 
   // 주의: @OnEvent에 배열을 넘기면 EventEmitter2가 "다중 구독"이 아니라
@@ -64,9 +65,9 @@ export class DailyCompletionCacheEventHandler {
   @OnEvent(TODO_CATEGORY_EVENTS.DELETED)
   async handle(event: CompletionSourceChangedEvent): Promise<void> {
     try {
-      await this.#cache.invalidate(event.userId);
+      await this.#dependencies.dailyCompletionCache.invalidate(UserId.reconstitute(event.userId));
     } catch (error) {
-      this.#logger.warn({
+      this.#dependencies.logger.warn({
         event: DailyCompletionLogEvent.CACHE_INVALIDATION_FAILED,
         userId: event.userId,
         errorType: toErrorType(error),

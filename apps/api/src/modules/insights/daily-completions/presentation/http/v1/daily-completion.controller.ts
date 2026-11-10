@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiDoc,
@@ -17,7 +18,7 @@ import {
 
 import { GetDailyCompletionsUseCase } from "../../../application/use-cases/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletionsUseCase } from "../../../application/use-cases/get-friend-daily-completions.use-case.js";
-import type { DailyCompletionsRange } from "../../../domain/daily-completion.read-model.js";
+import { toDailyCompletionsRangeResponse } from "./daily-completion-response.mapper.js";
 import {
   DailyCompletionsRangeResponseDto,
   GetDailyCompletionsRangeDto,
@@ -25,7 +26,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.DAILY_COMPLETIONS)
 @ApiBearerAuth()
-@Controller("daily-completions")
+@Controller({ path: "daily-completions", version: API_VERSION.V1 })
 export class DailyCompletionController {
   readonly #readDailyCompletions: GetDailyCompletionsUseCase;
   readonly #readFriendDailyCompletions: GetFriendDailyCompletionsUseCase;
@@ -133,11 +134,11 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
   ): Promise<DailyCompletionsRangeResponseDto> {
     const result = await this.#readDailyCompletions.execute({
       userId: user.userId,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      startDate: Temporal.PlainDate.from(query.startDate),
+      endDate: Temporal.PlainDate.from(query.endDate),
     });
 
-    return this.#mapToResponse(result);
+    return toDailyCompletionsRangeResponse(result);
   }
 
   @Get("friends/:userId")
@@ -196,29 +197,10 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
     const result = await this.#readFriendDailyCompletions.execute({
       userId: user.userId,
       friendUserId: params.userId,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      startDate: Temporal.PlainDate.from(query.startDate),
+      endDate: Temporal.PlainDate.from(query.endDate),
     });
 
-    return this.#mapToResponse(result);
-  }
-
-  #mapToResponse(result: DailyCompletionsRange): DailyCompletionsRangeResponseDto {
-    return {
-      completions: result.completions.map((completion) => ({
-        date: completion.date,
-        totalTodos: completion.totalTodos,
-        completedTodos: completion.completedTodos,
-        isComplete: completion.isComplete,
-        completionRate: completion.completionRate,
-        categoryColors: [...completion.categoryColors],
-      })),
-      totalCompleteDays: result.totalCompleteDays,
-      multiDayTodos: result.multiDayTodos?.map((todo) => ({ ...todo })),
-      dateRange: {
-        startDate: result.dateRange.startDate,
-        endDate: result.dateRange.endDate,
-      },
-    };
+    return toDailyCompletionsRangeResponse(result);
   }
 }

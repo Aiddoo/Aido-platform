@@ -1,68 +1,50 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { InMemoryWeeklyAchievementRepository } from "#test/doubles/insights/in-memory-weekly-achievement.repository";
 import {
-  createInsightsFixture,
   createWeeklyAchievementFixture,
-  INSIGHTS_TIME,
-} from "#test/fixtures/insights.fixture";
+  WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
+  WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+} from "#test/fixtures/insights/weekly-achievement.fixture";
 
 import { GetWeeklyAchievementUseCase } from "./get-weekly-achievement.use-case.js";
 
 describe("GetWeeklyAchievementUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
-  it.each([
-    { locale: "ko", label: "3월 1주차" },
-    { locale: "en", label: "Week 1 of Mar" },
-  ] satisfies ReadonlyArray<{ locale: SupportedLocale; label: string }>)(
-    "$locale 조회에서 같은 기록의 완료율·주간 날짜를 유지하고 라벨을 번역한다",
-    async ({ locale, label }) => {
-      // Given
-      const fixture = createInsightsFixture();
-      fixture.weeklyRepository.rows.set(
-        JSON.stringify([fixture.userId, 2026, 10]),
-        createWeeklyAchievementFixture(),
-      );
-      const useCase = new GetWeeklyAchievementUseCase({ repository: fixture.weeklyRepository });
-      // When
-      const result = await useCase.execute({
-        userId: fixture.userId,
-        year: 2026,
-        week: 10,
-        locale,
-      });
-      // Then
-      expect(result).toEqual({
-        id: 1,
-        year: 2026,
-        week: 10,
-        weekLabel: label,
-        dateRange: { startDate: "2026-03-02", endDate: "2026-03-08" },
-        totalTodos: 10,
-        completedTodos: 7,
-        completionRate: 70,
-        achievedAt: "2026-03-09T00:00:00.000Z",
-      });
-    },
-  );
-
-  it("다른 사용자의 기록으로 요청자의 누락된 주차를 채우지 않는다", async () => {
+  it("요청한 사용자의 그 주 기록을 돌려준다", async () => {
     // Given
-    const fixture = createInsightsFixture();
-    fixture.weeklyRepository.rows.set(
-      JSON.stringify([fixture.viewerId, 2026, 10]),
-      createWeeklyAchievementFixture(),
-    );
-    const useCase = new GetWeeklyAchievementUseCase({ repository: fixture.weeklyRepository });
-    // When, Then
-    await expect(
-      useCase.execute({ userId: fixture.userId, year: 2026, week: 10, locale: "ko" }),
-    ).rejects.toMatchObject({
+    const achievement = createWeeklyAchievementFixture({ year: 2026, week: 10 });
+    const useCase = new GetWeeklyAchievementUseCase({
+      weeklyAchievementRepository: new InMemoryWeeklyAchievementRepository([achievement]),
+    });
+
+    // When
+    const found = await useCase.execute({
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+      year: 2026,
+      week: 10,
+    });
+
+    // Then
+    expect(found.toPrimitives()).toEqual(achievement.toPrimitives());
+  });
+
+  it("다른 사용자의 기록으로 요청자의 빈 주를 채우지 않고 ACHIEVEMENT_1801로 거절한다", async () => {
+    // Given
+    const useCase = new GetWeeklyAchievementUseCase({
+      weeklyAchievementRepository: new InMemoryWeeklyAchievementRepository([
+        createWeeklyAchievementFixture({ userId: WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID }),
+      ]),
+    });
+
+    // When
+    const execution = useCase.execute({
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+      year: 2026,
+      week: 10,
+    });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({
       errorCode: ErrorCode.ACHIEVEMENT_1801,
       details: { year: 2026, week: 10 },
     });

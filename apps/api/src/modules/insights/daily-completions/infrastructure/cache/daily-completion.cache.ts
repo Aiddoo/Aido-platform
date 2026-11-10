@@ -3,23 +3,29 @@ import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   DailyCompletionCachePort,
   DailyCompletionCacheRead,
 } from "../../application/ports/daily-completion-cache.port.js";
-import type { DailyCompletionsRange } from "../../domain/daily-completion.read-model.js";
+import type { DailyCompletionRange } from "../../application/read-models/daily-completion-range.read-model.js";
+import { DailyCompletion } from "../../domain/daily-completion.entity.js";
+import { DateRange } from "../../domain/date-range.vo.js";
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DAILY_COMPLETION_GENERATION_TTL_MS,
   DailyCompletionCacheKey,
 } from "./daily-completion.keyspace.js";
 
-const DAILY_COMPLETIONS_RANGE_SCHEMA = z.object({
+const PLAIN_DATE_SCHEMA = z.iso.date().transform((value) => Temporal.PlainDate.from(value));
+
+// 배포 사이 이전·다음 버전이 같은 키를 읽으므로 저장 모양은 응답 계약과 같은 JSON 그대로 둔다
+const CACHED_RANGE_SCHEMA = z.object({
   completions: z.array(
     z.object({
-      date: z.string(),
+      date: PLAIN_DATE_SCHEMA,
       totalTodos: z.number(),
       completedTodos: z.number(),
       isComplete: z.boolean(),
@@ -31,122 +37,172 @@ const DAILY_COMPLETIONS_RANGE_SCHEMA = z.object({
   multiDayTodos: z
     .array(
       z.object({
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: PLAIN_DATE_SCHEMA,
+        endDate: PLAIN_DATE_SCHEMA,
         completed: z.boolean(),
         categoryColor: z.string(),
       }),
     )
     .optional(),
-  dateRange: z.object({ startDate: z.string(), endDate: z.string() }),
-}) satisfies z.ZodType<DailyCompletionsRange>;
+  dateRange: z.object({ startDate: PLAIN_DATE_SCHEMA, endDate: PLAIN_DATE_SCHEMA }),
+});
+
+type CachedRange = z.infer<typeof CACHED_RANGE_SCHEMA>;
+
+function toCachedJson(value: DailyCompletionRange) {
+  return {
+    completions: value.completions.map((completion) => ({
+      date: completion.date.toString(),
+      totalTodos: completion.totalTodos,
+      completedTodos: completion.completedTodos,
+      isComplete: completion.isComplete,
+      completionRate: completion.completionRate,
+      categoryColors: [...completion.categoryColors],
+    })),
+    totalCompleteDays: value.totalCompleteDays,
+    multiDayTodos: value.multiDayTodos.map((span) => ({
+      startDate: span.startDate.toString(),
+      endDate: span.endDate.toString(),
+      completed: span.completed,
+      categoryColor: span.categoryColor,
+    })),
+    dateRange: { startDate: value.range.start.toString(), endDate: value.range.end.toString() },
+  };
+}
+
+function toDailyCompletionRange(userId: UserId, cached: CachedRange): DailyCompletionRange {
+  return {
+    range: DateRange.create(cached.dateRange.startDate, cached.dateRange.endDate),
+    completions: cached.completions.map((completion) =>
+      DailyCompletion.reconstitute({
+        userId: userId.value,
+        date: completion.date,
+        totalTodos: completion.totalTodos,
+        completedTodos: completion.completedTodos,
+        categoryColors: completion.categoryColors,
+      }),
+    ),
+    totalCompleteDays: cached.totalCompleteDays,
+    multiDayTodos: cached.multiDayTodos ?? [],
+  };
+}
 
 @Injectable()
 export class DailyCompletionCache implements DailyCompletionCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cache: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
-    this.#cacheService = cacheService;
+  constructor(cache: CacheStorePort) {
+    this.#cache = cache;
   }
 
-  readRange(userId: string, startDate: string, endDate: string): Promise<DailyCompletionCacheRead> {
+  readRange(userId: UserId, range: DateRange): Promise<DailyCompletionCacheRead> {
     return this.#read(userId, (generation) =>
-      DailyCompletionCacheKey.range(userId, generation, startDate, endDate),
+      DailyCompletionCacheKey.range(
+        userId.value,
+        generation,
+        range.start.toString(),
+        range.end.toString(),
+      ),
     );
   }
 
   storeRangeIfCurrent(
-    userId: string,
-    startDate: string,
-    endDate: string,
+    userId: UserId,
     generation: string,
-    value: DailyCompletionsRange,
+    value: DailyCompletionRange,
   ): Promise<void> {
     return this.#storeIfCurrent(
       userId,
       generation,
-      DailyCompletionCacheKey.range(userId, generation, startDate, endDate),
+      DailyCompletionCacheKey.range(
+        userId.value,
+        generation,
+        value.range.start.toString(),
+        value.range.end.toString(),
+      ),
       value,
     );
   }
 
-  readPublicRange(
-    userId: string,
-    startDate: string,
-    endDate: string,
-  ): Promise<DailyCompletionCacheRead> {
-    return this.#read(userId, (generation) =>
-      DailyCompletionCacheKey.publicRange(userId, generation, startDate, endDate),
+  readPublicRange(ownerUserId: UserId, range: DateRange): Promise<DailyCompletionCacheRead> {
+    return this.#read(ownerUserId, (generation) =>
+      DailyCompletionCacheKey.publicRange(
+        ownerUserId.value,
+        generation,
+        range.start.toString(),
+        range.end.toString(),
+      ),
     );
   }
 
   storePublicRangeIfCurrent(
-    userId: string,
-    startDate: string,
-    endDate: string,
+    ownerUserId: UserId,
     generation: string,
-    value: DailyCompletionsRange,
+    value: DailyCompletionRange,
   ): Promise<void> {
     return this.#storeIfCurrent(
-      userId,
+      ownerUserId,
       generation,
-      DailyCompletionCacheKey.publicRange(userId, generation, startDate, endDate),
+      DailyCompletionCacheKey.publicRange(
+        ownerUserId.value,
+        generation,
+        value.range.start.toString(),
+        value.range.end.toString(),
+      ),
       value,
     );
   }
 
-  async invalidate(userId: string): Promise<void> {
+  async invalidate(userId: UserId): Promise<void> {
     const previousGeneration = await this.#getGeneration(userId);
     // prefix 삭제부터 이전 세대를 단절한다. 세대 miss는 새 UUID로만 복원한다.
-    await this.#cacheService.delByPattern(DailyCompletionCacheKey.legacyPattern(userId));
-    await this.#cacheService.set(
-      DailyCompletionCacheKey.generation(userId),
+    await this.#cache.delByPattern(DailyCompletionCacheKey.legacyPattern(userId.value));
+    await this.#cache.set(
+      DailyCompletionCacheKey.generation(userId.value),
       randomUUID(),
       DAILY_COMPLETION_GENERATION_TTL_MS,
     );
-    await this.#cacheService.delByPattern(
-      DailyCompletionCacheKey.generationPattern(userId, previousGeneration),
+    await this.#cache.delByPattern(
+      DailyCompletionCacheKey.generationPattern(userId.value, previousGeneration),
     );
   }
 
   async #read(
-    userId: string,
+    userId: UserId,
     keyForGeneration: (generation: string) => string,
   ): Promise<DailyCompletionCacheRead> {
     const generation = await this.#getGeneration(userId);
-    const value = await this.#cacheService.get(
-      keyForGeneration(generation),
-      DAILY_COMPLETIONS_RANGE_SCHEMA,
-    );
+    const cached = await this.#cache.get(keyForGeneration(generation), CACHED_RANGE_SCHEMA);
     const verifiedGeneration = await this.#getGeneration(userId);
 
-    return verifiedGeneration === generation
-      ? { generation, value }
-      : { generation: verifiedGeneration, value: undefined };
+    if (verifiedGeneration !== generation) {
+      return { generation: verifiedGeneration, value: null };
+    }
+    return { generation, value: cached == null ? null : toDailyCompletionRange(userId, cached) };
   }
 
   async #storeIfCurrent(
-    userId: string,
+    userId: UserId,
     generation: string,
     key: string,
-    value: DailyCompletionsRange,
+    value: DailyCompletionRange,
   ): Promise<void> {
     if ((await this.#getGeneration(userId)) !== generation) {
       return;
     }
     // 검사 직후 무효화되어도 캡처한 세대 namespace에만 저장한다.
-    await this.#cacheService.set(key, value, DAILY_COMPLETION_CACHE_TTL_MS);
+    await this.#cache.set(key, toCachedJson(value), DAILY_COMPLETION_CACHE_TTL_MS);
   }
 
-  async #getGeneration(userId: string): Promise<string> {
-    const key = DailyCompletionCacheKey.generation(userId);
-    const cachedGeneration = await this.#cacheService.get(key, z.string());
+  async #getGeneration(userId: UserId): Promise<string> {
+    const key = DailyCompletionCacheKey.generation(userId.value);
+    const cachedGeneration = await this.#cache.get(key, z.string());
     if (cachedGeneration != null) {
       return cachedGeneration;
     }
 
     const generation = randomUUID();
-    await this.#cacheService.set(key, generation, DAILY_COMPLETION_GENERATION_TTL_MS);
+    await this.#cache.set(key, generation, DAILY_COMPLETION_GENERATION_TTL_MS);
     return generation;
   }
 }

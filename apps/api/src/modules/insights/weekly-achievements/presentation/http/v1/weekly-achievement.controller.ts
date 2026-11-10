@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Locale } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
@@ -13,10 +14,14 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetWeeklyAchievementUseCase } from "../../../application/use-cases/get-weekly-achievement.use-case.js";
 import { ListWeeklyAchievementsUseCase } from "../../../application/use-cases/list-weekly-achievements.use-case.js";
+import {
+  toWeeklyAchievementListResponse,
+  toWeeklyAchievementResponse,
+} from "./weekly-achievement-response.mapper.js";
 import {
   GetWeeklyAchievementsQueryDto,
   WeeklyAchievementDetailResponseDto,
@@ -26,7 +31,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.WEEKLY_ACHIEVEMENTS)
 @ApiBearerAuth()
-@Controller("weekly-achievements")
+@Controller({ path: "weekly-achievements", version: API_VERSION.V1 })
 export class WeeklyAchievementController {
   readonly #readWeeklyAchievements: ListWeeklyAchievementsUseCase;
   readonly #readWeeklyAchievement: GetWeeklyAchievementUseCase;
@@ -101,13 +106,13 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementListResponseDto> {
-    return this.#readWeeklyAchievements.execute({
+    const list = await this.#readWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
       cursor: query.cursor,
       size: query.size,
-      locale: locale ?? "ko",
     });
+    return toWeeklyAchievementListResponse(list, locale ?? DEFAULT_LOCALE);
   }
 
   @Get(":year/:week")
@@ -151,11 +156,11 @@ GET /weekly-achievements/2026/10
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    return this.#readWeeklyAchievement.execute({
+    const achievement = await this.#readWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,
-      locale: locale ?? "ko",
     });
+    return toWeeklyAchievementResponse(achievement, locale ?? DEFAULT_LOCALE);
   }
 }
