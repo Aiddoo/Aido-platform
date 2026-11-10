@@ -1,92 +1,108 @@
-import { AggregateRoot } from "#api/shared/domain/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { CategoryColor } from "./category-color.vo.js";
 import { CategoryName } from "./category-name.vo.js";
+import { TodoCategoryId } from "./todo-category-id.vo.js";
 import { TodoCategoryUpdatedEvent } from "./todo-category-updated.event.js";
 
-export interface TodoCategoryProps {
-  id: number;
-  userId: string;
-  name: string;
-  color: string;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
+export interface TodoCategoryPrimitives {
+  readonly id: number;
+  readonly userId: string;
+  readonly name: string;
+  readonly color: string;
+  readonly sortOrder: number;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
 }
 
-export class TodoCategory extends AggregateRoot<{
-  id: number;
-  userId: string;
+interface TodoCategoryProps {
+  readonly userId: UserId;
   name: CategoryName;
   color: CategoryColor;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-}> {
-  constructor(props: {
-    id: number;
-    userId: string;
-    name: CategoryName;
-    color: CategoryColor;
-    sortOrder: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
-    super(props);
-  }
+  readonly sortOrder: number;
+  readonly createdAt: Temporal.Instant;
+  updatedAt: Temporal.Instant;
+}
 
-  static reconstitute(props: TodoCategoryProps): TodoCategory {
-    return new TodoCategory({
-      id: props.id,
-      userId: props.userId,
-      sortOrder: props.sortOrder,
-      name: CategoryName.reconstitute(props.name),
-      color: CategoryColor.reconstitute(props.color),
-      createdAt: new Date(props.createdAt),
-      updatedAt: new Date(props.updatedAt),
+interface CreateTodoCategoryParams {
+  readonly id: TodoCategoryId;
+  readonly userId: UserId;
+  readonly name: CategoryName;
+  readonly color: CategoryColor;
+  readonly sortOrder: number;
+  readonly now: Temporal.Instant;
+}
+
+export class TodoCategory extends AggregateRoot<
+  TodoCategoryId,
+  TodoCategoryProps,
+  TodoCategoryUpdatedEvent
+> {
+  static create(params: CreateTodoCategoryParams): TodoCategory {
+    return new TodoCategory(params.id, {
+      userId: params.userId,
+      name: params.name,
+      color: params.color,
+      sortOrder: params.sortOrder,
+      createdAt: params.now,
+      updatedAt: params.now,
     });
   }
 
-  get id(): number {
-    return this.props.id;
+  static reconstitute(primitives: TodoCategoryPrimitives): TodoCategory {
+    return new TodoCategory(TodoCategoryId.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      name: CategoryName.reconstitute(primitives.name),
+      color: CategoryColor.reconstitute(primitives.color),
+      sortOrder: primitives.sortOrder,
+      createdAt: primitives.createdAt,
+      updatedAt: primitives.updatedAt,
+    });
   }
 
-  get userId(): string {
+  get userId(): UserId {
     return this.props.userId;
   }
 
-  get name(): string {
-    return this.props.name.value;
+  get name(): CategoryName {
+    return this.props.name;
   }
 
-  get color(): string {
-    return this.props.color.value;
+  get color(): CategoryColor {
+    return this.props.color;
   }
 
   get sortOrder(): number {
     return this.props.sortOrder;
   }
 
-  get createdAt(): Date {
-    return new Date(this.props.createdAt);
-  }
-
-  get updatedAt(): Date {
-    return new Date(this.props.updatedAt);
-  }
-
-  updateDetails(changes: { name?: string; color?: string }): void {
+  /** 이름·색상을 모두 검증한 뒤에만 바꾼다. 같은 값만 보냈으면 false다. */
+  updateDetails(
+    changes: { readonly name?: string; readonly color?: string },
+    now: Temporal.Instant,
+  ): boolean {
     const name = changes.name == null ? this.props.name : CategoryName.create(changes.name);
     const color = changes.color == null ? this.props.color : CategoryColor.create(changes.color);
-    const changed = name.value !== this.name || color.value !== this.color;
+    if (name.equals(this.props.name) && color.equals(this.props.color)) {
+      return false;
+    }
     this.props.name = name;
     this.props.color = color;
-    if (changed) {
-      this.raise(new TodoCategoryUpdatedEvent(this.userId, this.id));
-    }
+    this.props.updatedAt = now;
+    this.raise(new TodoCategoryUpdatedEvent(this.props.userId.value, this.id.value));
+    return true;
   }
 
-  isOwnedBy(userId: string): boolean {
-    return this.props.userId === userId;
+  toPrimitives(): TodoCategoryPrimitives {
+    return {
+      id: this.id.value,
+      userId: this.props.userId.value,
+      name: this.props.name.value,
+      color: this.props.color.value,
+      sortOrder: this.props.sortOrder,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
+    };
   }
 }

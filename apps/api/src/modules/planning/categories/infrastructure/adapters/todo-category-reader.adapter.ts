@@ -4,10 +4,8 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import type { TodoCategoryCountReaderPort } from "../../application/ports/todo-category-count.reader.port.js";
 import type { TodoCategoryReaderPort } from "../../application/ports/todo-category.reader.port.js";
-import {
-  type TodoCategoryRepositoryPort,
-  type TodoCategoryWithCountView,
-} from "../../application/ports/todo-category.repository.port.js";
+import { type TodoCategoryRepositoryPort } from "../../application/ports/todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 
 interface TodoCategoryReaderDependencies {
   readonly repository: Pick<
@@ -25,7 +23,7 @@ export class TodoCategoryReaderAdapter
     this.#dependencies = dependencies;
   }
 
-  listForUser(userId: string): Promise<TodoCategoryWithCountView[]> {
+  listForUser(userId: string): Promise<TodoCategoryWithCountReadModel[]> {
     return this.#dependencies.repository.findManyByUserId(userId);
   }
 

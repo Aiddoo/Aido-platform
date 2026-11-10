@@ -1,6 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -55,6 +56,7 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     limitReader: TodoCategoryLimitReaderPort,
   }),
   provideUseCase(CreateTodoCategoryUseCase, {
+    clock: ClockPort,
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,
     limitReader: TodoCategoryLimitReaderPort,
@@ -63,6 +65,7 @@ export const PLANNING_CATEGORIES_PROVIDERS = [
     logger: loggerFor(CreateTodoCategoryUseCase),
   }),
   provideUseCase(UpdateTodoCategoryUseCase, {
+    clock: ClockPort,
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,
     mutationLock: MutationLockPort,

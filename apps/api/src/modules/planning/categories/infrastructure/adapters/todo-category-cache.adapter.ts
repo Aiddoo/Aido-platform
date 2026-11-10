@@ -8,7 +8,7 @@ import {
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port.js";
-import type { TodoCategoryWithCountView } from "../../application/ports/todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 
 /** Redis JSON에서 문자열이 된 생성·수정 시각을 Date로 복원한다. */
 const TODO_CATEGORY_LIST_SCHEMA = z.array(
@@ -22,7 +22,7 @@ const TODO_CATEGORY_LIST_SCHEMA = z.array(
     updatedAt: z.coerce.date(),
     todoCount: z.number(),
   }),
-) satisfies z.ZodType<TodoCategoryWithCountView[]>;
+) satisfies z.ZodType<TodoCategoryWithCountReadModel[]>;
 
 /**
  * TodoCategoryCachePort의 어댑터 — 공유 CacheService에 위임한다(키·TTL은 CacheService가 소유).
@@ -37,8 +37,8 @@ export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
 
   wrapList(
     userId: string,
-    factory: () => Promise<TodoCategoryWithCountView[]>,
-  ): Promise<TodoCategoryWithCountView[]> {
+    factory: () => Promise<TodoCategoryWithCountReadModel[]>,
+  ): Promise<TodoCategoryWithCountReadModel[]> {
     return this.#cacheService.wrap(
       TodoCategoryCacheKey.list(userId),
       TODO_CATEGORY_LIST_SCHEMA,

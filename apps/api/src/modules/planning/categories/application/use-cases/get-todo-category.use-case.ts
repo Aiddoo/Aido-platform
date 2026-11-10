@@ -2,10 +2,8 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type {
-  TodoCategoryRepositoryPort,
-  TodoCategoryWithCountView,
-} from "../ports/todo-category.repository.port.js";
+import type { TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
 interface GetTodoCategoryDependencies {
   readonly repository: Pick<TodoCategoryRepositoryPort, "findByIdWithCount">;
@@ -21,7 +19,7 @@ export class GetTodoCategoryUseCase {
   async execute(input: {
     readonly id: number;
     readonly userId: string;
-  }): Promise<TodoCategoryWithCountView> {
+  }): Promise<TodoCategoryWithCountReadModel> {
     const category = await this.#dependencies.repository.findByIdWithCount(input.id);
     if (category == null) {
       throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: input.id });

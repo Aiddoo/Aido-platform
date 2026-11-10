@@ -1,54 +1,102 @@
-import { DomainException } from "#api/shared/domain/index";
+import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
+
+import { CategoryColor } from "./category-color.vo.js";
+import { CategoryName } from "./category-name.vo.js";
+import { TodoCategoryId } from "./todo-category-id.vo.js";
+import { TodoCategoryUpdatedEvent } from "./todo-category-updated.event.js";
 import { TodoCategory } from "./todo-category.aggregate.js";
 
-const props = {
-  id: 1,
-  userId: "u1",
-  name: "업무",
-  color: "#FFB3B3",
-  sortOrder: 0,
-  createdAt: new Date("2026-01-01T00:00:00.000Z"),
-  updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-};
+const LATER = TODO_FIXTURE_NOW.add({ hours: 1 });
 
 describe("TodoCategory", () => {
+  it("만들면 두 시각이 지금이고 이벤트가 없다", () => {
+    // Given
+    const params = {
+      id: TodoCategoryId.reconstitute(3),
+      userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      name: CategoryName.create("업무"),
+      color: CategoryColor.create("#FFB3B3"),
+      sortOrder: 2,
+      now: TODO_FIXTURE_NOW,
+    };
+
+    // When
+    const category = TodoCategory.create(params);
+
+    // Then
+    expect(category.toPrimitives()).toEqual({
+      id: 3,
+      userId: TODO_FIXTURE_USER_ID,
+      name: "업무",
+      color: "#FFB3B3",
+      sortOrder: 2,
+      createdAt: TODO_FIXTURE_NOW,
+      updatedAt: TODO_FIXTURE_NOW,
+    });
+    expect(category.pullDomainEvents()).toEqual([]);
+  });
+
+  it("복원한 값을 그대로 꺼낸다", () => {
+    // Given
+    const primitives = createTodoCategoryFixture({ id: 5, sortOrder: 4 }).toPrimitives();
+
+    // When
+    const restored = TodoCategory.reconstitute(primitives);
+
+    // Then
+    expect(restored.toPrimitives()).toEqual(primitives);
+  });
+
   it("이름이 유효해도 색상 검증이 실패하면 모든 변경을 취소한다", () => {
     // Given
-    const category = TodoCategory.reconstitute(props);
+    const category = createTodoCategoryFixture();
+
     // When
-    const patch = () => category.updateDetails({ name: "변경된 업무", color: "invalid" });
+    const patch = () => category.updateDetails({ name: "변경된 업무", color: "invalid" }, LATER);
+
     // Then
-    expect(patch).toThrow(DomainException);
-    expect(category.name).toBe(props.name);
-    expect(category.color).toBe(props.color);
+    expect(patch).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
+    expect(category.toPrimitives()).toMatchObject({
+      name: "업무",
+      color: "#FFB3B3",
+      updatedAt: TODO_FIXTURE_NOW,
+    });
+    expect(category.pullDomainEvents()).toEqual([]);
   });
 
-  it("생성 입력과 getter의 Date 변경은 영속 상태를 변경하지 않는다", () => {
+  it("이름이나 색상이 바뀌면 true이고 수정 시각과 수정 이벤트를 남긴다", () => {
     // Given
-    const createdAt = new Date(props.createdAt);
-    const category = TodoCategory.reconstitute({ ...props, createdAt });
+    const category = createTodoCategoryFixture({ id: 7 });
+
     // When
-    createdAt.setUTCFullYear(2030);
-    category.createdAt.setUTCFullYear(2031);
+    const changed = category.updateDetails({ color: "#FF0000" }, LATER);
+
     // Then
-    expect(category.createdAt).toEqual(props.createdAt);
+    expect(changed).toBe(true);
+    expect(category.toPrimitives()).toMatchObject({
+      name: "업무",
+      color: "#FF0000",
+      updatedAt: LATER,
+    });
+    expect(category.pullDomainEvents()).toEqual([
+      new TodoCategoryUpdatedEvent(TODO_FIXTURE_USER_ID, 7),
+    ]);
   });
 
-  it("영속 상태를 복원하고 저장된 값을 조회한다", () => {
-    const category = TodoCategory.reconstitute(props);
-    expect(category.id).toBe(1);
-    expect(category.userId).toBe("u1");
-    expect(category.name).toBe("업무");
-    expect(category.color).toBe("#FFB3B3");
-    expect(category.sortOrder).toBe(0);
-    expect(category.createdAt).toEqual(props.createdAt);
-    expect(category.updatedAt).toEqual(props.updatedAt);
-  });
+  it("같은 이름·색상이면 false이고 시각·이벤트가 그대로다", () => {
+    // Given
+    const category = createTodoCategoryFixture();
 
-  it("isOwnedBy: 소유자 판별", () => {
-    const category = TodoCategory.reconstitute(props);
-    expect(category.isOwnedBy("u1")).toBe(true);
-    expect(category.isOwnedBy("u2")).toBe(false);
+    // When
+    const changed = category.updateDetails({ name: "업무", color: "#FFB3B3" }, LATER);
+
+    // Then
+    expect(changed).toBe(false);
+    expect(category.toPrimitives().updatedAt).toEqual(TODO_FIXTURE_NOW);
+    expect(category.pullDomainEvents()).toEqual([]);
   });
 });

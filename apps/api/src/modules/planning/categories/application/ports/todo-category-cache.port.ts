@@ -1,4 +1,4 @@
-import type { TodoCategoryWithCountView } from "./todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
 /**
  * TodoCategoryCachePort — 카테고리 목록 캐시 포트.
@@ -11,8 +11,8 @@ export abstract class TodoCategoryCachePort {
   /** 목록 캐시 read-through (miss 시 factory 실행 후 저장) */
   abstract wrapList(
     userId: string,
-    factory: () => Promise<TodoCategoryWithCountView[]>,
-  ): Promise<TodoCategoryWithCountView[]>;
+    factory: () => Promise<TodoCategoryWithCountReadModel[]>,
+  ): Promise<TodoCategoryWithCountReadModel[]>;
   /** 사용자 카테고리 목록 캐시 무효화 */
   abstract invalidate(userId: string): Promise<void>;
 }

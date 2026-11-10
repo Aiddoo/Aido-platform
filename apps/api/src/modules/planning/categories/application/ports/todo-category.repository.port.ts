@@ -1,40 +1,27 @@
+import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
-/** 카테고리 + 할 일 개수 읽기 프로젝션 */
-export interface TodoCategoryWithCountView {
-  id: number;
-  userId: string;
-  name: string;
-  color: string;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-  todoCount: number;
-}
-
-/** 카테고리 생성 입력 */
-export interface CreateCategoryInput {
-  userId: string;
-  name: string;
-  color: string;
-  sortOrder: number;
-}
-
-/** 카테고리 갱신 입력 (이름/색상/정렬 부분 갱신) */
+/** 카테고리 부분 갱신. undefined는 바꾸지 않는다. */
 export interface UpdateCategoryInput {
-  name?: string;
-  color?: string;
-  sortOrder?: number;
+  readonly name?: string;
+  readonly color?: string;
+  readonly sortOrder?: number;
 }
 
+/**
+ * 같은 사용자 안 이름이 겹치면 TODO_CATEGORY_0853이다(저장소가 유니크 위반을 번역한다).
+ * 수정은 고친 칸만 쓰고 저장된 행을 돌려준다. 다른 카테고리 순서 밀기와 겹쳐도 덮어쓰지 않게 하려는 것이다.
+ */
 export abstract class TodoCategoryRepositoryPort {
-  abstract create(input: CreateCategoryInput): Promise<TodoCategory>;
+  abstract nextId(): Promise<TodoCategoryId>;
+  abstract insert(category: TodoCategory): Promise<void>;
   abstract update(id: number, input: UpdateCategoryInput): Promise<TodoCategory>;
   abstract delete(id: number): Promise<void>;
 
   abstract findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null>;
-  abstract findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null>;
-  abstract findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]>;
+  abstract findByIdWithCount(id: number): Promise<TodoCategoryWithCountReadModel | null>;
+  abstract findManyByUserId(userId: string): Promise<TodoCategoryWithCountReadModel[]>;
 
   abstract countByUserId(userId: string): Promise<number>;
   abstract existsByUserIdAndName(

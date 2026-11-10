@@ -22,16 +22,21 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
-  CreateCategoryInput,
   TodoCategoryRepositoryPort,
-  TodoCategoryWithCountView,
   UpdateCategoryInput,
 } from "../../application/ports/todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
+import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import { toTodoCategory, toTodoCategoryWithCountView } from "./todo-category-row.mapper.js";
+import {
+  toTodoCategory,
+  toTodoCategoryRow,
+  toTodoCategoryWithCountReadModel,
+} from "./todo-category-row.mapper.js";
 
 /**
  * TodoCategoryRepositoryPort의 Drizzle 어댑터.
@@ -58,22 +63,17 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       .groupBy(todoCategory.id);
   }
 
-  async create(input: CreateCategoryInput): Promise<TodoCategory> {
+  async nextId(): Promise<TodoCategoryId> {
+    return TodoCategoryId.reconstitute(await nextSequenceValue(this.#db, todoCategory.id));
+  }
+
+  async insert(category: TodoCategory): Promise<void> {
     try {
-      const [row] = await this.#db
-        .insert(todoCategory)
-        .values({
-          userId: input.userId,
-          name: input.name,
-          color: input.color,
-          sortOrder: input.sortOrder,
-        })
-        .returning();
-      return toTodoCategory(requireRecord(row));
+      await this.#db.insert(todoCategory).values(toTodoCategoryRow(category));
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-          name: input.name,
+          name: category.name.value,
         });
       }
       throw error;
@@ -123,16 +123,16 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return row == null ? null : toTodoCategory(row);
   }
 
-  async findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null> {
+  async findByIdWithCount(id: number): Promise<TodoCategoryWithCountReadModel | null> {
     const [row] = await this.#selectWithCount().where(eq(todoCategory.id, id));
-    return row == null ? null : toTodoCategoryWithCountView(row);
+    return row == null ? null : toTodoCategoryWithCountReadModel(row);
   }
 
-  async findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]> {
+  async findManyByUserId(userId: string): Promise<TodoCategoryWithCountReadModel[]> {
     const rows = await this.#selectWithCount()
       .where(eq(todoCategory.userId, userId))
       .orderBy(asc(todoCategory.sortOrder), asc(todoCategory.id));
-    return rows.map((row) => toTodoCategoryWithCountView(row));
+    return rows.map((row) => toTodoCategoryWithCountReadModel(row));
   }
 
   countByUserId(userId: string): Promise<number> {

@@ -1,227 +1,227 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
+import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
-import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
-import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
+import { TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
+import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
-import { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { DeleteTodoCategoryUseCase } from "./delete-todo-category.use-case.js";
 
-const createCategory = (id = 1) =>
-  TodoCategory.reconstitute(
-    TodoCategoryFixture.create({
-      id,
-      userId: "category-user",
-      name: `카테고리 ${id}`,
-      sortOrder: id - 1,
-    }),
+const USER_ID = TODO_FIXTURE_USER_ID;
+
+function todoIn(id: number, categoryId: number): PlanningTodoRecord {
+  return { ...createPlanningTodo(USER_ID, id), categoryId };
+}
+
+function setUp(
+  input: {
+    readonly categoryIds?: readonly number[];
+    readonly todos?: readonly PlanningTodoRecord[];
+    readonly series?: readonly TodoSeries[];
+    readonly repository?: (
+      stores: ConstructorParameters<typeof InMemoryTodoCategoryRepository>[1],
+    ) => InMemoryTodoCategoryRepository;
+    readonly cache?: FakeTodoCategoryCache;
+    readonly mutationLock?: RecordingMutationLock;
+    readonly unitOfWork?: ImmediateUnitOfWork;
+  } = {},
+) {
+  const categories = (input.categoryIds ?? [1, 2]).map((id) =>
+    createTodoCategoryFixture({ id, name: `카테고리 ${id}`, sortOrder: id - 1 }),
   );
+  const todoRecords = new Map((input.todos ?? []).map((record) => [record.id, record]));
+  const seriesStore = new Map((input.series ?? []).map((series) => [series.id.value, series]));
+  const stores = { todoRecords, seriesStore };
+  const repository =
+    input.repository?.(stores) ?? new InMemoryTodoCategoryRepository(categories, stores);
+  const cache = input.cache ?? new FakeTodoCategoryCache();
+  const eventPublisher = new RecordingDomainEventPublisher();
+  const mutationLock = input.mutationLock ?? new RecordingMutationLock();
+  const useCase = new DeleteTodoCategoryUseCase({
+    repository,
+    cache,
+    mutationLock,
+    unitOfWork: input.unitOfWork ?? new ImmediateUnitOfWork(),
+    eventPublisher,
+    logger: new SilentLogger(),
+  });
+  return { repository, todoRecords, cache, eventPublisher, mutationLock, useCase };
+}
 
 describe("카테고리 삭제", () => {
-  let eventPublisher: RecordingDomainEventPublisher;
-  let useCase: DeleteTodoCategoryUseCase;
-  let repository: Mocked<ConstructorParameters<typeof DeleteTodoCategoryUseCase>[0]["repository"]>;
-  let cache: Mocked<TodoCategoryCachePort>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let unitOfWork: UnitOfWorkPort;
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
-    repository = mock<ConstructorParameters<typeof DeleteTodoCategoryUseCase>[0]["repository"]>();
-    cache = mock<TodoCategoryCachePort>();
-    mutationLock = mock<MutationLockPort>();
-    unitOfWork = createUnitOfWorkMock();
-    eventPublisher = new RecordingDomainEventPublisher();
-    useCase = new DeleteTodoCategoryUseCase({
-      repository,
-      cache,
-      mutationLock,
-      unitOfWork,
-      eventPublisher,
-      logger: mock<ApplicationLoggerPort>(),
+  it.each([
+    {
+      name: "존재하지 않으면 TODO_CATEGORY_0851",
+      categoryIds: [1, 2],
+      todos: [],
+      command: { categoryId: 9 },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0851, details: { categoryId: 9 } },
+    },
+    {
+      name: "마지막 카테고리면 TODO_CATEGORY_0854",
+      categoryIds: [1],
+      todos: [],
+      command: { categoryId: 1 },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0854 },
+    },
+    {
+      name: "할 일이 있는데 이동 대상 없으면 TODO_CATEGORY_0855",
+      categoryIds: [1, 2],
+      todos: [todoIn(10, 1)],
+      command: { categoryId: 1 },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0855, details: { categoryId: 1, todoCount: 1 } },
+    },
+    {
+      name: "이동 대상이 자신과 같으면 SYS_0002",
+      categoryIds: [1, 2],
+      todos: [todoIn(10, 1)],
+      command: { categoryId: 1, moveToCategoryId: 1 },
+      error: { errorCode: ErrorCode.SYS_0002 },
+    },
+    {
+      name: "이동 대상이 없으면 TODO_CATEGORY_0851",
+      categoryIds: [1, 2],
+      todos: [todoIn(10, 1)],
+      command: { categoryId: 1, moveToCategoryId: 9 },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0851, details: { categoryId: 9 } },
+    },
+  ])("$name이고 아무것도 바꾸지 않는다", async ({ categoryIds, todos, command, error }) => {
+    // Given
+    const { repository, todoRecords, cache, eventPublisher, useCase } = setUp({
+      categoryIds,
+      todos,
     });
 
-    repository.findByIdAndUserId.mockResolvedValue(createCategory());
-    repository.countByUserId.mockResolvedValue(2);
-    repository.getTodoCount.mockResolvedValue(0);
-    repository.countActiveSeries.mockResolvedValue(0);
-  });
+    // When
+    const deletion = useCase.execute({ userId: USER_ID, ...command });
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it("존재하지 않으면 TODO_CATEGORY_0851", async () => {
-    // Given
-    repository.findByIdAndUserId.mockResolvedValue(null);
-    // When / Then
-    await expect(useCase.execute({ userId: "category-user", categoryId: 1 })).rejects.toMatchObject(
-      { errorCode: ErrorCode.TODO_CATEGORY_0851 },
+    // Then
+    await expect(deletion).rejects.toMatchObject(error);
+    expect(await repository.countByUserId(USER_ID)).toBe(categoryIds.length);
+    expect([...todoRecords.values()].map((record) => record.categoryId)).toEqual(
+      todos.map((record) => record.categoryId),
     );
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
-
-  it("마지막 카테고리면 TODO_CATEGORY_0854", async () => {
-    // Given
-    repository.countByUserId.mockResolvedValue(1);
-    // When / Then
-    await expect(useCase.execute({ userId: "category-user", categoryId: 1 })).rejects.toMatchObject(
-      { errorCode: ErrorCode.TODO_CATEGORY_0854 },
-    );
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
-
-  it("할 일이 있는데 이동 대상 없으면 TODO_CATEGORY_0855", async () => {
-    // Given
-    repository.getTodoCount.mockResolvedValue(3);
-    // When / Then
-    await expect(useCase.execute({ userId: "category-user", categoryId: 1 })).rejects.toMatchObject(
-      { errorCode: ErrorCode.TODO_CATEGORY_0855 },
-    );
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
-
-  it("이동 대상이 자신과 같으면 SYS_0002", async () => {
-    // Given
-    repository.getTodoCount.mockResolvedValue(3);
-    // When / Then
-    await expect(
-      useCase.execute({ userId: "category-user", categoryId: 1, moveToCategoryId: 1 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
-
-  it("이동 대상이 없으면 TODO_CATEGORY_0851", async () => {
-    // Given
-    repository.getTodoCount.mockResolvedValue(3);
-    repository.findByIdAndUserId
-      .mockResolvedValueOnce(createCategory())
-      .mockResolvedValueOnce(null);
-    // When / Then
-    await expect(
-      useCase.execute({ userId: "category-user", categoryId: 1, moveToCategoryId: 2 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
+    expect(cache.invalidatedUserIds).toEqual([]);
     expect(eventPublisher.events).toEqual([]);
   });
 
   it("할 일 없이 진행 중 규칙만 있어도 옮길 곳을 묻고 상세에는 할 일 수만 싣는다", async () => {
     // Given
-    repository.countActiveSeries.mockResolvedValue(2);
+    const { repository, useCase } = setUp({
+      series: [createTodoSeriesFixture({ categoryId: 1 })],
+    });
+
     // When
-    const deletion = useCase.execute({ userId: "category-user", categoryId: 1 });
+    const deletion = useCase.execute({ userId: USER_ID, categoryId: 1 });
+
     // Then
     await expect(deletion).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_CATEGORY_0855,
       details: { categoryId: 1, todoCount: 0 },
     });
-    expect(repository.delete).not.toHaveBeenCalled();
+    expect(await repository.findByIdAndUserId(1, USER_ID)).not.toBeNull();
   });
 
   it("할 일을 대상 카테고리로 옮긴 뒤 삭제하고 캐시를 무효화한다", async () => {
     // Given
-    repository.getTodoCount.mockResolvedValue(3);
-    repository.findByIdAndUserId
-      .mockResolvedValueOnce(createCategory(1))
-      .mockResolvedValueOnce(createCategory(2));
-    const categoryIds = new Set([1, 2]);
-    const todoCategoryIds = [1, 1, 1];
-    repository.moveTodosToCategory.mockImplementation(async (from, to) => {
-      for (const [index, categoryId] of todoCategoryIds.entries()) {
-        if (categoryId === from) {
-          todoCategoryIds[index] = to;
-        }
-      }
-    });
-    repository.delete.mockImplementation(async (id) => {
-      categoryIds.delete(id);
+    const { repository, todoRecords, cache, eventPublisher, useCase } = setUp({
+      todos: [todoIn(10, 1), todoIn(11, 1), todoIn(12, 1)],
     });
 
     // When
-    await useCase.execute({ userId: "category-user", categoryId: 1, moveToCategoryId: 2 });
+    await useCase.execute({ userId: USER_ID, categoryId: 1, moveToCategoryId: 2 });
 
     // Then
-    expect([...categoryIds]).toEqual([2]);
-    expect(todoCategoryIds).toEqual([2, 2, 2]);
-    expect(repository.moveTodosToCategory).toHaveBeenCalledWith(1, 2);
-    expect(repository.delete).toHaveBeenCalledWith(1);
-    expect(cache.invalidate).toHaveBeenCalledWith("category-user");
+    expect(await repository.findByIdAndUserId(1, USER_ID)).toBeNull();
+    expect([...todoRecords.values()].map((record) => record.categoryId)).toEqual([2, 2, 2]);
+    expect(cache.invalidatedUserIds).toEqual([USER_ID]);
     expect(eventPublisher.events).toEqual([
-      { eventName: "todo-category.deleted", userId: "category-user", categoryId: 1 },
+      { eventName: "todo-category.deleted", userId: USER_ID, categoryId: 1 },
     ]);
   });
 
-  it("할 일 없으면 바로 삭제", async () => {
+  it("할 일 없으면 이동 대상 없이 바로 삭제한다", async () => {
     // Given
+    const { repository, useCase } = setUp();
+
     // When
-    await useCase.execute({ userId: "category-user", categoryId: 1 });
+    await useCase.execute({ userId: USER_ID, categoryId: 1 });
+
     // Then
-    expect(repository.moveTodosToCategory).not.toHaveBeenCalled();
-    expect(repository.delete).toHaveBeenCalledWith(1);
+    expect(await repository.findByIdAndUserId(1, USER_ID)).toBeNull();
+    expect(await repository.countByUserId(USER_ID)).toBe(1);
   });
 
   it("사용자 카테고리 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
     // Given - 삭제 transaction 경계와 구조 읽기 순서 기록
     const events: string[] = [];
-    unitOfWork.run = async (work) => {
-      events.push("uow:start");
-      const result = await work();
-      events.push("uow:resolved");
-      return result;
-    };
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
-    });
-    repository.findByIdAndUserId.mockImplementation(async () => {
-      events.push("category-read");
-      return createCategory();
-    });
-    repository.countByUserId.mockImplementation(async () => {
-      events.push("count");
-      return 2;
-    });
-    repository.getTodoCount.mockImplementation(async () => {
-      events.push("todo-count");
-      return 0;
-    });
-    repository.delete.mockImplementation(async () => {
-      events.push("delete");
-    });
-    cache.invalidate.mockImplementation(async () => {
-      events.push("cache");
+    class OrderedUnitOfWork extends ImmediateUnitOfWork {
+      override async run<T>(work: () => Promise<T>): Promise<T> {
+        events.push("uow:start");
+        const result = await work();
+        events.push("uow:resolved");
+        return result;
+      }
+    }
+    class OrderedMutationLock extends RecordingMutationLock {
+      override async acquire(keys: readonly string[]): Promise<void> {
+        events.push("lock");
+        await super.acquire(keys);
+      }
+    }
+    class OrderedRepository extends InMemoryTodoCategoryRepository {
+      override async findByIdAndUserId(id: number, userId: string) {
+        events.push("category-read");
+        return super.findByIdAndUserId(id, userId);
+      }
+      override async countByUserId(userId: string): Promise<number> {
+        events.push("count");
+        return super.countByUserId(userId);
+      }
+      override async getTodoCount(categoryId: number): Promise<number> {
+        events.push("todo-count");
+        return super.getTodoCount(categoryId);
+      }
+      override async countActiveSeries(categoryId: number): Promise<number> {
+        events.push("active-series");
+        return super.countActiveSeries(categoryId);
+      }
+      override async delete(id: number): Promise<void> {
+        events.push("delete");
+        await super.delete(id);
+      }
+    }
+    class OrderedCache extends FakeTodoCategoryCache {
+      override async invalidate(userId: string): Promise<void> {
+        events.push("cache");
+        await super.invalidate(userId);
+      }
+    }
+    const mutationLock = new OrderedMutationLock();
+    const categories = [1, 2].map((id) =>
+      createTodoCategoryFixture({ id, name: `카테고리 ${id}`, sortOrder: id - 1 }),
+    );
+    const { useCase } = setUp({
+      repository: (stores) => new OrderedRepository(categories, stores),
+      cache: new OrderedCache(),
+      mutationLock,
+      unitOfWork: new OrderedUnitOfWork(),
     });
 
     // When
-    await useCase.execute({ userId: "category-user", categoryId: 1 });
+    await useCase.execute({ userId: USER_ID, categoryId: 1 });
 
     // Then
-    expect(mutationLock.acquire).toHaveBeenCalledWith([
-      "mutation:v1:todo-category:category-user",
-      "mutation:v1:todo-sort-order:category-user",
+    expect(mutationLock.acquiredKeys).toEqual([
+      [`mutation:v1:todo-category:${USER_ID}`, `mutation:v1:todo-sort-order:${USER_ID}`],
     ]);
     expect(events).toEqual([
       "uow:start",
@@ -229,6 +229,7 @@ describe("카테고리 삭제", () => {
       "category-read",
       "count",
       "todo-count",
+      "active-series",
       "delete",
       "uow:resolved",
       "cache",

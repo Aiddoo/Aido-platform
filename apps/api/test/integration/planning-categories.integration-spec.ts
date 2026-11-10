@@ -8,6 +8,7 @@ import { GetTodoCategoryResourceLimitUseCase } from "#api/modules/planning/categ
 import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category.use-case";
 import { ListTodoCategoriesUseCase } from "#api/modules/planning/categories/application/use-cases/list-todo-categories.use-case";
 import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/update-todo-category.use-case";
+import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
 import {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
@@ -16,6 +17,7 @@ import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 
 import {
   createE2eApp,
@@ -55,9 +57,22 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           updatedAt: at,
         }),
       );
-    categoryId = (await repository.create({ userId, name: "기존", color: "#FFB3B3", sortOrder: 0 }))
-      .id;
+    categoryId = (await insertCategory({ name: "기존", color: "#FFB3B3", sortOrder: 0 })).id.value;
   });
+
+  async function insertCategory(input: {
+    readonly name: string;
+    readonly color: string;
+    readonly sortOrder: number;
+  }): Promise<TodoCategory> {
+    const category = createTodoCategoryFixture({
+      ...input,
+      id: (await repository.nextId()).value,
+      userId,
+    });
+    await repository.insert(category);
+    return category;
+  }
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
@@ -112,7 +127,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBeInstanceOf(Error);
 
     // Then
-    expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({
+    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
       name: "기존",
       color: "#FFB3B3",
     });
@@ -133,7 +148,9 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBe(failure);
 
     // Then
-    expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({ name: "기존" });
+    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+      name: "기존",
+    });
   });
 
   it("동시 이름·색상 수정은 서로의 요청하지 않은 필드를 덮지 않는다", async () => {
@@ -146,7 +163,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ]);
 
     // Then
-    expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({
+    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
       name: "변경",
       color: "#112233",
     });
@@ -154,30 +171,24 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("같은 사용자 이름 중복은 기존 409 업무 오류이며 다른 카테고리는 유지한다", async () => {
     // Given
-    const another = await repository.create({
-      userId,
-      name: "다른",
-      color: "#112233",
-      sortOrder: 1,
-    });
+    const another = await insertCategory({ name: "다른", color: "#112233", sortOrder: 1 });
 
     // When
     await expect(
-      update.execute({ id: another.id, userId, data: { name: "기존" } }),
+      update.execute({ id: another.id.value, userId, data: { name: "기존" } }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0853 });
 
     // Then
-    expect(await repository.findByIdAndUserId(another.id, userId)).toMatchObject({ name: "다른" });
+    expect(
+      (await repository.findByIdAndUserId(another.id.value, userId))?.toPrimitives(),
+    ).toMatchObject({
+      name: "다른",
+    });
   });
 
   it("카테고리 삭제 시 할 일을 대상에 일괄 이동하고 완료·정렬 상태를 보존한다", async () => {
     // Given
-    const target = await repository.create({
-      userId,
-      name: "이동 대상",
-      color: "#112233",
-      sortOrder: 1,
-    });
+    const target = await insertCategory({ name: "이동 대상", color: "#112233", sortOrder: 1 });
     const client = context.testDatabase.getClient();
     await client.insert(todo).values([
       omit(
@@ -211,7 +222,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // When
     await context.module
       .get(DeleteTodoCategoryUseCase)
-      .execute({ userId, categoryId, moveToCategoryId: target.id });
+      .execute({ userId, categoryId, moveToCategoryId: target.id.value });
 
     // Then
     const after = await client
@@ -231,12 +242,12 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         id: row.id,
         completed: row.completed,
         sortOrder: row.sortOrder,
-        categoryId: target.id,
+        categoryId: target.id.value,
       })),
     );
     expect(await repository.findByIdAndUserId(categoryId, userId)).toBeNull();
     expect(
-      await context.module.get(GetTodoCategoryUseCase).execute({ id: target.id, userId }),
+      await context.module.get(GetTodoCategoryUseCase).execute({ id: target.id.value, userId }),
     ).toMatchObject({ todoCount: 2 });
   });
 

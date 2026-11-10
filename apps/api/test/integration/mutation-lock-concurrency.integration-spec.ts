@@ -54,6 +54,7 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -1041,6 +1042,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: categoryLimitReader,
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
+      clock: new DateClock(),
       logger: mock<ConstructorParameters<typeof CreateTodoCategoryUseCase>[0]["logger"]>(),
     });
 

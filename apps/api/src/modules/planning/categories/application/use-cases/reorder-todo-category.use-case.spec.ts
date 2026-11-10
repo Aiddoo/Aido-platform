@@ -1,182 +1,208 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
-import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
+import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
-import { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
+import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { ReorderTodoCategoryUseCase } from "./reorder-todo-category.use-case.js";
 
-const createCategory = (id: number, sortOrder: number) =>
-  TodoCategory.reconstitute(
-    TodoCategoryFixture.create({ id, userId: "category-user", name: `카테고리 ${id}`, sortOrder }),
+const USER_ID = TODO_FIXTURE_USER_ID;
+
+// id 1·2·3이 순서 0·1·2에 있다
+function categories(): TodoCategory[] {
+  return [1, 2, 3].map((id) =>
+    createTodoCategoryFixture({ id, name: `카테고리 ${id}`, sortOrder: id - 1 }),
   );
+}
+
+function setUp(
+  overrides: {
+    readonly repository?: InMemoryTodoCategoryRepository;
+    readonly cache?: FakeTodoCategoryCache;
+    readonly mutationLock?: RecordingMutationLock;
+    readonly unitOfWork?: ImmediateUnitOfWork;
+  } = {},
+) {
+  const repository = overrides.repository ?? new InMemoryTodoCategoryRepository(categories());
+  const cache = overrides.cache ?? new FakeTodoCategoryCache();
+  const mutationLock = overrides.mutationLock ?? new RecordingMutationLock();
+  const useCase = new ReorderTodoCategoryUseCase({
+    repository,
+    cache,
+    mutationLock,
+    unitOfWork: overrides.unitOfWork ?? new ImmediateUnitOfWork(),
+    logger: new SilentLogger(),
+  });
+  return { repository, cache, mutationLock, useCase };
+}
+
+async function sortOrders(repository: InMemoryTodoCategoryRepository): Promise<number[][]> {
+  return (await repository.findManyByUserId(USER_ID)).map((category) => [
+    category.id,
+    category.sortOrder,
+  ]);
+}
 
 describe("카테고리 재정렬", () => {
-  let useCase: ReorderTodoCategoryUseCase;
-  let repository: Mocked<ConstructorParameters<typeof ReorderTodoCategoryUseCase>[0]["repository"]>;
-  let cache: Mocked<TodoCategoryCachePort>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let unitOfWork: UnitOfWorkPort;
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
-    repository = mock<ConstructorParameters<typeof ReorderTodoCategoryUseCase>[0]["repository"]>();
-    cache = mock<TodoCategoryCachePort>();
-    mutationLock = mock<MutationLockPort>();
-    unitOfWork = createUnitOfWorkMock();
-    useCase = new ReorderTodoCategoryUseCase({
-      repository,
-      cache,
-      mutationLock,
-      unitOfWork,
-      logger: mock<ApplicationLoggerPort>(),
-    });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it("존재하지 않으면 TODO_CATEGORY_0851", async () => {
-    // Given
-    repository.findByIdAndUserId.mockResolvedValue(null);
-    // When / Then
-    await expect(
-      useCase.execute({ userId: "category-user", categoryId: 9, position: "before" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    expect(repository.shiftSortOrders).not.toHaveBeenCalled();
-    expect(repository.update).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    repository.findByIdAndUserId
-      .mockResolvedValueOnce(createCategory(1, 0))
-      .mockResolvedValueOnce(null);
-    await expect(
-      useCase.execute({
-        userId: "category-user",
-        categoryId: 1,
-        targetCategoryId: 9,
-        position: "before",
-      }),
-    ).rejects.toMatchObject({
-      errorCode: ErrorCode.TODO_CATEGORY_0851,
+  it.each([
+    {
+      name: "옮길 카테고리",
+      command: { categoryId: 9, position: "before" },
       details: { categoryId: 9 },
-    });
-    expect(repository.shiftSortOrders).not.toHaveBeenCalled();
-    expect(repository.update).not.toHaveBeenCalled();
-  });
+    },
+    {
+      name: "기준 카테고리",
+      command: { categoryId: 1, targetCategoryId: 9, position: "before" },
+      details: { categoryId: 9 },
+    },
+  ] as const)(
+    "$name가 없으면 TODO_CATEGORY_0851이고 순서를 바꾸지 않는다",
+    async ({ command, details }) => {
+      // Given
+      const { repository, cache, useCase } = setUp();
 
-  it("자기 자신 대상이면 no-op(업데이트 없음)", async () => {
+      // When
+      const reorder = useCase.execute({ userId: USER_ID, ...command });
+
+      // Then
+      await expect(reorder).rejects.toMatchObject({
+        errorCode: ErrorCode.TODO_CATEGORY_0851,
+        details,
+      });
+      expect(await sortOrders(repository)).toEqual([
+        [1, 0],
+        [2, 1],
+        [3, 2],
+      ]);
+      expect(cache.invalidatedUserIds).toEqual([]);
+    },
+  );
+
+  it("자기 자신 대상이면 순서를 바꾸지 않고 그대로 돌려준다", async () => {
     // Given
-    repository.findByIdAndUserId.mockResolvedValue(createCategory(1, 0));
+    const { repository, useCase } = setUp();
+
     // When
     const result = await useCase.execute({
-      userId: "category-user",
+      userId: USER_ID,
       categoryId: 1,
       targetCategoryId: 1,
       position: "before",
     });
+
     // Then
-    expect(result.id).toBe(1);
-    expect(repository.update).not.toHaveBeenCalled();
-    expect(repository.shiftSortOrders).not.toHaveBeenCalled();
+    expect(result.id.value).toBe(1);
+    expect(await sortOrders(repository)).toEqual([
+      [1, 0],
+      [2, 1],
+      [3, 2],
+    ]);
   });
 
   it("기준 카테고리 앞으로 이동하고 사이 순서와 캐시를 갱신한다", async () => {
     // Given
-    repository.findByIdAndUserId
-      .mockResolvedValueOnce(createCategory(3, 2))
-      .mockResolvedValueOnce(createCategory(1, 0));
-    repository.shiftSortOrders.mockResolvedValue(2);
-    repository.update.mockResolvedValue(createCategory(3, 0));
+    const { repository, cache, useCase } = setUp();
 
     // When
     const result = await useCase.execute({
-      userId: "category-user",
+      userId: USER_ID,
       categoryId: 3,
       targetCategoryId: 1,
       position: "before",
     });
 
     // Then
-    expect(repository.shiftSortOrders).toHaveBeenCalledWith("category-user", 0, 1, 1);
-    expect(repository.update).toHaveBeenCalledWith(3, { sortOrder: 0 });
     expect(result.sortOrder).toBe(0);
-    expect(cache.invalidate).toHaveBeenCalledWith("category-user");
+    expect(await sortOrders(repository)).toEqual([
+      [3, 0],
+      [1, 1],
+      [2, 2],
+    ]);
+    expect(cache.invalidatedUserIds).toEqual([USER_ID]);
   });
 
   it("맨 뒤로 이동하면 마지막 순서를 저장한다", async () => {
     // Given
-    repository.findByIdAndUserId.mockResolvedValue(createCategory(1, 0));
-    repository.getMaxSortOrder.mockResolvedValue(2);
-    repository.shiftSortOrders.mockResolvedValue(2);
-    repository.update.mockResolvedValue(createCategory(1, 2));
+    const { repository, useCase } = setUp();
 
     // When
-    const result = await useCase.execute({
-      userId: "category-user",
-      categoryId: 1,
-      position: "after",
-    });
+    const result = await useCase.execute({ userId: USER_ID, categoryId: 1, position: "after" });
 
     // Then
-    expect(repository.shiftSortOrders).toHaveBeenCalledWith("category-user", 1, null, -1);
-    expect(repository.update).toHaveBeenCalledWith(1, { sortOrder: 2 });
     expect(result.sortOrder).toBe(2);
+    expect(await sortOrders(repository)).toEqual([
+      [2, 0],
+      [3, 1],
+      [1, 2],
+    ]);
   });
 
   it("사용자 카테고리 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
     // Given - 재배치 transaction 경계와 구조 읽기 순서 기록
     const events: string[] = [];
-    unitOfWork.run = async (work) => {
-      events.push("uow:start");
-      const result = await work();
-      events.push("uow:resolved");
-      return result;
-    };
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
-    });
-    repository.findByIdAndUserId
-      .mockImplementationOnce(async () => {
-        events.push("category-read");
-        return createCategory(3, 2);
-      })
-      .mockImplementationOnce(async () => {
-        events.push("target-read");
-        return createCategory(1, 0);
-      });
-    repository.shiftSortOrders.mockImplementation(async () => {
-      events.push("shift");
-      return 2;
-    });
-    repository.update.mockImplementation(async () => {
-      events.push("update");
-      return createCategory(3, 0);
-    });
-    cache.invalidate.mockImplementation(async () => {
-      events.push("cache");
+    class OrderedUnitOfWork extends ImmediateUnitOfWork {
+      override async run<T>(work: () => Promise<T>): Promise<T> {
+        events.push("uow:start");
+        const result = await work();
+        events.push("uow:resolved");
+        return result;
+      }
+    }
+    class OrderedMutationLock extends RecordingMutationLock {
+      override async acquire(keys: readonly string[]): Promise<void> {
+        events.push("lock");
+        await super.acquire(keys);
+      }
+    }
+    class OrderedRepository extends InMemoryTodoCategoryRepository {
+      override async findByIdAndUserId(id: number, userId: string) {
+        events.push(id === 3 ? "category-read" : "target-read");
+        return super.findByIdAndUserId(id, userId);
+      }
+      override async shiftSortOrders(
+        userId: string,
+        fromSortOrder: number,
+        toSortOrder: number | null,
+        delta: number,
+      ): Promise<number> {
+        events.push("shift");
+        return super.shiftSortOrders(userId, fromSortOrder, toSortOrder, delta);
+      }
+      override async update(id: number, input: UpdateCategoryInput): Promise<TodoCategory> {
+        events.push("update");
+        return super.update(id, input);
+      }
+    }
+    class OrderedCache extends FakeTodoCategoryCache {
+      override async invalidate(userId: string): Promise<void> {
+        events.push("cache");
+        await super.invalidate(userId);
+      }
+    }
+    const mutationLock = new OrderedMutationLock();
+    const { useCase } = setUp({
+      repository: new OrderedRepository(categories()),
+      cache: new OrderedCache(),
+      mutationLock,
+      unitOfWork: new OrderedUnitOfWork(),
     });
 
     // When
     await useCase.execute({
-      userId: "category-user",
+      userId: USER_ID,
       categoryId: 3,
       targetCategoryId: 1,
       position: "before",
     });
 
     // Then
-    expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:todo-category:category-user"]);
+    expect(mutationLock.acquiredKeys).toEqual([[`mutation:v1:todo-category:${USER_ID}`]]);
     expect(events).toEqual([
       "uow:start",
       "lock",

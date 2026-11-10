@@ -7,24 +7,26 @@ import type {
 } from "@aido/api";
 
 import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { TodoCategoryWithCountView } from "../../../application/ports/todo-category.repository.port.js";
+import type { TodoCategoryWithCountReadModel } from "../../../application/read-models/todo-category-with-count.read-model.js";
 import type { TodoCategory } from "../../../domain/todo-category.aggregate.js";
 
 export const TodoCategoryMapper = {
   toResponse(category: TodoCategory): TodoCategoryDto {
+    const { id, userId, name, color, sortOrder, createdAt, updatedAt } = category.toPrimitives();
     return {
-      id: category.id,
-      userId: category.userId,
-      name: category.name,
-      color: category.color,
-      sortOrder: category.sortOrder,
-      createdAt: toISOString(category.createdAt),
-      updatedAt: toISOString(category.updatedAt),
+      id,
+      userId,
+      name,
+      color,
+      sortOrder,
+      createdAt: toIsoString(createdAt),
+      updatedAt: toIsoString(updatedAt),
     };
   },
 
-  toResponseWithCount(view: TodoCategoryWithCountView): TodoCategoryWithCountDto {
+  toResponseWithCount(view: TodoCategoryWithCountReadModel): TodoCategoryWithCountDto {
     return {
       id: view.id,
       userId: view.userId,
@@ -37,7 +39,7 @@ export const TodoCategoryMapper = {
     };
   },
 
-  toManyResponseWithCount(views: TodoCategoryWithCountView[]): TodoCategoryWithCountDto[] {
+  toManyResponseWithCount(views: TodoCategoryWithCountReadModel[]): TodoCategoryWithCountDto[] {
     return views.map((view) => TodoCategoryMapper.toResponseWithCount(view));
   },
 };

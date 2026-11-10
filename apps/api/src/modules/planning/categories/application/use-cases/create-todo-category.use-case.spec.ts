@@ -1,182 +1,209 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
-import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
+import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
-import { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
-import { type TodoCategoryLimitReaderPort } from "../ports/todo-category-limit.reader.port.js";
+import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import {
+  type CategoryFeatureQuota,
+  TodoCategoryLimitReaderPort,
+} from "../ports/todo-category-limit.reader.port.js";
 import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case.js";
 
-const createCategory = () =>
-  TodoCategory.reconstitute(
-    TodoCategoryFixture.create({
-      id: 1,
-      userId: "category-user",
-      name: "새 카테고리",
-      sortOrder: 1,
-    }),
-  );
+const USER_ID = TODO_FIXTURE_USER_ID;
+
+class StubTodoCategoryLimitReader extends TodoCategoryLimitReaderPort {
+  maxCount: number | null = null;
+  quota: CategoryFeatureQuota = {};
+  readonly quotaReads: [string, number][] = [];
+
+  async getMaxCount(): Promise<number | null> {
+    return this.maxCount;
+  }
+
+  async getMaxCountInTx(): Promise<number | null> {
+    return this.maxCount;
+  }
+
+  async readQuotaInTx(userId: string, count: number): Promise<CategoryFeatureQuota> {
+    this.quotaReads.push([userId, count]);
+    return this.quota;
+  }
+}
+
+function existingCategories(): TodoCategory[] {
+  return [
+    createTodoCategoryFixture({ id: 1, name: "업무", sortOrder: 0 }),
+    createTodoCategoryFixture({ id: 2, name: "개인", sortOrder: 0 }),
+  ];
+}
+
+function setUp(
+  overrides: {
+    readonly repository?: InMemoryTodoCategoryRepository;
+    readonly limitReader?: StubTodoCategoryLimitReader;
+    readonly cache?: FakeTodoCategoryCache;
+    readonly mutationLock?: RecordingMutationLock;
+    readonly unitOfWork?: ImmediateUnitOfWork;
+  } = {},
+) {
+  const repository =
+    overrides.repository ?? new InMemoryTodoCategoryRepository(existingCategories());
+  const limitReader = overrides.limitReader ?? new StubTodoCategoryLimitReader();
+  const cache = overrides.cache ?? new FakeTodoCategoryCache();
+  const mutationLock = overrides.mutationLock ?? new RecordingMutationLock();
+  const useCase = new CreateTodoCategoryUseCase({
+    repository,
+    cache,
+    limitReader,
+    mutationLock,
+    unitOfWork: overrides.unitOfWork ?? new ImmediateUnitOfWork(),
+    clock: new FixedClock(TODO_FIXTURE_NOW),
+    logger: new SilentLogger(),
+  });
+  return { repository, limitReader, cache, mutationLock, useCase };
+}
 
 describe("카테고리 생성", () => {
-  let savedCategory: ReturnType<typeof TodoCategoryFixture.create> | undefined;
-  let useCase: CreateTodoCategoryUseCase;
-  let repository: Mocked<ConstructorParameters<typeof CreateTodoCategoryUseCase>[0]["repository"]>;
-  let cache: Mocked<TodoCategoryCachePort>;
-  let limitReader: Mocked<TodoCategoryLimitReaderPort>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let unitOfWork: UnitOfWorkPort;
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
-    repository = mock<ConstructorParameters<typeof CreateTodoCategoryUseCase>[0]["repository"]>();
-    cache = mock<TodoCategoryCachePort>();
-    limitReader = mock<TodoCategoryLimitReaderPort>();
-    mutationLock = mock<MutationLockPort>();
-    unitOfWork = createUnitOfWorkMock();
-    useCase = new CreateTodoCategoryUseCase({
-      repository,
-      cache,
-      mutationLock,
-      unitOfWork,
-      logger: mock<ApplicationLoggerPort>(),
-      limitReader,
-    });
-
-    limitReader.getMaxCountInTx.mockResolvedValue(null);
-    repository.countByUserId.mockResolvedValue(2);
-    repository.existsByUserIdAndName.mockResolvedValue(false);
-    repository.getMaxSortOrder.mockResolvedValue(0);
-    savedCategory = undefined;
-    repository.create.mockImplementation(async (input) => {
-      savedCategory = TodoCategoryFixture.create({ id: 1, ...input });
-      return TodoCategory.reconstitute(savedCategory);
-    });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
   it("한도 초과면 차감 없음과 서버가 계산한 featureQuota를 담아 TODO_CATEGORY_0857로 거부한다", async () => {
     // Given
     const featureQuota = {
       feature: "TODO_CATEGORY",
       allowed: true,
-      limit: 3,
-      used: 3,
+      limit: 2,
+      used: 2,
       remaining: 0,
       period: null,
       resetsAt: null,
       isFairUse: false,
       perUse: null,
-    } as const;
-    limitReader.getMaxCountInTx.mockResolvedValue(3);
-    limitReader.readQuotaInTx.mockResolvedValue(featureQuota);
-    repository.countByUserId.mockResolvedValue(3);
+    };
+    const limitReader = new StubTodoCategoryLimitReader();
+    limitReader.maxCount = 2;
+    limitReader.quota = featureQuota;
+    const { repository, cache, useCase } = setUp({ limitReader });
 
-    // When / Then
-    await expect(
-      useCase.execute({ userId: "category-user", name: "x", color: "#FFB3B3" }),
-    ).rejects.toMatchObject({
+    // When
+    const creation = useCase.execute({ userId: USER_ID, name: "새 카테고리", color: "#FFB3B3" });
+
+    // Then
+    await expect(creation).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_CATEGORY_0857,
       details: { charged: false, featureQuota },
     });
-    expect(limitReader.readQuotaInTx).toHaveBeenCalledWith("category-user", 3);
-    expect(repository.create).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
+    expect(limitReader.quotaReads).toEqual([[USER_ID, 2]]);
+    expect(await repository.countByUserId(USER_ID)).toBe(2);
+    expect(cache.invalidatedUserIds).toEqual([]);
   });
 
-  it("중복 이름이면 TODO_CATEGORY_0853", async () => {
+  it("중복 이름이면 TODO_CATEGORY_0853이고 저장하지 않는다", async () => {
     // Given
-    repository.existsByUserIdAndName.mockResolvedValue(true);
-    // When / Then
-    await expect(
-      useCase.execute({ userId: "category-user", name: "x", color: "#FFB3B3" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0853 });
-    expect(repository.create).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
+    const { repository, cache, useCase } = setUp();
+
+    // When
+    const creation = useCase.execute({ userId: USER_ID, name: "업무", color: "#FFB3B3" });
+
+    // Then
+    await expect(creation).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0853,
+      details: { name: "업무" },
+    });
+    expect(await repository.countByUserId(USER_ID)).toBe(2);
+    expect(cache.invalidatedUserIds).toEqual([]);
   });
 
   it("새 카테고리를 맨 뒤 순번으로 저장하고 캐시를 무효화한다", async () => {
     // Given
+    const { repository, cache, useCase } = setUp();
+
     // When
     const result = await useCase.execute({
-      userId: "category-user",
+      userId: USER_ID,
       name: "새 카테고리",
       color: "#FFB3B3",
     });
+
     // Then
-    expect(savedCategory).toMatchObject({
-      id: 1,
+    const saved = await repository.findByIdAndUserId(result.id.value, USER_ID);
+    expect(saved?.toPrimitives()).toEqual({
+      id: 3,
+      userId: USER_ID,
       name: "새 카테고리",
       color: "#FFB3B3",
       sortOrder: 1,
-      createdAt: PLANNING_TIME,
+      createdAt: TODO_FIXTURE_NOW,
+      updatedAt: TODO_FIXTURE_NOW,
     });
-    expect(result.id).toBe(1);
-    expect(repository.create).toHaveBeenCalledWith({
-      userId: "category-user",
-      name: "새 카테고리",
-      color: "#FFB3B3",
-      sortOrder: 1,
-    });
-    expect(cache.invalidate).toHaveBeenCalledWith("category-user");
+    expect(cache.invalidatedUserIds).toEqual([USER_ID]);
   });
 
   it("사용자 카테고리 키를 UoW 안에서 모든 guarded read 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
     // Given - UoW/lock/read/write/cache 경계의 관찰 가능한 순서
     const events: string[] = [];
-    unitOfWork.run = async (work) => {
-      events.push("uow:start");
-      const result = await work();
-      events.push("uow:resolved");
-      return result;
-    };
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
-    });
-    limitReader.getMaxCountInTx.mockImplementation(async () => {
-      events.push("entitlement");
-      return 3;
-    });
-    repository.countByUserId.mockImplementation(async () => {
-      events.push("count");
-      return 2;
-    });
-    repository.existsByUserIdAndName.mockImplementation(async () => {
-      events.push("name-read");
-      return false;
-    });
-    repository.getMaxSortOrder.mockImplementation(async () => {
-      events.push("max-order-read");
-      return 0;
-    });
-    repository.create.mockImplementation(async () => {
-      events.push("create");
-      return createCategory();
-    });
-    cache.invalidate.mockImplementation(async () => {
-      events.push("cache");
+    class OrderedUnitOfWork extends ImmediateUnitOfWork {
+      override async run<T>(work: () => Promise<T>): Promise<T> {
+        events.push("uow:start");
+        const result = await work();
+        events.push("uow:resolved");
+        return result;
+      }
+    }
+    class OrderedMutationLock extends RecordingMutationLock {
+      override async acquire(keys: readonly string[]): Promise<void> {
+        events.push("lock");
+        await super.acquire(keys);
+      }
+    }
+    class OrderedLimitReader extends StubTodoCategoryLimitReader {
+      override async getMaxCountInTx(): Promise<number | null> {
+        events.push("entitlement");
+        return 3;
+      }
+    }
+    class OrderedRepository extends InMemoryTodoCategoryRepository {
+      override async countByUserId(userId: string): Promise<number> {
+        events.push("count");
+        return super.countByUserId(userId);
+      }
+      override async existsByUserIdAndName(userId: string, name: string): Promise<boolean> {
+        events.push("name-read");
+        return super.existsByUserIdAndName(userId, name);
+      }
+      override async getMaxSortOrder(userId: string): Promise<number> {
+        events.push("max-order-read");
+        return super.getMaxSortOrder(userId);
+      }
+      override async insert(category: TodoCategory): Promise<void> {
+        events.push("insert");
+        await super.insert(category);
+      }
+    }
+    class OrderedCache extends FakeTodoCategoryCache {
+      override async invalidate(userId: string): Promise<void> {
+        events.push("cache");
+        await super.invalidate(userId);
+      }
+    }
+    const mutationLock = new OrderedMutationLock();
+    const { useCase } = setUp({
+      repository: new OrderedRepository(existingCategories()),
+      limitReader: new OrderedLimitReader(),
+      cache: new OrderedCache(),
+      mutationLock,
+      unitOfWork: new OrderedUnitOfWork(),
     });
 
     // When - 새 카테고리 생성
-    await useCase.execute({
-      userId: "category-user",
-      name: "새 카테고리",
-      color: "#FFB3B3",
-    });
+    await useCase.execute({ userId: USER_ID, name: "새 카테고리", color: "#FFB3B3" });
 
     // Then - 한 user-scoped key가 모든 구조 읽기보다 먼저이고 cache는 callback 성공 뒤
-    expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:todo-category:category-user"]);
+    expect(mutationLock.acquiredKeys).toEqual([[`mutation:v1:todo-category:${USER_ID}`]]);
     expect(events).toEqual([
       "uow:start",
       "lock",
@@ -184,7 +211,7 @@ describe("카테고리 생성", () => {
       "count",
       "name-read",
       "max-order-read",
-      "create",
+      "insert",
       "uow:resolved",
       "cache",
     ]);

@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type DomainEventPublisherPort,
@@ -33,6 +34,7 @@ interface UpdateTodoCategoryDependencies {
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -55,7 +57,7 @@ export class UpdateTodoCategoryUseCase {
         });
       }
 
-      if (data.name != null && data.name !== category.name) {
+      if (data.name != null && data.name !== category.name.value) {
         const duplicate = await this.#dependencies.repository.existsByUserIdAndName(
           userId,
           data.name,
@@ -68,11 +70,12 @@ export class UpdateTodoCategoryUseCase {
         }
       }
 
-      category.updateDetails(data);
-
+      if (!category.updateDetails(data, this.#dependencies.clock.now())) {
+        return { updated: category, events: [] };
+      }
       const updated = await this.#dependencies.repository.update(id, {
-        name: data.name == null ? undefined : category.name,
-        color: data.color == null ? undefined : category.color,
+        name: data.name == null ? undefined : category.name.value,
+        color: data.color == null ? undefined : category.color.value,
       });
       return { updated, events: category.pullDomainEvents() };
     });

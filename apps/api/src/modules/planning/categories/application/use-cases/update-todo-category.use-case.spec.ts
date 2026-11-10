@@ -1,144 +1,147 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { MutationLockPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
+import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
-import { PLANNING_TIME } from "#test/fixtures/planning/planning-todos.fixture";
-import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
-import { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
+import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case.js";
 
+const USER_ID = TODO_FIXTURE_USER_ID;
+const LATER = TODO_FIXTURE_NOW.add({ hours: 1 });
+
+class RecordingCategoryRepository extends InMemoryTodoCategoryRepository {
+  readonly updates: [number, UpdateCategoryInput][] = [];
+  readonly nameChecks: string[] = [];
+
+  override async existsByUserIdAndName(
+    userId: string,
+    name: string,
+    excludeId?: number,
+  ): Promise<boolean> {
+    this.nameChecks.push(name);
+    return super.existsByUserIdAndName(userId, name, excludeId);
+  }
+
+  override async update(id: number, input: UpdateCategoryInput) {
+    this.updates.push([id, input]);
+    return super.update(id, input);
+  }
+}
+
+function setUp(unitOfWork: ImmediateUnitOfWork = new ImmediateUnitOfWork()) {
+  const repository = new RecordingCategoryRepository([
+    createTodoCategoryFixture({ id: 1, name: "기존", color: "#FFB3B3" }),
+    createTodoCategoryFixture({ id: 2, name: "개인", sortOrder: 1 }),
+  ]);
+  const cache = new FakeTodoCategoryCache();
+  const eventPublisher = new RecordingDomainEventPublisher();
+  const useCase = new UpdateTodoCategoryUseCase({
+    repository,
+    cache,
+    mutationLock: new RecordingMutationLock(),
+    unitOfWork,
+    clock: new FixedClock(LATER),
+    eventPublisher,
+    logger: new SilentLogger(),
+  });
+  return { repository, cache, eventPublisher, useCase };
+}
+
 describe("카테고리 수정", () => {
-  let savedCategory: ReturnType<typeof TodoCategoryFixture.create>;
-  let unitOfWork: UnitOfWorkPort;
-  let eventPublisher: RecordingDomainEventPublisher;
-  let useCase: UpdateTodoCategoryUseCase;
-  let repository: Mocked<ConstructorParameters<typeof UpdateTodoCategoryUseCase>[0]["repository"]>;
-  let cache: Mocked<TodoCategoryCachePort>;
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
-    repository = mock<ConstructorParameters<typeof UpdateTodoCategoryUseCase>[0]["repository"]>();
-    cache = mock<TodoCategoryCachePort>();
-    const mutationLock = mock<MutationLockPort>();
-    unitOfWork = createUnitOfWorkMock();
-    eventPublisher = new RecordingDomainEventPublisher();
-    useCase = new UpdateTodoCategoryUseCase({
-      repository,
-      cache,
-      mutationLock,
-      unitOfWork,
-      eventPublisher,
-      logger: mock<ApplicationLoggerPort>(),
-    });
-
-    savedCategory = TodoCategoryFixture.create({
-      id: 1,
-      userId: "category-user",
-      name: "기존",
-      color: "#FFB3B3",
-      sortOrder: 0,
-    });
-    repository.findByIdAndUserId.mockImplementation(async (id, userId) =>
-      savedCategory.id === id && savedCategory.userId === userId
-        ? TodoCategory.reconstitute(savedCategory)
-        : null,
-    );
-    repository.existsByUserIdAndName.mockResolvedValue(false);
-    repository.update.mockImplementation(async (_id, input) => {
-      savedCategory = {
-        ...savedCategory,
-        name: input.name ?? savedCategory.name,
-        color: input.color ?? savedCategory.color,
-      };
-      return TodoCategory.reconstitute(savedCategory);
-    });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it("존재하지 않으면 TODO_CATEGORY_0851", async () => {
+  it.each([
+    {
+      name: "남의 카테고리나 없는 카테고리면 TODO_CATEGORY_0851",
+      command: { id: 9, data: { name: "수정" } },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0851, details: { categoryId: 9 } },
+    },
+    {
+      name: "이름이 다른 카테고리와 겹치면 TODO_CATEGORY_0853",
+      command: { id: 1, data: { name: "개인" } },
+      error: { errorCode: ErrorCode.TODO_CATEGORY_0853, details: { name: "개인" } },
+    },
+  ])("$name이고 저장·캐시·이벤트가 없다", async ({ command, error }) => {
     // Given
-    repository.findByIdAndUserId.mockResolvedValue(null);
-    // When / Then
-    await expect(
-      useCase.execute({ id: 1, userId: "category-user", data: { name: "수정" } }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    expect(repository.update).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
+    const { repository, cache, eventPublisher, useCase } = setUp();
 
-  it("이름 변경 시 중복이면 TODO_CATEGORY_0853", async () => {
-    // Given
-    repository.existsByUserIdAndName.mockResolvedValue(true);
-    // When / Then
-    await expect(
-      useCase.execute({ id: 1, userId: "category-user", data: { name: "수정" } }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0853 });
-    expect(repository.update).not.toHaveBeenCalled();
-    expect(cache.invalidate).not.toHaveBeenCalled();
-    expect(eventPublisher.events).toEqual([]);
-  });
-
-  it("수정한 이름과 색상을 저장하고 캐시를 무효화한다", async () => {
-    // Given
-    const callbackFinished = Promise.withResolvers<void>();
-    const releaseCallback = Promise.withResolvers<void>();
-    unitOfWork.run = async (work) => {
-      const result = await work();
-      callbackFinished.resolve();
-      await releaseCallback.promise;
-      return result;
-    };
     // When
-    const execution = useCase.execute({
+    const update = useCase.execute({ userId: USER_ID, ...command });
+
+    // Then
+    await expect(update).rejects.toMatchObject(error);
+    expect(repository.updates).toEqual([]);
+    expect(cache.invalidatedUserIds).toEqual([]);
+    expect(eventPublisher.events).toEqual([]);
+  });
+
+  it("수정한 이름과 색상을 저장하고 커밋 뒤에 캐시를 무효화하고 이벤트를 낸다", async () => {
+    // Given
+    const insideCommit: { invalidated: number; events: number }[] = [];
+    let cache: FakeTodoCategoryCache | null = null;
+    let eventPublisher: RecordingDomainEventPublisher | null = null;
+    class ObservedUnitOfWork extends ImmediateUnitOfWork {
+      override async run<T>(work: () => Promise<T>): Promise<T> {
+        const result = await work();
+        insideCommit.push({
+          invalidated: cache?.invalidatedUserIds.length ?? 0,
+          events: eventPublisher?.events.length ?? 0,
+        });
+        return result;
+      }
+    }
+    const context = setUp(new ObservedUnitOfWork());
+    cache = context.cache;
+    eventPublisher = context.eventPublisher;
+
+    // When
+    const result = await context.useCase.execute({
       id: 1,
-      userId: "category-user",
+      userId: USER_ID,
       data: { name: "수정", color: "#FF0000" },
     });
-    try {
-      await Promise.race([callbackFinished.promise, execution]);
-      expect(cache.invalidate).not.toHaveBeenCalled();
-      expect(eventPublisher.events).toEqual([]);
-    } finally {
-      releaseCallback.resolve();
-      await execution;
-    }
-    const result = await execution;
+
     // Then
-    expect(savedCategory).toMatchObject({
-      name: "수정",
-      color: "#FF0000",
-      sortOrder: 0,
-      createdAt: PLANNING_TIME,
-    });
-    expect(result.name).toBe("수정");
-    expect(repository.update).toHaveBeenCalledWith(1, {
-      name: "수정",
-      color: "#FF0000",
-    });
-    expect(cache.invalidate).toHaveBeenCalledWith("category-user");
-    expect(eventPublisher.events).toEqual([
-      { eventName: "todo-category.updated", userId: "category-user", categoryId: 1 },
+    expect(insideCommit).toEqual([{ invalidated: 0, events: 0 }]);
+    expect(result.toPrimitives()).toMatchObject({ name: "수정", color: "#FF0000", sortOrder: 0 });
+    expect(context.repository.updates).toEqual([[1, { name: "수정", color: "#FF0000" }]]);
+    expect(context.cache.invalidatedUserIds).toEqual([USER_ID]);
+    expect(context.eventPublisher.events).toEqual([
+      { eventName: "todo-category.updated", userId: USER_ID, categoryId: 1 },
     ]);
   });
 
   it("이름이 기존과 같으면 중복 검사를 건너뛴다", async () => {
     // Given
+    const { repository, useCase } = setUp();
+
     // When
-    await useCase.execute({ id: 1, userId: "category-user", data: { name: "기존" } });
+    await useCase.execute({ id: 1, userId: USER_ID, data: { name: "기존", color: "#FF0000" } });
+
     // Then
-    expect(repository.existsByUserIdAndName).not.toHaveBeenCalled();
+    expect(repository.nameChecks).toEqual([]);
+    expect(repository.updates).toEqual([[1, { name: "기존", color: "#FF0000" }]]);
+  });
+
+  it("같은 이름·색상이면 저장·이벤트 없이 그대로 돌려준다", async () => {
+    // Given
+    const { repository, eventPublisher, useCase } = setUp();
+
+    // When
+    const result = await useCase.execute({
+      id: 1,
+      userId: USER_ID,
+      data: { name: "기존", color: "#FFB3B3" },
+    });
+
+    // Then
+    expect(result.toPrimitives()).toMatchObject({ name: "기존", updatedAt: TODO_FIXTURE_NOW });
+    expect(repository.updates).toEqual([]);
+    expect(eventPublisher.events).toEqual([]);
   });
 });
