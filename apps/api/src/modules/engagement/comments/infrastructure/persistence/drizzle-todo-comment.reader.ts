@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 
+import { TodoDetailsReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { type KeysetOperand, tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
@@ -46,7 +47,6 @@ import {
   type TodoCommentProjectionRow,
 } from "./todo-comment-read-model.mapper.js";
 import { toTodoCommentKeysetWindow } from "./todo-comment-window.mapper.js";
-import { toFriendTodoReadModel } from "./todo-details-row.mapper.js";
 
 const commentTodo = alias(todo, "comment_todo");
 const authorProfile = alias(userProfile, "author_profile");
@@ -178,9 +178,14 @@ interface ThreadSummary {
 @Injectable()
 export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #todoDetails: Pick<TodoDetailsReaderPort, "findAccess" | "findDetails">;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    todoDetails: TodoDetailsReaderPort,
+  ) {
     this.#txHost = txHost;
+    this.#todoDetails = todoDetails;
   }
 
   get #db() {
@@ -202,57 +207,51 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { userId: true, visibility: true },
-      where: { id: todoId },
-    });
-    if (row == null) {
+    const access = await this.#todoDetails.findAccess(todoId);
+    if (access == null) {
       return null;
     }
-    if (row.userId === viewerId) {
-      return row.userId;
+    if (access.ownerId === viewerId) {
+      return access.ownerId;
     }
-    if (row.visibility !== "PUBLIC") {
+    if (access.visibility !== "PUBLIC") {
       return null;
     }
-    return (await this.#isAcceptedFriend(row.userId, viewerId)) ? row.userId : null;
+    return (await this.#isAcceptedFriend(access.ownerId, viewerId)) ? access.ownerId : null;
   }
 
   async findAccessibleTodoDetails(
     todoId: number,
     viewerId: string,
   ): Promise<TodoDetailsReadModel | null> {
-    const row = await this.#db.query.todo.findFirst({
-      where: { id: todoId },
-      with: {
-        category: true,
-        items: { orderBy: { sortOrder: "asc", id: "asc" } },
-        user: {
-          columns: { id: true },
-          with: { profile: { columns: { name: true, profileImage: true } } },
-        },
-      },
-    });
-    if (row == null) {
+    const details = await this.#todoDetails.findDetails(todoId);
+    if (details == null) {
       return null;
     }
-    const isOwner = row.userId === viewerId;
+    const { todo } = details;
+    const isOwner = todo.userId === viewerId;
     const canAccess =
       isOwner ||
-      (row.visibility === "PUBLIC" && (await this.#isAcceptedFriend(row.userId, viewerId)));
+      (todo.visibility === "PUBLIC" && (await this.#isAcceptedFriend(todo.userId, viewerId)));
     if (!canAccess) {
       return null;
     }
-    const owner = requireRecord(row.user);
+    const owner = requireRecord(
+      await this.#db.query.user.findFirst({
+        columns: { id: true },
+        where: { id: todo.userId },
+        with: { profile: { columns: { name: true, profileImage: true } } },
+      }),
+    );
     return {
-      todo: toFriendTodoReadModel(row),
+      todo,
       owner: {
         id: owner.id,
         name: owner.profile?.name ?? null,
         profileImage: owner.profile?.profileImage ?? null,
       },
-      viewCount: row.viewCount,
-      commentCount: row.commentCount,
+      viewCount: details.viewCount,
+      commentCount: todo.commentCount,
       isOwner,
     };
   }

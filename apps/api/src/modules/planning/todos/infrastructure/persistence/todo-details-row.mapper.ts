@@ -1,4 +1,3 @@
-import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
 import {
@@ -7,6 +6,8 @@ import {
   toISOString,
   toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
+
+import type { FriendTodoReadModel } from "../../application/read-models/todo.read-model.js";
 
 export type TodoDetailsRow = typeof todo.$inferSelect & {
   category: typeof todoCategory.$inferSelect | null;

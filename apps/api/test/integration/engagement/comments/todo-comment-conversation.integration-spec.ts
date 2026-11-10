@@ -17,6 +17,7 @@ import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comme
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { toTodoConversationResponse } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment-response.mapper";
+import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
@@ -68,7 +69,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
     client = await testDatabase.start();
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleTodoCommentReader(txHost);
+    reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
     blockRepository = new DrizzleUserBlockRepository(txHost);
     repository = new DrizzleTodoCommentRepository(txHost);
     cursorModule = await Test.createTestingModule({

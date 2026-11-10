@@ -23,6 +23,7 @@ import { NotificationCachePort } from "#api/modules/notification/inbox/applicati
 import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/delete-actor-notifications.use-case";
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
+import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import {
   TodoEngagementCounterPort,
@@ -477,7 +478,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 
     // When
     await purgeDeletedAccounts.execute();
-    const reader = new DrizzleTodoCommentReader(createDatabaseTransactionFixture(client).txHost);
+    const { txHost } = createDatabaseTransactionFixture(client);
+    const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
     const replyToPurged = await reader.findComment(fixture.todoId, fixture.activeGrandchildId);
 
     // Then

@@ -6,6 +6,7 @@ import { ListTodoCommentRepliesUseCase } from "#api/modules/engagement/comments/
 import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/comments/application/use-cases/list-todo-comment-threads.use-case";
 import { HmacTodoCommentCursorCodecAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader";
+import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
@@ -69,7 +70,7 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
     });
     client = await testDatabase.start();
     const { txHost } = createDatabaseTransactionFixture(client);
-    const reader = new DrizzleTodoCommentReader(txHost);
+    const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
     const blockReader = new DrizzleUserBlockRepository(txHost);
     cursorModule = await Test.createTestingModule({
       providers: [

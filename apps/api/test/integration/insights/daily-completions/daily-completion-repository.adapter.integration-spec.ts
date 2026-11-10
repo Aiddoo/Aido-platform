@@ -1,4 +1,5 @@
-import { DrizzleDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-daily-completion.repository";
+import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/daily-completion-repository.adapter";
+import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { describeDailyCompletionRepositoryContract } from "#test/contracts/insights/daily-completion-repository.contract";
 import { UserFixture } from "#test/fixtures/index";
@@ -15,7 +16,7 @@ function toDateColumn(date: Temporal.PlainDate): Date {
   return new Date(`${date.toString()}T00:00:00.000Z`);
 }
 
-describe("DrizzleDailyCompletionRepository (실제 PostgreSQL)", () => {
+describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
 
@@ -75,6 +76,6 @@ describe("DrizzleDailyCompletionRepository (실제 PostgreSQL)", () => {
   describeDailyCompletionRepositoryContract(async (todos) => {
     await seed(todos);
     const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleDailyCompletionRepository(txHost);
+    return new DailyCompletionRepositoryAdapter(new DrizzleTodoCompletionGroupReader(txHost));
   });
 });

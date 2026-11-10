@@ -232,7 +232,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(focus.result.items.at(0)?.id).toBe(focusId);
   });
 
-  it("할 일 소유자 상세는 관계를 쿼리 1번으로 읽는다", async () => {
+  // 할 일·카테고리·항목은 planning 조회 포트가 한 번에, 주인 프로필은 engagement가 따로 읽는다
+  it("할 일 소유자 상세는 할 일 1번·주인 프로필 1번으로 읽는다", async () => {
     // Given
     const getDetails = context.module.get(GetTodoDetailsUseCase);
 
@@ -240,7 +241,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const measured = await measure(() => getDetails.execute({ todoId, viewerId: userId }));
 
     // Then
-    expect(measured.count).toBe(1);
+    expect(measured.count).toBe(2);
     expect(measured.result).toMatchObject({ commentCount: 9 });
   });
 

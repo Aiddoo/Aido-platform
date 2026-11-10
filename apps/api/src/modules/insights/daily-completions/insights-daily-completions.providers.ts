@@ -9,12 +9,12 @@ import { DailyCompletionRepositoryPort } from "./application/ports/daily-complet
 import { FriendshipReaderPort } from "./application/ports/friendship.reader.port.js";
 import { GetDailyCompletionsUseCase } from "./application/use-cases/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletionsUseCase } from "./application/use-cases/get-friend-daily-completions.use-case.js";
+import { DailyCompletionRepositoryAdapter } from "./infrastructure/adapters/daily-completion-repository.adapter.js";
 import { DailyCompletionCache } from "./infrastructure/cache/daily-completion.cache.js";
 import { DailyCompletionCacheEventHandler } from "./infrastructure/event-handlers/daily-completion-cache.event-handler.js";
-import { DrizzleDailyCompletionRepository } from "./infrastructure/persistence/drizzle-daily-completion.repository.js";
 
 export const INSIGHTS_DAILY_COMPLETIONS_PROVIDERS = [
-  { provide: DailyCompletionRepositoryPort, useClass: DrizzleDailyCompletionRepository },
+  { provide: DailyCompletionRepositoryPort, useClass: DailyCompletionRepositoryAdapter },
   { provide: DailyCompletionCachePort, useClass: DailyCompletionCache },
   { provide: FriendshipReaderPort, useExisting: FollowReaderPort },
   provideUseCase(DailyCompletionCacheEventHandler, {
