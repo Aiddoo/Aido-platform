@@ -1,5 +1,6 @@
 export * from "./after-commit-task.registry.port.js";
 export * from "./domain-event-publisher.port.js";
+export * from "./job-heartbeat.port.js";
 export * from "./job-queue.port.js";
 export * from "./job-runtime.port.js";
 export * from "./mutation-lock.port.js";
