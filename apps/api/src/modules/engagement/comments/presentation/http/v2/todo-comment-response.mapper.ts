@@ -81,7 +81,7 @@ export function toVisiblePreviewReply(
   return preview == null || viewer.blockedAuthorIds.has(preview.authorId) ? null : preview;
 }
 
-export function toTodoCommentParticipantAuthor(
+function toTodoCommentParticipantAuthor(
   author: TodoCommentParticipantAuthorReadModel,
   appVersion?: string,
 ): TodoCommentV2Author {

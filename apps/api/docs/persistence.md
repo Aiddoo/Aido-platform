@@ -28,7 +28,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - 조건은 ORM 연산자(`eq`·`and`·`inArray`), 개수는 `$count`, 존재는 `exists`다. 여러 행 upsert는 한 문장(``set: { col: sql`excluded.col` }``)이다.
 - 항목 수에 비례해 쿼리를 퍼뜨리지 않는다. N번 조회는 `inArray` 한 번 + `keyBy`/`groupBy`다. `Promise.all`은 트랜잭션 밖의 독립 읽기에만 쓴다.
 - 행 타입은 `$inferSelect`/`$inferInsert`로 유도한다. ORM 타입은 infrastructure 밖으로 나가지 않는다.
-- Reader 사례: 댓글 overview·대화는 [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)가 root keyset을 SQL로 읽고 page 단위 좋아요를 합친다. viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다. 리마인더 스케줄러의 [DrizzleSchedulerReader](../src/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader.ts)는 발송 대상 판정을 위해 다른 Context 테이블을 한 SQL로 읽는 배치 Read Model이다(쓰기와 판단은 소유 Context).
+- Reader 사례: 댓글 overview·대화는 [DrizzleTodoCommentReader](../src/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader.ts)가 root keyset을 Drizzle CTE·LATERAL로 읽고 page 단위 좋아요를 합친다. viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다. 리마인더 스케줄러의 [DrizzleSchedulerReader](../src/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader.ts)는 발송 대상 판정을 위해 다른 Context 테이블을 한 SQL로 읽는 배치 Read Model이다(쓰기와 판단은 소유 Context).
 
 ## raw SQL
 

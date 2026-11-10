@@ -7,11 +7,11 @@ export const TODO_CONVERSATION_SCOPES = ["TODO", "THREAD"] as const;
 export type TodoConversationScope = (typeof TODO_CONVERSATION_SCOPES)[number];
 
 /** 기준 행 앞뒤를 함께 읽는 창. 묶음은 anchor, 답글은 around, 대화는 focus로 연다 */
-export const TODO_COMMENT_THREAD_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "ANCHOR"] as const;
+const TODO_COMMENT_THREAD_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "ANCHOR"] as const;
 export type TodoCommentThreadPageMode = (typeof TODO_COMMENT_THREAD_PAGE_MODES)[number];
 
-export const TODO_COMMENT_REPLY_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "AROUND"] as const;
+const TODO_COMMENT_REPLY_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "AROUND"] as const;
 export type TodoCommentReplyPageMode = (typeof TODO_COMMENT_REPLY_PAGE_MODES)[number];
 
-export const TODO_CONVERSATION_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "FOCUS"] as const;
+const TODO_CONVERSATION_PAGE_MODES = ["INITIAL", "BEFORE", "AFTER", "FOCUS"] as const;
 export type TodoConversationPageMode = (typeof TODO_CONVERSATION_PAGE_MODES)[number];

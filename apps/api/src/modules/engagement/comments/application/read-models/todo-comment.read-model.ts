@@ -109,7 +109,7 @@ export interface TodoCommentRepliesPage {
   readonly pagination: TodoCommentCursorPage;
 }
 
-export interface TodoConversationFocusReadModel {
+interface TodoConversationFocusReadModel {
   readonly commentId: string;
   readonly itemIndex: number;
   /** focus 답글 앞 페이지 밖의 묶음 머리. 1.14.0 이하 앱이 대화를 이어 그리는 데 쓴다 */
@@ -141,7 +141,7 @@ export interface TodoCommentLikeState {
   readonly likeCount: number;
 }
 
-export interface TodoDetailsOwnerReadModel {
+interface TodoDetailsOwnerReadModel {
   readonly id: string;
   readonly name: string | null;
   readonly profileImage: string | null;

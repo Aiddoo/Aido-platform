@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { TodoComment } from "./todo-comment.aggregate.js";
 
-export interface TodoCommentChainItem {
+interface TodoCommentChainItem {
   readonly clientRequestId: string;
   readonly content: string;
 }

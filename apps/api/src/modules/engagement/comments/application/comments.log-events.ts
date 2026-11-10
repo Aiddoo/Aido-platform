@@ -8,8 +8,7 @@ export const TodoCommentLogEvent = {
     "engagement.comment.account-cleanup.cache.invalidation.failed",
 } as const;
 
-export type TodoCommentFailureEvent =
-  (typeof TodoCommentLogEvent)[keyof typeof TodoCommentLogEvent];
+type TodoCommentFailureEvent = (typeof TodoCommentLogEvent)[keyof typeof TodoCommentLogEvent];
 
 interface AfterCommitTask {
   readonly failureEvent: TodoCommentFailureEvent;
