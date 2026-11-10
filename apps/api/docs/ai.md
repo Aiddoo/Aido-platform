@@ -4,7 +4,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 역할 분리
 
-- LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `domain/services/parsing/resolve-todo-schedule.ts`가 사용자 시간대 기준으로 계산한다.
+- LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `shared/domain/todo-schedule.domain-service.ts`(`resolveTodoSchedule`)가 사용자 시간대 기준으로 계산한다.
 - 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional 칸(`meta.promptVersion`, parse-memo의 `meta.omittedTodoCount`, `featureQuota`, `repeat`)만 더했다.
 - 빠른 계획(`POST /v1/quick-plans`)·녹음 정리(`POST /v1/voice-notes/digest`) 응답에는 `meta`가 없다. 앱이 읽지 않는 업체·모델·토큰·프롬프트 버전을 내보내지 않고 서버 로그 `ai.generation.*`에만 남긴다. 출시 앱이 쓰는 `parse-todo`·`parse-memo`의 `meta`는 그대로다.
 - parse-memo는 빠른 계획·녹음 정리와 같은 맥락(`planningContext`, 다가오는 할 일 30개)을 받아 겹침을 판정한다. 모델이 고른 id는 준 목록 안의 것만 남기고, 못 골랐으면 `findDuplicateTodoId`가 제목과 날짜로 다시 찾아 응답의 선택 칸 `duplicateOfTodoId`에 싣는다.
@@ -12,7 +12,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 - 긴 메모가 `maxOutputTokens`를 넘어 TRUNCATED가 되지 않도록 v2 모델은 할 일을 앞의 8개까지만 쓰고, 메모 전체 할 일 수를 LLM schema의 `totalTaskCount`(모르면 null)로 함께 낸다. `totalTaskCount`는 schema에서 `todos` 뒤에 둔다(앞에 두면 사고 토큰이 적은 응답에서 과대 집계가 잦았다). 남은 수는 `max(totalTaskCount, 받은 할 일 수) − 5`이고, 모델이 전체 수를 null로 두면 받은 할 일 수로 센다.
 - 일정 계산은 사용자가 말한 날짜·시각을 우선한다. 날짜 없이 말한 때("아침에")가 오늘 이미 지났으면 다음 날 그 때로 넘기고, "오늘 아침"처럼 오늘을 말했는데 지났으면 오늘 종일로 둔다(지난 기본 시각을 만들지 않는다). 숫자 시각("오늘 오전 9시")은 지났어도 그대로 둔다. 상대 시각(`relativeMinutes`)은 1분 이상이고 날짜가 없거나 오늘일 때만 쓰며, 0이나 "내일"과 함께 온 값은 무시한다.
 - 할 일에 지난 날짜는 쓸모없으므로 요일이 지났으면(토요일에 말한 "금요일", "이번 주 금요일") `weekOffset`과 무관하게 가장 가까운 앞으로의 그 요일로 넘긴다. "이번 달 초"(`MONTH_START` 0)는 1~10일이면 오늘, 11일부터 다음 달 1일이고, "올해 초"(`YEAR_START` 0)는 1월이면 오늘, 2월부터 내년 1월 1일이다(사용자 시간대 기준). 이번 달 이름을 말한 "M월 초"·"M월 말"은 모델이 `MONTH_START`·`MONTH_END` amount 0으로 내어 같게 계산하고, "M월 1일"처럼 정확한 날짜와 다른 달은 `CALENDAR_DATE`라 지났으면 내년이다. 음수 값과 연도까지 말한 지난 `CALENDAR_DATE`는 오늘로 두고 `INVALID_DATE`를 남긴다. 기간의 끝 요일이 시작보다 앞이면 시작 뒤의 그 요일이다.
-- 리포트·제안도 서버가 근거 데이터를 만들고(기간 날짜·달성률 차이·후보 목록) 모델은 문장만 쓰거나 후보를 고른다. 리포트 정규화는 ko의 "~요냥"(해요체 뒤에 붙인 냥)과 en의 "meow"를 지운다(`domain/services/reports/report-persona.ts`). 리포트 summary·팁에서 report_data에 없는 숫자를 쓴 문장은 빼고, 남는 summary나 팁이 없으면 폴백으로 저장한다. 제안 사유와 리포트 문장의 숫자는 서버 근거와 사용자가 쓴 이름의 분량("30개")만 허용하며 단위가 다르면 거른다(`domain/services/grounding/grounded-numbers.ts`).
+- 리포트·제안도 서버가 근거 데이터를 만들고(기간 날짜·달성률 차이·후보 목록) 모델은 문장만 쓰거나 후보를 고른다. 리포트 정규화는 ko의 "~요냥"(해요체 뒤에 붙인 냥)과 en의 "meow"를 지운다(`reports/domain/report-persona.domain-service.ts`). 리포트 summary·팁에서 report_data에 없는 숫자를 쓴 문장은 빼고, 남는 summary나 팁이 없으면 폴백으로 저장한다. 제안 사유와 리포트 문장의 숫자는 서버 근거와 사용자가 쓴 이름의 분량("30개")만 허용하며 단위가 다르면 거른다(`shared/domain/grounded-numbers.domain-service.ts`).
 
 ## 프롬프트 구성
 
@@ -77,16 +77,28 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | `AI_BUDGET_DAILY_USD` / `AI_BUDGET_MONTHLY_USD`                         | 전체 생성 중단 기준선                         | 3 / 30                                                      |
 | `AI_BUDGET_USER_DAILY_USD`                                              | 사용자 한 명의 일 추정 비용 상한              | 0.25                                                        |
 
-`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 `TypedConfigService.ai`가 업체·작업 단위로 묶어 한 번 파싱한다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·0, 배경은 pg-boss가 다시 부른다)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `infrastructure/adapters/generation/ai-generation-policy.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
+`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 `TypedConfigService.ai`가 업체·작업 단위로 묶어 한 번 파싱한다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·0, 배경은 pg-boss가 다시 부른다)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `generation/infrastructure/adapters/ai-generation-policy.constants.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
 
 ## 업체 체인·폴백·회로
 
-- Application은 `AI_GENERATOR`(`AiGeneratorPort.generate`) 하나만 안다(`ai-assistance-generation.public.ts`). 구현 `AiSdkGenerator`는 `ai-route.policy.ts`(순수 함수)로 업체 순서를 정한다: `AI_PROVIDER_ORDER` → 키가 있는 업체 → 사용자가 동의한 안내 버전이 허용한 업체(`ai-processor-consent.policy.ts`, 표는 `@aido/api/vocabulary`의 `AI_DATA_SHARING_CONSENT_PROVIDERS`) → 회로가 열린 업체 제외.
+- Application은 `AiGeneratorPort.generate`(클래스 토큰) 하나만 안다(`generation/ai-assistance-generation.public.ts`). 구현 `AiSdkGeneratorAdapter`는 `ai-route.domain-service.ts`(순수 함수)로 업체 순서를 정한다: `AI_PROVIDER_ORDER` → 키가 있는 업체 → 사용자가 동의한 안내 버전이 허용한 업체(`ai-processor-consent.domain-service.ts`, 표는 `@aido/api/vocabulary`의 `AI_DATA_SHARING_CONSENT_PROVIDERS`) → 회로가 열린 업체 제외.
 - 동의 버전: 2026-10-26(1.13·1.14 앱) 동의는 Google만, 2026-11-04(1.15) 동의는 Anthropic·Google·OpenAI를 쓴다. 동의 화면이 없던 1.13 미만 앱 요청(동의 버전 없음)은 그때 안내한 Google만 쓴다. 이전 버전 동의 사용자에게 다시 묻지 않는다. use case는 identity 동의 reader에서 동의한 버전을 읽어 `agreedConsentVersion`으로 넘긴다.
-- 업체별 SDK 옵션과 오류 본문 해석은 `providers/{anthropic,google,openai}.provider-adapter.ts`(multi 토큰 `AI_PROVIDER_ADAPTERS`) 안에만 있다. Claude 402 `billing_error`·400 `credit balance is too low`, OpenAI 429 `insufficient_quota`, Gemini 429의 선불 잔액 소진·지출 상한 문구와 400의 결제 문구는 `QUOTA_EXHAUSTED`다. Gemini 일반 429는 "check your plan and billing details"를 담아도 `RATE_LIMITED`다. 401/403·잘못된 키는 `AUTH`, Claude 529·503은 `OVERLOADED`, Gemini safety 400·OpenAI content policy·200 응답의 `refusal` 조각은 `BLOCKED`다. 기록된 오류 본문은 `apps/api/test/fixtures/providers/ai/<업체>/`에 있다.
+- 업체별 SDK 옵션과 오류 본문 해석은 `generation/infrastructure/adapters/{anthropic,google,openai}-provider.adapter.ts`(묶음 `AiProviderCatalog`) 안에만 있다. Claude 402 `billing_error`·400 `credit balance is too low`, OpenAI 429 `insufficient_quota`, Gemini 429의 선불 잔액 소진·지출 상한 문구와 400의 결제 문구는 `QUOTA_EXHAUSTED`다. Gemini 일반 429는 "check your plan and billing details"를 담아도 `RATE_LIMITED`다. 401/403·잘못된 키는 `AUTH`, Claude 529·503은 `OVERLOADED`, Gemini safety 400·OpenAI content policy·200 응답의 `refusal` 조각은 `BLOCKED`다. 기록된 오류 본문은 `apps/api/test/fixtures/providers/ai/<업체>/`에 있다.
 - 앞 업체는 SDK 재시도 없이(`maxRetries: 0`) 바로 넘기고 마지막 업체만 작업 분류의 재시도 수를 쓴다. 재시도 층은 한 호출에 하나다(SDK `maxRetries`, 잡은 pg-boss). 대기열(bulkhead)을 지난 뒤부터 체인 전체에 작업별 제한 시간 하나(`AbortSignal.any`)를 걸고, 마지막이 아닌 업체는 남은 시간을 이번 업체와 아직 시도하지 않은 업체의 몫(`resolveAttemptTime`, OpenAI 2·나머지 1)대로 나눈 만큼만 기다린 뒤 `TIMEOUT`으로 다음 업체에 넘긴다. 몫의 기준은 어떤 순서로 모두 멈춰도 각 업체가 자기 작업의 2026-11 live eval 최댓값(parse-todo 36건·quick-plan 30건·digest 7건: Claude 2.3·4.9·5.0초, Gemini 1.8·4.9·6.8초, OpenAI 4.8·5.2·6.2초)의 1.2배 이상을 받는 것이다. 12·24·45초 체인에서 OpenAI는 6·12·22.5초, 나머지는 3·6·11.25초를 받는다. quick-plan을 15초로 두었을 때는 앞 업체 몫 3.75초를 Claude 30건 중 2건, Gemini 30건 중 6건이 넘어 폴백 비용이 늘었다. 체인 제한은 앱 요청 제한(`QUICK_PLAN_TIMEOUT_MS` 30초, `DIGEST_TIMEOUT_MS` 60초)보다 짧아야 앱이 먼저 끊지 않고 환불된 오류(`charged:false`)를 받는다. 한도 예약·저장과 대기열(bulkhead 대기는 체인 제한에 넣지 않는다) 시간을 남겨 quick-plan은 6초, digest는 15초 여유를 둔다. digest 평가 전사는 짧아(입력 2KB 안팎) 30분 녹음 지연은 재지 못했다. 몫이 모자라면 `AI_DEADLINE_VOICE_NOTE_DIGEST_MS`를 앱 제한 아래에서 늘린다. 앱이 응답 전에 연결을 끊으면(`@ClientAbortSignal`) 체인을 멈추고 `TIMEOUT`으로 끝나 예약을 환불한다. 앞 시도 때문에 몫의 90%도 받지 못한 업체의 `TIMEOUT`과 호출자가 끊은 시도는 그 업체 탓이 아니므로 장애 회로에 세지 않는다. 다만 시험 호출(half-open)에서는 어떤 오류든 실패로 봐 회로를 닫지 않는다. 스키마 불일치(`INVALID_OUTPUT`)는 첫 업체에만 한 번 더 묻고, `BLOCKED`·`TRUNCATED`(본문 없이 출력 상한으로 끝난 응답 포함)는 다른 업체도 같게 실패하므로 넘기지 않는다. 결제·인증 실패는 SDK 재시도에서도 뺀다(`withoutRetryOnBillingFailure`). 요청당 모델 호출은 `maxModelCalls`를 넘지 않는다.
-- 회로: 공용 `OutboundPolicy`(`platform/resilience`, cockatiel, 프로세스 메모리 — 단일 컨테이너) 위에 업체별 얇은 spec(`ai-outbound.policies.ts`, 이름 `ai:anthropic`·`ai:google`·`ai:openai`)을 둔다. 결제 회로는 `QUOTA_EXHAUSTED` 한 번에, 인증 회로는 `AUTH` 연속 3번에 열고 15분 뒤 시험 호출, 장애 회로는 `OVERLOADED`·`UPSTREAM`·`TIMEOUT` 연속 5번에 30초 연다. 시험 호출이 진행 중인 업체는 열린 회로처럼 건너뛰고 기다리지 않는다. 결제 회로가 열리면 운영 경보 포트(`OperationalAlertPort.raise`, key `ai.provider.billing-circuit-opened`, Sentry fingerprint = key, 태그 policy·breaker·reason·task)로 "Claude 결제·인증 실패, 다음 순서 AI 업체로 전환" 이슈를 남긴다.
+- 회로: 공용 `OutboundPolicy`(`platform/resilience`, cockatiel, 프로세스 메모리 — 단일 컨테이너) 위에 업체별 얇은 spec(`ai-provider-outbound.policy.ts`, 이름 `ai:anthropic`·`ai:google`·`ai:openai`)을 둔다. 결제 회로는 `QUOTA_EXHAUSTED` 한 번에, 인증 회로는 `AUTH` 연속 3번에 열고 15분 뒤 시험 호출, 장애 회로는 `OVERLOADED`·`UPSTREAM`·`TIMEOUT` 연속 5번에 30초 연다. 시험 호출이 진행 중인 업체는 열린 회로처럼 건너뛰고 기다리지 않는다. 결제 회로가 열리면 운영 경보 포트(`OperationalAlertPort.raise`, key `ai.provider.billing-circuit-opened`, Sentry fingerprint = key, 태그 policy·breaker·reason·task)로 "Claude 결제·인증 실패, 다음 순서 AI 업체로 전환" 이슈를 남긴다.
 - 동시성: 작업 분류별 bulkhead `ai:interactive`(동시 8·대기 16)·`ai:background`(동시 2·대기 200). 대기열이 가득 차면 업체를 부르지 않고 `RATE_LIMITED`(AI_1310)다. 같은 사용자·작업·프롬프트 버전·지시·입력의 요청이 동시에 오면(sha256 키) 업체 호출 하나를 나눠 쓴다. 결과 저장형 캐시는 두지 않는다("내일"처럼 시점에 따라 답이 달라진다).
+
+### 업체 데이터 처리
+
+업체마다 `AiProviderAdapter.dataHandling`(`trainsOnUserData`·`disablesResponseStorage`·`basis`)으로 선언하고 앱 개인정보 문구(국외 이전)와 맞춘다. 셋 다 학습에 쓰지 않는다(`trainsOnUserData: false`). 보관을 끄는 옵션은 OpenAI에만 있어 그 어댑터만 `store: false`를 보낸다.
+
+| 업체      | 학습  | 응답 보관 끄기        | 근거                                               |
+| --------- | ----- | --------------------- | -------------------------------------------------- |
+| Anthropic | 안 함 | 옵션 없음(API 기본값) | API 상업 약관 기본값: 입력·출력을 학습에 쓰지 않음 |
+| Google    | 안 함 | 옵션 없음             | Gemini API 유료 등급 키: 제품 개선(학습)에 안 씀   |
+| OpenAI    | 안 함 | `store: false`        | API 기본값: 학습에 쓰지 않음, 응답 저장도 끈다     |
+
+Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](security.md#ai)).
 
 ### 입력 상한·킬 스위치·비용 예산
 
@@ -101,7 +113,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 오류·사용량
 
-생성 실패 종류와 처리는 `application/ports/generation/ai-generation.errors.ts`의 표 하나가 정한다.
+생성 실패 종류와 처리는 `generation/application/ai-generation.errors.ts`의 표 하나가 정한다.
 
 | 종류                                      | 폴백                    | 회로    | 응답    |
 | ----------------------------------------- | ----------------------- | ------- | ------- |
@@ -126,13 +138,13 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ## 프롬프트 보안
 
 - 지시는 AI SDK `instructions`(system)에만 둔다. system은 서버 상수이고 사용자·저장 데이터는 user 턴의 데이터 블록(`<user_input>`·`<context>`·`<report_data>`·`<suggestion_data>`)에만 들어간다. 각 system의 `<security>`·`<grounding>`이 블록 안 문자열을 데이터로 다루라고 명시한다.
-- 데이터 블록은 모두 `prompts/kit/untrusted-input.ts`의 `wrapUntrusted`(내부 `encodeUntrustedJson`)로 만든다. JSON 문자열로 넣고 `<`·`>`·`&`를 이스케이프해 태그를 닫거나 열 수 없고, 모든 문자열 값에서 보이지 않는 문자(태그 문자·보조 변형 선택자·폭 없는 공백·bidi 제어·제어 문자, `removeInvisibleCharacters`)를 지운다. 이모지 ZWJ·VS15/16·탭·줄바꿈은 남긴다.
+- 데이터 블록은 모두 `generation/application/messages/untrusted-input.messages.ts`의 `wrapUntrusted`(내부 `encodeUntrustedJson`)로 만든다. JSON 문자열로 넣고 `<`·`>`·`&`를 이스케이프해 태그를 닫거나 열 수 없고, 모든 문자열 값에서 보이지 않는 문자(태그 문자·보조 변형 선택자·폭 없는 공백·bidi 제어·제어 문자, `removeInvisibleCharacters`)를 지운다. 이모지 ZWJ·VS15/16·탭·줄바꿈은 남긴다.
 - 사용자 원문은 `sanitizeLineForPrompt`(parse-todo 500자·빠른 계획 1000자·전사 문장)·`sanitizeTextForPrompt`(메모 5000자·문장 없는 전사)가 NFKC 정규화(전각 `＜/task＞` → `</task>` 뒤 이스케이프) → 보이지 않는 문자 제거 → 계약 길이 자르기를 한다. 길이 초과 요청은 그 전에 `@aido/api` 요청 schema가 거절한다.
 - 데이터 최소화: 프롬프트에는 요청한 사용자 본인의 할 일·카테고리·통계만 들어간다. 친구·댓글·공유 데이터, 비밀 값, 날씨(제안 v2)는 넣지 않는다. 제안 v2는 서버가 만든 후보와 응답 이력만, 리포트는 집계 수치와 카테고리 이름·이전 팁만 넣는다.
 - 출력은 AI SDK `Output.object`(zod)로 받는다. zod object는 스키마 밖 필드를 버린다. 서버가 id·날짜·개수를 다시 정한다: 카테고리는 소유한 id만, 제안은 서버 후보 id와 기록된 요일만, 할 일 5개·항목 5개·팁 3개·길이 상한, 메모 `totalTaskCount`는 100개 상한. 제목·리포트 문장·제안 사유의 보이지 않는 문자도 지운다. 푸시 문구는 고정 copy라 모델 출력이 들어가지 않고, 앱은 모델 출력을 일반 텍스트로만 그린다(링크·Markdown 없음).
 - 도구 호출(function calling)은 쓰지 않는다. 모델은 구조화 출력만 낸다.
 - Gemini `safetySettings`는 괴롭힘·혐오·성적·위험 4종을 `BLOCK_ONLY_HIGH`로 둔다. 응답 후보가 safety로 막히면(`finishReason: content-filter`) `BLOCKED`(AI_1302)로 분류한다.
-- 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도·프리미엄 공정 사용 상한(동의 guard 뒤 access `@RequireQuota("AI_PLAN")` 선검사 + `QuotaLedger` 원자적 예약)을 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·분류별 `maxRetries`·`maxModelCalls`는 `ai-generation-policy.ts`, 입력 상한은 `PromptDefinition.maxInputChars`, 체인 전체 제한 시간은 `AI_DEADLINE_<TASK>_MS`, 비용 상한은 `AI_BUDGET_*`가 정한다.
+- 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도·프리미엄 공정 사용 상한(동의 guard 뒤 access `@RequireQuota("AI_PLAN")` 선검사 + `QuotaLedger` 원자적 예약)을 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·분류별 `maxRetries`·`maxModelCalls`는 `ai-generation-policy.constants.ts`, 입력 상한은 `PromptDefinition.maxInputChars`, 체인 전체 제한 시간은 `AI_DEADLINE_<TASK>_MS`, 비용 상한은 `AI_BUDGET_*`가 정한다.
 - 개인정보: 로그는 위 관측 필드만 남긴다. `/ai/` 요청은 5xx Sentry 이벤트에 요청 본문을 붙이지 않는다(`httpIntegration`의 `ignoreRequestBody`).
 
 ## 버전과 호환
@@ -143,9 +155,9 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 평가
 
-- 결정 규칙 golden 26건과 흔들린 표현(relativeMinutes 0, 오늘 지난 때)(서울·LA 같은 순간)과 경계(자정·DST·윤일·월말·연말): `resolve-todo-schedule.spec.ts`.
+- 결정 규칙 golden 26건과 흔들린 표현(relativeMinutes 0, 오늘 지난 때)(서울·LA 같은 순간)과 경계(자정·DST·윤일·월말·연말): `todo-schedule.domain-service.spec.ts`.
 - golden 데이터: `apps/api/test/fixtures/ai-golden/{parse-todo,parse-memo,quick-plan,voice-note-digest}.{ko,en,mixed}.jsonl`(로더 `golden-cases.ts`). 받아쓰기 오류(띄어쓰기 없음·동음이의·"음 그러니까"·`<context>`로 고칠 고유명사), 반복 종류 전부·종료 날짜·계속 반복, 기간, 하위 항목, 비공개, 종일·시각, 한영 혼합 제목, 남에게 부탁, 전사 안 지시 주입, 다가오는 할 일·진행 중 반복과의 겹침을 담는다. 계획 기대값은 일정 표현을 resolver로 계산한 날짜라 같은 뜻의 다른 표현도 같게 비교된다.
-- fake model golden: `parse-todo.golden.spec.ts`·`parse-memo.golden.spec.ts`(공개 응답), `prompts/planning/planning.golden.spec.ts`(계획 정규화·핵심 포인트 문장 번호·중요 표시 포함)가 모든 줄을 schema로 읽고 실행한다.
+- fake model golden: `parse-todo-golden.use-case.spec.ts`·`parse-memo-golden.use-case.spec.ts`(공개 응답), `action-plan-golden.messages.spec.ts`(계획 정규화·핵심 포인트 문장 번호·중요 표시 포함)가 모든 줄을 schema로 읽고 실행한다.
 - live eval(수동, CI·hook 제외): `pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest --provider anthropic|google|openai [추가 jsonl…]`(`--provider를 빼면 `AI_PROVIDER_ORDER` 폴백 체인). 키는 운영과 같은 env에서 읽고, 고른 업체 키가 없으면 호출 없이 exit 0이다. 날짜 0.97·제목 0.9·겹침 판정 0.9(계획)·NO_ACTION 1(parse-todo) 미만이면 exit 1이고, 요약에 캐시 토큰(`tokens.cached`·`tokens.cacheWrite`)과 캐시 단가를 반영한 추정 비용(`estimatedCostMicroUsd`)·지연(p50·p95·max)·녹음 정리의 중요 표시 반영률(`bookmarkRecall`)·앱 언어 작성률(`digestInAppLanguage`, 지표만)을 함께 낸다. 제목 비교는 영어 관사·소유격(a·an·the·my) 유무를 같게 본다. 콘솔에는 case id·지표·토큰(cached·cacheWrite 포함)만 쓰고 입력·전사·키는 쓰지 않는다. 실제 유료 호출이므로 결과를 아래에 남긴다.
 
 ### 검증 기록
@@ -160,4 +172,4 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 전환 중
 
-이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+ai-assistance는 slice 구조로 옮겼다(`architecture.ratchet.json`). 남은 것: 리포트 큐는 아직 `JobRuntimePort`(defineQueue 전), parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다). voice가 클래스 토큰으로 옮길 때까지 옛 Symbol 토큰(`USER_LOCALE_PREFERENCE_READER`·`ACTION_PLAN_GENERATOR`)과 parsing 공개 문의 옛 함수 별칭을 둔다.
