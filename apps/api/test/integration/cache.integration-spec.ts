@@ -9,7 +9,7 @@
  * pnpm --filter @aido/server test:integration -- cache
  * ```
  */
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, registerAs } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -30,6 +30,7 @@ import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheConfig } from "#api/platform/config/cache.config";
 
 import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
 
@@ -45,11 +46,13 @@ describe("CacheModule 통합 테스트", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 60000,
-                CACHE_MAX_ITEMS: 1000,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 60000,
+                  CACHE_MAX_ITEMS: 1000,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
@@ -133,11 +136,13 @@ describe("CacheModule 통합 테스트", () => {
             ConfigModule.forRoot({
               isGlobal: true,
               load: [
-                () => ({
-                  CACHE_TYPE: "memory",
-                  CACHE_DEFAULT_TTL_MS: 50,
-                  CACHE_MAX_ITEMS: 100,
-                }),
+                registerAs(cacheConfig.namespace, () =>
+                  cacheConfig.parse({
+                    CACHE_TYPE: "memory",
+                    CACHE_DEFAULT_TTL_MS: 50,
+                    CACHE_MAX_ITEMS: 100,
+                  }),
+                ),
               ],
             }),
             CacheModule.forRoot(),
@@ -744,7 +749,7 @@ describe("CacheModule 통합 테스트", () => {
         imports: [
           ConfigModule.forRoot({
             isGlobal: true,
-            load: [() => ({})],
+            load: [registerAs(cacheConfig.namespace, () => cacheConfig.parse({}))],
           }),
           CacheModule.forRoot(),
         ],
@@ -770,11 +775,13 @@ describe("CacheModule 통합 테스트", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 100,
-                CACHE_MAX_ITEMS: 5,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 100,
+                  CACHE_MAX_ITEMS: 5,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
@@ -804,7 +811,9 @@ describe("CacheModule 통합 테스트", () => {
         imports: [
           ConfigModule.forRoot({
             isGlobal: true,
-            load: [() => ({ CACHE_TYPE: "memory" })],
+            load: [
+              registerAs(cacheConfig.namespace, () => cacheConfig.parse({ CACHE_TYPE: "memory" })),
+            ],
           }),
           CacheModule.forRoot(),
         ],

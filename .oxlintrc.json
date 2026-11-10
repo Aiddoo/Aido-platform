@@ -76,7 +76,11 @@
     },
     {
       "files": ["apps/api/src/**/*.ts"],
-      "excludeFiles": ["apps/api/src/platform/config/env.ts", "**/*.spec.ts"],
+      "excludeFiles": [
+        "apps/api/src/platform/config/env.ts",
+        "apps/api/src/**/*.config.ts",
+        "**/*.spec.ts"
+      ],
       "rules": {
         "node/no-process-env": "error"
       }

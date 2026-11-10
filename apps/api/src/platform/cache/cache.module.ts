@@ -1,7 +1,8 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter.js";
 import { RedisCacheAdapter } from "./adapters/redis-cache.adapter.js";
@@ -36,25 +37,23 @@ export class CacheModule {
   static forRoot(): DynamicModule {
     const cacheProvider: Provider = {
       provide: CACHE_SERVICE,
-      useFactory: (configService: TypedConfigService, redis?: Redis): ICacheService => {
-        const cacheConfig = configService.cache;
-
-        if (cacheConfig.type === "redis" && redis) {
-          return new RedisCacheAdapter(redis, cacheConfig.defaultTtlMs);
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): ICacheService => {
+        if (cache.type === "redis" && redis) {
+          return new RedisCacheAdapter(redis, cache.defaultTtlMs);
         }
 
         return new InMemoryCacheAdapter({
-          defaultTtlMs: cacheConfig.defaultTtlMs,
-          maxItems: cacheConfig.maxItems,
-          cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
+          defaultTtlMs: cache.defaultTtlMs,
+          maxItems: cache.maxItems,
+          cleanupIntervalMs: cache.cleanupIntervalMs,
         });
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: CacheModule,
-      providers: [TypedConfigService, cacheProvider, CacheService],
+      providers: [cacheProvider, CacheService],
       exports: [CACHE_SERVICE, CacheService],
     };
   }

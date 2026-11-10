@@ -1,7 +1,8 @@
 import { Global, Module } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { DrizzleModule, getDrizzleToken } from "@nestjs/drizzle";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   AfterCommitTaskRegistryPort,
@@ -24,9 +25,9 @@ import { createPostgresPool } from "./postgres-pool.js";
   imports: [
     // 앱 종료 때 DrizzleModule이 pool을 한 번 닫는다(job worker는 그 전 beforeApplicationShutdown에서 멈춘다)
     DrizzleModule.forRootAsync({
-      inject: [TypedConfigService],
-      useFactory: (config: TypedConfigService) => ({
-        db: createDatabase(createPostgresPool(config.database)),
+      inject: [databaseConfig.KEY],
+      useFactory: (database: ConfigType<typeof databaseConfig>) => ({
+        db: createDatabase(createPostgresPool(database)),
       }),
     }),
   ],

@@ -1,7 +1,8 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryDedupAdapter } from "./adapters/in-memory-dedup.adapter.js";
 import { RedisDedupAdapter } from "./adapters/redis-dedup.adapter.js";
@@ -33,8 +34,8 @@ export class DedupModule {
   static forRoot(): DynamicModule {
     const dedupProvider: Provider = {
       provide: DEDUP_PROVIDER,
-      useFactory: (configService: TypedConfigService, redis?: Redis): IDedupProvider => {
-        const cacheType = configService.cache.type;
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): IDedupProvider => {
+        const cacheType = cache.type;
 
         if (cacheType === "redis" && redis) {
           return new RedisDedupAdapter(redis);
@@ -42,12 +43,12 @@ export class DedupModule {
 
         return new InMemoryDedupAdapter();
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: DedupModule,
-      providers: [TypedConfigService, dedupProvider],
+      providers: [dedupProvider],
       exports: [DEDUP_PROVIDER],
     };
   }

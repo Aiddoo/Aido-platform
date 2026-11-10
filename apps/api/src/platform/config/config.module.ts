@@ -1,8 +1,13 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule as NestConfigModule } from "@nestjs/config";
 
+import { cacheConfig } from "./cache.config.js";
+import { databaseConfig } from "./database.config.js";
 import { processEnv } from "./env.js";
+import { jwtConfig } from "./jwt.config.js";
+import { redisConfig } from "./redis.config.js";
 import { validateEnv } from "./schemas/index.js";
+import { sentryConfig } from "./sentry.config.js";
 import { TypedConfigService } from "./services/config.service.js";
 
 /**
@@ -23,6 +28,7 @@ import { TypedConfigService } from "./services/config.service.js";
       envFilePath: getEnvFilePath(),
       validate: validateEnv,
       ignoreEnvFile: false,
+      load: [databaseConfig, redisConfig, jwtConfig, sentryConfig, cacheConfig],
     }),
   ],
   providers: [TypedConfigService],

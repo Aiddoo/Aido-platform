@@ -1,7 +1,8 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter.js";
 import { RedisLockAdapter } from "./adapters/redis-lock.adapter.js";
@@ -33,8 +34,8 @@ export class LockModule {
   static forRoot(): DynamicModule {
     const lockProvider: Provider = {
       provide: LOCK_PROVIDER,
-      useFactory: (configService: TypedConfigService, redis?: Redis): ILockProvider => {
-        const cacheType = configService.cache.type;
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): ILockProvider => {
+        const cacheType = cache.type;
 
         if (cacheType === "redis" && redis) {
           return new RedisLockAdapter(redis);
@@ -42,12 +43,12 @@ export class LockModule {
 
         return new InMemoryLockAdapter();
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: LockModule,
-      providers: [TypedConfigService, lockProvider],
+      providers: [lockProvider],
       exports: [LOCK_PROVIDER],
     };
   }

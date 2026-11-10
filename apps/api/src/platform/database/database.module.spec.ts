@@ -3,7 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   type AfterCommitTaskRegistryPort,
@@ -20,17 +20,15 @@ const transactionHost = {
 };
 
 // pg Pool은 첫 쿼리 전까지 연결하지 않아 조립만 볼 때 실제 DB가 필요 없다
-const config = {
-  database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-};
+const database = { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 };
 
 @Global()
 @Module({
   providers: [
     { provide: TransactionHost, useValue: transactionHost },
-    { provide: TypedConfigService, useValue: config },
+    { provide: databaseConfig.KEY, useValue: database },
   ],
-  exports: [TransactionHost, TypedConfigService],
+  exports: [TransactionHost, databaseConfig.KEY],
 })
 class TestInfrastructureModule {}
 

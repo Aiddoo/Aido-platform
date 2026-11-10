@@ -1,8 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
+import type { z } from "zod";
 
+import { cacheConfig } from "../cache.config.js";
+import { databaseConfig } from "../database.config.js";
+import type { NamespaceConfig } from "../define-config.js";
+import { jwtConfig } from "../jwt.config.js";
+import { redisConfig } from "../redis.config.js";
 import { AI_CONFIG_KEYS, aiSchema, type AiSettings, toAiSettings } from "../schemas/ai.schema.js";
-import type { EnvConfig } from "../schemas/index.js";
+import { type EnvConfig, envSchema } from "../schemas/index.js";
+import { sentryConfig } from "../sentry.config.js";
 
 /**
  * 타입 안전한 ConfigService 래퍼
@@ -13,6 +20,7 @@ import type { EnvConfig } from "../schemas/index.js";
 @Injectable()
 export class TypedConfigService {
   #ai: AiSettings | undefined;
+  #env: Readonly<Record<string, unknown>> | undefined;
 
   constructor(private configService: NestConfigService<EnvConfig, true>) {}
 
@@ -62,32 +70,27 @@ export class TypedConfigService {
   }
 
   get databaseUrl(): string {
-    return this.get("DATABASE_URL");
+    return this.database.url;
   }
 
   get database() {
-    return {
-      url: this.get("DATABASE_URL"),
-      poolMax: this.get("DATABASE_POOL_MAX"),
-      idleTimeoutMs: this.get("DATABASE_POOL_IDLE_TIMEOUT_MS"),
-      connectionTimeoutMs: this.get("DATABASE_POOL_CONNECTION_TIMEOUT_MS"),
-    };
+    return this.#read(databaseConfig);
   }
 
   get jwtSecret(): string {
-    return this.get("JWT_SECRET");
+    return this.#read(jwtConfig).secret;
   }
 
   get jwtRefreshSecret(): string {
-    return this.get("JWT_REFRESH_SECRET");
+    return this.#read(jwtConfig).refreshSecret;
   }
 
   get jwtExpiresIn(): string {
-    return this.get("JWT_EXPIRES_IN");
+    return this.#read(jwtConfig).expiresIn;
   }
 
   get jwtRefreshExpiresIn(): string {
-    return this.get("JWT_REFRESH_EXPIRES_IN");
+    return this.#read(jwtConfig).refreshExpiresIn;
   }
 
   get corsOrigins(): string[] {
@@ -230,15 +233,15 @@ export class TypedConfigService {
   }
 
   get redisUrl(): string | undefined {
-    return this.get("REDIS_URL");
+    return this.#read(redisConfig).url;
   }
 
   get sentryDsn(): string | undefined {
-    return this.get("SENTRY_DSN");
+    return this.#read(sentryConfig).dsn;
   }
 
   get sentryTracesSampleRate(): number | undefined {
-    return this.get("SENTRY_TRACES_SAMPLE_RATE");
+    return this.#read(sentryConfig).tracesSampleRate;
   }
 
   // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (sentryRelease getter)
@@ -275,23 +278,12 @@ export class TypedConfigService {
   }
 
   get cache() {
-    return {
-      type: this.get("CACHE_TYPE"),
-      defaultTtlMs: this.get("CACHE_DEFAULT_TTL_MS"),
-      maxItems: this.get("CACHE_MAX_ITEMS"),
-      cleanupIntervalMs: this.get("CACHE_CLEANUP_INTERVAL_MS"),
-    };
+    return this.#read(cacheConfig);
   }
 
   get redis() {
-    return {
-      host: this.get("REDIS_HOST"),
-      port: this.get("REDIS_PORT"),
-      password: this.get("REDIS_PASSWORD"),
-      db: this.get("REDIS_DB"),
-      commandTimeoutMs: this.get("REDIS_COMMAND_TIMEOUT_MS"),
-      connectTimeoutMs: this.get("REDIS_CONNECT_TIMEOUT_MS"),
-    };
+    const { url: _url, ...connection } = this.#read(redisConfig);
+    return connection;
   }
 
   get job() {
@@ -315,5 +307,13 @@ export class TypedConfigService {
 
   get discordPaymentWebhookUrl(): string | undefined {
     return this.get("DISCORD_PAYMENT_WEBHOOK_URL");
+  }
+
+  /** platform 공용 섹션은 namespace 설정과 같은 schema·매핑으로 읽어 값의 출처를 하나로 둔다. */
+  #read<TConfig extends Record<string, unknown>>(
+    config: Pick<NamespaceConfig<z.ZodType<TConfig>>, "parse">,
+  ): TConfig {
+    this.#env ??= Object.fromEntries(envSchema.keyof().options.map((key) => [key, this.get(key)]));
+    return config.parse(this.#env);
   }
 }

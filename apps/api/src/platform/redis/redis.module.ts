@@ -8,10 +8,12 @@ import {
   Optional,
   type Provider,
 } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { withTimeout } from "es-toolkit";
 import { Redis, type RedisOptions } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig } from "../config/cache.config.js";
+import { redisConfig } from "../config/redis.config.js";
 import { PlatformLogEvent } from "../logging/platform-log.events.js";
 import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
 import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
@@ -60,16 +62,19 @@ export class RedisModule implements OnApplicationShutdown {
   static forRoot(): DynamicModule {
     const commandProvider: Provider = {
       provide: REDIS_COMMAND_CLIENT,
-      useFactory: (configService: TypedConfigService): Redis | null =>
-        configService.cache.type === "redis"
-          ? RedisModule.createClient(configService, buildCommandRedisOptions, "command")
+      useFactory: (
+        cache: ConfigType<typeof cacheConfig>,
+        redis: ConfigType<typeof redisConfig>,
+      ): Redis | null =>
+        cache.type === "redis"
+          ? RedisModule.createClient(redis, buildCommandRedisOptions, "command")
           : null,
-      inject: [TypedConfigService],
+      inject: [cacheConfig.KEY, redisConfig.KEY],
     };
 
     return {
       module: RedisModule,
-      providers: [TypedConfigService, commandProvider],
+      providers: [commandProvider],
       exports: [REDIS_COMMAND_CLIENT],
     };
   }
@@ -104,15 +109,10 @@ export class RedisModule implements OnApplicationShutdown {
   }
 
   private static createClient(
-    configService: TypedConfigService,
+    settings: RedisConnectionSettings,
     buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
     name: string,
   ): Redis {
-    const settings: RedisConnectionSettings = {
-      url: configService.redisUrl,
-      ...configService.redis,
-    };
-
     const options = buildOptions(settings);
     const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
 

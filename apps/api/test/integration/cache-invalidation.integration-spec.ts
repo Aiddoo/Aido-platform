@@ -6,7 +6,7 @@ import type { INestApplication } from "@nestjs/common";
  * 캐시 무효화 시나리오를 실제 환경과 유사하게 테스트합니다.
  * 캐시 모듈의 전체 라이프사이클과 무효화 동작을 검증합니다.
  */
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, registerAs } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -26,6 +26,7 @@ import {
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheConfig } from "#api/platform/config/cache.config";
 
 import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
@@ -39,11 +40,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ConfigModule.forRoot({
           isGlobal: true,
           load: [
-            () => ({
-              CACHE_TYPE: "memory",
-              CACHE_DEFAULT_TTL_MS: 60000,
-              CACHE_MAX_ITEMS: 1000,
-            }),
+            registerAs(cacheConfig.namespace, () =>
+              cacheConfig.parse({
+                CACHE_TYPE: "memory",
+                CACHE_DEFAULT_TTL_MS: 60000,
+                CACHE_MAX_ITEMS: 1000,
+              }),
+            ),
           ],
         }),
         CacheModule.forRoot(),
@@ -105,11 +108,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 50,
-                CACHE_MAX_ITEMS: 100,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 50,
+                  CACHE_MAX_ITEMS: 100,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
@@ -439,11 +444,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 60000,
-                CACHE_MAX_ITEMS: 5,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 60000,
+                  CACHE_MAX_ITEMS: 5,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
