@@ -1,6 +1,9 @@
 import { HealthIndicatorService } from "@nestjs/terminus";
 import { vi, type Mocked } from "vitest";
+import { z } from "zod";
 
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { defineQueue } from "#api/shared/application/ports/job-queue.port";
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { JobRuntimeHealthIndicator } from "./job-runtime.health.js";
@@ -33,7 +36,11 @@ function runtime(): Mocked<JobRuntimePort> {
 describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () => {
   it("선택된 backend와 큐 카운트를 up 응답으로 반환한다", async () => {
     const jobRuntime = runtime();
-    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(
+      new HealthIndicatorService(),
+      jobRuntime,
+      new JobQueueRegistry(),
+    );
 
     const result = await indicator.isHealthy("queues");
 
@@ -59,7 +66,59 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "todo-timezone-rebase.v1",
       "quota-abandoned-refund.v1",
       "store-subscription-reconcile.v1",
+      "account-purge.v1",
+      "notification.marketing-consent-reconfirm.v1",
+      "timezone-reminder.v1",
+      "invite-reward.v1",
+      "invite-maintenance.v1",
+      "voice-plan-application-cleanup.v1",
+      "premium-grant-sweep.v1",
+      "outbound-usage-retention.v1",
     ]);
+  });
+
+  it("defineQueue로 등록된 큐와 DLQ를 옛 목록에 한 번씩 더해 본다", async () => {
+    // Given
+    const jobRuntime = runtime();
+    const registry = new JobQueueRegistry();
+    const policy = {
+      retryLimit: 1,
+      retryDelaySeconds: 1,
+      retryBackoff: false,
+      expireInSeconds: 60,
+      retentionSeconds: 60,
+      deleteAfterSeconds: 60,
+    };
+    registry.register(
+      defineQueue({
+        name: "sample.v1",
+        payloadSchema: z.object({ id: z.string() }),
+        retry: policy,
+        deadLetter: { queue: "sample-dead-letter.v1", jobPolicy: policy },
+        worker: { localConcurrency: 1, pollingIntervalSeconds: 2 },
+      }),
+    );
+    registry.register(
+      defineQueue({
+        name: "todo-reminder.v1",
+        payloadSchema: z.object({ id: z.string() }),
+        retry: policy,
+        worker: { localConcurrency: 1, pollingIntervalSeconds: 2 },
+      }),
+    );
+    const indicator = new JobRuntimeHealthIndicator(
+      new HealthIndicatorService(),
+      jobRuntime,
+      registry,
+    );
+
+    // When
+    await indicator.isHealthy("queues");
+
+    // Then
+    const [queueNames] = jobRuntime.health.mock.calls[0] ?? [];
+    expect(queueNames).toHaveLength(26);
+    expect(queueNames?.slice(-2)).toEqual(["sample.v1", "sample-dead-letter.v1"]);
   });
 
   it("backend 장애도 503 대신 up + degraded로 유지한다", async () => {
@@ -70,7 +129,11 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       reason: "job_runtime_unavailable",
       queues: {},
     });
-    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(
+      new HealthIndicatorService(),
+      jobRuntime,
+      new JobQueueRegistry(),
+    );
 
     const result = await indicator.isHealthy("queues");
 
@@ -84,7 +147,11 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
   it("health 수집 실패도 up + degraded로 정규화한다", async () => {
     const jobRuntime = runtime();
     jobRuntime.health.mockRejectedValue(new Error("database unavailable"));
-    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(
+      new HealthIndicatorService(),
+      jobRuntime,
+      new JobQueueRegistry(),
+    );
 
     const result = await indicator.isHealthy("queues");
 
@@ -99,7 +166,11 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
     vi.useFakeTimers();
     const jobRuntime = runtime();
     jobRuntime.health.mockReturnValue(new Promise(() => {}));
-    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(
+      new HealthIndicatorService(),
+      jobRuntime,
+      new JobQueueRegistry(),
+    );
 
     const pending = indicator.isHealthy("queues");
     await vi.advanceTimersByTimeAsync(2_000);

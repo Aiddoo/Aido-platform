@@ -36,6 +36,11 @@ export interface EnqueueJobOptions extends JobRetryPolicy {
   readonly timezone?: string;
 }
 
+// 옛 스케줄은 missed를 생략해 pg-boss 기본값(skip)을 쓴다. defineQueue로 옮기면 필수다
+export interface ScheduleJobOptions extends EnqueueJobOptions {
+  readonly missed?: "skip" | "once";
+}
+
 export interface EnqueueJobRequest<T extends JobData = JobData> {
   readonly data: T;
   readonly options: EnqueueJobOptions;
@@ -92,7 +97,7 @@ export abstract class JobRuntimePort {
     cron: string,
     queue: string,
     data: T,
-    options: EnqueueJobOptions,
+    options: ScheduleJobOptions,
   ): Promise<void>;
   abstract unschedule(scheduleKey: string, queue: string): Promise<void>;
   /** 작업을 상태와 상관없이 지워 같은 key로 다시 등록할 수 있게 한다. 없는 key는 무시한다. */

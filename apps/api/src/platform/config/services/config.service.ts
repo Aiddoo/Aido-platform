@@ -298,7 +298,6 @@ export class TypedConfigService {
     return {
       schema: this.get("JOB_SCHEMA"),
       shutdownTimeoutMs: this.get("JOB_SHUTDOWN_TIMEOUT_MS"),
-      pollingIntervalSeconds: this.get("JOB_POLLING_INTERVAL_SECONDS"),
     };
   }
 

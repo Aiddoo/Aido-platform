@@ -26,18 +26,45 @@
 
 ## 큐 정의
 
-`defineQueue({ name, payloadSchema, policy, deadLetter, worker: { localConcurrency, batchSize, pollingIntervalSeconds }, schedule })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 쓴다.
+`defineQueue({ name, payloadSchema, retry, deadLetter, worker: { localConcurrency, pollingIntervalSeconds, batchSize, minPriority, maxPriority }, schedules })`가 큐 하나의 정의다(`shared/application/ports/job-queue.port.ts`). producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
 
-| 규칙         | 내용                                                                                                            |
-| ------------ | --------------------------------------------------------------------------------------------------------------- |
-| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다                                                          |
-| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이) |
-| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                              |
-| 묶음         | 발송량이 많은 큐는 `batchSize`. 묶음이 throw하면 전체가 재시도되므로 상태 fence로 멱등을 보장한다               |
-| Health       | 등록된 큐 전부를 본다                                                                                           |
-| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                        |
-| `startAfter` | Date·ISO 문자열을 넘긴다. Instant를 그대로 넘기지 않는다                                                        |
-| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md))   |
+```ts
+export const DOCUMENT_QUEUE = defineQueue({
+  name: "document.v1",
+  payloadSchema: documentPayloadSchema,
+  retry: DOCUMENT_RETRY,
+  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
+  schedules: [
+    {
+      key: "daily-document",
+      cron: "0 3 * * *",
+      timezone: "Asia/Seoul",
+      missed: "once",
+      payload: {},
+    },
+  ],
+});
+
+await jobQueue.enqueue(DOCUMENT_QUEUE, payload, { idempotencyKey, startAfter, priority }); // 활성 UoW 트랜잭션에 쓴다
+await jobQueue.work(DOCUMENT_QUEUE, async (jobs) => {
+  /* jobs[].data는 schema로 parse된 값 */
+});
+await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upsert
+```
+
+| 규칙         | 내용                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)          |
+| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                           |
+| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                        |
+| 묶음         | 발송량이 많은 큐는 `batchSize`. handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다                                 |
+| Health       | `JobQueuePort`에 넘긴 정의(와 DLQ)는 `JobQueueRegistry`가 모아 Health에 더한다. 옮기지 않은 큐는 `job-runtime.health.ts`의 옛 목록에 있다 |
+| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                  |
+| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                    |
+| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md))                             |
+
+- `JobQueuePort`(`PgBossJobQueueAdapter`)와 옛 `JobRuntimePort`(`PgBossJobRuntimeAdapter`)는 메서드 이름이 겹쳐 클래스가 나뉘지만 같은 pg-boss client와 시작·종료를 쓴다.
+- E2E 앱은 `JobQueuePort`를 `test/doubles/platform/in-memory-job-queue.ts`로 바꾼다.
 
 **바꾸지 않는 운영 계약**
 
@@ -79,4 +106,4 @@
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`, `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(리마인더 예약 5개·초대 활동 1개)을 쓴다. 새 publisher가 들어온 뒤에도 옛 `publishAll`·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(리마인더 예약 5개·초대 활동 1개)을 쓴다. 새 publisher가 들어온 뒤에도 옛 `publishAll`·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

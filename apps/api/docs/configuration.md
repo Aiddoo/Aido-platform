@@ -47,4 +47,4 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 ## 전환 중
 
-지금 설정은 `platform/config`의 `TypedConfigService`와 `src/platform/config/schemas`의 schema 파일들이 한곳에서 읽는다. Context를 옮길 때 그 Context가 쓰는 값만 소유 slice의 `*.config.ts`로 나누고 env 이름은 그대로 둔다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 사용처가 0인지 확인한 뒤 지운다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+지금 설정은 `platform/config`의 `TypedConfigService`와 `src/platform/config/schemas`의 schema 파일들이 한곳에서 읽는다. Context를 옮길 때 그 Context가 쓰는 값만 소유 slice의 `*.config.ts`로 나누고 env 이름은 그대로 둔다. 안 쓰는 env(`JOB_POLLING_INTERVAL_SECONDS`, `JOB_BACKEND`, `JOB_REDIS_DRAIN_ENABLED`)는 schema에서 지웠다. 배포 env에 남아 있어도 env schema가 모르는 키를 버려 무시된다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

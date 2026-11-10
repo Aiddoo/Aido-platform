@@ -27,9 +27,9 @@ import type {
   EnqueueJobRequest,
   JobData,
   JobEnvelope,
-  JobRetryPolicy,
   JobRuntimeHealth,
   JobRuntimePort,
+  ScheduleJobOptions,
   WorkJobOptions,
 } from "#api/shared/application/ports/job-runtime.port";
 import {
@@ -39,6 +39,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
+import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
@@ -204,8 +205,7 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 @Injectable()
 export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   private readonly logger = new Logger(PgBossJobRuntimeAdapter.name);
-  private readonly queueCreations = new Map<string, Promise<void>>();
-  private readonly queuePolicyApplications = new Map<string, Promise<void>>();
+  readonly #queues: PgBossQueueProvisioner;
 
   constructor(
     @Inject(PG_BOSS_CLIENT) private readonly boss: PgBossClient,
@@ -214,6 +214,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     @Inject(TypedConfigService)
     private readonly config: JobRuntimeConfigSource,
   ) {
+    this.#queues = new PgBossQueueProvisioner(boss);
     this.boss.on("error", (error) => {
       // 오류 종류만 기록한다. 작업 payload나 DB 연결 문자열은 로그에 남기지 않는다.
       this.logger.error({
@@ -244,9 +245,9 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     const deadLetterQueue = resolveDeadLetterQueue(options.deadLetter);
     const deadLetterJobPolicy = resolveDeadLetterJobPolicy(options.deadLetter);
     if (deadLetterQueue) {
-      await this.ensureQueue(deadLetterQueue, deadLetterJobPolicy);
+      await this.#queues.ensure(deadLetterQueue, deadLetterJobPolicy);
     }
-    await this.ensureQueue(queue);
+    await this.#queues.ensure(queue);
     return this.boss.send(queue, data, {
       ...toPgBossJobOptions(queue, options),
       db: transactionJobDatabase(this.txHost.tx),
@@ -263,10 +264,10 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     for (const deadLetter of uniqueDeadLetters(jobs)) {
       const deadLetterQueue = resolveDeadLetterQueue(deadLetter);
       if (deadLetterQueue) {
-        await this.ensureQueue(deadLetterQueue, resolveDeadLetterJobPolicy(deadLetter));
+        await this.#queues.ensure(deadLetterQueue, resolveDeadLetterJobPolicy(deadLetter));
       }
     }
-    await this.ensureQueue(queue);
+    await this.#queues.ensure(queue);
     // insert는 활성 CLS transaction에서 한 INSERT로 실행되고, 결정적 id 충돌은 send와 같이 무시된다.
     await this.boss.insert(
       queue,
@@ -280,14 +281,14 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     cron: string,
     queue: string,
     data: T,
-    options: EnqueueJobOptions,
+    options: ScheduleJobOptions,
   ): Promise<void> {
     const deadLetterQueue = resolveDeadLetterQueue(options.deadLetter);
     const deadLetterJobPolicy = resolveDeadLetterJobPolicy(options.deadLetter);
     if (deadLetterQueue) {
-      await this.ensureQueue(deadLetterQueue, deadLetterJobPolicy);
+      await this.#queues.ensure(deadLetterQueue, deadLetterJobPolicy);
     }
-    await this.ensureQueue(queue);
+    await this.#queues.ensure(queue);
     const {
       db: _transactionDb,
       singletonKey: _idempotencyKey,
@@ -297,6 +298,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       ...persistedOptions,
       key: scheduleKey,
       tz: options.timezone,
+      ...(options.missed && { missed: options.missed }),
     });
   }
 
@@ -308,7 +310,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     if (idempotencyKeys.length === 0) {
       return;
     }
-    await this.ensureQueue(queue);
+    await this.#queues.ensure(queue);
     // pg-boss cancel은 행을 cancelled로 남겨 같은 결정적 id의 재등록이 ON CONFLICT로 무시된다.
     // 지우면 상태와 상관없이 id가 비어 재예약이 산다. 끝난 행은 보존 기록일 뿐이라 잃어도 된다.
     await this.boss.deleteJob(
@@ -323,7 +325,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void> {
-    await this.ensureQueue(queue, options.queuePolicy);
+    await this.#queues.ensure(queue, options.queuePolicy);
     await this.boss.work(
       queue,
       {
@@ -405,64 +407,13 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       deadLetter: resolveDeadLetterQueue(options.deadLetter),
     };
   }
-
-  private async ensureQueue(queue: string, queuePolicy?: JobRetryPolicy): Promise<void> {
-    const existing = this.queueCreations.get(queue);
-    if (existing) {
-      await existing;
-    } else {
-      const creation = this.boss.createQueue(
-        queue,
-        queuePolicy ? this.toPgBossQueueOptions(queuePolicy) : undefined,
-      );
-      this.queueCreations.set(queue, creation);
-      try {
-        await creation;
-      } catch (error) {
-        this.queueCreations.delete(queue);
-        throw error;
-      }
-    }
-
-    if (queuePolicy) {
-      await this.applyQueuePolicy(queue, queuePolicy);
-    }
-  }
-
-  private async applyQueuePolicy(queue: string, policy: JobRetryPolicy): Promise<void> {
-    const policyKey = `${queue}:${JSON.stringify(policy)}`;
-    const existing = this.queuePolicyApplications.get(policyKey);
-    if (existing) {
-      await existing;
-      return;
-    }
-
-    // createQueue는 기존 queue의 정책을 갱신하지 않는다. updateQueue를 함께 호출해
-    // worker-first rolling 배포에서 이미 생성된 DLQ도 동일한 정책으로 수렴시킨다.
-    const application = this.boss.updateQueue(queue, this.toPgBossQueueOptions(policy));
-    this.queuePolicyApplications.set(policyKey, application);
-    try {
-      await application;
-    } catch (error) {
-      this.queuePolicyApplications.delete(policyKey);
-      throw error;
-    }
-  }
-
-  private toPgBossQueueOptions(policy: JobRetryPolicy): QueueOptions {
-    return {
-      retryLimit: policy.retryLimit,
-      retryDelay: policy.retryDelaySeconds,
-      retryBackoff: policy.retryBackoff,
-      expireInSeconds: policy.expireInSeconds,
-      retentionSeconds: policy.retentionSeconds,
-      deleteAfterSeconds: policy.deleteAfterSeconds,
-    };
-  }
 }
 
 /** enqueue와 enqueueMany가 같은 재시도·DLQ·결정적 id 옵션으로 작업을 쓰도록 한 곳에서 변환한다. */
-function toPgBossJobOptions(queue: string, options: EnqueueJobOptions): Omit<JobInsert, "data"> {
+export function toPgBossJobOptions(
+  queue: string,
+  options: EnqueueJobOptions,
+): Omit<JobInsert, "data"> {
   const { idempotencyKey } = options;
   return {
     singletonKey: idempotencyKey,

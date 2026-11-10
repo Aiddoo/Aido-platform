@@ -1,0 +1,102 @@
+import {
+  JobQueuePort,
+  type EnqueueManyJob,
+  type EnqueueOptions,
+  type JobEnvelope,
+  type QueueDefinition,
+} from "#api/shared/application/ports/index";
+
+export interface InMemoryJob {
+  readonly queue: string;
+  readonly payload: object;
+  readonly options: EnqueueOptions;
+}
+
+type StoredHandler = (jobs: readonly JobEnvelope<object>[]) => Promise<void>;
+
+interface StoredWorker {
+  readonly queue: QueueDefinition<object>;
+  readonly handler: StoredHandler;
+}
+
+// 실제 큐처럼 같은 key는 지우기 전까지 한 번만 받고, run은 소비 때와 같이 schema로 parse한다
+export class InMemoryJobQueue extends JobQueuePort {
+  readonly jobs: InMemoryJob[] = [];
+  readonly scheduledQueues: string[] = [];
+  readonly #keys = new Set<string>();
+  readonly #workers = new Map<string, StoredWorker>();
+  #sequence = 0;
+
+  async enqueue<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    payload: TPayload,
+    options: EnqueueOptions = {},
+  ): Promise<string | null> {
+    if (options.idempotencyKey != null) {
+      const key = `${queue.name}:${options.idempotencyKey}`;
+      if (this.#keys.has(key)) {
+        return null;
+      }
+      this.#keys.add(key);
+    }
+    this.jobs.push({ queue: queue.name, payload, options });
+    this.#sequence += 1;
+    return `in-memory-job-${this.#sequence}`;
+  }
+
+  async enqueueMany<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    jobs: readonly EnqueueManyJob<TPayload>[],
+  ): Promise<void> {
+    for (const { payload, ...options } of jobs) {
+      await this.enqueue(queue, payload, options);
+    }
+  }
+
+  async cancel(queue: QueueDefinition<object>, idempotencyKeys: readonly string[]): Promise<void> {
+    for (const idempotencyKey of idempotencyKeys) {
+      this.#keys.delete(`${queue.name}:${idempotencyKey}`);
+      const index = this.jobs.findIndex(
+        (job) => job.queue === queue.name && job.options.idempotencyKey === idempotencyKey,
+      );
+      if (index !== -1) {
+        this.jobs.splice(index, 1);
+      }
+    }
+  }
+
+  async work<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+  ): Promise<void> {
+    this.#workers.set(queue.name, {
+      queue,
+      handler: async (jobs) =>
+        handler(jobs.map((job) => ({ ...job, data: queue.payloadSchema.parse(job.data) }))),
+    });
+  }
+
+  async registerSchedules(queue: QueueDefinition<object>): Promise<void> {
+    this.scheduledQueues.push(queue.name);
+  }
+
+  jobsIn(queue: QueueDefinition<object>): readonly InMemoryJob[] {
+    return this.jobs.filter((job) => job.queue === queue.name);
+  }
+
+  /** 쌓인 작업을 등록된 worker로 처리하고 큐에서 뺀다. */
+  async drain(queue: QueueDefinition<object>): Promise<void> {
+    const worker = this.#workers.get(queue.name);
+    if (worker == null) {
+      throw new Error(`No in-memory worker registered for ${queue.name}`);
+    }
+    const pending = this.jobsIn(queue);
+    for (const job of pending) {
+      this.jobs.splice(this.jobs.indexOf(job), 1);
+      this.#sequence += 1;
+      await worker.handler([
+        { id: `in-memory-run-${this.#sequence}`, name: queue.name, data: job.payload, attempt: 1 },
+      ]);
+    }
+  }
+}

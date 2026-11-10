@@ -74,7 +74,7 @@ migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴�
 
 ## Job과 종료
 
-durable job은 PostgreSQL(pg-boss)만 쓴다. 배포 env에 남은 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`는 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
+durable job은 PostgreSQL(pg-boss)만 쓴다. 배포 env에 남은 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`·`JOB_POLLING_INTERVAL_SECONDS`는 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 

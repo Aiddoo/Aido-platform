@@ -57,7 +57,12 @@ import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
+import {
+  DOMAIN_EVENT_PUBLISHER,
+  JOB_RUNTIME,
+  JobQueuePort,
+} from "#api/shared/application/ports/index";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
@@ -210,6 +215,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(redisMock)
     .overrideProvider(JOB_RUNTIME)
     .useValue(fakeJobRuntime)
+    // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
+    .overrideProvider(JobQueuePort)
+    .useValue(new InMemoryJobQueue())
     .overrideProvider(CACHE_SERVICE)
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)

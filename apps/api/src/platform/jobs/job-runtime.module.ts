@@ -7,8 +7,11 @@ import {
   type BeforeApplicationShutdown,
 } from "@nestjs/common";
 
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { JOB_RUNTIME, JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
+import { JobQueueRegistry } from "./job-queue.registry.js";
+import { PgBossJobQueueAdapter } from "./pg-boss-job-queue.adapter.js";
 import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter.js";
 
 @Injectable()
@@ -37,8 +40,12 @@ export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplic
     { provide: JOB_RUNTIME, useExisting: PgBossJobRuntimeAdapter },
     // 옛 Symbol 토큰을 쓰는 Context가 모두 옮겨질 때까지 같은 인스턴스의 별칭이다
     { provide: JobRuntimePort, useExisting: JOB_RUNTIME },
+    // 옛 JobRuntimePort와 메서드 이름이 겹쳐 따로 구현하고, 같은 pg-boss client와 시작·종료를 공유한다
+    PgBossJobQueueAdapter,
+    { provide: JobQueuePort, useExisting: PgBossJobQueueAdapter },
+    JobQueueRegistry,
     JobRuntimeLifecycle,
   ],
-  exports: [JOB_RUNTIME, JobRuntimePort],
+  exports: [JOB_RUNTIME, JobRuntimePort, JobQueuePort, JobQueueRegistry],
 })
 export class JobRuntimeModule {}

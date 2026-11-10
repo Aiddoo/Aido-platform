@@ -9,3 +9,4 @@ export {
 } from "./infrastructure/jobs/delivery/push-delivery-queue.constants.js";
 export { NotificationQueueModule } from "./infrastructure/jobs/delivery/notification-queue.module.js";
 export { NotificationQueueService } from "./infrastructure/jobs/delivery/notification-queue.service.js";
+export { MARKETING_CONSENT_RECONFIRM_QUEUE } from "./infrastructure/jobs/delivery/marketing-consent-reconfirm-queue.constants.js";
