@@ -39,4 +39,4 @@ export {
   marketingReconfirmCutoff,
 } from "./preferences/domain/marketing-consent.domain-service.js";
 export { TimezoneSelfHealInterceptor } from "./preferences/presentation/http/interceptors/timezone-self-heal.interceptor.js";
-export { IdentitySettingsModule } from "./preferences/identity-preferences.module.js";
+export { IdentityPreferencesModule as IdentitySettingsModule } from "./preferences/identity-preferences.module.js";

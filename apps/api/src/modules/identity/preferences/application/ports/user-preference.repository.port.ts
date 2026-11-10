@@ -33,28 +33,29 @@ export interface PreferenceWriteInput {
 /**
  * 설정 리포지토리 포트.
  */
-export interface UserPreferenceRepositoryPort {
-  findByUserId(userId: string): Promise<UserPreferenceRecord | null>;
+export abstract class UserPreferenceRepositoryPort {
+  abstract findByUserId(userId: string): Promise<UserPreferenceRecord | null>;
   /** 연속 완료 전이를 가진 설정 Aggregate. 설정 행이 없으면 null */
-  findStreakByUserId(userId: string): Promise<UserPreference | null>;
-  findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]>;
-  create(userId: string, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
-  upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
+  abstract findStreakByUserId(userId: string): Promise<UserPreference | null>;
+  abstract findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]>;
+  abstract create(userId: string, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
+  abstract upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
   /** 시간대를 넣거나 바꾼다. 실제로 달라졌으면(행을 새로 만든 경우 포함) true다. */
-  upsertTimezone(userId: string, timezone: string): Promise<boolean>;
+  abstract upsertTimezone(userId: string, timezone: string): Promise<boolean>;
   /**
    * 저장된 타임존이 다를 때만 갱신하고, 실제 갱신된 행 수를 반환한다.
    *
    * 자가치유(핫패스)용 — 값이 같으면 0행(no-op)이라 쓰기 증폭·캐시 무효화가 없다.
    * 행이 없으면(설정 미생성) 0을 반환한다(신규 생성하지 않음 — 토큰 등록 upsert가 담당).
    */
-  refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number>;
-  upsertLocale(userId: string, locale: string): Promise<void>;
-  updateStreakIfUnchanged(
+  abstract refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number>;
+  abstract upsertLocale(userId: string, locale: string): Promise<void>;
+  abstract updateStreakIfUnchanged(
     userId: string,
     expected: StreakState,
     next: StreakState,
   ): Promise<boolean>;
 }
 
+/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
 export const USER_PREFERENCE_REPOSITORY = Symbol("USER_PREFERENCE_REPOSITORY");

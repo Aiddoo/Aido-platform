@@ -6,7 +6,6 @@ import { JwtModule } from "@nestjs/jwt";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
@@ -24,6 +23,8 @@ import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
+import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
+import { IdentityUsersModule } from "../users/identity-users.module.js";
 import { AccountPurgeProcessor } from "../users/infrastructure/jobs/account-purge.processor.js";
 import { AccountPurgeScheduler } from "../users/infrastructure/jobs/account-purge.scheduler.js";
 import { DrizzleUserRepository } from "../users/infrastructure/persistence/drizzle-user.repository.js";
@@ -147,7 +148,8 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     NotificationDeliveryModule,
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
-    IdentitySettingsModule,
+    IdentityPreferencesModule,
+    IdentityUsersModule,
     PlanningCategoriesModule,
     NotificationRetentionModule,
     EngagementCommentsModule,

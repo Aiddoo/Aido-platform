@@ -15,14 +15,11 @@ import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-dis
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import {
-  IdentityAuthModule,
   JwtAuthGuard,
   LastActiveInterceptor,
 } from "#api/modules/identity/auth/identity-auth.public";
-import {
-  TimezoneSelfHealInterceptor,
-  IdentitySettingsModule,
-} from "#api/modules/identity/identity-settings.public";
+import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
+import { IdentityModule } from "#api/modules/identity/identity.module";
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { NotesModule } from "#api/modules/notes/notes.module";
@@ -136,7 +133,7 @@ import { AppService } from "./app.service.js";
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
     VoiceModule,
-    IdentityAuthModule,
+    IdentityModule,
     SocialBlocksModule,
     SocialCheersModule,
     InsightsDailyCompletionsModule,
@@ -154,7 +151,6 @@ import { AppService } from "./app.service.js";
     PlanningTodosModule,
     EngagementCommentsModule,
     PlanningCategoriesModule,
-    IdentitySettingsModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],

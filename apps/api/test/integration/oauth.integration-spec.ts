@@ -675,7 +675,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   });
 
   async function createState(state: string, provider: AccountProvider, redirectUri: string) {
-    // use case의 DateNowClock과 같은 시계로 만료를 정한다
+    // use case의 DateClock과 같은 시계로 만료를 정한다
     const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     await oauthStateRepository.create({
       state,

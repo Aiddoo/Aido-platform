@@ -5,6 +5,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userConsent } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type {
   ConsentSeedInput,
@@ -30,6 +31,8 @@ const reconfirmTargetColumns = {
 type UserConsentRow = typeof userConsent.$inferSelect;
 type UserConsentPatch = Partial<Omit<typeof userConsent.$inferInsert, "id" | "userId">>;
 
+import { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
+
 @Injectable()
 export class DrizzleUserConsentRepository implements UserConsentRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -45,6 +48,19 @@ export class DrizzleUserConsentRepository implements UserConsentRepositoryPort {
   async findByUserId(userId: string): Promise<UserConsentRow | null> {
     const row = await this.#db.query.userConsent.findFirst({ where: { userId } });
     return row ?? null;
+  }
+
+  async findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent> {
+    const row = await this.#db.query.userConsent.findFirst({
+      columns: { aiDataSharingAgreedAt: true, aiDataSharingVersion: true },
+      where: { userId },
+    });
+    return AiDataSharingConsent.reconstitute({
+      userId,
+      agreedAt:
+        row?.aiDataSharingAgreedAt == null ? null : instantFromDate(row.aiDataSharingAgreedAt),
+      version: row?.aiDataSharingVersion ?? null,
+    });
   }
 
   async findByUserIds(userIds: readonly string[]): Promise<UserConsentRow[]> {

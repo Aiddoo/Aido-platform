@@ -1,16 +1,16 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { REMINDER_TIMEZONE_CACHE } from "#api/modules/notification/notification-reminders-cache.public";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { PREFERENCE_ENTITLEMENT } from "./application/ports/preference-entitlement.port.js";
-import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/reminder-schedule-enqueuer.port.js";
-import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/streak-milestone-notifier.port.js";
-import { TODO_COMPLETION_STATS_READER } from "./application/ports/todo-completion-stats.reader.port.js";
-import { TODO_TIMEZONE_REBASE_ENQUEUER } from "./application/ports/todo-timezone-rebase-enqueuer.port.js";
-import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port.js";
-import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port.js";
-import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port.js";
+import { ReminderScheduleEnqueuerPort } from "./application/ports/reminder-schedule-enqueuer.port.js";
+import { StreakMilestoneNotifierPort } from "./application/ports/streak-milestone-notifier.port.js";
+import { TodoCompletionStatsReaderPort } from "./application/ports/todo-completion-stats.reader.port.js";
+import { TodoTimezoneRebaseEnqueuerPort } from "./application/ports/todo-timezone-rebase-enqueuer.port.js";
+import { UserConsentRepositoryPort } from "./application/ports/user-consent.repository.port.js";
+import { UserPreferenceRepositoryPort } from "./application/ports/user-preference.repository.port.js";
+import { UserSettingsCachePort } from "./application/ports/user-settings-cache.port.js";
 import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
 import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record.use-case.js";
 import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records.use-case.js";
@@ -31,7 +31,7 @@ import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-t
 
 export const userPreferenceReaderProvider: FactoryProvider<ReadUserPreferencesUseCase> = {
   provide: ReadUserPreferencesUseCase,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
+  inject: [UserPreferenceRepositoryPort, UserSettingsCachePort],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof ReadUserPreferencesUseCase
@@ -42,7 +42,7 @@ export const userPreferenceReaderProvider: FactoryProvider<ReadUserPreferencesUs
 
 export const getConsentProvider: FactoryProvider<GetConsentUseCase> = {
   provide: GetConsentUseCase,
-  inject: [USER_CONSENT_REPOSITORY],
+  inject: [UserConsentRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<typeof GetConsentUseCase>[0]["consentRepository"],
   ) => new GetConsentUseCase({ consentRepository }),
@@ -50,7 +50,7 @@ export const getConsentProvider: FactoryProvider<GetConsentUseCase> = {
 
 export const getConsentRecordProvider: FactoryProvider<GetConsentRecordUseCase> = {
   provide: GetConsentRecordUseCase,
-  inject: [USER_CONSENT_REPOSITORY],
+  inject: [UserConsentRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<
       typeof GetConsentRecordUseCase
@@ -60,7 +60,7 @@ export const getConsentRecordProvider: FactoryProvider<GetConsentRecordUseCase> 
 
 export const getConsentRecordsProvider: FactoryProvider<GetConsentRecordsUseCase> = {
   provide: GetConsentRecordsUseCase,
-  inject: [USER_CONSENT_REPOSITORY],
+  inject: [UserConsentRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<
       typeof GetConsentRecordsUseCase
@@ -79,7 +79,7 @@ export const getPreferenceProvider: FactoryProvider<GetPreferenceUseCase> = {
 
 export const getPreferenceRecordProvider: FactoryProvider<GetPreferenceRecordUseCase> = {
   provide: GetPreferenceRecordUseCase,
-  inject: [USER_PREFERENCE_REPOSITORY],
+  inject: [UserPreferenceRepositoryPort],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof GetPreferenceRecordUseCase
@@ -89,7 +89,7 @@ export const getPreferenceRecordProvider: FactoryProvider<GetPreferenceRecordUse
 
 export const getPreferenceRecordsProvider: FactoryProvider<GetPreferenceRecordsUseCase> = {
   provide: GetPreferenceRecordsUseCase,
-  inject: [USER_PREFERENCE_REPOSITORY],
+  inject: [UserPreferenceRepositoryPort],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof GetPreferenceRecordsUseCase
@@ -99,7 +99,11 @@ export const getPreferenceRecordsProvider: FactoryProvider<GetPreferenceRecordsU
 
 export const onTodoToggledProvider: FactoryProvider<OnTodoToggledUseCase> = {
   provide: OnTodoToggledUseCase,
-  inject: [USER_PREFERENCE_REPOSITORY, TODO_COMPLETION_STATS_READER, STREAK_MILESTONE_NOTIFIER],
+  inject: [
+    UserPreferenceRepositoryPort,
+    TodoCompletionStatsReaderPort,
+    StreakMilestoneNotifierPort,
+  ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof OnTodoToggledUseCase
@@ -118,11 +122,11 @@ export const onTodoToggledProvider: FactoryProvider<OnTodoToggledUseCase> = {
 export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezoneUseCase> = {
   provide: RefreshPushTimezoneUseCase,
   inject: [
-    USER_PREFERENCE_REPOSITORY,
-    USER_SETTINGS_CACHE,
+    UserPreferenceRepositoryPort,
+    UserSettingsCachePort,
     REMINDER_TIMEZONE_CACHE,
-    TODO_TIMEZONE_REBASE_ENQUEUER,
-    UNIT_OF_WORK,
+    TodoTimezoneRebaseEnqueuerPort,
+    UnitOfWorkPort,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
@@ -148,7 +152,7 @@ export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezoneUse
 
 export const seedUserSettingsProvider: FactoryProvider<SeedUserSettingsUseCase> = {
   provide: SeedUserSettingsUseCase,
-  inject: [USER_CONSENT_REPOSITORY, USER_PREFERENCE_REPOSITORY],
+  inject: [UserConsentRepositoryPort, UserPreferenceRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<
       typeof SeedUserSettingsUseCase
@@ -165,7 +169,7 @@ export const seedUserSettingsProvider: FactoryProvider<SeedUserSettingsUseCase> 
 
 export const aiDataSharingConsentReaderProvider: FactoryProvider<GetAiDataSharingConsentUseCase> = {
   provide: GetAiDataSharingConsentUseCase,
-  inject: [USER_CONSENT_REPOSITORY],
+  inject: [UserConsentRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<
       typeof GetAiDataSharingConsentUseCase
@@ -176,7 +180,7 @@ export const aiDataSharingConsentReaderProvider: FactoryProvider<GetAiDataSharin
 export const updateAiDataSharingConsentProvider: FactoryProvider<UpdateAiDataSharingConsentUseCase> =
   {
     provide: UpdateAiDataSharingConsentUseCase,
-    inject: [USER_CONSENT_REPOSITORY],
+    inject: [UserConsentRepositoryPort],
     useFactory: (
       consentRepository: ConstructorParameters<
         typeof UpdateAiDataSharingConsentUseCase
@@ -190,7 +194,7 @@ export const updateAiDataSharingConsentProvider: FactoryProvider<UpdateAiDataSha
 
 export const updateMarketingConsentProvider: FactoryProvider<UpdateMarketingConsentUseCase> = {
   provide: UpdateMarketingConsentUseCase,
-  inject: [USER_CONSENT_REPOSITORY],
+  inject: [UserConsentRepositoryPort],
   useFactory: (
     consentRepository: ConstructorParameters<
       typeof UpdateMarketingConsentUseCase
@@ -205,7 +209,7 @@ export const updateMarketingConsentProvider: FactoryProvider<UpdateMarketingCons
 export const updateMarketingPushConsentProvider: FactoryProvider<UpdateMarketingPushConsentUseCase> =
   {
     provide: UpdateMarketingPushConsentUseCase,
-    inject: [USER_CONSENT_REPOSITORY],
+    inject: [UserConsentRepositoryPort],
     useFactory: (
       consentRepository: ConstructorParameters<
         typeof UpdateMarketingPushConsentUseCase
@@ -220,13 +224,13 @@ export const updateMarketingPushConsentProvider: FactoryProvider<UpdateMarketing
 export const updatePreferenceProvider: FactoryProvider<UpdatePreferenceUseCase> = {
   provide: UpdatePreferenceUseCase,
   inject: [
-    USER_PREFERENCE_REPOSITORY,
+    UserPreferenceRepositoryPort,
     PREFERENCE_ENTITLEMENT,
-    USER_SETTINGS_CACHE,
+    UserSettingsCachePort,
     REMINDER_TIMEZONE_CACHE,
-    REMINDER_SCHEDULE_ENQUEUER,
-    TODO_TIMEZONE_REBASE_ENQUEUER,
-    UNIT_OF_WORK,
+    ReminderScheduleEnqueuerPort,
+    TodoTimezoneRebaseEnqueuerPort,
+    UnitOfWorkPort,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<
@@ -257,7 +261,7 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreferenceUseCase> 
 
 export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocaleUseCase> = {
   provide: UpsertPushLocaleUseCase,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
+  inject: [UserPreferenceRepositoryPort, UserSettingsCachePort],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof UpsertPushLocaleUseCase
@@ -269,11 +273,11 @@ export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocaleUseCase> 
 export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezoneUseCase> = {
   provide: UpsertPushTimezoneUseCase,
   inject: [
-    USER_PREFERENCE_REPOSITORY,
-    USER_SETTINGS_CACHE,
+    UserPreferenceRepositoryPort,
+    UserSettingsCachePort,
     REMINDER_TIMEZONE_CACHE,
-    TODO_TIMEZONE_REBASE_ENQUEUER,
-    UNIT_OF_WORK,
+    TodoTimezoneRebaseEnqueuerPort,
+    UnitOfWorkPort,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<

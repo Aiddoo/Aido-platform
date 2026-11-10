@@ -60,7 +60,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { DateNowClock } from "#test/doubles/platform/date-now-clock";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -195,7 +195,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           provide: TransactionHost,
           useValue: transaction.txHost,
         },
-        { provide: ClockPort, useClass: DateNowClock },
+        { provide: ClockPort, useClass: DateClock },
         {
           provide: jwtConfig.KEY,
           useValue: {

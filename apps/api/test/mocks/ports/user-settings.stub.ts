@@ -26,6 +26,7 @@ import type {
 } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
 import type { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
 import type { PreferenceSnapshot } from "#api/modules/identity/preferences/application/read-models/preference.read-model";
+import { AiDataSharingConsent } from "#api/modules/identity/preferences/domain/ai-data-sharing-consent.entity";
 import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
 import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
 import { UserPreference } from "#api/modules/identity/preferences/domain/user-preference.aggregate";
@@ -156,6 +157,18 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
     const record = this.records.get(userId);
     return record === undefined ? null : { ...record };
   }
+  async findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent> {
+    const record = await this.findByUserId(userId);
+    return AiDataSharingConsent.reconstitute({
+      userId,
+      agreedAt:
+        record?.aiDataSharingAgreedAt == null
+          ? null
+          : Temporal.Instant.fromEpochMilliseconds(record.aiDataSharingAgreedAt.getTime()),
+      version: record?.aiDataSharingVersion ?? null,
+    });
+  }
+
   async findByUserIds(userIds: readonly string[]): Promise<UserConsentRecordWithId[]> {
     this.batchReads.push([...userIds]);
     return [...this.records.entries()]

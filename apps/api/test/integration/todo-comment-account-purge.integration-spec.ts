@@ -43,7 +43,7 @@ import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.inter
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MUTATION_LOCK, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
-import { DateNowClock } from "#test/doubles/platform/date-now-clock";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -225,7 +225,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
       providers: [
         ClsUnitOfWork,
         { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
-        { provide: ClockPort, useClass: DateNowClock },
+        { provide: ClockPort, useClass: DateClock },
         PostgresMutationLockAdapter,
         { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         DrizzleTodoCommentAccountCleanupStore,

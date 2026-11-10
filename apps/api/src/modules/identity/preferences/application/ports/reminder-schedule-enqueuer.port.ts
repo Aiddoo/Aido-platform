@@ -17,8 +17,9 @@ export interface ReminderHourChangedPayload {
  *
  * 리마인더 시간 변경 시 즉시 반영 큐 잡을 등록한다(fire-and-forget void).
  */
-export interface ReminderScheduleEnqueuerPort {
-  enqueueReminderHourChanged(payload: ReminderHourChangedPayload): void;
+export abstract class ReminderScheduleEnqueuerPort {
+  abstract enqueueReminderHourChanged(payload: ReminderHourChangedPayload): void;
 }
 
+/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
 export const REMINDER_SCHEDULE_ENQUEUER = Symbol("REMINDER_SCHEDULE_ENQUEUER");

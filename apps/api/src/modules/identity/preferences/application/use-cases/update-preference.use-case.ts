@@ -55,7 +55,7 @@ export class UpdatePreferenceUseCase {
       await assertEntitled(this.#dependencies.entitlement, userId, "CUSTOM_REMINDER_TIME");
     }
 
-    ReminderTime.assertValidRanges(input);
+    ReminderTime.create(input);
 
     const timezone = input.timezone == null ? undefined : normalizeIanaTimezone(input.timezone);
     if (input.timezone != null && timezone == null) {

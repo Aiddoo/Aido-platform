@@ -1,3 +1,4 @@
+import type { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
 import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
 
 export type { UserConsentRecord };
@@ -31,35 +32,38 @@ export interface FindMarketingReconfirmTargetsParams {
 /**
  * 약관 동의 리포지토리 포트.
  */
-export interface UserConsentRepositoryPort {
-  findByUserId(userId: string): Promise<UserConsentRecord | null>;
-  findByUserIds(userIds: readonly string[]): Promise<UserConsentRecordWithId[]>;
-  create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecord>;
-  upsertMarketingConsent(
+export abstract class UserConsentRepositoryPort {
+  abstract findByUserId(userId: string): Promise<UserConsentRecord | null>;
+  /** 동의 행이 없으면 아직 답하지 않은 동의다 */
+  abstract findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent>;
+  abstract findByUserIds(userIds: readonly string[]): Promise<UserConsentRecordWithId[]>;
+  abstract create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecord>;
+  abstract upsertMarketingConsent(
     userId: string,
     data: { agreedAt: Date | null },
   ): Promise<UserConsentRecord>;
-  upsertMarketingPushConsent(
+  abstract upsertMarketingPushConsent(
     userId: string,
     data: { agreedAt: Date | null },
   ): Promise<UserConsentRecord>;
   /** 활성 사용자 중 광고성 동의(또는 마지막 재확인)가 cutoff 이전인 사용자를 userId 순으로 읽는다. */
-  findMarketingReconfirmTargets(
+  abstract findMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]>;
   /**
    * 아직 대상인 사용자만 재확인 시각을 기록하고 기록한 사용자를 돌려준다. 두 실행이 같은 사용자를 고르면
    * 행 잠금 뒤 조건을 다시 보므로 한 실행만 얻는다.
    */
-  claimMarketingReconfirm(
+  abstract claimMarketingReconfirm(
     userIds: readonly string[],
     params: { readonly cutoff: Date; readonly at: Date },
   ): Promise<MarketingReconfirmTarget[]>;
   /** 동의하면 agreedAt에 시각, 거부·철회하면 null을 쓰고 답한 안내 version을 함께 남긴다. */
-  upsertAiDataSharingConsent(
+  abstract upsertAiDataSharingConsent(
     userId: string,
     data: { agreedAt: Date | null; version: string },
   ): Promise<UserConsentRecord>;
 }
 
+/** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */
 export const USER_CONSENT_REPOSITORY = Symbol("USER_CONSENT_REPOSITORY");

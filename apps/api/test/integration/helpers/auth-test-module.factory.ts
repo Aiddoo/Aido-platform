@@ -47,7 +47,7 @@ import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { DateNowClock } from "#test/doubles/platform/date-now-clock";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   createDatabaseTransactionFixture,
@@ -198,7 +198,7 @@ export async function createAuthTestModule(
         provide: UnitOfWorkPort,
         useValue: transaction.uow,
       },
-      { provide: ClockPort, useClass: DateNowClock },
+      { provide: ClockPort, useClass: DateClock },
       {
         provide: jwtConfig.KEY,
         useValue: {

@@ -1,17 +1,12 @@
+// 아직 옮기지 않은 소비 Context가 쓰는 옛 진입점. 새 코드는 users/identity-users.public.ts를 쓴다
 export {
   USER_ACTIVITY_READER,
-  type UserActivityReaderPort,
-} from "./users/application/ports/user-activity.reader.port.js";
-export {
+  UserActivityReaderPort,
   USER_APP_VERSION_READER,
-  type UserAppVersionReaderPort,
-} from "./users/application/ports/user-app-version.reader.port.js";
-export {
+  UserAppVersionReaderPort,
   USER_MUTATION_LOCK,
-  type UserMutationLockPort,
-} from "./users/application/ports/user-mutation-lock.port.js";
-export {
+  UserMutationLockPort,
   USER_PROFILE_INVALIDATOR,
-  type UserProfileInvalidatorPort,
-} from "./users/application/ports/user-profile-invalidator.port.js";
-export { IdentityUserAccessModule } from "./users/identity-users.module.js";
+  UserProfileInvalidatorPort,
+  IdentityUsersModule as IdentityUserAccessModule,
+} from "./users/identity-users.public.js";

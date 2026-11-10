@@ -4,10 +4,10 @@ import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 
 import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
-import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
-import { TODO_TIMEZONE_REBASE_ENQUEUER } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
-import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import { USER_SETTINGS_CACHE } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import { ReminderScheduleEnqueuerPort } from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
+import { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
+import { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
+import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
 import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import {
   refreshPushTimezoneProvider,
@@ -20,7 +20,7 @@ import {
 } from "#api/modules/notification/notification-reminders-cache.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
@@ -58,12 +58,12 @@ async function createFixture() {
       refreshPushTimezoneProvider,
       updatePreferenceProvider,
       upsertPushTimezoneProvider,
-      { provide: USER_PREFERENCE_REPOSITORY, useValue: settings.preferenceRepository },
-      { provide: USER_SETTINGS_CACHE, useValue: settings.cache },
+      { provide: UserPreferenceRepositoryPort, useValue: settings.preferenceRepository },
+      { provide: UserSettingsCachePort, useValue: settings.cache },
       { provide: PREFERENCE_ENTITLEMENT, useValue: settings.entitlement },
-      { provide: REMINDER_SCHEDULE_ENQUEUER, useValue: settings.reminderEnqueuer },
-      { provide: TODO_TIMEZONE_REBASE_ENQUEUER, useValue: settings.todoTimezoneRebase },
-      { provide: UNIT_OF_WORK, useValue: settings.unitOfWork },
+      { provide: ReminderScheduleEnqueuerPort, useValue: settings.reminderEnqueuer },
+      { provide: TodoTimezoneRebaseEnqueuerPort, useValue: settings.todoTimezoneRebase },
+      { provide: UnitOfWorkPort, useValue: settings.unitOfWork },
     ],
   }).compile();
   return {
