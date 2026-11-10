@@ -1119,7 +1119,7 @@ onSettled: (_data, error) => {
 - 되돌릴 값과 기간은 `findCachedTodo`로 그날 목록 → 상세 → 다른 날짜 목록 순으로 읽는다. 알림으로 연 상세는 그날 목록이 없다.
 - 저장을 기다리는 시트(제목·날짜·시각·카테고리 고치기)는 낙관적으로 쓰지 않는다. 같은 `listWrites` 키로 세고 `onSuccess`에서 `settleTodoEdit`로 고치기 전·후 값의 날짜 목록·위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 맞춘다. 반복 범위·규칙을 바꾸면 바뀐 회차를 몰라 `invalidateTodos`다.
 - 하위 항목 진행(막대·"2/4")은 저장하지 않고 `SubTodoPolicy.getSubTodoStats`로 항목 목록에서 센다. 항목 추가는 끝낸 할 일일 때만 완료가 풀려 달력·위젯·존재 여부를 맞춘다.
-- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다. 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`saveCreatedTodo`).
+- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`·`TodoCategoryPolicy.isOptimisticCategory`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다. 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`saveCreatedTodo`). 임시 행은 버튼을 끄거나 핸들러를 비우고(`onSelectedChange={isOptimistic ? undefined : …}`), 순서 바꾸기는 `useReorderableList`의 `isOptimistic`에 같은 규칙을 넘겨 끌기를 끄고 임시 id가 섞인 순서는 보내지 않는다. route는 양수 id만 받아 임시 id로 시트를 열 수 없다.
 
 ---
 

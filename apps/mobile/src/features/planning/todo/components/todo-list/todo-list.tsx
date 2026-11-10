@@ -1,7 +1,10 @@
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
+import {
+  TodoCategoryPolicy,
+  type TodoCategoryWithCount,
+} from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { toDateKey } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -89,12 +92,7 @@ export function TodoList({ isReminderOff = false }: TodoListProps) {
     <Box gap={16}>
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
-          <CategoryHeader
-            label={group.category.name}
-            color={group.category.color}
-            categoryId={group.category.id}
-            date={date}
-          />
+          <CategoryHeader category={group.category} date={date} />
 
           <TodoReorderableList
             items={group.todos}
@@ -135,23 +133,22 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 };
 
 interface CategoryHeaderProps {
-  label: string;
-  color: string;
-  categoryId: number;
+  category: TodoCategoryWithCount;
   date: string;
 }
 
-function CategoryHeader({ label, color, categoryId, date }: CategoryHeaderProps) {
+function CategoryHeader({ category, date }: CategoryHeaderProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   return (
     <PressableFeedback
-      onPress={() => push({ pathname: '/todo/new', params: { date, categoryId } })}
+      onPress={() => push({ pathname: '/todo/new', params: { date, categoryId: category.id } })}
+      isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
       hitSlop={8}
       className="self-start"
     >
-      <CategoryHeaderPill label={label} color={color} pointerEvents="none">
+      <CategoryHeaderPill label={category.name} color={category.color} pointerEvents="none">
         <PlusIcon
           width={fontScaledSize(14)}
           height={fontScaledSize(14)}
@@ -311,8 +308,8 @@ TodoList.Item = function Item({
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
-          onSelectedChange={handleCompletedToggle}
-          isDisabled={toggleTodo.isPending || isOptimistic}
+          onSelectedChange={isOptimistic ? undefined : handleCompletedToggle}
+          isDisabled={toggleTodo.isPending}
         />
       }
       top={

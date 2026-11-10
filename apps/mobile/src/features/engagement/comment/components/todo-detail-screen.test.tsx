@@ -8,6 +8,8 @@ import {
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import {
   createAnalyticsStub,
   createClipboardGatewayStub,
@@ -17,7 +19,7 @@ import {
 } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
@@ -449,6 +451,29 @@ describe('할 일 상세 체크', () => {
       completed: true,
     });
     pending.settle();
+  });
+
+  it('목록에서 막 더해 응답을 기다리는 하위 할 일은 체크할 수 없어 임시 id로 요청을 보내지 않는다', async () => {
+    // Given
+    const todo = createTodoDto({ id: TODO_ID, ...PRIVATE_TODO });
+    const { httpClient, queryClient } = await renderTodoDetail({ details: { todo } });
+    await act(async () => {
+      updateCachedTodo(queryClient, { date: todo.startDate, todoId: TODO_ID }, (cached) =>
+        SubTodoPolicy.withSubTodoAdded(cached, {
+          id: -1,
+          title: '스트레칭',
+          completed: false,
+          sortOrder: 0,
+        }),
+      );
+    });
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-sub-todo-checkbox--1'));
+
+    // Then
+    expect(screen.getByTestId('todo-detail-sub-todo-checkbox--1')).toBeDisabled();
+    expect(httpClient.patch).not.toHaveBeenCalled();
   });
 
   it('친구 하위 할 일은 읽기 전용이다', async () => {

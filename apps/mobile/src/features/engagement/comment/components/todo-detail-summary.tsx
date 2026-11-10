@@ -211,7 +211,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                 isSelected={subTodo.completed}
                 isDisabled={toggleSubTodo.isPending}
                 onSelectedChange={
-                  detail.permissions.canEdit
+                  detail.permissions.canEdit && !SubTodoPolicy.isOptimisticSubTodo(subTodo)
                     ? () =>
                         toggleSubTodo.mutate({
                           todoId,
