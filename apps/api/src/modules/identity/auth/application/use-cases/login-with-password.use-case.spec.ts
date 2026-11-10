@@ -1,44 +1,103 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
+import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
+import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
+import type { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
-  AUTH_CREDENTIAL_TIME,
+  AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
+import { createIdentityUserFixture } from "#test/fixtures/identity/auth-session.fixture";
+import { StubAuthPasswordHasher } from "#test/mocks/ports/auth-credentials.stub";
 
+import { AuthLogEvent } from "../auth.log-events.js";
 import { ChangePasswordUseCase } from "./change-password.use-case.js";
 import { LoginWithPasswordUseCase } from "./login-with-password.use-case.js";
 
-describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+type CredentialFixture = ReturnType<typeof createAuthCredentialFixture>;
 
+// 로그인 뒤 백그라운드 rehash가 끝나는 시점을 테스트가 정한다
+class DeferredRehashPasswordHasher extends StubAuthPasswordHasher {
+  readonly rehash = Promise.withResolvers<string>();
+  #deferred = true;
+
+  constructor(outdatedHash: string) {
+    super();
+    this.outdatedHashes.add(outdatedHash);
+  }
+
+  override async hash(password: string): Promise<string> {
+    if (this.#deferred) {
+      this.#deferred = false;
+      return this.rehash.promise;
+    }
+    return super.hash(password);
+  }
+}
+
+class CasObservingAccountRepository extends InMemoryAuthAccountRepository {
+  readonly casSettled = Promise.withResolvers<boolean>();
+
+  override async updatePasswordIfUnchanged(
+    userId: string,
+    expectedPasswordHash: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    const updated = await super.updatePasswordIfUnchanged(
+      userId,
+      expectedPasswordHash,
+      passwordHash,
+    );
+    this.casSettled.resolve(updated);
+    return updated;
+  }
+}
+
+class ErrorSignalingLogger extends SilentLogger {
+  readonly errorLogged = Promise.withResolvers<void>();
+
+  override error(message: ApplicationLogMessage): void {
+    super.error(message);
+    this.errorLogged.resolve();
+  }
+}
+
+// 복구를 판정한 뒤 트랜잭션이 열리기 전에 시간이 흘러 유예 경계를 넘는 상황을 만든다
+class ClockAdvancingUnitOfWork extends ImmediateUnitOfWork {
+  readonly #clock: FixedClock;
+
+  constructor(clock: FixedClock) {
+    super();
+    this.#clock = clock;
+  }
+
+  override run<T>(work: () => Promise<T>): Promise<T> {
+    this.#clock.advanceBy({ milliseconds: 2 });
+    return super.run(work);
+  }
+}
+
+async function markDeleted(fixture: CredentialFixture, deletedAt: Temporal.Instant) {
+  await fixture.userRepository.saveAccountStatus(
+    createIdentityUserFixture({ ...fixture.user, status: "SUSPENDED", deletedAt }),
+  );
+}
+
+describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new LoginWithPasswordUseCase({
-      clock: fixture.clock,
-      userRepository: fixture.userRepository,
-      accountRepository: fixture.accountRepository,
-      loginAttemptRepository: fixture.loginAttemptRepository,
-      passwordService: fixture.passwordService,
-      securityLogRepository: fixture.securityLogRepository,
-      issueLoginUseCase: fixture.issueLoginUseCase,
-      restoreAccount: fixture.restoreAccount,
-      cacheService: fixture.cacheService,
-      unitOfWork: fixture.unitOfWork,
-      logger: fixture.logger,
-    });
-    return { ...fixture, useCase };
+    return { ...fixture, useCase: new LoginWithPasswordUseCase(fixture) };
   }
 
   it("인증된 사용자의 세션·토큰을 발급하고 성공 기록과 프로필을 반환한다", async () => {
     // Given
     const fixture = given();
     const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test" };
+
     // When
     const result = await fixture.useCase.execute({
       email: fixture.user.email,
@@ -46,6 +105,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       deviceName: "내 기기",
       metadata,
     });
+
     // Then
     expect(result).toMatchObject({
       userId: fixture.user.id,
@@ -55,21 +115,22 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       accountRestored: false,
       tokens: { expiresIn: 900 },
     });
-    expect(fixture.sessionRepository.sessions.has(result.sessionId)).toBe(true);
-    expect(fixture.sessionRepository.creations).toEqual([
+    expect(fixture.sessionRepository.stored(result.sessionId)).toEqual(
       expect.objectContaining({
+        userId: fixture.user.id,
         deviceFingerprint: "내 기기",
         ipAddress: metadata.ip,
         userAgent: metadata.userAgent,
+        revokedAt: null,
       }),
-    ]);
+    );
     expect(fixture.loginAttemptRepository.attempts).toEqual([
       expect.objectContaining({ email: fixture.user.email, provider: "CREDENTIAL", success: true }),
     ]);
     expect(fixture.securityLogRepository.entries).toEqual([
       {
         userId: fixture.user.id,
-        event: "LOGIN_SUCCESS",
+        event: SECURITY_EVENT.LOGIN_SUCCESS,
         ipAddress: metadata.ip,
         userAgent: metadata.userAgent,
       },
@@ -87,49 +148,62 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
           : reason === "social"
             ? "NO_CREDENTIAL_ACCOUNT"
             : "INVALID_PASSWORD";
+
       // When
       const pending = fixture.useCase.execute({
         email: fixture.user.email,
         password: reason === "wrong" ? "wrong" : AUTH_CREDENTIAL_PASSWORD,
       });
+
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
       expect(fixture.loginAttemptRepository.attempts).toEqual([
-        expect.objectContaining({ success: false, failureReason: expected }),
+        expect.objectContaining({
+          success: false,
+          failureReason: expected,
+          attemptedAt: AUTH_CREDENTIAL_NOW,
+        }),
       ]);
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.sessionRepository.all).toEqual([]);
     },
   );
 
   it("다섯 번째 비밀번호 실패부터 잠그고 30분이 지난 실패는 잠금 계산에서 제외한다", async () => {
     // Given
     const fixture = given();
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
-      // When / Then
-      await expect(
-        fixture.useCase.execute({ email: fixture.user.email, password: "wrong" }),
-      ).rejects.toMatchObject({
-        errorCode: attempt === 5 ? ErrorCode.USER_0607 : ErrorCode.USER_0602,
-      });
+    const login = (password: string) =>
+      fixture.useCase.execute({ email: fixture.user.email, password });
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await expect(login("wrong")).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
     }
-    await expect(
-      fixture.useCase.execute({ email: fixture.user.email, password: AUTH_CREDENTIAL_PASSWORD }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.USER_0607 });
-    expect(fixture.loginAttemptRepository.attempts).toHaveLength(5);
-    expect(fixture.passwordService.checked).toHaveLength(5);
+
+    // When
+    const fifthFailure = await login("wrong").catch((error: unknown) => error);
+    const lockedLogin = await login(AUTH_CREDENTIAL_PASSWORD).catch((error: unknown) => error);
+    fixture.clock.advanceBy({ minutes: 31 });
+    const afterLockout = await login(AUTH_CREDENTIAL_PASSWORD);
+
+    // Then
+    expect(fifthFailure).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+    expect(lockedLogin).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+    expect(afterLockout.accountRestored).toBe(false);
+    // 잠긴 동안의 시도는 비밀번호를 확인하거나 시도로 기록하지 않는다
+    expect(fixture.passwordService.checked).toHaveLength(6);
+    expect(fixture.loginAttemptRepository.attempts.map((attempt) => attempt.success)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+    ]);
     expect(fixture.securityLogRepository.entries).toEqual([
       expect.objectContaining({
-        event: "ACCOUNT_LOCKED",
+        event: SECURITY_EVENT.ACCOUNT_LOCKED,
         metadata: { email: fixture.user.email, recentFailures: 5 },
       }),
+      expect.objectContaining({ event: SECURITY_EVENT.LOGIN_SUCCESS }),
     ]);
-    vi.setSystemTime(new Date(AUTH_CREDENTIAL_TIME.getTime() + 31 * 60_000));
-    const result = await fixture.useCase.execute({
-      email: fixture.user.email,
-      password: AUTH_CREDENTIAL_PASSWORD,
-    });
-    expect(result.accountRestored).toBe(false);
-    expect(fixture.loginAttemptRepository.attempts.at(-1)?.success).toBe(true);
   });
 
   it.each([
@@ -141,54 +215,57 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     async ({ status, errorCode }) => {
       // Given
       const fixture = given({ pending: status === "PENDING_VERIFY" });
-      fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status });
+      await fixture.userRepository.saveAccountStatus(
+        createIdentityUserFixture({ ...fixture.user, status }),
+      );
+
       // When
       const pending = fixture.useCase.execute({
         email: fixture.user.email,
         password: AUTH_CREDENTIAL_PASSWORD,
       });
+
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.sessionRepository.all).toEqual([]);
       expect(fixture.loginAttemptRepository.attempts).toEqual([]);
     },
   );
 
-  it.each([false, true])(
-    "복구 승인 후 처리 중 유예 경계 통과=%s여도 같은 판정 시각으로 복구한다",
-    async (crossesBoundary) => {
+  it.each([
+    { crossesBoundary: false, deletedAt: "2026-10-12T00:00:00.000Z" },
+    // 판정 시각에는 유예 30일보다 1ms 짧고 트랜잭션 안의 시각에는 유예를 넘는다
+    { crossesBoundary: true, deletedAt: "2026-10-11T00:00:00.001Z" },
+  ])(
+    "복구 승인 후 처리 중 유예 경계 통과=$crossesBoundary여도 같은 판정 시각으로 복구한다",
+    async ({ crossesBoundary, deletedAt }) => {
       // Given
-      const fixture = given();
-      const deletedAt = new Date(
-        AUTH_CREDENTIAL_TIME.getTime() - (crossesBoundary ? 30 * 86_400_000 - 1 : 29 * 86_400_000),
-      );
-      await fixture.userRepository.softDelete(fixture.user.id, deletedAt);
+      const fixture = createAuthCredentialFixture();
+      await markDeleted(fixture, Temporal.Instant.from(deletedAt));
       fixture.cacheService.userIds.add(fixture.user.id);
-      if (crossesBoundary) {
-        fixture.unitOfWork.run = async <T>(work: () => Promise<T>): Promise<T> => {
-          vi.setSystemTime(new Date(AUTH_CREDENTIAL_TIME.getTime() + 2));
-          return work();
-        };
-      }
+      const useCase = new LoginWithPasswordUseCase({
+        ...fixture,
+        unitOfWork: crossesBoundary
+          ? new ClockAdvancingUnitOfWork(fixture.clock)
+          : fixture.unitOfWork,
+      });
+
       // When
-      const result = await fixture.useCase.execute({
+      const result = await useCase.execute({
         email: fixture.user.email,
         password: AUTH_CREDENTIAL_PASSWORD,
       });
+
       // Then
       expect(result.accountRestored).toBe(true);
-      expect(fixture.userRepository.users.get(fixture.user.id)).toMatchObject({
-        status: "ACTIVE",
-        deletedAt: null,
-      });
+      expect(fixture.userRepository.stored(fixture.user.id)).toEqual(
+        expect.objectContaining({ status: "ACTIVE", deletedAt: null }),
+      );
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
       expect(fixture.securityLogRepository.entries).toContainEqual(
         expect.objectContaining({
-          event: "ACCOUNT_RESTORED",
-          metadata: {
-            deletedAt: deletedAt.toISOString(),
-            restoredAt: AUTH_CREDENTIAL_TIME.toISOString(),
-          },
+          event: SECURITY_EVENT.ACCOUNT_RESTORED,
+          metadata: { deletedAt, restoredAt: "2026-11-10T00:00:00.000Z" },
         }),
       );
     },
@@ -197,115 +274,102 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
   it("복구 유예가 끝난 계정은 저장·발급 없이 USER_0606으로 거부한다", async () => {
     // Given
     const fixture = given();
-    await fixture.userRepository.softDelete(
-      fixture.user.id,
-      new Date(AUTH_CREDENTIAL_TIME.getTime() - 31 * 86_400_000),
-    );
+    await markDeleted(fixture, AUTH_CREDENTIAL_NOW.subtract({ hours: 24 * 31 }));
+
     // When
     const pending = fixture.useCase.execute({
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
+
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0606 });
-    expect(fixture.sessionRepository.sessions.size).toBe(0);
+    expect(fixture.userRepository.stored(fixture.user.id)?.status).toBe("SUSPENDED");
+    expect(fixture.sessionRepository.all).toEqual([]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
 
   it("진행 중인 rehash보다 뒤에 변경한 비밀번호를 CAS로 보존한다", async () => {
     // Given
-    const fixture = given();
-    const pendingHash = Promise.withResolvers<string>();
-    const finished = Promise.withResolvers<void>();
-    fixture.passwordService.outdatedHashes.add(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
-    vi.spyOn(fixture.passwordService, "hash").mockReturnValueOnce(pendingHash.promise);
-    const update = fixture.accountRepository.updatePasswordIfUnchanged.bind(
-      fixture.accountRepository,
-    );
-    vi.spyOn(fixture.accountRepository, "updatePasswordIfUnchanged").mockImplementation(
-      async (...input) => {
-        const result = await update(...input);
-        finished.resolve();
-        return result;
-      },
-    );
-    // When
-    const result = await fixture.useCase.execute({
+    const fixture = createAuthCredentialFixture();
+    const passwordService = new DeferredRehashPasswordHasher(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
+    const accountRepository = new CasObservingAccountRepository(fixture.accountRepository.all);
+    const dependencies = { ...fixture, passwordService, accountRepository };
+    const login = await new LoginWithPasswordUseCase(dependencies).execute({
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
-    const changePassword = new ChangePasswordUseCase({
-      pushDevices: fixture.pushDevices,
-      userRepository: fixture.userRepository,
-      accountRepository: fixture.accountRepository,
-      passwordService: fixture.passwordService,
-      sessionRepository: fixture.sessionRepository,
-      cacheService: fixture.cacheService,
-      securityLogRepository: fixture.securityLogRepository,
-      unitOfWork: fixture.unitOfWork,
-      logger: fixture.logger,
-    });
-    await changePassword.execute({
+
+    // When
+    await new ChangePasswordUseCase(dependencies).execute({
       userId: fixture.user.id,
       currentPassword: AUTH_CREDENTIAL_PASSWORD,
       newPassword: "new-password",
-      currentSessionId: result.sessionId,
+      currentSessionId: login.sessionId,
     });
-    pendingHash.resolve("upgraded:old-password");
-    await finished.promise;
+    passwordService.rehash.resolve("upgraded:old-password");
+    const rehashSaved = await accountRepository.casSettled.promise;
+
     // Then
-    expect(fixture.sessionRepository.sessions.has(result.sessionId)).toBe(true);
-    expect(fixture.accountRepository.accounts[0]?.password).toBe("digest:new-password");
-    expect(fixture.logger.debug).not.toHaveBeenCalled();
+    expect(rehashSaved).toBe(false);
+    expect(accountRepository.all.map((account) => account.password)).toEqual([
+      "digest:new-password",
+    ]);
+    expect(fixture.sessionRepository.stored(login.sessionId)?.revokedAt).toBeNull();
   });
 
   it("rehash 실패는 성공한 로그인 응답을 바꾸거나 민감한 오류를 기록하지 않는다", async () => {
     // Given
-    const fixture = given();
-    const pendingHash = Promise.withResolvers<string>();
-    const logged = Promise.withResolvers<void>();
-    fixture.passwordService.outdatedHashes.add(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
-    vi.spyOn(fixture.passwordService, "hash").mockReturnValueOnce(pendingHash.promise);
-    fixture.logger.error.mockImplementation(() => {
-      logged.resolve();
-    });
+    const fixture = createAuthCredentialFixture();
+    const passwordService = new DeferredRehashPasswordHasher(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
+    const logger = new ErrorSignalingLogger();
+    const useCase = new LoginWithPasswordUseCase({ ...fixture, passwordService, logger });
+
     // When
-    const result = await fixture.useCase.execute({
+    const result = await useCase.execute({
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
-    pendingHash.reject(new Error("private password payload"));
-    await logged.promise;
+    passwordService.rehash.reject(new Error("private password payload"));
+    await logger.errorLogged.promise;
+
     // Then
-    expect(fixture.sessionRepository.sessions.has(result.sessionId)).toBe(true);
-    expect(fixture.accountRepository.accounts[0]?.password).toBe(
+    expect(fixture.sessionRepository.stored(result.sessionId)?.revokedAt).toBeNull();
+    expect(fixture.accountRepository.all.map((account) => account.password)).toEqual([
       `digest:${AUTH_CREDENTIAL_PASSWORD}`,
-    );
-    expect(JSON.stringify(fixture.logger.error.mock.calls)).not.toContain(
-      "private password payload",
-    );
+    ]);
+    expect(logger.messages).toContainEqual({
+      event: AuthLogEvent.PASSWORD_REHASH_FAILED,
+      userId: fixture.user.id,
+      errorType: "Error",
+    });
+    expect(JSON.stringify(logger.messages)).not.toContain("private password payload");
   });
 
   it("비밀번호가 그대로면 rehash를 저장하고 로그인 세션을 유지한다", async () => {
     // Given
-    const fixture = given();
-    const pendingHash = Promise.withResolvers<string>();
-    const logged = Promise.withResolvers<void>();
-    fixture.passwordService.outdatedHashes.add(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
-    vi.spyOn(fixture.passwordService, "hash").mockReturnValueOnce(pendingHash.promise);
-    fixture.logger.debug.mockImplementation(() => {
-      logged.resolve();
+    const fixture = createAuthCredentialFixture();
+    const passwordService = new DeferredRehashPasswordHasher(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
+    const accountRepository = new CasObservingAccountRepository(fixture.accountRepository.all);
+    const useCase = new LoginWithPasswordUseCase({
+      ...fixture,
+      passwordService,
+      accountRepository,
     });
+
     // When
-    const result = await fixture.useCase.execute({
+    const result = await useCase.execute({
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
-    pendingHash.resolve("upgraded:current-password");
-    await logged.promise;
+    passwordService.rehash.resolve("upgraded:current-password");
+    const rehashSaved = await accountRepository.casSettled.promise;
+
     // Then
-    expect(fixture.accountRepository.accounts[0]?.password).toBe("upgraded:current-password");
-    expect(fixture.sessionRepository.sessions.get(result.sessionId)?.revokedAt).toBeNull();
-    expect(fixture.logger.error).not.toHaveBeenCalled();
+    expect(rehashSaved).toBe(true);
+    expect(accountRepository.all.map((account) => account.password)).toEqual([
+      "upgraded:current-password",
+    ]);
+    expect(fixture.sessionRepository.stored(result.sessionId)?.revokedAt).toBeNull();
   });
 });

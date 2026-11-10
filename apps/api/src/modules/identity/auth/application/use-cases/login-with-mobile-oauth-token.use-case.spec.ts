@@ -1,18 +1,11 @@
-import { vi } from "vitest";
-
-import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
+import { toIsoString } from "#api/shared/domain/time/instant";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { LoginWithMobileOAuthTokenUseCase } from "./login-with-mobile-oauth-token.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의 가입 알림", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   const device = { devicePlatform: "ANDROID", appVersion: "1.14.2" } as const;
 
   function given(options: Parameters<typeof createAuthOAuthFixture>[1] = {}) {
@@ -43,7 +36,7 @@ describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의
         userId: result.userId,
         email: fixture.identityProvider.profile.email,
         provider: "google",
-        registeredAt: AUTH_CREDENTIAL_TIME.toISOString(),
+        registeredAt: toIsoString(AUTH_CREDENTIAL_NOW),
         name: "새 사용자",
         ...device,
       },
@@ -54,7 +47,6 @@ describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의
     // Given
     const fixture = given({ empty: true });
     await fixture.useCase.execute({ provider: "GOOGLE", token: "token", metadata: { device } });
-    fixture.adminEventNotifier.notifications.length = 0;
     // When
     const result = await fixture.useCase.execute({
       provider: "GOOGLE",
@@ -63,6 +55,6 @@ describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의
     });
     // Then
     expect(result.isNewUser).toBe(false);
-    expect(fixture.adminEventNotifier.notifications).toEqual([]);
+    expect(fixture.adminEventNotifier.notifications).toHaveLength(1);
   });
 });

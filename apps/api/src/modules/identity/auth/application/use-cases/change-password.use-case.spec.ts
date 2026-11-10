@@ -1,38 +1,42 @@
 import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
+import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import {
+  AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
-  AUTH_CREDENTIAL_TIME,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
-import { SessionFixture } from "#test/fixtures/session.fixture";
+import { createAuthAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import {
+  createAuthSessionFixture,
+  createIdentityUserFixture,
+} from "#test/fixtures/identity/auth-session.fixture";
 
 import { ChangePasswordUseCase } from "./change-password.use-case.js";
 
-describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경", () => {
-  const newPassword = "NewPassword2!";
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+const newPassword = "NewPassword2!";
 
+async function givenSessions(
+  fixture: ReturnType<typeof createAuthCredentialFixture>,
+  sessions: readonly { readonly id: string; readonly userId: string }[],
+) {
+  for (const session of sessions) {
+    await fixture.sessionRepository.save(createAuthSessionFixture(session));
+    fixture.cacheService.sessionIds.add(session.id);
+  }
+}
+
+describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경", () => {
   it("현재 기기와 다른 사용자는 유지하고 나머지 폐기 세션 캐시만 삭제한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
     const useCase = new ChangePasswordUseCase(fixture);
-    const currentSession = SessionFixture.create({ id: "current-device", userId: fixture.user.id });
-    const otherSession = SessionFixture.create({ id: "other-device", userId: fixture.user.id });
-    const otherUserSession = SessionFixture.create({
-      id: "other-user-device",
-      userId: "other-user",
-    });
-    for (const session of [currentSession, otherSession, otherUserSession]) {
-      fixture.sessionRepository.sessions.set(session.id, session);
-      fixture.cacheService.sessionIds.add(session.id);
-    }
+    await givenSessions(fixture, [
+      { id: "current-device", userId: fixture.user.id },
+      { id: "other-device", userId: fixture.user.id },
+      { id: "other-user-device", userId: "other-user" },
+    ]);
     const metadata = { ip: "192.0.2.11", userAgent: "현재 기기" };
 
     // When
@@ -40,25 +44,27 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
       userId: fixture.user.id,
       currentPassword: AUTH_CREDENTIAL_PASSWORD,
       newPassword,
-      currentSessionId: currentSession.id,
+      currentSessionId: "current-device",
       metadata,
     });
 
     // Then
     expect(result.message).toBe("비밀번호가 변경되었습니다.");
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
-    ).toMatchObject({ password: `digest:${newPassword}` });
-    expect(fixture.sessionRepository.sessions.get(otherSession.id)?.revokedAt).toEqual(
-      AUTH_CREDENTIAL_TIME,
+    expect(fixture.accountRepository.all.map((account) => account.password)).toEqual([
+      `digest:${newPassword}`,
+    ]);
+    expect(fixture.sessionRepository.stored("other-device")?.revokedAt).toEqual(
+      AUTH_CREDENTIAL_NOW,
     );
-    expect(fixture.sessionRepository.revocationReasons.get(otherSession.id)).toBe(
-      REVOKE_REASON.PASSWORD_CHANGED,
+    expect(fixture.sessionRepository.revocationReasons).toEqual(
+      new Map([["other-device", REVOKE_REASON.PASSWORD_CHANGED]]),
     );
-    expect(fixture.cacheService.sessionIds.has(otherSession.id)).toBe(false);
-    for (const session of [currentSession, otherUserSession]) {
-      expect(fixture.sessionRepository.sessions.get(session.id)?.revokedAt).toBeNull();
-      expect(fixture.cacheService.sessionIds.has(session.id)).toBe(true);
+    expect(fixture.cacheService.sessionIds).toEqual(
+      new Set(["current-device", "other-user-device"]),
+    );
+    expect(fixture.pushDevices.releasedSessionIds).toEqual(["other-device"]);
+    for (const sessionId of ["current-device", "other-user-device"]) {
+      expect(fixture.sessionRepository.stored(sessionId)?.revokedAt).toBeNull();
     }
     expect(fixture.securityLogRepository.entries).toEqual([
       {
@@ -74,9 +80,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
     // Given
     const fixture = createAuthCredentialFixture();
     const useCase = new ChangePasswordUseCase(fixture);
-    const session = SessionFixture.create({ userId: fixture.user.id });
-    fixture.sessionRepository.sessions.set(session.id, session);
-    fixture.cacheService.sessionIds.add(session.id);
+    await givenSessions(fixture, [{ id: "only-device", userId: fixture.user.id }]);
 
     // When
     await useCase.execute({
@@ -86,10 +90,8 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
     });
 
     // Then
-    expect(fixture.sessionRepository.sessions.get(session.id)?.revokedAt).toEqual(
-      AUTH_CREDENTIAL_TIME,
-    );
-    expect(fixture.cacheService.sessionIds.has(session.id)).toBe(false);
+    expect(fixture.sessionRepository.stored("only-device")?.revokedAt).toEqual(AUTH_CREDENTIAL_NOW);
+    expect(fixture.cacheService.sessionIds.size).toBe(0);
   });
 
   it.each(["존재하지 않는", "탈퇴한", "소셜 전용", "비밀번호가 없는"] as const)(
@@ -101,14 +103,21 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
         socialOnly: state === "소셜 전용",
       });
       if (state === "탈퇴한") {
-        await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+        await fixture.userRepository.saveAccountStatus(
+          createIdentityUserFixture({
+            ...fixture.user,
+            status: "SUSPENDED",
+            deletedAt: AUTH_CREDENTIAL_NOW,
+          }),
+        );
       }
-      if (state === "비밀번호가 없는") {
-        for (const account of fixture.accountRepository.accounts) {
-          account.password = null;
-        }
-      }
-      const useCase = new ChangePasswordUseCase(fixture);
+      const accountRepository =
+        state === "비밀번호가 없는"
+          ? new InMemoryAuthAccountRepository([
+              createAuthAccountFixture({ userId: fixture.user.id, password: null }),
+            ])
+          : fixture.accountRepository;
+      const useCase = new ChangePasswordUseCase({ ...fixture, accountRepository });
       const errorCode =
         state === "존재하지 않는"
           ? ErrorCode.USER_0601
@@ -134,9 +143,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
     // Given
     const fixture = createAuthCredentialFixture();
     const useCase = new ChangePasswordUseCase(fixture);
-    const session = SessionFixture.create({ userId: fixture.user.id });
-    fixture.sessionRepository.sessions.set(session.id, session);
-    fixture.cacheService.sessionIds.add(session.id);
+    await givenSessions(fixture, [{ id: "only-device", userId: fixture.user.id }]);
 
     // When
     const pending = useCase.execute({
@@ -147,12 +154,12 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
-    ).toMatchObject({ password: `digest:${AUTH_CREDENTIAL_PASSWORD}` });
+    expect(fixture.accountRepository.all.map((account) => account.password)).toEqual([
+      `digest:${AUTH_CREDENTIAL_PASSWORD}`,
+    ]);
     expect(fixture.passwordService.hashes).toEqual([]);
-    expect(fixture.sessionRepository.sessions.get(session.id)?.revokedAt).toBeNull();
-    expect(fixture.cacheService.sessionIds.has(session.id)).toBe(true);
+    expect(fixture.sessionRepository.stored("only-device")?.revokedAt).toBeNull();
+    expect(fixture.cacheService.sessionIds.has("only-device")).toBe(true);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
 });

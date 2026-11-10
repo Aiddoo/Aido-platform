@@ -1,21 +1,15 @@
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import {
-  AUTH_CREDENTIAL_TIME,
+  AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
+import { createIdentityUserFixture } from "#test/fixtures/identity/auth-session.fixture";
 
 import { RequestPasswordResetUseCase } from "./request-password-reset.use-case.js";
 
 describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설정 요청", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   it("재설정 용도의 코드를 저장·발송하고 요청 정보를 감사 기록에 남긴다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
@@ -27,10 +21,17 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
 
     // Then
     expect(result).toEqual({ message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." });
-    const sentEmail = fixture.emailSender.getSentEmail(fixture.user.email);
-    expect(sentEmail).toMatchObject({ type: "password-reset", sentAt: AUTH_CREDENTIAL_TIME });
-    expect([...fixture.verificationRepository.verifications.values()]).toEqual([
-      expect.objectContaining({ userId: fixture.user.id, type: "PASSWORD_RESET", usedAt: null }),
+    expect(fixture.emailSender.getSentEmail(fixture.user.email)).toMatchObject({
+      type: "password-reset",
+      code: "123456",
+    });
+    expect(fixture.verificationRepository.all).toEqual([
+      expect.objectContaining({
+        userId: fixture.user.id,
+        type: "PASSWORD_RESET",
+        tokenHash: "digest:123456",
+        usedAt: null,
+      }),
     ]);
     expect(fixture.securityLogRepository.entries).toEqual([
       {
@@ -49,7 +50,9 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       // Given
       const fixture = createAuthCredentialFixture({ empty: state === "존재하지 않는" });
       if (state === "탈퇴한") {
-        await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+        const user = createIdentityUserFixture(fixture.user);
+        user.requestDeletion(AUTH_CREDENTIAL_NOW);
+        await fixture.userRepository.saveAccountStatus(user);
       }
       const useCase = new RequestPasswordResetUseCase(fixture);
 
@@ -61,7 +64,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
         message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.",
       });
       expect(fixture.emailSender.getSentCount()).toBe(0);
-      expect(fixture.verificationRepository.verifications.size).toBe(0);
+      expect(fixture.verificationRepository.all).toEqual([]);
       expect(fixture.securityLogRepository.entries).toEqual([]);
     },
   );

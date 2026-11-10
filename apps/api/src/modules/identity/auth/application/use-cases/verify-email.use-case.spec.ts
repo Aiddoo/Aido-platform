@@ -1,59 +1,49 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
-  AUTH_CREDENTIAL_TIME,
+  AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
+import { createIdentityUserFixture } from "#test/fixtures/identity/auth-session.fixture";
 
 import { VerifyEmailUseCase } from "./verify-email.use-case.js";
 
 describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    const useCase = new VerifyEmailUseCase({
-      userRepository: fixture.userRepository,
-      verificationService: fixture.verificationService,
-      retentionEnroller: fixture.retentionEnroller,
-      sessionService: fixture.sessionService,
-      securityLogRepository: fixture.securityLogRepository,
-      unitOfWork: fixture.unitOfWork,
-      logger: fixture.logger,
-    });
-    return { ...fixture, useCase };
+    return { ...fixture, useCase: new VerifyEmailUseCase(fixture) };
   }
 
   async function givenCode() {
     const fixture = given({ pending: true });
-    await fixture.verificationService.createEmailVerification(fixture.user.id);
-    return fixture;
+    const issued = await fixture.issueVerificationCode.execute({
+      userId: fixture.user.id,
+      type: "EMAIL_VERIFY",
+    });
+    return { ...fixture, code: issued.code };
   }
 
   it("올바른 코드를 소비하고 계정을 활성화하며 첫 세션·프로필을 반환한다", async () => {
     // Given
     const fixture = await givenCode();
+    fixture.clock.advanceBy({ minutes: 1 });
+    const verifiedAt = AUTH_CREDENTIAL_NOW.add({ minutes: 1 });
     const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test" };
     // When
     const result = await fixture.useCase.execute({
       email: fixture.user.email,
-      code: "123456",
+      code: fixture.code,
       metadata,
     });
     // Then
-    expect(fixture.userRepository.users.get(fixture.user.id)).toMatchObject({
+    expect(fixture.userRepository.stored(fixture.user.id)).toMatchObject({
       status: "ACTIVE",
-      emailVerifiedAt: AUTH_CREDENTIAL_TIME,
+      emailVerifiedAt: verifiedAt,
     });
-    expect([...fixture.verificationRepository.verifications.values()][0]?.usedAt).toEqual(
-      AUTH_CREDENTIAL_TIME,
-    );
-    expect(fixture.sessionRepository.creations).toEqual([
+    expect(fixture.verificationRepository.all).toEqual([
+      expect.objectContaining({ usedAt: verifiedAt }),
+    ]);
+    expect(fixture.sessionRepository.all).toEqual([
       expect.objectContaining({
         userId: fixture.user.id,
         ipAddress: metadata.ip,
@@ -86,12 +76,11 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
     const pending = fixture.useCase.execute({ email: fixture.user.email, code: "999999" });
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
-    expect(fixture.userRepository.users.get(fixture.user.id)?.status).toBe("PENDING_VERIFY");
-    expect([...fixture.verificationRepository.verifications.values()][0]).toMatchObject({
-      attempts: 1,
-      usedAt: null,
-    });
-    expect(fixture.sessionRepository.sessions.size).toBe(0);
+    expect(fixture.userRepository.stored(fixture.user.id)?.status).toBe("PENDING_VERIFY");
+    expect(fixture.verificationRepository.all).toEqual([
+      expect.objectContaining({ attempts: 1, usedAt: null }),
+    ]);
+    expect(fixture.sessionRepository.all).toEqual([]);
     expect(fixture.retentionEnroller.activatedUserIds).toEqual([]);
   });
 
@@ -101,7 +90,9 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
       // Given
       const fixture = given({ pending: state !== "verified", empty: state === "missing" });
       if (state === "deleted") {
-        await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+        const user = createIdentityUserFixture(fixture.user);
+        user.requestDeletion(AUTH_CREDENTIAL_NOW);
+        await fixture.userRepository.saveAccountStatus(user);
       }
       const expected =
         state === "missing"
@@ -113,7 +104,7 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
       const pending = fixture.useCase.execute({ email: fixture.user.email, code: "123456" });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: expected });
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.sessionRepository.all).toEqual([]);
       expect(fixture.securityLogRepository.entries).toEqual([]);
     },
   );

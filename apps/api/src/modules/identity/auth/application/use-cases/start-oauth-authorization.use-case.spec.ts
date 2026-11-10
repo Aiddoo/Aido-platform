@@ -1,18 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
-import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
+import { OAUTH_STATE_EXPIRY_MINUTES } from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization.use-case.js";
 
 describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저장", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   it.each(["GOOGLE", "KAKAO", "NAVER"] satisfies Array<
     Parameters<StartOAuthAuthorizationUseCase["execute"]>[0]["provider"]
   >)("%s 연결 요청의 actor와 복귀 주소를 저장한다", async (provider) => {
@@ -32,7 +26,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
     });
     // Then
     expect(result).toBe("https://provider.example/authorize?state=state-secret");
-    expect([...fixture.oauthStateRepository.states.values()]).toMatchObject([
+    expect(fixture.oauthStateRepository.all).toMatchObject([
       {
         provider,
         state: "state-secret",
@@ -41,6 +35,9 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
         initiatingUserId: fixture.user.id,
       },
     ]);
+    expect(fixture.oauthStateRepository.all[0]?.expiresAt).toEqual(
+      AUTH_CREDENTIAL_NOW.add({ minutes: OAUTH_STATE_EXPIRY_MINUTES }),
+    );
   });
 
   it.each([
@@ -87,7 +84,7 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
       // When
       await useCase.execute({ provider: "GOOGLE", state: "state", clientRedirectUri: uri });
       // Then
-      expect([...fixture.oauthStateRepository.states.values()][0]?.redirectUri).toBe(expected);
+      expect(fixture.oauthStateRepository.all[0]?.redirectUri).toBe(expected);
     },
   );
 
@@ -105,6 +102,6 @@ describe("StartOAuthAuthorization — 허용된 복귀 주소와 OAuth state 저
       errorCode: ErrorCode.SOCIAL_0204,
       details: { provider: "NAVER", reason: "Unsupported provider: NAVER" },
     });
-    expect(fixture.oauthStateRepository.states.size).toBe(0);
+    expect(fixture.oauthStateRepository.all).toEqual([]);
   });
 });

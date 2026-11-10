@@ -1,26 +1,25 @@
-import { vi } from "vitest";
-
-import {
-  AUTH_CREDENTIAL_TIME,
-  createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
+import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
 import { UpdateProfileUseCase } from "./update-profile.use-case.js";
 
-describe("UpdateProfile — 프로필 변경", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+const profileSaveFailure = new Error("프로필 저장 실패");
 
-  function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
-    const fixture = createAuthCredentialFixture(options);
+class FailingProfileUserRepository extends InMemoryAuthUserRepository {
+  override async updateProfile(): Promise<never> {
+    throw profileSaveFailure;
+  }
+}
+
+describe("UpdateProfile — 프로필 변경", () => {
+  function given(userRepository?: InMemoryAuthUserRepository) {
+    const fixture = createAuthCredentialFixture();
     const useCase = new UpdateProfileUseCase({
-      userRepository: fixture.userRepository,
+      userRepository: userRepository ?? fixture.userRepository,
       cacheService: fixture.cacheService,
       logger: fixture.logger,
     });
+    fixture.cacheService.userIds.add(fixture.user.id);
     return { ...fixture, useCase };
   }
 
@@ -29,12 +28,13 @@ describe("UpdateProfile — 프로필 변경", () => {
     async (profileImage) => {
       // Given
       const fixture = given();
-      fixture.cacheService.userIds.add(fixture.user.id);
+
       // When
       const result = await fixture.useCase.execute({ userId: fixture.user.id, profileImage });
+
       // Then
       expect(result).toEqual({ message: "프로필이 수정되었습니다.", name: "사용자", profileImage });
-      expect(fixture.userRepository.profiles.get(fixture.user.id)).toEqual({
+      expect(fixture.userRepository.profileOf(fixture.user.id)).toEqual({
         name: "사용자",
         profileImage,
       });
@@ -45,16 +45,17 @@ describe("UpdateProfile — 프로필 변경", () => {
   it("이름만 수정하면 저장한 이미지를 유지하고 다른 사용자 캐시에 영향이 없다", async () => {
     // Given
     const fixture = given();
-    fixture.userRepository.profiles.set(fixture.user.id, {
+    await fixture.userRepository.createProfile(fixture.user.id, {
       name: "사용자",
       profileImage: "scottish_fold",
     });
-    fixture.cacheService.userIds.add(fixture.user.id);
     fixture.cacheService.userIds.add("other-user");
+
     // When
     await fixture.useCase.execute({ userId: fixture.user.id, name: "새 이름" });
+
     // Then
-    expect(fixture.userRepository.profiles.get(fixture.user.id)).toEqual({
+    expect(fixture.userRepository.profileOf(fixture.user.id)).toEqual({
       name: "새 이름",
       profileImage: "scottish_fold",
     });
@@ -63,19 +64,14 @@ describe("UpdateProfile — 프로필 변경", () => {
 
   it("프로필 저장이 실패하면 기존 캐시를 유지하고 성공 로그를 남기지 않는다", async () => {
     // Given
-    const fixture = given();
-    fixture.cacheService.userIds.add(fixture.user.id);
-    const failure = new Error("프로필 저장 실패");
-    fixture.userRepository.updateProfile = async () => {
-      throw failure;
-    };
+    const fixture = given(new FailingProfileUserRepository());
 
     // When
     const pending = fixture.useCase.execute({ userId: fixture.user.id, name: "새 이름" });
 
     // Then
-    await expect(pending).rejects.toBe(failure);
+    await expect(pending).rejects.toBe(profileSaveFailure);
     expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
-    expect(fixture.logger.log).not.toHaveBeenCalled();
+    expect(fixture.logger.messages).toEqual([]);
   });
 });

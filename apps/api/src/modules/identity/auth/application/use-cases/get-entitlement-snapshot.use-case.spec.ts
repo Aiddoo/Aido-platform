@@ -1,7 +1,7 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import type { ResourceBonuses } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
-import { QUOTA_LEDGER_TIME, createQuotaLedgerFixture } from "#test/fixtures/quota-ledger.fixture";
+import { createQuotaLedgerFixture } from "#test/fixtures/quota-ledger.fixture";
 import type { InMemoryQuotaUser } from "#test/mocks/ports/quota-ledger.stub";
 
 import { GetEntitlementSnapshotUseCase } from "./get-entitlement-snapshot.use-case.js";
@@ -9,12 +9,6 @@ import { GetEntitlementSnapshotUseCase } from "./get-entitlement-snapshot.use-ca
 const DAILY_RESETS_AT = new Date("2026-04-12T15:00:00Z");
 
 describe("GetEntitlementSnapshot — 권한 스냅샷", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   function given(input: {
     readonly friends: number;
     readonly categories: number;

@@ -1,42 +1,51 @@
 import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
-import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
-import { AccountFixture } from "#test/fixtures/user.fixture";
 
 import { UnlinkOAuthAccountUseCase } from "./unlink-oauth-account.use-case.js";
 
-describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+// 작업이 끝난 커밋 시점의 상태를 남겨 커밋 뒤에 할 일이 트랜잭션 안에서 실행되지 않았는지 본다
+class CommitProbeUnitOfWork<T> extends UnitOfWorkPort {
+  readonly observed: T[] = [];
+  readonly #probe: () => T;
 
+  constructor(probe: () => T) {
+    super();
+    this.#probe = probe;
+  }
+
+  async run<R>(work: () => Promise<R>): Promise<R> {
+    const result = await work();
+    this.observed.push(this.#probe());
+    return result;
+  }
+}
+
+describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
   it("Credential 로그인을 남긴 채 소셜 연결을 제거하고 커밋 뒤 캐시를 무효화한다", async () => {
     // Given
     const fixture = createAuthOAuthFixture();
-    fixture.accountRepository.accounts.push(
-      AccountFixture.create({ userId: fixture.user.id, provider: "GOOGLE" }),
-    );
+    await fixture.accountRepository.createOAuthAccount({
+      userId: fixture.user.id,
+      provider: "GOOGLE",
+      providerAccountId: "google-account",
+    });
     fixture.cacheService.userIds.add(fixture.user.id);
     const metadata = { ip: "192.0.2.20", userAgent: "연결 해제 기기" };
-    fixture.unitOfWork.run = async <T>(work: () => Promise<T>): Promise<T> => {
-      const result = await work();
-      expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
-      return result;
-    };
+    const unitOfWork = new CommitProbeUnitOfWork(() =>
+      fixture.cacheService.userIds.has(fixture.user.id),
+    );
     // When
-    const result = await new UnlinkOAuthAccountUseCase(fixture).execute({
+    const result = await new UnlinkOAuthAccountUseCase({ ...fixture, unitOfWork }).execute({
       userId: fixture.user.id,
       provider: "GOOGLE",
       metadata,
     });
     // Then
     expect(result.message).toBe("계정 연결이 해제되었습니다.");
-    expect(fixture.accountRepository.accounts.map((account) => account.provider)).toEqual([
+    expect(fixture.accountRepository.all.map((account) => account.provider)).toEqual([
       "CREDENTIAL",
     ]);
     expect(fixture.securityLogRepository.entries).toEqual([
@@ -48,6 +57,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
         metadata: { provider: "GOOGLE" },
       },
     ]);
+    expect(unitOfWork.observed).toEqual([true]);
     expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
   });
 
@@ -85,7 +95,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
         errorCode,
         ...(details == null ? {} : { details }),
       });
-      expect(fixture.accountRepository.accounts).toHaveLength(1);
+      expect(fixture.accountRepository.all).toHaveLength(1);
       expect(fixture.securityLogRepository.entries).toEqual([]);
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
     },

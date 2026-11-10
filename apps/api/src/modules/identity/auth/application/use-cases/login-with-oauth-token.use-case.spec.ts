@@ -1,17 +1,23 @@
 import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
+import type { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
   type AccountProvider,
+  type UserStatus,
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { IdentityUser } from "#api/modules/identity/auth/domain/identity-user.aggregate";
-import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
+import type { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
-import { SessionFixture } from "#test/fixtures/session.fixture";
-import { AccountFixture } from "#test/fixtures/user.fixture";
+import {
+  createAuthSessionFixture,
+  createIdentityUserFixture,
+} from "#test/fixtures/identity/auth-session.fixture";
 
 import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
@@ -21,22 +27,85 @@ const providers = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] satisfies Array<
 >;
 const metadata = { ip: "192.0.2.40", userAgent: "소셜 로그인 기기" };
 
-describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
+type OAuthFixture = ReturnType<typeof createAuthOAuthFixture>;
 
-  function givenExisting(provider: AccountProvider = "GOOGLE") {
+type LoginUserReader = Pick<
+  AuthUserRepositoryPort,
+  "findById" | "findByEmail" | "findByIdForUpdate"
+>;
+
+// 역할을 바꾸는 저장소 API가 없어, 정한 조회 차례부터 같은 사용자를 ADMIN으로 돌려준다
+class PromotingUserRepository implements LoginUserReader {
+  readonly #source: LoginUserReader;
+  readonly #promoteFromRead: number;
+  #reads = 0;
+
+  constructor(source: LoginUserReader, promoteFromRead: number) {
+    this.#source = source;
+    this.#promoteFromRead = promoteFromRead;
+  }
+
+  async findById(id: string): Promise<IdentityUser | null> {
+    const user = await this.#source.findById(id);
+    this.#reads += 1;
+    if (user == null || this.#reads < this.#promoteFromRead) {
+      return user;
+    }
+    return IdentityUser.reconstitute({ ...user.toPrimitives(), role: "ADMIN" });
+  }
+
+  findByEmail(email: string): Promise<IdentityUser | null> {
+    return this.#source.findByEmail(email);
+  }
+
+  findByIdForUpdate(id: string): Promise<IdentityUser | null> {
+    return this.#source.findByIdForUpdate(id);
+  }
+}
+
+// 트랜잭션을 열 때마다 시계를 넘겨, 판정 시각을 다시 읽으면 경계를 넘도록 만든다
+class ClockAdvancingUnitOfWork extends UnitOfWorkPort {
+  readonly #clock: FixedClock;
+  readonly #step: Temporal.DurationLike;
+
+  constructor(clock: FixedClock, step: Temporal.DurationLike) {
+    super();
+    this.#clock = clock;
+    this.#step = step;
+  }
+
+  run<T>(work: () => Promise<T>): Promise<T> {
+    this.#clock.advanceBy(this.#step);
+    return work();
+  }
+}
+
+async function saveUserStatus(
+  fixture: OAuthFixture,
+  status: UserStatus,
+  deletedAt: Temporal.Instant | null = null,
+): Promise<void> {
+  await fixture.userRepository.saveAccountStatus(
+    createIdentityUserFixture({ ...fixture.user, status, deletedAt }),
+  );
+}
+
+function daysBeforeNow(days: number): Temporal.Instant {
+  return AUTH_CREDENTIAL_NOW.subtract({ hours: 24 * days });
+}
+
+describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", () => {
+  async function linkExistingIdentity(fixture: OAuthFixture, provider: AccountProvider) {
+    await fixture.accountRepository.createOAuthAccount({
+      userId: fixture.user.id,
+      provider,
+      providerAccountId: fixture.identityProvider.profile.id,
+    });
+  }
+
+  async function givenExisting(provider: AccountProvider = "GOOGLE") {
     const fixture = createAuthOAuthFixture(provider);
-    fixture.accountRepository.accounts.push(
-      AccountFixture.create({
-        userId: fixture.user.id,
-        provider,
-        providerAccountId: fixture.identityProvider.profile.id,
-      }),
-    );
+    await linkExistingIdentity(fixture, provider);
     return { ...fixture, useCase: new LoginWithOAuthTokenUseCase(fixture) };
   }
 
@@ -44,14 +113,14 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     "%s: 기존 신원을 우선 조회하고 저장된 이메일·역할로 세션을 발급한다",
     async (provider) => {
       // Given
-      const fixture = givenExisting(provider);
-      fixture.userRepository.users.set(fixture.user.id, {
-        ...fixture.user,
-        role: "ADMIN",
-        status: "PENDING_VERIFY",
+      const fixture = await givenExisting(provider);
+      await saveUserStatus(fixture, "PENDING_VERIFY");
+      const useCase = new LoginWithOAuthTokenUseCase({
+        ...fixture,
+        userRepository: new PromotingUserRepository(fixture.userRepository, 1),
       });
       // When
-      const result = await fixture.useCase.execute({
+      const result = await useCase.execute({
         provider,
         token: "token-secret",
         metadata,
@@ -70,7 +139,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
           sessionId: result.sessionId,
         },
       ]);
-      expect(fixture.sessionRepository.sessions.get(result.sessionId)).toMatchObject({
+      expect(fixture.sessionRepository.stored(result.sessionId)).toMatchObject({
         userId: fixture.user.id,
         refreshTokenHash: `digest:${result.tokens.refreshToken}`,
         ipAddress: metadata.ip,
@@ -86,7 +155,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         { event: SECURITY_EVENT.LOGIN_SUCCESS, metadata: { provider } },
       ]);
       expect(fixture.retentionEnroller.enrollments).toEqual([]);
-      expect(JSON.stringify(fixture.logger.debug.mock.calls)).not.toContain("token-secret");
+      expect(JSON.stringify(fixture.logger.messages)).not.toContain("token-secret");
     },
   );
 
@@ -94,14 +163,14 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     "%s: 검증 실패만 실패 시도로 기록하고 사용자 상태를 변경하지 않는다",
     async (provider) => {
       // Given
-      const fixture = givenExisting(provider);
+      const fixture = await givenExisting(provider);
       const verificationError = new Error("검증 실패");
       fixture.identityProvider.verificationError = verificationError;
       // When
       const pending = fixture.useCase.execute({ provider, token: "token-secret" });
       // Then
       await expect(pending).rejects.toBe(verificationError);
-      expect(fixture.loginAttemptRepository.attempts).toMatchObject([
+      expect(fixture.loginAttemptRepository.attempts).toEqual([
         {
           email: fixture.identityProvider.failureEmail,
           provider,
@@ -109,9 +178,11 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
           failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
           ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
           userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+          attemptedAt: AUTH_CREDENTIAL_NOW,
         },
       ]);
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.userRepository.all).toEqual([fixture.user]);
+      expect(fixture.sessionRepository.all).toEqual([]);
       expect(fixture.securityLogRepository.entries).toEqual([]);
     },
   );
@@ -131,12 +202,13 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       });
       // Then
       expect(result.isNewUser).toBe(true);
-      expect(fixture.userRepository.users.get(result.userId)).toMatchObject({
+      const stored = fixture.userRepository.stored(result.userId);
+      expect(stored).toMatchObject({
         email: fixture.identityProvider.profile.email,
         status: "ACTIVE",
-        emailVerifiedAt: AUTH_CREDENTIAL_TIME,
       });
-      expect(fixture.userRepository.profiles.get(result.userId)).toEqual({
+      expect(stored?.emailVerifiedAt).toEqual(AUTH_CREDENTIAL_NOW);
+      expect(fixture.userRepository.profileOf(result.userId)).toEqual({
         name: userName.slice(0, 20),
         profileImage: provider === "APPLE" ? null : fixture.identityProvider.profile.picture,
       });
@@ -150,8 +222,8 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         {
           userId: result.userId,
           consent: {
-            termsAgreedAt: AUTH_CREDENTIAL_TIME,
-            privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+            termsAgreedAt: AUTH_CREDENTIAL_NOW,
+            privacyAgreedAt: AUTH_CREDENTIAL_NOW,
             agreedTermsVersion: "1.0.0",
           },
         },
@@ -187,7 +259,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       token: "token",
     });
     // Then
-    expect(fixture.userRepository.users.get(result.userId)?.email).toBe(
+    expect(fixture.userRepository.stored(result.userId)?.email).toBe(
       "kakao_provider-account@social.aido.kr",
     );
     expect(result.name).toBe("소셜 사용자");
@@ -209,21 +281,21 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     "$status: 검증된 사용자 상태 오류는 token-invalid 시도로 기록하지 않는다",
     async ({ status, errorCode, details }) => {
       // Given
-      const fixture = givenExisting();
-      fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status });
+      const fixture = await givenExisting();
+      await saveUserStatus(fixture, status);
       // When
       const pending = fixture.useCase.execute({ provider: "GOOGLE", token: "token" });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode, details });
       expect(fixture.loginAttemptRepository.attempts).toEqual([]);
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.sessionRepository.all).toEqual([]);
     },
   );
 
   it("신원에 연결된 사용자가 없으면 USER_0601이고 신규 가입·실패 시도를 만들지 않는다", async () => {
     // Given
-    const fixture = givenExisting();
-    fixture.userRepository.users.delete(fixture.user.id);
+    const fixture = await givenExisting();
+    await fixture.userRepository.hardDelete(fixture.user.id);
     // When
     const pending = fixture.useCase.execute({ provider: "GOOGLE", token: "token" });
     // Then
@@ -231,7 +303,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       errorCode: ErrorCode.USER_0601,
       details: { userId: fixture.user.id },
     });
-    expect(fixture.userRepository.users.size).toBe(0);
+    expect(fixture.userRepository.all).toEqual([]);
     expect(fixture.loginAttemptRepository.attempts).toEqual([]);
   });
 
@@ -241,19 +313,16 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     // Given
     const fixture = createAuthOAuthFixture(provider);
     fixture.identityProvider.profile.email = fixture.user.email;
-    const existingSession = SessionFixture.create({ userId: fixture.user.id });
-    fixture.sessionRepository.sessions.set(existingSession.id, existingSession);
-    fixture.cacheService.sessionIds.add(existingSession.id);
+    const existingSession = createAuthSessionFixture({ userId: fixture.user.id });
+    const sessionId = existingSession.id.value;
+    await fixture.sessionRepository.save(existingSession);
+    fixture.cacheService.sessionIds.add(sessionId);
     const currentUser = new GetCurrentUserUseCase(fixture);
-    expect(
-      (
-        await currentUser.execute({
-          userId: fixture.user.id,
-          sessionId: existingSession.id,
-          timezone: "Asia/Seoul",
-        })
-      ).providers,
-    ).toEqual(["CREDENTIAL"]);
+    const before = await currentUser.execute({
+      userId: fixture.user.id,
+      sessionId,
+      timezone: "Asia/Seoul",
+    });
     // When
     const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
       provider,
@@ -261,22 +330,15 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       metadata,
     });
     // Then
+    expect(before.providers).toEqual(["CREDENTIAL"]);
     expect(result.userId).toBe(fixture.user.id);
     expect(result.isNewUser).toBe(false);
     expect(fixture.cacheService.profiles.has(fixture.user.id)).toBe(false);
     expect(
-      await currentUser.execute({
-        userId: fixture.user.id,
-        sessionId: existingSession.id,
-        timezone: "Asia/Seoul",
-      }),
-    ).toMatchObject({
-      name: "사용자",
-      sessionId: existingSession.id,
-      providers: ["CREDENTIAL", provider],
-    });
-    expect(fixture.sessionRepository.sessions.get(existingSession.id)?.revokedAt).toBeNull();
-    expect(fixture.cacheService.sessionIds.has(existingSession.id)).toBe(true);
+      await currentUser.execute({ userId: fixture.user.id, sessionId, timezone: "Asia/Seoul" }),
+    ).toMatchObject({ name: "사용자", sessionId, providers: ["CREDENTIAL", provider] });
+    expect(fixture.sessionRepository.stored(sessionId)?.revokedAt).toBeNull();
+    expect(fixture.cacheService.sessionIds.has(sessionId)).toBe(true);
     expect(
       await fixture.accountRepository.findByProviderAccountId(
         provider,
@@ -312,7 +374,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         email: fixture.user.email,
         emailVerified,
       };
-      fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status: "LOCKED" });
+      await saveUserStatus(fixture, "LOCKED");
       // When
       const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider,
@@ -331,8 +393,8 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       expect(fixture.securityLogRepository.entries).toMatchObject([
         { event: SECURITY_EVENT.OAUTH_LINK_REQUIRED, metadata: { provider, reason } },
       ]);
-      expect(fixture.accountRepository.accounts).toHaveLength(1);
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.accountRepository.all).toHaveLength(1);
+      expect(fixture.sessionRepository.all).toEqual([]);
       expect(fixture.loginAttemptRepository.attempts).toEqual([]);
     },
   );
@@ -343,7 +405,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       // Given
       const fixture = createAuthOAuthFixture();
       fixture.identityProvider.profile.email = fixture.user.email;
-      fixture.userRepository.users.set(fixture.user.id, { ...fixture.user, status });
+      await saveUserStatus(fixture, status);
       // When
       const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "GOOGLE",
@@ -353,7 +415,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       await expect(pending).rejects.toMatchObject({
         errorCode: status === "LOCKED" ? ErrorCode.USER_0607 : ErrorCode.USER_0605,
       });
-      expect(fixture.accountRepository.accounts).toHaveLength(1);
+      expect(fixture.accountRepository.all).toHaveLength(1);
       expect(fixture.securityLogRepository.entries).toEqual([]);
     },
   );
@@ -362,17 +424,16 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     "기존 신원=%s: 유예기간의 탈퇴 계정을 복구하고 동일 판정 시각으로 경계 통과 요청을 완료한다",
     async (existingIdentity) => {
       // Given
-      const fixture = existingIdentity ? givenExisting() : createAuthOAuthFixture();
+      const fixture = createAuthOAuthFixture();
+      if (existingIdentity) {
+        await linkExistingIdentity(fixture, "GOOGLE");
+      }
       fixture.identityProvider.profile.email = fixture.user.email;
-      const deletedAt = new Date(AUTH_CREDENTIAL_TIME.getTime() - 30 * 86_400_000 + 1);
-      await fixture.userRepository.softDelete(fixture.user.id, deletedAt);
+      await saveUserStatus(fixture, "SUSPENDED", daysBeforeNow(30).add({ milliseconds: 1 }));
       fixture.cacheService.userIds.add(fixture.user.id);
-      fixture.unitOfWork.run = async <T>(work: () => Promise<T>): Promise<T> => {
-        vi.setSystemTime(AUTH_CREDENTIAL_TIME.getTime() + 2);
-        return work();
-      };
+      const unitOfWork = new ClockAdvancingUnitOfWork(fixture.clock, { milliseconds: 2 });
       // When
-      const result = await new LoginWithOAuthTokenUseCase(fixture).execute({
+      const result = await new LoginWithOAuthTokenUseCase({ ...fixture, unitOfWork }).execute({
         provider: "GOOGLE",
         token: "token",
         metadata,
@@ -380,7 +441,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       // Then
       expect(result.accountRestored).toBe(true);
       expect(result.isNewUser).toBe(false);
-      expect(fixture.userRepository.users.get(fixture.user.id)).toMatchObject({
+      expect(fixture.userRepository.stored(fixture.user.id)).toMatchObject({
         status: "ACTIVE",
         deletedAt: null,
       });
@@ -390,35 +451,28 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
           (entry) => entry.event === SECURITY_EVENT.ACCOUNT_RESTORED,
         ),
       ).toBe(true);
-      expect(fixture.sessionRepository.sessions.size).toBe(1);
+      expect(fixture.sessionRepository.all).toHaveLength(1);
     },
   );
 
   it("복구 시 최신 역할을 발급에 사용하면서 복구 감사의 원래 탈퇴 시각을 보존한다", async () => {
     // Given
-    const fixture = givenExisting();
-    const deletedAt = new Date(AUTH_CREDENTIAL_TIME.getTime() - 29 * 86_400_000);
-    await fixture.userRepository.softDelete(fixture.user.id, deletedAt);
-    const originalRead = fixture.userRepository.findById.bind(fixture.userRepository);
-    let reads = 0;
-    vi.spyOn(fixture.userRepository, "findById").mockImplementation(async (id) => {
-      const user = await originalRead(id);
-      if (user == null) {
-        return null;
-      }
-      return ++reads === 1
-        ? user
-        : IdentityUser.reconstitute({ ...user.toPrimitives(), role: "ADMIN" });
+    const fixture = await givenExisting();
+    const deletedAt = daysBeforeNow(29);
+    await saveUserStatus(fixture, "SUSPENDED", deletedAt);
+    const useCase = new LoginWithOAuthTokenUseCase({
+      ...fixture,
+      userRepository: new PromotingUserRepository(fixture.userRepository, 2),
     });
     // When
-    await fixture.useCase.execute({ provider: "GOOGLE", token: "token", metadata });
+    await useCase.execute({ provider: "GOOGLE", token: "token", metadata });
     // Then
     expect(fixture.tokenService.issued[0]?.role).toBe("ADMIN");
     expect(
       fixture.securityLogRepository.entries.find(
         (entry) => entry.event === SECURITY_EVENT.ACCOUNT_RESTORED,
       )?.metadata,
-    ).toMatchObject({ deletedAt: deletedAt.toISOString() });
+    ).toMatchObject({ deletedAt: toIsoString(deletedAt) });
   });
 
   it.each([true, false])(
@@ -428,18 +482,9 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const fixture = createAuthOAuthFixture("KAKAO");
       fixture.identityProvider.profile.email = fixture.user.email;
       if (existingIdentity) {
-        fixture.accountRepository.accounts.push(
-          AccountFixture.create({
-            userId: fixture.user.id,
-            provider: "KAKAO",
-            providerAccountId: fixture.identityProvider.profile.id,
-          }),
-        );
+        await linkExistingIdentity(fixture, "KAKAO");
       }
-      await fixture.userRepository.softDelete(
-        fixture.user.id,
-        new Date(AUTH_CREDENTIAL_TIME.getTime() - 31 * 86_400_000),
-      );
+      await saveUserStatus(fixture, "SUSPENDED", daysBeforeNow(31));
       // When
       const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
         provider: "KAKAO",
@@ -447,7 +492,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0606 });
-      expect(fixture.sessionRepository.sessions.size).toBe(0);
+      expect(fixture.sessionRepository.all).toEqual([]);
       expect(fixture.securityLogRepository.entries).toEqual([]);
       expect(fixture.loginAttemptRepository.attempts).toEqual([]);
     },
@@ -460,19 +505,21 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const fixture = createAuthOAuthFixture();
       fixture.identityProvider.profile.email = fixture.user.email;
       if (restoring) {
-        await fixture.userRepository.softDelete(
-          fixture.user.id,
-          new Date(AUTH_CREDENTIAL_TIME.getTime() - 29 * 86_400_000),
-        );
+        await saveUserStatus(fixture, "SUSPENDED", daysBeforeNow(29));
       }
       fixture.cacheService.userIds.add(fixture.user.id);
       const storageError = new Error("연결 저장 실패");
-      vi.spyOn(fixture.accountRepository, "createOAuthAccount").mockRejectedValueOnce(storageError);
-      // When
-      const pending = new LoginWithOAuthTokenUseCase(fixture).execute({
-        provider: "GOOGLE",
-        token: "token",
+      const useCase = new LoginWithOAuthTokenUseCase({
+        ...fixture,
+        accountRepository: {
+          findByProviderAccountId: async () => null,
+          createOAuthAccount: async () => {
+            throw storageError;
+          },
+        },
       });
+      // When
+      const pending = useCase.execute({ provider: "GOOGLE", token: "token" });
       // Then
       await expect(pending).rejects.toBe(storageError);
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);

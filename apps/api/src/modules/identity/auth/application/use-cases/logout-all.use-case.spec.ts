@@ -1,69 +1,76 @@
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
-import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { SessionFixture } from "#test/fixtures/index";
+import type { AuthSession } from "#api/modules/identity/auth/domain/auth-session.aggregate";
+import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
+import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import {
+  AUTH_FIXTURE_NOW,
+  AUTH_FIXTURE_USER_ID,
+  createAuthSessionFixture,
+} from "#test/fixtures/identity/auth-session.fixture";
 import {
   StubAuthSessionCache,
-  StubAuthSessionRepository,
   StubSessionPushDeviceReleaser,
-  StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { LogoutAllUseCase } from "./logout-all.use-case.js";
 
-const currentTime = new Date("2026-12-31T23:59:00Z");
-const userId = "user-123";
+const userId = AUTH_FIXTURE_USER_ID;
 
 describe("LogoutAll — 모든 기기의 세션 종료", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(currentTime);
-  });
-  afterEach(() => vi.useRealTimers());
-
-  it("만료된 세션을 포함해 내 미폐기 세션과 캐시를 비우고 다른 사용자는 유지한다", async () => {
-    // Given
-    const sessionRepository = new StubAuthSessionRepository([
-      SessionFixture.create({ userId, id: "session-1" }),
-      SessionFixture.create({ userId, id: "session-2" }),
-      SessionFixture.create({
-        userId,
-        id: "expired-session",
-        expiresAt: new Date(currentTime.getTime() - 1),
-      }),
-      SessionFixture.create({ userId: "other-user", id: "other-session" }),
-    ]);
-    const cacheService = new StubAuthSessionCache([...sessionRepository.sessions.keys()]);
-    const securityLogRepository = new StubAuthSecurityLogRepository();
+  function givenSessions(sessions: readonly AuthSession[] = []) {
+    const sessionRepository = new InMemoryAuthSessionRepository(sessions);
+    const cacheService = new StubAuthSessionCache(sessions.map((session) => session.id.value));
+    const securityLogRepository = new InMemoryAuthSecurityLogRepository();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new LogoutAllUseCase({
       pushDevices,
       sessionRepository,
       cacheService,
       securityLogRepository,
-      logger: mock<ApplicationLoggerPort>(),
+      clock: new FixedClock(AUTH_FIXTURE_NOW),
+      logger: new SilentLogger(),
     });
+    return { useCase, sessionRepository, cacheService, securityLogRepository, pushDevices };
+  }
+
+  it("만료된 세션을 포함해 내 미폐기 세션과 캐시를 비우고 다른 사용자는 유지한다", async () => {
+    // Given
+    const fixture = givenSessions([
+      createAuthSessionFixture({ id: "session-1" }),
+      createAuthSessionFixture({ id: "session-2" }),
+      createAuthSessionFixture({
+        id: "expired-session",
+        expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }),
+      }),
+      createAuthSessionFixture({ id: "other-session", userId: "other-user" }),
+    ]);
     const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test/1.0" };
 
     // When
-    const result = await useCase.execute({ userId, metadata });
+    const result = await fixture.useCase.execute({ userId, metadata });
 
     // Then
     expect(result).toEqual({ message: "모든 기기에서 로그아웃되었습니다.", revokedCount: 3 });
-    expect(sessionRepository.revocationReasons).toEqual(
+    expect(fixture.sessionRepository.revocationReasons).toEqual(
       new Map([
         ["session-1", REVOKE_REASON.USER_LOGOUT_ALL],
         ["session-2", REVOKE_REASON.USER_LOGOUT_ALL],
         ["expired-session", REVOKE_REASON.USER_LOGOUT_ALL],
       ]),
     );
-    expect(sessionRepository.sessions.get("other-session")?.revokedAt).toBeNull();
-    expect(cacheService.sessionIds).toEqual(new Set(["other-session"]));
-    expect(pushDevices.releasedSessionIds).toEqual(["session-1", "session-2", "expired-session"]);
-    expect(securityLogRepository.entries).toEqual([
+    expect(fixture.sessionRepository.stored("session-1")?.revokedAt).toEqual(AUTH_FIXTURE_NOW);
+    expect(fixture.sessionRepository.stored("other-session")?.revokedAt).toBeNull();
+    expect(fixture.cacheService.sessionIds).toEqual(new Set(["other-session"]));
+    expect(fixture.pushDevices.releasedSessionIds).toEqual([
+      "session-1",
+      "session-2",
+      "expired-session",
+    ]);
+    expect(fixture.securityLogRepository.entries).toEqual([
       {
         userId,
         event: SECURITY_EVENT.SESSION_REVOKED_ALL,
@@ -76,25 +83,15 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
 
   it("활성 세션이 없어도 종료 개수 0과 기본 요청 정보로 정상 응답한다", async () => {
     // Given
-    const sessionRepository = new StubAuthSessionRepository();
-    const cacheService = new StubAuthSessionCache();
-    const securityLogRepository = new StubAuthSecurityLogRepository();
-    const pushDevices = new StubSessionPushDeviceReleaser();
-    const useCase = new LogoutAllUseCase({
-      pushDevices,
-      sessionRepository,
-      cacheService,
-      securityLogRepository,
-      logger: mock<ApplicationLoggerPort>(),
-    });
+    const fixture = givenSessions();
 
     // When
-    const result = await useCase.execute({ userId });
+    const result = await fixture.useCase.execute({ userId });
 
     // Then
     expect(result.revokedCount).toBe(0);
-    expect(cacheService.sessionIds.size).toBe(0);
-    expect(securityLogRepository.entries).toEqual([
+    expect(fixture.pushDevices.releasedSessionIds).toEqual([]);
+    expect(fixture.securityLogRepository.entries).toEqual([
       {
         userId,
         event: SECURITY_EVENT.SESSION_REVOKED_ALL,

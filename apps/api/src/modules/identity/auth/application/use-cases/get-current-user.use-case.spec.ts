@@ -1,21 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
-import {
-  AUTH_CREDENTIAL_TIME,
-  createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
 import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
 
 describe("GetCurrentUser — 현재 사용자 조회", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
     const useCase = new GetCurrentUserUseCase({
@@ -33,23 +23,26 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
   it("nullable 프로필과 여러 provider를 보존하며 요청별 sessionId는 캐시하지 않는다", async () => {
     // Given
     const fixture = given({ pending: true });
-    fixture.userRepository.profiles.set(fixture.user.id, { name: null, profileImage: null });
-    fixture.userRepository.providers.set(fixture.user.id, [
-      { provider: "CREDENTIAL" },
-      { provider: "GOOGLE" },
-    ]);
+    await fixture.userRepository.createProfile(fixture.user.id, {});
+    await fixture.accountRepository.createOAuthAccount({
+      userId: fixture.user.id,
+      provider: "GOOGLE",
+      providerAccountId: "google-account",
+    });
+
     // When
     const first = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-1",
       timezone: "Asia/Seoul",
     });
-    fixture.userRepository.users.delete(fixture.user.id);
+    await fixture.userRepository.hardDelete(fixture.user.id);
     const second = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-2",
       timezone: "Asia/Seoul",
     });
+
     // Then
     expect(first).toMatchObject({
       userId: fixture.user.id,
@@ -61,18 +54,20 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       sessionId: "session-1",
     });
     expect(second).toEqual({ ...first, sessionId: "session-2" });
-    expect(fixture.userRepository.users.size).toBe(0);
+    expect(fixture.userRepository.stored(fixture.user.id)).toBeUndefined();
   });
 
   it("없는 사용자는 USER_0601이며 보상·구독을 조회하지 않고 실패 결과를 프로필 캐시에 저장하지 않는다", async () => {
     // Given
     const fixture = given({ empty: true });
+
     // When
     const pending = fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-1",
       timezone: "Asia/Seoul",
     });
+
     // Then
     await expect(pending).rejects.toMatchObject({
       errorCode: ErrorCode.USER_0601,

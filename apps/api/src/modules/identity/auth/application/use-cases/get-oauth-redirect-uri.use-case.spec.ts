@@ -1,27 +1,28 @@
-import { vi } from "vitest";
-
-import { AUTH_CREDENTIAL_TIME } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
-import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
+import { InMemoryAuthOAuthStateRepository } from "#test/doubles/identity/in-memory-auth-oauth-state.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { createAuthOAuthStateFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/auth-session.fixture";
 
 import { GetOAuthRedirectUriUseCase } from "./get-oauth-redirect-uri.use-case.js";
 
 describe("GetOAuthRedirectUri — 유효한 OAuth state의 앱 복귀 URI", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("저장된 URI를 반환하고 존재하지 않거나 만료된 state에는 null을 반환한다", async () => {
     // Given
-    const fixture = createAuthOAuthFixture();
-    const state = OAuthStateFixture.create({ redirectUri: "aido:///auth/complete" });
-    fixture.oauthStateRepository.states.set(state.id, state);
-    const useCase = new GetOAuthRedirectUriUseCase(fixture);
-    // When / Then
-    expect(await useCase.execute({ state: state.state })).toBe(state.redirectUri);
-    expect(await useCase.execute({ state: "unknown-state" })).toBeNull();
-    vi.setSystemTime(state.expiresAt);
-    expect(await useCase.execute({ state: state.state })).toBeNull();
+    const clock = new FixedClock(AUTH_FIXTURE_NOW);
+    const state = createAuthOAuthStateFixture({
+      redirectUri: "aido:///auth/complete",
+      expiresAt: AUTH_FIXTURE_NOW.add({ minutes: 10 }),
+    });
+    const useCase = new GetOAuthRedirectUriUseCase({
+      oauthStateRepository: new InMemoryAuthOAuthStateRepository([state]),
+      clock,
+    });
+    // When
+    const stored = await useCase.execute({ state: state.state });
+    const unknown = await useCase.execute({ state: "unknown-state" });
+    clock.advanceBy({ minutes: 10 });
+    const expired = await useCase.execute({ state: state.state });
+    // Then
+    expect([stored, unknown, expired]).toEqual(["aido:///auth/complete", null, null]);
   });
 });

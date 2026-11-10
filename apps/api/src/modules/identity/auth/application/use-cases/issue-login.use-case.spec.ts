@@ -1,19 +1,11 @@
-import { vi } from "vitest";
-
 import {
-  AUTH_CREDENTIAL_TIME,
+  AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
 } from "#test/fixtures/auth-credential.fixture";
 
 import type { IssueLoginCommand } from "./issue-login.use-case.js";
 
 describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
-
   it.each([
     { provider: "CREDENTIAL", securityMetadata: undefined },
     { provider: "GOOGLE", securityMetadata: { provider: "GOOGLE" } },
@@ -37,19 +29,22 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
       const result = await fixture.issueLoginUseCase.execute(input);
 
       // Then
-      expect(fixture.sessionRepository.sessions.get(result.sessionId)).toMatchObject({
-        userId: fixture.user.id,
-        refreshTokenHash: `digest:${result.tokens.refreshToken}`,
-        revokedAt: null,
-      });
-      expect(fixture.sessionRepository.creations).toEqual([
+      expect(fixture.sessionRepository.stored(result.sessionId)).toEqual(
         expect.objectContaining({
           userId: fixture.user.id,
+          refreshTokenHash: `digest:${result.tokens.refreshToken}`,
+          tokenVersion: 1,
           deviceFingerprint: input.deviceFingerprint,
           userAgent: input.userAgent,
           ipAddress: input.ip,
+          createdAt: AUTH_CREDENTIAL_NOW,
+          expiresAt: AUTH_CREDENTIAL_NOW.add({
+            seconds: fixture.tokenService.refreshTokenExpiresInSeconds,
+          }),
+          revokedAt: null,
         }),
-      ]);
+      );
+      expect(fixture.sessionRepository.all).toHaveLength(1);
       expect(result).toEqual({
         sessionId: result.sessionId,
         tokens: {
@@ -68,7 +63,7 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
           ipAddress: input.ip,
           userAgent: input.userAgent,
           success: true,
-          at: AUTH_CREDENTIAL_TIME,
+          attemptedAt: AUTH_CREDENTIAL_NOW,
         },
       ]);
       expect(fixture.securityLogRepository.entries).toStrictEqual([
@@ -85,8 +80,7 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
 
   it("프로필 조회 결과가 없으면 userTag는 빈 문자열, 이름·이미지는 null로 반환한다", async () => {
     // Given
-    const fixture = createAuthCredentialFixture();
-    fixture.userRepository.users.clear();
+    const fixture = createAuthCredentialFixture({ empty: true });
 
     // When
     const result = await fixture.issueLoginUseCase.execute({
@@ -101,6 +95,6 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
 
     // Then
     expect(result).toMatchObject({ userTag: "", name: null, profileImage: null });
-    expect(fixture.sessionRepository.sessions.has(result.sessionId)).toBe(true);
+    expect(fixture.sessionRepository.stored(result.sessionId)).toBeDefined();
   });
 });
