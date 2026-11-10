@@ -227,3 +227,37 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     expect(lock).toBeNull();
   });
 });
+
+describe('WindowLayoutPolicy.isShortWindow', () => {
+  it.each([
+    ['접은 iPhone Duo', DEVICE_WINDOW.iPhoneDuoFolded, true],
+    ['iPhone SE', DEVICE_WINDOW.iPhoneSe, true],
+    ['휴대폰 분할 화면 한쪽 창', DEVICE_WINDOW.phoneSplitScreenHalf, true],
+    ['iPhone mini', DEVICE_WINDOW.iPhoneMini, false],
+    ['Surface Duo 한 화면', DEVICE_WINDOW.duoSingleScreen, false],
+    ['휴대폰', DEVICE_WINDOW.phone, false],
+  ] as const)('%s 창은 낮은 창 %s다', (_device, size, expected) => {
+    // Given
+    const window = createAppWindow(size);
+
+    // When
+    const isShort = WindowLayoutPolicy.isShortWindow(window);
+
+    // Then
+    expect(isShort).toBe(expected);
+  });
+
+  it.each([
+    [719, true],
+    [720, false],
+  ] as const)('창 높이 %d이면 낮은 창 %s다', (height, expected) => {
+    // Given
+    const window = createAppWindow({ height });
+
+    // When
+    const isShort = WindowLayoutPolicy.isShortWindow(window);
+
+    // Then
+    expect(isShort).toBe(expected);
+  });
+});

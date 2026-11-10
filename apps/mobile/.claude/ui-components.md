@@ -220,6 +220,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
   - 예외는 마이 탭 하나다. 상세 칸이 Stack이라 헤더를 전체 폭으로 두고 메뉴를 화면마다 본문 왼쪽 칸에 그린다(`MyPageStack`). iPadOS 세로의 떠 있는 탭 바가 칸 안 헤더의 뒤로 가기를 가리기 때문이다. [내 정보 메뉴](../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸).
 - **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
+- **낮은 창은 시트 안 여러 줄 선택지를 한 줄로 민다.** 창 높이 720pt 미만(`WindowLayoutPolicy.isShortWindow`, 접은 iPhone Duo 678·SE 667)은 키보드를 올린 시트에 입력칸·두 줄 내용·주 버튼이 함께 들어가지 않는다. 카테고리 색은 `SheetChipRow` 한 줄로 두고 고른 색을 처음부터 보이게 민다. 키보드 시트가 열린 동안 keyboard-controller는 꺼져 그 훅으로 키보드 높이를 읽을 수 없어 창 높이로 정한다.
 - **방향은 화면이 정하지 않는다.** 휴대폰은 가로를 지원하지 않고, 태블릿과 펼친 폴더블·두 화면은 돌릴 수 있다. Android는 앱 설정에서 방향을 묶지 않고 창의 짧은 변이 600dp 미만이면 실행 중에 세로로 묶는다(`WindowLayoutPolicy.getOrientationLock`, `useOrientationLock`, [Android 큰 화면 방향 권장](https://developer.android.com/develop/adaptive-apps/cookbook/orientation-restriction)). 펼친 폴더블·태블릿은 가로로도 쓰므로 화면은 세로를 가정한 고정 높이를 두지 않고 창 높이에 맞춰 줄인다.
 
 | 기기·자세                     | 창 짧은 변 | 방향                                                                                                    |

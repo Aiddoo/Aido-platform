@@ -71,7 +71,8 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 
 `SheetChipRow`는 칩을 한 줄로 두고 시트 좌우 끝까지 가로로 민다. gorhom 문제 해결 문서대로 Gesture Handler `ScrollView`를 쓰고,
 시트 끌기는 gorhom `activeOffsetY`(세로 15dp)·`failOffsetX`(가로 10dp)로 세로로 움직일 때만 잡는다. Gesture Handler
-`ScrollView`만으로는 Android에서 손가락이 조금만 흔들려도 시트가 끌기를 가져가 칩 줄이 밀리지 않았다.
+`ScrollView`만으로는 Android에서 손가락이 조금만 흔들려도 시트가 끌기를 가져가 칩 줄이 밀리지 않았다. 고른 칩이 처음부터
+보여야 하면 `ref`로 받은 줄을 `scrollTo`로 민다(낮은 창의 카테고리 색).
 
 바깥 탭과 Android 뒤로 가기에서 닫기 전에 할 일이 있으면(빠른 말하기의 듣기 취소·계획 버리기 확인) `onDismissRequest`를 넘긴다. 없으면 닫는다.
 손잡이·내용 끌어내리기는 gorhom이 닫으므로 이 경로를 타지 않는다. 핸들러는 ref로 읽어 렌더마다 바뀌어도 backdrop이 다시 마운트되지 않는다.
