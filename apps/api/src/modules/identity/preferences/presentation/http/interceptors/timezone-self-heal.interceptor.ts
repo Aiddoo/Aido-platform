@@ -5,8 +5,8 @@ import {
   Injectable,
   Logger,
   type NestInterceptor,
-  type OnModuleDestroy,
 } from "@nestjs/common";
+import { LRUCache } from "lru-cache";
 import type { Observable } from "rxjs";
 
 import { RequestClientReader } from "#api/platform/http/request-client/index";
@@ -16,15 +16,20 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { PreferenceLogEvent } from "../../../application/preferences.log-events.js";
 import { RefreshPushTimezoneUseCase } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
 
+export const TIMEZONE_SELF_HEAL_TTL_MS = 60 * 60 * 1000;
+// 한 시간에 이보다 많은 사용자가 오면 가장 오래 안 본 사용자를 잊는다. 잊힌 사용자는 시간대를 한 번 더 저장할 뿐이다
+export const TIMEZONE_SELF_HEAL_MAX_ENTRIES = 10_000;
+
+interface TimezoneAttempt {
+  readonly tz: string;
+  readonly at: number;
+}
+
 @Injectable()
-export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDestroy {
+export class TimezoneSelfHealInterceptor implements NestInterceptor {
   readonly #logger = new Logger(TimezoneSelfHealInterceptor.name);
 
-  readonly #seen = new Map<string, { tz: string; at: number }>();
-
-  readonly #cleanupInterval: NodeJS.Timeout;
-
-  static readonly THROTTLE_MS = 60 * 60 * 1000;
+  readonly #seen: LRUCache<string, TimezoneAttempt>;
 
   readonly #refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase;
   readonly #requestClientReader: RequestClientReader;
@@ -38,14 +43,13 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
     this.#refreshPushTimezoneUseCase = refreshPushTimezoneUseCase;
     this.#requestClientReader = requestClientReader;
     this.#clock = clock;
-    this.#cleanupInterval = setInterval(
-      () => this.#cleanup(),
-      TimezoneSelfHealInterceptor.THROTTLE_MS,
-    );
-  }
-
-  onModuleDestroy(): void {
-    clearInterval(this.#cleanupInterval);
+    this.#seen = new LRUCache({
+      max: TIMEZONE_SELF_HEAL_MAX_ENTRIES,
+      ttl: TIMEZONE_SELF_HEAL_TTL_MS,
+      // 스로틀 판단과 같은 시계로 만료를 재고, 시각을 타이머로 캐시하지 않는다
+      perf: { now: () => this.#clock.now().epochMilliseconds },
+      ttlResolution: 0,
+    });
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -65,7 +69,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
     const now = this.#clock.now().epochMilliseconds;
     const seen = this.#seen.get(userId);
 
-    if (seen && seen.tz === timezone && now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS) {
+    if (seen && seen.tz === timezone && now - seen.at < TIMEZONE_SELF_HEAL_TTL_MS) {
       return;
     }
 
@@ -73,7 +77,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
     this.#seen.set(userId, attempt);
 
     void this.#refreshPushTimezoneUseCase.execute({ userId, timezone }).catch((error: unknown) => {
-      if (this.#seen.get(userId) === attempt) {
+      if (this.#seen.peek(userId) === attempt) {
         this.#seen.delete(userId);
       }
       this.#logger.error({
@@ -83,24 +87,5 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
         errorType: toErrorType(error),
       });
     });
-  }
-
-  #cleanup(): void {
-    const cutoff = this.#clock.now().epochMilliseconds - TimezoneSelfHealInterceptor.THROTTLE_MS;
-    let cleaned = 0;
-
-    for (const [userId, entry] of this.#seen.entries()) {
-      if (entry.at < cutoff) {
-        this.#seen.delete(userId);
-        cleaned++;
-      }
-    }
-
-    if (cleaned > 0) {
-      this.#logger.debug({
-        event: PreferenceLogEvent.TIMEZONE_HEAL_CLEANED,
-        removedCount: cleaned,
-      });
-    }
   }
 }

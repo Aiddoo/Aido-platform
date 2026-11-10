@@ -1,47 +1,43 @@
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { LRUCache } from "lru-cache";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 
-interface DedupEntry {
-  members: Set<string>;
-  expiresAt: number;
-}
+// 키는 날짜·주·사용자 단위다. 넘치면 가장 오래 안 쓴 Set을 버리고, 그 뒤 중복은 DB unique index가 막는다
+export const DEDUP_MAX_ENTRIES = 20_000;
 
 /**
  * 인메모리 중복 방지 어댑터
  *
- * - Map<string, Set> 기반 저장소
- * - TTL 지원 (밀리초)
- * - 60초마다 만료된 항목 자동 정리
+ * - Set마다 호출자가 준 TTL(밀리초)을 lru-cache가 지키고, 만료 항목은 읽을 때 지운다
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 필요)
  */
 @Injectable()
-export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, OnModuleInit {
+export class InMemoryDedupAdapter implements IDedupProvider, OnModuleInit {
   readonly #logger = new Logger(InMemoryDedupAdapter.name);
-  readonly #sets = new Map<string, DedupEntry>();
-  #cleanupInterval: NodeJS.Timeout | undefined;
+  readonly #sets = new LRUCache<string, Set<string>>({
+    max: DEDUP_MAX_ENTRIES,
+    // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    perf: { now: () => Date.now() },
+    ttlResolution: 0,
+  });
 
   onModuleInit(): void {
-    this.#cleanupInterval = setInterval(() => this.#cleanup(), 60_000);
     this.#logger.warn({ event: PlatformLogEvent.DEDUP_SINGLE_INSTANCE, provider: "memory" });
   }
 
-  onModuleDestroy(): void {
-    clearInterval(this.#cleanupInterval);
-  }
-
   async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
-    const entry = this.#getValid(setKey);
-    if (!entry) {
+    const set = this.#sets.get(setKey);
+    if (!set) {
       return new Set();
     }
-    return new Set(members.filter((m) => entry.members.has(m)));
+    return new Set(members.filter((m) => set.has(m)));
   }
 
   async isMember(setKey: string, member: string): Promise<boolean> {
-    return this.#getValid(setKey)?.members.has(member) ?? false;
+    return this.#sets.get(setKey)?.has(member) ?? false;
   }
 
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
@@ -49,44 +45,11 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
       return;
     }
 
-    let entry = this.#getValid(setKey);
-    if (!entry) {
-      entry = { members: new Set(), expiresAt: Date.now() + ttlMs };
-      this.#sets.set(setKey, entry);
-    }
+    const set = this.#sets.get(setKey) ?? new Set<string>();
     for (const m of members) {
-      entry.members.add(m);
+      set.add(m);
     }
-    entry.expiresAt = Date.now() + ttlMs;
-  }
-
-  #getValid(key: string): DedupEntry | undefined {
-    const entry = this.#sets.get(key);
-    if (!entry) {
-      return undefined;
-    }
-
-    if (Date.now() > entry.expiresAt) {
-      this.#sets.delete(key);
-      return undefined;
-    }
-
-    return entry;
-  }
-
-  #cleanup(): void {
-    const now = Date.now();
-    let cleaned = 0;
-
-    for (const [key, entry] of this.#sets) {
-      if (now > entry.expiresAt) {
-        this.#sets.delete(key);
-        cleaned++;
-      }
-    }
-
-    if (cleaned > 0) {
-      this.#logger.debug({ event: PlatformLogEvent.DEDUP_EXPIRED_CLEANED, count: cleaned });
-    }
+    // 다시 넣어 Redis PEXPIRE처럼 TTL을 지금부터 새로 잰다
+    this.#sets.set(setKey, set, { ttl: ttlMs });
   }
 }

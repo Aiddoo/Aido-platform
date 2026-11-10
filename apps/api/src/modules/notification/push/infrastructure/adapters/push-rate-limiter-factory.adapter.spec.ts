@@ -48,8 +48,5 @@ describe("createPushRateLimiter", () => {
 
     // Then
     expect(limiter).toBeInstanceOf(InMemoryPushRateLimiterAdapter);
-    if (limiter instanceof InMemoryPushRateLimiterAdapter) {
-      limiter.destroy();
-    }
   });
 });

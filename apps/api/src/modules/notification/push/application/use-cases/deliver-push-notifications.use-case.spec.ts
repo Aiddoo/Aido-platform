@@ -656,25 +656,21 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
     const reservationWriteError = new Error("reservation commit unavailable");
     fixture.lifecycle.failNext("markRateLimitReserved", reservationWriteError);
 
-    try {
-      // When
-      const firstRun = fixture.useCase.execute(createExecutionInput([claimed]));
-      await expect(firstRun).rejects.toBe(reservationWriteError);
-      const secondRun = fixture.useCase.execute({
-        ...createExecutionInput([claimed]),
-        processingJobAttempt: 2,
-      });
+    // When
+    const firstRun = fixture.useCase.execute(createExecutionInput([claimed]));
+    await expect(firstRun).rejects.toBe(reservationWriteError);
+    const secondRun = fixture.useCase.execute({
+      ...createExecutionInput([claimed]),
+      processingJobAttempt: 2,
+    });
 
-      // Then
-      await expect(secondRun).resolves.toBeUndefined();
-      expect(fixture.eligibility.reserveBatchCount).toBe(2);
-      expect(fixture.lifecycle.finalizedSkipped.flat()).not.toContainEqual(
-        expect.objectContaining({ reason: "RATE_LIMITED" }),
-      );
-      expect(fixture.delivery.sentBatchCount).toBe(1);
-    } finally {
-      limiter.destroy();
-    }
+    // Then
+    await expect(secondRun).resolves.toBeUndefined();
+    expect(fixture.eligibility.reserveBatchCount).toBe(2);
+    expect(fixture.lifecycle.finalizedSkipped.flat()).not.toContainEqual(
+      expect.objectContaining({ reason: "RATE_LIMITED" }),
+    );
+    expect(fixture.delivery.sentBatchCount).toBe(1);
   });
 
   it("마지막 runtime attempt의 provider 오류는 lease와 outbox를 reopen하고 다시 던진다", async () => {

@@ -48,7 +48,6 @@ export const AuthLogEvent = {
   OAUTH_ERROR_REDIRECT_FAILED: "identity.oauth.error-redirect.failed",
   OAUTH_CALLBACK_FAILED: "identity.oauth.callback.failed",
   LAST_ACTIVE_UPDATE_FAILED: "identity.last-active.update.failed",
-  LAST_ACTIVE_THROTTLE_CLEANED: "identity.last-active.throttle.cleaned",
   OAUTH_TOKEN_EXCHANGE_FAILED: "identity.oauth.token-exchange.failed",
   OAUTH_TOKEN_EXCHANGE_INVALID: "identity.oauth.token-exchange.invalid",
   OAUTH_NONCE_REJECTED: "identity.oauth.nonce.rejected",
