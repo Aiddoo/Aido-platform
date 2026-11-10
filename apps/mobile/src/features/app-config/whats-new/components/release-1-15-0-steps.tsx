@@ -221,7 +221,7 @@ export function Release1150Steps() {
               description={t('v1_15_0.voiceTodo.title')}
               onPress={() => {
                 flow.trackCta({ step, feature: 'voice_quick' });
-                flow.leaveTo({ pathname: '/todo/new', params: { startVoice: '1' } });
+                flow.leaveTo(RELEASE_1_15_0.cta.href);
               }}
               testID="whats-new-start-voice-todo"
             />

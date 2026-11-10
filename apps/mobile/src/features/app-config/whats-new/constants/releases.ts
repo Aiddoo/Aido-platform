@@ -11,8 +11,9 @@ export const RELEASE_1_15_0 = {
   titleKey: 'v1_15_0.release.title',
   descriptionKey: 'v1_15_0.release.description',
   requiresInvite: false,
+  // 어느 탭에서 와도 오늘 피드 위에 시트를 열어 만든 할 일이 시트 뒤에 보인다. `/todo/new?startVoice=1` 링크는 그대로 둔다
   cta: {
-    href: { pathname: '/todo/new', params: { startVoice: '1' } },
+    href: { pathname: '/feed', params: { action: 'add-voice-todo' } },
     feature: 'voice_quick',
   },
 } satisfies ReleaseEntry;
