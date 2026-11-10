@@ -16,8 +16,6 @@ import type {
   SubscriptionStore,
 } from "../../domain/subscriptions.constants.js";
 
-export type { SubscriptionLifecycle };
-
 /**
  * 공급자 웹훅이 준 값은 이벤트마다 같은 이름으로 싣는다. 이벤트에 없으면 비운다.
  */
