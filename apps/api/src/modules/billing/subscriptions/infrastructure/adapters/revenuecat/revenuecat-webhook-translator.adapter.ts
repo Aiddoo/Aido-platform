@@ -2,7 +2,7 @@ import {
   type RevenueCatWebhookPayload,
   revenueCatTransferWebhookPayloadSchema,
   revenueCatWebhookPayloadSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/subscription";
 import { match } from "ts-pattern";
 
 import type {
