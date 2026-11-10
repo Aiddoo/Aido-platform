@@ -80,7 +80,7 @@ export function describeCacheStoreContract(context: {
 
       // When & Then
       await expect
-        .poll(() => cache.has("contract:short"), { timeout: 2_000, interval: 25 })
+        .poll(() => cache.has("contract:short"), { timeout: 2000, interval: 25 })
         .toBe(false);
       expect(await cache.get("contract:short", z.unknown())).toBeUndefined();
     });
