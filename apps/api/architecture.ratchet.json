@@ -1,1 +1,1 @@
-{ "migratedContexts": ["notes", "identity", "billing"] }
+{ "migratedContexts": ["notes", "identity", "billing", "operations", "app-config", "support"] }
