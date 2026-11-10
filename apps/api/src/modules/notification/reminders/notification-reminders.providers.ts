@@ -3,6 +3,7 @@ import type { Provider } from "@nestjs/common";
 import { WeeklyAchievementWriterPort as InsightsWeeklyAchievementWriterPort } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
 import { WeatherReportReaderPort } from "../../weather/forecasts/weather-forecasts.public.js";
@@ -189,5 +190,6 @@ export function provideSweepTimezoneRemindersUseCase() {
     weatherMorning: SendWeatherMorningUseCase,
     weatherEvening: SendWeatherEveningUseCase,
     logger: loggerFor(SweepTimezoneRemindersUseCase),
+    alert: OperationalAlertPort,
   });
 }

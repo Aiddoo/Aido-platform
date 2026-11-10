@@ -15,7 +15,7 @@ import {
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
-import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
@@ -59,9 +59,7 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {
     this.#alert.raise({
-      key: SubscriptionAlertKey.WEBHOOK_PROCESSING_FAILED,
-      severity: "error",
-      message: "RevenueCat 웹훅 처리에 실패했습니다",
+      ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
       // Sentry 이벤트의 environment는 배포 환경(APP_ENV)이라 스토어 결제 환경은 다른 이름으로 싣는다
       tags: {
         eventKind: context.kind,

@@ -81,6 +81,7 @@ export function createAiSdkGenerator(
     new AiProviderCatalog(adapters),
     registry,
     new AiSpendBudgetAdapter(config, meter, alert, new DateClock()),
+    alert,
   );
   return { generator, alert, meter, registry };
 }

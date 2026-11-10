@@ -15,6 +15,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { projectId?: string } = {}) {
@@ -60,9 +61,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     // Then
     expect(alerts.alerts).toEqual([
       {
-        key: "billing.subscription.webhook.processing-failed",
-        severity: "error",
-        message: "RevenueCat 웹훅 처리에 실패했습니다",
+        ...SubscriptionAlerts.WEBHOOK_PROCESSING_FAILED,
         tags: { eventKind: "STARTED", store: "APP_STORE", storeEnvironment: "SANDBOX" },
         details: {
           eventId: "evt-1",

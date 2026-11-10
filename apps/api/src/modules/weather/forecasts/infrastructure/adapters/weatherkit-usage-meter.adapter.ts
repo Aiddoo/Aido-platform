@@ -14,7 +14,7 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { ForecastAlertKey } from "../../application/forecasts.alerts.js";
+import { ForecastAlerts } from "../../application/forecasts.alerts.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_MONTHLY_CALL_ALERTS } from "./weather-outbound.policy.js";
 
@@ -54,9 +54,7 @@ export class WeatherKitUsageMeterAdapter {
       for (const threshold of crossedThresholds(total, 1, WEATHERKIT_MONTHLY_CALL_ALERTS)) {
         this.#logger.warn({ event: WeatherKitLogEvent.MONTHLY_CALLS_REACHED, period, threshold });
         this.#alert.raise({
-          key: ForecastAlertKey.WEATHERKIT_MONTHLY_CALLS,
-          severity: "warning",
-          message: `WeatherKit 이번 달 호출이 ${threshold}회에 닿았습니다`,
+          ...ForecastAlerts.WEATHERKIT_MONTHLY_CALLS,
           tags: { period },
           details: { threshold, total },
         });

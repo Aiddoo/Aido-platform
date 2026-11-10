@@ -9,6 +9,7 @@ import { createEntityId } from "#api/platform/database/entity-id";
 import { securityLog, user as userTable } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -145,6 +146,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       unitOfWork: transaction.uow,
       clock: new FixedClock(now),
       logger,
+      alert: new RecordingOperationalAlert(),
     };
     return { dependencies, purge: new PurgeDeletedAccountsUseCase(dependencies) };
   }

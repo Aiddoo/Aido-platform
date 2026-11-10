@@ -19,6 +19,7 @@ import {
   wrap,
 } from "cockatiel";
 
+import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { OutboundRejectedError, OutboundTimeoutError } from "./outbound-policy.errors.js";
@@ -32,8 +33,8 @@ export interface OutboundBreakerSpec {
   readonly handles: (error: unknown) => boolean;
   /** 던지지 않고 돌아온 실패 결과(예: 5xx 응답)를 실패로 셀지 */
   readonly handlesResult?: (result: unknown) => boolean;
-  /** 열릴 때 사람이 확인해야 하면 운영 경보로 올린다 */
-  readonly alert?: { readonly key: string; readonly message: string };
+  /** 열릴 때 사람이 확인해야 하면 이 경보로 올린다. 업체 이름은 정책 이름 태그(policy)로 간다 */
+  readonly alert?: AlertDefinition;
 }
 
 /**

@@ -14,7 +14,7 @@ import type {
   TodoSeriesRef,
   TodoSeriesRepositoryPort,
 } from "../ports/todo-series.repository.port.js";
-import { TodoSeriesAlertKey } from "../todo-series.alerts.js";
+import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 
@@ -133,9 +133,7 @@ export class MaterializeDueTodoSeriesUseCase {
     });
     if (failedCount > 0 || timedOut) {
       alert.raise({
-        key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
-        severity: "error",
-        message: "반복 할 일 회차 채우기가 일부 끝나지 않았습니다.",
+        ...TodoSeriesAlerts.MATERIALIZE_FAILED,
         details: { processedCount, createdCount, failedCount, timedOut, durationMs },
       });
     }

@@ -4,7 +4,7 @@ import type { ConfigType } from "@nestjs/config";
 import { appConfig } from "#api/platform/config/app.config";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
-import { SubscriptionAlertKey } from "../../../application/subscriptions.alerts.js";
+import { SubscriptionAlerts } from "../../../application/subscriptions.alerts.js";
 import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
 import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
 import { translateRevenueCatWebhook } from "./revenuecat-webhook-translator.adapter.js";
@@ -52,9 +52,7 @@ export class RevenueCatWebhookReceiver {
         issueCount: translation.issueCount,
       });
       this.#alert.raise({
-        key: SubscriptionAlertKey.WEBHOOK_INVALID,
-        severity: "warning",
-        message: "RevenueCat 웹훅 원문이 계약과 달라 처리하지 않았습니다",
+        ...SubscriptionAlerts.WEBHOOK_INVALID,
         tags: { eventType: translation.eventType ?? "unknown" },
         details: { issueCount: translation.issueCount },
       });

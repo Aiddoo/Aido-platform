@@ -8,7 +8,9 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
+import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import {
   AiGenerationError,
   type AiFailureKind,
@@ -107,16 +109,19 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
 
   readonly #config: TypedConfigService;
   readonly #spend: AiSpendBudgetAdapter;
+  readonly #alert: Pick<OperationalAlertPort, "raise">;
 
   constructor(
     config: TypedConfigService,
     providers: AiProviderCatalog,
     policies: OutboundPolicyRegistry,
     spend: AiSpendBudgetAdapter,
+    alert: OperationalAlertPort,
   ) {
     super();
     this.#config = config;
     this.#spend = spend;
+    this.#alert = alert;
     this.#providers = providers;
     this.#providerPolicies = new Map(
       AI_PROVIDER_IDS.map((provider) => [
@@ -301,6 +306,13 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
     if (last == null) {
       const hasEligibleProvider =
         planAiRoute({ ...routeInput, openCircuits: new Set() }).length > 0;
+      if (hasEligibleProvider) {
+        // 결제·인증 회로 경보는 업체마다 따로 오지만 AI 기능 전체가 멈춘 것은 이 경보 하나로 본다
+        this.#alert.raise({
+          ...AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN,
+          tags: { task: request.task, taskClass: request.taskClass },
+        });
+      }
       throw new AiGenerationError(hasEligibleProvider ? "CIRCUIT_OPEN" : "UNAVAILABLE", {
         provider: null,
         attempts,

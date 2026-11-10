@@ -19,6 +19,8 @@ import {
   databaseSqlState,
   isRecordNotFoundError,
 } from "#api/platform/database/database-error.util";
+import { DatabaseAlerts } from "#api/platform/database/database.alerts";
+import { readRouteTemplate } from "#api/platform/http/request-route";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
@@ -55,7 +57,15 @@ function isDatabaseFailure(exception: unknown): boolean {
   );
 }
 
-const UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY = "database.unique-constraint.unknown";
+/**
+ * 업체 장애(AI_1301·WEATHER_1901)·DB 일시 장애(SYS_0005)처럼 코드로 분류해 던진 5xx는 던진 곳의 스택과 상관없이
+ * 코드별 한 이슈로 모은다. 분류되지 않은 예외(SYS_0001)는 스택으로 모아 버그마다 이슈가 따로 생긴다.
+ */
+function classifiedFailureGroup(exception: unknown): string | undefined {
+  return exception instanceof ErrorCodedException && exception.errorCode !== ErrorCode.SYS_0001
+    ? `http-5xx.${exception.errorCode}`
+    : undefined;
+}
 
 /** 모든 예외를 공유 오류 envelope로 바꾸고, 5xx만 예외 보고로 보낸다. */
 @Catch()
@@ -96,11 +106,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         userId: userId === "anonymous" ? null : userId,
         tags: {
           [SENTRY_TAG.HTTP_METHOD]: request.method,
-          [SENTRY_TAG.HTTP_URL]: requestPath,
+          [SENTRY_TAG.HTTP_ROUTE]: readRouteTemplate(request) ?? "unmatched",
           [SENTRY_TAG.HTTP_STATUS_CODE]: String(statusCode),
           [SENTRY_TAG.ERROR_CODE]: errorResponse.error.code,
         },
         extras: { [SENTRY_EXTRA.ERROR_RESPONSE]: errorResponse },
+        groupKey: classifiedFailureGroup(exception),
       });
     }
 
@@ -264,9 +275,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
     this.#logger.warn({ event: PlatformLogEvent.DATABASE_UNIQUE_CONSTRAINT_UNKNOWN, constraint });
     this.#operationalAlert.raise({
-      key: UNKNOWN_UNIQUE_CONSTRAINT_ALERT_KEY,
-      severity: "warning",
-      message: "저장소가 번역하지 않은 unique 제약 충돌",
+      ...DatabaseAlerts.UNIQUE_CONSTRAINT_UNKNOWN,
       tags: { constraint },
     });
     return concurrentModification();

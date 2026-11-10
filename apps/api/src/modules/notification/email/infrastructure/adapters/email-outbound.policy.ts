@@ -5,7 +5,7 @@ import {
 } from "#api/platform/resilience/outbound-policy";
 import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 
-import { EmailAlertKey } from "../../application/email.alerts.js";
+import { EmailAlerts } from "../../application/email.alerts.js";
 
 export const EMAIL_SEND_TIMEOUT_MS = 10_000;
 
@@ -38,10 +38,7 @@ export const EMAIL_PROVIDER_POLICY: OutboundPolicySpec = {
       halfOpenAfterMs: TIME_UNIT.MS_PER_MINUTE,
       handles: isTransportFailure,
       handlesResult: isUnavailableOutcome,
-      alert: {
-        key: EmailAlertKey.CIRCUIT_OPEN,
-        message: "이메일 공급자 호출이 연속으로 실패해 발송을 잠시 멈춥니다",
-      },
+      alert: EmailAlerts.CIRCUIT_OPEN,
     },
   ],
   describeFailure: (failure) =>

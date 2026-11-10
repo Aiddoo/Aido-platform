@@ -7,6 +7,7 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
@@ -221,6 +222,7 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(ReconcilePushReceiptsUseCase),
+    alert: OperationalAlertPort,
   }),
   provideUseCase(SendNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,

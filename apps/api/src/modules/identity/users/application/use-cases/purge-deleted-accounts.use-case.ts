@@ -3,6 +3,7 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
@@ -13,6 +14,7 @@ import type {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "../ports/account-cleanup.port.js";
+import { UserAlerts } from "../users.alerts.js";
 
 interface PurgeDeletedAccountsDependencies {
   readonly userRepository: Pick<
@@ -26,6 +28,7 @@ interface PurgeDeletedAccountsDependencies {
   readonly usageCleanup: AccountUsageCleanupPort;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
 }
 
 export class PurgeDeletedAccountsUseCase {
@@ -117,5 +120,12 @@ export class PurgeDeletedAccountsUseCase {
       skippedCount,
       failedCount,
     });
+    // 사용자 하나의 실패는 잡을 실패시키지 않아 pg-boss 재시도·작업 실패 경보로는 보이지 않는다
+    if (failedCount > 0) {
+      this.#dependencies.alert.raise({
+        ...UserAlerts.ACCOUNT_PURGE_FAILED,
+        details: { candidateCount: users.length, purgedCount, failedCount },
+      });
+    }
   }
 }

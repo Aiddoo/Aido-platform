@@ -10,8 +10,15 @@ import {
 const START = Temporal.Instant.from("2026-11-10T00:00:00Z");
 const REPEAT_INTERVAL_MS = OPERATIONAL_ALERT_LIMITS.repeatIntervalMs;
 
+// 감싸기는 key를 그대로 비교하므로 카탈로그 없이 key만 바꾼 경보를 쓴다
 function alert(key: string): OperationalAlert {
-  return { key, severity: "error", message: "작업이 재시도를 모두 쓰고 실패했다" };
+  return {
+    key,
+    context: "job",
+    severity: "error",
+    summary: "작업이 재시도를 모두 쓰고 실패했다",
+    runbook: "로그를 본다",
+  };
 }
 
 function setup() {

@@ -63,9 +63,7 @@ export class OutboundPolicyRegistry {
     });
     if (breaker.alert != null) {
       alert.raise({
-        key: breaker.alert.key,
-        severity: "error",
-        message: breaker.alert.message,
+        ...breaker.alert,
         tags: { policy, breaker: breaker.name, ...failure },
         details: { cooldownMs: breaker.halfOpenAfterMs },
       });

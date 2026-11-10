@@ -177,6 +177,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       weatherMorning: idleStrategy,
       weatherEvening: idleStrategy,
       logger,
+      alert: { raise: () => undefined },
     });
     return { clock, cursor, logger, sweptMinutes, sweep };
   }
@@ -291,6 +292,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           new StubNotificationRecipientLocaleReader(),
           new InMemoryJobQueue(),
           new FixedClock(now),
+          { raise: () => undefined },
         );
       }
 

@@ -9,6 +9,7 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
+import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   OPERATIONAL_ALERT,
@@ -17,10 +18,11 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { AiAlertKey } from "../../application/ai-generation.alerts.js";
+import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import {
   AI_SPEND_TIERS,
   type AiSpend,
+  type AiSpendTier,
   type AiSpendDecision,
   type AiTaskClass,
   decideAiSpend,
@@ -30,6 +32,13 @@ import { AiGuardLogEvent } from "./ai-provider.log-events.js";
 
 /** 추정 비용 누적(micro-USD). subject "*"는 전역, 사용자 id는 사용자 일 예산이다. */
 export const AI_SPEND_METER = "ai.spend";
+
+// 경고 기준선은 사람이 볼 것이고, 배경·전체 중단 기준선은 기능이 멈춘 것이라 심각도가 다르다
+const SPEND_TIER_ALERTS = {
+  alert: AiAlerts.SPEND_THRESHOLD_REACHED,
+  background: AiAlerts.SPEND_BACKGROUND_HALTED,
+  halt: AiAlerts.SPEND_HALTED,
+} satisfies Record<AiSpendTier, AlertDefinition>;
 
 /** 오늘 비용을 기억하는 사용자 수 상한. 넘으면 오래 쓰지 않은 사용자부터 지우고 다음에 DB에서 다시 읽는다. */
 const USER_SPEND_CACHE_LIMIT = 10_000;
@@ -80,9 +89,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     });
     if (unpriced.length > 0) {
       this.#alert.raise({
-        key: AiAlertKey.MODEL_PRICING_UNKNOWN,
-        severity: "error",
-        message: "가격표에 없는 AI 모델이 설정되어 비용을 최고 단가로 잡습니다.",
+        ...AiAlerts.MODEL_PRICING_UNKNOWN,
         details: { providers: unpriced.join(",") },
       });
     }
@@ -219,9 +226,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
         const fields = { tier, window, period, totalMicroUsd: total, limitMicroUsd: limit };
         this.#logger.warn({ event: AiGuardLogEvent.SPEND_THRESHOLD_REACHED, ...fields });
         this.#alert.raise({
-          key: AiAlertKey.SPEND_THRESHOLD_REACHED,
-          severity: tier === "alert" ? "warning" : "error",
-          message: `AI 추정 비용이 ${window === "daily" ? "일" : "월"} ${tier} 기준선에 닿았습니다`,
+          ...SPEND_TIER_ALERTS[tier],
           tags: { tier, window },
           details: fields,
         });

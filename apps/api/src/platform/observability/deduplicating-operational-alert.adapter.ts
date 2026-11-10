@@ -2,6 +2,7 @@ import { LRUCache } from "lru-cache";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
+  alertIssueKey,
   type OperationalAlert,
   OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
@@ -40,11 +41,12 @@ export class DeduplicatingOperationalAlertAdapter extends OperationalAlertPort {
 
   raise(alert: OperationalAlert): void {
     const nowMs = this.#clock.now().epochMilliseconds;
-    const lastRaisedAtMs = this.#lastRaisedAtMs.get(alert.key);
+    const issueKey = alertIssueKey(alert);
+    const lastRaisedAtMs = this.#lastRaisedAtMs.get(issueKey);
     if (lastRaisedAtMs != null && !this.#takeRepeat(nowMs, lastRaisedAtMs)) {
       return;
     }
-    this.#lastRaisedAtMs.set(alert.key, nowMs);
+    this.#lastRaisedAtMs.set(issueKey, nowMs);
     this.#delegate.raise(alert);
   }
 

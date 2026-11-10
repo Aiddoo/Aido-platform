@@ -37,7 +37,7 @@ import { VOICE_NOTE_DURATION_TOLERANCE_SECONDS } from "../../domain/voice-notes.
 import { type TranscriptSegment, VoiceTranscript } from "../../domain/voice-transcript.vo.js";
 import type { VoiceNoteDigestResult } from "../ports/voice-note-digest-result-replay.port.js";
 import type { VoiceNoteDigestReadModel } from "../read-models/voice-note-digest.read-model.js";
-import { VoiceNoteAlertKey } from "../voice-notes.alerts.js";
+import { VoiceNoteAlerts } from "../voice-notes.alerts.js";
 import { VoiceNoteLogEvent } from "../voice-notes.log-events.js";
 
 export interface DigestVoiceNoteCommand {
@@ -153,9 +153,7 @@ export class DigestVoiceNoteUseCase {
     ) {
       // 1.15.1은 출시 앱 호환을 위해 거절하지 않고 경보만 올린다(1.15.2부터 거절)
       this.#dependencies.alert.raise({
-        key: VoiceNoteAlertKey.DURATION_OVER_LIMIT,
-        severity: "warning",
-        message: "녹음 길이가 한 번 상한을 넘었습니다",
+        ...VoiceNoteAlerts.DURATION_OVER_LIMIT,
         details: {
           durationSeconds: transcript.durationSeconds,
           maxSeconds: featureQuota.perUse.maxSeconds,

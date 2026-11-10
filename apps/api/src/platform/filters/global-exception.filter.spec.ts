@@ -27,7 +27,12 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
   let logger: RecordingPinoLogger;
   let mockResponse: { status: Mock; json: Mock };
-  let mockRequest: { method: string; url: string; user?: { userId: string } };
+  let mockRequest: {
+    method: string;
+    url: string;
+    route?: { path: string };
+    user?: { userId: string };
+  };
   let host: ExecutionContextHost;
 
   let messages: ErrorMessageTranslator;
@@ -62,7 +67,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     mockRequest = {
       method: "POST",
-      url: "/test",
+      url: "/test/42?token=secret",
+      route: { path: "/test/:id" },
     };
 
     host = new ExecutionContextHost([mockRequest, mockResponse]);
@@ -245,7 +251,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
             userId: null,
             tags: {
               "http.method": "POST",
-              "http.url": "/test",
+              "http.route": "/test/:id",
               "http.status_code": "500",
               "error.code": ErrorCode.SYS_0001,
             },
@@ -267,6 +273,28 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       // Then
       expect(reporter.reports.map((report) => report.context.userId)).toEqual(["user-1", null]);
       expect(JSON.stringify(reporter.reports)).not.toContain("ip_address");
+    });
+
+    it("코드로 분류해 던진 5xx는 던진 곳과 상관없이 코드별 한 묶음으로 보고한다", () => {
+      // Given
+      const exception = new ApplicationException(ErrorCode.AI_1301);
+
+      // When
+      filter.catch(exception, host);
+
+      // Then
+      expect(reporter.reports[0]?.context.groupKey).toBe("http-5xx.AI_1301");
+    });
+
+    it("라우팅 전에 실패한 요청은 경로 템플릿 대신 unmatched로 싣는다", () => {
+      // Given
+      mockRequest.route = undefined;
+
+      // When
+      filter.catch(new Error("boom"), host);
+
+      // Then
+      expect(reporter.reports[0]?.context.tags["http.route"]).toBe("unmatched");
     });
 
     it("4xx 클라이언트 에러는 보고하지 않는다", () => {

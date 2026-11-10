@@ -187,6 +187,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       new StubNotificationRecipientLocaleReader(),
       jobQueue,
       new DateClock(),
+      { raise: () => undefined },
     );
   });
 

@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
+import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import {
   createTodoReminderNotificationMessage,
@@ -13,6 +15,7 @@ import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapt
 import { todoSeriesPausedJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
+import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import {
@@ -32,9 +35,18 @@ import {
   type TodoReminderRuntimeJob,
 } from "./todo-reminder.queue.js";
 
+/**
+ * 늦어서 버린 리마인더가 한 시간(REMINDER_LATE_SKIP_WINDOW_MS) 안에 이만큼 쌓이면 경보한다.
+ * 배포로 worker가 잠깐 멈춘 뒤 몇 건은 늘 생기므로 그보다 크게 잡는다.
+ */
+export const REMINDER_LATE_SKIP_THRESHOLD = 20;
+export const REMINDER_LATE_SKIP_WINDOW_MS = 60 * 60_000;
+const LATE_SKIP_COUNTER_KEY = "late-skip";
+
 @Injectable()
 export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoReminderQueueProcessor.name);
+  readonly #lateSkips = new WindowedCounter(REMINDER_LATE_SKIP_WINDOW_MS);
 
   readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodo">;
   readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
@@ -42,6 +54,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "work">;
   readonly #clock: Pick<ClockPort, "now">;
+  readonly #alert: Pick<OperationalAlertPort, "raise">;
 
   constructor(
     @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "findActiveTodo">,
@@ -53,6 +66,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">,
     @Inject(JobQueuePort) jobQueue: Pick<JobQueuePort, "enqueue" | "work">,
     @Inject(ClockPort) clock: Pick<ClockPort, "now">,
+    @Inject(OperationalAlertPort) alert: Pick<OperationalAlertPort, "raise">,
   ) {
     this.#reader = reader;
     this.#seriesOwnerDormancy = seriesOwnerDormancy;
@@ -60,6 +74,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     this.#recipientLocaleReader = recipientLocaleReader;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
+    this.#alert = alert;
   }
 
   async onModuleInit(): Promise<void> {
@@ -114,6 +129,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
           largestUnit: "minutes",
         }).minutes,
       });
+      this.#countLateSkip(now);
       return;
     }
 
@@ -174,6 +190,22 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
 
     this.#logger.log({ event: NotificationProviderLogEvent.JOB_COMPLETED, todoId, userId, stage });
+  }
+
+  #countLateSkip(now: Temporal.Instant): void {
+    // 창 안에서 기준에 닿는 순간 한 번만 올린다
+    if (
+      this.#lateSkips.add(LATE_SKIP_COUNTER_KEY, now.epochMilliseconds) ===
+      REMINDER_LATE_SKIP_THRESHOLD
+    ) {
+      this.#alert.raise({
+        ...ReminderAlerts.LATE_SKIPS_HIGH,
+        details: {
+          skippedCount: REMINDER_LATE_SKIP_THRESHOLD,
+          windowMinutes: REMINDER_LATE_SKIP_WINDOW_MS / 60_000,
+        },
+      });
+    }
   }
 
   async #sendSeriesPausedNotice(job: { readonly todoId: number; readonly userId: string }) {

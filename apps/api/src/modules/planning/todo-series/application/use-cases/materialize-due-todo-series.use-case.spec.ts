@@ -9,7 +9,7 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todo
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
-import { TodoSeriesAlertKey } from "../todo-series.alerts.js";
+import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { MaterializeDueTodoSeriesUseCase } from "./materialize-due-todo-series.use-case.js";
 import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
@@ -98,8 +98,7 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 2, createdCount: 3, failedCount: 1 });
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
-        severity: "error",
+        key: TodoSeriesAlerts.MATERIALIZE_FAILED.key,
       }),
     ]);
   });

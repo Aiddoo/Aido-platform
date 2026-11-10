@@ -412,6 +412,7 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       new AiProviderCatalog(adapters),
       new OutboundPolicyRegistry(alert),
       new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert, new SystemClock()),
+      alert,
     ),
     available,
     thinking: config.ai.tasks[task].thinking,

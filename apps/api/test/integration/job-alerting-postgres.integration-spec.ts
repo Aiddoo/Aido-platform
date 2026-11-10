@@ -3,6 +3,7 @@ import { PgBoss } from "pg-boss";
 import { z } from "zod";
 
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { JobAlerts } from "#api/platform/jobs/jobs.alerts";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { PgBossScheduleRunReader } from "#api/platform/jobs/pg-boss-schedule-run.reader";
 import { ScheduleWatchdogProcessor } from "#api/platform/jobs/schedule-watchdog.processor";
@@ -14,6 +15,7 @@ import {
   type OperationalAlertPort,
   type QueueDefinition,
 } from "#api/shared/application/ports/index";
+import { alertIssueKey } from "#api/shared/application/ports/operational-alert.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingJobHeartbeat } from "#test/doubles/platform/recording-job-heartbeat";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -161,9 +163,8 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     expect(attempts).toBe(3);
     expect(alerts.alerts).toEqual([
       {
-        key: "job.failed:integration-alert-final-only:DocumentRenderError",
-        severity: "error",
-        message: "작업이 재시도를 모두 쓰고 실패했다 (integration-alert-final-only)",
+        ...JobAlerts.FAILED,
+        subject: "integration-alert-final-only:DocumentRenderError",
         tags: {
           queue: "integration-alert-final-only",
           "job.name": "integration-alert-final-only",
@@ -200,7 +201,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
     // Then
     expect(raisedWithinWindow).toBe(1);
-    expect(recorded.alerts.map(({ key }) => key)).toEqual([
+    expect(recorded.alerts.map(alertIssueKey)).toEqual([
       "job.failed:integration-alert-dedup:DocumentRenderError",
       "job.failed:integration-alert-dedup:DocumentRenderError",
     ]);
@@ -216,7 +217,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     await watchdog.run();
 
     // Then
-    expect(alerts.alerts.map(({ key }) => key)).toContain(
+    expect(alerts.alerts.map(alertIssueKey)).toContain(
       "schedule.overdue:integration-hourly-overdue",
     );
     expect(heartbeat.schedules).toEqual([SCHEDULE_WATCHDOG_HEARTBEAT]);
@@ -240,7 +241,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     await watchdog.run();
 
     // Then
-    const keys = alerts.alerts.map(({ key }) => key);
+    const keys = alerts.alerts.map(alertIssueKey);
     expect(keys).not.toContain("schedule.overdue:integration-hourly-healthy");
     expect(keys).not.toContain("schedule.failing:integration-hourly-healthy");
   });
@@ -266,7 +267,8 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     // Then
     expect(alerts.alerts).toContainEqual(
       expect.objectContaining({
-        key: "schedule.failing:integration-hourly-failing",
+        key: "schedule.failing",
+        subject: "integration-hourly-failing",
         details: expect.objectContaining({ failedRuns: 1 }),
       }),
     );
@@ -299,7 +301,8 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     // Then
     expect(alerts.alerts).toContainEqual(
       expect.objectContaining({
-        key: "queue.dead-letter:integration-watch-source-dead-letter",
+        key: "queue.dead-letter",
+        subject: "integration-watch-source-dead-letter",
         details: { arrivals: 1, windowMinutes: 15 },
       }),
     );

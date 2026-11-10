@@ -13,6 +13,7 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthAccountRepositoryPort } from "../auth/application/ports/auth-account.repository.port.js";
@@ -73,6 +74,7 @@ export const purgeDeletedAccountsProvider = provideUseCase(PurgeDeletedAccountsU
   usageCleanup: AccountUsageCleanupPort,
   clock: ClockPort,
   logger: loggerFor(PurgeDeletedAccountsUseCase),
+  alert: OperationalAlertPort,
 });
 
 export const deleteAccountProvider = provideUseCase(DeleteAccountUseCase, {

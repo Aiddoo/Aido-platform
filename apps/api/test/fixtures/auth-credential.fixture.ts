@@ -32,6 +32,7 @@ import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-aut
 import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-memory-auth-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
@@ -145,6 +146,7 @@ export function createAuthCredentialFixture(
     retentionEnroller,
     seeder,
     logger,
+    alert: new RecordingOperationalAlert(),
     unitOfWork,
     clock,
     sessionService,

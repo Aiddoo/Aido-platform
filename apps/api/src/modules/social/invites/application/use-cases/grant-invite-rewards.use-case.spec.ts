@@ -17,7 +17,7 @@ import {
 import { createRewardGrantFixture } from "#test/fixtures/social/reward-grant.fixture";
 
 import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
-import { InviteAlertKey } from "../invites.alerts.js";
+import { InviteAlerts } from "../invites.alerts.js";
 import { GrantInviteRewardsUseCase } from "./grant-invite-rewards.use-case.js";
 
 const NOW = INVITE_FIXTURE_NOW.add({ hours: 1 });
@@ -142,9 +142,7 @@ describe("GrantInviteRewardsUseCase — 초대 보상 지급", () => {
     await expect(result).rejects.toMatchObject({ failedCount: 2 });
     expect(granter.alert.alerts).toEqual([
       {
-        key: InviteAlertKey.REWARD_RETRY_EXHAUSTED,
-        severity: "error",
-        message: "Invite reward retries exhausted",
+        ...InviteAlerts.REWARD_RETRY_EXHAUSTED,
         tags: { errorCode: "APPLY_FAILED" },
         details: {
           grantId: PREMIUM_GRANT_ID,

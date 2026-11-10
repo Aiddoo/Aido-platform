@@ -4,10 +4,12 @@ import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AUTH_DEFAULTS, TOKEN_REUSE_GRACE_PERIOD_MS } from "../../domain/auth.constants.js";
+import { AuthAlerts } from "../auth.alerts.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthTokenIssuerPort } from "../ports/auth-crypto.port.js";
@@ -40,6 +42,7 @@ interface RefreshTokensDependencies {
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
 }
 
 export class RefreshTokensUseCase {
@@ -101,6 +104,11 @@ export class RefreshTokensUseCase {
       userId: authSession.userId.value,
       sessionId,
       revokedCount: revokedSessionIds.length,
+    });
+    // 유출 의심 신호다. 사용자 ID는 로그에만 두고 경보에는 끊은 세션 수만 싣는다
+    this.#dependencies.alert.raise({
+      ...AuthAlerts.REFRESH_TOKEN_REUSED,
+      details: { revokedCount: revokedSessionIds.length },
     });
     throw new ApplicationException(ErrorCode.SESSION_0704, { tokenFamily: undefined });
   }

@@ -7,12 +7,18 @@ import { StubTodoReminderReader } from "#test/doubles/notification/stub-todo-rem
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
 import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
+import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
+import {
+  REMINDER_LATE_SKIP_THRESHOLD,
+  REMINDER_LATE_SKIP_WINDOW_MS,
+  TodoReminderQueueProcessor,
+} from "./todo-reminder-queue.processor.js";
 import {
   type ReminderJobData,
   type TodoReminderRuntimeJob,
@@ -52,6 +58,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   let localeReader: StubNotificationRecipientLocaleReader;
   let jobQueue: InMemoryJobQueue;
   let clock: FixedClock;
+  let alert: RecordingOperationalAlert;
   let processor: TodoReminderQueueProcessor;
 
   beforeEach(() => {
@@ -61,6 +68,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     localeReader = new StubNotificationRecipientLocaleReader();
     jobQueue = new InMemoryJobQueue();
     clock = new FixedClock(NOW);
+    alert = new RecordingOperationalAlert();
     processor = new TodoReminderQueueProcessor(
       reader,
       seriesOwnerDormancy,
@@ -68,6 +76,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       localeReader,
       jobQueue,
       clock,
+      alert,
     );
     reader.todos.set(1, activeTodo());
   });
@@ -231,6 +240,28 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         reason: "late-over-15m",
         lateMinutes: 16,
       });
+    });
+
+    it("한 시간 안에 버린 리마인더가 기준 수에 닿는 순간 한 번만 경보한다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 44 }) }));
+      vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+
+      // When
+      for (let index = 0; index <= REMINDER_LATE_SKIP_THRESHOLD; index++) {
+        await processor.process(makeJob({ stageLabel: "60min" }));
+      }
+
+      // Then
+      expect(alert.alerts).toEqual([
+        {
+          ...ReminderAlerts.LATE_SKIPS_HIGH,
+          details: {
+            skippedCount: REMINDER_LATE_SKIP_THRESHOLD,
+            windowMinutes: REMINDER_LATE_SKIP_WINDOW_MS / 60_000,
+          },
+        },
+      ]);
     });
 
     it("정확히 15분 늦은 리마인더는 보낸다", async () => {

@@ -9,6 +9,7 @@ import type {
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
   AUTH_FIXTURE_NOW,
@@ -23,6 +24,7 @@ import {
 } from "#test/mocks/ports/auth-session.stub";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
+import { AuthAlerts } from "../auth.alerts.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { VerifiedRefreshPayload } from "../read-models/auth-result.read-model.js";
 import { RefreshTokensUseCase } from "./refresh-tokens.use-case.js";
@@ -68,6 +70,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     const securityLogRepository = new InMemoryAuthSecurityLogRepository();
     const logger = new SilentLogger();
     const pushDevices = new StubSessionPushDeviceReleaser();
+    const alert = new RecordingOperationalAlert();
     const useCase = new RefreshTokensUseCase({
       clock: new FixedClock(AUTH_FIXTURE_NOW),
       pushDevices,
@@ -76,9 +79,11 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
       cacheService,
       securityLogRepository,
       logger,
+      alert,
     });
     return {
       useCase,
+      alert,
       sessionRepository,
       tokenService,
       cacheService,
@@ -243,6 +248,9 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
         metadata: { reason: REVOKE_REASON.TOKEN_REUSE_DETECTED, tokenFamily: "family-id" },
       },
+    ]);
+    expect(fixture.alert.alerts).toEqual([
+      { ...AuthAlerts.REFRESH_TOKEN_REUSED, details: { revokedCount: 2 } },
     ]);
   });
 

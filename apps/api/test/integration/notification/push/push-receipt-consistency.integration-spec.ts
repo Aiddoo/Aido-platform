@@ -296,6 +296,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       cache: { async invalidatePushTokens() {} },
       clock,
       logger: { log() {}, warn() {} },
+      alert: { raise() {} },
     });
 
     // When
@@ -432,6 +433,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       cache: { async invalidatePushTokens() {} },
       clock: new FixedClock(AT_INSTANT),
       logger: { log() {}, warn() {} },
+      alert: { raise() {} },
     });
 
     // When
