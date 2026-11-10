@@ -18,6 +18,7 @@ import {
   isRecordNotFoundError,
 } from "#api/platform/database/database-error.util";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
+import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
@@ -44,6 +45,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
     private readonly logger: PinoLogger,
     private readonly configService: TypedConfigService,
+    private readonly messages: ErrorMessageTranslator,
   ) {
     this.logger.setContext(GlobalExceptionFilter.name);
   }
@@ -91,7 +93,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         success: false,
         error: {
           code: ErrorCode.SYS_0001,
-          message: Errors[ErrorCode.SYS_0001].message,
+          message: this.messages.translate(ErrorCode.SYS_0001),
           ...(this.configService.isDevelopment && {
             details: errorMessage,
           }),
@@ -167,7 +169,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         success: false,
         error: {
           code: exception.errorCode,
-          message: exception.message || definition.message,
+          message: this.#messageOf(exception),
           // undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
           // nullish-strict: undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
           ...(details !== undefined && { details }),
@@ -175,6 +177,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         timestamp: Date.now(),
       },
     };
+  }
+
+  /** 코드의 기본 문구는 요청 언어로 바꾸고, 던진 곳이 정한 문구는 그대로 둔다. */
+  #messageOf(exception: ErrorCodedException): string {
+    const isCustomMessage =
+      exception.message !== "" && exception.message !== Errors[exception.errorCode].message;
+    return isCustomMessage ? exception.message : this.messages.translate(exception.errorCode);
   }
 
   #mapDatabaseError(error: unknown): ErrorCodedException {

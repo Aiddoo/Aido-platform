@@ -3,6 +3,7 @@ export {
   normalizeDevicePlatform,
   parseAcceptLanguage,
   parseRequestClient,
+  resolveResponseLocale,
   type RequestClient,
   type RequestClientPlatform,
 } from "./request-client.js";

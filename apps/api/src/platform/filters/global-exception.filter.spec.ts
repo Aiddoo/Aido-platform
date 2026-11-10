@@ -14,12 +14,15 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
 import * as Sentry from "@sentry/nestjs";
 import type { PinoLogger } from "nestjs-pino";
 import { vi, type Mock } from "vitest";
 import { mock, type MockProxy } from "vitest-mock-extended";
 
 import type { TypedConfigService } from "#api/platform/config/services/config.service";
+import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
+import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
@@ -50,10 +53,18 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let mockRequest: { method: string; url: string; user?: { userId: string } };
   let mockHost: MockProxy<ArgumentsHost>;
 
+  let messages: ErrorMessageTranslator;
+
   const createFilter = (isDevelopment = true) => {
     mockConfigService = mock<TypedConfigService>({ isDevelopment });
-    return new GlobalExceptionFilter(mockLogger, mockConfigService);
+    return new GlobalExceptionFilter(mockLogger, mockConfigService, messages);
   };
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({ imports: [AppI18nModule] }).compile();
+    await module.init();
+    messages = module.get(ErrorMessageTranslator);
+  });
 
   beforeEach(() => {
     mockLogger = mock<PinoLogger>();

@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import { isSemanticVersionAtLeast } from "@aido/api";
-import { IDEMPOTENCY_KEY_MAX_LENGTH } from "@aido/api/vocabulary";
+import { IDEMPOTENCY_KEY_MAX_LENGTH, resolveSupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -92,6 +92,15 @@ export function parseAcceptLanguage(header: unknown): SupportedLocale | undefine
   const language = primary.split(";")[0]?.split("-")[0];
   const matched = SUPPORTED_LOCALES.find((locale) => locale === language);
   return matched ?? DEFAULT_LOCALE;
+}
+
+/**
+ * 응답 문구(오류 message 등)의 언어. Accept-Language 첫 항목을 앱과 같은 vocabulary 규칙으로 정한다.
+ * 저장용 locale(parseAcceptLanguage)과 달리 보내지 않으면 ko, 지원하지 않는 언어는 en이다.
+ */
+export function resolveResponseLocale(header: unknown): SupportedLocale {
+  const primary = typeof header === "string" ? header.split(",")[0]?.split(";")[0] : undefined;
+  return resolveSupportedLocale(primary);
 }
 
 /**

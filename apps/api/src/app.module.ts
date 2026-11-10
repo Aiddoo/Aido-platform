@@ -55,6 +55,7 @@ import {
   REQUEST_CLIENT_CLS_MIDDLEWARE,
   RequestClientModule,
 } from "#api/platform/http/request-client/index";
+import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
 import { LockModule } from "#api/platform/lock/index";
 import { LoggerModule } from "#api/platform/logging/index";
@@ -78,6 +79,7 @@ import { AppService } from "./app.service.js";
 @Module({
   imports: [
     AppConfigModule,
+    AppI18nModule,
 
     SentryModule.forRoot(),
 
