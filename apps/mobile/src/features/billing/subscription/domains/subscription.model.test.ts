@@ -81,8 +81,8 @@ describe('getAnnualDiscountPercent', () => {
   ])('월 %i원, 연 %i원의 할인율은 %i%%이다', (monthlyPrice, annualPrice, expected) => {
     // When
     const percent = SubscriptionPolicy.getAnnualDiscountPercent(
-      { price: monthlyPrice },
-      { price: annualPrice },
+      createPlan({ price: monthlyPrice }),
+      createPlan({ identifier: 'annual', planType: 'annual', price: annualPrice }),
     );
 
     // Then
@@ -99,7 +99,9 @@ describe('getMonthlyEquivalent', () => {
     [8.89, 0.74],
   ])('연 %f원의 월 환산 금액은 %f원이다', (annualPrice, expected) => {
     // When
-    const monthlyEquivalent = SubscriptionPolicy.getMonthlyEquivalent({ price: annualPrice });
+    const monthlyEquivalent = SubscriptionPolicy.getMonthlyEquivalent(
+      createPlan({ identifier: 'annual', planType: 'annual', price: annualPrice }),
+    );
 
     // Then
     expect(monthlyEquivalent).toBeCloseTo(expected, 2);

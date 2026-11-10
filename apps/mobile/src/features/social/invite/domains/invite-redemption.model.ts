@@ -110,7 +110,7 @@ export function getMissingRewardReason(result: RedemptionResult) {
 }
 
 // 수락 뒤 다시 받은 내 정보로만 판단한다. 구독·다른 보상 기간 중이면 서버가 쌓아 두고 그 뒤에 잇는다
-export function getRewardStart(premiumAccess: Pick<PremiumAccess, 'source' | 'bankedDays'>) {
+export function getRewardStart(premiumAccess: PremiumAccess) {
   return match({
     source: premiumAccess.source,
     hasBankedDays: PremiumAccessPolicy.hasBankedDays(premiumAccess),

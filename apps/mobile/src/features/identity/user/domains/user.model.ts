@@ -28,24 +28,21 @@ const updateProfileResultSchema = z.object({
 });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
-function hasCredential(user: Pick<User, 'providers'>) {
+function hasCredential(user: User) {
   return user.providers.includes('CREDENTIAL');
 }
 
-function isAdmin(user: Pick<User, 'role'>) {
+function isAdmin(user: User) {
   return user.role === USER_ROLE.ADMIN;
 }
 
 /** 서버의 isPremium은 ADMIN을 반영하지 않는다. 앱의 "결제 사용자" 판별은 여기 하나다 */
-function hasPremiumAccess(user: Pick<User, 'role' | 'isPremium'>) {
+function hasPremiumAccess(user: User) {
   return isAdmin(user) || user.isPremium;
 }
 
 /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
-function hasEntitlementChanged(
-  previous: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
-  next: Pick<User, 'role' | 'isPremium' | 'premiumAccess'>,
-) {
+function hasEntitlementChanged(previous: User, next: User) {
   return (
     previous.role !== next.role ||
     previous.isPremium !== next.isPremium ||
