@@ -95,8 +95,8 @@ catalog:
   'jose': '6.2.15'
   knip: 6.44.1
   'ngeohash': '0.6.4'
-  'oxfmt': '0.76.0'
-  'oxlint': '1.91.0'
+  'oxfmt': '0.78.0'
+  'oxlint': '1.93.0'
   'pg': '8.23.1'
   'pg-boss': '12.38.0'
   'react-native-reorderable-list': '0.18.3'
