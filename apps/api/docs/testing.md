@@ -95,7 +95,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 [createE2eApp](../test/e2e/helpers/e2e-app-factory.ts)이 실제 AppModule을 조립하고 관리형 PostgreSQL을 연결한다. Email·OAuth·Push·AI·Weather·job runtime은 Fake다.
 
 - 각 케이스는 필요한 데이터를 스스로 준비하고 `ctx.reset()`으로 정리한다. 새 override는 `customizeBuilder`, mutable Fake는 `additionalResetters`로 넣는다.
-- 공개 route·validation·nullable/default·오류 우선순위, 401·비소유·premium 경계, 저장 결과를 본다. 응답 body는 공유 schema로 `.parse`한다.
+- 공개 route·validation·nullable/default·오류 우선순위, 401·비소유·premium 경계, 저장 결과를 본다. 응답 body는 공유 schema로 `.parse`한다. 앱은 [응답 계약 검사](http-contracts.md#응답-계약-검사)를 켠 채로 떠서 선언과 다른 성공 응답은 500이 된다.
 - throttle은 기본으로 꺼져 있다. 검증할 때만 `withRealThrottler: true`를 쓴다.
 - [OpenAPI 계약](../test/e2e/openapi-contract.e2e-spec.ts)과 released fixture가 출시 앱 응답 모양을 지킨다([절차](http-contracts.md#출시-앱-호환-절차)).
 

@@ -48,25 +48,35 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 - 변경 응답의 `message`는 출시 계약이라 유지하되 문구는 presentation 매퍼 상수에 두고 Swagger에 `deprecated`로 표시한다. 새 응답에는 넣지 않는다.
 - 운영 응답에 실을 details는 `PUBLIC_ERROR_DETAILS`에 코드별 Zod로 등록한다.
 
+## 응답 계약 검사
+
+`NODE_ENV`가 `production`이 아니면(로컬 개발·E2E) [configureApplication](../src/platform/http/configure-application.ts)이 [`ResponseContractInterceptor`](../src/platform/http/interceptors/response-contract.interceptor.ts)를 전역으로 더한다. 운영과 production 빌드로 도는 개발 서버에는 등록하지 않는다.
+
+- `@ApiSuccessResponse`·`@ApiCreatedResponse`가 Swagger에 등록한 바로 그 Zod schema로, 실제 상태 코드의 body를 JSON으로 바꾼 뒤(`@RawResponse`가 아니면 envelope 포함) `safeParse`한다. 응답 값은 바꾸지 않는다.
+- 다르거나 선언한 성공 상태와 다른 상태로 응답하면 `http.response-contract.violated` 로그(handler·path·Zod issues)를 남기고 500(`SYS_0001`)으로 실패한다.
+- Zod가 아닌 선언(class `type`, OpenAPI `schema` 객체)과 `@Res()`로 직접 보낸 응답은 검사하지 않는다. 친구·카테고리 한도 응답의 class DTO는 Zod로 옮기면 제약 없는 nullable 숫자가 `nullable: true` 대신 `type: ["number", "null"]`이 되어 released 지문이 달라지므로 그대로 둔다.
+- 실패는 서버 응답을 출시 계약에 맞추거나, 선언이 틀렸으면 선언을 고쳐서 없앤다. 출시 계약과 released fixture는 바꾸지 않는다.
+
 ## 페이지네이션
 
-- 새 endpoint는 `cursorPageSchema(item, cursor)`의 `{ items, pagination: { nextCursor, hasNext, size } }`만 쓴다. 페이지 크기 이름은 `size`다.
+- 새 endpoint는 [`cursorPageSchema(item, cursor)`](../../../packages/api/src/common/pagination.ts)의 `{ items, pagination: { nextCursor, hasNext, size } }`만 쓴다. 페이지 크기 이름은 `size`다.
+- 할 일·친구 할 일·메모·주간 성취 목록이 이 helper를 쓴다. 출시 계약을 옮길 때는 그 계약의 설명 문구를 세 번째 인자로 넘겨 생성된 JSON Schema를 바이트 단위로 같게 두고, OpenAPI 스냅샷으로 확인한다.
 - 다른 모양의 출시 계약(알림·친구·응원·찌르기·초대)은 그대로 두고, 서버 내부는 `CursorPage`로 통일한 뒤 매퍼가 옛 모양을 만든다.
 - 커서는 `platform/http/cursor`의 서명 codec 하나(key ring, [보안](security.md))다. 숫자 커서 계약은 숫자를 유지한다.
 
 ## 타입 안전 체크리스트
 
-| 경계              | 보장                                                                                                                              |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| HTTP 입력         | 공유 Zod + Nest `StandardSchemaValidationPipe`(전역). 인자 타입은 `z.infer`                                                       |
-| HTTP 출력         | 반환 타입이 계약 DTO 타입. dev·test는 `ResponseContractInterceptor`가 `@ApiDoc` 응답 schema로 실제 body를 `parse`. E2E도 `.parse` |
-| 외부 API          | `*.wire.ts` Zod `parse`([외부 호출](outbound.md))                                                                                 |
-| 큐·이벤트 payload | `defineQueue`·이벤트 schema([작업과 이벤트](jobs-and-events.md))                                                                  |
-| 환경변수          | slice `registerAs` + Zod([설정](configuration.md))                                                                                |
-| DB 행             | `$inferSelect`/`$inferInsert` + customType, 행 → 도메인은 매퍼 한 곳                                                              |
-| DI                | abstract class 토큰 + `provideUseCase`                                                                                            |
-| 분기              | 유니온은 ts-pattern `.exhaustive()`                                                                                               |
-| 금지              | `as`(`as const` 제외)·`any`·`!`·`@ts-*`. 예외는 `provideUseCase` 내부 1곳(사유 주석)                                              |
+| 경계              | 보장                                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| HTTP 입력         | 공유 Zod + Nest `StandardSchemaValidationPipe`(전역). 인자 타입은 `z.infer`                                      |
+| HTTP 출력         | 반환 타입이 계약 DTO 타입. 운영 밖에서는 [응답 계약 검사](#응답-계약-검사)가 실제 body를 `parse`. E2E도 `.parse` |
+| 외부 API          | `*.wire.ts` Zod `parse`([외부 호출](outbound.md))                                                                |
+| 큐·이벤트 payload | `defineQueue`·이벤트 schema([작업과 이벤트](jobs-and-events.md))                                                 |
+| 환경변수          | slice `registerAs` + Zod([설정](configuration.md))                                                               |
+| DB 행             | `$inferSelect`/`$inferInsert` + customType, 행 → 도메인은 매퍼 한 곳                                             |
+| DI                | abstract class 토큰 + `provideUseCase`                                                                           |
+| 분기              | 유니온은 ts-pattern `.exhaustive()`                                                                              |
+| 금지              | `as`(`as const` 제외)·`any`·`!`·`@ts-*`. 예외는 `provideUseCase` 내부 1곳(사유 주석)                             |
 
 ## 출시 앱 호환 절차
 
