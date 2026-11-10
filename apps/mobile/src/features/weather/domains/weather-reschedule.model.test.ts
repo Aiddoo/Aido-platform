@@ -1,49 +1,61 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import {
+  createBriefingDto,
   createBriefingTodo,
   createHourlySeries,
+  createRescheduleOptionDto,
   createWeatherReport,
-  createWeatherReportWithHours,
 } from '../__tests__/weather-report.fixtures';
 import { WeatherReschedulePolicy } from './weather-reschedule.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
-const { hourly } = createWeatherReport({
-  hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
+const HOURLY = createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]);
+/** 서버가 16:30 할 일 1만 비와 겹친다고 보고 19시·21시를 후보로 고른다 */
+const SERVER_BRIEFING = createBriefingDto({
+  reason: 'rain',
+  affectedTodoIds: [1],
+  rescheduleOptions: [
+    {
+      todoId: 1,
+      options: [
+        createRescheduleOptionDto('2026-11-02T10:00:00.000Z', { isRecommended: true }),
+        createRescheduleOptionDto('2026-11-02T12:00:00.000Z'),
+      ],
+    },
+  ],
 });
+const report = createWeatherReport({ hourly: HOURLY, briefing: SERVER_BRIEFING });
 
-describe('getAffectedTodos', () => {
-  it('비를 피할 때는 비 오는 시간에 걸린 미완료 할 일만 고른다', () => {
-    // Given
-    const todos = [
-      createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
-      createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T10:30:00.000Z') }),
-    ];
+describe('getRescheduleTodos', () => {
+  const todos = [
+    createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
+    createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
+  ];
 
+  it('시트 링크의 할 일 중 서버가 같은 이유로 고른 할 일만 서버 후보와 함께 돌려준다', () => {
     // When
-    const affected = WeatherReschedulePolicy.getAffectedTodos(hourly, todos, {
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(report, todos, {
       now: NOW,
       reason: 'rain',
     });
 
     // Then
+    // 2도 예보상 비 시간이지만 서버가 고르지 않았다
     expect(affected.map((todo) => todo.todoId)).toEqual([1]);
+    expect(affected[0]?.rescheduleOptions.map((option) => option.startsAt)).toEqual([
+      '2026-11-02T10:00:00.000Z',
+      '2026-11-02T12:00:00.000Z',
+    ]);
   });
 
-  it('비와 겹친 할 일을 끝냈으면 옮길 할 일에서 뺀다', () => {
+  it('시트를 연 사이 끝낸 할 일은 옮기지 않는다', () => {
     // Given
-    const todos = [
-      createBriefingTodo({
-        id: 1,
-        scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
-        completed: true,
-      }),
-    ];
+    const completed = [createBriefingTodo({ id: 1, completed: true })];
 
     // When
-    const affected = WeatherReschedulePolicy.getAffectedTodos(hourly, todos, {
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(report, completed, {
       now: NOW,
       reason: 'rain',
     });
@@ -52,107 +64,67 @@ describe('getAffectedTodos', () => {
     expect(affected).toEqual([]);
   });
 
-  it('더위를 피할 때는 체감 온도가 높은 낮 시간에 걸린 미완료 할 일만 고른다', () => {
+  it.each([
+    { title: '서버가 판단하지 못한 리포트', briefing: undefined },
+    {
+      title: '서버가 지금은 더위로 판단한 리포트',
+      briefing: { ...SERVER_BRIEFING, reason: 'heat' },
+    },
+  ] as const)('$title로는 비를 피해 옮길 할 일을 다시 고르지 않는다', ({ briefing }) => {
     // Given
-    const hotHours = createWeatherReportWithHours([
-      { apparentTemperature: 28 },
-      { apparentTemperature: 36 },
-      { apparentTemperature: 28 },
-    ]).hourly;
-    const todos = [
-      createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
-      createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
-    ];
+    const otherReport = createWeatherReport({ hourly: HOURLY, briefing });
 
     // When
-    const affected = WeatherReschedulePolicy.getAffectedTodos(hotHours, todos, {
+    const affected = WeatherReschedulePolicy.getRescheduleTodos(otherReport, todos, {
       now: NOW,
-      reason: 'heat',
+      reason: 'rain',
     });
 
     // Then
-    expect(affected.map((todo) => todo.todoId)).toEqual([1]);
+    expect(affected).toEqual([]);
   });
 });
 
-describe('getRescheduleOptions', () => {
-  it('같은 날 지금 이후의 맑은 정시를 강수 확률이 낮고 원래 시각에 가까운 순으로 고르고 첫 번째를 추천한다', () => {
+describe('getUpcomingOptions', () => {
+  it('리포트를 받은 뒤 정시를 넘겨 지난 후보는 빼고 서버 순서를 지킨다', () => {
+    // Given
+    const options = report.briefing?.rescheduleOptions[0]?.options ?? [];
+
     // When
-    const options = WeatherReschedulePolicy.getRescheduleOptions(
-      hourly,
-      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
-      { now: NOW, timeZone: 'Asia/Seoul', reason: 'rain' },
+    const upcoming = WeatherReschedulePolicy.getUpcomingOptions(
+      options,
+      toInstant('2026-11-02T10:00:00.000Z'),
     );
 
     // Then
-    expect(options.map((option) => option.startsAt)).toEqual([
-      '2026-11-02T10:00:00.000Z',
-      '2026-11-02T12:00:00.000Z',
-      '2026-11-02T13:00:00.000Z',
-      '2026-11-02T09:00:00.000Z',
-    ]);
-    expect(options.map((option) => option.isRecommended)).toEqual([true, false, false, false]);
+    expect(upcoming.map((option) => option.startsAt)).toEqual(['2026-11-02T12:00:00.000Z']);
   });
+});
 
-  it('남은 시간이 모두 비면 옮길 시간이 없다', () => {
-    // Given
-    const { hourly: rainyHours } = createWeatherReport({
-      hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [80, 80, 80]),
+describe('findNextRescheduleOption', () => {
+  it('지난 선택을 바꿀 다음 후보는 그 할 일의 아직 지나지 않은 첫 서버 후보다', () => {
+    // When
+    const next = WeatherReschedulePolicy.findNextRescheduleOption(report.briefing, {
+      todoId: 1,
+      now: toInstant('2026-11-02T10:00:30.000Z'),
     });
 
-    // When
-    const options = WeatherReschedulePolicy.getRescheduleOptions(
-      rainyHours,
-      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
-      { now: NOW, timeZone: 'Asia/Seoul', reason: 'rain' },
-    );
-
     // Then
-    expect(options).toEqual([]);
+    expect(next?.startsAt).toBe('2026-11-02T12:00:00.000Z');
   });
 
-  it('기기 시간대의 자정을 넘는 시간은 다른 날이라 후보에서 뺀다', () => {
-    // Given
-    const { hourly: lateHours } = createWeatherReport({
-      hourly: createHourlySeries('2026-11-02T13:00:00.000Z', [80, 10, 10]),
+  it.each([
+    { title: '서버 후보가 모두 지났으면', todoId: 1, now: '2026-11-02T12:00:30.000Z' },
+    { title: '서버 후보가 없는 할 일이면', todoId: 2, now: '2026-11-02T06:26:00.000Z' },
+  ])('$title 바꿀 후보가 없다', ({ todoId, now }) => {
+    // When
+    const next = WeatherReschedulePolicy.findNextRescheduleOption(report.briefing, {
+      todoId,
+      now: toInstant(now),
     });
 
-    // When
-    const options = WeatherReschedulePolicy.getRescheduleOptions(
-      lateHours,
-      { scheduledAt: toInstant('2026-11-02T13:30:00.000Z') },
-      { now: toInstant('2026-11-02T13:10:00.000Z'), timeZone: 'Asia/Seoul', reason: 'rain' },
-    );
-
     // Then
-    expect(options.map((option) => option.startsAt)).toEqual(['2026-11-02T14:00:00.000Z']);
-  });
-
-  it('더위를 피할 때는 덥지 않은 같은 날 시간을 원래 시각과 가까운 순으로 고른다', () => {
-    // Given
-    const hotHours = createWeatherReportWithHours([
-      { apparentTemperature: 34 },
-      { apparentTemperature: 36 },
-      { apparentTemperature: 36 },
-      { apparentTemperature: 28 },
-      { apparentTemperature: 28 },
-      { apparentTemperature: 28, isDaylight: false },
-    ]).hourly;
-
-    // When
-    const options = WeatherReschedulePolicy.getRescheduleOptions(
-      hotHours,
-      { scheduledAt: toInstant('2026-11-02T07:30:00.000Z') },
-      { now: NOW, timeZone: 'Asia/Seoul', reason: 'heat' },
-    );
-
-    // Then
-    // 16~17시 체감 36°가 빠지고 원래 시각(16:30)에 가까운 18시·19시·20시 순이다
-    expect(options.map((option) => option.startsAt)).toEqual([
-      '2026-11-02T09:00:00.000Z',
-      '2026-11-02T10:00:00.000Z',
-      '2026-11-02T11:00:00.000Z',
-    ]);
+    expect(next).toBeNull();
   });
 });
 

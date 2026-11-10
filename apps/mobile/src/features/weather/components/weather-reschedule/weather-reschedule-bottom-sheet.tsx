@@ -119,8 +119,8 @@ function RescheduleTodoList({
   const now = useMinuteNow();
   const copy = RESCHEDULE_COPY_KEYS[reason];
   const todosById = keyBy(todoList.todos, (todo) => todo.id);
-  const affectedTodos = WeatherReschedulePolicy.getAffectedTodos(
-    report.hourly,
+  const affectedTodos = WeatherReschedulePolicy.getRescheduleTodos(
+    report,
     todoIds.flatMap((todoId) => {
       const todo = todosById[todoId];
       return todo == null
@@ -173,11 +173,7 @@ function RescheduleTodoList({
           <WeatherRescheduleTodo
             form={form}
             todo={todo}
-            options={WeatherReschedulePolicy.getRescheduleOptions(report.hourly, todo, {
-              now,
-              timeZone,
-              reason,
-            })}
+            options={WeatherReschedulePolicy.getUpcomingOptions(todo.rescheduleOptions, now)}
             reason={reason}
             timeFormat={preference.timeFormat}
             onExclude={() => handleExclude(todo.todoId)}

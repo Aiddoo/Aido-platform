@@ -1,25 +1,17 @@
 import { type WeatherRescheduleReason } from '@aido/api/vocabulary';
-import { type Instant, toDateKey, toEpochMs, toHHmm } from '@src/shared/date/instant';
-import { keyBy, orderBy } from 'es-toolkit';
-import { match } from 'ts-pattern';
+import { type Instant, toEpochMs, toHHmm } from '@src/shared/date/instant';
+import { keyBy } from 'es-toolkit';
 
 import {
+  type AffectedTodo,
   type BriefingTodo,
-  type ForecastTodo,
   WeatherBriefingPolicy,
 } from './weather-briefing.model';
-import type { HourlyForecastEntry } from './weather-report.model';
-import { WeatherReportPolicy } from './weather-report.model';
-
-/** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
-const RESCHEDULE_OPTION_LIMIT = 4;
-
-export interface RescheduleOption {
-  startsAt: Instant;
-  precipitationChance: number;
-  apparentTemperature: number;
-  isRecommended: boolean;
-}
+import type {
+  HourlyForecastEntry,
+  RescheduleOption,
+  WeatherReportBriefing,
+} from './weather-report.model';
 
 export interface ScheduleChange {
   todoId: number;
@@ -89,82 +81,46 @@ function getExpiredTargets<TTodo>(
   return targets.filter(({ startsAt }) => toEpochMs(startsAt) <= toEpochMs(now));
 }
 
-/** 아직 하지 않은 할 일 중 지금 이후 시각이 비 오는 시간에 걸린 것만 고른다. 종일·시간 없는 할 일은 뺀다. */
-function getRainyTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  now: Instant,
-): ForecastTodo[] {
-  return WeatherBriefingPolicy.getForecastTodos(hourly, todos, now).filter(
-    (todo) => !todo.completed && WeatherReportPolicy.isWetHour(todo.hour),
-  );
-}
-
-/** 아직 하지 않은 할 일 중 체감 온도가 위험한 낮 시간에 걸린 것만 고른다. */
-function getHotTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  now: Instant,
-): ForecastTodo[] {
-  return WeatherBriefingPolicy.getForecastTodos(hourly, todos, now).filter(
-    (todo) => !todo.completed && WeatherBriefingPolicy.isHot(todo.hour),
-  );
-}
-
-function getAffectedTodos(
-  hourly: readonly HourlyForecastEntry[],
+/**
+ * 시트 링크의 할 일 중 서버가 지금도 같은 이유로 영향받는다고 본 할 일. 시트를 연 사이 끝낸 할 일은 뺀다.
+ * 서버가 판단하지 못했거나(briefing 없음) 이유가 바뀌었으면 앱이 다시 판단하지 않고 옮기지 않는다.
+ */
+function getRescheduleTodos(
+  report: { hourly: readonly HourlyForecastEntry[]; briefing: WeatherReportBriefing | null },
   todos: readonly BriefingTodo[],
   { now, reason }: { now: Instant; reason: WeatherRescheduleReason },
-): ForecastTodo[] {
-  return match(reason)
-    .with('rain', () => getRainyTodos(hourly, todos, now))
-    .with('heat', () => getHotTodos(hourly, todos, now))
-    .exhaustive();
+): AffectedTodo[] {
+  const { briefing } = report;
+  if (briefing == null || briefing.reason !== reason) {
+    return [];
+  }
+  const forecastTodos = WeatherBriefingPolicy.getForecastTodos(report.hourly, todos, now);
+  return WeatherBriefingPolicy.getAffectedTodos(briefing, forecastTodos).filter(
+    (todo) => !todo.completed,
+  );
 }
 
-/** 할 일 날짜는 기기 시간대로 저장되므로 위치 시간대가 아니라 기기 시간대의 같은 날에서 후보를 고른다 */
-function getRescheduleOptions(
-  hourly: readonly HourlyForecastEntry[],
-  todo: Pick<ForecastTodo, 'scheduledAt'>,
-  { now, timeZone, reason }: { now: Instant; timeZone: string; reason: WeatherRescheduleReason },
+/** 서버가 고른 후보 중 아직 지나지 않은 시각. 리포트를 받은 뒤 정시를 넘기면 지난 후보가 빠진다. */
+function getUpcomingOptions(
+  options: readonly RescheduleOption[],
+  now: Instant,
 ): RescheduleOption[] {
-  const todoDateKey = toDateKey(todo.scheduledAt, timeZone);
-  const distance = (hour: HourlyForecastEntry) =>
-    Math.abs(toEpochMs(hour.startsAt) - toEpochMs(todo.scheduledAt));
-  const sameDayHours = hourly.filter(
-    (hour) =>
-      toEpochMs(hour.startsAt) > toEpochMs(now) &&
-      toDateKey(hour.startsAt, timeZone) === todoDateKey,
-  );
-  const ordered = match(reason)
-    .with('rain', () =>
-      orderBy(
-        sameDayHours.filter((hour) => !WeatherReportPolicy.isWetHour(hour)),
-        [(hour) => hour.precipitationChance, distance],
-        ['asc', 'asc'],
-      ),
-    )
-    .with('heat', () =>
-      orderBy(
-        sameDayHours.filter(
-          (hour) => !WeatherReportPolicy.isWetHour(hour) && !WeatherBriefingPolicy.isHot(hour),
-        ),
-        [distance, (hour) => hour.apparentTemperature],
-        ['asc', 'asc'],
-      ),
-    )
-    .exhaustive();
-  return ordered.slice(0, RESCHEDULE_OPTION_LIMIT).map((hour, index) => ({
-    startsAt: hour.startsAt,
-    precipitationChance: hour.precipitationChance,
-    apparentTemperature: hour.apparentTemperature,
-    isRecommended: index === 0,
-  }));
+  return options.filter((option) => toEpochMs(option.startsAt) > toEpochMs(now));
+}
+
+/** 시트를 연 채 지난 선택을 바꿀 다음 후보. 서버 후보가 모두 지났으면 null이다. */
+function findNextRescheduleOption(
+  briefing: Pick<WeatherReportBriefing, 'rescheduleOptions'> | null,
+  { todoId, now }: { todoId: number; now: Instant },
+): RescheduleOption | null {
+  const entry = briefing?.rescheduleOptions.find((candidate) => candidate.todoId === todoId);
+  return getUpcomingOptions(entry?.options ?? [], now)[0] ?? null;
 }
 
 export const WeatherReschedulePolicy = {
-  getAffectedTodos,
-  getRescheduleOptions,
+  getRescheduleTodos,
+  getUpcomingOptions,
+  findNextRescheduleOption,
   getMovedScheduleInput,
   getOriginalScheduleInput,
   getRescheduleTargets,

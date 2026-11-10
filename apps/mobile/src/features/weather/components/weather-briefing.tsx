@@ -104,6 +104,9 @@ export function WeatherBriefing() {
     ),
     { now, timeZone: deviceTimeZone },
   );
+  if (briefing == null) {
+    return <WeatherBriefing.Empty />;
+  }
 
   return (
     <WeatherBriefing.Contents
@@ -135,7 +138,6 @@ WeatherBriefing.Contents = function Contents({
   const view = toBriefingView(briefing, {
     hourly,
     now,
-    timeZone: dateFormat.timeZone,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
     formatTemperature: (celsius) => formatTemperature(celsius, unit),
@@ -447,7 +449,7 @@ WeatherBriefing.Error = function ErrorFallback({ reset }: QueryErrorFallbackProp
   );
 };
 
-/** 오래된 데이터이거나 위치 벽시계가 기기와 다르면 할 일과 날씨를 겹쳐 안내하지 않는다. */
+/** 오래된 데이터이거나 위치 벽시계가 기기와 다르거나 서버가 영향받는 할 일을 판단하지 못했으면 할 일과 날씨를 겹쳐 안내하지 않는다. */
 WeatherBriefing.Empty = function Empty() {
   return null;
 };

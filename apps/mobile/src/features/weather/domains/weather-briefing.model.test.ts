@@ -3,8 +3,10 @@ import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
+  createBriefingDto,
   createBriefingTodo,
   createHourlySeries,
+  createRescheduleOptionDto,
   createWeatherReport,
   createWeatherReportDto,
   createWeatherReportWithHours,
@@ -14,9 +16,20 @@ import { WeatherBriefingPolicy } from './weather-briefing.model';
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
 const CLOCK = { now: NOW, timeZone: 'Asia/Seoul' };
-const report = createWeatherReport({
-  hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]),
+const HOURLY = createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 30, 10, 10, 60]);
+const report = createWeatherReport({ hourly: HOURLY });
+/** 서버가 16:30(07:30Z) 할 일 1이 비와 겹친다고 보고 19시를 추천한다 */
+const RAIN_ON_TODO_1 = createBriefingDto({
+  reason: 'rain',
+  affectedTodoIds: [1],
+  rescheduleOptions: [
+    {
+      todoId: 1,
+      options: [createRescheduleOptionDto('2026-11-02T10:00:00.000Z', { isRecommended: true })],
+    },
+  ],
 });
+const rainyReport = createWeatherReport({ hourly: HOURLY, briefing: RAIN_ON_TODO_1 });
 
 const DRY_HOURS = range(9).map(() => ({ precipitationChance: 10 }));
 
@@ -44,64 +57,89 @@ describe('getWeatherBriefing', () => {
     expect(briefing).toEqual({ kind: 'noScheduledTodos' });
   });
 
-  it('할 일 하나가 비 오는 시간에 걸리면 그 할 일과 그 시간의 예보를 돌려준다', () => {
+  it('서버가 판단하지 못한 리포트(옛 서버·할 일 읽기 실패)면 앱이 다시 판단하지 않고 브리핑하지 않는다', () => {
     // Given
-    const walkTodo = createBriefingTodo();
+    const reportWithoutBriefing = createWeatherReport({ hourly: HOURLY, briefing: undefined });
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, [walkTodo], CLOCK);
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
+      reportWithoutBriefing,
+      [createBriefingTodo()],
+      CLOCK,
+    );
 
     // Then
-    expect(briefing.kind).toBe('rainy');
-    expect(briefing.kind === 'rainy' && briefing.todos).toEqual([
+    expect(briefing).toBeNull();
+  });
+
+  it('서버가 비와 겹친 할 일이 없다고 하면 예보상 비 시간에 할 일이 있어도 위험을 알리지 않는다', () => {
+    // When
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
+      report,
+      [createBriefingTodo()],
+      CLOCK,
+    );
+
+    // Then
+    expect(briefing?.kind).toBe('rainLater');
+  });
+
+  it('서버가 비와 겹친다고 고른 할 일을 그 시간의 예보·서버가 고른 옮길 시각 후보와 함께 돌려준다', () => {
+    // When
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
+      rainyReport,
+      [createBriefingTodo()],
+      CLOCK,
+    );
+
+    // Then
+    expect(briefing?.kind).toBe('rainy');
+    expect(briefing?.kind === 'rainy' && briefing.todos).toEqual([
       expect.objectContaining({
         todoId: 1,
         title: '산책',
         scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
         hour: expect.objectContaining({ precipitationChance: 70, precipitationType: 'RAIN' }),
+        rescheduleOptions: [
+          expect.objectContaining({ startsAt: '2026-11-02T10:00:00.000Z', isRecommended: true }),
+        ],
       }),
     ]);
   });
 
-  it('할 일 7개 중 비 오는 시간에 걸린 것만 고르고, 지난 할 일은 빼며 끝낸 할 일은 완료 표시로 남긴다', () => {
+  it('서버가 고른 할 일 중 오늘 목록에서 사라졌거나 이미 지난 할 일은 빼고 서버 순서를 지킨다', () => {
     // Given
-    // 14:30부터 1시간 간격 할 일 7개, 세 번째는 끝냈다
-    const todos = range(7).map((index) =>
-      createBriefingTodo({
-        id: index + 1,
-        scheduledAt: fromEpochMs(Date.parse('2026-11-02T05:30:00.000Z') + index * 60 * 60_000),
-        completed: index === 2,
-      }),
-    );
-
-    // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, todos, CLOCK);
-
-    // Then
-    expect(
-      briefing.kind === 'rainy' &&
-        briefing.todos.map(({ todoId, completed }) => ({ todoId, completed })),
-    ).toEqual([
-      { todoId: 3, completed: true },
-      { todoId: 4, completed: false },
-    ]);
-  });
-
-  it('비와 겹친 할 일을 끝내도 브리핑은 그대로 둔다', () => {
-    // Given
+    // 3·1은 남았고, 2는 14:30이라 지났고, 9는 목록에 없다
+    const serverReport = createWeatherReport({
+      hourly: HOURLY,
+      briefing: createBriefingDto({ reason: 'rain', affectedTodoIds: [3, 2, 1, 9] }),
+    });
     const todos = [
-      createBriefingTodo({
-        id: 1,
-        scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
-        completed: true,
-      }),
+      createBriefingTodo({ id: 1, scheduledAt: toInstant('2026-11-02T08:30:00.000Z') }),
+      createBriefingTodo({ id: 2, scheduledAt: toInstant('2026-11-02T05:30:00.000Z') }),
+      createBriefingTodo({ id: 3, scheduledAt: toInstant('2026-11-02T07:30:00.000Z') }),
     ];
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, todos, CLOCK);
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(serverReport, todos, CLOCK);
 
     // Then
-    expect(briefing.kind).toBe('rainy');
+    expect(briefing?.kind === 'rainy' && briefing.todos.map(({ todoId }) => todoId)).toEqual([
+      3, 1,
+    ]);
+  });
+
+  it('비와 겹친 할 일을 브리핑에서 끝내도 리포트를 다시 받기 전까지 카드는 그대로 두고 완료로 보인다', () => {
+    // Given
+    const todos = [createBriefingTodo({ id: 1, completed: true })];
+
+    // When
+    const briefing = WeatherBriefingPolicy.getWeatherBriefing(rainyReport, todos, CLOCK);
+
+    // Then
+    expect(briefing?.kind === 'rainy' && briefing.todos.map(({ completed }) => completed)).toEqual([
+      true,
+    ]);
   });
 
   it('할 일이 뇌우 시간에 걸리면 이어지는 뇌우 시간대와 함께 낙뢰를 알린다', () => {
@@ -112,13 +150,10 @@ describe('getWeatherBriefing', () => {
       precipitationChance: 90,
       precipitationType: 'RAIN',
     } as const;
-    const stormReport = createWeatherReportWithHours([
-      { precipitationChance: 10 },
-      thunder,
-      thunder,
-      thunder,
-      { precipitationChance: 10 },
-    ]);
+    const stormReport = createWeatherReportWithHours(
+      [{ precipitationChance: 10 }, thunder, thunder, thunder, { precipitationChance: 10 }],
+      { briefing: RAIN_ON_TODO_1 },
+    );
 
     // When
     const briefing = WeatherBriefingPolicy.getWeatherBriefing(
@@ -128,8 +163,8 @@ describe('getWeatherBriefing', () => {
     );
 
     // Then
-    expect(briefing.kind).toBe('stormy');
-    expect(briefing.kind === 'stormy' && briefing.range).toEqual({
+    expect(briefing?.kind).toBe('stormy');
+    expect(briefing?.kind === 'stormy' && briefing.range).toEqual({
       startsAt: toInstant('2026-11-02T07:00:00.000Z'),
       endsAt: toInstant('2026-11-02T10:00:00.000Z'),
     });
@@ -137,10 +172,13 @@ describe('getWeatherBriefing', () => {
 
   it('겹친 시간이 모두 눈이면 이동이 늦어진다고 알린다', () => {
     // Given
-    const snowReport = createWeatherReportWithHours([
-      { precipitationChance: 10 },
-      { condition: 'SNOW', precipitationChance: 90, precipitationType: 'SNOW' },
-    ]);
+    const snowReport = createWeatherReportWithHours(
+      [
+        { precipitationChance: 10 },
+        { condition: 'SNOW', precipitationChance: 90, precipitationType: 'SNOW' },
+      ],
+      { briefing: RAIN_ON_TODO_1 },
+    );
 
     // When
     const briefing = WeatherBriefingPolicy.getWeatherBriefing(
@@ -150,18 +188,21 @@ describe('getWeatherBriefing', () => {
     );
 
     // Then
-    expect(briefing.kind).toBe('snowy');
+    expect(briefing?.kind).toBe('snowy');
   });
 
-  it('할 일이 체감 33° 이상인 낮 시간에 걸리면 더위 시간대와 가장 높은 체감 온도를 알린다', () => {
+  it('서버가 더위와 겹친다고 고른 할 일이 있으면 더위 시간대와 가장 높은 체감 온도를 알린다', () => {
     // Given
     // 16~17시 체감 35°·39°, 16:30 할 일
-    const hotReport = createWeatherReportWithHours([
-      { apparentTemperature: 31 },
-      { apparentTemperature: 35 },
-      { apparentTemperature: 39 },
-      { apparentTemperature: 30 },
-    ]);
+    const hotReport = createWeatherReportWithHours(
+      [
+        { apparentTemperature: 31 },
+        { apparentTemperature: 35 },
+        { apparentTemperature: 39 },
+        { apparentTemperature: 30 },
+      ],
+      { briefing: createBriefingDto({ reason: 'heat', affectedTodoIds: [1] }) },
+    );
 
     // When
     const briefing = WeatherBriefingPolicy.getWeatherBriefing(
@@ -228,8 +269,8 @@ describe('getWeatherBriefing', () => {
     );
 
     // Then
-    expect(briefing.kind).toBe('dry');
-    expect(briefing.kind === 'dry' && briefing.todos.map((todo) => todo.todoId)).toEqual([1]);
+    expect(briefing?.kind).toBe('dry');
+    expect(briefing?.kind === 'dry' && briefing.todos.map((todo) => todo.todoId)).toEqual([1]);
   });
 
   it('오늘 남은 낮이 맑으면 가장 따뜻한 시간대를 야외 할 일 하기 좋은 때로 알린다', () => {
@@ -329,12 +370,12 @@ describe('toBriefingTodo', () => {
 
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, SEOUL);
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, [todo], CLOCK);
+    const forecastTodos = WeatherBriefingPolicy.getForecastTodos(report.hourly, [todo], NOW);
 
     // Then
     // 시작일이 아니라 오늘 16:30이라 지난 시각으로 버려지지 않는다
     expect(todo.scheduledAt).toBe('2026-11-02T07:30:00.000Z');
-    expect(briefing.kind === 'rainy').toBe(true);
+    expect(forecastTodos).toHaveLength(1);
   });
 
   it('같은 벽시계도 기기 시간대가 다르면 다른 순간으로 만든다', () => {
@@ -435,46 +476,6 @@ describe('getSuggestedStartAt', () => {
 
     // Then
     expect(startAt).toBe('2026-11-02T06:30:00.000Z');
-  });
-});
-
-function createHour(row: Parameters<typeof createWeatherReportWithHours>[0][number]) {
-  const [hour] = createWeatherReportWithHours([row]).hourly;
-  if (hour == null) {
-    throw new Error('예보 한 시간을 만들지 못했다');
-  }
-  return hour;
-}
-
-describe('isHot', () => {
-  it.each([
-    {
-      title: '낮 체감 33°C면 더운 시간이다',
-      isDaylight: true,
-      apparentTemperature: 33,
-      expected: true,
-    },
-    {
-      title: '낮 체감 32.9°C면 덥지 않다',
-      isDaylight: true,
-      apparentTemperature: 32.9,
-      expected: false,
-    },
-    {
-      title: '밤에는 체감 35°C여도 더위 안내를 하지 않는다',
-      isDaylight: false,
-      apparentTemperature: 35,
-      expected: false,
-    },
-  ])('$title', ({ isDaylight, apparentTemperature, expected }) => {
-    // Given
-    const hour = createHour({ isDaylight, apparentTemperature });
-
-    // When
-    const result = WeatherBriefingPolicy.isHot(hour);
-
-    // Then
-    expect(result).toBe(expected);
   });
 });
 

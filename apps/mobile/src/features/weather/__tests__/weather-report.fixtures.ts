@@ -1,4 +1,4 @@
-import type { WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
+import type { WeatherBriefing, WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { toWeatherReport } from '../apis/weather.mapper';
@@ -64,6 +64,25 @@ export function createAttributionDto(
   };
 }
 
+/** 서버가 판단한 브리핑. 기본은 날씨와 겹친 할 일이 없다. */
+export function createBriefingDto(overrides: Partial<WeatherBriefing> = {}): WeatherBriefing {
+  return { reason: null, affectedTodoIds: [], rescheduleOptions: [], ...overrides };
+}
+
+/** 서버가 고른 옮길 시각 후보 한 칸. 첫 후보가 추천이다. */
+export function createRescheduleOptionDto(
+  startsAt: string,
+  overrides: Partial<WeatherBriefing['rescheduleOptions'][number]['options'][number]> = {},
+) {
+  return {
+    startsAt,
+    precipitationChance: 10,
+    apparentTemperature: 9.1,
+    isRecommended: false,
+    ...overrides,
+  };
+}
+
 export function createWeatherReportDto(
   overrides: Partial<WeatherReportResponse> = {},
 ): WeatherReportResponse {
@@ -116,6 +135,7 @@ export function createWeatherReportDto(
     airQuality: { pm10: 32, pm25: 18, source: 'AIRKOREA' },
     attribution: createAttributionDto(),
     fetchedAt: '2026-11-02T06:20:00.000Z',
+    briefing: createBriefingDto(),
     ...overrides,
   };
 }
@@ -197,8 +217,11 @@ export function createHourlyForecasts(rows: readonly Partial<WeatherHourlyForeca
   );
 }
 
-export function createWeatherReportWithHours(rows: readonly Partial<WeatherHourlyForecast>[]) {
-  return createWeatherReport({ hourly: createHourlyForecasts(rows) });
+export function createWeatherReportWithHours(
+  rows: readonly Partial<WeatherHourlyForecast>[],
+  overrides: Partial<WeatherReportResponse> = {},
+) {
+  return createWeatherReport({ hourly: createHourlyForecasts(rows), ...overrides });
 }
 
 export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {

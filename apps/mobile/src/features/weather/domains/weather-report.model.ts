@@ -9,6 +9,7 @@ import {
   WEATHER_PRECIPITATION_TYPES,
   WEATHER_PRESSURE_TRENDS,
   WEATHER_PROVIDERS,
+  WEATHER_RESCHEDULE_REASONS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
@@ -150,6 +151,24 @@ const attributionSchema = z.object({
 });
 export type AttributionInfo = z.infer<typeof attributionSchema>;
 
+const rescheduleOptionSchema = z.object({
+  startsAt: instantSchema,
+  precipitationChance: z.number(),
+  apparentTemperature: z.number(),
+  isRecommended: z.boolean(),
+});
+export type RescheduleOption = z.infer<typeof rescheduleOptionSchema>;
+
+/** 서버가 판단한 영향받는 할 일(시각 순)과 할 일별 옮길 시각 후보(첫 항목이 추천). reason이 null이면 영향받는 할 일이 없다 */
+const weatherReportBriefingSchema = z.object({
+  reason: z.enum(WEATHER_RESCHEDULE_REASONS).nullable(),
+  affectedTodoIds: z.array(z.int()),
+  rescheduleOptions: z.array(
+    z.object({ todoId: z.int(), options: z.array(rescheduleOptionSchema) }),
+  ),
+});
+export type WeatherReportBriefing = z.infer<typeof weatherReportBriefingSchema>;
+
 export const weatherReportSchema = z.object({
   location: registeredLocationSchema,
   current: currentWeatherSchema,
@@ -160,6 +179,8 @@ export const weatherReportSchema = z.object({
   airQuality: airQualitySchema.nullable(),
   attribution: attributionSchema,
   fetchedAt: instantSchema,
+  // 옛 서버이거나 서버가 오늘 할 일을 읽지 못하면 null이다
+  briefing: weatherReportBriefingSchema.nullable(),
 });
 export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
