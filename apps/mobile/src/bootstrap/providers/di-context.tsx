@@ -187,6 +187,7 @@ export {
   useLogger,
   /** @public */
   useSyncStorage,
+  useSystemShare,
 } from '@src/shared/di/shared-di-context';
 
 function useDI(): DIContainer {
