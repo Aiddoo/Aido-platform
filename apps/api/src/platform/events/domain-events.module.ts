@@ -6,16 +6,14 @@ import {
   DomainEventPublisherPort,
 } from "#api/shared/application/ports/index";
 
-import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher.js";
 import { eventSubscriptionCatalogProvider } from "./event-subscription.catalog.js";
 import { FanOutDomainEventPublisher } from "./fan-out-domain-event.publisher.js";
 
-// 구독은 slice module이 provideEventSubscriptions로 선언하고, 옛 @OnEvent 구독과 EventEmitterModule.forRoot()는 app.module이 배선한다
+// 구독은 slice module이 provideEventSubscriptions로 선언하고, after-commit 전달 채널(EventEmitterModule.forRoot())은 app.module이 배선한다
 @Global()
 @Module({
   imports: [DiscoveryModule],
   providers: [
-    EventEmitterDomainEventPublisher,
     eventSubscriptionCatalogProvider,
     FanOutDomainEventPublisher,
     { provide: DOMAIN_EVENT_PUBLISHER, useExisting: FanOutDomainEventPublisher },

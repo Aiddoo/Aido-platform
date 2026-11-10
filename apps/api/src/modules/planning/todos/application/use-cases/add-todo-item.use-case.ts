@@ -5,7 +5,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
-  type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -16,6 +15,7 @@ import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface AddTodoItemInput {
@@ -37,7 +37,7 @@ interface AddTodoItemDependencies {
   readonly mutationLock: MutationLockPort;
   readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
+  readonly completionEffects: Pick<ApplyTodoCompletionEffectsUseCase, "execute">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -84,7 +84,7 @@ export class AddTodoItemUseCase {
 
     this.#dependencies.logger.log({ event: TodoLogEvent.ITEM_ADDED, todoId, userId });
 
-    await this.#dependencies.eventPublisher.publishAll(events);
+    await this.#dependencies.completionEffects.execute(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

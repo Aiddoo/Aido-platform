@@ -7,7 +7,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
@@ -43,7 +42,6 @@ interface DeleteTodoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
-  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -61,7 +59,7 @@ export class DeleteTodoUseCase {
       return;
     }
 
-    const events = await this.#dependencies.unitOfWork.run(async () => {
+    await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
         MutationLockKeys.todoCategory(userId),
         MutationLockKeys.todo(id),
@@ -77,12 +75,8 @@ export class DeleteTodoUseCase {
       await this.#dependencies.todoRepository.delete(id);
 
       todo.markDeleted();
-      const events = todo.pullDomainEvents();
-      await this.#dependencies.applyTodoEvents.execute(events);
-      return events;
+      await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
-
-    await this.#dependencies.eventPublisher.publishAll(events);
 
     await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);

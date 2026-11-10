@@ -8,8 +8,6 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
 import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 describe("할 일 부분 수정", () => {
@@ -54,7 +52,7 @@ describe("할 일 부분 수정", () => {
       timezone: "Asia/Seoul",
       data: { scheduledTime: "10:00" },
     });
-    fixture.eventPublisher.events.length = 0;
+    fixture.todoReminder.scheduled.length = 0;
     // When
     const result = await useCase.execute({
       id: 1,
@@ -66,9 +64,11 @@ describe("할 일 부분 수정", () => {
     const instant = new Date("2026-05-20T14:00:00.000Z");
     expect(result).toMatchObject({ startDate: "2026-05-20", scheduledLocalTime: "10:00" });
     expect(fixture.records.get(1)).toMatchObject({ scheduledTime: instant, isAllDay: false });
-    expect(fixture.eventPublisher.events).toContainEqual(
-      new TodoRescheduledEvent(1, fixture.userId, instant),
-    );
+    expect(fixture.todoReminder.scheduled).toContainEqual({
+      todoId: 1,
+      scheduledTime: instant,
+      userId: fixture.userId,
+    });
   });
   it("PATCH로 완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림을 다시 잡는다", async () => {
     // Given
@@ -78,7 +78,7 @@ describe("할 일 부분 수정", () => {
       timezone: "Asia/Seoul",
       data: { scheduledTime: "10:00", completed: true },
     });
-    fixture.eventPublisher.events.length = 0;
+    fixture.todoReminder.scheduled.length = 0;
     // When
     await useCase.execute({
       id: 1,
@@ -92,9 +92,11 @@ describe("할 일 부분 수정", () => {
       scheduledLocalTime: "10:00",
       scheduledTime: instant,
     });
-    expect(fixture.eventPublisher.events).toContainEqual(
-      new TodoRescheduledEvent(1, fixture.userId, instant),
-    );
+    expect(fixture.todoReminder.scheduled).toContainEqual({
+      todoId: 1,
+      scheduledTime: instant,
+      userId: fixture.userId,
+    });
   });
   it("시간만 수정하면 저장된 날짜와 사용자 timezone으로 변환한다", async () => {
     // Given / When
@@ -120,9 +122,11 @@ describe("할 일 부분 수정", () => {
       data: { scheduledTime: "12:30" },
     });
     // Then
-    expect(fixture.eventPublisher.events).toContainEqual(
-      new TodoRescheduledEvent(1, fixture.userId, new Date("2026-05-15T03:30:00.000Z")),
-    );
+    expect(fixture.todoReminder.scheduled).toContainEqual({
+      todoId: 1,
+      scheduledTime: new Date("2026-05-15T03:30:00.000Z"),
+      userId: fixture.userId,
+    });
   });
 
   it("시각이 그대로면 재예약 이벤트를 내지 않는다", async () => {
@@ -134,9 +138,10 @@ describe("할 일 부분 수정", () => {
       data: { title: "제목만" },
     });
     // Then
-    expect(
-      fixture.eventPublisher.events.filter((event) => event instanceof TodoRescheduledEvent),
-    ).toEqual([]);
+    expect(fixture.todoReminder.scheduled).toEqual([]);
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).not.toContain(
+      "planning.todo.rescheduled",
+    );
   });
 
   it("명시한 null은 시간을 지워 종일로 맞추고 생략한 endDate와 false 값은 보존한다", async () => {
@@ -188,9 +193,9 @@ describe("할 일 부분 수정", () => {
     expect(completed.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(repeated.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(uncompleted).toMatchObject({ completed: false, completedAt: null });
-    expect(fixture.eventPublisher.events.every((event) => event instanceof TodoUpdatedEvent)).toBe(
-      true,
-    );
+    expect(
+      new Set(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)),
+    ).toEqual(new Set(["planning.todo.updated"]));
   });
   it("일반 PATCH는 카테고리 소유권만 확인하고 전용 이동의 활성 한도를 적용하지 않는다", async () => {
     // Given
@@ -241,32 +246,5 @@ describe("할 일 부분 수정", () => {
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
-  });
-
-  it("이벤트 발행이 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
-    // Given
-    const entered = Promise.withResolvers<void>();
-    const publication = Promise.withResolvers<void>();
-    fixture.eventPublisher.publishAll = async () => {
-      entered.resolve();
-      await publication.promise;
-    };
-    const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
-    // When
-    const execution = useCase.execute({
-      id: 1,
-      userId: fixture.userId,
-      timezone: "UTC",
-      data: { title: "새 제목" },
-    });
-    try {
-      await Promise.race([entered.promise, execution]);
-      // Then
-      expect(responseRead).not.toHaveBeenCalled();
-    } finally {
-      publication.resolve();
-      await execution;
-    }
-    expect(responseRead).toHaveBeenCalledOnce();
   });
 });

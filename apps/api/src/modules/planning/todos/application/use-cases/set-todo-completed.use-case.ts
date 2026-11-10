@@ -6,7 +6,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
@@ -15,6 +14,7 @@ import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface ToggleTodoCompleteInput {
@@ -33,7 +33,7 @@ interface ToggleTodoCompleteDependencies {
   readonly mutationLock: MutationLockPort;
   readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
+  readonly completionEffects: Pick<ApplyTodoCompletionEffectsUseCase, "execute">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -75,7 +75,7 @@ export class SetTodoCompletedUseCase {
       return events;
     });
 
-    await this.#dependencies.eventPublisher.publishAll(events);
+    await this.#dependencies.completionEffects.execute(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

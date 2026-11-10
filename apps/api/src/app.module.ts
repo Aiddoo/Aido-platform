@@ -78,8 +78,8 @@ import { AppService } from "./app.service.js";
     }),
     RequestClientModule,
     EncryptionModule,
-    // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
-    // 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
+    // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), after-commit 구독의 커밋 뒤 전달은 EventEmitter2.
+    // 와일드카드 off(기본값): 구독 이름 채널만 쓴다.
     EventEmitterModule.forRoot(),
     DomainEventsModule,
     RedisModule.forRoot(),

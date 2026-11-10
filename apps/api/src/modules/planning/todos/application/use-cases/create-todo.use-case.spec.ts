@@ -8,10 +8,8 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
 import { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
-import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
 import { StagedTodoCreatorAdapter } from "../../infrastructure/adapters/staged-todo-creator.adapter.js";
 import { CreateTodoUseCase, type CreateTodoInput } from "./create-todo.use-case.js";
 import { StageTodoCreationUseCase } from "./stage-todo-creation.use-case.js";
@@ -93,8 +91,8 @@ describe("할 일 생성", () => {
       startDate: "2026-05-16",
     });
     expect(result.items.map((item) => item.title)).toEqual(["첫 항목", "둘째 항목"]);
-    expect(fixture.eventPublisher.events).toEqual([
-      new TodoCreatedEvent(result.id, fixture.userId, null),
+    expect(fixture.eventPublisher.publishedEvents.map((event) => event.toPayload())).toEqual([
+      { todoId: result.id, userId: fixture.userId, occurredAt: expect.any(String) },
     ]);
     expect(fixture.todoCache.categoryUsers.has(fixture.userId)).toBe(false);
     expect(series).toBeNull();
@@ -118,7 +116,7 @@ describe("할 일 생성", () => {
       errorCode: ErrorCode.SYS_0002,
     });
     expect([...fixture.records.values()]).toEqual(before);
-    expect(fixture.eventPublisher.events).toEqual([]);
+    expect(fixture.eventPublisher.publishedEvents).toEqual([]);
   });
   it("활성 한도가 찬 카테고리는 생성을 거부한다", async () => {
     // Given
@@ -137,21 +135,15 @@ describe("할 일 생성", () => {
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.size).toBe(TODO_LIMITS.MAX_PER_CATEGORY);
   });
-  it.each(["cache", "publisher"])(
+  it.each(["cache"])(
     "단독 생성의 %s 실패는 커밋된 행을 두고 원래 오류를 전달한다",
     async (boundary) => {
       // Given
       fixture.records.clear();
       const failure = new Error(`${boundary} failure`);
-      if (boundary === "cache") {
-        fixture.todoCache.invalidateTodoCategories = async () => {
-          throw failure;
-        };
-      } else {
-        fixture.eventPublisher.publishAll = async () => {
-          throw failure;
-        };
-      }
+      fixture.todoCache.invalidateTodoCategories = async () => {
+        throw failure;
+      };
       // When / Then
       await expect(
         useCase.execute({
@@ -376,8 +368,13 @@ describe("할 일 생성", () => {
       expect(fixture.todoReminder.scheduled.map((reminder) => reminder.todoId)).toEqual(
         todos.map((todo) => todo.id),
       );
-      expect(fixture.eventPublisher.events).toEqual([
-        new TodoOccurrencesCreatedEvent(series?.id ?? "", fixture.userId, 3),
+      expect(
+        fixture.eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
+      ).toEqual([
+        [
+          "planning.todo-series.occurrences-created",
+          { seriesId: series?.id, userId: fixture.userId, occurredAt: expect.any(String) },
+        ],
       ]);
     });
 

@@ -6,7 +6,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
@@ -42,7 +41,6 @@ interface UpdateTodoScheduleDependencies {
   readonly clock: ClockPort;
   readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -57,7 +55,7 @@ export class UpdateTodoScheduleUseCase {
     const { id, userId, schedule } = input;
     const timezone = await this.#dependencies.timezoneResolver.execute(userId, input.timezone);
 
-    const events = await this.#dependencies.unitOfWork.run(async () => {
+    await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {
@@ -75,12 +73,10 @@ export class UpdateTodoScheduleUseCase {
         this.#dependencies.clock.now(),
       );
       if (!rescheduled) {
-        return [];
+        return;
       }
       await this.#dependencies.todoRepository.updateSchedule(id, todo.schedule.toPrimitives());
-      const events = todo.pullDomainEvents();
-      await this.#dependencies.applyTodoEvents.execute(events);
-      return events;
+      await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 
     this.#dependencies.logger.log({
@@ -88,8 +84,6 @@ export class UpdateTodoScheduleUseCase {
       todoId: id,
       userId,
     });
-
-    await this.#dependencies.eventPublisher.publishAll(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

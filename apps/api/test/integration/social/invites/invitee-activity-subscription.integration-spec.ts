@@ -3,7 +3,6 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { count, eq } from "drizzle-orm";
 import { PgBoss } from "pg-boss";
 
-import { TodoToggledEvent } from "#api/modules/planning/todos/planning-todos.public";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
 import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
@@ -16,7 +15,6 @@ import { INVITEE_ACTIVITY_QUEUE } from "#api/modules/social/invites/infrastructu
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, user } from "#api/platform/database/schema/index";
-import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
 import { EventSubscriptionCatalog } from "#api/platform/events/event-subscription.catalog";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
@@ -84,7 +82,6 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
     // 커밋 뒤 in-process 전달을 받을 리스너가 하나도 없는 emitter다
     eventEmitter = new EventEmitter2();
     publisher = new FanOutDomainEventPublisher(
-      new EventEmitterDomainEventPublisher(eventEmitter),
       new EventSubscriptionCatalog([INVITEE_ACTIVITY_SUBSCRIPTION]),
       jobQueue,
       context.module.get(AfterCommitTaskRegistryPort),
@@ -192,17 +189,5 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
 
     // Then
     expect(await queuedPayloadsFor(inviteeId)).toEqual([]);
-  });
-
-  it("옛 in-process 완료 이벤트만으로는 활동일을 기록하지 않아 두 경로가 함께 세지 않는다", async () => {
-    // Given
-    const inviteeId = await redeemedInviteeId("OLDINVTR", "OLDINVTE");
-    const appEmitter = context.module.get(EventEmitter2);
-
-    // When
-    await appEmitter.emitAsync("todo.toggled", new TodoToggledEvent(1, inviteeId, true, "UTC"));
-
-    // Then
-    expect(await activeDaysOf(inviteeId)).toBe(0);
   });
 });

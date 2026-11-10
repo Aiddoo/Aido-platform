@@ -139,7 +139,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       mutationLock,
       logger: silentLogger,
     });
-    const eventPublisher = { publishAll: async () => undefined, publish: async () => undefined };
+    const eventPublisher = { publish: async () => undefined };
     updateSchedule = new UpdateTodoScheduleUseCase({
       todoRepository,
       todoReadRepository: new DrizzleTodoReadRepository(txHost),
@@ -153,7 +153,6 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         eventPublisher,
         clock: new DateClock(),
       }),
-      eventPublisher,
       logger: silentLogger,
     });
     const publisher = new PublishNotificationUseCase({

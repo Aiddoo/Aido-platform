@@ -11,7 +11,6 @@ import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-case
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
 import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
-import { TodoCreatedEvent } from "#api/modules/planning/shared/domain/todo-created.event";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -388,7 +387,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     const categoryId = requireRecord(category).id;
-    const publishAll = vi.spyOn(context.module.get(DomainEventPublisherPort), "publishAll");
+    const publish = vi.spyOn(context.module.get(DomainEventPublisherPort), "publish");
     const startDate = new Date("2027-01-08T00:00:00.000Z");
 
     // When
@@ -440,10 +439,10 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
         UserId.reconstitute(userId),
       ),
     ).not.toBeNull();
-    const events = publishAll.mock.calls
+    const created = publish.mock.calls
       .flatMap(([published]) => published)
-      .filter((event) => event instanceof TodoCreatedEvent);
-    expect(events).toHaveLength(1);
-    expect(events.at(0)?.todoId).toBe(todos.at(0)?.id);
+      .filter((event) => event.eventName === "planning.todo.created")
+      .map((event) => event.toPayload());
+    expect(created).toEqual([expect.objectContaining({ todoId: todos.at(0)?.id })]);
   });
 });

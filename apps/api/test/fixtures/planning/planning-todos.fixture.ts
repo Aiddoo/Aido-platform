@@ -12,6 +12,7 @@ import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-tod
 import { InMemoryTodoSeriesRepository } from "#test/doubles/planning/in-memory-todo-series.repository";
 import { InMemoryTodoRepository } from "#test/doubles/planning/in-memory-todo.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
+import { RecordingTodoCompletionEffects } from "#test/doubles/planning/recording-todo-completion-effects";
 import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { createStubCategoryOwnership } from "#test/doubles/planning/stub-category-ownership";
 import { StubTodoOwnerTimezone } from "#test/doubles/planning/stub-todo-owner-timezone";
@@ -61,11 +62,8 @@ export function createPlanningTodoFixture(
     todoReminder,
     applyTodoEvents,
   });
-  const seriesEffects = new PublishTodoSeriesEditUseCase({
-    todoCache,
-    eventPublisher,
-    logger,
-  });
+  const seriesEffects = new PublishTodoSeriesEditUseCase({ todoCache, logger });
+  const completionEffects = new RecordingTodoCompletionEffects();
   const mutationLock = new RecordingMutationLock();
   const categoryOwnership = createStubCategoryOwnership(categories, categoryOwners);
   const unitOfWork = new ImmediateUnitOfWork();
@@ -106,6 +104,7 @@ export function createPlanningTodoFixture(
     occurrenceMaterializer,
     todoCache,
     eventPublisher,
+    completionEffects,
     mutationLock,
     categoryOwnership,
     unitOfWork,

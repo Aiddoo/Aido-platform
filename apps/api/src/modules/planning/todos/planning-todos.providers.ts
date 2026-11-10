@@ -3,7 +3,6 @@ import type { Provider } from "@nestjs/common";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
@@ -31,6 +30,7 @@ import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-sch
 import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js";
 import { AddTodoItemUseCase } from "./application/use-cases/add-todo-item.use-case.js";
+import { ApplyTodoCompletionEffectsUseCase } from "./application/use-cases/apply-todo-completion-effects.use-case.js";
 import { ApplyTodoEventsUseCase } from "./application/use-cases/apply-todo-events.use-case.js";
 import { ChangeTodoCategoryUseCase } from "./application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "./application/use-cases/create-todo.use-case.js";
@@ -60,7 +60,6 @@ import { StagedTodoCreatorAdapter } from "./infrastructure/adapters/staged-todo-
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
-import { TodoCompletionEffectsEventHandler } from "./infrastructure/event-handlers/todo-completion-effects.event-handler.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
 import { DrizzleTodoEngagementCounterAdapter } from "./infrastructure/persistence/drizzle-todo-engagement-counter.adapter.js";
 
@@ -104,7 +103,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     todoCache: TodoCachePort,
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(DeleteTodoUseCase),
   }),
   provideUseCase(UpdateTodoUseCase, {
@@ -115,7 +113,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
     categoryOwnership: CategoryOwnershipPort,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(UpdateTodoUseCase),
   }),
   provideUseCase(EditTodoUseCase, {
@@ -128,6 +125,13 @@ export const PLANNING_TODOS_PROVIDERS = [
     timezoneResolver: ResolveTodoTimezoneUseCase,
     applyTodoEvents: ApplyTodoEventsUseCase,
   }),
+  provideUseCase(ApplyTodoCompletionEffectsUseCase, {
+    todoReadRepository: TodoReadRepositoryPort,
+    friendPort: FriendPort,
+    todoNotification: TodoNotificationPort,
+    streakPort: StreakPort,
+    logger: loggerFor(ApplyTodoCompletionEffectsUseCase),
+  }),
   provideUseCase(AddTodoItemUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
@@ -135,7 +139,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
     logger: loggerFor(AddTodoItemUseCase),
   }),
   provideUseCase(ChangeTodoCategoryUseCase, {
@@ -146,7 +150,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
     categoryOwnership: CategoryOwnershipPort,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(ChangeTodoCategoryUseCase),
   }),
   provideUseCase(DeleteTodoItemUseCase, {
@@ -177,7 +180,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
     logger: loggerFor(SetTodoCompletedUseCase),
   }),
   provideUseCase(UpdateTodoItemUseCase, {
@@ -196,7 +199,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
     timezoneResolver: ResolveTodoTimezoneUseCase,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(UpdateTodoScheduleUseCase),
   }),
   provideUseCase(UpdateTodoTitleUseCase, {
@@ -206,7 +208,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(UpdateTodoTitleUseCase),
   }),
   provideUseCase(UpdateTodoVisibilityUseCase, {
@@ -216,7 +217,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(UpdateTodoVisibilityUseCase),
   }),
   provideUseCase(RebaseTodoTimezoneUseCase, {
@@ -248,5 +248,4 @@ export const PLANNING_TODOS_PROVIDERS = [
     seriesCatchUp: CatchUpTodoSeriesUseCase,
   }),
   TodoTimezoneRebaseProcessor,
-  TodoCompletionEffectsEventHandler,
 ] satisfies Provider[];

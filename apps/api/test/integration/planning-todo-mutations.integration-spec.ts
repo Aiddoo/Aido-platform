@@ -1,12 +1,13 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { DAILY_COMPLETION_CACHE_SUBSCRIPTIONS } from "#api/modules/insights/daily-completions/infrastructure/event-handlers/daily-completion-cache.event-handler";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
@@ -213,7 +214,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("동일한 완료 요청 두 개는 모두 응답하되 실제 완료 이벤트는 한 번 발행한다", async () => {
     // Given
     const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-    const publishAll = vi.spyOn(publisher, "publishAll");
+    const publish = vi.spyOn(publisher, "publish");
     const toggle = context.module.get(SetTodoCompletedUseCase);
 
     // When
@@ -237,9 +238,9 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     // Then
     expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
     expect(
-      publishAll.mock.calls
+      publish.mock.calls
         .flatMap(([events]) => events)
-        .filter((event) => event instanceof TodoToggledEvent),
+        .filter((event) => event.eventName === "planning.todo.completed"),
     ).toHaveLength(1);
     expect(
       await client.query.todo.findFirst({
@@ -490,6 +491,26 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   });
 
   describe("커밋 후 생성 포트", () => {
+    // 커밋 뒤 in-process 전달은 구독 이름 채널로 가므로 그 채널에 도착한 것만 커밋된 이벤트다
+    function recordCommittedOccurrencesCreated(): { readonly delivered: unknown[] } {
+      const channel = DAILY_COMPLETION_CACHE_SUBSCRIPTIONS.find(
+        ({ eventName }) => eventName === "planning.todo-series.occurrences-created",
+      )?.name;
+      if (channel == null) {
+        throw new Error("회차 생성 구독이 없습니다.");
+      }
+      const delivered: unknown[] = [];
+      const emitter = context.module.get(EventEmitter2);
+      const listener = (payload: unknown) => {
+        delivered.push(payload);
+      };
+      emitter.on(channel, listener);
+      onTestFinished(() => {
+        emitter.off(channel, listener);
+      });
+      return { delivered };
+    }
+
     function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
       const creator = context.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
       const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
@@ -512,28 +533,26 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     it("바깥 트랜잭션이 롤백되면 할 일도 생성 이벤트도 남지 않는다", async () => {
       // Given
-      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-      const publishAll = vi.spyOn(publisher, "publishAll");
+      const { delivered } = recordCommittedOccurrencesCreated();
       const failure = new Error("바깥 작업 실패");
       // When
       const outcome = stageInsideUnitOfWork(() => Promise.reject(failure));
       // Then
       await expect(outcome).rejects.toBe(failure);
-      expect(publishAll).not.toHaveBeenCalled();
+      expect(delivered).toEqual([]);
       expect(await client.$count(todo, eq(todo.title, "포트 반복"))).toBe(0);
     });
 
     it("커밋에 성공하면 그 뒤에 규칙당 생성 이벤트 하나를 낸다", async () => {
       // Given
-      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-      const publishAll = vi.spyOn(publisher, "publishAll");
+      const { delivered } = recordCommittedOccurrencesCreated();
       // When
       const staged = await stageInsideUnitOfWork(async () => {
-        expect(publishAll).not.toHaveBeenCalled();
+        expect(delivered).toEqual([]);
       });
       // Then
       expect(staged.todos).toHaveLength(2);
-      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(1);
+      expect(delivered).toEqual([expect.objectContaining({ userId })]);
       expect(staged.todos.every((created) => !created.isAllDay)).toBe(true);
     });
   });

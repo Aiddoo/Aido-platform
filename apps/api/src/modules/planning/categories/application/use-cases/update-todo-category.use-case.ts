@@ -51,7 +51,7 @@ export class UpdateTodoCategoryUseCase {
 
   async execute(input: UpdateTodoCategoryInput): Promise<TodoCategory> {
     const { id, userId, data } = input;
-    const { updated, events } = await this.#dependencies.unitOfWork.run(async () => {
+    const updated = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
       const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
       if (category == null) {
@@ -75,7 +75,7 @@ export class UpdateTodoCategoryUseCase {
 
       const now = this.#dependencies.clock.now();
       if (!category.updateDetails(data, now)) {
-        return { updated: category, events: [] };
+        return category;
       }
       const updated = await this.#dependencies.repository.update(id, {
         name: data.name == null ? undefined : category.name.value,
@@ -90,11 +90,10 @@ export class UpdateTodoCategoryUseCase {
           userId,
         }),
       ]);
-      return { updated, events: category.pullDomainEvents() };
+      return updated;
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    await this.#dependencies.eventPublisher.publishAll(events);
     this.#dependencies.logger.debug({
       event: TodoCategoryLogEvent.UPDATED,
       userId,

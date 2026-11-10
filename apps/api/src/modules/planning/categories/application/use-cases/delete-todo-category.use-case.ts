@@ -13,7 +13,6 @@ import {
 } from "#api/shared/application/ports/index";
 
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
-import { TodoCategoryDeletedEvent } from "../../domain/todo-category-deleted.event.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
@@ -118,9 +117,6 @@ export class DeleteTodoCategoryUseCase {
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    await this.#dependencies.eventPublisher.publishAll([
-      new TodoCategoryDeletedEvent(userId, categoryId),
-    ]);
     this.#dependencies.logger.debug({
       event: TodoCategoryLogEvent.DELETED,
       userId,

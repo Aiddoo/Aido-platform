@@ -77,11 +77,10 @@ describe("카테고리 수정", () => {
     await expect(update).rejects.toMatchObject(error);
     expect(repository.updates).toEqual([]);
     expect(cache.invalidatedUserIds).toEqual([]);
-    expect(eventPublisher.events).toEqual([]);
     expect(eventPublisher.publishedEvents).toEqual([]);
   });
 
-  it("수정한 이름과 색상을 저장하고 커밋 뒤에 캐시를 무효화하고 이벤트를 낸다", async () => {
+  it("수정한 이름과 색상을 저장하고 이벤트는 트랜잭션 안에서, 캐시 무효화는 커밋 뒤에 한다", async () => {
     // Given
     const insideCommit: { invalidated: number; events: number }[] = [];
     let cache: FakeTodoCategoryCache | null = null;
@@ -91,7 +90,7 @@ describe("카테고리 수정", () => {
         const result = await work();
         insideCommit.push({
           invalidated: cache?.invalidatedUserIds.length ?? 0,
-          events: eventPublisher?.events.length ?? 0,
+          events: eventPublisher?.publishedEvents.length ?? 0,
         });
         return result;
       }
@@ -108,13 +107,10 @@ describe("카테고리 수정", () => {
     });
 
     // Then
-    expect(insideCommit).toEqual([{ invalidated: 0, events: 0 }]);
+    expect(insideCommit).toEqual([{ invalidated: 0, events: 1 }]);
     expect(result.toPrimitives()).toMatchObject({ name: "수정", color: "#FF0000", sortOrder: 0 });
     expect(context.repository.updates).toEqual([[1, { name: "수정", color: "#FF0000" }]]);
     expect(context.cache.invalidatedUserIds).toEqual([USER_ID]);
-    expect(context.eventPublisher.events).toEqual([
-      { eventName: "todo-category.updated", userId: USER_ID, categoryId: 1 },
-    ]);
     expect(
       context.eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
     ).toEqual([
@@ -151,7 +147,6 @@ describe("카테고리 수정", () => {
     // Then
     expect(result.toPrimitives()).toMatchObject({ name: "기존", updatedAt: TODO_FIXTURE_NOW });
     expect(repository.updates).toEqual([]);
-    expect(eventPublisher.events).toEqual([]);
     expect(eventPublisher.publishedEvents).toEqual([]);
   });
 });

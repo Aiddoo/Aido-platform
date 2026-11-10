@@ -1,8 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
-import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 
 export interface TodoSeriesEditEffect {
   readonly seriesId: string;
@@ -11,11 +9,10 @@ export interface TodoSeriesEditEffect {
 
 interface TodoSeriesEditEffectsDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-/** 범위 수정·삭제의 커밋 뒤 효과. 리마인더는 UoW 안에서 처리하고 이벤트는 규칙당 하나다. */
+/** 범위 수정·삭제의 커밋 뒤 캐시 정리. 리마인더·이벤트는 UoW 안에서 처리한다. */
 export class PublishTodoSeriesEditUseCase {
   readonly #dependencies: TodoSeriesEditEffectsDependencies;
 
@@ -24,11 +21,8 @@ export class PublishTodoSeriesEditUseCase {
   }
 
   async execute(effect: TodoSeriesEditEffect): Promise<void> {
-    const { todoCache, eventPublisher } = this.#dependencies;
+    const { todoCache } = this.#dependencies;
     await todoCache.invalidateTodoCategories(effect.userId);
     await todoCache.invalidateFriendTodos(effect.userId);
-    await eventPublisher.publishAll([
-      new TodoOccurrencesChangedEvent(effect.seriesId, effect.userId),
-    ]);
   }
 }

@@ -34,7 +34,7 @@ const SEOUL = "Asia/Seoul";
 // 리마인더가 아직 미래에 있도록 실제 시각보다 넉넉히 뒤 날짜를 쓴다
 const FUTURE_DATE = "2099-03-10";
 
-class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish" | "publishAll"> {
+class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish"> {
   readonly published: PublishedDomainEvent[] = [];
   failsOnPublish = false;
 
@@ -44,8 +44,6 @@ class SwitchablePublisher implements Pick<DomainEventPublisherPort, "publish" | 
     }
     this.published.push(...events);
   }
-
-  async publishAll(): Promise<void> {}
 }
 
 describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다 (실제 PostgreSQL·pg-boss)", () => {
@@ -98,7 +96,6 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
         ownerTimezone: { findTimezone: async () => SEOUL },
       }),
       todoCache,
-      eventPublisher: publisher,
       logger: new SilentLogger(),
     });
     setCompleted = new SetTodoCompletedUseCase({
@@ -109,7 +106,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       applyTodoEvents,
       mutationLock,
       todoCache,
-      eventPublisher: publisher,
+      completionEffects: { execute: async () => undefined },
       logger: new SilentLogger(),
     });
   });

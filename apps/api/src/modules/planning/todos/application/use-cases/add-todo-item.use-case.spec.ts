@@ -60,7 +60,7 @@ describe("하위 항목 추가", () => {
     // Then
     expect(result.completed).toBe(false);
     expect(fixture.records.get(1)?.completedAt).toBeNull();
-    expect(fixture.eventPublisher.events).toEqual([
+    expect(fixture.completionEffects.events).toEqual([
       expect.objectContaining({ todoId: 1, completed: false, timezone: TIMEZONE }),
     ]);
   });
@@ -73,7 +73,7 @@ describe("하위 항목 추가", () => {
       timezone: TIMEZONE,
     });
     // Then
-    expect(fixture.eventPublisher.events).toEqual([]);
+    expect(fixture.completionEffects.events).toEqual([]);
   });
   it("20개 항목 한도와 잘못된 제목은 상태를 바꾸지 않는다", async () => {
     // Given

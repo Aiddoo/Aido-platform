@@ -50,10 +50,7 @@ export function defineEventSubscription<TPayload extends object>(
  *
  * `publish`는 UoW 안에서 부른다. 구독마다 durable은 같은 트랜잭션의 큐 작업으로,
  * after-commit은 커밋 뒤 in-process 전달로 나뉜다.
- *
- * `publishAll`은 옮기지 않은 Context가 커밋 뒤 부르는 옛 경로다. 실패를 호출자에게 전파하지 않는다.
  */
 export abstract class DomainEventPublisherPort {
-  abstract publishAll(events: readonly DomainEvent[]): Promise<void>;
   abstract publish(events: readonly PublishedDomainEvent[]): Promise<void>;
 }

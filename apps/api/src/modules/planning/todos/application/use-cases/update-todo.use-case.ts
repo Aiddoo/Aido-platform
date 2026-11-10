@@ -8,7 +8,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
@@ -59,7 +58,6 @@ interface UpdateTodoDependencies {
   readonly clock: ClockPort;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -125,15 +123,13 @@ export class UpdateTodoUseCase {
   }
 
   async publish(applied: AppliedTodoUpdate): Promise<void> {
-    const { id, userId, hasCategoryChanged, events } = applied;
+    const { id, userId, hasCategoryChanged } = applied;
     this.#dependencies.logger.log({ event: TodoLogEvent.UPDATED, todoId: id, userId });
 
     if (hasCategoryChanged) {
       await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     }
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
-
-    await this.#dependencies.eventPublisher.publishAll(events);
   }
 }
 

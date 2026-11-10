@@ -20,7 +20,7 @@
 - 구독자 목록은 각 Context의 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`으로 선언한 정적 코드 레지스트리다. slice module의 `providers`에 `provideEventSubscriptions(...)`로 넣으면 `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 컴파일 시점에 정해져 타입 검사·테스트가 쉽다.
 - 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. 발행 쪽에서 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
 - `delivery: "durable"`은 `queue`가 필수다. 구독 큐의 worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다.
-- `delivery: "after-commit"`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 `@OnEvent(<구독 이름>)`이고, 옛 `publishAll`의 이벤트 이름 채널과 겹치지 않는다. 실패는 구독 단위로 로그만 남기고 커밋을 되돌리지 않는다.
+- `delivery: "after-commit"`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 `*.event-handler.ts`가 `onModuleInit`에서 구독 이름 채널에 리스너를 건다(insights `DailyCompletionCacheEventHandler`). 실패는 구독 단위로 로그만 남기고 커밋을 되돌리지 않는다.
 - publish는 구독자마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. 구독자별 idempotency key는 `<eventId>:<subscription>`이고 재시도·DLQ가 구독자마다 붙는다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
 - pg-boss 내장 `publish`/`subscribe`는 쓰지 않는다: 구독자 조회가 pg-boss 자체 풀(트랜잭션 밖)에서 돌고, 구독이 없으면 조용히 지나가고, 모든 구독 큐에 같은 job id가 가서 구독자별 결정적 id를 쓸 수 없다.
 - payload는 이벤트의 Zod schema(발행 Context `*.public.ts`)로 구독자가 다시 `parse`한다. payload에 Temporal 객체를 넣지 않고 `toIsoString`으로 직렬화한다.
@@ -126,4 +126,4 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(insights 캐시 무효화 등)을 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`)이다. 새 publisher(`FanOutDomainEventPublisher`)가 들어온 뒤에도 옛 `publishAll`(커밋 뒤 이벤트 이름 채널로 in-process 전달)·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의를 쓴다. 초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

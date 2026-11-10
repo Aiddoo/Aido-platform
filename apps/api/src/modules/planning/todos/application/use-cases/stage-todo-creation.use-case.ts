@@ -57,7 +57,7 @@ export class StageTodoCreationUseCase {
     return {
       todos: [response],
       series: null,
-      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo, created.events),
+      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo),
     };
   }
 

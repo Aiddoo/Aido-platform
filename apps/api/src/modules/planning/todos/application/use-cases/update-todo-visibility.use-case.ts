@@ -7,7 +7,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
-  type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
@@ -32,7 +31,6 @@ interface UpdateTodoVisibilityDependencies {
   readonly mutationLock: MutationLockPort;
   readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -46,7 +44,7 @@ export class UpdateTodoVisibilityUseCase {
   async execute(input: UpdateTodoVisibilityInput): Promise<TodoReadModel> {
     const { id, userId, visibility } = input;
 
-    const events = await this.#dependencies.unitOfWork.run(async () => {
+    await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {
@@ -54,12 +52,10 @@ export class UpdateTodoVisibilityUseCase {
       }
 
       if (!todo.changeVisibility(visibility, this.#dependencies.clock.now())) {
-        return [];
+        return;
       }
       await this.#dependencies.todoRepository.updateVisibility(id, todo.visibility);
-      const events = todo.pullDomainEvents();
-      await this.#dependencies.applyTodoEvents.execute(events);
-      return events;
+      await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 
     this.#dependencies.logger.log({
@@ -68,8 +64,6 @@ export class UpdateTodoVisibilityUseCase {
       userId,
       visibility,
     });
-
-    await this.#dependencies.eventPublisher.publishAll(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 

@@ -112,7 +112,6 @@ describe("카테고리 삭제", () => {
       todos.map((record) => record.categoryId),
     );
     expect(cache.invalidatedUserIds).toEqual([]);
-    expect(eventPublisher.events).toEqual([]);
     expect(eventPublisher.publishedEvents).toEqual([]);
   });
 
@@ -146,9 +145,6 @@ describe("카테고리 삭제", () => {
     expect(await repository.findByIdAndUserId(1, USER_ID)).toBeNull();
     expect([...todoRecords.values()].map((record) => record.categoryId)).toEqual([2, 2, 2]);
     expect(cache.invalidatedUserIds).toEqual([USER_ID]);
-    expect(eventPublisher.events).toEqual([
-      { eventName: "todo-category.deleted", userId: USER_ID, categoryId: 1 },
-    ]);
     expect(
       eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
     ).toEqual([

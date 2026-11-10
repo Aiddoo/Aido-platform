@@ -7,7 +7,6 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoVisibilityChangedEvent } from "../../../shared/domain/todo-visibility-changed.event.js";
 import { UpdateTodoVisibilityUseCase } from "./update-todo-visibility.use-case.js";
 
 describe("할 일 공개 범위 수정", () => {
@@ -38,7 +37,9 @@ describe("할 일 공개 범위 수정", () => {
     expect(
       (await fixture.todoCache.readFriendTodosFirstPage(fixture.userId, "-", "-", 20)).page,
     ).toBeUndefined();
-    expect(fixture.eventPublisher.events[0]).toBeInstanceOf(TodoVisibilityChangedEvent);
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.visibility-changed",
+    ]);
   });
   it("없는 할 일과 저장 후 사라진 응답은 기존 오류를 반환한다", async () => {
     // Given

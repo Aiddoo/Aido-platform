@@ -145,7 +145,6 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
           invalidateTodoCategories: async () => undefined,
           invalidateFriendTodos: async () => undefined,
         },
-        eventPublisher: { publishAll: async () => undefined, publish: async () => undefined },
         logger: new Logger("DormancyIntegration"),
       }),
       unitOfWork: fixture.uow,

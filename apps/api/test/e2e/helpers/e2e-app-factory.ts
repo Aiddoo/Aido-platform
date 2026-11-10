@@ -9,7 +9,6 @@ import type { INestApplication, ModuleMetadata } from "@nestjs/common";
  * - Native StandardSchemaValidationPipe
  * - PinoLogger 억제
  */
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import RedisMock from "ioredis-mock";
@@ -56,15 +55,10 @@ import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/applic
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/index";
-import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  DOMAIN_EVENT_PUBLISHER,
-  JOB_RUNTIME,
-  JobQueuePort,
-} from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, JobQueuePort } from "#api/shared/application/ports/index";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -85,7 +79,6 @@ import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
 import { TestDatabase } from "../../setup/test-database.js";
 import { E2eHelpers } from "./e2e-helpers.js";
 import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state.js";
-import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.js";
 
 /* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
@@ -166,7 +159,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     maxItems: 1000,
   });
   let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
-  let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
   let module: TestingModule | undefined;
   let app: INestApplication<App> | undefined;
   let applicationClosed = false;
@@ -275,16 +267,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .overrideProvider(SunTimeProviderPort)
     .useValue(fakeSunTimeProvider)
     .overrideProvider(PinoLogger)
-    .useClass(FakeLogger)
-    // 도메인 이벤트 리스너의 잔류 작업을 reset이 drain할 수 있도록 추적 퍼블리셔로 교체
-    .overrideProvider(DOMAIN_EVENT_PUBLISHER)
-    .useFactory({
-      inject: [EventEmitter2, FanOutDomainEventPublisher],
-      factory: (eventEmitter: EventEmitter2, fanOut: FanOutDomainEventPublisher) => {
-        trackingEventPublisher = new TrackingDomainEventPublisher(eventEmitter, fanOut);
-        return trackingEventPublisher;
-      },
-    });
+    .useClass(FakeLogger);
 
   if (!options?.withRealThrottler) {
     builder = builder.overrideProvider(ThrottlerGuard).useValue({ canActivate: async () => true });
@@ -321,10 +304,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 
     const helpers = new E2eHelpers(app, fakeEmailService);
     const reset = createE2eTestStateResetter({
-      drainBackgroundWork: async () => {
-        // commit 뒤 이벤트 작업이 정착한 후 DB를 정리한다. Push는 durable queue가 소유한다.
-        await trackingEventPublisher?.drainPendingEvents();
-      },
       cleanupDatabase: () => testDatabase.cleanup(),
       resetCache: () => cacheAdapter.reset(),
       flushRedis: () => redisMock.flushall(),

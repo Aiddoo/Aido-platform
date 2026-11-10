@@ -12,7 +12,6 @@ import { z } from "zod";
 import { databaseConfig } from "#api/platform/config/database.config";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
 import { EventSubscriptionCatalog } from "#api/platform/events/event-subscription.catalog";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
@@ -144,7 +143,6 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
     txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     eventEmitter = new EventEmitter2();
     publisher = new FanOutDomainEventPublisher(
-      new EventEmitterDomainEventPublisher(eventEmitter),
       new EventSubscriptionCatalog(SUBSCRIPTIONS),
       new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
       module.get(AfterCommitTaskRegistryPort),

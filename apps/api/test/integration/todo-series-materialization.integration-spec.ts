@@ -43,7 +43,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let userId: string;
   let categoryId: number;
-  let published: { seriesId: string; todoIds: number[] }[];
+  let published: string[];
 
   beforeAll(async () => {
     client = await database.start();
@@ -87,11 +87,8 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
     const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
-      publishOccurrences: async (series, occurrences) => {
-        published.push({
-          seriesId: series.id.value,
-          todoIds: occurrences.map((occurrence) => occurrence.todoId),
-        });
+      publishOccurrences: async (series) => {
+        published.push(series.id.value);
       },
     };
     const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
@@ -259,7 +256,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const result = await useCase({ batchSize: 2 }).execute();
     // Then
     expect(result.processedCount).toBe(ids.length);
-    expect(published.map((entry) => entry.seriesId)).toEqual(ids);
+    expect(published).toEqual(ids);
   });
 
   it("며칠 멈췄다 돌면 커서가 앞서 있어 지난 날 없이 밀린 만큼만 채운다", async () => {
@@ -280,7 +277,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     expect(first?.startDate.toISOString().slice(0, 10)).toBe("2026-11-05");
   });
 
-  it("이미 있는 회차는 건너뛰고 효과에는 새로 만든 행만 넘긴다", async () => {
+  it("이미 있는 회차는 건너뛰고 새로 만든 행만 센다", async () => {
     // Given
     const id = createEntityId();
     await seedSeries(id);
@@ -295,11 +292,11 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       })
       .returning();
     // When
-    await useCase().execute();
+    const result = await useCase().execute();
     // Then
     expect(await countOccurrences(id)).toBe(HORIZON_ROWS);
-    expect(published[0]?.todoIds).toHaveLength(HORIZON_ROWS - 1);
-    expect(published[0]?.todoIds).not.toContain(existing?.id);
+    expect(result.createdCount).toBe(HORIZON_ROWS - 1);
+    expect(await client.$count(todo, eq(todo.id, existing?.id ?? 0))).toBe(1);
   });
 
   it("회차는 체크리스트를 복사하고 규칙의 createdAt을 물려받는다", async () => {
