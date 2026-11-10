@@ -11,7 +11,6 @@ import type { INestApplication, ModuleMetadata } from "@nestjs/common";
  */
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
-import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 import { vi } from "vitest";
@@ -58,7 +57,6 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
-import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JOB_RUNTIME, JobQueuePort } from "#api/shared/application/ports/index";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
@@ -160,7 +158,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeJobRuntime = new FakeJobRuntime();
   const inMemoryJobQueue = new InMemoryJobQueue();
 
-  const redisMock = new RedisMock();
   const cacheAdapter = new InMemoryCacheStore({
     defaultTtlMs: 60_000,
     maxItems: 1000,
@@ -175,22 +172,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
       return;
     }
     applicationClosed = true;
-    const errors: unknown[] = [];
-    try {
-      await app?.close();
-    } catch (error) {
-      errors.push(error);
-    }
-
-    const results = await Promise.allSettled([
-      Promise.resolve().then(() => redisMock.disconnect()),
-    ]);
-    errors.push(
-      ...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
-    );
-    if (errors.length > 0) {
-      throw new AggregateError(errors, "Failed to close E2E app resources");
-    }
+    await app?.close();
   };
 
   const closeTestResources = async (): Promise<void> => {
@@ -213,8 +195,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   let builder = Test.createTestingModule({
     imports: [AppModule, ...(options?.imports ?? [])],
   })
-    .overrideProvider(REDIS_COMMAND_CLIENT)
-    .useValue(redisMock)
     .overrideProvider(JOB_RUNTIME)
     .useValue(fakeJobRuntime)
     // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
@@ -314,7 +294,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     const reset = createE2eTestStateResetter({
       cleanupDatabase: () => testDatabase.cleanup(),
       resetCache: () => cacheAdapter.reset(),
-      flushRedis: () => redisMock.flushall(),
       sharedResetters: [
         () => fakeEmailService.clear(),
         () => fakeOAuthTokenVerifierService.clear(),
