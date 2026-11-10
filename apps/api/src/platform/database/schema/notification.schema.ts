@@ -17,7 +17,7 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 
-import { instant } from "../columns/temporal-columns.js";
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   notificationActionType,
@@ -46,16 +46,18 @@ export const notification = pgTable(
     cheerId: integer(),
     copyFacts: jsonb(),
     copyKey: varchar({ length: 150 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     friendId: text(),
     id: serial().primaryKey(),
     isRead: boolean().default(false).notNull(),
     metadata: jsonb(),
-    notificationDate: date({ mode: "date" }),
+    notificationDate: plainDate(),
     nudgeId: integer(),
-    openedAt: timestamp({ precision: 3 }),
+    openedAt: instant(),
     purpose: notificationPurpose().default("TRANSACTIONAL").notNull(),
-    readAt: timestamp({ precision: 3 }),
+    readAt: instant(),
     reminderOccurrenceKey: varchar({ length: 16 }),
     title: varchar({ length: 200 }).notNull(),
     todoId: integer(),

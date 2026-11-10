@@ -19,11 +19,12 @@ import type { NotificationId } from "#api/modules/notification/inbox/domain/noti
 import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
 import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
 function compareListOrder(left: InboxNotification, right: InboxNotification): number {
-  return right.createdAt.getTime() - left.createdAt.getTime() || right.id - left.id;
+  return Temporal.Instant.compare(right.createdAt, left.createdAt) || right.id - left.id;
 }
 
 function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | undefined) {
@@ -32,10 +33,6 @@ function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | 
 
 function metadataField(row: InboxNotification, key: string): unknown {
   return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
-}
-
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 // Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
@@ -94,9 +91,9 @@ export class InMemoryNotificationRepository
       copyKey: row.copyKey,
       copyFacts: isPlainObject(row.copyFacts) ? row.copyFacts : null,
       isRead: row.isRead,
-      readAt: row.readAt == null ? null : instantFromDate(row.readAt),
-      openedAt: row.openedAt == null ? null : instantFromDate(row.openedAt),
-      createdAt: instantFromDate(row.createdAt),
+      readAt: row.readAt,
+      openedAt: row.openedAt,
+      createdAt: row.createdAt,
     });
   }
 
@@ -127,7 +124,7 @@ export class InMemoryNotificationRepository
     if (row == null || row.userId !== userId || row.isRead) {
       return false;
     }
-    this.#rows.set(id, { ...row, isRead, readAt: readAt == null ? null : instantToDate(readAt) });
+    this.#rows.set(id, { ...row, isRead, readAt });
     return true;
   }
 
@@ -140,8 +137,7 @@ export class InMemoryNotificationRepository
     if (row == null || row.userId !== userId || row.openedAt != null) {
       return false;
     }
-    const openedAt = instantToDate(now);
-    this.#rows.set(row.id, { ...row, openedAt, isRead: true, readAt: openedAt });
+    this.#rows.set(row.id, { ...row, openedAt: now, isRead: true, readAt: now });
     return true;
   }
 
@@ -154,7 +150,7 @@ export class InMemoryNotificationRepository
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     );
     for (const row of targets) {
-      this.#rows.set(row.id, { ...row, isRead: true, readAt: instantToDate(now) });
+      this.#rows.set(row.id, { ...row, isRead: true, readAt: now });
     }
     return { count: targets.length };
   }
@@ -201,7 +197,7 @@ export class InMemoryNotificationRepository
       (row) =>
         row.userId === query.userId &&
         row.type === query.type &&
-        row.createdAt.getTime() >= query.since.getTime() &&
+        Temporal.Instant.compare(row.createdAt, instantFromDate(query.since)) >= 0 &&
         (query.friendId == null || row.friendId === query.friendId) &&
         (query.todoId == null || row.todoId === query.todoId) &&
         (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
@@ -210,7 +206,7 @@ export class InMemoryNotificationRepository
   }
 
   async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
-    const notificationDate = toDateOnly(query.notificationDate);
+    const notificationDate = plainDateFromDate(query.notificationDate);
     return new Set(
       [...this.#rows.values()]
         .filter(
@@ -218,7 +214,7 @@ export class InMemoryNotificationRepository
             query.userIds.includes(row.userId) &&
             row.type === query.type &&
             row.notificationDate != null &&
-            toDateOnly(row.notificationDate) === notificationDate &&
+            row.notificationDate.equals(notificationDate) &&
             (query.friendId == null || row.friendId === query.friendId),
         )
         .map((row) => row.userId),
@@ -249,9 +245,10 @@ export class InMemoryNotificationRepository
       friendId: data.friendId ?? null,
       nudgeId: data.nudgeId ?? null,
       cheerId: data.cheerId ?? null,
-      notificationDate: data.notificationDate ?? null,
+      notificationDate:
+        data.notificationDate == null ? null : plainDateFromDate(data.notificationDate),
       metadata: data.metadata ?? null,
-      createdAt: this.#now(),
+      createdAt: instantFromDate(this.#now()),
       readAt: null,
       actionType: data.action?.type ?? "DEEP_LINK",
       actionUrl: data.action?.url ?? null,

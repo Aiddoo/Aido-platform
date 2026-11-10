@@ -202,7 +202,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       // Then
       expect(worker.sweptMinutes).toEqual(["7:56", "7:57", "7:58", "7:59", "8:00", "8:01"]);
       expect(await morningReminders()).toEqual([
-        { notificationDate: new Date("2026-11-10T00:00:00.000Z") },
+        { notificationDate: Temporal.PlainDate.from("2026-11-10") },
       ]);
       expect(await worker.cursor.findLastCompletedAt(TIMEZONE_REMINDER_SWEEP_CURSOR_KEY)).toEqual(
         BEFORE_MORNING.add({ minutes: 5 }),

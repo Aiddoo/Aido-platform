@@ -13,6 +13,7 @@ import {
   pushToken,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -81,7 +82,7 @@ describe("푸시 발송 퍼널 조회 (실제 PostgreSQL)", () => {
   });
 
   async function seed(input: SeededNotification): Promise<void> {
-    const createdAt = input.createdAt ?? IN_RANGE;
+    const createdAt = instantFromDate(input.createdAt ?? IN_RANGE);
     const [created] = await client
       .insert(notificationTable)
       .values({

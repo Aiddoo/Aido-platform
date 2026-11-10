@@ -23,7 +23,7 @@ function setup() {
       userId: "user-2",
       type: "FRIEND_COMPLETED",
       friendId: "friend-1",
-      notificationDate: NOTIFICATION_DATE,
+      notificationDate: Temporal.PlainDate.from("2026-03-09"),
     }),
   ]);
   const reader = new NotificationHistoryReader({

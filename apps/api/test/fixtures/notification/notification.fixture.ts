@@ -48,7 +48,7 @@ export function createInboxNotificationFixture(
     cheerId: null,
     notificationDate: null,
     metadata: null,
-    createdAt: new Date(NOTIFICATION_FIXTURE_NOW.epochMilliseconds),
+    createdAt: NOTIFICATION_FIXTURE_NOW,
     readAt: null,
     actionType: "DEEP_LINK",
     actionUrl: null,

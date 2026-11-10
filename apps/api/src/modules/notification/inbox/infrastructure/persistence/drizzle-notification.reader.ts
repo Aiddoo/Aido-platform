@@ -4,6 +4,8 @@ import { and, count, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationMilestone } from "../../../push/domain/notification-milestone.constants.js";
 import type {
@@ -81,7 +83,7 @@ export class DrizzleNotificationReader
       where: {
         userId: query.userId,
         type: query.type,
-        createdAt: { gte: query.since },
+        createdAt: { gte: instantFromDate(query.since) },
         ...(query.friendId != null && { friendId: query.friendId }),
         ...(query.todoId != null && { todoId: query.todoId }),
         ...(query.nudgeId != null && { nudgeId: query.nudgeId }),
@@ -99,7 +101,7 @@ export class DrizzleNotificationReader
         and(
           inArray(notification.userId, query.userIds),
           eq(notification.type, query.type),
-          eq(notification.notificationDate, query.notificationDate),
+          eq(notification.notificationDate, plainDateFromDate(query.notificationDate)),
           query.friendId != null ? eq(notification.friendId, query.friendId) : undefined,
         ),
       )

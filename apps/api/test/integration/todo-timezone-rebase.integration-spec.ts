@@ -521,7 +521,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
           todoId: id,
           metadata: { stage: "60min" },
           reminderOccurrenceKey: `${date}T10:00`,
-          createdAt: new Date(Date.now() - 30 * HOUR_MS),
+          createdAt: nowInstant().subtract({ milliseconds: 30 * HOUR_MS }),
         })
         .onConflictDoNothing()
         .returning({ id: notification.id });

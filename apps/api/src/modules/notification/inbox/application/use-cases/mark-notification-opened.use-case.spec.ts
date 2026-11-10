@@ -41,7 +41,7 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
     const result = await useCase.execute({ userId: USER_ID, notificationId: 42 });
 
     // Then
-    const openedAt = new Date(NOW.epochMilliseconds);
+    const openedAt = NOW;
     expect(result).toBe(true);
     expect(notificationRepository.rowOf(42)).toMatchObject({
       openedAt,
@@ -57,7 +57,7 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
   ])("%s은 캐시를 두고 false를 준다", async (_case, notification, isOpened) => {
     // Given
     const row = isOpened
-      ? { ...notification, openedAt: new Date("2026-11-01T00:00:00Z") }
+      ? { ...notification, openedAt: Temporal.Instant.from("2026-11-01T00:00:00Z") }
       : notification;
     const notificationRepository = new InMemoryNotificationRepository([row]);
     const cache = new PassThroughNotificationCache();

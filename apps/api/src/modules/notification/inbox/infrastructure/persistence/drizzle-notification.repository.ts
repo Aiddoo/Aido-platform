@@ -10,6 +10,7 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
 import {
@@ -37,7 +38,9 @@ function toNotificationInsert(data: CreateNotificationData): NotificationInsert 
     nudgeId: data.nudgeId,
     cheerId: data.cheerId,
     metadata: data.metadata ?? undefined,
-    notificationDate: data.notificationDate ?? undefined,
+    // 리마인더 쪽은 아직 오늘을 UTC 자정 Date로 넘긴다
+    notificationDate:
+      data.notificationDate == null ? undefined : plainDateFromDate(data.notificationDate),
     actionType: data.action?.type ?? "DEEP_LINK",
     actionUrl: data.action?.url,
     campaignKey: data.campaignKey,
@@ -106,7 +109,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     const { id, userId, isRead, readAt } = target.toPrimitives();
     const updated = await this.#db
       .update(notification)
-      .set({ isRead, readAt: readAt == null ? null : instantToDate(readAt) })
+      .set({ isRead, readAt })
       .where(
         and(
           eq(notification.id, id),
@@ -124,10 +127,9 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     now: Temporal.Instant,
   ): Promise<boolean> {
     const id = notificationId.value;
-    const openedAt = instantToDate(now);
     const updated = await this.#db
       .update(notification)
-      .set({ openedAt, isRead: true, readAt: openedAt })
+      .set({ openedAt: now, isRead: true, readAt: now })
       .where(
         and(
           eq(notification.id, id),
@@ -139,7 +141,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     if (updated.length > 0) {
       await this.#db
         .update(pushDispatch)
-        .set({ openedAt })
+        .set({ openedAt: instantToDate(now) })
         .where(
           and(
             eq(pushDispatch.notificationId, id),
@@ -158,7 +160,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
   ): Promise<{ count: number }> {
     const updated = await this.#db
       .update(notification)
-      .set({ isRead: true, readAt: instantToDate(now) })
+      .set({ isRead: true, readAt: now })
       .where(
         and(
           eq(notification.userId, userId),

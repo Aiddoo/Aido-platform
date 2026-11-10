@@ -549,7 +549,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -638,7 +638,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           userId: "user-1",
           type: "SYSTEM_NOTICE",
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
         createInboxNotificationFixture({
           userId: "user-1",
@@ -666,7 +666,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -714,7 +714,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -767,7 +767,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       await expect(marking).resolves.toBeUndefined();
       expect(await findNotification(unread.id)).toMatchObject({
         isRead: true,
-        readAt: expect.any(Date),
+        readAt: expect.any(Temporal.Instant),
       });
     });
 
@@ -794,7 +794,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       expect(repeated).toBe(false);
       expect(await findNotification(unread.id)).toMatchObject({
         isRead: true,
-        openedAt: expect.any(Date),
+        openedAt: expect.any(Temporal.Instant),
       });
       expect(
         await client.query.pushDispatch.findFirst({ where: { notificationId: unread.id } }),
