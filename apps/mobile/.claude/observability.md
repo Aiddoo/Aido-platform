@@ -95,7 +95,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### User
 
-`useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다.
+`useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다. core의 `sendDefaultPii`는 `dataCollection`으로 대체 예정이지만 RN SDK 8은 `dataCollection`을 옵션에서 빼고 이 값으로 IP 추론(`infer_ip: never`)·라우트 URL·딥링크 수집을 가르므로 그대로 둔다.
 
 ### Session Replay
 
@@ -103,11 +103,15 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 | 설정                       | 값                                                         |
 | -------------------------- | ---------------------------------------------------------- |
-| `replaysSessionSampleRate` | `0.1`                                                      |
-| `replaysOnErrorSampleRate` | `1`                                                        |
+| `replaysSessionSampleRate` | `0`                                                        |
+| `replaysOnErrorSampleRate` | `0.2`                                                      |
 | `mobileReplayIntegration`  | `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true` |
 
-마스킹을 끄지 않는다. 할 일과 전사가 화면에 보이기 때문이다.
+마스킹을 끄지 않는다. 할 일과 전사가 화면에 보이기 때문이다. 상시 녹화는 무료 할당(월 50개)을 넘겨 30일에 541개가 버려졌다. 오류 녹화는 세션마다 한 개라 월 오류 약 200건 × 0.2 = 40개로 할당 안에 든다.
+
+### 서버와 trace 잇기
+
+`tracePropagationTargets`는 `ENV.API_URL`의 출처 하나다(`trace-propagation-targets.ts`). 외부 주소에는 `sentry-trace`·`baggage`를 붙이지 않는다. 비우면 SDK 기본값이 모든 주소라 빈 배열로 둔다. `tracesSampleRate`는 두지 않아 앱 span을 보내지 않고, 표본 여부는 서버가 정한다. 앱에는 화면 이동 span이 없어 앱을 다시 켜기 전까지 요청이 한 trace id를 쓴다.
 
 ### Severity
 
