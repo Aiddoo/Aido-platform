@@ -8,7 +8,7 @@ import { createDevicePorts, type DevicePorts } from './create-device-ports';
 
 /**
  * 프로세스 수명 객체의 유일한 주인이다. 로거·QueryClient·SecureStore·토큰과 갱신기·HTTP·결제 SDK를 여기서 한 번 만들어
- * 루트 "다시 시도"가 트리를 다시 그려도 같은 것을 쓴다. 앱의 모듈 수준 값은 이 파일에만 둔다(architecture.md#수명)
+ * 루트 "다시 시도"가 트리를 다시 그려도 같은 것을 쓴다. 프로세스 수명 객체를 담는 모듈 수준 값은 이 파일에만 둔다(architecture.md#수명)
  */
 export const compositionRoot = createCompositionRoot({
   createDevicePorts: createProcessDevicePorts,
