@@ -1,5 +1,3 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-
 import type { FeatureQuota } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
@@ -7,9 +5,8 @@ import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapte
 import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { and, asc, eq, sql } from "drizzle-orm";
-import { ClsModule, ClsService } from "nestjs-cls";
+import { ClsModule, ClsServiceManager } from "nestjs-cls";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
@@ -56,7 +53,8 @@ import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/applicat
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createTestClient } from "#test/setup/database-context";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "../setup/test-database.js";
@@ -252,7 +250,6 @@ function createValueDeferred<T>(): ValueDeferred<T> {
 }
 
 interface AdvisoryWaitObservation {
-  probes: number;
   waitingCount: number;
 }
 
@@ -262,7 +259,6 @@ interface AdvisoryLockIdentity {
 }
 
 interface AdvisoryLockState {
-  probes: number;
   grantedCount: number;
   waitingCount: number;
 }
@@ -331,46 +327,40 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   }
 }
 
+const LOCK_PROBE_INTERVAL_MS = 10;
+
 async function waitForBlockedAdvisoryLock(
   client: TestDatabaseClient,
   key: string,
   identity: AdvisoryLockIdentity,
-  options: { timeoutMs?: number; pollIntervalMs?: number } = {},
+  options: { timeoutMs?: number } = {},
 ): Promise<AdvisoryWaitObservation> {
-  const timeoutMs = options.timeoutMs ?? 2_000;
-  const pollIntervalMs = options.pollIntervalMs ?? 10;
-  const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
-  let lastWaitingCount = 0;
-
-  for (let probe = 1; probe <= maxProbes; probe += 1) {
-    const { rows } = await client.execute<{ waitingCount: number }>(sql`
-      WITH target AS (
-        SELECT hashtextextended(${key}, 0) AS lock_key
-      )
-      SELECT COUNT(*)::int AS "waitingCount"
-      FROM pg_locks, target
-      WHERE locktype = 'advisory'
-        AND granted = false
-        AND objsubid = 1
-        AND pid = ${identity.pid}
-        AND database = ${identity.databaseOid}::oid
-        AND classid::bigint = ((lock_key >> 32) & 4294967295)
-        AND objid::bigint = (lock_key & 4294967295)
-    `);
-    lastWaitingCount = rows[0]?.waitingCount ?? 0;
-    if (lastWaitingCount > 0) {
-      return { probes: probe, waitingCount: lastWaitingCount };
-    }
-    if (probe < maxProbes) {
-      await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
-    }
-  }
-
-  throw new Error(
-    `Timed out after ${maxProbes} probes (~${timeoutMs}ms) waiting for ` +
-      `PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
-      `pid=${identity.pid}, databaseOid=${identity.databaseOid}; ` +
-      `lastWaitingCount=${lastWaitingCount}`,
+  return vi.waitFor(
+    async () => {
+      const { rows } = await client.execute<{ waitingCount: number }>(sql`
+        WITH target AS (
+          SELECT hashtextextended(${key}, 0) AS lock_key
+        )
+        SELECT COUNT(*)::int AS "waitingCount"
+        FROM pg_locks, target
+        WHERE locktype = 'advisory'
+          AND granted = false
+          AND objsubid = 1
+          AND pid = ${identity.pid}
+          AND database = ${identity.databaseOid}::oid
+          AND classid::bigint = ((lock_key >> 32) & 4294967295)
+          AND objid::bigint = (lock_key & 4294967295)
+      `);
+      const waitingCount = rows[0]?.waitingCount ?? 0;
+      if (waitingCount === 0) {
+        throw new Error(
+          `PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
+            `pid=${identity.pid}, databaseOid=${identity.databaseOid}; waitingCount=0`,
+        );
+      }
+      return { waitingCount };
+    },
+    { timeout: options.timeoutMs ?? 2_000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -378,50 +368,39 @@ async function waitForCategoryAdvisoryLockState(
   client: TestDatabaseClient,
   key: string,
   expectedWaitingCount: number,
-  options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryLockState> {
-  const timeoutMs = options.timeoutMs ?? 5_000;
-  const pollIntervalMs = options.pollIntervalMs ?? 10;
-  const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
-  let lastGrantedCount = 0;
-  let lastWaitingCount = 0;
-
-  for (let probe = 1; probe <= maxProbes; probe += 1) {
-    const { rows } = await client.execute<{ grantedCount: number; waitingCount: number }>(sql`
-      WITH target AS (
+  return vi.waitFor(
+    async () => {
+      const { rows } = await client.execute<AdvisoryLockState>(sql`
+        WITH target AS (
+          SELECT
+            hashtextextended(${key}, 0) AS lock_key,
+            (SELECT oid FROM pg_database WHERE datname = current_database()) AS database_oid
+        )
         SELECT
-          hashtextextended(${key}, 0) AS lock_key,
-          (SELECT oid FROM pg_database WHERE datname = current_database()) AS database_oid
-      )
-      SELECT
-        (COUNT(*) FILTER (WHERE granted = true))::int AS "grantedCount",
-        (COUNT(*) FILTER (WHERE granted = false))::int AS "waitingCount"
-      FROM pg_locks, target
-      WHERE locktype = 'advisory'
-        AND objsubid = 1
-        AND database = database_oid
-        AND classid::bigint = ((lock_key >> 32) & 4294967295)
-        AND objid::bigint = (lock_key & 4294967295)
-    `);
-    lastGrantedCount = rows[0]?.grantedCount ?? 0;
-    lastWaitingCount = rows[0]?.waitingCount ?? 0;
-    if (lastGrantedCount === 1 && lastWaitingCount === expectedWaitingCount) {
-      return {
-        probes: probe,
-        grantedCount: lastGrantedCount,
-        waitingCount: lastWaitingCount,
+          (COUNT(*) FILTER (WHERE granted = true))::int AS "grantedCount",
+          (COUNT(*) FILTER (WHERE granted = false))::int AS "waitingCount"
+        FROM pg_locks, target
+        WHERE locktype = 'advisory'
+          AND objsubid = 1
+          AND database = database_oid
+          AND classid::bigint = ((lock_key >> 32) & 4294967295)
+          AND objid::bigint = (lock_key & 4294967295)
+      `);
+      const state = {
+        grantedCount: rows[0]?.grantedCount ?? 0,
+        waitingCount: rows[0]?.waitingCount ?? 0,
       };
-    }
-    if (probe < maxProbes) {
-      await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
-    }
-  }
-
-  throw new Error(
-    `Timed out after ${maxProbes} probes (~${timeoutMs}ms) observing category ` +
-      `advisory lock key=${JSON.stringify(key)} in the current database; ` +
-      `expectedGranted=1, lastGranted=${lastGrantedCount}; ` +
-      `expectedWaiting=${expectedWaitingCount}, lastWaiting=${lastWaitingCount}`,
+      if (state.grantedCount !== 1 || state.waitingCount !== expectedWaitingCount) {
+        throw new Error(
+          `category advisory lock key=${JSON.stringify(key)}; expectedGranted=1, ` +
+            `granted=${state.grantedCount}; expectedWaiting=${expectedWaitingCount}, ` +
+            `waiting=${state.waitingCount}`,
+        );
+      }
+      return state;
+    },
+    { timeout: 5_000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -436,11 +415,7 @@ async function observeCategoryRace<T>(
   results: PromiseSettledResult<T>[];
 }> {
   let participants: readonly string[] = [];
-  let lockState: AdvisoryLockState = {
-    probes: 0,
-    grantedCount: 0,
-    waitingCount: 0,
-  };
+  let lockState: AdvisoryLockState = { grantedCount: 0, waitingCount: 0 };
   let observationFailure: unknown;
 
   try {
@@ -493,35 +468,12 @@ class CategoryDatabaseTestModule {
   }
 }
 
-type ActiveTransaction = Parameters<Parameters<TestDatabaseClient["transaction"]>[0]>[0];
-
 function createTransactionHarness(client: TestDatabaseClient): {
   txHost: TransactionHost<DrizzleTransactionalAdapter>;
   uow: UnitOfWorkPort;
 } {
-  const storage = new AsyncLocalStorage<ActiveTransaction>();
-  const cls = new ClsService(new AsyncLocalStorage());
-  const txHost = mock<TransactionHost<DrizzleTransactionalAdapter>>();
-  Object.defineProperty(txHost, "tx", {
-    get: () => storage.getStore() ?? client,
-  });
-  Object.assign(txHost, {
-    isTransactionActive(): boolean {
-      return storage.getStore() !== undefined;
-    },
-    withTransaction<T>(work: () => Promise<T>): Promise<T> {
-      if (storage.getStore()) {
-        return cls.run({ ifNested: "inherit" }, work);
-      }
-      return client.transaction((tx) =>
-        storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
-      );
-    },
-  });
-  return {
-    txHost,
-    uow: new ClsUnitOfWork(txHost, cls),
-  };
+  const txHost = createTransactionHost(client);
+  return { txHost, uow: new ClsUnitOfWork(txHost, ClsServiceManager.getClsService()) };
 }
 
 interface AdvisoryLockAttempt {
@@ -870,7 +822,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -904,7 +856,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -945,7 +897,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -980,7 +932,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -1018,7 +970,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -1058,7 +1010,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof CreateTodoCategoryUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -1127,7 +1079,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       cache: createTodoCategoryCache(),
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
-      logger: mock<ConstructorParameters<typeof ReorderTodoCategoryUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -1277,7 +1229,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
       clock: new DateClock(),
-      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
+      logger: new SilentLogger(),
     });
 
     // When
@@ -1287,10 +1239,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       continueLockAttempt.resolve();
       const mismatchedIdentity = { pid: -1, databaseOid: -1 };
       await expect(
-        waitForBlockedAdvisoryLock(client, dailyKey, mismatchedIdentity, {
-          timeoutMs: 40,
-          pollIntervalMs: 10,
-        }),
+        waitForBlockedAdvisoryLock(client, dailyKey, mismatchedIdentity, { timeoutMs: 40 }),
       ).rejects.toThrow("pid=-1, databaseOid=-1");
       const observation = await waitForBlockedAdvisoryLock(client, dailyKey, identity);
       expect(observation.waitingCount).toBe(1);
