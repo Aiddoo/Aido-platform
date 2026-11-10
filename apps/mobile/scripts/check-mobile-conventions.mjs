@@ -1163,24 +1163,56 @@ function isWireContractModule(moduleName) {
   );
 }
 
+// 모델은 업무 규칙만 둔다. 문구·화면 부품·플랫폼은 view-model·컴포넌트·어댑터가 맡는다
+function findModelPresentationImport(moduleName) {
+  if (
+    moduleName === '@src/shared/i18n' ||
+    moduleName.startsWith('@src/shared/i18n/') ||
+    moduleName === 'i18next' ||
+    moduleName === 'react-i18next'
+  ) {
+    return '문구(i18n)';
+  }
+  if (moduleName === '@src/shared/ui' || moduleName.startsWith('@src/shared/ui/')) {
+    return '화면 부품(shared/ui)';
+  }
+  if (moduleName === 'react-native' || moduleName.startsWith('react-native/')) {
+    return '플랫폼(react-native)';
+  }
+  if (moduleName === 'react' || moduleName.startsWith('react/')) {
+    return 'React';
+  }
+  return null;
+}
+
 function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  const isDomainModel = DOMAIN_MODEL_FILE.test(relativePath);
   if (
     relativePath.includes('.test.') ||
-    (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path)) &&
-      !DOMAIN_MODEL_FILE.test(relativePath))
+    (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path)) && !isDomainModel)
   ) {
     return;
   }
   for (const statement of sourceFile.statements) {
     if (
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier !== undefined &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      isWireContractModule(statement.moduleSpecifier.text)
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier)
     ) {
+      continue;
+    }
+    const moduleName = statement.moduleSpecifier.text;
+    if (isWireContractModule(moduleName)) {
       errors.push(
-        `${getLocation(sourceFile, statement, repositoryRoot)} 클라이언트 모델은 요청·응답 계약(${statement.moduleSpecifier.text})을 import하지 않습니다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고칩니다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져오세요.`,
+        `${getLocation(sourceFile, statement, repositoryRoot)} 클라이언트 모델은 요청·응답 계약(${moduleName})을 import하지 않습니다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고칩니다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져오세요.`,
+      );
+      continue;
+    }
+    const presentation = isDomainModel ? findModelPresentationImport(moduleName) : null;
+    if (presentation !== null) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 도메인 모델은 ${presentation}(${moduleName})을 import하지 않습니다. 모델과 Policy는 업무 규칙만 두고 문구·화면·플랫폼 값은 view-model·컴포넌트·어댑터가 맡습니다.`,
       );
     }
   }
@@ -1948,6 +1980,123 @@ function unwrapExpression(expression) {
   return current;
 }
 
+// 모델 일부만 받는 모양. 모델에 필드가 늘거나 줄 때마다 Policy 서명과 호출부가 함께 바뀐다
+const MODEL_FRAGMENT_UTILITIES = new Set(['Pick', 'Partial', 'Omit', 'Required']);
+const ARRAY_TYPE_NAMES = new Set(['ReadonlyArray', 'Array']);
+
+function collectLocalTypeAliases(sourceFile) {
+  const aliases = new Map();
+  for (const statement of sourceFile.statements) {
+    if (ts.isTypeAliasDeclaration(statement)) {
+      aliases.set(statement.name.text, statement.type);
+    }
+  }
+  return aliases;
+}
+
+function isNullishTypeNode(typeNode) {
+  return (
+    typeNode.kind === ts.SyntaxKind.UndefinedKeyword ||
+    (ts.isLiteralTypeNode(typeNode) && typeNode.literal.kind === ts.SyntaxKind.NullKeyword)
+  );
+}
+
+/**
+ * 첫 인자가 모델 전체(또는 모델 목록)가 아니라 일부를 받는지 본다. 같은 파일의 type 별칭과 타입 인자 제약까지 따라간다.
+ * 별칭이 객체 리터럴의 합(판별 유니온)이면 상태 모델이라 통과한다
+ */
+function describeModelFragment(typeNode, context, isAliasUnionMember = false) {
+  if (ts.isParenthesizedTypeNode(typeNode)) {
+    return describeModelFragment(typeNode.type, context, isAliasUnionMember);
+  }
+  if (ts.isTypeOperatorNode(typeNode) && typeNode.operator === ts.SyntaxKind.ReadonlyKeyword) {
+    return describeModelFragment(typeNode.type, context);
+  }
+  if (ts.isArrayTypeNode(typeNode)) {
+    return describeModelFragment(typeNode.elementType, context);
+  }
+  if (ts.isRestTypeNode(typeNode) || ts.isNamedTupleMember(typeNode)) {
+    return describeModelFragment(typeNode.type, context);
+  }
+  if (ts.isTupleTypeNode(typeNode)) {
+    for (const element of typeNode.elements) {
+      const fragment = describeModelFragment(element, context);
+      if (fragment !== null) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+  if (ts.isUnionTypeNode(typeNode)) {
+    for (const member of typeNode.types) {
+      if (isNullishTypeNode(member)) {
+        continue;
+      }
+      const fragment = describeModelFragment(member, context, context.isInAlias);
+      if (fragment !== null) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    return '교차 타입';
+  }
+  if (ts.isTypeLiteralNode(typeNode)) {
+    return isAliasUnionMember ? null : '객체 리터럴 타입';
+  }
+  if (ts.isIndexedAccessTypeNode(typeNode)) {
+    return '모델 필드 타입';
+  }
+  if (!ts.isTypeReferenceNode(typeNode) || !ts.isIdentifier(typeNode.typeName)) {
+    return null;
+  }
+  const name = typeNode.typeName.text;
+  if (MODEL_FRAGMENT_UTILITIES.has(name)) {
+    return `${name}<…>`;
+  }
+  const [elementType] = typeNode.typeArguments ?? [];
+  if (ARRAY_TYPE_NAMES.has(name) && elementType !== undefined) {
+    return describeModelFragment(elementType, context);
+  }
+  if (context.visited.has(name)) {
+    return null;
+  }
+  const constraint = context.typeParameters.get(name);
+  if (constraint !== undefined) {
+    context.visited.add(name);
+    return describeModelFragment(constraint, context);
+  }
+  const alias = context.aliases.get(name);
+  if (alias === undefined) {
+    return null;
+  }
+  context.visited.add(name);
+  const fragment = describeModelFragment(alias, { ...context, isInAlias: true });
+  return fragment === null ? null : `${name}(${fragment})`;
+}
+
+function checkPolicyMemberFirstParameter(declaration, sourceFile, aliases) {
+  const [firstParameter] = declaration.parameters;
+  if (firstParameter === undefined) {
+    return null;
+  }
+  if (firstParameter.type === undefined) {
+    return ts.isObjectBindingPattern(firstParameter.name) ? '구조 분해한 객체' : null;
+  }
+  const typeParameters = new Map(
+    (declaration.typeParameters ?? [])
+      .filter((parameter) => parameter.constraint !== undefined)
+      .map((parameter) => [parameter.name.text, parameter.constraint]),
+  );
+  return describeModelFragment(firstParameter.type, {
+    aliases,
+    typeParameters,
+    visited: new Set(),
+    isInAlias: false,
+  });
+}
+
 function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryRoot) {
   const object = node.initializer === undefined ? null : unwrapExpression(node.initializer);
   if (object === null || !ts.isObjectLiteralExpression(object)) {
@@ -1959,19 +2108,44 @@ function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryR
       key: relativePath,
       message: `${getLocation(sourceFile, member, repositoryRoot)} ${node.name.text}: ${problem}. Facade는 모듈 수준 함수를 같은 이름으로 모으기만 합니다.`,
     });
+  const functions = new Map(
+    sourceFile.statements
+      .filter((statement) => ts.isFunctionDeclaration(statement) && statement.name !== undefined)
+      .map((statement) => [statement.name.text, statement]),
+  );
+  const aliases = collectLocalTypeAliases(sourceFile);
   for (const member of object.properties) {
     if (ts.isMethodDeclaration(member)) {
       push(member, '메서드를 Facade 안에 정의했습니다');
       continue;
     }
-    if (!ts.isPropertyAssignment(member)) {
+    const value = ts.isShorthandPropertyAssignment(member)
+      ? member.name
+      : ts.isPropertyAssignment(member)
+        ? unwrapExpression(member.initializer)
+        : null;
+    if (value === null) {
       continue;
     }
-    const value = unwrapExpression(member.initializer);
     if (ts.isIdentifier(value) && value.text !== getPropertyName(member.name)) {
       push(member, `별칭(${getPropertyName(member.name)}: ${value.text})을 썼습니다`);
-    } else if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
+      continue;
+    }
+    if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
       push(member, '함수를 Facade 안에 정의했습니다');
+      continue;
+    }
+    const declaration = ts.isIdentifier(value) ? functions.get(value.text) : undefined;
+    const fragment =
+      declaration === undefined
+        ? null
+        : checkPolicyMemberFirstParameter(declaration, sourceFile, aliases);
+    if (fragment !== null) {
+      findings.push({
+        rule: 'policy-facade',
+        key: relativePath,
+        message: `${getLocation(sourceFile, member, repositoryRoot)} ${node.name.text}.${value.text}: 첫 인자가 모델 일부(${fragment})입니다. Policy 멤버는 모델 전체(category: TodoCategory)나 모델 목록(readonly TodoCategory[])을 첫 인자로 받아 모델 필드가 바뀌어도 서명이 그대로입니다. 호출부가 모델 일부(폼 값 등)만 가지면 엔티티 규칙이 아니니 Policy 밖 순수 함수로 두세요.`,
+      });
     }
   }
 }

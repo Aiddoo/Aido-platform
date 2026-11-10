@@ -953,6 +953,156 @@ test('Facade의 별칭, 인라인 함수, 모델의 this를 거부하고 같은 
   );
 });
 
+test('Policy 멤버의 첫 인자가 모델 일부면 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        type MemoTitle = Pick<Memo, 'title'>;
+        function byPick(memo: Pick<Memo, 'content'>) { return memo.content; }
+        function byPartial(memo: Partial<Memo>) { return memo.content; }
+        function byOmit(memo: Omit<Memo, 'id'>) { return memo.content; }
+        function byLiteral(memo: { content: string }) { return memo.content; }
+        function byDestructuredLiteral({ content }: { content: string }) { return content; }
+        function byIntersection(memo: Pick<Memo, 'id'> & { content: string }) { return memo.id; }
+        function byField(content: Memo['content']) { return content; }
+        function byAlias(memo: MemoTitle) { return memo.title; }
+        function byPickList(memos: readonly Pick<Memo, 'id'>[]) { return memos.length; }
+        function byNullablePick(memo: Pick<Memo, 'id'> | null) { return memo?.id; }
+        function byConstraint<T extends Pick<Memo, 'id'>>(memo: T) { return memo.id; }
+        function byTuple(memos: readonly [Pick<Memo, 'id'>, ...Pick<Memo, 'id'>[]]) { return memos; }
+        export const MemoPolicy = {
+          byPick,
+          byPartial,
+          byOmit,
+          byLiteral,
+          byDestructuredLiteral,
+          byIntersection,
+          byField,
+          byAlias,
+          byPickList,
+          byNullablePick,
+          byConstraint,
+          byTuple,
+        } as const;
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 12);
+      for (const [name, fragment] of [
+        ['byPick', 'Pick<…>'],
+        ['byPartial', 'Partial<…>'],
+        ['byOmit', 'Omit<…>'],
+        ['byLiteral', '객체 리터럴 타입'],
+        ['byDestructuredLiteral', '객체 리터럴 타입'],
+        ['byIntersection', '교차 타입'],
+        ['byField', '모델 필드 타입'],
+        ['byAlias', 'MemoTitle(Pick<…>)'],
+        ['byPickList', 'Pick<…>'],
+        ['byNullablePick', 'Pick<…>'],
+        ['byConstraint', 'Pick<…>'],
+        ['byTuple', 'Pick<…>'],
+      ]) {
+        assert.ok(
+          errors.some((error) =>
+            error.includes(`MemoPolicy.${name}: 첫 인자가 모델 일부(${fragment})`),
+          ),
+          name,
+        );
+      }
+    },
+  );
+});
+
+test('모델 전체·모델 목록·상태 유니온·값·인자 없는 Policy 멤버는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        import { z } from 'zod';
+        const memoSchema = z.object({ id: z.int(), content: z.string() });
+        type Memo = z.infer<typeof memoSchema>;
+        type MemoEditorState = { status: 'idle' } | { status: 'editing'; draft: string };
+        function hasContentChanged(memo: Memo, content: string) { return memo.content !== content; }
+        function canReorder(memos: readonly Memo[]) { return memos.length > 1; }
+        function findMemo<T extends Memo>(memos: readonly T[], id: number) { return memos.find((memo) => memo.id === id) ?? null; }
+        function findLatest(memos: readonly [Memo, ...Memo[]]) { return memos[0]; }
+        function isPinned(memo: Memo | null) { return memo != null; }
+        function isEditing(state: MemoEditorState) { return state.status === 'editing'; }
+        function isBlank(content: string) { return content.trim() === ''; }
+        function createEmptyState(): MemoEditorState { return { status: 'idle' }; }
+        export function toPreview(memo: Pick<Memo, 'content'>) { return memo.content; }
+        export const MemoPolicy = {
+          hasContentChanged,
+          canReorder,
+          findMemo,
+          findLatest,
+          isPinned,
+          isEditing,
+          isBlank,
+          createEmptyState,
+        } as const;
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('도메인 모델은 계약·문구·화면 부품·플랫폼·React를 import하지 않고 용어와 오류 코드는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/shared/domains/window-layout.model.ts': `
+        import { Platform } from 'react-native';
+        import { useMemo } from 'react';
+        import { memoSchema } from '@aido/api/contracts/memo';
+        export const WindowLayoutPolicy = {} as const;
+      `,
+      'apps/mobile/src/features/notes/memo/domains/memo.model.ts': `
+        import { MEMO_LIMITS } from '@aido/api/vocabulary';
+        import { ErrorCode } from '@aido/api/errors';
+        import { useTranslation } from '@src/shared/i18n';
+        import { VALIDATION_MESSAGES } from '@src/shared/i18n/validation-message';
+        import { Trans } from 'react-i18next';
+        import i18next from 'i18next';
+        import { Text } from '@src/shared/ui';
+        import { BottomSheet } from '@src/shared/ui/bottom-sheet';
+        import type { ReactNode } from 'react';
+        export const MemoPolicy = {} as const;
+      `,
+      'apps/mobile/src/features/notes/memo/components/memo-row.tsx': `
+        import { useMemo } from 'react';
+        import { View } from 'react-native';
+        import { useTranslation } from '@src/shared/i18n';
+        import { Text } from '@src/shared/ui';
+        export function MemoRow() { return null; }
+      `,
+      'apps/mobile/src/features/notes/memo/domains/memo.model.test.ts': `
+        import { render } from '@testing-library/react-native';
+        import { Text } from '@src/shared/ui';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 10);
+      const joined = errors.join('\n');
+      assert.match(joined, /window-layout\.model\.ts:2:\d+ 도메인 모델은 플랫폼\(react-native\)/u);
+      assert.match(joined, /window-layout\.model\.ts:3:\d+ 도메인 모델은 React\(react\)/u);
+      assert.match(joined, /window-layout\.model\.ts:4:\d+ 클라이언트 모델은 요청·응답 계약/u);
+      assert.match(
+        joined,
+        /memo\.model\.ts:4:\d+ 도메인 모델은 문구\(i18n\)\(@src\/shared\/i18n\)/u,
+      );
+      assert.match(joined, /memo\.model\.ts:5:\d+ 도메인 모델은 문구\(i18n\)/u);
+      assert.match(joined, /memo\.model\.ts:6:\d+ 도메인 모델은 문구\(i18n\)\(react-i18next\)/u);
+      assert.match(joined, /memo\.model\.ts:7:\d+ 도메인 모델은 문구\(i18n\)\(i18next\)/u);
+      assert.match(joined, /memo\.model\.ts:8:\d+ 도메인 모델은 화면 부품\(shared\/ui\)/u);
+      assert.match(joined, /memo\.model\.ts:9:\d+ 도메인 모델은 화면 부품\(shared\/ui\)/u);
+      assert.match(joined, /memo\.model\.ts:10:\d+ 도메인 모델은 React\(react\)/u);
+      // 2·3번 줄의 용어(vocabulary)와 오류 코드(errors)는 모델도 쓴다
+      assert.doesNotMatch(joined, /memo-row\.tsx|memo\.model\.test\.ts|memo\.model\.ts:[23]:/u);
+    },
+  );
+});
+
 test('모델 파일은 모델 스키마·타입·순수 함수·Policy를 내보내고 상수와 계약 import는 거부한다', () => {
   withFixture(
     {
