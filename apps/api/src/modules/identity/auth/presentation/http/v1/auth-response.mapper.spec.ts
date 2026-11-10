@@ -15,7 +15,6 @@ import {
   resolveAllFeatureAccess,
 } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import type {
-  CurrentUserResult,
   ExchangeCodeResult,
   LoginResult,
   RefreshTokensResult,
@@ -24,6 +23,7 @@ import type {
   UpdateProfileResult,
   VerifyEmailResult,
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
+import type { CurrentUserResult } from "#api/modules/identity/users/application/read-models/current-user.read-model";
 
 import { AuthMapper } from "./auth-response.mapper.js";
 
@@ -194,6 +194,8 @@ describe("AuthMapper — 인증 매퍼", () => {
   describe("toCurrentUserResponse", () => {
     it("현재 사용자 정보의 모든 필드를 포함한 응답으로 변환한다", () => {
       // Given
+      const features = resolveAllFeatureAccess("PREMIUM", NO_RESOURCE_BONUSES);
+      const usage = { used: 1, resetsAt: "2024-02-01T00:00:00.000Z" };
       const result: CurrentUserResult = {
         userId: "user-123",
         email: "test@example.com",
@@ -217,7 +219,12 @@ describe("AuthMapper — 인증 매퍼", () => {
         premiumIsTrial: false,
         premiumPlanType: null,
         isPremium: true,
-        entitlements: resolveAllFeatureAccess("PREMIUM", NO_RESOURCE_BONUSES),
+        entitlements: {
+          ...features,
+          AI_PARSE: { ...features.AI_PARSE, ...usage },
+          CHEER: { ...features.CHEER, ...usage },
+          NUDGE: { ...features.NUDGE, ...usage },
+        },
       };
 
       // When

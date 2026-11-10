@@ -2,7 +2,6 @@ import type { currentUserSchema, LinkedAccountsResponse } from "@aido/api/contra
 import type { z } from "zod";
 
 import type {
-  CurrentUserResult,
   ExchangeCodeResult,
   LoginResult,
   RefreshTokensResult,
@@ -20,6 +19,7 @@ import type {
  * @module auth.mapper
  */
 import type { ListLinkedAccountsResult } from "#api/modules/identity/auth/application/use-cases/list-linked-accounts.use-case";
+import type { CurrentUserResult } from "#api/modules/identity/users/application/read-models/current-user.read-model";
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";
 

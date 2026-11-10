@@ -1,4 +1,3 @@
-import type { PremiumEntitlements } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
@@ -6,13 +5,16 @@ import { pick } from "es-toolkit";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
-import type { CurrentUserResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
+import type {
+  CurrentUserEntitlements,
+  CurrentUserResult,
+} from "../read-models/current-user.read-model.js";
 
 export interface GetCurrentUserQuery {
   readonly userId: string;
@@ -112,7 +114,7 @@ export class GetCurrentUserUseCase {
   async #entitlements(
     userId: string,
     timezone: string,
-  ): Promise<{ isPremium: boolean; entitlements: PremiumEntitlements }> {
+  ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
     const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
