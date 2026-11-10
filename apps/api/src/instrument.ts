@@ -5,8 +5,8 @@ import * as Sentry from "@sentry/nestjs";
 
 import { processEnv } from "./platform/config/env.js";
 import {
+  beforeSendError,
   resolveSentryOptions,
-  scrubErrorEvent,
   SENTRY_DATA_COLLECTION,
   sentryIntegrations,
   toSentryRelease,
@@ -32,5 +32,5 @@ Sentry.init({
   tracePropagationTargets: [...options.tracePropagationTargets],
   integrations: sentryIntegrations(),
   dataCollection: SENTRY_DATA_COLLECTION,
-  beforeSend: scrubErrorEvent,
+  beforeSend: beforeSendError,
 });

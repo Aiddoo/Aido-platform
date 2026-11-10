@@ -8,6 +8,8 @@
 import * as Sentry from "@sentry/nestjs";
 import { z } from "zod";
 
+import { isBusinessRejection } from "#api/shared/application/utils/business-rejection";
+
 import { appConfig } from "../app.config.js";
 import type { AppEnvironment } from "../schemas/app.schema.js";
 
@@ -163,6 +165,18 @@ export function scrubErrorEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
     delete event.user.username;
   }
   return event;
+}
+
+/**
+ * `beforeSend`. @sentry/nestjs는 `@OnEvent`·`@Cron` handler에서 던진 예외를 종류와 상관없이 잡아 보낸다.
+ * 그 경로의 업무 거부(4xx로 정한 ApplicationException·DomainException)는 HTTP처럼 오류가 아니므로 버리고,
+ * 나머지는 정리해 보낸다.
+ */
+export function beforeSendError(
+  event: Sentry.ErrorEvent,
+  hint: Sentry.EventHint,
+): Sentry.ErrorEvent | null {
+  return isBusinessRejection(hint.originalException) ? null : scrubErrorEvent(event);
 }
 
 const packageVersionSchema = z.object({ version: z.string().min(1) });

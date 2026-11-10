@@ -6,7 +6,9 @@ import {
   type OperationalAlert,
   type OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
+import { isBusinessRejection } from "#api/shared/application/utils/business-rejection";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { SENTRY_EXTRA, SENTRY_TAG } from "./sentry-keys.js";
@@ -33,7 +35,11 @@ export class SentryOperationalAlertAdapter implements OperationalAlertPort {
         });
         scope.setExtras({ ...alert.details, [SENTRY_EXTRA.RUNBOOK]: alert.runbook });
         scope.setLevel(alert.severity);
-        if (alert.cause == null) {
+        // 업무 거부가 원인이면 스택은 쓸모없고 예외 이름이 이슈 제목이 되어 4xx가 오류로 보이므로 경보 문장으로 보낸다
+        if (alert.cause == null || isBusinessRejection(alert.cause)) {
+          if (alert.cause instanceof ErrorCodedException) {
+            scope.setExtra("errorCode", alert.cause.errorCode);
+          }
           Sentry.captureMessage(alert.summary, alert.severity);
           return;
         }

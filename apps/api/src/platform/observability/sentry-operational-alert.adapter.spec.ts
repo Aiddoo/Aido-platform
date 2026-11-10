@@ -1,6 +1,8 @@
+import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 
 import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { SentryOperationalAlertAdapter } from "./sentry-operational-alert.adapter.js";
 
@@ -75,6 +77,19 @@ describe("SentryOperationalAlertAdapter", () => {
     expect(scope.setLevel).toHaveBeenCalledWith("error");
     expect(sentry.captureException).toHaveBeenCalledWith(cause);
     expect(sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("웹훅 영구 실패처럼 업무 거부가 원인이면 예외가 아니라 경보 문장과 오류 코드로 보낸다", () => {
+    // Given - 없는 구독 사용자(404)로 닫은 RevenueCat 웹훅
+    const cause = new ApplicationException(ErrorCode.SUBSCRIPTION_1602);
+
+    // When
+    new SentryOperationalAlertAdapter().raise({ ...VendorAlerts.BILLING_FAILED, cause });
+
+    // Then
+    expect(sentry.captureException).not.toHaveBeenCalled();
+    expect(sentry.captureMessage).toHaveBeenCalledWith("결제 실패", "error");
+    expect(scope.setExtra).toHaveBeenCalledWith("errorCode", ErrorCode.SUBSCRIPTION_1602);
   });
 
   it("Sentry가 실패해도 호출 흐름으로 던지지 않고 경고만 남긴다", () => {

@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 /**
  * resolveSentryOptions 단위 테스트
  *
@@ -13,7 +14,10 @@
  */
 import * as Sentry from "@sentry/nestjs";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
+
 import {
+  beforeSendError,
   DEFAULT_HTTP_TRACE_RATE,
   DEFAULT_JOB_TRACE_RATE,
   JOB_QUEUE_SPAN_ATTRIBUTE,
@@ -268,5 +272,38 @@ describe("Sentry 수집 범위 — 사용자 원문이 나가지 않게", () => 
       query_string: "token=[FILTERED]&page=1",
     });
     expect(scrubbed.user).toEqual({ id: "user-1" });
+  });
+});
+
+describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 보내지 않는다", () => {
+  afterEach(async () => {
+    await Sentry.close();
+  });
+
+  it("@OnEvent handler·작업에서 자동 수집된 4xx 업무 거부는 버리고 장애는 보낸다", async () => {
+    // Given - @sentry/nestjs가 이벤트 handler 예외를 잡는 것과 같은 captureException 경로다
+    const passed: unknown[] = [];
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      beforeSend: (event, hint) => {
+        if (beforeSendError(event, hint) != null) {
+          passed.push(hint.originalException);
+        }
+        return null;
+      },
+    });
+    const rejected = new ApplicationException(ErrorCode.SUBSCRIPTION_1602);
+    const outage = new ApplicationException(ErrorCode.AI_1301);
+    const bug = new TypeError("boom");
+
+    // When
+    for (const error of [rejected, outage, bug]) {
+      Sentry.captureException(error);
+    }
+    await Sentry.flush(1_000);
+
+    // Then - 이벤트 처리는 비동기라 순서는 보지 않는다
+    expect(passed).toHaveLength(2);
+    expect(passed).toEqual(expect.arrayContaining([outage, bug]));
   });
 });
