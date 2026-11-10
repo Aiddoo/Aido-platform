@@ -6,11 +6,15 @@ import type {
   UsageMeterPort,
   UsageReservation,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
-import { now } from "#api/shared/domain/date/utils/core";
 
 interface Entry {
   used: number;
-  updatedAt: Date;
+  updatedAt: Temporal.Instant;
+}
+
+// vi.setSystemTime으로 고정한 시각을 따른다
+function now(): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(Date.now());
 }
 
 const keyOf = (key: UsageKey) => `${key.meter}\u0000${key.periodKey}\u0000${key.subject}`;
@@ -59,10 +63,10 @@ export class InMemoryUsageMeterAdapter implements UsageMeterPort {
     return keys.map((key) => this.#entries.get(keyOf(key))?.used ?? 0);
   }
 
-  async prune(cutoff: Date): Promise<number> {
+  async prune(cutoff: Temporal.Instant): Promise<number> {
     let pruned = 0;
     for (const [key, entry] of this.#entries) {
-      if (entry.updatedAt < cutoff) {
+      if (Temporal.Instant.compare(entry.updatedAt, cutoff) < 0) {
         this.#entries.delete(key);
         pruned++;
       }

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   type EnqueueJobOptions,
   JOB_POLLING_SECONDS,
@@ -8,7 +9,6 @@ import {
   type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import { USAGE_METER, type UsageMeterPort } from "./interfaces/usage-meter.interface.js";
@@ -39,10 +39,15 @@ export class UsageRetentionJob implements OnModuleInit {
   readonly #logger = new Logger(UsageRetentionJob.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
+  readonly #clock: ClockPort;
+
   constructor(
     @Inject(USAGE_METER) private readonly meter: Pick<UsageMeterPort, "prune">,
     @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
-  ) {}
+    clock: ClockPort,
+  ) {
+    this.#clock = clock;
+  }
 
   onModuleInit(): void {
     this.schedulerRegistration = runInBackground(
@@ -67,7 +72,9 @@ export class UsageRetentionJob implements OnModuleInit {
 
   async prune(): Promise<void> {
     try {
-      const prunedCount = await this.meter.prune(subtractDays(USAGE_RETENTION_DAYS));
+      // UTC 일수라 일광 절약 없이 24시간 단위다
+      const cutoff = this.#clock.now().subtract({ hours: 24 * USAGE_RETENTION_DAYS });
+      const prunedCount = await this.meter.prune(cutoff);
       this.#logger.log({ event: PlatformLogEvent.METERING_USAGE_PRUNED, prunedCount });
     } catch (error) {
       this.#logger.error({

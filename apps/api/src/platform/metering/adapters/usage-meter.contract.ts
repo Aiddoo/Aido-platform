@@ -118,8 +118,8 @@ export function describeUsageMeterContract(context: {
       await meter.add([{ key: DAY, amount: 1 }]);
 
       // When
-      const keptCount = await meter.prune(new Date("2000-01-01T00:00:00.000Z"));
-      const prunedCount = await meter.prune(new Date("2999-01-01T00:00:00.000Z"));
+      const keptCount = await meter.prune(Temporal.Instant.from("2000-01-01T00:00:00.000Z"));
+      const prunedCount = await meter.prune(Temporal.Instant.from("2999-01-01T00:00:00.000Z"));
 
       // Then
       expect([keptCount, prunedCount]).toEqual([0, 1]);

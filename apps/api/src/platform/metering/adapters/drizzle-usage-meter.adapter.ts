@@ -4,7 +4,7 @@ import { and, eq, lt, or, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { outboundUsage } from "#api/platform/database/schema/outbound.schema";
-import { now } from "#api/shared/domain/date/utils/core";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   UsageIncrement,
@@ -26,7 +26,13 @@ const whereUsageKey = (key: UsageKey) =>
 /** 기간별 한 행을 `ON CONFLICT DO UPDATE … RETURNING`으로 원자적으로 더한다(QuotaUsage와 같은 방식). */
 @Injectable()
 export class DrizzleUsageMeterAdapter implements UsageMeterPort {
-  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
+
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#txHost = txHost;
+    this.#clock = clock;
+  }
 
   async add(increments: readonly UsageIncrement[]): Promise<readonly number[]> {
     if (increments.length === 0) {
@@ -41,8 +47,8 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
         amount: (previous?.amount ?? 0) + increment.amount,
       });
     }
-    const at = now();
-    const rows = await this.txHost.tx
+    const at = this.#clock.now();
+    const rows = await this.#txHost.tx
       .insert(outboundUsage)
       .values(
         [...merged.values()].map(({ key, amount }) => ({ ...key, used: amount, updatedAt: at })),
@@ -66,8 +72,8 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
       const [current] = await this.read([key]);
       return { isAccepted: false, total: current ?? 0 };
     }
-    const at = now();
-    const [reserved] = await this.txHost.tx
+    const at = this.#clock.now();
+    const [reserved] = await this.#txHost.tx
       .insert(outboundUsage)
       .values({ ...key, used: amount, updatedAt: at })
       .onConflictDoUpdate({
@@ -84,9 +90,12 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
   }
 
   async release(key: UsageKey, amount: number): Promise<void> {
-    await this.txHost.tx
+    await this.#txHost.tx
       .update(outboundUsage)
-      .set({ used: sql`greatest(${outboundUsage.used} - ${amount}, 0)`, updatedAt: now() })
+      .set({
+        used: sql`greatest(${outboundUsage.used} - ${amount}, 0)`,
+        updatedAt: this.#clock.now(),
+      })
       .where(whereUsageKey(key));
   }
 
@@ -94,7 +103,7 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
     if (keys.length === 0) {
       return [];
     }
-    const rows = await this.txHost.tx
+    const rows = await this.#txHost.tx
       .select({
         meter: outboundUsage.meter,
         periodKey: outboundUsage.periodKey,
@@ -107,8 +116,8 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
     return keys.map((key) => totals.get(toUsageId(key)) ?? 0);
   }
 
-  async prune(cutoff: Date): Promise<number> {
-    const deleted = await this.txHost.tx
+  async prune(cutoff: Temporal.Instant): Promise<number> {
+    const deleted = await this.#txHost.tx
       .delete(outboundUsage)
       .where(lt(outboundUsage.updatedAt, cutoff))
       .returning({ meter: outboundUsage.meter });
@@ -116,7 +125,7 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
   }
 
   async deleteSubject(subject: string): Promise<number> {
-    const deleted = await this.txHost.tx
+    const deleted = await this.#txHost.tx
       .delete(outboundUsage)
       .where(eq(outboundUsage.subject, subject))
       .returning({ meter: outboundUsage.meter });

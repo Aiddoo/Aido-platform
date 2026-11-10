@@ -35,7 +35,7 @@ export interface UsageMeterPort {
   release(key: UsageKey, amount: number): Promise<void>;
   read(keys: readonly UsageKey[]): Promise<readonly number[]>;
   /** cutoff 전에 마지막으로 바뀐 기간을 지운다 */
-  prune(cutoff: Date): Promise<number>;
+  prune(cutoff: Temporal.Instant): Promise<number>;
   /** 사용자 id를 대상으로 한 모든 기간을 지운다(계정 영구 삭제) */
   deleteSubject(subject: string): Promise<number>;
 }
