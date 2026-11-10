@@ -120,7 +120,7 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     );
   });
 
-  it("프로젝트 ID가 없으면 받은 그대로 넘긴다", () => {
+  it("프로젝트 ID가 없으면 고객 화면 주소 없이 넘기고 앱 사용자 ID는 싣지 않는다", () => {
     // Given
     const { adapter, forwarded } = createAdapter();
 
@@ -128,7 +128,17 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     adapter.notifySubscriptionEvent(event);
 
     // Then
-    expect(forwarded).toEqual([event]);
+    expect(forwarded).toEqual([
+      {
+        userId: "user-1",
+        email: "user@example.com",
+        kind: "STARTED",
+        productId: "premium_monthly",
+        store: "APP_STORE",
+      },
+    ]);
+    expect(forwarded[0]).not.toHaveProperty("appUserId");
+    expect(forwarded[0]?.providerCustomerUrl).toBeUndefined();
   });
 });
 

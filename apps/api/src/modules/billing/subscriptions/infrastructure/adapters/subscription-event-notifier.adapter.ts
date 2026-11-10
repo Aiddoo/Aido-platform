@@ -1,7 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
+import {
+  AdminEventNotifierPort,
+  type SubscriptionAlertInput,
+} from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -42,14 +45,8 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   }
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-    const projectId = this.#config.revenuecat.projectId;
     this.#adminEventNotifier.notifySubscriptionEvent(
-      projectId == null || payload.appUserId == null
-        ? payload
-        : {
-            ...payload,
-            providerCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
-          },
+      toSubscriptionAlertInput(payload, this.#providerCustomerUrl(payload.appUserId)),
     );
   }
 
@@ -77,4 +74,50 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
       cause: error,
     });
   }
+
+  #providerCustomerUrl(appUserId: string | undefined): string | undefined {
+    const projectId = this.#config.revenuecat.projectId;
+    if (projectId == null || appUserId == null) {
+      return undefined;
+    }
+    return `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(appUserId)}`;
+  }
+}
+
+// operations가 소유한 입력 모양으로 한 필드씩 옮긴다. 앱 사용자 ID 같은 billing 내부 값은 넘기지 않는다
+function toSubscriptionAlertInput(
+  payload: SubscriptionEventPayload,
+  providerCustomerUrl: string | undefined,
+) {
+  return {
+    userId: payload.userId,
+    email: payload.email,
+    name: payload.name,
+    kind: payload.kind,
+    isOneTime: payload.isOneTime,
+    productId: payload.productId,
+    planType: payload.planType,
+    store: payload.store,
+    environment: payload.environment,
+    storeSubscriptionId: payload.storeSubscriptionId,
+    purchasedAt: payload.purchasedAt,
+    expiresAt: payload.expiresAt,
+    gracePeriodEndsAt: payload.gracePeriodEndsAt,
+    endReason: payload.endReason,
+    priceUsd: payload.priceUsd,
+    priceInPurchasedCurrency: payload.priceInPurchasedCurrency,
+    purchasedCurrency: payload.purchasedCurrency,
+    newProductId: payload.newProductId,
+    newPlanType: payload.newPlanType,
+    transfer: payload.transfer,
+    providerCustomerUrl,
+    eventId: payload.eventId,
+    countryCode: payload.countryCode,
+    periodKind: payload.periodKind,
+    appVersion: payload.appVersion,
+    deviceModel: payload.deviceModel,
+    lifecycle: payload.lifecycle,
+    isFirstPurchase: payload.isFirstPurchase,
+    premium: payload.premium,
+  } satisfies SubscriptionAlertInput;
 }
