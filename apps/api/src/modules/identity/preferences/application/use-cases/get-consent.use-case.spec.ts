@@ -1,15 +1,8 @@
-import { vi } from "vitest";
-
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
 import { GetConsentUseCase } from "./get-consent.use-case.js";
 
 describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(SETTINGS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("기록이 없으면 모든 동의를 null로 반환하고 조회로 동의를 생성하지 않는다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: null });
@@ -26,7 +19,7 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
       aiDataSharingAgreedAt: null,
       aiDataSharingConsentVersion: null,
     });
-    expect(fixture.consentRepository.records.size).toBe(0);
+    expect(fixture.consentRepository.all).toEqual([]);
   });
   it("저장된 시각은 ISO 문자열로 반환하고 선택 동의의 null은 유지한다", async () => {
     // Given

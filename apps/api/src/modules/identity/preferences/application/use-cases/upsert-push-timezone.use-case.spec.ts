@@ -21,14 +21,14 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
       });
       // Then
       expect((await query.execute({ userId: fixture.userId })).timezone).toBe("America/New_York");
-      expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe(
+      expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe(
         "America/New_York",
       );
       expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
       expect(fixture.reminderEnqueuer.jobs).toEqual([]);
       expect(fixture.todoTimezoneRebase.enqueued).toEqual([fixture.userId]);
       if (existing) {
-        expect(fixture.preferenceRepository.records.get(fixture.userId)?.currentStreak).toBe(7);
+        expect(fixture.preferenceRepository.stored(fixture.userId)?.currentStreak).toBe(7);
       }
     },
   );
@@ -48,17 +48,22 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
     const fixture = createUserSettingsFixture();
     await fixture.preferenceReader.read(fixture.userId);
     const failure = new Error("synthetic cache unavailable");
-    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockRejectedValueOnce(
-      failure,
-    );
+    const useCase = new UpsertPushTimezoneUseCase({
+      ...fixture,
+      reminderTimezoneCache: {
+        invalidateActiveTimezones: async () => {
+          throw failure;
+        },
+      },
+    });
     // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
     await expect(
-      new UpsertPushTimezoneUseCase(fixture).execute({
+      useCase.execute({
         userId: fixture.userId,
         timezone: "Asia/Seoul",
       }),
     ).rejects.toBe(failure);
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       timezone: "Asia/Seoul",
     });
     expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);

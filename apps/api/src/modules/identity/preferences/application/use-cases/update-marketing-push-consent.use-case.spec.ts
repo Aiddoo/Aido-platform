@@ -1,15 +1,8 @@
-import { vi } from "vitest";
-
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
 import { UpdateMarketingPushConsentUseCase } from "./update-marketing-push-consent.use-case.js";
 
 describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(SETTINGS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("활성화·철회는 광고성 푸시 동의만 바꾸고 일반 마케팅 동의를 보존한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
@@ -20,7 +13,7 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
     // Then
     expect(agreed.marketingPushAgreedAt).toBe(SETTINGS_TIME.toISOString());
     expect(revoked.marketingPushAgreedAt).toBeNull();
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
       ...fixture.consent,
       marketingPushAgreedAt: null,
     });
@@ -34,7 +27,8 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
       agreed: true,
     });
     // Then
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
+      userId: fixture.userId,
       termsAgreedAt: null,
       privacyAgreedAt: null,
       agreedTermsVersion: null,

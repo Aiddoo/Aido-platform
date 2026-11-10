@@ -21,6 +21,7 @@ import {
 } from "#api/modules/notification/notification-reminders-cache.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
@@ -66,6 +67,7 @@ async function createFixture() {
       { provide: ReminderScheduleEnqueuerPort, useValue: settings.reminderEnqueuer },
       { provide: TodoTimezoneRebaseEnqueuerPort, useValue: settings.todoTimezoneRebase },
       { provide: UnitOfWorkPort, useValue: settings.unitOfWork },
+      { provide: ClockPort, useValue: settings.clock },
     ],
   }).compile();
   return {
@@ -99,9 +101,9 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
         REMINDER_CACHE_TTL_MS,
       );
       // Then: 이전 목록을 반환하지 않고 관련 없는 캐시는 보존한다.
-      expect(
-        fixture.settings.preferenceRepository.records.get(fixture.settings.userId)?.timezone,
-      ).toBe("Asia/Seoul");
+      expect(fixture.settings.preferenceRepository.stored(fixture.settings.userId)?.timezone).toBe(
+        "Asia/Seoul",
+      );
       expect(result).toEqual(["Asia/Seoul"]);
       expect(load).toHaveBeenCalledTimes(1);
       expect(await fixture.cache.get(activeKey, z.unknown())).toEqual(["Asia/Seoul"]);

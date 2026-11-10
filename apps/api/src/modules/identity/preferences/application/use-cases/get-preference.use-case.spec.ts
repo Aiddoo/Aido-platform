@@ -21,7 +21,8 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
     const useCase = new GetPreferenceUseCase(fixture);
     // When
     const free = await useCase.execute({ userId: fixture.userId });
-    fixture.preferenceRepository.records.delete(fixture.userId);
+    // 캐시를 비우지 않고 원본만 바꿔 이후 응답이 캐시에서 오는지 본다
+    await fixture.preferenceRepository.upsert(fixture.userId, { morningReminderHour: 9 });
     fixture.entitlement.premiumUserIds.add(fixture.userId);
     const premium = await useCase.execute({ userId: fixture.userId });
     fixture.entitlement.premiumUserIds.delete(fixture.userId);
@@ -41,7 +42,6 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
       timezone: "Asia/Tokyo",
     });
     expect(expired).toEqual(free);
-    expect(fixture.preferenceRepository.reads).toEqual([fixture.userId]);
     expect(fixture.cache.snapshots.get(fixture.userId)).toMatchObject({
       morningReminderHour: 7,
       locale: "ja",
@@ -63,7 +63,7 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
       weatherMorningEnabled: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
       weatherEveningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
     });
-    expect(fixture.preferenceRepository.records.size).toBe(0);
-    expect(fixture.consentRepository.records.size).toBe(0);
+    expect(fixture.preferenceRepository.all).toEqual([]);
+    expect(fixture.consentRepository.all).toEqual([]);
   });
 });

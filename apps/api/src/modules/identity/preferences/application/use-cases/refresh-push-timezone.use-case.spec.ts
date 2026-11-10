@@ -18,7 +18,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     const reloaded = await query.execute({ userId: fixture.userId });
     // Then
     expect(reloaded.timezone).toBe("Asia/Seoul");
-    expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("Asia/Seoul");
+    expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe("Asia/Seoul");
     expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
     expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(1);
     expect(fixture.todoTimezoneRebase.enqueued).toEqual([fixture.userId]);
@@ -37,7 +37,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
         timezone: "UTC",
       });
       // Then
-      expect(fixture.preferenceRepository.records.size).toBe(existing ? 1 : 0);
+      expect(fixture.preferenceRepository.all).toHaveLength(existing ? 1 : 0);
       expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);
       expect([...fixture.reminderTimezoneCache.activeTimezones]).toEqual(["UTC"]);
       expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(0);
@@ -48,9 +48,16 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     // Given
     const fixture = createUserSettingsFixture();
     const failure = new Error("queue unavailable");
-    vi.spyOn(fixture.todoTimezoneRebase, "enqueueRebase").mockRejectedValueOnce(failure);
+    const useCase = new RefreshPushTimezoneUseCase({
+      ...fixture,
+      todoTimezoneRebase: {
+        enqueueRebase: async () => {
+          throw failure;
+        },
+      },
+    });
     // When
-    const refresh = new RefreshPushTimezoneUseCase(fixture).execute({
+    const refresh = useCase.execute({
       userId: fixture.userId,
       timezone: "Asia/Seoul",
     });
@@ -62,17 +69,22 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     const fixture = createUserSettingsFixture();
     await fixture.preferenceReader.read(fixture.userId);
     const failure = new Error("synthetic cache unavailable");
-    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockRejectedValueOnce(
-      failure,
-    );
+    const useCase = new RefreshPushTimezoneUseCase({
+      ...fixture,
+      reminderTimezoneCache: {
+        invalidateActiveTimezones: async () => {
+          throw failure;
+        },
+      },
+    });
     // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
     await expect(
-      new RefreshPushTimezoneUseCase(fixture).execute({
+      useCase.execute({
         userId: fixture.userId,
         timezone: "Asia/Seoul",
       }),
     ).rejects.toBe(failure);
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       timezone: "Asia/Seoul",
     });
     expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);

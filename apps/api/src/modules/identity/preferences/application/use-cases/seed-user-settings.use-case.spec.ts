@@ -1,15 +1,8 @@
-import { vi } from "vitest";
-
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
 import { SeedUserSettingsUseCase } from "./seed-user-settings.use-case.js";
 
 describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(SETTINGS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("받은 동의와 기본 푸시 플래그를 저장하고 선택 동의를 자동으로 만들지 않는다", async () => {
     // Given
     const fixture = createUserSettingsFixture({ preference: null, consent: null });
@@ -21,7 +14,8 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
     // When
     await new SeedUserSettingsUseCase(fixture).execute({ userId: fixture.userId, consent });
     // Then
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
+      userId: fixture.userId,
       ...consent,
       marketingAgreedAt: null,
       marketingPushAgreedAt: null,
@@ -29,7 +23,7 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
       aiDataSharingVersion: null,
       marketingReconfirmedAt: null,
     });
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       pushEnabled: true,
       nightPushEnabled: true,
       currentStreak: 0,
@@ -42,7 +36,8 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
     // When
     await new SeedUserSettingsUseCase(fixture).execute({ userId: fixture.userId, consent: {} });
     // Then
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
+      userId: fixture.userId,
       termsAgreedAt: null,
       privacyAgreedAt: null,
       agreedTermsVersion: null,
@@ -52,7 +47,7 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
       aiDataSharingVersion: null,
       marketingReconfirmedAt: null,
     });
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       pushEnabled: true,
       nightPushEnabled: true,
     });

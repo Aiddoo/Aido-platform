@@ -1,17 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
-import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
+import { PreferenceLogEvent } from "../preferences.log-events.js";
 import { GetPreferenceUseCase } from "./get-preference.use-case.js";
 import { UpdatePreferenceUseCase } from "./update-preference.use-case.js";
 
 describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(SETTINGS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("false·0을 저장하고 미지정 필드·streak를 보존하며 캐시를 갱신한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({
@@ -21,7 +16,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         weatherMorningMinute: 37,
         currentStreak: 3,
         longestStreak: 9,
-        lastCompletedDate: SETTINGS_TIME,
+        lastCompletedDate: new Date("2026-01-16T00:00:00.000Z"),
       },
     });
     const query = new GetPreferenceUseCase(fixture);
@@ -36,7 +31,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     });
     const reloaded = await query.execute({ userId: fixture.userId });
     // Then
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toEqual({
       ...fixture.preference,
       pushEnabled: false,
       weatherMorningMinute: 0,
@@ -69,7 +64,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       morningReminderMinute: 0,
       eveningReminderHour: 20,
     });
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toEqual({
       ...fixture.preference,
       morningReminderHour: 7,
       morningReminderMinute: 0,
@@ -104,7 +99,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     });
     // Then
     expect(result).toMatchObject(changes);
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject(changes);
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject(changes);
     expect(fixture.reminderEnqueuer.jobs).toEqual([]);
   });
   it.each([
@@ -146,7 +141,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       });
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual(fixture.preference);
+      expect(fixture.preferenceRepository.stored(fixture.userId)).toEqual(fixture.preference);
       expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(snapshot);
       expect(fixture.reminderEnqueuer.jobs).toEqual([]);
     },
@@ -162,7 +157,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       timezone: "Etc/UTC",
     });
     // Then
-    expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("UTC");
+    expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe("UTC");
     expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
   });
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
@@ -170,14 +165,19 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     const fixture = createUserSettingsFixture();
     await fixture.preferenceReader.read(fixture.userId);
     const failure = new Error("synthetic cache unavailable");
-    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockRejectedValueOnce(
+    const useCase = new UpdatePreferenceUseCase({
+      ...fixture,
+      reminderTimezoneCache: {
+        invalidateActiveTimezones: async () => {
+          throw failure;
+        },
+      },
+    });
+    // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
+    await expect(useCase.execute({ userId: fixture.userId, pushEnabled: false })).rejects.toBe(
       failure,
     );
-    // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
-    await expect(
-      new UpdatePreferenceUseCase(fixture).execute({ userId: fixture.userId, pushEnabled: false }),
-    ).rejects.toBe(failure);
-    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       pushEnabled: false,
     });
     expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);
@@ -188,22 +188,26 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     const fixture = createUserSettingsFixture();
     const entered = Promise.withResolvers<void>();
     const deletion = Promise.withResolvers<void>();
-    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockImplementation(() => {
-      entered.resolve();
-      return deletion.promise;
+    const useCase = new UpdatePreferenceUseCase({
+      ...fixture,
+      reminderTimezoneCache: {
+        invalidateActiveTimezones: () => {
+          entered.resolve();
+          return deletion.promise;
+        },
+      },
     });
     // When: 저장 흐름이 목록 삭제에 도달한다.
-    const execution = new UpdatePreferenceUseCase(fixture).execute({
-      userId: fixture.userId,
-      timezone: "Asia/Seoul",
-    });
+    const execution = useCase.execute({ userId: fixture.userId, timezone: "Asia/Seoul" });
     try {
       await entered.promise;
       // Then: 캐시 삭제 전 완료 로그를 남기지 않고, 삭제 완료 뒤 응답한다.
-      expect(fixture.logger.log).not.toHaveBeenCalled();
+      expect(fixture.logger.messages).toEqual([]);
       deletion.resolve();
       await expect(execution).resolves.toMatchObject({ timezone: "Asia/Seoul" });
-      expect(fixture.logger.log).toHaveBeenCalledTimes(1);
+      expect(fixture.logger.messages).toMatchObject([
+        { event: PreferenceLogEvent.PREFERENCE_UPDATED, timezone: "Asia/Seoul" },
+      ]);
     } finally {
       deletion.resolve();
       await execution;

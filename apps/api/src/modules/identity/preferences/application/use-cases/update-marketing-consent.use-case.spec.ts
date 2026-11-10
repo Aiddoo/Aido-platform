@@ -1,15 +1,10 @@
-import { vi } from "vitest";
-
 import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
 import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case.js";
 
+const A_MINUTE_LATER = new Date(SETTINGS_TIME.getTime() + 60_000);
+
 describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(SETTINGS_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("동의·재동의·철회는 해당 시각만 변경하고 약관·광고성 푸시 동의를 보존한다", async () => {
     // Given
     const fixture = createUserSettingsFixture({
@@ -18,16 +13,14 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     const useCase = new UpdateMarketingConsentUseCase(fixture);
     // When
     const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
-    vi.setSystemTime(SETTINGS_TIME.getTime() + 60_000);
+    fixture.clock.advanceBy({ minutes: 1 });
     const reAgreed = await useCase.execute({ userId: fixture.userId, agreed: true });
     const revoked = await useCase.execute({ userId: fixture.userId, agreed: false });
     // Then
     expect(agreed.marketingAgreedAt).toBe(SETTINGS_TIME.toISOString());
-    expect(reAgreed.marketingAgreedAt).toBe(
-      new Date(SETTINGS_TIME.getTime() + 60_000).toISOString(),
-    );
+    expect(reAgreed.marketingAgreedAt).toBe(A_MINUTE_LATER.toISOString());
     expect(revoked.marketingAgreedAt).toBeNull();
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
       ...fixture.consent,
       marketingAgreedAt: null,
     });
@@ -41,7 +34,8 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
       agreed: true,
     });
     // Then
-    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+    expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
+      userId: fixture.userId,
       termsAgreedAt: null,
       privacyAgreedAt: null,
       agreedTermsVersion: null,
@@ -56,20 +50,19 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
     // Given
     const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
     const useCase = new UpdateMarketingConsentUseCase(fixture);
-    const withdrawAt = new Date(SETTINGS_TIME.getTime() + 60_000);
+    fixture.clock.advanceBy({ minutes: 1 });
 
     // When
-    vi.setSystemTime(withdrawAt);
     const withdrawn = await useCase.execute({ userId: fixture.userId, agreed: false });
     const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
 
     // Then
     expect(withdrawn).toEqual({
       marketingAgreedAt: null,
-      marketingWithdrawnAt: withdrawAt.toISOString(),
+      marketingWithdrawnAt: A_MINUTE_LATER.toISOString(),
     });
     expect(agreed).toEqual({
-      marketingAgreedAt: withdrawAt.toISOString(),
+      marketingAgreedAt: A_MINUTE_LATER.toISOString(),
       marketingWithdrawnAt: null,
     });
   });

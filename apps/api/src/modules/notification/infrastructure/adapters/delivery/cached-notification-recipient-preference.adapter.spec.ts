@@ -48,7 +48,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
       timezone: "UTC",
       locale: "ko",
     });
-    expect(settings.preferenceRepository.records.has(settings.userId)).toBe(false);
+    expect(settings.preferenceRepository.stored(settings.userId)).toBeUndefined();
   });
 
   it("locale이 없는 기존 캐시는 DB 조회 없이 한국어로 읽는다", async () => {
@@ -58,7 +58,6 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     const snapshot: PreferenceSnapshot = { ...preference };
     delete snapshot.locale;
     fixture.cache.snapshots.set(fixture.userId, snapshot);
-    fixture.preferenceRepository.records.clear();
 
     // When
     const locale = await fixture.reader.getLocale(fixture.userId);
