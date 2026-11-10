@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
@@ -8,7 +8,7 @@ import { type NotificationRepositoryPort } from "../../ports/delivery/notificati
 interface MarkNotificationOpenedDependencies {
   readonly notificationRepository: Pick<NotificationRepositoryPort, "markAsOpened">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class MarkNotificationOpened {

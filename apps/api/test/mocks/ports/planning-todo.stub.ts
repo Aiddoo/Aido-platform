@@ -48,6 +48,7 @@ import {
   TodoSchedule,
   type TodoScheduleProps,
 } from "#api/modules/planning/domain/value-objects/todos/todo-schedule.vo";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type {
   DomainEventPublisherPort,
@@ -56,7 +57,6 @@ import type {
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { ApplicationException } from "#api/shared/domain/index";
 import { TodoBuilder } from "#test/builders/index";
 import {
   createTodoResponseFixture,

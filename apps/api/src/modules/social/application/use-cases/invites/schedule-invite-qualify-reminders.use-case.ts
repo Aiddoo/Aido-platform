@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import {
   hasOneActiveDayLeft,
@@ -37,7 +37,7 @@ interface ScheduleInviteQualifyRemindersDependencies {
   >;
   readonly reminderScheduler: InviteQualifyReminderSchedulerPort;
   readonly inviteConfig: InviteConfigPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

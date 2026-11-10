@@ -18,8 +18,8 @@ import type {
   UserSearchResult,
 } from "#api/modules/social/application/ports/friends/follow.repository.port";
 import { Friendship } from "#api/modules/social/domain/aggregates/friends/friendship.aggregate";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { FollowFixture } from "#test/fixtures/friend.fixture";
 
 export class StubFollowRepository implements FollowRepositoryPort {

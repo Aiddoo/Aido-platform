@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthOAuthStateRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
@@ -32,7 +32,7 @@ interface CompleteOAuthAuthorizationDependencies {
     "findByState" | "generateExchangeCode" | "saveExchangeData" | "saveLinkingData"
   >;
   readonly loginWithOAuthToken: Pick<LoginWithOAuthToken, "execute">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class CompleteOAuthAuthorization {

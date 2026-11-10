@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -67,7 +67,7 @@ interface RecordInviteeActivityDependencies extends InvitePairReachabilityDepend
   readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

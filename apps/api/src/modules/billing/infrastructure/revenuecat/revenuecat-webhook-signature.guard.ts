@@ -6,7 +6,7 @@ import type { Request } from "express";
 
 import { BillingLogEvent } from "#api/modules/billing/application/observability/subscriptions/billing-log.events";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**
  * RevenueCat Webhook 서명 검증 가드

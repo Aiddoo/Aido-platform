@@ -7,7 +7,7 @@ import type {
   PlanningContextReaderPort,
 } from "#api/modules/voice/application/ports/plans/planning-context.reader.port";
 import { ChargedPlanRunner } from "#api/modules/voice/application/services/plans/charged-plan-runner";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createQuotaLedgerFixture } from "./quota-ledger.fixture.js";
@@ -72,7 +72,7 @@ export function createPlanFlowFixture(
 ) {
   const ledgerFixture = createQuotaLedgerFixture(ledgerInput);
   const aiGenerator = new FakeAiGenerator();
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const quota = {
     reserve: ledgerFixture.ledger.reserve.bind(ledgerFixture.ledger),
     commit: ledgerFixture.ledger.commit.bind(ledgerFixture.ledger),

@@ -2,7 +2,7 @@ import type { NotificationCategory } from "@aido/api/vocabulary";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import {
   notificationTypesOfCategory,
@@ -33,7 +33,7 @@ interface GetNotificationsDependencies {
     PaginationService,
     "createCursorPaginatedResponse" | "normalizeCursorPagination"
   >;
-  readonly logger: Pick<ApplicationLogger, "debug">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class GetNotifications {

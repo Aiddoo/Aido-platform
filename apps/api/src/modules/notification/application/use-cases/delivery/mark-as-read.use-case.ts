@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { Notification } from "../../../domain/aggregates/delivery/notification.aggregate.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -19,7 +19,7 @@ interface MarkAsReadDependencies {
   readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "findNotificationById">;
   readonly notificationRepository: Pick<NotificationRepositoryPort, "markAsRead">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
-  readonly logger: Pick<ApplicationLogger, "debug">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class MarkAsRead {

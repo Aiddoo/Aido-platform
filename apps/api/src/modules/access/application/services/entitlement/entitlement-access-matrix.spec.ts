@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
 
 import { assertEntitled, assertEntitledInTx } from "./entitlement-guard.js";

@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserFixture } from "#test/fixtures/index";
 import {
   StubAccountLifecycleRepository,
@@ -34,7 +34,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     const todoCommentCleanup = new StubAccountTodoCommentCleanup();
     const usageCleanup = new StubAccountUsageCleanup();
     const securityLogRepository = new StubAuthSecurityLogRepository();
-    const logger = mock<ApplicationLogger>();
+    const logger = mock<ApplicationLoggerPort>();
     const useCase = new PurgeDeletedAccounts({
       userRepository,
       notificationCleanup,

@@ -1,13 +1,5 @@
-/**
- * Domain/Application 예외 단위 테스트
- *
- * GWT 패턴 적용
- * - 에러 코드 보존, 기본 메시지 폴백, 커스텀 메시지 우선 검증
- */
-
 import { ErrorCode, Errors } from "@aido/api/errors";
 
-import { ApplicationException } from "./application.exception.js";
 import { DomainException } from "./domain.exception.js";
 import { ErrorCodedException } from "./error-coded.exception.js";
 
@@ -54,28 +46,5 @@ describe("DomainException — 도메인 예외", () => {
     // Then
     expect(exception).toBeInstanceOf(ErrorCodedException);
     expect(exception).toBeInstanceOf(Error);
-  });
-});
-
-describe("ApplicationException — 애플리케이션 예외", () => {
-  it("에러 코드와 details를 보존한다", () => {
-    // Given
-    const details = { userId: "user-123" };
-
-    // When
-    const exception = new ApplicationException(ErrorCode.USER_0601, details);
-
-    // Then
-    expect(exception.errorCode).toBe(ErrorCode.USER_0601);
-    expect(exception.details).toEqual(details);
-    expect(exception.name).toBe("ApplicationException");
-  });
-
-  it("ErrorCodedException의 인스턴스이다", () => {
-    // Given & When
-    const exception = new ApplicationException(ErrorCode.SYS_0001);
-
-    // Then
-    expect(exception).toBeInstanceOf(ErrorCodedException);
   });
 });

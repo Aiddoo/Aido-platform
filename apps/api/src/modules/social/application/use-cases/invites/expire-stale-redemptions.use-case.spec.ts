@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { ExpireStaleRedemptions } from "./expire-stale-redemptions.use-case.js";
@@ -17,7 +17,7 @@ function createMaintenance(isEnabled: boolean) {
     },
     inviteConfig: { isEnabled },
     unitOfWork: createUnitOfWorkMock(),
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   });
   return { maintenance, scheduled };
 }

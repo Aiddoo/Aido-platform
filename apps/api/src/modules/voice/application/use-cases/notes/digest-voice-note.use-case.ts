@@ -14,9 +14,9 @@ import type {
   ActionPlanGeneratorPort,
   VoiceNoteDigestGeneration,
 } from "#api/modules/ai-assistance/ai-assistance-planning.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -59,7 +59,7 @@ interface DigestVoiceNoteDependencies {
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly replay: PlanResultReplayPort<VoiceNoteDigestResult>;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /** 요약·핵심 내용도 결과이므로 할 일이 0개여도 횟수를 쓴다. 돌려줄 내용이 전혀 없을 때만 환불한다. */

@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { AuthSession } from "../../../domain/aggregates/auth/auth-session.aggregate.js";
 import {
@@ -44,7 +44,7 @@ interface RefreshTokensDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class RefreshTokens {

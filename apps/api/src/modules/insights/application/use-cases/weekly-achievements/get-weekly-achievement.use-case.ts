@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { type WeeklyAchievementRepositoryPort } from "../../ports/weekly-achievements/weekly-achievement.repository.port.js";

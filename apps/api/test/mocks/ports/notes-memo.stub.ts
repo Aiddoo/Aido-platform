@@ -6,7 +6,7 @@ import type {
 } from "#api/modules/notes/application/ports/memos/memo.repository.port";
 import { Memo } from "#api/modules/notes/domain/aggregates/memos/memo.aggregate";
 import type { MemoRecord } from "#api/modules/notes/domain/records/memos/memo.record";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { MemoBuilder } from "#test/builders/memo.builder";
 
 export class StubMemoRepository implements MemoRepositoryPort {

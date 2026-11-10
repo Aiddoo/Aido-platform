@@ -51,7 +51,7 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
   AuthTokensDto,

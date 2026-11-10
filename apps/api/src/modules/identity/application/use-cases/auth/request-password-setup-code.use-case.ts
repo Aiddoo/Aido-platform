@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { assertNotDeleted } from "#api/modules/identity/application/utils/auth/auth-validation.utils";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
   AuthUserRepositoryPort,

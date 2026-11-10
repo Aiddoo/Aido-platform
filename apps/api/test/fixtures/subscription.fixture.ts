@@ -4,7 +4,7 @@ import type { SubscriptionUser } from "#api/modules/billing/application/ports/su
 import { PremiumAccessProjector } from "#api/modules/billing/application/services/subscriptions/premium-access-projector.service";
 import type { SubscriptionProps } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
 import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {
   StubPremiumGrantRepository,
@@ -105,6 +105,6 @@ export function createSubscriptionFixture(
     }),
     reconcileScheduler: new StubStoreSubscriptionReconcileScheduler(),
     unitOfWork: createUnitOfWorkMock(),
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   };
 }

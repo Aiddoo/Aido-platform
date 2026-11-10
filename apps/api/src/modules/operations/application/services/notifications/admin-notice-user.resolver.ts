@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
@@ -7,7 +7,7 @@ import type { AdminNoticeUser } from "../../read-models/notifications/admin-noti
 
 interface AdminNoticeUserResolverDependencies {
   readonly reader: Pick<AdminNoticeUserReaderPort, "findById">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 /**

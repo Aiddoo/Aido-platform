@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { addDays, subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
@@ -26,7 +26,7 @@ interface OnTodoToggledDependencies {
   >;
   readonly statsReader: Pick<TodoCompletionStatsReaderPort, "countForDay">;
   readonly milestoneNotifier: Pick<StreakMilestoneNotifierPort, "notifyStreak3Reached">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class OnTodoToggled {

@@ -5,7 +5,7 @@ import {
   assertEntitled,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";

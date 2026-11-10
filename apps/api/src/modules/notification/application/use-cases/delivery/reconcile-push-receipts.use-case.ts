@@ -1,6 +1,6 @@
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -25,7 +25,7 @@ interface ReconcilePushReceiptsDependencies {
   readonly pushProvider: Pick<PushProvider, "getReceipts">;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /** 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다. */

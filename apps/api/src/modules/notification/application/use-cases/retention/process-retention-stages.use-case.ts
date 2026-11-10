@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -31,7 +31,7 @@ interface ProcessRetentionStagesDependencies {
   readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
 export class ProcessRetentionStages {

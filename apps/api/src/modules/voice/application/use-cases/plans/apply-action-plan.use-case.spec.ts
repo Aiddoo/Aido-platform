@@ -2,7 +2,7 @@ import type { Memo, Todo, TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { TodoBuilder } from "#test/builders/todo.builder";
@@ -120,7 +120,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     todoReader: {
       findManyByIds: async (_userId, ids): Promise<Todo[]> => ids.map((id) => todoResponse(id)),
     },
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   });
   const execute = (actions: readonly PlannedAction[], idempotencyKey = "key-1") =>
     useCase.execute({

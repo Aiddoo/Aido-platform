@@ -1,13 +1,13 @@
 import type { TodoCommentMutationResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";

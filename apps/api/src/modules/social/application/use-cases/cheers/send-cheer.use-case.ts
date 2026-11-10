@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -9,7 +10,6 @@ import {
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { evaluateCheerCooldown } from "../../../domain/policies/cheers/cheer-cooldown.policy.js";
 import { CheerMessage } from "../../../domain/value-objects/cheers/cheer-message.vo.js";
@@ -38,7 +38,7 @@ interface SendCheerDependencies {
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class SendCheer {

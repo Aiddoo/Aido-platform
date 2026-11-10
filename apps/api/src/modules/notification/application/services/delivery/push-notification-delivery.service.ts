@@ -1,7 +1,7 @@
 import { isSemanticVersionAtLeast } from "@aido/api";
 import { groupBy, uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
 import {
@@ -88,7 +88,7 @@ interface PushNotificationDeliveryServiceDependencies {
   readonly pushProvider: Pick<PushProvider, "sendBatch">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId" | "findByUserIds">;
   readonly notificationCache: Pick<NotificationCachePort, "invalidatePushTokens">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
 export class PushNotificationDeliveryService {

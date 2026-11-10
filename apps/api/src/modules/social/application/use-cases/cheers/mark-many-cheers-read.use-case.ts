@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
 import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
@@ -10,7 +10,7 @@ export interface MarkManyCheersReadInput {
 
 interface MarkManyCheersReadDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "markManyAsRead">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class MarkManyCheersRead {

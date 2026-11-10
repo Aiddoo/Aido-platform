@@ -1,6 +1,6 @@
 import type { ErrorCodeType } from "@aido/api/errors";
 
-import { ErrorCodedException } from "./error-coded.exception.js";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 /**
  * 애플리케이션 예외

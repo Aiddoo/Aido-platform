@@ -1,13 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { TodoCategoryDeletedEvent } from "../../../domain/events/categories/todo-category-deleted.event.js";
 import { PlanningCategoryLogEvent } from "../../observability/categories/planning-category-log.events.js";
@@ -40,7 +40,7 @@ interface DeleteTodoCategoryDependencies {
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly eventPublisher: DomainEventPublisherPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class DeleteTodoCategory {

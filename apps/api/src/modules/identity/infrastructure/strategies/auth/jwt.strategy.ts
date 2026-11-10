@@ -10,9 +10,9 @@ import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/obse
 import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   AUTH_CACHE,

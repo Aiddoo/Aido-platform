@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
@@ -13,7 +13,7 @@ interface FriendshipEffectsDependencies {
   readonly followRepository: Pick<FollowRepositoryPort, "countMutualFriends">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowMutual" | "notifyFirstFriendMilestone">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class FriendshipEffects {

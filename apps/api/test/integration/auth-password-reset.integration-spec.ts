@@ -9,7 +9,7 @@ import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/
 import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { securityLog, session as sessionTable } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";

@@ -1,6 +1,6 @@
 import { chunk, sumBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { BillingNoticeWindowPolicy } from "../../../domain/policies/subscriptions/billing-notice-window.policy.js";
@@ -61,7 +61,7 @@ interface BillingNoticeBatchResult {
 interface BillingNoticeSweeperDependencies {
   readonly quietHoursReader: QuietHoursReaderPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -49,7 +49,7 @@ interface RebaseTodoTimezoneDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
   readonly batchSize?: number;
 }
 

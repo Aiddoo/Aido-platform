@@ -5,7 +5,7 @@ import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { RewardApplier } from "../../../application/ports/invites/reward-applier.port.js";
 import type { RewardGrantRecord } from "../../../application/ports/invites/reward-grant.repository.port.js";

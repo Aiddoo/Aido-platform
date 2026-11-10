@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { createParamDecorator } from "@nestjs/common";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { readRequestClient } from "../request-client/index.js";
 

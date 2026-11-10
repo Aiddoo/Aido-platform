@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -12,7 +12,7 @@ interface ReleaseSessionPushDevicesDependencies {
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deletePushTokensBySessions">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

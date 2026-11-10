@@ -2,7 +2,7 @@ import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
 } from "#api/modules/access/access-entitlement.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
@@ -16,7 +16,7 @@ import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-sugg
 interface GetPendingSuggestionsDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findPendingByUserId">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class GetPendingSuggestions {

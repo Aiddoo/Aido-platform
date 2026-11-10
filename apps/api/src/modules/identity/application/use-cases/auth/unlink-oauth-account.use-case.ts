@@ -4,7 +4,7 @@ import {
   SECURITY_EVENT,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
@@ -28,7 +28,7 @@ interface UnlinkOAuthAccountDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class UnlinkOAuthAccount {

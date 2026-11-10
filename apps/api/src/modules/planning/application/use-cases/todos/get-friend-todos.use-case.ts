@@ -1,11 +1,11 @@
 import type { FriendTodo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import { isAfter } from "#api/shared/domain/date/utils/compare";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type { FindFriendTodosParams, GetFriendTodosParams } from "../../models/todos/todo.types.js";
 import { type FriendPort } from "../../ports/todos/friend.port.js";

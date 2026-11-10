@@ -8,7 +8,8 @@ import {
   premiumFeatureDenied,
 } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type AfterCommitTaskRegistryPort,
@@ -19,7 +20,6 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
@@ -56,7 +56,7 @@ interface HandleSuggestionActionDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
   readonly todoCreator: SuggestionTodoCreatorPort;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly mutationLock: MutationLockPort;

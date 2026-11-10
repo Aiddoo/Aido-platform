@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";
 

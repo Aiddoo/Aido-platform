@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { type InquiryMailerPort } from "../../ports/inquiries/inquiry-mailer.port.js";
 import { buildInquirySubmission } from "../../services/inquiries/inquiry-submission.factory.js";
@@ -22,7 +22,7 @@ export interface CreateInquiryInput {
  */
 interface CreateInquiryDependencies {
   readonly mailer: Pick<InquiryMailerPort, "deliver">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class CreateInquiry {

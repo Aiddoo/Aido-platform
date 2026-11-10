@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
 import { createMilestoneNotificationMessage } from "../../messages/delivery/notification-messages.js";
@@ -21,7 +21,7 @@ interface SendMilestoneNotificationDependencies {
     "hasMilestoneNotification"
   >;
   readonly notificationDedupLock: Pick<NotificationDedupLockPort, "acquire">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
 export class SendMilestoneNotification {

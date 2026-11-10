@@ -9,7 +9,7 @@ import {
   type ChargedGeneration,
   type ChargedGenerationResult,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { PlanResultReplayPort } from "../../ports/plans/plan-result-replay.port.js";
 
@@ -26,7 +26,7 @@ export interface ChargedPlanRequest<T> {
 
 interface ChargedPlanRunnerDependencies {
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen" | "commit" | "refund" | "read">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 /** 돈이 드는 계획 생성의 사용량 흐름: 호출 전 예약 → 결과에 따라 확정·환불. 같은 키는 몇 번을 보내도 한 번만 차감한다. */

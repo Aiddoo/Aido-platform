@@ -2,7 +2,8 @@ import type { Todo, TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -10,7 +11,6 @@ import {
   type SavepointRunnerPort,
   type AfterCommitTaskRegistryPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import type { MemoTodoCreatorPort } from "../../ports/memos/memo-todo-creator.port.js";
@@ -52,7 +52,7 @@ interface ConvertMemoToTodosDependencies {
   readonly mutationLock: MutationLockPort;
   readonly savepointRunner: SavepointRunnerPort;
   readonly afterCommit: AfterCommitTaskRegistryPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class ConvertMemoToTodos {

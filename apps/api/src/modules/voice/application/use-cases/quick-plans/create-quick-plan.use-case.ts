@@ -7,7 +7,7 @@ import {
   type UserLocalePreferenceReaderPort,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/ai-assistance-planning.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
@@ -43,7 +43,7 @@ interface CreateQuickPlanDependencies {
   readonly contextReader: Pick<PlanningContextReaderPort, "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly replay: PlanResultReplayPort<QuickPlanResult>;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /** 짧은 말·글 → 실행 계획. 할 일을 찾지 못하면 환불한다. 저장은 사용자가 확인한 뒤 적용 API가 한다. */

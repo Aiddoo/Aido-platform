@@ -1,7 +1,7 @@
 import { mock, type MockProxy } from "vitest-mock-extended";
 
 import type { ReminderWeatherReport } from "#api/modules/notification/application/ports/reminders/reminder-weather-report.reader.port";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 import {
   StubNotificationBatchPublisher,
@@ -54,7 +54,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림", () => {
   let publisher: StubNotificationBatchPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
-  let logger: MockProxy<ApplicationLogger>;
+  let logger: MockProxy<ApplicationLoggerPort>;
   let strategy: WeatherEveningStrategy;
 
   beforeEach(() => {
@@ -64,7 +64,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림", () => {
     publisher = new StubNotificationBatchPublisher();
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
-    logger = mock<ApplicationLogger>();
+    logger = mock<ApplicationLoggerPort>();
     strategy = new WeatherEveningStrategy({
       reader,
       notificationPublisher: publisher,

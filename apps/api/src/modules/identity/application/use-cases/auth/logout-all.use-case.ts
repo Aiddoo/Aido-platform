@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import {
   AUTH_DEFAULTS,
@@ -24,7 +24,7 @@ interface LogoutAllDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class LogoutAll {

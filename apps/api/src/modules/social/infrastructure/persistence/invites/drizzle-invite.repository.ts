@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { invite } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
   InviteRepositoryPort,

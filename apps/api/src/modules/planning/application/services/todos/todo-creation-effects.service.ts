@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 
 import type { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
@@ -12,7 +12,7 @@ import type { CreatedOccurrence } from "../../ports/todos/todo.repository.port.j
 interface TodoCreationEffectsDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class TodoCreationEffects {

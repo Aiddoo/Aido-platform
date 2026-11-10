@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { flatMapAsync, groupBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Coordinate } from "../../../domain/value-objects/forecast/coordinate.vo.js";
 import { GeoCell } from "../../../domain/value-objects/forecast/geo-cell.vo.js";
@@ -39,7 +39,7 @@ interface WeatherReportReaderDependencies {
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getReport" | "localizesContent">;
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadReport" | "getLatestReport">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
-  readonly logger: Pick<ApplicationLogger, "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
 }
 
 /** 화면 조회와 날씨 알림이 같은 칸 캐시·폴백을 쓰도록 v2 리포트 읽기를 한곳에 둔다. */

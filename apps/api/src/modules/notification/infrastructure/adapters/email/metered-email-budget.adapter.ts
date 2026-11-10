@@ -4,7 +4,7 @@ import {
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -30,7 +30,7 @@ const EMAIL_BUDGET_ALERT_THRESHOLDS = emailBudgetAlertThresholds(RESEND_FREE_PLA
 interface MeteredEmailBudgetDependencies {
   readonly meter: Pick<UsageMeterPort, "tryReserve" | "release" | "read" | "add">;
   readonly alert: OperationalAlertPort;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 /** EmailBudgetPort의 사용량 계량기 어댑터. 일·월 건수를 원자적으로 예약한다. */

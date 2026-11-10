@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AuthSession } from "../../../domain/aggregates/auth/auth-session.aggregate.js";
 import {
@@ -29,7 +29,7 @@ interface RevokeSessionDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class RevokeSession {

@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { assertStatusAllowsLogin } from "#api/modules/identity/domain/services/auth/account-status-policy";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthUserRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
@@ -20,7 +20,7 @@ interface ResendVerificationDependencies {
     "createEmailVerification" | "sendVerificationEmail"
   >;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class ResendVerification {

@@ -9,13 +9,13 @@ import {
 import { mapValues } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { QuotaCharge } from "../../../domain/aggregates/quotas/quota-charge.aggregate.js";
 import {
@@ -59,7 +59,7 @@ interface QuotaLedgerServiceDependencies {
   readonly resourceBonuses: Pick<EntitlementDatabasePort, "findResourceBonuses">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly alert: OperationalAlertPort;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
 
 /** 기능별 한도 초과 코드. 출시 앱은 AI_PARSE의 AI_1303을 안다. */

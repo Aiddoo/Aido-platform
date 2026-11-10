@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 import type { UserRole } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { getSessionValidity } from "../../../domain/policies/auth/session-validity.policy.js";
 import { type AuthTokenIssuerPort, type TokenPair } from "../../ports/auth/auth-crypto.port.js";

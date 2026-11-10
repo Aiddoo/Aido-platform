@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { CreateTodoData, ResolvedCreateTodoData } from "../../models/todos/todo.types.js";
 import type {

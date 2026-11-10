@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
 import type { SubscriptionAlertInput } from "../../types/notifications/subscription-alert.input.js";
@@ -10,7 +10,7 @@ import type { EnqueueUserRegistered } from "../../use-cases/notifications/enqueu
 interface AdminEventNotifierDependencies {
   readonly enqueueUserRegistered: Pick<EnqueueUserRegistered, "execute">;
   readonly enqueueSubscriptionEvent: Pick<EnqueueSubscriptionEvent, "execute">;
-  readonly logger: Pick<ApplicationLogger, "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "error">;
 }
 
 export class AdminEventNotifier {

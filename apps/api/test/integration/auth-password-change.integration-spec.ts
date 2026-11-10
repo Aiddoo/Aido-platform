@@ -5,7 +5,7 @@ import { ChangePassword } from "#api/modules/identity/application/use-cases/auth
 import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
 import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
 import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";

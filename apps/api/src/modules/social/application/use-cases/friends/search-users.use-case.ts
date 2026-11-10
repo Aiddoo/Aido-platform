@@ -1,5 +1,5 @@
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { normalizeUserSearchQuery } from "../../../domain/policies/friends/user-search-query.policy.js";
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
@@ -26,7 +26,7 @@ export interface SearchUsersOutput {
 interface SearchUsersDependencies {
   readonly followRepository: Pick<FollowRepositoryPort, "searchUsers" | "countSearchUsers">;
   readonly paginationService: PaginationService;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class SearchUsers {

@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
 import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
@@ -14,7 +14,7 @@ export interface MarkCheerReadInput {
 
 interface MarkCheerReadDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "findById" | "saveRead">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class MarkCheerRead {

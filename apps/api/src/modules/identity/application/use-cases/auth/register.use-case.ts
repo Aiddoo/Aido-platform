@@ -11,11 +11,11 @@ import {
   SECURITY_EVENT,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
 import { Email } from "#api/modules/identity/domain/value-objects/auth/email.vo";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type {
@@ -44,7 +44,7 @@ interface RegisterDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly adminEventNotifier: Pick<AuthRegistrationNotifierPort, "notifyUserRegistered">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class Register {

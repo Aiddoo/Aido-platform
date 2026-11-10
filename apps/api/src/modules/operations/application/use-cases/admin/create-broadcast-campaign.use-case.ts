@@ -2,9 +2,9 @@ import type { NotificationAction } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { BroadcastTargetFilter } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { BroadcastCampaign } from "../../../domain/aggregates/admin/broadcast-campaign.aggregate.js";
 import { BroadcastContent } from "../../../domain/value-objects/admin/broadcast-content.vo.js";
@@ -32,7 +32,7 @@ interface CreateBroadcastCampaignDependencies {
   readonly userDirectory: Pick<AdminUserDirectoryPort, "countTargets">;
   readonly fanOutEnqueuer: Pick<BroadcastFanOutEnqueuerPort, "enqueueFanOut">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 import {
@@ -28,7 +28,7 @@ interface SendNotificationWithDedupDependencies {
     NotificationHistoryReaderPort,
     "existsRecentNotification"
   >;
-  readonly logger: Pick<ApplicationLogger, "debug">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class SendNotificationWithDedup {

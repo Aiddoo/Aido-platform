@@ -1,6 +1,6 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   resolvePlanSchedule,
@@ -36,7 +36,7 @@ import { isEmptyVoiceNoteDigest } from "./action-plan.normalizer.js";
 interface ActionPlanGeneratorDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
-  readonly logger: Pick<ApplicationLogger, "log" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
 function toGeneratedPlan(plan: NormalizedActionPlan, clock: ScheduleClock): GeneratedActionPlan {

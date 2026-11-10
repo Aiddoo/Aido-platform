@@ -1,7 +1,7 @@
 import type { TodoCommentSort, TodoConversationFocus, TodoConversationResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
   ConversationPageMode,

@@ -3,7 +3,8 @@ import { ErrorCode } from "@aido/api/errors";
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
 import { fingerprintRequest } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   type AfterCommitTaskRegistryPort,
   MutationLockKeys,
@@ -11,7 +12,6 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   ActionPlan,
@@ -46,7 +46,7 @@ interface ApplyActionPlanDependencies {
   readonly todoCreator: PlanTodoCreatorPort;
   readonly memoWriter: PlanMemoWriterPort;
   readonly todoReader: PlanTodoReaderPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 type ApplyOutcome =

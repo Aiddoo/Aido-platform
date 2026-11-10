@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
@@ -113,7 +113,7 @@ function createRecorder({
     inviteConfig: { isEnabled },
     mutationLock: { acquire: async () => {} },
     unitOfWork: createUnitOfWorkMock(),
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   });
   return { recorder, notified };
 }

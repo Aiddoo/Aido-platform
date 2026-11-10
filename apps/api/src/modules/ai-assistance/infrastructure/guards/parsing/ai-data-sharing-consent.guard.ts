@@ -4,7 +4,7 @@ import { type CanActivate, type ExecutionContext, Inject, Injectable } from "@ne
 import type { Request } from "express";
 
 import { RequestClientReader } from "#api/platform/http/request-client/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
   AI_DATA_SHARING_CONSENT_DECISION_READER,

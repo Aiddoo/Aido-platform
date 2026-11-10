@@ -4,7 +4,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
 
 import { IS_PUBLIC_KEY } from "#api/modules/identity/presentation/decorators/auth/public.decorator";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 /**

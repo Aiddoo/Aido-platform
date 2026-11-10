@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 
 import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import { type GridInput } from "#api/modules/weather/weather-forecast.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
@@ -42,7 +42,7 @@ interface SuggestionContextBuilderDependencies {
   >;
   readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "getForecastsByGridBatch">;
   readonly reportReader: Pick<WeeklyReportReaderPort, "findLatestWeekly">;
-  readonly logger: Pick<ApplicationLogger, "debug">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
 export class SuggestionContextBuilder {

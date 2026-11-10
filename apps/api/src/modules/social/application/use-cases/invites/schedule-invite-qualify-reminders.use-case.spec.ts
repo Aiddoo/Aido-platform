@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { ScheduledQualifyReminder } from "../../ports/invites/invite-qualify-reminder.scheduler.port.js";
 import type { QualifyReminderCandidate } from "../../ports/invites/invite-redemption.repository.port.js";
@@ -31,7 +31,7 @@ function createScheduler(candidates: readonly QualifyReminderCandidate[], isEnab
       },
     },
     inviteConfig: { isEnabled },
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   });
   return { scheduler, scheduled };
 }

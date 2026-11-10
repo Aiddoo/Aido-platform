@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { UserTag } from "../../../domain/value-objects/friends/user-tag.vo.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";

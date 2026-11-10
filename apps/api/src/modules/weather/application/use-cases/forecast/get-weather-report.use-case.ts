@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { KoreanWeatherCoveragePolicy } from "../../../domain/policies/forecast/korean-weather-coverage.policy.js";
 import { GeoCell } from "../../../domain/value-objects/forecast/geo-cell.vo.js";
@@ -49,7 +49,7 @@ interface GetWeatherReportDependencies {
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
   readonly airQualityProvider: Pick<AirQualityProvider, "getAirQuality">;
-  readonly logger: Pick<ApplicationLogger, "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
 }
 
 export class GetWeatherReport {

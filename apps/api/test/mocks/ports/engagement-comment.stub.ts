@@ -27,7 +27,7 @@ import {
 import { TodoComment } from "#api/modules/engagement/domain/aggregates/comments/todo-comment.aggregate";
 import type { TodoCommentState } from "#api/modules/engagement/domain/records/comments/todo-comment.record";
 import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 interface LikeState {
   isLiked: boolean;

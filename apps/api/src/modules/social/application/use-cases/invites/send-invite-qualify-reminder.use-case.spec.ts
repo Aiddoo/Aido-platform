@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
@@ -73,7 +73,7 @@ function createSender({
     blockReader: { findRelation: async () => blockRelation },
     inviteConfig: { isEnabled: true },
     unitOfWork: createUnitOfWorkMock(),
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
   });
   return { sender, notified, sentAt: () => stored?.qualifyReminderSentAt ?? null };
 }

@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -30,7 +30,7 @@ interface SendFriendCompletionNotificationsDependencies {
     UserNotificationSettingsPort,
     "getPreferenceRecordsByUserIds"
   >;
-  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
 export class SendFriendCompletionNotifications {

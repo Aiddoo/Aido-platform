@@ -1,7 +1,7 @@
 import type { Memo as MemoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
 import { toMemoView } from "../../read-models/memos/memo.read-model.js";

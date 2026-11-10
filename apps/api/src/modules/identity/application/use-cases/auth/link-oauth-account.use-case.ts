@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js";
@@ -27,7 +27,7 @@ interface LinkOAuthAccountDependencies {
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentity, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class LinkOAuthAccount {

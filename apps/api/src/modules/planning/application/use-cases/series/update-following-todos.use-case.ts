@@ -5,7 +5,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -14,7 +15,6 @@ import {
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
   TodoSeries,
@@ -85,7 +85,7 @@ interface UpdateFollowingTodosDependencies {
   readonly effects: Pick<TodoSeriesEditEffects, "publish">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

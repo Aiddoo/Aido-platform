@@ -1,7 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
 import { GetReports } from "./get-reports.use-case.js";

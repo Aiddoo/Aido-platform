@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
 import { NudgeInteractionPolicy } from "../../../domain/policies/nudges/nudge-interaction.policy.js";

@@ -2,7 +2,8 @@ import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -10,7 +11,6 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
   TodoDetailsPatch,
@@ -52,7 +52,7 @@ interface UpdateTodoDependencies {
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class UpdateTodo {

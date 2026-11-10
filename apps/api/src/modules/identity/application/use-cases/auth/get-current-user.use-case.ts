@@ -8,8 +8,8 @@ import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../../ports/auth/auth-persistence.port.js";

@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { Todo, type TodoCreationDraft } from "../../../domain/aggregates/todos/todo.aggregate.js";

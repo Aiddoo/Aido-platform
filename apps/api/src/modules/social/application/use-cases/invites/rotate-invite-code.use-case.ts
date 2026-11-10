@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -26,7 +26,7 @@ interface RotateInviteCodeDependencies {
   readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /** 지금 코드를 폐기하고 새 코드를 발급한다. 폐기한 코드로 들어오면 INVITE_2102가 된다. */

@@ -1,6 +1,6 @@
 import { withTimeout } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -12,7 +12,7 @@ const FAST_PATH_TIMEOUT_MS = 2_000;
 interface PushDeliveryAfterCommitPublisherDependencies {
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly publishOutbox: Pick<PublishPushDeliveryOutbox, "execute">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class PushDeliveryAfterCommitPublisher {

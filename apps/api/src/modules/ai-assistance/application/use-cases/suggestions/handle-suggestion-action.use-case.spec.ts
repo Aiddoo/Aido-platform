@@ -1,8 +1,8 @@
 import { vi, type Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { TodoBuilder } from "#test/builders/todo.builder";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -61,7 +61,7 @@ interface TimezoneAwareReminderOrchestratorDependencies {
   readonly onboarding: Pick<OnboardingStrategy, "execute">;
   readonly weatherMorning: Pick<WeatherMorningStrategy, "execute">;
   readonly weatherEvening: Pick<WeatherEveningStrategy, "execute">;
-  readonly logger: Pick<ApplicationLogger, "error" | "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "error" | "log" | "warn">;
 }
 
 export class TimezoneAwareReminderOrchestrator {

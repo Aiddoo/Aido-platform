@@ -12,8 +12,8 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoComment, todoCommentLike, todoView } from "#api/platform/database/schema/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
   CreateTodoCommentChainInput,

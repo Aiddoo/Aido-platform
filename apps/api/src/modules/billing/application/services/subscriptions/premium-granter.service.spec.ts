@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
 import { SUBSCRIPTION_TIME, createSubscriptionFixture } from "#test/fixtures/subscription.fixture";
 
@@ -10,7 +10,7 @@ import { PremiumGranter } from "./premium-granter.service.js";
 function createGranter() {
   const fixture = createSubscriptionFixture();
   const afterCommit: AfterCommitTask[] = [];
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const granter = new PremiumGranter({
     premiumGrantRepository: fixture.premiumGrantRepository,
     premiumAccessProjector: fixture.premiumAccessProjector,

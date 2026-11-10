@@ -2,9 +2,9 @@ import type { ErrorCodeType } from "@aido/api/errors";
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   AiGenerationLogEvent,
@@ -33,7 +33,7 @@ export function withoutChargedClaim(error: unknown): unknown {
 export async function readFeatureQuotaOrNull(
   dependencies: {
     readonly quota: Pick<QuotaLedgerPort, "read">;
-    readonly logger: Pick<ApplicationLogger, "warn">;
+    readonly logger: Pick<ApplicationLoggerPort, "warn">;
   },
   input: {
     readonly userId: string;

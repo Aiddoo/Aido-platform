@@ -3,7 +3,7 @@ import { mock, type MockProxy } from "vitest-mock-extended";
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 import { StubTimezoneResolver, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
@@ -19,7 +19,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
   let memory: InMemoryCacheAdapter;
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
-  let logger: MockProxy<ApplicationLogger>;
+  let logger: MockProxy<ApplicationLoggerPort>;
   let reader: WeatherReportReader;
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
-    logger = mock<ApplicationLogger>();
+    logger = mock<ApplicationLoggerPort>();
     reader = new WeatherReportReader({
       weatherReportProvider: provider,
       weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),

@@ -1,8 +1,8 @@
 import type { BroadcastResult, NotificationAction } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { BroadcastContent } from "../../../domain/value-objects/admin/broadcast-content.vo.js";
 import { buildBroadcastMessages } from "../../messages/admin/broadcast-message.factory.js";
@@ -21,7 +21,7 @@ export interface SendTargetedNotificationInput {
 interface SendTargetedNotificationDependencies {
   readonly userDirectory: Pick<AdminUserDirectoryPort, "findExistingUserIds">;
   readonly notifier: Pick<AdminBroadcastNotifierPort, "sendBatch">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SendTargetedNotification {

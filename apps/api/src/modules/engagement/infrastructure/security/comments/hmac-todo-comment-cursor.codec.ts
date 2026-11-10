@@ -5,7 +5,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { Injectable } from "@nestjs/common";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
   TODO_COMMENT_PAGE_DIRECTION,

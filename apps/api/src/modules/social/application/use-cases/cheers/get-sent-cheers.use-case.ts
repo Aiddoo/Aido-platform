@@ -1,5 +1,5 @@
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { GetCheersInput, SentCheersSnapshot } from "../../models/cheers/cheer-read.models.js";
 import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
@@ -11,7 +11,7 @@ interface GetSentCheersDependencies {
     PaginationService,
     "normalizeCursorPagination" | "createCursorPaginatedResponse"
   >;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class GetSentCheers {

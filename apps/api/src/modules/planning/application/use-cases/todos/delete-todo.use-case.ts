@@ -2,7 +2,8 @@ import { ErrorCode } from "@aido/api/errors";
 import type { TodoEditScope } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -11,7 +12,6 @@ import {
 } from "#api/shared/application/ports/index";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
@@ -42,7 +42,7 @@ interface DeleteTodoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly eventPublisher: DomainEventPublisherPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class DeleteTodo {

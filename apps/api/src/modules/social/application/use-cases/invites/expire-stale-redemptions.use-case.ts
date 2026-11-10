@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
 
@@ -34,7 +34,7 @@ interface ExpireStaleRedemptionsDependencies {
   readonly rewardScheduler: Pick<InviteRewardSchedulerPort, "scheduleMany">;
   readonly inviteConfig: InviteConfigPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /** 사용 시작 마감이 지난 수락을 거절하고, 적용하지 못한 지급의 작업을 다시 만든다. */

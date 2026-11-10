@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
@@ -33,7 +33,7 @@ interface StopTodoSeriesDependencies {
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly effects: Pick<TodoSeriesEditEffects, "publish">;
   readonly mutationLock: MutationLockPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** 이 회차 뒤로 반복을 끝낸다. 나뉜 뒤 구간까지 끝내고, 이 회차와 완료한 회차는 남고 뒤의 미완료 회차만 지운다. */

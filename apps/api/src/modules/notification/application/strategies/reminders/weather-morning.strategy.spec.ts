@@ -5,7 +5,7 @@ import { WeatherReportReader } from "#api/modules/weather/application/services/f
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 import {
   StubNotificationBatchPublisher,
@@ -67,7 +67,7 @@ describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
   let publisher: StubNotificationBatchPublisher;
   let history: StubNotificationHistoryReader;
   let weatherReports: StubReminderWeatherReportReader;
-  let logger: MockProxy<ApplicationLogger>;
+  let logger: MockProxy<ApplicationLoggerPort>;
   let strategy: WeatherMorningStrategy;
 
   beforeEach(() => {
@@ -77,7 +77,7 @@ describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
     publisher = new StubNotificationBatchPublisher();
     history = new StubNotificationHistoryReader();
     weatherReports = new StubReminderWeatherReportReader();
-    logger = mock<ApplicationLogger>();
+    logger = mock<ApplicationLoggerPort>();
     strategy = new WeatherMorningStrategy({
       reader,
       notificationPublisher: publisher,
@@ -228,9 +228,9 @@ describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예
         weatherReportProvider: provider,
         weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),
         timezoneResolver: new StubTimezoneResolver(),
-        logger: mock<ApplicationLogger>(),
+        logger: mock<ApplicationLoggerPort>(),
       }),
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
   });
   afterEach(() => {

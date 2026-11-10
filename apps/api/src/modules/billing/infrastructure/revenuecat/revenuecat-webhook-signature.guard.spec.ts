@@ -13,7 +13,7 @@ import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { createMockExecutionContext } from "#test/mocks/index";
 
 import { RevenueCatWebhookSignatureGuard } from "./revenuecat-webhook-signature.guard.js";

@@ -14,7 +14,8 @@ import type {
   FriendshipEstablisherPort,
   FriendshipEstablishment,
 } from "#api/modules/social/social-friends.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -22,7 +23,6 @@ import {
 } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { InviteRedemption } from "../../../domain/aggregates/invites/invite-redemption.aggregate.js";
 import type { Invite } from "../../../domain/aggregates/invites/invite.aggregate.js";
@@ -104,7 +104,7 @@ interface RedeemInviteDependencies {
   readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /** 초대를 수락해 친구를 맺고, 새로 가입한 사람이면 보상 지급을 남긴다. */

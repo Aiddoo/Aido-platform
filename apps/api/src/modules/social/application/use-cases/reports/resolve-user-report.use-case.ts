@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { UserReport } from "../../../domain/aggregates/reports/user-report.aggregate.js";
 import { type UserReportRepositoryPort } from "../../ports/reports/user-report.repository.port.js";

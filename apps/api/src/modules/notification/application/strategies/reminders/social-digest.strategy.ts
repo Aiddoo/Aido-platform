@@ -1,6 +1,6 @@
 import { groupBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -26,7 +26,7 @@ interface SocialDigestStrategyDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SocialDigestStrategy implements TimezoneReminderStrategy {

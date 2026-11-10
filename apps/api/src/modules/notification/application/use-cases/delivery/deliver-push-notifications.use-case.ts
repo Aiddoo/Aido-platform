@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -88,7 +88,7 @@ interface DeliverPushNotificationsDependencies {
     PushNotificationDeliveryService,
     "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"
   >;
-  readonly logger: Pick<ApplicationLogger, "debug" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "error">;
 }
 
 export class DeliverPushNotifications {

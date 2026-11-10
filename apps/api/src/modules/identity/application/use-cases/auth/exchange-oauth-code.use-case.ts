@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { AuthOAuthState } from "#api/modules/identity/domain/aggregates/auth/auth-oauth-state.aggregate";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthOAuthStateRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
@@ -21,7 +21,7 @@ interface ExchangeOAuthCodeDependencies {
     "findByExchangeCode" | "consumeExchangeCode"
   >;
   readonly oauthSignupNotifier: Pick<OAuthSignupNotifier, "notify">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class ExchangeOAuthCode {

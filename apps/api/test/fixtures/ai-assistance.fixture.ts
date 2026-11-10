@@ -11,7 +11,7 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/domain/services/suggestions/suggestion-candidates";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
@@ -84,7 +84,7 @@ export function createAiAssistanceFixture() {
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const contextBuilder = new SuggestionContextBuilder({
     repository,
     weatherForecastReader,

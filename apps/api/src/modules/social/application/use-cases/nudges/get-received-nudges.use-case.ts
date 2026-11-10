@@ -1,5 +1,5 @@
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type {
   GetNudgesInput,
@@ -17,7 +17,7 @@ interface GetReceivedNudgesDependencies {
     PaginationService,
     "normalizeCursorPagination" | "createCursorPaginatedResponse"
   >;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class GetReceivedNudges {

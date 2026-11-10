@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { AccountFixture, SessionFixture, UserFixture } from "#test/fixtures/index";
 import {
   StubAccountLifecycleCache,
@@ -63,7 +63,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     );
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const passwordService = new StubAccountPasswordVerifier();
-    const logger = mock<ApplicationLogger>();
+    const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new DeleteAccount({
       pushDevices,

@@ -9,7 +9,7 @@ import type {
   VerifiedProfile,
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 function exchangeKey(provider: AccountProvider, code: string): string {
   return `${provider}:${code}`;

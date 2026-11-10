@@ -17,7 +17,7 @@ import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
 import { IS_PUBLIC_KEY } from "#api/modules/identity/presentation/decorators/auth/public.decorator";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { createMockExecutionContext } from "#test/mocks/index";
 
 import { JwtAuthGuard } from "./jwt-auth.guard.js";

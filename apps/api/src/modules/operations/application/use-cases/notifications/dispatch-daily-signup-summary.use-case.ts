@@ -1,6 +1,6 @@
 import { sumBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { buildDailySummaryMessage } from "../../messages/notifications/admin-message.factory.js";
@@ -18,7 +18,7 @@ import { computePreviousKstDayRange } from "../../services/notifications/signup-
 interface DispatchDailySignupSummaryDependencies {
   readonly reader: Pick<SignupStatsReaderPort, "getSignupStats">;
   readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
-  readonly logger: Pick<ApplicationLogger, "log" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
 export class DispatchDailySignupSummary {

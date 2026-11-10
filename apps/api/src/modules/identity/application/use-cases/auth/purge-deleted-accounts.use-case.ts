@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
@@ -22,7 +22,7 @@ interface PurgeDeletedAccountsDependencies {
   readonly notificationCleanup: AccountNotificationCleanupPort;
   readonly todoCommentCleanup: AccountTodoCommentCleanupPort;
   readonly usageCleanup: AccountUsageCleanupPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class PurgeDeletedAccounts {

@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { OperationsAlertKey } from "../../observability/notifications/operations-alerts.js";
@@ -17,7 +17,7 @@ export class AdminNotificationRetryableError extends Error {
 interface SendAdminNotificationDependencies {
   readonly notifier: Pick<AdminNotifierPort, "send">;
   readonly alert: OperationalAlertPort;
-  readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "log" | "warn">;
 }
 
 /**

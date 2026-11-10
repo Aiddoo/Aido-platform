@@ -1,7 +1,7 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
@@ -40,7 +40,7 @@ interface MaterializeDueTodoSeriesDependencies {
   readonly seriesOwner: TodoSeriesOwnerPort;
   readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
   readonly alert: OperationalAlertPort;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly batchSize?: number;
   readonly deadlineMs?: number;
 }

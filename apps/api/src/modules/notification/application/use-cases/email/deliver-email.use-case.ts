@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import type { EmailKind } from "../../../domain/types/email/email-delivery.types.js";
@@ -30,7 +30,7 @@ interface DeliverEmailDependencies {
   readonly sender: EmailSenderPort;
   readonly budget: Pick<EmailBudgetPort, "release" | "settleProviderQuotaExhausted">;
   readonly alert: OperationalAlertPort;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /**

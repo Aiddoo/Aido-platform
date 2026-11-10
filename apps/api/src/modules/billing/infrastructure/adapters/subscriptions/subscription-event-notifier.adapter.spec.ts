@@ -4,8 +4,8 @@ import { vi } from "vitest";
 
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { SUBSCRIPTION_TIME } from "#test/fixtures/subscription.fixture";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 

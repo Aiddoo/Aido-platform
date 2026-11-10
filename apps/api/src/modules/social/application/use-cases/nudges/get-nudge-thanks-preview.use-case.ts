@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { NudgeThanksPreviewResult } from "../../models/nudges/nudge-interaction.models.js";
 import { type NudgeInteractionConfigPort } from "../../ports/nudges/nudge-interaction.config.port.js";

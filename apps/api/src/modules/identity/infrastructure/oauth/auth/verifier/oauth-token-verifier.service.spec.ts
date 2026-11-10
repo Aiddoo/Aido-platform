@@ -14,7 +14,7 @@ import {
 } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { asMock } from "#test/mocks/index";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 

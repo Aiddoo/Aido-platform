@@ -5,7 +5,7 @@ import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/for
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   kmaTimingFixture,
   weatherForecastFixture,
@@ -34,7 +34,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     reader = new WeatherForecastReader({
       weatherProvider,
       weatherCache: cache,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
   });
   afterEach(() => {
@@ -181,7 +181,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     reader = new WeatherForecastReader({
       weatherProvider: tracking,
       weatherCache: cache,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
     const grids = Array.from({ length: 10 }, (_, i) => ({
       gridX: 50 + i,
@@ -244,7 +244,7 @@ describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
     reader = new WeatherForecastReader({
       weatherProvider,
       weatherCache: cache,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
   });
   afterEach(() => {

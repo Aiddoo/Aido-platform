@@ -1,6 +1,6 @@
 import { NOTICE_DEEP_LINK_PATH } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { createBillingIssueNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -14,7 +14,7 @@ export interface SendBillingIssueNotificationInput {
 interface SendBillingIssueNotificationDependencies {
   readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class SendBillingIssueNotification {

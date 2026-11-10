@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
@@ -12,7 +12,7 @@ export interface NotificationAccountCleanupResult {
 interface NotificationAccountCleanupDependencies {
   readonly repository: Pick<NotificationRepositoryPort, "deleteNotificationsByActorId">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class NotificationAccountCleanup {

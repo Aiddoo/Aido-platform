@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { resolveEmailPriority } from "../../../domain/policies/email/email-budget.policy.js";
 import type { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
@@ -38,7 +38,7 @@ interface TransactionalEmailSenderDependencies {
   readonly queue: EmailDeliveryQueuePort;
   readonly sender: EmailSenderPort;
   readonly budget: Pick<EmailBudgetPort, "reserve" | "release" | "settleProviderQuotaExhausted">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /** 인증·문의·신고 템플릿을 이메일 발송 큐에 올리는 공개 capability. */

@@ -1,5 +1,5 @@
 import type { WeeklyAchievementWriterPort } from "#api/modules/insights/insights-weekly-achievements.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -24,7 +24,7 @@ interface WeeklyAchievementStrategyDependencies {
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class WeeklyAchievementStrategy implements TimezoneReminderStrategy {

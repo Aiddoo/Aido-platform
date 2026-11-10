@@ -1,7 +1,7 @@
 import { INVITE_FRIENDSHIP, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   type AfterCommitTaskRegistryPort,
   MutationLockKeys,
@@ -40,7 +40,7 @@ interface FriendshipEstablisherDependencies {
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly afterCommitTasks: Pick<AfterCommitTaskRegistryPort, "register">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

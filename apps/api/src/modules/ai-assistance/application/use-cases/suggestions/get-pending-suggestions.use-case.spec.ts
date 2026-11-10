@@ -1,7 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
 import { GetPendingSuggestions } from "./get-pending-suggestions.use-case.js";

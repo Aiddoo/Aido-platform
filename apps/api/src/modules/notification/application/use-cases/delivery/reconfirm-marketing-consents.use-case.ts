@@ -5,7 +5,7 @@ import {
   marketingAgreedSince,
   marketingReconfirmCutoff,
 } from "#api/modules/identity/identity-settings.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
@@ -47,7 +47,7 @@ interface ReconfirmMarketingConsentsDependencies {
   readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "findUsersInQuietHours">;
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

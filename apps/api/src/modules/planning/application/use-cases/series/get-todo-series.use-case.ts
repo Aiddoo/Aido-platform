@@ -1,7 +1,7 @@
 import type { TodoSeriesResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import { toTodoSeriesResponse } from "../../read-models/series/todo-series.read-model.js";

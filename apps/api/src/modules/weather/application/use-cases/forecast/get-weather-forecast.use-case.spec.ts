@@ -5,7 +5,7 @@ import { WeatherForecastReader } from "#api/modules/weather/application/services
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherLocationFixture } from "#test/fixtures/weather.fixture";
 import { StubWeatherLocationRepository, StubWeatherProvider } from "#test/mocks/ports/weather.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -31,7 +31,7 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     const forecastReader = new WeatherForecastReader({
       weatherProvider,
       weatherCache: cache,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
     useCase = new GetWeatherForecast({ weatherLocationRepository: repository, forecastReader });
   });

@@ -4,7 +4,7 @@ import { vi, type Mocked } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import type { VerificationType } from "#api/modules/identity/domain/types/auth/auth.types";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { StubAuthVerificationRepository } from "#test/mocks/ports/auth-credentials.stub";
@@ -28,7 +28,7 @@ const passwordScenarios = [
 
 describe("VerificationService — 인증 코드 발급과 계정 보호", () => {
   let service: VerificationService;
-  let logger: Mocked<ApplicationLogger>;
+  let logger: Mocked<ApplicationLoggerPort>;
   let repository: Mocked<AuthVerificationRepositoryPort>;
   let emailSender: FakeEmailService;
   let security: Mocked<VerificationCodeSecurityPort>;
@@ -36,7 +36,7 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(currentTime);
-    logger = mock<ApplicationLogger>();
+    logger = mock<ApplicationLoggerPort>();
     repository = mock<AuthVerificationRepositoryPort>();
     security = mock<VerificationCodeSecurityPort>();
     emailSender = new FakeEmailService();

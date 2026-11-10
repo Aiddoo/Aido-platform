@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { UserLocation } from "../../../domain/entities/forecast/user-location.entity.js";
 import { type WeatherLocationRepositoryPort } from "../../ports/forecast/weather-location.repository.port.js";

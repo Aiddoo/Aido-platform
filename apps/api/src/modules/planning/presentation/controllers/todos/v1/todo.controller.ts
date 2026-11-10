@@ -32,9 +32,10 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException, DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/index";
 
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";

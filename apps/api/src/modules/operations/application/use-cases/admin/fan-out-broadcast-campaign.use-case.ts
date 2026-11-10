@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { buildBroadcastMessages } from "../../messages/admin/broadcast-message.factory.js";
@@ -19,7 +19,7 @@ interface FanOutBroadcastCampaignDependencies {
   readonly notifier: Pick<AdminBroadcastNotifierPort, "sendBatch">;
   readonly fanOutEnqueuer: Pick<BroadcastFanOutEnqueuerPort, "enqueueFanOut">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**

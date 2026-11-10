@@ -6,7 +6,7 @@ import {
   SECURITY_EVENT,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
   AuthPersistenceConflict,

@@ -3,7 +3,7 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { PLANNING_TIME } from "#test/fixtures/planning-todo.fixture";
 import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
@@ -46,7 +46,7 @@ describe("카테고리 생성", () => {
       cache,
       mutationLock,
       unitOfWork,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
       limitReader,
     });
 

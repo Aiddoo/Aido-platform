@@ -1,5 +1,5 @@
 import type { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { GetNudgesInput, SentNudgesSnapshot } from "../../models/nudges/nudge-read.models.js";
 import { NudgeLogEvent } from "../../observability/nudges/nudge-log.events.js";
@@ -11,7 +11,7 @@ interface GetSentNudgesDependencies {
     PaginationService,
     "normalizeCursorPagination" | "createCursorPaginatedResponse"
   >;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class GetSentNudges {

@@ -19,10 +19,10 @@ import {
   userPreference,
   userProfile,
 } from "#api/platform/database/schema/index";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { generateUserTag } from "./user-tag.generator.js";
 

@@ -74,36 +74,36 @@ export interface JobRuntimeHealth {
   readonly queues: Readonly<Record<string, JobQueueHealth>>;
 }
 
-export interface JobRuntimePort {
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  enqueue<T extends JobData>(
+export abstract class JobRuntimePort {
+  abstract start(): Promise<void>;
+  abstract stop(): Promise<void>;
+  abstract enqueue<T extends JobData>(
     queue: string,
     data: T,
     options: EnqueueJobOptions,
   ): Promise<string | null>;
   /** 같은 큐의 작업을 한 번에 등록한다. 같은 idempotency key의 작업은 enqueue와 같이 한 번만 남는다. */
-  enqueueMany<T extends JobData>(
+  abstract enqueueMany<T extends JobData>(
     queue: string,
     jobs: readonly EnqueueJobRequest<T>[],
   ): Promise<void>;
-  schedule<T extends JobData>(
+  abstract schedule<T extends JobData>(
     scheduleKey: string,
     cron: string,
     queue: string,
     data: T,
     options: EnqueueJobOptions,
   ): Promise<void>;
-  unschedule(scheduleKey: string, queue: string): Promise<void>;
+  abstract unschedule(scheduleKey: string, queue: string): Promise<void>;
   /** 작업을 상태와 상관없이 지워 같은 key로 다시 등록할 수 있게 한다. 없는 key는 무시한다. */
-  cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void>;
+  abstract cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void>;
   /** payload는 저장소에서 읽은 그대로라 handler가 자기 스키마로 검증한다. */
-  work(
+  abstract work(
     queue: string,
     handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void>;
-  health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;
+  abstract health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;
 }
 
 export const JOB_RUNTIME = Symbol("JOB_RUNTIME");

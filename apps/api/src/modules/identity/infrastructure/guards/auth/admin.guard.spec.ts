@@ -12,7 +12,7 @@
  */
 import { TestBed } from "@suites/unit";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { createMockExecutionContext } from "#test/mocks/index";
 
 import { AdminGuard } from "./admin.guard.js";

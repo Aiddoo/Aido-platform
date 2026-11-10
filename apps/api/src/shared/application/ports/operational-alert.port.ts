@@ -20,6 +20,6 @@ export interface OperationalAlert {
 }
 
 /** 운영 경보를 올린다. 경보 실패는 호출 흐름에 전파하지 않는다(never throws). */
-export interface OperationalAlertPort {
-  raise(alert: OperationalAlert): void;
+export abstract class OperationalAlertPort {
+  abstract raise(alert: OperationalAlert): void;
 }

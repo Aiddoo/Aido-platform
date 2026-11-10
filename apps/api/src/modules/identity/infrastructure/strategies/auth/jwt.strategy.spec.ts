@@ -20,7 +20,7 @@ import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/a
 import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { asDep, asMock } from "#test/mocks/index";
 
 import {

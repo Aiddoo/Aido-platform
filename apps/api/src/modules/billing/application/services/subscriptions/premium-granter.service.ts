@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type {
   AfterCommitTaskRegistryPort,
   UnitOfWorkPort,
@@ -25,7 +25,7 @@ interface PremiumGranterDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly afterCommitTasks: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly cache: SubscriptionCachePort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /** 웹훅과 같은 사용자 잠금 아래에서 보상 기간을 저장하고 프리미엄 projection을 다시 계산한다. */

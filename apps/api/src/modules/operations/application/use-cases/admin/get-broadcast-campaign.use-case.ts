@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { PushCampaignOutcome } from "#api/modules/notification/notification-delivery.public";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { BroadcastCampaign } from "../../../domain/aggregates/admin/broadcast-campaign.aggregate.js";
 import type { BroadcastCampaignRepositoryPort } from "../../ports/admin/broadcast-campaign.repository.port.js";

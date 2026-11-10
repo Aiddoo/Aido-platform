@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
@@ -26,7 +26,7 @@ interface RevokePremiumGrantDependencies {
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: SubscriptionCachePort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

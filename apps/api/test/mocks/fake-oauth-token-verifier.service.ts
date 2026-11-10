@@ -8,7 +8,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { VerifiedProfile } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**
  * 테스트용 OAuth 토큰 검증 서비스

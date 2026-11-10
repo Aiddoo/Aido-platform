@@ -14,8 +14,8 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { KAKAO_OAUTH_POLICY, NAVER_OAUTH_POLICY } from "../oauth-outbound.policies.js";

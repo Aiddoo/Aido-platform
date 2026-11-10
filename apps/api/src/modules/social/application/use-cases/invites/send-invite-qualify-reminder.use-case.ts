@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { InviteQualifyReminderPolicy } from "../../../domain/policies/invites/invite-qualify-reminder.policy.js";
@@ -30,7 +30,7 @@ interface SendInviteQualifyReminderDependencies extends InvitePairReachabilityDe
   readonly notifier: Pick<InviteNotifierPort, "notifyQualifyReminder" | "isInQuietHours">;
   readonly inviteConfig: InviteConfigPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

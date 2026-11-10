@@ -1,14 +1,14 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { UserReportReason, UserReportTargetType } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   UserReport,
@@ -48,7 +48,7 @@ interface ReportContentDependencies {
   readonly notifier: Pick<UserReportNotifierPort, "notifyOperators">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
@@ -8,7 +8,7 @@ import { type UserNotificationSettingsPort } from "../../ports/delivery/user-not
 interface OptOutMarketingPushDependencies {
   readonly tokens: Pick<MarketingPushOptOutTokenPort, "verify">;
   readonly settings: Pick<UserNotificationSettingsPort, "updateMarketingPushConsent">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export interface OptOutMarketingPushResult {

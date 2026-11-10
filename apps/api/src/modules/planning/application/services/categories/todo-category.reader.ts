@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { TodoCategoryCountReaderPort } from "../../ports/categories/todo-category-count-reader.port.js";
 import type { TodoCategoryReaderPort } from "../../ports/categories/todo-category-reader.port.js";

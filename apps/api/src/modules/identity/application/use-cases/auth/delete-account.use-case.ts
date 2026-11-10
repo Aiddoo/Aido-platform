@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityUser } from "../../../domain/aggregates/auth/identity-user.aggregate.js";
 import {
@@ -42,7 +42,7 @@ interface DeleteAccountDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession" | "invalidateUserProfile">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class DeleteAccount {

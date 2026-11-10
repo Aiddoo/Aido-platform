@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { buildDailyCompletionsRange } from "../../../domain/policies/daily-completions/daily-completion.policy.js";
 import type { DailyCompletionsRange } from "../../../domain/records/daily-completions/daily-completion.record.js";

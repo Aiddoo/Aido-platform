@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -24,7 +24,7 @@ interface WinbackStrategyDependencies {
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDedup: Pick<SchedulerDedupPort, "hasWinbackStage" | "recordWinbackStages">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 export class WinbackStrategy implements TimezoneReminderStrategy {

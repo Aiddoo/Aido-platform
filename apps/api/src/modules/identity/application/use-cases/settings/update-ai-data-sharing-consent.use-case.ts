@@ -1,6 +1,6 @@
 import type { UpdateAiDataSharingConsentResponse } from "@aido/api";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveAiDataSharingAgreement } from "../../../domain/services/settings/ai-data-sharing-consent-policy.js";
@@ -17,7 +17,7 @@ export interface UpdateAiDataSharingConsentInput {
 
 interface UpdateAiDataSharingConsentDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "upsertAiDataSharingConsent">;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** AI 데이터 처리(Google Gemini 전송)에 동의하거나 거부·철회한다. 거부해도 AI 외 기능은 그대로다. */

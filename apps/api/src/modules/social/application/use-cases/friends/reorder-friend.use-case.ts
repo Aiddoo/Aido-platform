@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type {
   ReorderPlan,
@@ -36,7 +36,7 @@ interface ReorderFriendDependencies {
   >;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class ReorderFriend {

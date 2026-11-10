@@ -1,13 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   UserBlock,
@@ -39,7 +39,7 @@ interface BlockUserDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly friendshipCache: FriendshipCacheInvalidator;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class BlockUser {

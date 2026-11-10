@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
@@ -41,7 +41,7 @@ describe("Logout — 현재 기기의 세션 종료", () => {
       sessionRepository,
       cacheService,
       securityLogRepository,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
     return { useCase, sessionRepository, cacheService, securityLogRepository };
   }

@@ -4,10 +4,10 @@ import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";

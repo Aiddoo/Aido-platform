@@ -2,7 +2,7 @@ import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { TodoBuilder } from "#test/builders/todo.builder";
 import { createNotesMemoFixture, NOTES_TIME } from "#test/fixtures/notes-memo.fixture";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";

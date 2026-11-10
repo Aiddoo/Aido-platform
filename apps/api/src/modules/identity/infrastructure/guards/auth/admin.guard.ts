@@ -4,7 +4,7 @@ import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**
  * 관리자 전용 가드

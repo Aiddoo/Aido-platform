@@ -23,7 +23,7 @@ import type {
   DailySendUsage,
   DailySendUsageReaderPort,
 } from "#api/modules/social/social-cheers.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { StubAccountRepository } from "#test/mocks/ports/account-lifecycle.stub";
 import {
@@ -88,7 +88,7 @@ export function createAuthCredentialFixture(
   const adminEventNotifier = new StubAuthRegistrationNotifier();
   const retentionEnroller = new StubAuthRetentionEnroller();
   const seeder = new StubAuthProvisioningSeeder();
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const unitOfWork = createUnitOfWorkMock();
   const sessionService = new SessionService({ sessionRepository, tokenService });
   const verificationService = new VerificationService({

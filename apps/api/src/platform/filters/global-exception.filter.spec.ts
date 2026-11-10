@@ -20,8 +20,8 @@ import { vi, type Mock } from "vitest";
 import { mock, type MockProxy } from "vitest-mock-extended";
 
 import type { TypedConfigService } from "#api/platform/config/services/config.service";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { sqlQueryError } from "#test/mocks/drizzle.mock";
 

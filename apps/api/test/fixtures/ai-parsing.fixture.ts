@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { StubAiDataSharingConsent } from "#test/mocks/ports/ai-assistance.stub";
 import {
@@ -20,7 +20,7 @@ export function createAiParsingFixture(input: Partial<InMemoryQuotaUser> = {}) {
   return {
     ...ledgerFixture,
     quota: ledgerFixture.ledger,
-    logger: mock<ApplicationLogger>(),
+    logger: mock<ApplicationLoggerPort>(),
     categoryReader,
     upcomingTodoReader: new StubUpcomingTodoReader(),
     generator: new FakeAiGenerator(),

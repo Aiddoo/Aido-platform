@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 
 import { TodoOccurrencesChangedEvent } from "../../../domain/events/series/todo-occurrences-changed.event.js";
@@ -12,7 +12,7 @@ export interface TodoSeriesEditEffect {
 interface TodoSeriesEditEffectsDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
-  readonly logger: Pick<ApplicationLogger, "log">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /** 범위 수정·삭제의 커밋 뒤 효과. 리마인더는 UoW 안에서 처리하고 이벤트는 규칙당 하나다. */

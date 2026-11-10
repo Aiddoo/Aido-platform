@@ -11,10 +11,10 @@ import {
 import { assertStatusAllowsLogin } from "#api/modules/identity/domain/services/auth/account-status-policy";
 import { generateRandomName } from "#api/modules/identity/domain/services/auth/random-name.util";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
@@ -60,7 +60,7 @@ interface LoginWithOAuthTokenDependencies {
   readonly issueLoginUseCase: Pick<IssueLogin, "execute">;
   readonly provisionUserUseCase: Pick<ProvisionUser, "execute">;
   readonly restoreAccount: Pick<RestoreAccount, "execute">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class LoginWithOAuthToken {

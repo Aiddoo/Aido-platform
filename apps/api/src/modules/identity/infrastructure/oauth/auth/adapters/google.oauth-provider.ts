@@ -15,7 +15,7 @@ import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/obse
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { GOOGLE_OAUTH_POLICY } from "../oauth-outbound.policies.js";
 import { readOAuthProviderError } from "./oauth-provider-error.js";

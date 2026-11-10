@@ -2,13 +2,13 @@ import type { TodoCommentChainResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
 import { CommentPlacement } from "../../../domain/value-objects/comments/comment-placement.vo.js";
@@ -110,7 +110,7 @@ interface WriteTodoCommentChainDependencies {
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class WriteTodoCommentChain {

@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createSubscriptionFixture } from "#test/fixtures/subscription.fixture";
 import { StubPremiumGrantRepository } from "#test/mocks/ports/subscription.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
@@ -14,7 +14,7 @@ function given() {
   const premiumGrantRepository = new StubPremiumGrantRepository();
   const invalidated: string[] = [];
   const projected: string[] = [];
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const useCase = new RevokePremiumGrant({
     premiumGrantRepository,
     premiumAccessProjector: {

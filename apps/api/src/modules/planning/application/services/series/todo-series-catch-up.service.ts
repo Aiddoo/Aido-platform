@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -20,7 +20,7 @@ interface TodoSeriesCatchUpDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
   readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
   readonly dueRunner: Pick<TodoSeriesDueRunner, "materialize">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly deadlineMs?: number;
 }
 

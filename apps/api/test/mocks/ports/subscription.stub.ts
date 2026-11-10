@@ -36,7 +36,7 @@ import {
 } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
 import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/policies/subscriptions/premium-access.policy";
 import { StoreSubscriptionId } from "#api/modules/billing/domain/value-objects/subscriptions/store-subscription-id.vo";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 /** 저장소 대역의 사용자. appUserAlias는 스토어가 User.id 대신 쓰는 별칭(DB 칸 User.revenueCatUserId)이다. */
 export interface StubSubscriptionUser extends SubscriptionUser {

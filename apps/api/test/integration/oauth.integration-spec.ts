@@ -23,7 +23,7 @@ import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructur
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";

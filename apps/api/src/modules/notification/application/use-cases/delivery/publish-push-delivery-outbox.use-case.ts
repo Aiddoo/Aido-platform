@@ -1,6 +1,6 @@
 import { chunk } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -31,7 +31,7 @@ interface PublishPushDeliveryOutboxDependencies {
   >;
   readonly enqueuer: Pick<PushDeliveryJobEnqueuerPort, "enqueueDeliveries">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class PublishPushDeliveryOutbox {

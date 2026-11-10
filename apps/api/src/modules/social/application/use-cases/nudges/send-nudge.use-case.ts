@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -9,7 +10,6 @@ import {
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
 import { evaluateNudgeCooldown } from "../../../domain/policies/nudges/nudge-cooldown.policy.js";
@@ -41,7 +41,7 @@ interface SendNudgeDependencies {
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class SendNudge {

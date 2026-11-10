@@ -1,6 +1,6 @@
 import type { UpdateMarketingConsentResponse } from "@aido/api";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveMarketingAgreement } from "../../../domain/services/settings/marketing-consent-policy.js";
@@ -15,7 +15,7 @@ export interface UpdateMarketingConsentInput {
 
 interface UpdateMarketingConsentDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "upsertMarketingConsent">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class UpdateMarketingConsent {

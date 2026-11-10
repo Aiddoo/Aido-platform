@@ -2,12 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { sortBy, uniq, uniqBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import type { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
@@ -61,7 +61,7 @@ interface ApplyStoreSubscriptionEventDependencies {
   readonly webhookLock: SubscriptionWebhookLockPort;
   readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
   readonly reconcileScheduler: StoreSubscriptionReconcileSchedulerPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 interface SubscriptionTransition {

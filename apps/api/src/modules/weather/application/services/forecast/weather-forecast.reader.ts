@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 import { chunk } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { UserLocation } from "../../../domain/entities/forecast/user-location.entity.js";
 import { KmaForecastAvailabilityPolicy } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
@@ -41,7 +41,7 @@ interface WeatherForecastReaderDependencies {
     | "saveForecastBatch"
     | "getLatestForecastBatch"
   >;
-  readonly logger: Pick<ApplicationLogger, "warn" | "debug">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn" | "debug">;
 }
 
 export class WeatherForecastReader implements WeatherForecastReaderPort {

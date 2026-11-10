@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
@@ -68,7 +68,7 @@ interface GenerateReportDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
   readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
-  readonly logger: Pick<ApplicationLogger, "log" | "debug" | "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "debug" | "warn" | "error">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;

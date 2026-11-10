@@ -2,14 +2,14 @@ import type { DeleteTodoCommentResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
@@ -33,7 +33,7 @@ interface DeleteTodoCommentDependencies {
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class DeleteTodoComment {

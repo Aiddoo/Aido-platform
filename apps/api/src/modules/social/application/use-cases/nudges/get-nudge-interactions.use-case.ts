@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import { type CursorPaginatedResponse } from "#api/shared/application/pagination/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NudgeInteractionPolicy } from "../../../domain/policies/nudges/nudge-interaction.policy.js";
 import type { NudgeInteractionResult } from "../../models/nudges/nudge-interaction.models.js";

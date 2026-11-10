@@ -2,10 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { PushDevice } from "../../../domain/aggregates/delivery/push-device.aggregate.js";
 import { platformFromDeviceId } from "../../../domain/policies/delivery/push-device.policy.js";
@@ -61,7 +61,7 @@ interface ReportPushDeviceDependencies {
     "upsertPushLocale" | "upsertPushTimezone"
   >;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens" | "invalidateUserPreference">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
 /**

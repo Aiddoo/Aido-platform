@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import type { EngagementCommentFailureEvent } from "../../observability/comments/engagement-comment-log.events.js";
 
@@ -14,7 +14,7 @@ interface AfterCommitTask {
 
 /** 커밋된 쓰기를 부수 작업 실패 때문에 실패 응답으로 바꾸지 않는다. */
 export async function settleAfterCommit(
-  logger: ApplicationLogger,
+  logger: ApplicationLoggerPort,
   tasks: readonly AfterCommitTask[],
 ): Promise<void> {
   const settled = await Promise.allSettled(

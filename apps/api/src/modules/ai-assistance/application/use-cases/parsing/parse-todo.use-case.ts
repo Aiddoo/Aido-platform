@@ -1,9 +1,9 @@
 import type { ParsedTodoData } from "@aido/api";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
@@ -83,7 +83,7 @@ interface ParseTodoDependencies {
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn" | "error">;
 }
 
 export class ParseTodo {

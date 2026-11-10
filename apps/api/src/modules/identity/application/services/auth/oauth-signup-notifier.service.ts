@@ -1,5 +1,5 @@
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
@@ -31,7 +31,7 @@ export interface OAuthSignupNotice {
 interface OAuthSignupNotifierDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly adminEventNotifier: Pick<AuthRegistrationNotifierPort, "notifyUserRegistered">;
-  readonly logger: Pick<ApplicationLogger, "warn" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
 }
 
 /**

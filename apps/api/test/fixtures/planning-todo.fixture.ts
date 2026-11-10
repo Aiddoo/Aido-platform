@@ -6,7 +6,7 @@ import { TodoSeriesEditEffects } from "#api/modules/planning/application/service
 import { TodoTimezoneResolver } from "#api/modules/planning/application/services/todos/todo-timezone-resolver.service";
 import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { PaginationService } from "#api/shared/application/pagination/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { TodoBuilder } from "#test/builders/index";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
@@ -44,7 +44,7 @@ export function createPlanningTodoFixture(
   }
   const todoCache = new StubPlanningTodoCache();
   const eventPublisher = new StubPlanningEventPublisher();
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   const seriesStore = new Map<string, TodoSeries>();
   const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
   const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);

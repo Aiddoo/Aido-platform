@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
@@ -42,7 +42,7 @@ const fullUpcomingTodos = Array.from({ length: PLANNING_UPCOMING_TODO_LIMIT }, (
 
 function setup() {
   const aiGenerator = new FakeAiGenerator();
-  const logger = mock<ApplicationLogger>();
+  const logger = mock<ApplicationLoggerPort>();
   return {
     aiGenerator,
     logger,

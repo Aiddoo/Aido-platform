@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { ServerFlagFeature } from "../../../domain/policies/entitlement/entitlement.policy.js";
 import type { EntitlementReaderPort } from "../../ports/entitlement/entitlement-reader.port.js";

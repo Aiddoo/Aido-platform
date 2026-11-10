@@ -5,7 +5,7 @@ import { WeatherForecastReader } from "#api/modules/weather/application/services
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { weatherConditionsFixture, weatherLocationFixture } from "#test/fixtures/weather.fixture";
 import {
   StubAirQualityProvider,
@@ -40,7 +40,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
     airQualityProvider = new StubAirQualityProvider();
     lifestyleIndexProvider = new StubLifestyleIndexProvider();
     sunTimeProvider = new StubSunTimeProvider();
-    const logger = mock<ApplicationLogger>();
+    const logger = mock<ApplicationLoggerPort>();
     const forecastReader = new WeatherForecastReader({
       weatherProvider,
       weatherCache: cache,
@@ -144,7 +144,7 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
   ])("공급자 시간대 %s의 hour를 선택한다", async (timeZone, expectedTemperature) => {
     // Given - 공급자 metadata는 서버 host TZ와 독립이다.
     const provider = new StubWeatherProvider(String(timeZone));
-    const logger = mock<ApplicationLogger>();
+    const logger = mock<ApplicationLoggerPort>();
     const forecastReader = new WeatherForecastReader({
       weatherProvider: provider,
       weatherCache: cache,

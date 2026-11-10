@@ -7,8 +7,8 @@ import type {
   QuotaLedgerPort,
   QuotaReservation,
 } from "#api/modules/access/access-quota.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { AiGenerationLogEvent } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiTaskId } from "../../ports/generation/ai-generator.port.js";
@@ -32,7 +32,7 @@ export interface ChargedGenerationResult<T> {
 
 interface ChargedGenerationDependencies {
   readonly quota: Pick<QuotaLedgerPort, "commit" | "refund" | "read">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 /**

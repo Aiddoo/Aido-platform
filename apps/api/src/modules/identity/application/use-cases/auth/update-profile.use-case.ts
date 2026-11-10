@@ -1,7 +1,7 @@
 import type { UpdateProfileInput as UpdateProfileBody } from "@aido/api";
 
 import type { UpdateProfileResult } from "#api/modules/identity/application/types/auth/index";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js";
@@ -12,7 +12,7 @@ export type UpdateProfileInput = Readonly<UpdateProfileBody> & { readonly userId
 interface UpdateProfileDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "updateProfile">;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class UpdateProfile {

@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
@@ -51,7 +51,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     ]);
     const cacheService = new StubAuthSessionCache([sessionId]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
-    const logger = mock<ApplicationLogger>();
+    const logger = mock<ApplicationLoggerPort>();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new RefreshTokens({
       pushDevices,

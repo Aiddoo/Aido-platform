@@ -1,10 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import { isAfter } from "#api/shared/domain/date/utils/compare";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import type { FindTodosParams, GetTodosParams } from "../../models/todos/todo.types.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";

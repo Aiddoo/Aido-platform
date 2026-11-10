@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type {
-  ApplicationLogger,
+  ApplicationLoggerPort,
   ApplicationLogMessage,
-} from "#api/shared/application/ports/application-logger";
+} from "#api/shared/application/ports/application-logger.port";
 import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
@@ -46,7 +46,7 @@ class RecordingCache implements Pick<
   }
 }
 
-class RecordingLogger implements Pick<ApplicationLogger, "log" | "warn"> {
+class RecordingLogger implements Pick<ApplicationLoggerPort, "log" | "warn"> {
   readonly entries: ApplicationLogMessage[] = [];
 
   log(message: ApplicationLogMessage): void {

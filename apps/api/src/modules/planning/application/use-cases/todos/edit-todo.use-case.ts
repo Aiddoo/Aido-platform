@@ -2,12 +2,12 @@ import type { TodoRepeat, Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
 import type { UpdateTodoData } from "../../models/todos/todo.types.js";

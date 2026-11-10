@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
@@ -20,7 +20,7 @@ interface RejectFriendRequestDependencies {
   readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class RejectFriendRequest {

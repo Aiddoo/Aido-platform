@@ -7,7 +7,7 @@ import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/a
 import { WeatherKitNotConfiguredError } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-token.resolver";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
 import {
   weatherAttributionFixture,
@@ -31,7 +31,7 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
   let airQuality: StubAirQualityProvider;
-  let logger: MockProxy<ApplicationLogger>;
+  let logger: MockProxy<ApplicationLoggerPort>;
   let useCase: GetWeatherReport;
 
   /** 캐시 TTL과 응답 시각이 같은 시계를 보도록 Date만 고정·이동한다. */
@@ -50,7 +50,7 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     airQuality = new StubAirQualityProvider();
-    logger = mock<ApplicationLogger>();
+    logger = mock<ApplicationLoggerPort>();
     useCase = new GetWeatherReport({
       weatherLocationRepository: repository,
       weatherReportReader: new WeatherReportReader({

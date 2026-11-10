@@ -7,7 +7,7 @@ import { activeSubscriptionCondition } from "#api/modules/access/access-entitlem
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { subscription, user } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type {
   CreateSubscriptionData,

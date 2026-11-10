@@ -5,7 +5,7 @@ import {
   NO_RESOURCE_BONUSES,
   type ResourceBonuses,
 } from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import {
   InMemoryQuotaLedgerRepository,
@@ -35,7 +35,7 @@ export function createQuotaLedgerFixture(
   });
   const userMutationLock = new StubQuotaUserMutationLock(repository);
   const unitOfWork = createUnitOfWorkMock();
-  const ledgerLogger = mock<ApplicationLogger>();
+  const ledgerLogger = mock<ApplicationLoggerPort>();
   const alert = mock<OperationalAlertPort>();
   const ledger = new QuotaLedgerService({
     repository,

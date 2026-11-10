@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -17,7 +17,7 @@ interface UnblockUserDependencies {
   readonly userBlockRepository: Pick<UserBlockRepositoryPort, "delete">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /** 차단을 해제한다. 끊긴 친구 관계는 되살리지 않는다. 없던 차단을 해제해도 성공으로 본다. */

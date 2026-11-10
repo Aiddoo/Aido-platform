@@ -6,11 +6,11 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { assertEntitled } from "#api/modules/access/access-entitlement.public";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { ReminderTime } from "../../../domain/value-objects/settings/reminder-time.vo.js";
 import { IdentitySettingsLogEvent } from "../../observability/settings/identity-settings-log.events.js";
@@ -33,7 +33,7 @@ interface UpdatePreferenceDependencies {
   readonly reminderEnqueuer: Pick<ReminderScheduleEnqueuerPort, "enqueueReminderHourChanged">;
   readonly todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class UpdatePreference {

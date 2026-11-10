@@ -2,7 +2,7 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
 import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";

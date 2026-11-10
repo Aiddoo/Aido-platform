@@ -2,13 +2,13 @@ import type { Memo as MemoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { MemoContent } from "../../../domain/value-objects/memos/memo-content.vo.js";
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
@@ -29,7 +29,7 @@ interface CreateMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly repository: Pick<MemoRepositoryPort, "countByUserId" | "getMaxSortOrder" | "create">;
   readonly mutationLock: MutationLockPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class CreateMemo {

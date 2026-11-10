@@ -5,10 +5,10 @@ import { match } from "ts-pattern";
 import { AuthVerification } from "#api/modules/identity/domain/aggregates/auth/auth-verification.aggregate";
 import type { VerificationType } from "#api/modules/identity/domain/types/auth/auth.types";
 import { VerificationCode } from "#api/modules/identity/domain/value-objects/auth/verification-code.vo";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { addMinutes, subtractSeconds } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import { type AuthEmailSenderPort } from "../../ports/auth/auth-collaboration.port.js";
@@ -24,7 +24,7 @@ interface VerificationServiceDependencies {
   readonly verificationRepository: AuthVerificationRepositoryPort;
   readonly emailSender: AuthEmailSenderPort;
   readonly verificationCodeSecurity: VerificationCodeSecurityPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class VerificationService {

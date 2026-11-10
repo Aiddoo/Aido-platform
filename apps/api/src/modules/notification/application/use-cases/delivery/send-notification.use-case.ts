@@ -1,4 +1,4 @@
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import {
   type AfterCommitTaskRegistryPort,
   type UnitOfWorkPort,
@@ -24,7 +24,7 @@ interface SendNotificationDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly afterCommitPublisher: Pick<PushDeliveryAfterCommitPublisher, "register">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
 export class SendNotification {

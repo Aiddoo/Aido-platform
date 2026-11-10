@@ -2,7 +2,7 @@ import { isErrorCode } from "@aido/api/errors";
 import { REDEMPTION_STATUS, REWARD_TYPE, type RewardType } from "@aido/api/vocabulary";
 import { sumBy } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -58,7 +58,7 @@ interface GrantInviteRewardsDependencies {
   readonly alert: Pick<OperationalAlertPort, "raise">;
   readonly inviteConfig: InviteConfigPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 /**

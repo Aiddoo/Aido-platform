@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
@@ -47,7 +47,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
       sessionRepository,
       cacheService,
       securityLogRepository,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
     const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test/1.0" };
 
@@ -88,7 +88,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
       sessionRepository,
       cacheService,
       securityLogRepository,
-      logger: mock<ApplicationLogger>(),
+      logger: mock<ApplicationLoggerPort>(),
     });
 
     // When

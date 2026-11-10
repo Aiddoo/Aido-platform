@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { UserLocation } from "../../../domain/entities/forecast/user-location.entity.js";
 import { WeatherLogEvent } from "../../observability/forecast/weather-log.events.js";
@@ -33,7 +33,7 @@ interface GetWeatherConditionsDependencies {
   readonly forecastReader: Pick<WeatherForecastReader, "fetchForLocation">;
   readonly weatherProvider: Pick<WeatherProvider, "timeZone">;
   readonly weatherCache: Pick<WeatherCachePort, "getConditions" | "setConditions">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class GetWeatherConditions {

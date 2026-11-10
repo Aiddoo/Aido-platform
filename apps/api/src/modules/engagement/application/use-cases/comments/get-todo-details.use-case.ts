@@ -1,8 +1,8 @@
 import type { TodoDetailsResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/index";
 
 import { getTodoDetailsPermissions } from "../../../domain/policies/comments/todo-comment-permission.policy.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";

@@ -1,6 +1,6 @@
 import { forEachAsync, uniq } from "es-toolkit";
 
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
@@ -13,7 +13,7 @@ const CACHE_INVALIDATION_CONCURRENCY = 5;
 interface FinalizeBatchNotificationDependencies {
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
   readonly notificationDedup: Pick<NotificationDedupPort, "recordNotifiedUsers">;
-  readonly logger: Pick<ApplicationLogger, "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
 export class FinalizeBatchNotification {

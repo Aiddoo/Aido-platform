@@ -6,9 +6,9 @@ import {
   SECURITY_EVENT,
   REVOKE_REASON,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
-import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js";
@@ -41,7 +41,7 @@ interface ResetPasswordDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
-  readonly logger: ApplicationLogger;
+  readonly logger: ApplicationLoggerPort;
 }
 
 export class ResetPassword {
