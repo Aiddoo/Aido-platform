@@ -244,8 +244,7 @@
         "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
         "apps/api/src/modules/identity/users/application/use-cases/get-current-user.use-case.ts",
         "apps/api/src/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case.ts",
-        "apps/api/src/modules/identity/auth/application/read-models/auth-result.read-model.ts",
-        "apps/api/src/modules/identity/preferences/**"
+        "apps/api/src/modules/identity/auth/application/read-models/auth-result.read-model.ts"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -282,8 +281,7 @@
         "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**",
         "apps/api/src/modules/identity/users/application/use-cases/get-current-user.use-case.ts",
         "apps/api/src/modules/identity/users/application/use-cases/get-entitlement-snapshot.use-case.ts",
-        "apps/api/src/modules/identity/auth/application/read-models/auth-result.read-model.ts",
-        "apps/api/src/modules/identity/preferences/**"
+        "apps/api/src/modules/identity/auth/application/read-models/auth-result.read-model.ts"
       ],
       "rules": {
         "no-restricted-imports": [

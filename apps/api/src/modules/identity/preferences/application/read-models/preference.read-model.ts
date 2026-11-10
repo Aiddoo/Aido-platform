@@ -1,8 +1,4 @@
-import {
-  type PreferenceResponse,
-  type UpdatePreferenceResponse,
-  USER_PREFERENCE_DEFAULTS,
-} from "@aido/api";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
@@ -30,6 +26,10 @@ export interface PreferenceSnapshot {
   weatherEveningMinute: number;
 }
 
+/** 앱에 돌려주는 설정 값(locale 제외). 변경 요청은 이 필드 중 일부만 보낸다 */
+export type PreferenceView = Omit<PreferenceSnapshot, "locale">;
+export type PreferenceChanges = Partial<PreferenceView>;
+
 const PREFERENCE_RESPONSE_FIELDS = [
   "pushEnabled",
   "nightPushEnabled",
@@ -45,9 +45,9 @@ const PREFERENCE_RESPONSE_FIELDS = [
   "weatherEveningEnabled",
   "weatherEveningHour",
   "weatherEveningMinute",
-] satisfies (keyof UpdatePreferenceResponse)[];
+] satisfies (keyof PreferenceView)[];
 
-export function buildUpdatedPreferenceView(record: PreferenceSnapshot): UpdatePreferenceResponse {
+export function buildUpdatedPreferenceView(record: PreferenceSnapshot): PreferenceView {
   return pick(record, PREFERENCE_RESPONSE_FIELDS);
 }
 
@@ -72,7 +72,7 @@ export const DEFAULT_PREFERENCE_SNAPSHOT: PreferenceSnapshot = {
 export function buildPreferenceView(
   snapshot: PreferenceSnapshot,
   hasPremium: boolean,
-): PreferenceResponse {
+): PreferenceView {
   return {
     ...buildUpdatedPreferenceView(snapshot),
     morningReminderHour: hasPremium

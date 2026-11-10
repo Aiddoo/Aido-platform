@@ -116,6 +116,9 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
         agreedTermsVersion: "1.0",
         marketingAgreedAt: null,
         marketingPushAgreedAt: null,
+        aiDataSharingDecision: "UNDECIDED" as const,
+        aiDataSharingAgreedAt: null,
+        aiDataSharingConsentVersion: null,
       };
       getConsentUseCase.execute.mockResolvedValue(expectedResult);
 
@@ -134,6 +137,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const dto = { agreed: true };
       const expectedResult = {
         marketingAgreedAt: "2024-01-15T10:00:00.000Z",
+        marketingWithdrawnAt: null,
       };
       updateMarketingConsentUseCase.execute.mockResolvedValue(expectedResult);
 
@@ -151,7 +155,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
     it("마케팅 동의를 철회하면 null을 반환해야 한다", async () => {
       // Given
       const dto = { agreed: false };
-      const expectedResult = { marketingAgreedAt: null };
+      const expectedResult = {
+        marketingAgreedAt: null,
+        marketingWithdrawnAt: "2024-01-15T10:00:00.000Z",
+      };
       updateMarketingConsentUseCase.execute.mockResolvedValue(expectedResult);
 
       // When

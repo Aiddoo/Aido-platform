@@ -1,12 +1,13 @@
-import type { UpdateAiDataSharingConsentResponse } from "@aido/api";
-
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveAiDataSharingAgreement } from "../../domain/ai-data-sharing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
 import { PreferenceLogEvent } from "../preferences.log-events.js";
-import { buildAiDataSharingConsentView } from "../read-models/consent.read-model.js";
+import {
+  type AiDataSharingConsentView,
+  buildAiDataSharingConsentView,
+} from "../read-models/consent.read-model.js";
 
 export interface UpdateAiDataSharingConsentCommand {
   readonly userId: string;
@@ -28,9 +29,7 @@ export class UpdateAiDataSharingConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(
-    input: UpdateAiDataSharingConsentCommand,
-  ): Promise<UpdateAiDataSharingConsentResponse> {
+  async execute(input: UpdateAiDataSharingConsentCommand): Promise<AiDataSharingConsentView> {
     const updated = await this.#dependencies.consentRepository.upsertAiDataSharingConsent(
       input.userId,
       { agreedAt: resolveAiDataSharingAgreement(input.agreed, now()), version: input.version },

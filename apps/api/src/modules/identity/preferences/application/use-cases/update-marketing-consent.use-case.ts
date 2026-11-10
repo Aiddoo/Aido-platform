@@ -1,12 +1,13 @@
-import type { UpdateMarketingConsentResponse } from "@aido/api";
-
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveMarketingAgreement } from "../../domain/marketing-consent.domain-service.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
 import { PreferenceLogEvent } from "../preferences.log-events.js";
-import { buildMarketingConsentView } from "../read-models/consent.read-model.js";
+import {
+  buildMarketingConsentView,
+  type MarketingConsentView,
+} from "../read-models/consent.read-model.js";
 
 export interface UpdateMarketingConsentCommand {
   readonly userId: string;
@@ -25,7 +26,7 @@ export class UpdateMarketingConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateMarketingConsentCommand): Promise<UpdateMarketingConsentResponse> {
+  async execute(input: UpdateMarketingConsentCommand): Promise<MarketingConsentView> {
     const processedAt = now();
     const updated = await this.#dependencies.consentRepository.upsertMarketingConsent(
       input.userId,

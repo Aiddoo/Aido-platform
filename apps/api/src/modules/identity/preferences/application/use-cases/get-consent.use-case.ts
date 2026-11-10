@@ -1,7 +1,5 @@
-import type { ConsentResponse } from "@aido/api";
-
 import { type UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
-import { buildConsentView } from "../read-models/consent.read-model.js";
+import { buildConsentView, type ConsentView } from "../read-models/consent.read-model.js";
 
 export interface GetConsentQuery {
   readonly userId: string;
@@ -17,7 +15,7 @@ export class GetConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetConsentQuery): Promise<ConsentResponse> {
+  async execute(input: GetConsentQuery): Promise<ConsentView> {
     const consent = await this.#dependencies.consentRepository.findByUserId(input.userId);
     return buildConsentView(consent);
   }

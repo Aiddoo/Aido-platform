@@ -1,7 +1,3 @@
-import type {
-  UpdatePreferenceInput as PreferenceChanges,
-  UpdatePreferenceResponse,
-} from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import { assertEntitled } from "#api/modules/access/access-entitlement.public";
@@ -19,7 +15,11 @@ import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-reba
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 import { PreferenceLogEvent } from "../preferences.log-events.js";
-import { buildUpdatedPreferenceView } from "../read-models/preference.read-model.js";
+import {
+  buildUpdatedPreferenceView,
+  type PreferenceChanges,
+  type PreferenceView,
+} from "../read-models/preference.read-model.js";
 
 export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
   readonly userId: string;
@@ -43,7 +43,7 @@ export class UpdatePreferenceUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdatePreferenceCommand): Promise<UpdatePreferenceResponse> {
+  async execute(input: UpdatePreferenceCommand): Promise<PreferenceView> {
     const { userId } = input;
     const changesReminder =
       input.morningReminderHour != null ||

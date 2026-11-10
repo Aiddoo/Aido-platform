@@ -1,7 +1,5 @@
-import type { PreferenceResponse } from "@aido/api";
-
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
-import { buildPreferenceView } from "../read-models/preference.read-model.js";
+import { buildPreferenceView, type PreferenceView } from "../read-models/preference.read-model.js";
 import type { ReadUserPreferencesUseCase } from "./read-user-preferences.use-case.js";
 
 export interface GetPreferenceQuery {
@@ -20,7 +18,7 @@ export class GetPreferenceUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetPreferenceQuery): Promise<PreferenceResponse> {
+  async execute(input: GetPreferenceQuery): Promise<PreferenceView> {
     const [snapshot, canCustomizeReminder] = await Promise.all([
       this.#dependencies.preferenceReader.read(input.userId),
       this.#dependencies.entitlement.can(input.userId, "CUSTOM_REMINDER_TIME"),
