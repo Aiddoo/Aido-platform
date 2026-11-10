@@ -14,7 +14,6 @@ export type Cheer = typeof tables.cheer.$inferSelect;
 export type DailyCompletion = typeof tables.dailyCompletion.$inferSelect;
 export type Follow = typeof tables.follow.$inferSelect;
 export type LoginAttempt = typeof tables.loginAttempt.$inferSelect;
-export type Memo = typeof tables.memo.$inferSelect;
 export type Notification = typeof tables.notification.$inferSelect;
 export type Nudge = typeof tables.nudge.$inferSelect;
 export type OAuthState = typeof tables.oAuthState.$inferSelect;
