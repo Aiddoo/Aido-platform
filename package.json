@@ -37,6 +37,7 @@
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
     "test:e2e": "turbo run test:e2e --filter=@aido/server",
+    "test:contract": "turbo run test:contract --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
     "typecheck": "turbo run typecheck",
     "version-packages": "changeset version && node scripts/release/sync-versions.mjs"
