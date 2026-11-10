@@ -229,6 +229,57 @@ describe('CoachmarkPopover', () => {
       ).toHaveLength(1);
     });
 
+    it('먼저 뜰 화면을 기다리다 열 차례가 되면 자리를 처음부터 다시 재어, 그 화면이 바로 덮으면 열지 않고 돌아온 뒤 연다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+      const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+      const analytics = createAnalyticsStub();
+      const coachmark = (shouldAutoOpen: boolean) => (
+        <CoachmarkPopover
+          kind="friend-strip"
+          description="안내 설명"
+          shouldAutoOpen={shouldAutoOpen}
+        >
+          <PressableFeedback testID="target" />
+        </CoachmarkPopover>
+      );
+      const { rerender } = await renderUi(coachmark(false), {
+        di: { httpClient, syncStorage, analytics },
+      });
+      await act(async () => {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 600);
+        });
+      });
+      expect(screen.queryByTestId('hint-popover')).toBeNull();
+
+      // When
+      await rerender(coachmark(true));
+      const isOpenRightAfterTurn = screen.queryByTestId('hint-popover') != null;
+      jest.mocked(useIsFocused).mockReturnValue(false);
+      await rerender(coachmark(true));
+      await act(async () => {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 600);
+        });
+      });
+      const isOpenWhileCovered = screen.queryByTestId('hint-popover') != null;
+      jest.mocked(useIsFocused).mockReturnValue(true);
+      await rerender(coachmark(true));
+
+      // Then
+      expect(isOpenRightAfterTurn).toBe(false);
+      expect(isOpenWhileCovered).toBe(false);
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(
+        coachmarkRepository.hasSeen({
+          accountId: createCurrentUserDto().userId,
+          kind: 'friend-strip',
+        }),
+      ).toBe(false);
+    });
+
     it('닫아서 소비하지 않았으면 탭으로 돌아왔을 때 다시 연다', async () => {
       // Given
       const { changeFocus } = await renderCoachmarkOnHiddenTab();

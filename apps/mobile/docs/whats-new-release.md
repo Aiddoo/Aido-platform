@@ -53,6 +53,7 @@
 | 가입 시점과 상관없이 자동 | `WhatsNewPolicy.shouldAutoOpen(release, …)`: 서버 `enabled`·`autoOpen`, 이 출시의 캠페인, 지원 버전, 안 봄. 새 계정도 한 번 본다. 1.15.0 이하 앱은 `launchedAt` 전 가입자에게만 연다 |
 | 다른 안내와 겹치지 않음   | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                                                                                                |
 | 알림 화면 다음에 연다     | 피드가 `useIsPushOnboardingGuardClosed()`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                                       |
+| 말풍선은 그 다음          | `useWhatsNewAutoOpen`의 `shouldShowCoachmarks`(`utils/should-show-coachmarks.ts`)를 피드가 친구 줄·달력 안내에 넘긴다. 설정을 받는 중이거나 자동으로 열 차례면 기다린다              |
 | 다시 열기                 | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                                                                                            |
 | 새 기능 표시·메뉴 점      | `useUnseenCampaignReleaseId`: 서버 캠페인이 가리키는 출시를 아직 보지 않았을 때만 그 줄에 "새 기능", 마이 메뉴에 점. 지난 출시에는 붙이지 않는다                                     |
 | 캠페인 없는 소개          | 목록에서만 연다. 본 기록·`feature_hub_*`·`feature_card_cta`·기능 귀속을 남기지 않고 `whats_new_*`만 남긴다                                                                           |
@@ -65,7 +66,7 @@
 
 1. **알림 화면** `/onboarding/notifications`: `(app)/_layout`의 `usePushOnboardingGuard`가 내 정보와 OS 권한을 읽고 정한다. 읽기 전에는 guard 값이 `null`이라 어느 자동 화면도 열지 않는다. 권한을 읽지 못하면 알림 화면을 띄울 수 없으므로 열 차례가 아닌 것(`false`)으로 정한다.
 2. **새로운 기능** `/whats-new`: guard가 `false`로 그려진 뒤에만 연다. 알림 화면에 답하면 guard가 닫혀 화면이 빠지고, 피드가 다시 앞에 자리 잡을 때 연다. 열기 직전에 본 기록을 claim하므로 닫은 뒤 다시 자동으로 열리지 않는다.
-3. **말풍선**: 피드에 포커스가 있을 때 450ms 뒤에 뜨므로 위 두 화면을 닫은 뒤에 보인다.
+3. **말풍선**: 알림 화면을 열 차례가 아니라고 정해지고, 캠페인 설정을 다 받았고(실패·오프라인이면 열지 않는 것으로 본다), 새로운 기능을 자동으로 열 차례가 아닐 때만 띄운다(`shouldShowCoachmarks`). 450ms 기다림만으로는 설정이 늦게 오면 말풍선이 먼저 뜨고 새로운 기능이 그 위에 열린다. 열 차례가 되면 자리를 처음부터 다시 재므로(`CoachmarkPopover`의 `shouldAutoOpen`), 새로운 기능이 바로 덮으면 열리지 않고 닫고 피드로 돌아온 뒤 열린다. 이미 본 계정은 설정을 받자마자 기다리지 않는다.
 
 ## 키 정리
 
