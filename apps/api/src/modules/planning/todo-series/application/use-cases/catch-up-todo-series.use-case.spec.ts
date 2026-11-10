@@ -78,9 +78,7 @@ describe("복귀 회차 채우기", () => {
     await catchUp().execute(fixture.userId);
     // Then
     expect(fixture.records.size).toBe(91);
-    const dates = [...fixture.records.values()].map((todo) =>
-      todo.occurrenceDate?.toISOString().slice(0, 10),
-    );
+    const dates = [...fixture.records.values()].map((todo) => todo.occurrenceDate?.toString());
     expect(dates).toContain("2026-11-05");
     expect(dates).not.toContain("2026-11-04");
     expect(fixture.logger.messages).toContainEqual(

@@ -61,8 +61,8 @@ describe("친구 할 일 목록 조회", () => {
       userId: fixture.userId,
       friendUserId: "friend-user",
       size: 2,
-      startDate: new Date("2026-05-01"),
-      endDate: new Date("2026-05-31"),
+      startDate: Temporal.PlainDate.from("2026-05-01"),
+      endDate: Temporal.PlainDate.from("2026-05-31"),
     };
     fixture.todoReadRepository.queryResults = [
       createTodoReadModelFromRecord(createPlanningTodo("friend-user", 3)),
@@ -94,8 +94,8 @@ describe("친구 할 일 목록 조회", () => {
       useCase.execute({
         userId: fixture.userId,
         friendUserId: "friend-user",
-        startDate: new Date("2026-05-16"),
-        endDate: new Date("2026-05-15"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
+        endDate: Temporal.PlainDate.from("2026-05-15"),
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(permission).not.toHaveBeenCalled();

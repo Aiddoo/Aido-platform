@@ -141,7 +141,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           userId,
           categoryId,
           title: "책 읽기 10분",
-          startDate: new Date(`${date}T00:00:00Z`),
+          startDate: Temporal.PlainDate.from(date),
         });
         return row;
       }),
@@ -316,9 +316,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: date,
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed: true,
-            completedAt: new Date(`${date}T12:00:00Z`),
+            completedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
           });
           return row;
         }),
@@ -419,9 +419,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             userId,
             categoryId,
             title: "주간 날짜 경계",
-            startDate: new Date(`${date}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(date),
             completed,
-            completedAt: completed ? new Date(`${date}T12:00:00Z`) : null,
+            completedAt: completed ? Temporal.Instant.from(`${date}T12:00:00Z`) : null,
           });
           return row;
         }),
@@ -635,7 +635,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         userId: input.userId,
         categoryId: input.categoryId,
         title: input.title,
-        startDate: new Date("2026-10-12T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-10-12"),
       });
       await fixture.txHost.tx.insert(todo).values(row);
       return {

@@ -4,7 +4,6 @@ import { sumBy } from "es-toolkit";
 
 import { type Database, DRIZZLE } from "#api/platform/database/database.client";
 import { todo } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   TodoCompletionStats,
@@ -21,12 +20,10 @@ export class DrizzleTodoCompletionStatsReader implements TodoCompletionStatsRead
   }
 
   async countForDay(userId: string, date: Temporal.PlainDate): Promise<TodoCompletionStats> {
-    // planning Todo의 date 칸은 아직 UTC 자정 Date로 오간다
-    const day = instantToDate(date.toZonedDateTime("UTC").toInstant());
     // 여러 날 할 일은 시작일부터 종료일까지 모든 날에 센다(planning의 날짜 조회와 같은 겹침 규칙)
     const spansDay = and(
-      lte(todo.startDate, day),
-      or(gte(todo.endDate, day), and(isNull(todo.endDate), gte(todo.startDate, day))),
+      lte(todo.startDate, date),
+      or(gte(todo.endDate, date), and(isNull(todo.endDate), gte(todo.startDate, date))),
     );
     const groups = await this.#db
       .select({ completed: todo.completed, count: count() })

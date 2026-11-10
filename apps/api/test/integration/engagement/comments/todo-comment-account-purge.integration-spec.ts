@@ -56,6 +56,7 @@ import { OperationalAlertPort } from "#api/shared/application/ports/operational-
 import { RecordingTodoViewCacheInvalidator } from "#test/doubles/engagement/recording-todo-view-cache-invalidator";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -67,7 +68,7 @@ import {
 } from "../../../../src/modules/identity/users/identity-users.providers.js";
 import { TestDatabase } from "../../../setup/test-database.js";
 
-const NOW = new Date("2026-08-26T00:00:00.000Z");
+const TODO_DATE = Temporal.PlainDate.from("2026-08-26");
 const PURGE_ELIGIBLE_AT = Temporal.Instant.from("2026-07-01T00:00:00.000Z");
 const COMMENT_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
@@ -142,9 +143,10 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       userId: owner.id,
       categoryId: category.id,
       title: "댓글 사슬을 보존할 할 일",
-      startDate: NOW,
+      startDate: TODO_DATE,
       visibility: "PUBLIC",
       commentCount: 4,
+      updatedAt: nowInstant(),
     })
     .returning();
   if (todo === undefined) {
@@ -417,8 +419,9 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         userId: owner.id,
         categoryId: category.id,
         title: "같은 멱등 키",
-        startDate: NOW,
+        startDate: TODO_DATE,
         commentCount: 2,
+        updatedAt: nowInstant(),
       })
       .returning();
     if (todo === undefined) {

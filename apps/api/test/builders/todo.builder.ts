@@ -23,7 +23,7 @@ export class TodoBuilder {
   private static idCounter = 0;
 
   private constructor(userId: string) {
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     TodoBuilder.idCounter += 1;
     this.data = {
       id: TodoBuilder.idCounter,
@@ -31,7 +31,7 @@ export class TodoBuilder {
       title: `테스트 할 일 ${TodoBuilder.idCounter}`,
       categoryId: 1,
       sortOrder: 0,
-      startDate: now,
+      startDate: now.toZonedDateTimeISO("UTC").toPlainDate(),
       endDate: null,
       scheduledLocalTime: null,
       scheduledTime: null,
@@ -102,17 +102,17 @@ export class TodoBuilder {
 
   // === 일정 관련 ===
 
-  withStartDate(date: Date): TodoBuilder {
+  withStartDate(date: Temporal.PlainDate): TodoBuilder {
     this.data.startDate = date;
     return this;
   }
 
-  withEndDate(date: Date | null): TodoBuilder {
+  withEndDate(date: Temporal.PlainDate | null): TodoBuilder {
     this.data.endDate = date;
     return this;
   }
 
-  withScheduledTime(time: Date | null): TodoBuilder {
+  withScheduledTime(time: Temporal.Instant | null): TodoBuilder {
     this.data.scheduledTime = time;
     return this;
   }
@@ -122,7 +122,7 @@ export class TodoBuilder {
     return this;
   }
 
-  withDateRange(startDate: Date, endDate: Date): TodoBuilder {
+  withDateRange(startDate: Temporal.PlainDate, endDate: Temporal.PlainDate): TodoBuilder {
     this.data.startDate = startDate;
     this.data.endDate = endDate;
     return this;
@@ -154,7 +154,7 @@ export class TodoBuilder {
 
   // === 반복 생성 그룹 관련 ===
 
-  withOccurrenceDate(occurrenceDate: Date | null): TodoBuilder {
+  withOccurrenceDate(occurrenceDate: Temporal.PlainDate | null): TodoBuilder {
     this.data.occurrenceDate = occurrenceDate;
     return this;
   }
@@ -166,9 +166,9 @@ export class TodoBuilder {
 
   // === 완료 상태 관련 ===
 
-  completed(completedAt?: Date): TodoBuilder {
+  completed(completedAt?: Temporal.Instant): TodoBuilder {
     this.data.completed = true;
-    this.data.completedAt = completedAt ?? new Date();
+    this.data.completedAt = completedAt ?? Temporal.Instant.fromEpochMilliseconds(Date.now());
     return this;
   }
 
@@ -187,12 +187,12 @@ export class TodoBuilder {
 
   // === 타임스탬프 관련 ===
 
-  withCreatedAt(date: Date): TodoBuilder {
+  withCreatedAt(date: Temporal.Instant): TodoBuilder {
     this.data.createdAt = date;
     return this;
   }
 
-  withUpdatedAt(date: Date): TodoBuilder {
+  withUpdatedAt(date: Temporal.Instant): TodoBuilder {
     this.data.updatedAt = date;
     return this;
   }

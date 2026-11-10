@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { resolveWallClockTimezone } from "#api/shared/domain/date/utils/timezone";
+import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
@@ -136,8 +136,8 @@ export class RebaseTodoTimezoneUseCase {
     });
     const rebased = candidates.flatMap((candidate) => rebaseInstant(candidate, timezone));
     await todoRepository.updateRebasedInstants(rebased);
-    const nowMs = this.#dependencies.clock.now().epochMilliseconds;
-    const reminders = rebased.filter((row) => hasPendingReminder(row, nowMs));
+    const now = this.#dependencies.clock.now();
+    const reminders = rebased.filter((row) => hasPendingReminder(row, now));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
     await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));
     await todoReminder.scheduleReminders(
@@ -183,7 +183,7 @@ const EMPTY_RESULT = { scannedCount: 0, rebasedCount: 0, skippedCount: 0, series
 function rebaseInstant(candidate: RebaseCandidate, timezone: string) {
   const { todoId, startDate, scheduledLocalTime, scheduledTime, completed } = candidate;
   const next = resolveScheduledInstant(startDate, scheduledLocalTime, timezone);
-  if (next == null || next.getTime() === scheduledTime.getTime()) {
+  if (next == null || next.equals(scheduledTime)) {
     return [];
   }
   return [{ todoId, scheduledTime: next, previousTime: scheduledTime, completed }];
@@ -191,10 +191,16 @@ function rebaseInstant(candidate: RebaseCandidate, timezone: string) {
 
 /** 완료 전이고 옛 시각이나 새 시각이 앞으로일 때만 지울 예약이나 새 예약이 있다. 지난 이력은 예약을 건드리지 않는다. */
 function hasPendingReminder(
-  row: { readonly scheduledTime: Date; readonly previousTime: Date; readonly completed: boolean },
-  nowMs: number,
+  row: {
+    readonly scheduledTime: Temporal.Instant;
+    readonly previousTime: Temporal.Instant;
+    readonly completed: boolean;
+  },
+  now: Temporal.Instant,
 ): boolean {
   return (
-    !row.completed && (row.scheduledTime.getTime() > nowMs || row.previousTime.getTime() > nowMs)
+    !row.completed &&
+    (Temporal.Instant.compare(row.scheduledTime, now) > 0 ||
+      Temporal.Instant.compare(row.previousTime, now) > 0)
   );
 }

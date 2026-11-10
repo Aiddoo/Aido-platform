@@ -6,6 +6,7 @@ import { userPreference } from "#api/platform/database/schema/index";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -109,7 +110,9 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
       // Then
       const rows = await occurrences(seriesId);
       expect(rows.map((row) => row.scheduledTime)).toEqual(
-        rows.map((row) => parseLocalDateTime(toDateString(row.startDate), "09:00", zone)),
+        rows.map((row) =>
+          instantFromDate(parseLocalDateTime(row.startDate.toString(), "09:00", zone)),
+        ),
       );
       expect(rows.every((row) => row.scheduledLocalTime === "09:00")).toBe(true);
       expect(await readSeries(seriesId, header)).toMatchObject({
@@ -123,7 +126,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
       const { seriesId } = await createSeries(header, null);
       // Then
       const rows = await occurrences(seriesId);
-      expect(rows[0] && toDateString(rows[0].startDate)).toBe(startDate());
+      expect(rows[0]?.startDate.toString()).toBe(startDate());
       expect(rows.every((row) => row.scheduledTime == null && row.isAllDay)).toBe(true);
       expect(await readSeries(seriesId, header)).toMatchObject({ scheduledTime: null });
     });
@@ -149,7 +152,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         expect(rows[0]?.scheduledTime).toEqual(first?.scheduledTime);
         expect(rows.slice(1).map((row) => row.scheduledTime)).toEqual(
           [second, third].map((row) =>
-            parseLocalDateTime(toDateString(row?.startDate ?? new Date()), "10:00", zone),
+            instantFromDate(parseLocalDateTime(String(row?.startDate), "10:00", zone)),
           ),
         );
         expect(await readSeries(seriesId, header)).toMatchObject({
@@ -233,7 +236,9 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         });
         const rows = await occurrences(newSeriesId);
         expect(rows.map((row) => row.scheduledTime)).toEqual(
-          rows.map((row) => parseLocalDateTime(toDateString(row.startDate), "10:00", zone)),
+          rows.map((row) =>
+            instantFromDate(parseLocalDateTime(row.startDate.toString(), "10:00", zone)),
+          ),
         );
       },
     );
@@ -254,7 +259,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         // Then
         const rows = await occurrences(seriesId);
         expect(rows[1]?.scheduledTime).toEqual(
-          parseLocalDateTime(toDateString(target?.startDate ?? new Date()), "10:00", zone),
+          instantFromDate(parseLocalDateTime(String(target?.startDate), "10:00", zone)),
         );
         expect(rows[0]?.scheduledTime).toEqual(before[0]?.scheduledTime);
         expect(rows[2]?.scheduledTime).toEqual(before[2]?.scheduledTime);

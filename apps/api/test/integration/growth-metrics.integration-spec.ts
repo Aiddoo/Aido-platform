@@ -15,6 +15,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -376,27 +377,30 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "created within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.epochMilliseconds + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "completed within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.epochMilliseconds - 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.subtract({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(activatedSignup.epochMilliseconds + 2 * 60 * 60 * 1000),
+      completedAt: activatedSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
     {
       userId: "immature-d30",
       categoryId: immatureCategory,
       title: "activated",
-      startDate: new Date("2026-07-20T00:00:00.000Z"),
-      createdAt: new Date(immatureSignup.epochMilliseconds + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-07-20"),
+      createdAt: immatureSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(immatureSignup.epochMilliseconds + 2 * 60 * 60 * 1000),
+      completedAt: immatureSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
   ]);
 }
@@ -433,18 +437,20 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted created",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: new Date(signupAt.getTime() + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(new Date(signupAt.getTime() + 60 * 60 * 1000)),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted completed",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: signupAt,
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(signupAt),
       completed: true,
-      completedAt: new Date(signupAt.getTime() + 2 * 60 * 60 * 1000),
+      completedAt: instantFromDate(new Date(signupAt.getTime() + 2 * 60 * 60 * 1000)),
+      updatedAt: nowInstant(),
     },
   ]);
   await client

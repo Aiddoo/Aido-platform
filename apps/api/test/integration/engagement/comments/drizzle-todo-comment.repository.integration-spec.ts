@@ -10,6 +10,7 @@ import {
 } from "#test/contracts/engagement/todo-comment-like-repository.contract";
 import { describeTodoCommentPurgeRepositoryContract } from "#test/contracts/engagement/todo-comment-purge-repository.contract";
 import { describeTodoCommentRepositoryContract } from "#test/contracts/engagement/todo-comment-repository.contract";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import {
   createTodoCommentFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -59,7 +60,8 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
         userId: TODO_COMMENT_FIXTURE_OWNER_ID,
         categoryId: CATEGORY_ID,
         title: `댓글 할 일 ${id}`,
-        startDate: new Date("2026-08-26T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-08-26"),
+        updatedAt: nowInstant(),
       })),
     );
   });

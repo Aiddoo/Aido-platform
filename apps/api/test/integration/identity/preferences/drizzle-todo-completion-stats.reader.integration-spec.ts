@@ -1,10 +1,11 @@
 import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+const day = (iso: string) => Temporal.PlainDate.from(iso);
 
 describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계 (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
@@ -55,6 +56,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
       startDate: day(startDate),
       endDate: endDate == null ? null : day(endDate),
       completed,
+      updatedAt: nowInstant(),
     });
   }
 
@@ -112,6 +114,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
       title: "다른 사용자",
       startDate: day("2026-12-01"),
       completed: true,
+      updatedAt: nowInstant(),
     });
 
     // When

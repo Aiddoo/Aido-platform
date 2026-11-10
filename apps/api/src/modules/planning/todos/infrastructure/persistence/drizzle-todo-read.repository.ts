@@ -6,8 +6,8 @@ import { sumBy } from "es-toolkit";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type {
   TodoPlanReaderPort,
   UpcomingTodoView,
@@ -24,7 +24,10 @@ import type {
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
 /** Inclusive overlap. A single supplied boundary selects that exact calendar date. */
-function todoDateCondition(startDate?: Date, endDate?: Date): SQL | undefined {
+function todoDateCondition(
+  startDate?: Temporal.PlainDate,
+  endDate?: Temporal.PlainDate,
+): SQL | undefined {
   const start = startDate ?? endDate;
   if (start == null) {
     return undefined;
@@ -156,7 +159,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
 
   async getTodayTodoStats(
     userId: string,
-    today: Date,
+    today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }> {
     const groups = await this.#db
       .select({ completed: todo.completed, count: count() })
@@ -169,7 +172,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     };
   }
 
-  findTodayTopTodos(userId: string, today: Date, limit: number) {
+  findTodayTopTodos(userId: string, today: Temporal.PlainDate, limit: number) {
     return this.#db
       .select({
         id: todo.id,
@@ -214,6 +217,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     userId: string,
     input: { readonly fromDate: Date; readonly limit: number },
   ): Promise<UpcomingTodoView[]> {
+    const fromDate = plainDateFromDate(input.fromDate);
     // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
     const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
     const upcoming = this.#db
@@ -228,7 +232,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
         and(
           eq(todo.userId, userId),
           eq(todo.completed, false),
-          or(gte(todo.startDate, input.fromDate), gte(todo.endDate, input.fromDate)),
+          or(gte(todo.startDate, fromDate), gte(todo.endDate, fromDate)),
         ),
       )
       .orderBy(groupKey, asc(todo.startDate), asc(todo.id))
@@ -241,7 +245,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
-      startDate: dateKeyOf(row.startDate),
+      startDate: row.startDate.toString(),
       isRepeating: row.seriesId != null,
     }));
   }

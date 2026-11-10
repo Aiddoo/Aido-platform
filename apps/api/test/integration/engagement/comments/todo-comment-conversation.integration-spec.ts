@@ -30,6 +30,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -48,7 +49,7 @@ const PARTICIPANT_A_REPLY = "cm1conversationparticipantareply1";
 const PARTICIPANT_B_REPLY = "cm1conversationparticipantbreply1";
 
 type CommentRow = Omit<typeof todoComment.$inferInsert, "updatedAt">;
-const TODO_START_DATE = new Date("2026-08-26T00:00:00.000Z");
+const TODO_START_DATE = Temporal.PlainDate.from("2026-08-26");
 const COMMENT_UPDATED_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
 describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
@@ -160,6 +161,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         title: "한 화면의 댓글 대화",
         startDate: TODO_START_DATE,
         commentCount: 5,
+        updatedAt: nowInstant(),
       })
       .returning();
     if (createdTodo === undefined) {

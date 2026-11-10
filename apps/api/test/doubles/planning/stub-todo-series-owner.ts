@@ -17,8 +17,8 @@ export class StubTodoSeriesOwner extends TodoSeriesOwnerPort {
         .map((userId) => [
           userId,
           this.activity ?? {
-            lastActiveAt: new Date(),
-            signedUpAt: new Date(),
+            lastActiveAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+            signedUpAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
             timezone: "UTC",
           },
         ]),

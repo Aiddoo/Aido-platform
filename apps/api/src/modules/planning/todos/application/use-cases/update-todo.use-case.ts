@@ -21,8 +21,8 @@ import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 export interface UpdateTodoData {
   readonly title?: string;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date | null;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;

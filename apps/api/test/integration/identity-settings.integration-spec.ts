@@ -24,6 +24,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -38,7 +39,6 @@ import {
 type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 const at = new Date("2027-01-01T12:00:00.000Z");
-const today = new Date("2027-01-01T00:00:00.000Z");
 const now = Temporal.Instant.from("2027-01-01T12:00:00.000Z");
 const todayDate = Temporal.PlainDate.from("2027-01-01");
 const yesterdayDate = Temporal.PlainDate.from("2026-12-31");
@@ -141,9 +141,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       const created = TodoFixture.create({
         userId,
         categoryId: category.id,
-        startDate: today,
+        startDate: todayDate,
         completed: true,
-        completedAt: at,
+        completedAt: instantFromDate(at),
       });
       await client.insert(todo).values(created);
     }

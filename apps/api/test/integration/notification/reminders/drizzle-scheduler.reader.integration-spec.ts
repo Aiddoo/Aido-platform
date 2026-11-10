@@ -10,7 +10,6 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { describeSchedulerPreferenceReaderContract } from "#test/contracts/notification/scheduler-preference-reader.contract";
 import {
   describeWeeklyAchievementStatsReaderContract,
@@ -71,8 +70,8 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
     for (const span of seed.todos ?? []) {
       await client.insert(todo).values({
         ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
-        startDate: parseDateOnly(span.start),
-        endDate: span.end == null ? null : parseDateOnly(span.end),
+        startDate: Temporal.PlainDate.from(span.start),
+        endDate: span.end == null ? null : Temporal.PlainDate.from(span.end),
         completed: span.completed ?? false,
       });
     }

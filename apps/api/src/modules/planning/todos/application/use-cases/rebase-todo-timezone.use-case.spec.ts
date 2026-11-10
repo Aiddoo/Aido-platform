@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -20,9 +21,9 @@ const NEW_YORK = "America/New_York";
 function timedTodo(id: number, date: string, overrides: object = {}) {
   return {
     ...createPlanningTodo("planning-user", id),
-    startDate: new Date(`${date}T00:00:00.000Z`),
+    startDate: Temporal.PlainDate.from(date),
     scheduledLocalTime: "10:00",
-    scheduledTime: new Date(`${date}T01:00:00.000Z`),
+    scheduledTime: Temporal.Instant.from(`${date}T01:00:00.000Z`),
     isAllDay: false,
     ...overrides,
   };
@@ -35,7 +36,10 @@ describe("시간대 재계산", () => {
     fixture.ownerTimezone.timezones.set(fixture.userId, timezone);
     return new RebaseTodoTimezoneUseCase({ ...fixture, batchSize });
   };
-  const readInstant = (id: number) => fixture.records.get(id)?.scheduledTime?.toISOString();
+  const readInstant = (id: number) => {
+    const scheduledTime = fixture.records.get(id)?.scheduledTime;
+    return scheduledTime == null ? undefined : toIsoString(scheduledTime);
+  };
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -114,7 +118,7 @@ describe("시간대 재계산", () => {
       timedTodo(3, "2026-11-10", { scheduledLocalTime: null, scheduledTime: null, isAllDay: true }),
       timedTodo(4, "2024-01-15", { completed: true, completedAt: NOW }),
       timedTodo(5, "2026-11-01"),
-      timedTodo(6, "2026-11-01", { endDate: new Date("2026-11-12T00:00:00.000Z") }),
+      timedTodo(6, "2026-11-01", { endDate: Temporal.PlainDate.from("2026-11-12") }),
     ];
     const useCase = setUp(todos, NEW_YORK);
     // When
@@ -162,7 +166,7 @@ describe("시간대 재계산", () => {
       name: "옛 시각은 앞으로였는데 새 시간대에서 지난 회차",
       overrides: {
         scheduledLocalTime: "01:00",
-        scheduledTime: new Date("2026-11-05T13:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-05T13:00:00.000Z"),
       },
       date: "2026-11-05",
       cancelled: [1],
@@ -206,7 +210,7 @@ describe("시간대 재계산", () => {
     // Then
     const scheduled = fixture.todoReminder.scheduled.map(({ todoId, scheduledTime }) => ({
       todoId,
-      scheduledTime: scheduledTime.toISOString(),
+      scheduledTime: toIsoString(scheduledTime),
     }));
     expect(scheduled).toEqual([{ todoId: 1, scheduledTime: "2026-11-06T06:00:00.000Z" }]);
     expect(readInstant(2)).toBe("2026-11-05T11:00:00.000Z");
@@ -259,7 +263,7 @@ describe("시간대 재계산", () => {
         timedTodo(2, "2026-11-11", {
           seriesId: "series-1",
           scheduledLocalTime: "15:00",
-          scheduledTime: new Date("2026-11-11T06:00:00.000Z"),
+          scheduledTime: Temporal.Instant.from("2026-11-11T06:00:00.000Z"),
         }),
       ],
       NEW_YORK,
@@ -295,7 +299,7 @@ describe("시간대 재계산", () => {
     const drafts = fixture.seriesStore.get("series-1")?.planOccurrences("2026-11-10");
     // Then
     expect(result.seriesCount).toBe(1);
-    expect(drafts?.[0]?.scheduledTime?.toISOString()).toBe("2026-11-10T15:00:00.000Z");
+    expect(drafts?.[0]?.scheduledTime).toEqual(Temporal.Instant.from("2026-11-10T15:00:00.000Z"));
   });
 
   it("벽시계 칸이 빈 행은 건너뛰어 세고 순간을 망가뜨리지 않는다", async () => {
@@ -358,7 +362,11 @@ describe("시간대 재계산", () => {
   it("저장된 시간대가 잘못됐으면 기본값으로 계산한다", async () => {
     // Given
     const useCase = setUp(
-      [timedTodo(1, "2026-11-10", { scheduledTime: new Date("2026-11-10T10:00:00.000Z") })],
+      [
+        timedTodo(1, "2026-11-10", {
+          scheduledTime: Temporal.Instant.from("2026-11-10T10:00:00.000Z"),
+        }),
+      ],
       "Mars/Phobos",
     );
     // When

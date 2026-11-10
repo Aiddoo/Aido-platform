@@ -126,6 +126,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     friendPort: FriendPort,
     todoNotification: TodoNotificationPort,
     streakPort: StreakPort,
+    clock: ClockPort,
     logger: loggerFor(ApplyTodoCompletionEffectsUseCase),
   }),
   provideUseCase(AddTodoItemUseCase, {

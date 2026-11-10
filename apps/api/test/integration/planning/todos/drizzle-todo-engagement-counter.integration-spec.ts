@@ -7,6 +7,7 @@ import type {
 } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -27,6 +28,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     client = await database.start();
     counter = new DrizzleTodoEngagementCounterAdapter(
       createDatabaseTransactionFixture(client).txHost,
+      new DateClock(),
     );
   });
 

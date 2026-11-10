@@ -105,8 +105,8 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         userId: receiverId,
         categoryId: category.id,
         visibility: "PUBLIC",
-        startDate: new Date("2027-01-04"),
-        endDate: new Date("2027-01-05"),
+        startDate: Temporal.PlainDate.from("2027-01-04"),
+        endDate: Temporal.PlainDate.from("2027-01-05"),
         sortOrder: 0,
       });
       const [row] = await client

@@ -6,6 +6,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { UpdateTodoUseCase } from "./update-todo.use-case.js";
@@ -26,7 +27,7 @@ describe("할 일 부분 수정", () => {
 
   it("제목만 수정하면 nullable 일정과 완료 상태를 보존한다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When
     const result = await useCase.execute({
       id: 1,
@@ -58,10 +59,10 @@ describe("할 일 부분 수정", () => {
       id: 1,
       userId: fixture.userId,
       timezone: "America/New_York",
-      data: { startDate: new Date("2026-05-20T00:00:00Z") },
+      data: { startDate: Temporal.PlainDate.from("2026-05-20") },
     });
     // Then
-    const instant = new Date("2026-05-20T14:00:00.000Z");
+    const instant = Temporal.Instant.from("2026-05-20T14:00:00.000Z");
     expect(result).toMatchObject({ startDate: "2026-05-20", scheduledLocalTime: "10:00" });
     expect(fixture.records.get(1)).toMatchObject({ scheduledTime: instant, isAllDay: false });
     expect(fixture.todoReminder.scheduled).toContainEqual({
@@ -87,7 +88,7 @@ describe("할 일 부분 수정", () => {
       data: { completed: false },
     });
     // Then
-    const instant = new Date("2026-05-15T01:00:00.000Z");
+    const instant = Temporal.Instant.from("2026-05-15T01:00:00.000Z");
     expect(fixture.records.get(1)).toMatchObject({
       scheduledLocalTime: "10:00",
       scheduledTime: instant,
@@ -111,7 +112,9 @@ describe("할 일 부분 수정", () => {
       startDate: "2026-05-15",
       scheduledTime: "2026-05-15T03:30:00.000Z",
     });
-    expect(fixture.records.get(1)?.scheduledTime).toEqual(new Date("2026-05-15T03:30:00Z"));
+    expect(fixture.records.get(1)?.scheduledTime).toEqual(
+      Temporal.Instant.from("2026-05-15T03:30:00Z"),
+    );
   });
   it("시간을 바꾸면 리마인더를 다시 잡도록 재예약 이벤트를 낸다", async () => {
     // When
@@ -124,7 +127,7 @@ describe("할 일 부분 수정", () => {
     // Then
     expect(fixture.todoReminder.scheduled).toContainEqual({
       todoId: 1,
-      scheduledTime: new Date("2026-05-15T03:30:00.000Z"),
+      scheduledTime: Temporal.Instant.from("2026-05-15T03:30:00.000Z"),
       userId: fixture.userId,
     });
   });
@@ -150,8 +153,8 @@ describe("할 일 부분 수정", () => {
     if (saved == null) {
       throw new Error("Todo fixture missing");
     }
-    saved.scheduledTime = new Date("2026-05-15T00:00:00Z");
-    saved.endDate = new Date("2026-05-16T00:00:00Z");
+    saved.scheduledTime = Temporal.Instant.from("2026-05-15T00:00:00Z");
+    saved.endDate = Temporal.PlainDate.from("2026-05-16");
     // When
     const result = await useCase.execute({
       id: 1,
@@ -186,7 +189,7 @@ describe("할 일 부분 수정", () => {
     const input = { id: 1, userId: fixture.userId, timezone: "UTC", data: { completed: true } };
     // When
     const completed = await useCase.execute(input);
-    vi.setSystemTime(new Date("2026-05-15T04:00:00Z"));
+    vi.setSystemTime(Temporal.Instant.from("2026-05-15T04:00:00Z"));
     const repeated = await useCase.execute(input);
     const uncompleted = await useCase.execute({ ...input, data: { completed: false } });
     // Then
@@ -218,7 +221,7 @@ describe("할 일 부분 수정", () => {
   });
   it("소유권과 기간 검증이 실패하면 저장 상태를 보존한다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     fixture.categoryOwners.set(1, "other-user");
     // When / Then
     await expect(
@@ -234,7 +237,7 @@ describe("할 일 부분 수정", () => {
         id: 1,
         userId: fixture.userId,
         timezone: "UTC",
-        data: { endDate: new Date("2026-05-14T00:00:00Z") },
+        data: { endDate: Temporal.PlainDate.from("2026-05-14") },
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     await expect(

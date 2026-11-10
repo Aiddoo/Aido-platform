@@ -9,6 +9,7 @@ import { describeRetentionRepositoryContract } from "#test/contracts/notificatio
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -171,13 +172,15 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
         userId: invalidTimezoneUserId,
         categoryId: invalidCategory.id,
         title: "잘못된 타임존에서도 조회되는 할 일",
-        startDate: new Date("2026-07-16T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-07-16"),
+        updatedAt: nowInstant(),
       }),
       db.insert(todo).values({
         userId: aliasTimezoneUserId,
         categoryId: aliasCategory.id,
         title: "레거시 별칭에서도 조회되는 할 일",
-        startDate: new Date("2026-07-16T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-07-16"),
+        updatedAt: nowInstant(),
       }),
     ]);
     const startedAt = new Date("2026-07-15T00:00:00.000Z");

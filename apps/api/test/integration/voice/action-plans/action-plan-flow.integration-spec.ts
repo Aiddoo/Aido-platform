@@ -20,6 +20,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { UserFixture } from "#test/fixtures/index";
 import { digestDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -497,9 +498,9 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
           userId,
           categoryId,
           title: `할 일 ${index}`,
-          startDate: AT,
+          startDate: plainDateFromDate(AT),
           sortOrder: index,
-          updatedAt: AT,
+          updatedAt: instantFromDate(AT),
         })),
       );
       // When
@@ -569,22 +570,26 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         userId,
         categoryId,
         title,
-        startDate: new Date(`${startDate}T00:00:00.000Z`),
-        updatedAt: AT,
+        startDate: Temporal.PlainDate.from(startDate),
+        updatedAt: instantFromDate(AT),
         ...overrides,
       });
       const seriesId = "11111111-1111-4111-8111-111111111111";
-      await client
-        .insert(todoTable)
-        .values([
-          row("지난 할 일", "2027-01-01"),
-          row("완료한 할 일", "2027-01-05", { completed: true }),
-          row("나중 할 일", "2027-01-20"),
-          row("곧 할 일", "2027-01-05"),
-          row("진행 중 기간", "2027-01-01", { endDate: new Date("2027-01-10T00:00:00.000Z") }),
-          row("운동", "2027-01-08", { seriesId, occurrenceDate: "2027-01-08" }),
-          row("운동", "2027-01-06", { seriesId, occurrenceDate: "2027-01-06" }),
-        ]);
+      await client.insert(todoTable).values([
+        row("지난 할 일", "2027-01-01"),
+        row("완료한 할 일", "2027-01-05", { completed: true }),
+        row("나중 할 일", "2027-01-20"),
+        row("곧 할 일", "2027-01-05"),
+        row("진행 중 기간", "2027-01-01", { endDate: Temporal.PlainDate.from("2027-01-10") }),
+        row("운동", "2027-01-08", {
+          seriesId,
+          occurrenceDate: Temporal.PlainDate.from("2027-01-08"),
+        }),
+        row("운동", "2027-01-06", {
+          seriesId,
+          occurrenceDate: Temporal.PlainDate.from("2027-01-06"),
+        }),
+      ]);
       // When
       const upcoming = await todoPlanReader.findUpcoming(userId, {
         fromDate: new Date("2027-01-04T00:00:00.000Z"),

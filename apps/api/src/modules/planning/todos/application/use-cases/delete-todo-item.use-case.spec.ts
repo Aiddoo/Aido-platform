@@ -5,6 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { DeleteTodoItemUseCase } from "./delete-todo-item.use-case.js";
@@ -38,7 +39,7 @@ describe("하위 항목 삭제", () => {
   it("없는 항목과 다른 소유자의 할 일은 상태를 바꾸지 않는다", async () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({ todoId: 1, itemId: 999, userId: fixture.userId }),

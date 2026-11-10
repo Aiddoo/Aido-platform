@@ -33,7 +33,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { DrizzleSweepCursorAdapter } from "#api/platform/jobs/drizzle-sweep-cursor.adapter";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -274,9 +273,9 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           .insert(todo)
           .values({
             ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
-            startDate: new Date("2026-11-10T00:00:00.000Z"),
+            startDate: Temporal.PlainDate.from("2026-11-10"),
             scheduledLocalTime: "09:00",
-            scheduledTime: instantToDate(scheduledAt),
+            scheduledTime: scheduledAt,
             isAllDay: false,
             completed: false,
           })

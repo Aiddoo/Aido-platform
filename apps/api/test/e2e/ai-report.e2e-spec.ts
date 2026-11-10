@@ -196,7 +196,7 @@ describe("AI 리포트 E2E", () => {
       userId,
       categoryId: category.id,
       title: "주간 리포트 기록",
-      startDate: new Date(`${seoulDate.format(lastWeek)}T00:00:00Z`),
+      startDate: Temporal.PlainDate.from(seoulDate.format(lastWeek)),
     });
     await client.insert(todo).values(row);
   }

@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { type DayOfWeek, TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
+import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -100,7 +101,7 @@ describe("할 일 생성", () => {
   it("다른 소유자의 카테고리와 잘못된 제목을 거부하고 저장 상태를 보존한다", async () => {
     // Given
     fixture.categoryOwners.set(1, "other-user");
-    const before = structuredClone([...fixture.records.values()]);
+    const before = [...fixture.records.values()].map(copyTodoRecord);
     const input = {
       userId: fixture.userId,
       title: "새 할 일",

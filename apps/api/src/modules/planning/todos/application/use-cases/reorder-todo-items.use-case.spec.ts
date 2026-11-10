@@ -5,6 +5,7 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case.js";
@@ -50,7 +51,7 @@ describe("하위 항목 순서 변경", () => {
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({ todoId: 1, userId: fixture.userId, itemIds: ids }),

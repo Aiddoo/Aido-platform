@@ -1,6 +1,6 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
@@ -11,10 +11,10 @@ const TOP_TODOS_LIMIT = 10;
 
 export interface GetTodoSummaryInput {
   readonly userId: string;
-  /** 사용자 시간대의 오늘 (UTC 자정 DATE) */
-  readonly today: Date;
+  /** 사용자 시간대의 오늘 */
+  readonly today: Temporal.PlainDate;
   /** 요약할 날짜. 생략하면 오늘이며 오늘·내일만 허용한다. */
-  readonly requestedDate?: Date;
+  readonly requestedDate?: Temporal.PlainDate;
 }
 
 export interface TodoSummaryTodoResult {
@@ -67,16 +67,18 @@ export class GetTodoSummaryUseCase {
 
     const { completionRate, isComplete } = summarizeCompletion(stats);
 
+    const { lastCompletedDate } = streakContext;
+    // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
     const { streak: currentStreak } = computeEffectiveStreak({
       currentStreak: streakContext.currentStreak,
-      lastCompletedDate: streakContext.lastCompletedDate,
+      lastCompletedDate: lastCompletedDate == null ? null : plainDateToDate(lastCompletedDate),
       todosCompleted: stats.completed,
       todosTotal: stats.total,
-      today: date,
+      today: plainDateToDate(date),
     });
 
     return {
-      date: dateKeyOf(date),
+      date: date.toString(),
       totalTodos: stats.total,
       completedTodos: stats.completed,
       completionRate,

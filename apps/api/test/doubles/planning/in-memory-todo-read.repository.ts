@@ -13,6 +13,7 @@ import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "#api/modules/planning/todos/application/read-models/todo.read-model";
+import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createTodoReadModelFromRecord,
   type PlanningTodoRecord,
@@ -41,7 +42,7 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     if (saved === undefined || saved.userId !== userId) {
       return null;
     }
-    const record = structuredClone(saved);
+    const record = copyTodoRecord(saved);
     record.items.sort((left, right) => left.sortOrder - right.sortOrder);
     record.category = this.categories.get(record.categoryId) ?? null;
     return createTodoReadModelFromRecord(record);
@@ -91,13 +92,13 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   }
   async getTodayTodoStats(
     _userId: string,
-    _today: Date,
+    _today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }> {
     return { ...this.dayStats };
   }
   async findTodayTopTodos(
     _userId: string,
-    _today: Date,
+    _today: Temporal.PlainDate,
     _limit: number,
   ): Promise<TodaySummaryTodoRow[]> {
     return structuredClone(this.topTodos);

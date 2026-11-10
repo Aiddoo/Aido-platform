@@ -15,8 +15,8 @@ interface GetTodosParams {
   readonly size?: number;
   readonly completed?: boolean;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 export type GetTodosInput = GetTodosParams;
@@ -38,12 +38,12 @@ export class ListTodosUseCase {
     if (
       input.startDate != null &&
       input.endDate != null &&
-      input.startDate.getTime() > input.endDate.getTime()
+      Temporal.PlainDate.compare(input.startDate, input.endDate) > 0
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         message: "startDate must be less than or equal to endDate",
-        startDate: input.startDate,
-        endDate: input.endDate,
+        startDate: input.startDate.toString(),
+        endDate: input.endDate.toString(),
       });
     }
 

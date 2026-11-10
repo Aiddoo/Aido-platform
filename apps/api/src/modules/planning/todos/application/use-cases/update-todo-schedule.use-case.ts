@@ -19,8 +19,8 @@ export interface UpdateTodoScheduleInput {
   readonly id: number;
   readonly userId: string;
   readonly schedule: {
-    readonly startDate: Date;
-    readonly endDate: Date | null;
+    readonly startDate: Temporal.PlainDate;
+    readonly endDate: Temporal.PlainDate | null;
     /** HH:mm. null이면 종일이다. */
     readonly scheduledTime: string | null;
     readonly isAllDay: boolean;

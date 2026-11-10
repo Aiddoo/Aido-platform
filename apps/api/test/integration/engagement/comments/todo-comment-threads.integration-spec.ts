@@ -10,6 +10,7 @@ import { DrizzleTodoCommentReader } from "#api/modules/engagement/comments/infra
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -124,7 +125,8 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
           userId: OWNER_ID,
           categoryId: category.id,
           title: `묶음 할 일 ${index}`,
-          startDate: new Date("2026-08-26T00:00:00.000Z"),
+          startDate: Temporal.PlainDate.from("2026-08-26"),
+          updatedAt: nowInstant(),
         })),
       )
       .returning({ id: todo.id });

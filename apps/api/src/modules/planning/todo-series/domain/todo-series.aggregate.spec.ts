@@ -174,7 +174,7 @@ describe("TodoSeries — 반복 할 일", () => {
       // When
       const [draft] = series.planOccurrences(date);
       // Then
-      expect(draft?.scheduledTime?.toISOString()).toBe(expected);
+      expect(draft?.scheduledTime).toEqual(Temporal.Instant.from(expected));
       expect(draft?.isAllDay).toBe(false);
     });
   });

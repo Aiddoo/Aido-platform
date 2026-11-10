@@ -14,6 +14,7 @@ export interface CreateTodoData {
   readonly userId: string;
   readonly title: string;
   readonly categoryId: number;
+  // 메모·음성·AI가 아직 날짜를 UTC 자정 Date로 넘겨 이 경계에서만 Date로 받는다
   readonly startDate: Date;
   readonly endDate?: Date | null;
   readonly scheduledTime?: string | null;

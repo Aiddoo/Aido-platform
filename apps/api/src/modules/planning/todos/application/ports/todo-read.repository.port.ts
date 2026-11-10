@@ -6,16 +6,16 @@ export interface FindTodosParams {
   readonly size: number;
   readonly completed?: boolean;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 export interface FindFriendTodosParams {
   readonly friendUserId: string;
   readonly cursor?: number;
   readonly size: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 /**
@@ -52,7 +52,7 @@ export abstract class TodoReadRepositoryPort {
 
   abstract getTodayTodoStats(
     userId: string,
-    today: Date,
+    today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }>;
 
   /**
@@ -61,7 +61,7 @@ export abstract class TodoReadRepositoryPort {
    */
   abstract findTodayTopTodos(
     userId: string,
-    today: Date,
+    today: Temporal.PlainDate,
     limit: number,
   ): Promise<TodaySummaryTodoRow[]>;
 }

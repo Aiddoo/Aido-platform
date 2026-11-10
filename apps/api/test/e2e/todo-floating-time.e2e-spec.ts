@@ -22,6 +22,7 @@ import {
   toLocalTimeString,
 } from "#api/shared/domain/date/utils/timezone";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 
 import { releasedTodoSchema } from "./fixtures/released-todo-response.schema.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -346,8 +347,9 @@ describe("떠 있는 시각 E2E", () => {
             title: "시드",
             timezone: "UTC",
             repeatFrequency: "DAILY" as const,
-            startDate: new Date(),
-            nextOccurrenceDate: new Date(),
+            startDate: todayUtc(),
+            nextOccurrenceDate: todayUtc(),
+            updatedAt: nowInstant(),
           };
         }),
       );

@@ -4,7 +4,6 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { type FriendPort } from "../ports/friend.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -16,8 +15,8 @@ export interface GetFriendTodosParams {
   readonly friendUserId: string;
   readonly cursor?: number;
   readonly size?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate;
 }
 
 export type GetFriendTodosInput = GetFriendTodosParams;
@@ -47,12 +46,12 @@ export class ListFriendTodosUseCase {
     if (
       input.startDate != null &&
       input.endDate != null &&
-      input.startDate.getTime() > input.endDate.getTime()
+      Temporal.PlainDate.compare(input.startDate, input.endDate) > 0
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         message: "startDate must be less than or equal to endDate",
-        startDate: input.startDate,
-        endDate: input.endDate,
+        startDate: input.startDate.toString(),
+        endDate: input.endDate.toString(),
       });
     }
 
@@ -71,8 +70,8 @@ export class ListFriendTodosUseCase {
     );
 
     const isFirstPage = cursor == null;
-    const startDateKey = input.startDate != null ? dateKeyOf(input.startDate) : "-";
-    const endDateKey = input.endDate != null ? dateKeyOf(input.endDate) : "-";
+    const startDateKey = input.startDate?.toString() ?? "-";
+    const endDateKey = input.endDate?.toString() ?? "-";
     let cacheGeneration: string | undefined;
 
     if (isFirstPage) {

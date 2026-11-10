@@ -46,11 +46,12 @@ import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adap
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -127,11 +128,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     };
     const mutationLock = new PostgresMutationLockAdapter(txHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
-    const todoRepository = new DrizzleTodoRepository(txHost);
+    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
     rebase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
       todoRepository,
-      seriesRepository: new DrizzleTodoSeriesRepository(txHost),
+      seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
       ownerTimezone,
       todoReminder: reminderAdapter,
       todoCache,
@@ -225,12 +226,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
 
   async function seedTodo(day: number, time: string, overrides: object = {}) {
     const date = dayKey(day);
-    const scheduledTime = parseLocalDateTime(date, time, SEOUL);
+    const scheduledTime = instantFromDate(parseLocalDateTime(date, time, SEOUL));
     const [row] = await client
       .insert(todo)
       .values({
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
-        startDate: parseDateOnly(date),
+        startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: time,
         scheduledTime,
         isAllDay: false,
@@ -264,7 +265,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       id: todoId,
       userId,
       schedule: {
-        startDate: parseDateOnly(dayKey(day)),
+        startDate: Temporal.PlainDate.from(dayKey(day)),
         endDate: null,
         scheduledTime: time,
         isAllDay: time == null,
@@ -439,10 +440,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         timezone: SEOUL,
         repeatFrequency: "DAILY",
         repeatInterval: 1,
-        startDate: parseDateOnly(dayKey(0)),
+        startDate: Temporal.PlainDate.from(dayKey(0)),
         checklistTemplate: [],
-        nextOccurrenceDate: parseDateOnly(dayKey(3)),
+        nextOccurrenceDate: Temporal.PlainDate.from(dayKey(3)),
         generatedCount: 3,
+        updatedAt: nowInstant(),
       });
       return [
         await seedTodo(0, "10:00", { seriesId: SERIES_ID }),
@@ -635,7 +637,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         isAllDay: true,
       });
       const pastDate = addDaysToDateKey(today, -10);
-      const past = await seedTodo(0, "10:00", { startDate: parseDateOnly(pastDate) });
+      const past = await seedTodo(0, "10:00", { startDate: Temporal.PlainDate.from(pastDate) });
       const allDayRow = await seedLegacyRow(allDay, { stage: "60min", todoDate: dayKey(0) });
       const pastRow = await seedLegacyRow(past, { stage: "60min", todoDate: pastDate });
       // When

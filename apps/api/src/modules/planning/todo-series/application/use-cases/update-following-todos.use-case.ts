@@ -8,7 +8,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
@@ -145,7 +145,7 @@ export class UpdateFollowingTodosUseCase {
     if (occurrenceDate == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
-    return this.#applyTo(input, series, dateKeyOf(occurrenceDate));
+    return this.#applyTo(input, series, occurrenceDate.toString());
   }
 
   async publish(edited: AppliedFollowingEdit, userId: string): Promise<void> {

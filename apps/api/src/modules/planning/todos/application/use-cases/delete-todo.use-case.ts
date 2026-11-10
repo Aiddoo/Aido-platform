@@ -7,7 +7,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
 import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
@@ -126,7 +126,7 @@ export class DeleteTodoUseCase {
           if (occurrenceDate == null) {
             throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
           }
-          const pivot = dateKeyOf(occurrenceDate);
+          const pivot = occurrenceDate.toString();
           const following =
             series == null ? [] : await seriesRepository.lockFollowingSegments(series);
           const ids = await todoRepository.deleteOccurrences({

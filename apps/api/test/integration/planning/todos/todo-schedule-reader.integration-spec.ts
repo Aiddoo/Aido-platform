@@ -11,12 +11,12 @@ const HOUR_MS = 60 * 60_000;
 const SEOUL = "Asia/Seoul";
 const TODAY = Temporal.PlainDate.from("2026-11-02");
 /** 서울 2026-11-02 07:00 */
-const FROM = new Date("2026-11-01T22:00:00.000Z");
+const FROM = Temporal.Instant.from("2026-11-01T22:00:00.000Z");
 /** 서울 2026-11-03 00:00 */
-const UNTIL = new Date("2026-11-02T15:00:00.000Z");
+const UNTIL = Temporal.Instant.from("2026-11-02T15:00:00.000Z");
 
-function dateColumn(date: string): Date {
-  return new Date(`${date}T00:00:00.000Z`);
+function dateColumn(date: string): Temporal.PlainDate {
+  return Temporal.PlainDate.from(date);
 }
 
 describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
@@ -75,25 +75,25 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
       userIds,
       date: TODAY,
       timezone,
-      from: instantFromDate(FROM),
-      until: instantFromDate(UNTIL),
+      from: FROM,
+      until: UNTIL,
     });
   }
 
   it("요청 사용자의 시각 지정·미완료 할 일 중 [from, until) 안의 것만 시각 순으로 돌려준다", async () => {
     // Given
     await givenTodos([
-      { title: "오후 산책", scheduledTime: new Date(FROM.getTime() + 8 * HOUR_MS) },
+      { title: "오후 산책", scheduledTime: FROM.add({ milliseconds: 8 * HOUR_MS }) },
       { title: "정각 시작", scheduledTime: FROM },
-      { title: "지난 일", scheduledTime: new Date(FROM.getTime() - 1) },
+      { title: "지난 일", scheduledTime: FROM.subtract({ milliseconds: 1 }) },
       { title: "자정 이후", scheduledTime: UNTIL },
-      { title: "종일", isAllDay: true, scheduledTime: new Date(FROM.getTime() + HOUR_MS) },
-      { title: "완료", completed: true, scheduledTime: new Date(FROM.getTime() + HOUR_MS) },
+      { title: "종일", isAllDay: true, scheduledTime: FROM.add({ milliseconds: HOUR_MS }) },
+      { title: "완료", completed: true, scheduledTime: FROM.add({ milliseconds: HOUR_MS }) },
       { title: "시간 없음", scheduledTime: null },
       {
         title: "다른 사람",
         userId: otherUserId,
-        scheduledTime: new Date(FROM.getTime() + HOUR_MS),
+        scheduledTime: FROM.add({ milliseconds: HOUR_MS }),
       },
     ]);
 
@@ -104,7 +104,7 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
     expect(todos.map((row) => row.title)).toEqual(["정각 시작", "오후 산책"]);
     expect(todos[1]).toMatchObject({
       userId,
-      scheduledAt: instantFromDate(new Date(FROM.getTime() + 8 * HOUR_MS)),
+      scheduledAt: FROM.add({ milliseconds: 8 * HOUR_MS }),
     });
   });
 
@@ -125,9 +125,9 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
         startDate: dateColumn("2026-11-01"),
         endDate: dateColumn("2026-11-02"),
         scheduledLocalTime: "16:30",
-        scheduledTime: new Date("2026-11-01T07:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-01T07:30:00.000Z"),
       },
-      { title: "점심", scheduledTime: new Date("2026-11-02T04:00:00.000Z") },
+      { title: "점심", scheduledTime: Temporal.Instant.from("2026-11-02T04:00:00.000Z") },
     ]);
 
     // When
@@ -148,21 +148,21 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
         startDate: dateColumn("2026-10-31"),
         endDate: dateColumn("2026-11-01"),
         scheduledLocalTime: "16:30",
-        scheduledTime: new Date("2026-10-31T07:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-10-31T07:30:00.000Z"),
       },
       {
         title: "오늘 시각 지남",
         startDate: dateColumn("2026-11-01"),
         endDate: dateColumn("2026-11-03"),
         scheduledLocalTime: "06:00",
-        scheduledTime: new Date("2026-10-31T21:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-10-31T21:00:00.000Z"),
       },
       {
         title: "내일 시작",
         startDate: dateColumn("2026-11-03"),
         endDate: dateColumn("2026-11-04"),
         scheduledLocalTime: "09:00",
-        scheduledTime: new Date("2026-11-03T00:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-03T00:00:00.000Z"),
       },
       {
         title: "종일 여러 날",
@@ -189,7 +189,7 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
         startDate: dateColumn("2026-11-01"),
         endDate: dateColumn("2026-11-02"),
         scheduledLocalTime: null,
-        scheduledTime: new Date("2026-11-02T05:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-02T05:00:00.000Z"),
       },
     ]);
 

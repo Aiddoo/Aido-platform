@@ -89,7 +89,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       userId,
       categoryId,
       title: "최근 기록",
-      startDate: new Date(`${date}T00:00:00Z`),
+      startDate: Temporal.PlainDate.from(date),
     });
     await client.insert(todo).values(row);
   }

@@ -8,6 +8,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -60,7 +61,8 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
       repeatFrequency: "WEEKLY",
       repeatInterval: 1,
       repeatWeekdays: ["MON", "THU"],
-      startDate: new Date("2026-11-02T00:00:00.000Z"),
+      startDate: Temporal.PlainDate.from("2026-11-02"),
+      updatedAt: nowInstant(),
     });
   });
 
@@ -68,8 +70,8 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  function occurrenceDateOf(index: number): Date {
-    return new Date(Date.UTC(2026, 10, 2 + index));
+  function occurrenceDateOf(index: number): Temporal.PlainDate {
+    return Temporal.PlainDate.from("2026-11-02").add({ days: index });
   }
 
   async function seedOccurrences(count: number, overrides: Partial<typeof todo.$inferInsert> = {}) {
@@ -87,7 +89,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
   async function seedTodos(count: number, overrides: Partial<typeof todo.$inferInsert> = {}) {
     const rows = Array.from({ length: count }, (_, index) => ({
       ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
-      startDate: new Date("2026-11-02T00:00:00.000Z"),
+      startDate: Temporal.PlainDate.from("2026-11-02"),
       endDate: null,
       ...overrides,
     }));
@@ -123,8 +125,8 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     await seedTodos(1, {
       title: "회차",
       seriesId: SERIES_ID,
-      occurrenceDate: new Date("2026-11-02T00:00:00.000Z"),
-      startDate: new Date("2026-11-04T00:00:00.000Z"),
+      occurrenceDate: Temporal.PlainDate.from("2026-11-02"),
+      startDate: Temporal.PlainDate.from("2026-11-04"),
     });
     await seedTodos(1, { title: "단일", sortOrder: 1 });
     // When

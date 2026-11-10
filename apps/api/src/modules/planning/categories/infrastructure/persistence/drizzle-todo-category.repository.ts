@@ -190,13 +190,14 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   }
 
   async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void> {
+    const updatedAt = this.#clock.now();
     await this.#db
       .update(todo)
-      .set({ categoryId: toCategoryId })
+      .set({ categoryId: toCategoryId, updatedAt })
       .where(eq(todo.categoryId, fromCategoryId));
     await this.#db
       .update(todoSeries)
-      .set({ categoryId: toCategoryId })
+      .set({ categoryId: toCategoryId, updatedAt })
       .where(eq(todoSeries.categoryId, fromCategoryId));
   }
 }

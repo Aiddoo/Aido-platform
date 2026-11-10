@@ -5,9 +5,11 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import {
+  addDaysToKey,
+  localDateKeyAt,
+} from "../../../shared/domain/todo-calendar.domain-service.js";
 import { isSeriesOwnerDormant } from "../../domain/series-dormancy.domain-service.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type {
@@ -67,7 +69,7 @@ export class MaterializeDueTodoSeriesUseCase {
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
     const startedAt = performance.now();
     const through = addDaysToKey(
-      dateKeyOf(instantToDate(this.#dependencies.clock.now())),
+      localDateKeyAt(this.#dependencies.clock.now(), "UTC"),
       TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
     );
     let afterId: string | null = null;
@@ -96,7 +98,7 @@ export class MaterializeDueTodoSeriesUseCase {
           continue;
         }
         if (
-          isSeriesOwnerDormant(owner, instantToDate(this.#dependencies.clock.now())) &&
+          isSeriesOwnerDormant(owner, this.#dependencies.clock.now()) &&
           !(await seriesOwner.isExemptFromDormancy(due.userId))
         ) {
           dormantCount += 1;

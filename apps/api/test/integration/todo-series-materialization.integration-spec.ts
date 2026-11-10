@@ -28,6 +28,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
@@ -86,13 +87,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     } = {},
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
-    const todoRepository = new DrizzleTodoRepository(fixture.txHost);
+    const todoRepository = new DrizzleTodoRepository(fixture.txHost, new DateClock());
     const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
       publishOccurrences: async (series) => {
         published.push(series.id.value);
       },
     };
-    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
+    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock());
     const entitlements = new StubCurrentUserAccess();
     return new MaterializeDueTodoSeriesUseCase({
       clock: new DateClock(),
@@ -136,7 +137,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       checklistTemplate: [{ title: "항목" }],
       now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
-    await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
+    await new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).insert(series);
     return series;
   }
 
@@ -146,7 +147,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
 
   async function nextOccurrenceOf(seriesId: string) {
     const row = await client.query.todoSeries.findFirst({ where: { id: seriesId } });
-    return row?.nextOccurrenceDate?.toISOString().slice(0, 10) ?? null;
+    return row?.nextOccurrenceDate?.toString() ?? null;
   }
 
   it("미리 만드는 기간까지 만들고 다음 회차로 커서를 옮기며 다시 돌아도 그대로다", async () => {
@@ -275,14 +276,14 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       where: { seriesId: id },
       orderBy: { occurrenceDate: "asc" },
     });
-    expect(first?.startDate.toISOString().slice(0, 10)).toBe("2026-11-05");
+    expect(first?.startDate.toString()).toBe("2026-11-05");
   });
 
   it("이미 있는 회차는 건너뛰고 새로 만든 행만 센다", async () => {
     // Given
     const id = createEntityId();
     await seedSeries(id);
-    const occurrenceDate = new Date("2026-11-05T00:00:00.000Z");
+    const occurrenceDate = Temporal.PlainDate.from("2026-11-05");
     const [existing] = await client
       .insert(todo)
       .values({
@@ -399,8 +400,8 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       await client.insert(todo).values({
         ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 1 }), ["id"]),
         seriesId: "broken",
-        occurrenceDate: AT,
-        startDate: AT,
+        occurrenceDate: plainDateFromDate(AT),
+        startDate: plainDateFromDate(AT),
       });
       await deleteCategoryLikeOldServer(categoryId, remaining);
       // When

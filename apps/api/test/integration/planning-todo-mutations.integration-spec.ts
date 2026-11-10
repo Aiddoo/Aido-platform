@@ -32,6 +32,8 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -111,7 +113,13 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({ userId, categoryId, completed: false, startDate: AT, sortOrder: 0 }),
+          TodoFixture.create({
+            userId,
+            categoryId,
+            completed: false,
+            startDate: plainDateFromDate(AT),
+            sortOrder: 0,
+          }),
           ["id"],
         ),
       )
@@ -136,6 +144,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
         todoId,
         title: `항목 ${sortOrder}`,
         sortOrder,
+        updatedAt: nowInstant(),
       })),
     );
     return readItems();
@@ -303,7 +312,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
         title: "기존 제목",
         completed: true,
         completedAt: instantFromDate(AT),
-        endDate: new Date("2027-01-05"),
+        endDate: Temporal.PlainDate.from("2027-01-05"),
       }),
     );
 
@@ -578,7 +587,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             userId,
             categoryId,
             title: "rollback 대상",
-            startDate: AT,
+            startDate: plainDateFromDate(AT),
             endDate: null,
             scheduledLocalTime: null,
             scheduledTime: null,

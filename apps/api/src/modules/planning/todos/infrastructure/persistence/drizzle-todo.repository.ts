@@ -11,9 +11,9 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
 import { nextSequenceValue, nextSequenceValues } from "#api/platform/database/sequence";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
-import { dateKeyOf, utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
 import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
@@ -39,9 +39,11 @@ type TodoPatch = Partial<typeof todo.$inferInsert>;
 @Injectable()
 export class DrizzleTodoRepository implements TodoRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -92,9 +94,12 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     if (items.length === 0) {
       return;
     }
+    const updatedAt = this.#clock.now();
     await this.#db
       .insert(todoItem)
-      .values(items.map((item, sortOrder) => ({ todoId, title: item.title, sortOrder })));
+      .values(
+        items.map((item, sortOrder) => ({ todoId, title: item.title, sortOrder, updatedAt })),
+      );
   }
 
   async insertOccurrences(
@@ -106,6 +111,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       return [];
     }
     // 이미 있는 날짜는 건너뛰어 그 id는 쓰이지 않고 비어도 된다
+    const updatedAt = this.#clock.now();
     const rows = await this.#db
       .insert(todo)
       .values(
@@ -113,8 +119,8 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
           ...plan,
           id: plan.id.value,
           seriesId,
-          occurrenceDate: utcMidnightOf(plan.occurrenceDate),
-          createdAt: instantToDate(plan.createdAt),
+          occurrenceDate: Temporal.PlainDate.from(plan.occurrenceDate),
+          updatedAt,
         })),
       )
       .onConflictDoNothing({
@@ -129,6 +135,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
             todoId: created.id,
             title: item.title,
             sortOrder,
+            updatedAt,
           })),
         ),
       );
@@ -152,15 +159,15 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .where(
         and(
           inArray(todo.seriesId, [...seriesIds]),
-          gte(todo.occurrenceDate, utcMidnightOf(fromDate)),
+          gte(todo.occurrenceDate, Temporal.PlainDate.from(fromDate)),
         ),
       )
       .orderBy(asc(todo.occurrenceDate));
     return rows.map((row) => ({
       todoId: row.todoId,
       seriesId: requireRecord(row.seriesId),
-      occurrenceDate: dateKeyOf(requireRecord(row.occurrenceDate)),
-      startDate: dateKeyOf(row.startDate),
+      occurrenceDate: requireRecord(row.occurrenceDate).toString(),
+      startDate: row.startDate.toString(),
       completed: row.completed,
     }));
   }
@@ -176,11 +183,11 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     }
     await this.#db
       .update(todo)
-      .set(values)
+      .set({ ...values, updatedAt: this.#clock.now() })
       .where(
         and(
           eq(todo.seriesId, seriesId),
-          gte(todo.occurrenceDate, utcMidnightOf(fromDate)),
+          gte(todo.occurrenceDate, Temporal.PlainDate.from(fromDate)),
           eq(todo.completed, false),
         ),
       );
@@ -194,7 +201,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     const instantCases = sql.join(
       times.map(
         ({ todoId, scheduledTime }) =>
-          sql`WHEN ${todoId}::integer THEN ${scheduledTime == null ? null : scheduledTime.toISOString()}::timestamptz`,
+          sql`WHEN ${todoId}::integer THEN ${scheduledTime == null ? null : toIsoString(scheduledTime)}::timestamptz`,
       ),
       sql` `,
     );
@@ -211,6 +218,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
         scheduledTime: sql`CASE ${todo.id} ${instantCases} END`,
         scheduledLocalTime: sql`CASE ${todo.id} ${localTimeCases} END`,
         isAllDay: times.every(({ scheduledTime }) => scheduledTime == null),
+        updatedAt: this.#clock.now(),
       })
       .where(
         inArray(
@@ -226,12 +234,12 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     }
     await this.#db
       .update(todo)
-      .set({ seriesId: toSeriesId })
+      .set({ seriesId: toSeriesId, updatedAt: this.#clock.now() })
       .where(inArray(todo.id, [...todoIds]));
   }
 
   async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
-    const date = utcMidnightOf(occurrence.occurrenceDate);
+    const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
     await this.#updateTodoRow(todoId, {
       occurrenceDate: date,
       startDate: date,
@@ -262,7 +270,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .for("update");
     return rows.map((row) => ({
       ...row,
-      startDate: dateKeyOf(row.startDate),
+      startDate: row.startDate.toString(),
       scheduledTime: requireRecord(row.scheduledTime),
     }));
   }
@@ -274,13 +282,13 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     const cases = sql.join(
       instants.map(
         ({ todoId, scheduledTime }) =>
-          sql`WHEN ${todoId}::integer THEN ${scheduledTime.toISOString()}::timestamptz`,
+          sql`WHEN ${todoId}::integer THEN ${toIsoString(scheduledTime)}::timestamptz`,
       ),
       sql` `,
     );
     await this.#db
       .update(todo)
-      .set({ scheduledTime: sql`CASE ${todo.id} ${cases} END`, updatedAt: sql`${todo.updatedAt}` })
+      .set({ scheduledTime: sql`CASE ${todo.id} ${cases} END` })
       .where(
         inArray(
           todo.id,
@@ -294,7 +302,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     seriesId: string,
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void> {
-    const date = utcMidnightOf(occurrence.occurrenceDate);
+    const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
     await this.#updateTodoRow(todoId, {
       seriesId,
       occurrenceDate: date,
@@ -321,7 +329,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
           inArray(todo.seriesId, [...query.seriesIds]),
           query.fromDate == null
             ? undefined
-            : gte(todo.occurrenceDate, utcMidnightOf(query.fromDate)),
+            : gte(todo.occurrenceDate, Temporal.PlainDate.from(query.fromDate)),
           query.includeCompleted ? undefined : eq(todo.completed, false),
         ),
       )
@@ -337,14 +345,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
   }
 
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-    const { completedAt, ...values } = patch;
-    await this.#updateTodoRow(id, {
-      ...values,
-      // nullish-strict: null은 완료 시각 지우기이고 undefined는 그대로다
-      ...(completedAt === undefined
-        ? {}
-        : { completedAt: completedAt == null ? null : instantToDate(completedAt) }),
-    });
+    await this.#updateTodoRow(id, patch);
   }
 
   async updateTitle(id: number, title: string): Promise<void> {
@@ -375,7 +376,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     }
     const updated = await this.#db
       .update(todo)
-      .set(values)
+      .set({ ...values, updatedAt: this.#clock.now() })
       .where(eq(todo.id, id))
       .returning({ id: todo.id });
     requireRecord(updated[0]);
@@ -423,7 +424,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
   ): Promise<void> {
     await this.#db
       .update(todo)
-      .set({ sortOrder: sql`${todo.sortOrder} + ${delta}` })
+      .set({ sortOrder: sql`${todo.sortOrder} + ${delta}`, updatedAt: this.#clock.now() })
       .where(
         and(
           eq(todo.userId, userId),
@@ -447,7 +448,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     }
     const updated = await this.#db
       .update(todoItem)
-      .set(values)
+      .set({ ...values, updatedAt: this.#clock.now() })
       .where(eq(todoItem.id, itemId))
       .returning({ id: todoItem.id });
     requireRecord(updated[0]);
@@ -472,7 +473,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     );
     const updated = await this.#db
       .update(todoItem)
-      .set({ sortOrder: sql`CASE ${todoItem.id} ${orders} END` })
+      .set({ sortOrder: sql`CASE ${todoItem.id} ${orders} END`, updatedAt: this.#clock.now() })
       .where(inArray(todoItem.id, [...itemIds]))
       .returning({ id: todoItem.id });
     if (updated.length !== itemIds.length) {

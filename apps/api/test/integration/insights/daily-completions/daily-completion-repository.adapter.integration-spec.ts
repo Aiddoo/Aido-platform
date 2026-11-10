@@ -2,6 +2,7 @@ import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-co
 import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { describeDailyCompletionRepositoryContract } from "#test/contracts/insights/daily-completion-repository.contract";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import {
   DAILY_COMPLETION_FIXTURE_FRIEND_ID,
@@ -10,11 +11,6 @@ import {
 } from "#test/fixtures/insights/daily-completion.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
-// planning Todo의 date 칸은 UTC 자정 Date로 오간다
-function toDateColumn(date: Temporal.PlainDate): Date {
-  return new Date(`${date.toString()}T00:00:00.000Z`);
-}
 
 describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -66,10 +62,11 @@ describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () =
         userId: seedTodo.userId,
         categoryId,
         title: "일일 완료 집계 fixture",
-        startDate: toDateColumn(seedTodo.startDate),
-        endDate: seedTodo.endDate == null ? null : toDateColumn(seedTodo.endDate),
+        startDate: seedTodo.startDate,
+        endDate: seedTodo.endDate,
         completed: seedTodo.completed,
         visibility: seedTodo.isPublic ? "PUBLIC" : "PRIVATE",
+        updatedAt: nowInstant(),
       });
     }
   }

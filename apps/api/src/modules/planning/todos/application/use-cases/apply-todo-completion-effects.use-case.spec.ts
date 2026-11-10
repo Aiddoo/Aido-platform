@@ -1,3 +1,4 @@
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
@@ -58,6 +59,7 @@ function setUp(options: {
     friendPort,
     todoNotification: notification,
     streakPort: streak,
+    clock: new FixedClock(Temporal.Instant.from("2026-11-10T03:00:00Z")),
     logger: new SilentLogger(),
   });
   return { useCase, streakRecords, friendCompleted, milestones };

@@ -45,7 +45,9 @@ import {
   todayInTimezone,
   toLocalTimeString,
 } from "#api/shared/domain/date/utils/timezone";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -105,8 +107,8 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     queue = new TodoTimezoneRebaseQueueService(jobQueue);
     useCase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
-      todoRepository: new DrizzleTodoRepository(transaction.txHost),
-      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
+      todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
       ownerTimezone: {
         findTimezone: async (id) => {
           const row = await transaction.txHost.tx.query.userPreference.findFirst({
@@ -158,9 +160,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       .insert(todo)
       .values({
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
-        startDate: parseDateOnly(date),
+        startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: localTime,
-        scheduledTime: parseLocalDateTime(date, localTime, SEOUL),
+        scheduledTime: instantFromDate(parseLocalDateTime(date, localTime, SEOUL)),
         isAllDay: false,
         ...overrides,
       })
@@ -173,7 +175,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       columns: { scheduledTime: true },
       where: { id },
     });
-    return row?.scheduledTime?.toISOString();
+    return row?.scheduledTime == null ? undefined : toIsoString(row.scheduledTime);
   }
 
   async function queuedStarts(todoId: number, label: string) {
@@ -197,7 +199,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const date = addDaysToDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
-    const seoulInstant = parseLocalDateTime(date, "10:00", SEOUL);
+    const seoulInstant = instantFromDate(parseLocalDateTime(date, "10:00", SEOUL));
     await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
     // When
     const result = await useCase.execute({ userId });
@@ -216,10 +218,10 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const yesterday = addDaysToDateKey(today, -1);
     const id = await seedTodo(yesterday, "00:00", {
-      scheduledTime: new Date(Date.now() + 5 * HOUR_MS),
+      scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
     await reminderAdapter.scheduleReminders([
-      { todoId: id, scheduledTime: new Date(Date.now() + 5 * HOUR_MS), userId },
+      { todoId: id, scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }), userId },
     ]);
     // When
     const result = await useCase.execute({ userId });
@@ -234,10 +236,10 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const soon = new Date(Date.now() + 5 * 60 * 1000);
     const localTime = toLocalTimeString(soon, NEW_YORK);
     const id = await seedTodo(localDateInTimezone(soon, NEW_YORK), localTime, {
-      scheduledTime: new Date(Date.now() + 5 * HOUR_MS),
+      scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
     await reminderAdapter.scheduleReminders([
-      { todoId: id, scheduledTime: new Date(Date.now() + 5 * HOUR_MS), userId },
+      { todoId: id, scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }), userId },
     ]);
     // When
     const result = await useCase.execute({ userId });
@@ -278,7 +280,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const date = addDaysToDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
-    const seoulInstant = parseLocalDateTime(date, "10:00", SEOUL);
+    const seoulInstant = instantFromDate(parseLocalDateTime(date, "10:00", SEOUL));
     await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
     // When
     await useCase.execute({ userId });
@@ -287,10 +289,12 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     await useCase.execute({ userId });
     await useCase.execute({ userId });
     // Then
-    expect(await readInstant(id)).toBe(seoulInstant.toISOString());
+    expect(await readInstant(id)).toBe(toIsoString(seoulInstant));
     const starts = await queuedStarts(id, "60min");
     expect(starts).toHaveLength(1);
-    expect(Math.abs((starts[0] ?? 0) - (seoulInstant.getTime() - HOUR_MS))).toBeLessThan(5_000);
+    expect(Math.abs((starts[0] ?? 0) - (seoulInstant.epochMilliseconds - HOUR_MS))).toBeLessThan(
+      5_000,
+    );
     expect(await queuedStarts(id, "10min")).toHaveLength(1);
   });
 
@@ -318,10 +322,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         timezone,
         repeatFrequency: "DAILY",
         repeatInterval: 1,
-        startDate: parseDateOnly(today),
+        startDate: Temporal.PlainDate.from(today),
         checklistTemplate: [],
-        nextOccurrenceDate: parseDateOnly(today),
+        nextOccurrenceDate: Temporal.PlainDate.from(today),
         generatedCount: 0,
+        updatedAt: nowInstant(),
       });
     };
     await seedSeries(userId, SEOUL, "00000000-0000-4000-8000-000000000a01");
@@ -343,8 +348,8 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     let failed = false;
     const flaky = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
-      todoRepository: new DrizzleTodoRepository(transaction.txHost),
-      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
+      todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
       ownerTimezone: { findTimezone: async () => NEW_YORK },
       todoReminder: {
         cancelReminders: async () => undefined,
@@ -426,7 +431,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       const date = addDaysToDateKey(today, 3);
       const id = await seedTodo(date, "10:00");
       await reminderAdapter.scheduleReminders([
-        { todoId: id, scheduledTime: parseLocalDateTime(date, "10:00", SEOUL), userId },
+        {
+          todoId: id,
+          scheduledTime: instantFromDate(parseLocalDateTime(date, "10:00", SEOUL)),
+          userId,
+        },
       ]);
       await setStoredTimezone(SEOUL);
       const at = new Date(
@@ -579,14 +588,14 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
 
   async function seedRow(
     owner: { userId: string; categoryId: number },
-    scheduledTime: Date | null,
+    scheduledTime: Temporal.Instant | null,
     overrides: object = {},
   ) {
     const [row] = await client
       .insert(todo)
       .values({
         ...omit(TodoFixture.create(owner), ["id"]),
-        startDate: new Date("2026-11-05T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-11-05"),
         scheduledTime,
         scheduledLocalTime: null,
         isAllDay: scheduledTime == null,
@@ -605,7 +614,7 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
   ])("$name: 순간은 그대로 두고 벽시계를 채운다", async ({ tag, timezone, local }) => {
     // Given
     const owner = await seedUser(tag, timezone);
-    const instant = new Date("2026-11-05T01:00:00.000Z");
+    const instant = Temporal.Instant.from("2026-11-05T01:00:00.000Z");
     const row = await seedRow(owner, instant);
     const allDay = await seedRow(owner, null);
     // When
@@ -623,16 +632,16 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
     // Given
     const owner = await seedUser("BF000006", NEW_YORK);
     const rollbackAt = new Date("2026-11-05T00:00:00.000Z");
-    const before = new Date("2026-11-04T00:00:00.000Z");
-    const after = new Date("2026-11-05T12:00:00.000Z");
-    const pastKept = await seedRow(owner, new Date("2026-11-01T01:00:00.000Z"), {
+    const before = Temporal.Instant.from("2026-11-04T00:00:00.000Z");
+    const after = Temporal.Instant.from("2026-11-05T12:00:00.000Z");
+    const pastKept = await seedRow(owner, Temporal.Instant.from("2026-11-01T01:00:00.000Z"), {
       scheduledLocalTime: "10:00",
       updatedAt: before,
     });
-    const created = await seedRow(owner, new Date("2026-11-06T14:00:00.000Z"), {
+    const created = await seedRow(owner, Temporal.Instant.from("2026-11-06T14:00:00.000Z"), {
       updatedAt: after,
     });
-    const edited = await seedRow(owner, new Date("2026-11-07T15:30:00.000Z"), {
+    const edited = await seedRow(owner, Temporal.Instant.from("2026-11-07T15:30:00.000Z"), {
       scheduledLocalTime: "09:00",
       updatedAt: after,
     });
@@ -712,9 +721,9 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     expect(rows.length).toBeGreaterThan(0);
     const wrong = rows.filter(
       (row) =>
-        row.scheduledTime?.getTime() !==
+        row.scheduledTime?.epochMilliseconds !==
         parseLocalDateTime(
-          toDateString(row.startDate),
+          row.startDate.toString(),
           row.scheduledLocalTime ?? "",
           timezone,
         ).getTime(),
@@ -800,14 +809,17 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     const { seriesId } = await createDailySeries("09:00");
     await client
       .update(todoSeries)
-      .set({ nextOccurrenceDate: parseDateOnly(addDaysToDateKey(today, 1)), generatedCount: 1 })
+      .set({
+        nextOccurrenceDate: Temporal.PlainDate.from(addDaysToDateKey(today, 1)),
+        generatedCount: 1,
+      })
       .where(eq(todoSeries.id, seriesId));
     await client
       .delete(todo)
       .where(
         and(
           eq(todo.seriesId, seriesId),
-          gte(todo.occurrenceDate, parseDateOnly(addDaysToDateKey(today, 1))),
+          gte(todo.occurrenceDate, Temporal.PlainDate.from(addDaysToDateKey(today, 1))),
         ),
       );
     // When

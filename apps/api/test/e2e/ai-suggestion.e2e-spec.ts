@@ -25,6 +25,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -163,8 +164,9 @@ describe("AI 제안 E2E", () => {
               title: "시드",
               timezone: "UTC",
               repeatFrequency: "DAILY" as const,
-              startDate: new Date(),
-              nextOccurrenceDate: new Date(),
+              startDate: todayUtc(),
+              nextOccurrenceDate: todayUtc(),
+              updatedAt: nowInstant(),
             };
           }),
         );

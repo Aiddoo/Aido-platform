@@ -12,6 +12,8 @@ import request from "supertest";
 import { todo as todoTable } from "#api/platform/database/schema/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -33,11 +35,11 @@ describe("오늘의 할 일 요약 E2E", () => {
   const password = "Test1234!";
   const timezone = "Asia/Seoul";
   const activeDateRange = () => {
-    const today = todayInTimezone(timezone);
+    const today = plainDateFromDate(todayInTimezone(timezone));
     return {
       today,
-      startDate: new Date(today.getTime() - 24 * 60 * 60 * 1000),
-      endDate: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+      startDate: today.subtract({ days: 1 }),
+      endDate: today.add({ days: 1 }),
     };
   };
 
@@ -58,7 +60,8 @@ describe("오늘의 할 일 요약 E2E", () => {
           endDate,
           sortOrder: 0,
           completed: true,
-          completedAt: new Date(),
+          completedAt: nowInstant(),
+          updatedAt: nowInstant(),
         },
         {
           userId: user.userId,
@@ -68,6 +71,7 @@ describe("오늘의 할 일 요약 E2E", () => {
           endDate,
           sortOrder: 1,
           completed: false,
+          updatedAt: nowInstant(),
         },
         {
           userId: user.userId,
@@ -77,6 +81,7 @@ describe("오늘의 할 일 요약 E2E", () => {
           endDate,
           sortOrder: 2,
           completed: false,
+          updatedAt: nowInstant(),
         },
       ]);
 
@@ -151,7 +156,8 @@ describe("오늘의 할 일 요약 E2E", () => {
           endDate,
           sortOrder: i,
           completed: i < 6,
-          ...(i < 6 && { completedAt: new Date() }),
+          updatedAt: nowInstant(),
+          ...(i < 6 && { completedAt: nowInstant() }),
         })),
       );
 
@@ -187,28 +193,52 @@ describe("오늘의 할 일 요약 E2E", () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary-tomorrow@test.com", password);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
-      const today = todayInTimezone(timezone);
-      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      const today = plainDateFromDate(todayInTimezone(timezone));
+      const tomorrow = today.add({ days: 1 });
       const client = ctx.testDatabase.getClient();
       await client.insert(todoTable).values(
         [
-          { title: "오늘 할 일", startDate: today, endDate: today, sortOrder: 0 },
-          { title: "내일 할 일 1", startDate: tomorrow, endDate: tomorrow, sortOrder: 1 },
-          { title: "내일 할 일 2", startDate: tomorrow, endDate: tomorrow, sortOrder: 2 },
-        ].map((todo) => ({ ...todo, userId: user.userId, categoryId, completed: false })),
+          {
+            title: "오늘 할 일",
+            startDate: today,
+            endDate: today,
+            sortOrder: 0,
+            updatedAt: nowInstant(),
+          },
+          {
+            title: "내일 할 일 1",
+            startDate: tomorrow,
+            endDate: tomorrow,
+            sortOrder: 1,
+            updatedAt: nowInstant(),
+          },
+          {
+            title: "내일 할 일 2",
+            startDate: tomorrow,
+            endDate: tomorrow,
+            sortOrder: 2,
+            updatedAt: nowInstant(),
+          },
+        ].map((todo) => ({
+          ...todo,
+          userId: user.userId,
+          categoryId,
+          completed: false,
+          updatedAt: nowInstant(),
+        })),
       );
 
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos/summary")
-        .query({ date: toDateString(tomorrow) })
+        .query({ date: tomorrow.toString() })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
 
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
-        date: toDateString(tomorrow),
+        date: tomorrow.toString(),
         totalTodos: 2,
         completedTodos: 0,
       });

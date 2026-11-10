@@ -6,7 +6,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/index";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
@@ -90,7 +89,7 @@ export class StartSeriesFromTodoUseCase {
     }
     const scheduledLocalTime = todo.localTimeIn(timezone);
     const now = this.#dependencies.clock.now();
-    const startDate = dateKeyOf(todo.schedule.startDate);
+    const startDate = todo.schedule.startDate.toString();
     const series = TodoSeries.create({
       id: TodoSeriesId.generate(),
       userId: todo.userId,

@@ -18,9 +18,9 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import type {
@@ -62,7 +62,7 @@ import type {
   WinbackUser,
 } from "../../application/read-models/scheduler.read-model.js";
 
-// identity User·UserPreference 칸은 Temporal이지만 스케줄러 읽기 모델은 아직 Date다
+// identity·planning 칸은 Temporal이지만 스케줄러 읽기 모델·조회 조건은 아직 Date다
 function toDateOrNull(instant: Temporal.Instant | null): Date | null {
   return instant == null ? null : instantToDate(instant);
 }
@@ -181,12 +181,12 @@ export class DrizzleSchedulerReader
         ...(userId && { id: userId }),
         RAW: (target) => premiumAccessCondition(target, now()),
         preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
-        todos: { startDate: { gte: today, lt: tomorrow } },
+        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
+          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
@@ -203,12 +203,12 @@ export class DrizzleSchedulerReader
       where: {
         RAW: (target) => freeAccessCondition(target, now()),
         preference: { timezone: tz },
-        todos: { startDate: { gte: today, lt: tomorrow } },
+        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
+          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
@@ -224,8 +224,19 @@ export class DrizzleSchedulerReader
         AND: [
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz } },
-          { todos: { startDate: { gte: today, lt: tomorrow } } },
-          { NOT: { todos: { startDate: { gte: today, lt: tomorrow }, completed: true } } },
+          {
+            todos: {
+              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+            },
+          },
+          {
+            NOT: {
+              todos: {
+                startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+                completed: true,
+              },
+            },
+          },
         ],
       },
     });
@@ -246,7 +257,9 @@ export class DrizzleSchedulerReader
       where: {
         preference: { timezone: tz },
         RAW: (target) => premiumAccessCondition(target, now()),
-        todos: { startDate: { gte: periodStart, lt: periodEnd } },
+        todos: {
+          startDate: { gte: plainDateFromDate(periodStart), lt: plainDateFromDate(periodEnd) },
+        },
       },
     });
   }
@@ -360,13 +373,18 @@ export class DrizzleSchedulerReader
           { id: { in: [...recipientUserIds] } },
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz } },
-          { todos: { startDate: { gte: today, lt: tomorrow }, completed: false } },
+          {
+            todos: {
+              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+              completed: false,
+            },
+          },
         ],
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
+          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
         },
       },
     });
@@ -394,13 +412,13 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         id: { in: friendIds },
-        todos: { startDate: { gte: today, lt: tomorrow } },
+        todos: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
       },
       with: {
         profile: { columns: { name: true } },
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
+          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
         },
       },
     });
@@ -414,13 +432,18 @@ export class DrizzleSchedulerReader
         AND: [
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz, currentStreak: { gte: 3 } } },
-          { todos: { startDate: { gte: today, lt: tomorrow }, completed: false } },
+          {
+            todos: {
+              startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) },
+              completed: false,
+            },
+          },
         ],
       },
       with: {
         todos: {
           columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
+          where: { startDate: { gte: plainDateFromDate(today), lt: plainDateFromDate(tomorrow) } },
         },
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
@@ -537,8 +560,8 @@ export class DrizzleSchedulerReader
   // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
   #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCount[]> {
     const { tz, periodStart, periodEnd } = params;
-    const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
-    const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
+    const firstDay = sql`${sql.param(plainDateFromDate(periodStart), todo.startDate)}::date`;
+    const lastDay = sql`(${sql.param(plainDateFromDate(periodEnd), todo.startDate)}::date - 1)`;
     const todoLastDay = sql`coalesce(${todo.endDate}, ${todo.startDate})`;
     const daysInPeriod = sql<number>`sum(greatest(0, least(${todoLastDay}, ${lastDay}) - greatest(${todo.startDate}, ${firstDay}) + 1))::int`;
     return this.#db
@@ -589,11 +612,7 @@ export class DrizzleSchedulerReader
       return null;
     }
     const { scheduledTime, ...rest } = row;
-    return {
-      ...rest,
-      startDate: toDateString(row.startDate),
-      scheduledAt: scheduledTime == null ? null : instantFromDate(scheduledTime),
-    };
+    return { ...rest, startDate: row.startDate.toString(), scheduledAt: scheduledTime };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -636,8 +655,8 @@ export class DrizzleSchedulerReader
     return sql<number>`(
       SELECT count(*)::int FROM ${todo}
       WHERE ${todo.userId} = ${userId}
-        AND ${todo.startDate} >= ${sql.param(today, todo.startDate)}
-        AND ${todo.startDate} < ${sql.param(tomorrow, todo.startDate)}
+        AND ${todo.startDate} >= ${sql.param(plainDateFromDate(today), todo.startDate)}
+        AND ${todo.startDate} < ${sql.param(plainDateFromDate(tomorrow), todo.startDate)}
     )`;
   }
 

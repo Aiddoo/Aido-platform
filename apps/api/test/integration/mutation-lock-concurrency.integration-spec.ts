@@ -55,6 +55,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -63,7 +64,7 @@ import { TestDatabase } from "../setup/test-database.js";
 const CONCURRENCY = 20;
 const CATEGORY_POOL_MAX = 30;
 const DAILY_LIMIT = 3;
-const TODAY = new Date("2026-07-26T00:00:00.000Z");
+const TODAY = Temporal.PlainDate.from("2026-07-26");
 
 class BestEffortRendezvous {
   #arrivals = 0;
@@ -629,6 +630,7 @@ async function createTodo(
       title,
       startDate: TODAY,
       visibility: "PUBLIC",
+      updatedAt: nowInstant(),
     })
     .returning({ id: todo.id });
   if (created === undefined) {

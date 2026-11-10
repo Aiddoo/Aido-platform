@@ -6,9 +6,9 @@ import {
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 
@@ -17,6 +17,7 @@ import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series
 export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort {
   readonly #activityReader: UserActivityReaderPort;
   readonly #entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
+  readonly #clock: ClockPort;
 
   constructor(
     @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
@@ -24,10 +25,12 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
       EntitlementReaderPort,
       "getEntitlements"
     >,
+    clock: ClockPort,
   ) {
     super();
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;
+    this.#clock = clock;
   }
 
   async findDormantSince(userId: string): Promise<string | null> {
@@ -35,16 +38,13 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
     if (account == null) {
       return null;
     }
-    // 휴면 판정은 아직 Date로 계산한다
-    const owner = {
-      lastActiveAt: account.lastActiveAt == null ? null : instantToDate(account.lastActiveAt),
-      signedUpAt: instantToDate(account.signedUpAt),
-      timezone: account.timezone,
-    };
-    if (!isSeriesOwnerDormant(owner, now())) {
+    if (!isSeriesOwnerDormant(account, this.#clock.now())) {
       return null;
     }
     const { plan } = await this.#entitlementReader.getEntitlements(userId);
-    return isExemptFromDormancy(plan) ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
+    // 휴면 시작일은 지금처럼 UTC 달력 날짜로 알린다
+    return isExemptFromDormancy(plan)
+      ? null
+      : localDateOf(account.lastActiveAt ?? account.signedUpAt, TimeZone.UTC).toString();
   }
 }

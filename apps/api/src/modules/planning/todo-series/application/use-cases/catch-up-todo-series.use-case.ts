@@ -1,9 +1,11 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import {
+  addDaysToKey,
+  localDateKeyAt,
+} from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -44,8 +46,9 @@ export class CatchUpTodoSeriesUseCase {
   }
 
   execute(userId: string): Promise<void> {
-    const at = instantToDate(this.#dependencies.clock.now());
-    const today = dateKeyOf(at);
+    const at = this.#dependencies.clock.now();
+    // 날짜가 바뀌는 기준은 지금처럼 UTC 달력이다
+    const today = localDateKeyAt(at, "UTC");
     if (today !== this.#checkedDate) {
       this.#checkedDate = today;
       this.#nextCheckAt.clear();
@@ -54,7 +57,7 @@ export class CatchUpTodoSeriesUseCase {
     if (inFlight != null) {
       return inFlight;
     }
-    if ((this.#nextCheckAt.get(userId) ?? 0) > at.getTime()) {
+    if ((this.#nextCheckAt.get(userId) ?? 0) > at.epochMilliseconds) {
       return Promise.resolve();
     }
     const run = this.#catchUp(userId, addDaysToKey(today, 1)).finally(() => {

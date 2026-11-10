@@ -30,13 +30,13 @@ export interface OccurrencePatch {
 export interface OccurrenceTime {
   readonly todoId: number;
   readonly scheduledLocalTime: string | null;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
 }
 
 export interface TodoOccurrenceAttachment {
   readonly occurrenceDate: string;
   readonly scheduledLocalTime: string | null;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
 }
 
 /** 시간대가 바뀌면 다시 계산할 할 일. 벽시계가 빈 행은 옛 서버가 쓴 것이라 재배포 SQL이 채운다. */
@@ -44,7 +44,7 @@ export interface RebaseCandidate {
   readonly todoId: number;
   readonly startDate: string;
   readonly scheduledLocalTime: string | null;
-  readonly scheduledTime: Date;
+  readonly scheduledTime: Temporal.Instant;
   readonly completed: boolean;
 }
 
@@ -57,22 +57,22 @@ export interface RebaseCandidateQuery {
 
 export interface RebasedInstant {
   readonly todoId: number;
-  readonly scheduledTime: Date;
+  readonly scheduledTime: Temporal.Instant;
 }
 
 export interface CreatedOccurrence {
   readonly todoId: number;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
 }
 
 /** 부분 수정 패치. undefined 필드는 바꾸지 않는다. */
 export interface TodoUpdatePatch {
   readonly title?: string;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date | null;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledLocalTime?: string | null;
-  readonly scheduledTime?: Date | null;
+  readonly scheduledTime?: Temporal.Instant | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly completed?: boolean;

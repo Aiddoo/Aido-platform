@@ -35,6 +35,9 @@ import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -178,12 +181,13 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       userId: testUserId,
       categoryId: category.id,
       title: "테스트 할 일",
-      startDate: data.startDate,
+      startDate: plainDateFromDate(data.startDate),
       completed: data.completed ?? false,
-      completedAt: data.completedAt ?? null,
+      completedAt: data.completedAt == null ? null : instantFromDate(data.completedAt),
       isAllDay: true,
       visibility: "PUBLIC",
       sortOrder: 0,
+      updatedAt: nowInstant(),
     });
   }
 
@@ -372,9 +376,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
           userId: testUserId,
           categoryId: category.id,
           title: "미커밋 할 일",
-          startDate: params.startDate,
+          startDate: plainDateFromDate(params.startDate),
           completed: true,
-          completedAt: new Date("2026-02-23T23:30:00.000Z"),
+          completedAt: Temporal.Instant.from("2026-02-23T23:30:00.000Z"),
+          updatedAt: nowInstant(),
         });
         const inputs = await reader.fetchAggregationInputs(params);
         expect(
@@ -425,9 +430,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       userId: otherUser.id,
       categoryId: otherCategory.id,
       title: "다른 사용자의 할 일",
-      startDate: params.startDate,
+      startDate: plainDateFromDate(params.startDate),
       completed: true,
-      completedAt: params.startDate,
+      completedAt: instantFromDate(params.startDate),
+      updatedAt: nowInstant(),
     });
     const result = await aggregate(params);
     expect(result.totalTodos).toBe(2);

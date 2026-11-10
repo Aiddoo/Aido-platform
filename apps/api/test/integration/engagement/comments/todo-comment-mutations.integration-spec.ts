@@ -94,7 +94,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
             userId,
             categoryId: category.id,
             visibility: "PUBLIC",
-            startDate: AT,
+            startDate: Temporal.PlainDate.from("2027-01-08"),
             sortOrder: 0,
             commentCount: 9,
           }),

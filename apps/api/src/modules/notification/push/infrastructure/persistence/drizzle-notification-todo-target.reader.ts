@@ -2,7 +2,6 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   NotificationTodoTarget,
@@ -30,7 +29,7 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
     });
 
     return new Map(
-      rows.map((row) => [row.id, { ownerId: row.userId, date: toDateString(row.startDate) }]),
+      rows.map((row) => [row.id, { ownerId: row.userId, date: row.startDate.toString() }]),
     );
   }
 }

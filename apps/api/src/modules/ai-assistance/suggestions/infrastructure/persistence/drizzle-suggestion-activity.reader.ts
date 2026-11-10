@@ -14,10 +14,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
-  dateColumnOf,
   localDateAt,
   localDateTimeAt,
-  plainDateOfDateColumn,
   sundayBasedDayIndex,
 } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
@@ -30,9 +28,9 @@ import type {
   UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
-// planning Todo.startDate는 아직 UTC 자정 Date로 읽는 달력 날짜다
-function localDay(value: Date, timezone: string): Date {
-  return dateColumnOf(localDateAt(value, timezone));
+// planning Todo.startDate는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
+function localDay(value: Date, timezone: string): Temporal.PlainDate {
+  return localDateAt(value, timezone);
 }
 
 function toWallClock(local: Temporal.ZonedDateTime): string {
@@ -197,7 +195,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     return todos.toReversed().map((t) => ({
       title: t.title,
-      startDate: plainDateOfDateColumn(t.startDate).toString(),
+      startDate: t.startDate.toString(),
       scheduledTime:
         t.scheduledTime == null
           ? null

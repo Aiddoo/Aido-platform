@@ -39,7 +39,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     getPreferenceRecord: vi.fn(),
   };
 
-  const today = new Date("2026-07-12T00:00:00.000Z");
+  const today = Temporal.PlainDate.from("2026-07-12");
 
   beforeAll(async () => {
     suppressLogger();

@@ -127,8 +127,8 @@ describe("시간대 재계산 규모 측정", () => {
         );
         const useCase = new RebaseTodoTimezoneUseCase({
           clock: new DateClock(),
-          todoRepository: new DrizzleTodoRepository(transaction.txHost),
-          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
+          todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
+          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
           ownerTimezone: {
             findTimezone: async (id) => {
               const row = await transaction.txHost.tx.query.userPreference.findFirst({

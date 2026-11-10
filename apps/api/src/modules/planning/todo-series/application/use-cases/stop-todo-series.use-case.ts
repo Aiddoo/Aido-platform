@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { type MutationLockPort } from "#api/shared/application/ports/index";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
@@ -68,7 +68,7 @@ export class StopTodoSeriesUseCase {
     if (series == null || series.userId.value !== userId) {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
     }
-    const lastDate = dateKeyOf(occurrenceDate);
+    const lastDate = occurrenceDate.toString();
     const following = await seriesRepository.lockFollowingSegments(series);
     const stopped = [series, ...following].filter((segment) => segment.stopAfter(lastDate));
     if (stopped.length === 0) {

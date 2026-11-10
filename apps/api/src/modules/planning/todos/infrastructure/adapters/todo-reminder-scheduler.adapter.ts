@@ -24,7 +24,7 @@ export class ReminderSchedulerAdapter implements TodoReminderSchedulerPort {
     this.#reminderScheduler = reminderScheduler;
   }
 
-  scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+  scheduleReminder(todoId: number, scheduledTime: Temporal.Instant, userId: string): Promise<void> {
     return this.#reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
   }
 

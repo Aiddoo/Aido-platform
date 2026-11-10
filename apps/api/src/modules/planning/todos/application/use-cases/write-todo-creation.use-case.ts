@@ -4,8 +4,8 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { Todo, type TodoEvent } from "../../../shared/domain/todo.aggregate.js";
@@ -34,8 +34,8 @@ export function toSingleTodoSpec(input: ResolvedCreateTodoData): SingleTodoSpec 
     categoryId: input.categoryId,
     title: TodoTitle.create(input.title),
     schedule: TodoSchedule.create({
-      startDate: input.startDate,
-      endDate: input.endDate ?? null,
+      startDate: plainDateFromDate(input.startDate),
+      endDate: input.endDate == null ? null : plainDateFromDate(input.endDate),
       scheduledLocalTime: input.scheduledTime ?? null,
       isAllDay: input.isAllDay ?? true,
       timezone: input.timezone,
@@ -130,7 +130,7 @@ export class WriteTodoCreationUseCase {
       scheduledLocalTime: input.scheduledTime ?? null,
       timezone: input.timezone,
       rule,
-      startDate: dateKeyOf(input.startDate),
+      startDate: plainDateFromDate(input.startDate).toString(),
       checklistTemplate: input.items ?? [],
       now,
     });

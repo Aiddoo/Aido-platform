@@ -5,8 +5,8 @@ import { and, asc, eq, gt, gte, inArray, isNotNull, lte, ne } from "drizzle-orm"
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoSeries } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import { utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type {
   DueTodoSeriesQuery,
   TodoSeriesRef,
@@ -18,9 +18,11 @@ import { toTodoSeries, toTodoSeriesRow } from "./todo-series-row.mapper.js";
 @Injectable()
 export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -44,14 +46,16 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
   }
 
   async insert(series: TodoSeries): Promise<void> {
-    await this.#db.insert(todoSeries).values(toTodoSeriesRow(series));
+    await this.#db
+      .insert(todoSeries)
+      .values({ ...toTodoSeriesRow(series), updatedAt: series.updatedAt });
   }
 
   async update(series: TodoSeries): Promise<void> {
     const { id, userId: _userId, createdAt: _createdAt, ...values } = toTodoSeriesRow(series);
     const updated = await this.#db
       .update(todoSeries)
-      .set(values)
+      .set({ ...values, updatedAt: this.#clock.now() })
       .where(eq(todoSeries.id, id))
       .returning({ id: todoSeries.id });
     requireRecord(updated[0]);
@@ -75,7 +79,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
         and(
           eq(todoSeries.userId, series.userId.value),
           eq(todoSeries.originSeriesId, series.originSeriesId.value),
-          gte(todoSeries.startDate, utcMidnightOf(series.startDate)),
+          gte(todoSeries.startDate, Temporal.PlainDate.from(series.startDate)),
           ne(todoSeries.id, series.id.value),
         ),
       )
@@ -101,7 +105,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
   async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
     const updated = await this.#db
       .update(todoSeries)
-      .set({ timezone })
+      .set({ timezone, updatedAt: this.#clock.now() })
       .where(and(eq(todoSeries.userId, userId), ne(todoSeries.timezone, timezone)))
       .returning({ id: todoSeries.id });
     return updated.length;
@@ -114,7 +118,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .where(
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
-          lte(todoSeries.nextOccurrenceDate, utcMidnightOf(query.through)),
+          lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(query.through)),
           query.afterId == null ? undefined : gt(todoSeries.id, query.afterId),
         ),
       )
@@ -129,7 +133,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .where(
         and(
           eq(todoSeries.userId, userId),
-          lte(todoSeries.nextOccurrenceDate, utcMidnightOf(through)),
+          lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(through)),
         ),
       );
     return rows.map((row) => row.id);

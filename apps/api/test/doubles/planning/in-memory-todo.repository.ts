@@ -20,11 +20,17 @@ import {
   TodoRepositoryPort,
   type TodoUpdatePatch,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
 import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
+
+// Temporal 값은 바뀌지 않아 structuredClone 대신 행과 하위 항목만 복사한다
+export function copyTodoRecord(record: PlanningTodoRecord): PlanningTodoRecord {
+  return {
+    ...record,
+    items: record.items.map((item) => ({ ...item })),
+    category: record.category == null ? null : { ...record.category },
+  };
+}
 
 export class InMemoryTodoRepository extends TodoRepositoryPort {
   readonly records: Map<number, PlanningTodoRecord>;
@@ -44,18 +50,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     if (saved === undefined || saved.userId !== userId) {
       return null;
     }
-    const record = structuredClone(saved);
-    return Todo.reconstitute({
-      ...record,
-      completedAt: record.completedAt == null ? null : instantFromDate(record.completedAt),
-      items: record.items.map((item) => ({
-        ...item,
-        createdAt: instantFromDate(item.createdAt),
-        updatedAt: instantFromDate(item.updatedAt),
-      })),
-      createdAt: instantFromDate(record.createdAt),
-      updatedAt: instantFromDate(record.updatedAt),
-    });
+    return Todo.reconstitute(copyTodoRecord(saved));
   }
 
   #sequence = 0;
@@ -87,13 +82,8 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     const primitives = todo.toPrimitives();
     this.records.set(primitives.id, {
       ...TodoBuilder.create(primitives.userId).withId(primitives.id).build(),
-      ...structuredClone({
-        ...primitives,
-        completedAt: primitives.completedAt == null ? null : instantToDate(primitives.completedAt),
-        items: [],
-        createdAt: instantToDate(primitives.createdAt),
-        updatedAt: instantToDate(primitives.updatedAt),
-      }),
+      ...primitives,
+      items: [],
     });
   }
 
@@ -104,11 +94,9 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   ): Promise<readonly CreatedOccurrence[]> {
     const created: CreatedOccurrence[] = [];
     for (const plan of plans) {
-      const occurrenceDate = parseDateOnly(plan.occurrenceDate);
+      const occurrenceDate = Temporal.PlainDate.from(plan.occurrenceDate);
       const exists = [...this.records.values()].some(
-        (record) =>
-          record.seriesId === seriesId &&
-          record.occurrenceDate?.getTime() === occurrenceDate.getTime(),
+        (record) => record.seriesId === seriesId && record.occurrenceDate?.equals(occurrenceDate),
       );
       if (exists) {
         continue;
@@ -116,7 +104,8 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
       const id = plan.id.value;
       this.records.set(id, {
         ...TodoBuilder.create(plan.userId).withId(id).build(),
-        ...structuredClone({ ...plan, id, createdAt: instantToDate(plan.createdAt) }),
+        ...plan,
+        id,
         seriesId,
         occurrenceDate,
       });
@@ -136,13 +125,13 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
           record.seriesId != null &&
           seriesIds.includes(record.seriesId) &&
           record.occurrenceDate !== null &&
-          toDateString(record.occurrenceDate) >= fromDate,
+          record.occurrenceDate.toString() >= fromDate,
       )
       .map((record) => ({
         todoId: record.id,
         seriesId: record.seriesId ?? "",
-        occurrenceDate: toDateString(record.occurrenceDate ?? record.startDate),
-        startDate: toDateString(record.startDate),
+        occurrenceDate: (record.occurrenceDate ?? record.startDate).toString(),
+        startDate: record.startDate.toString(),
         completed: record.completed,
       }))
       .sort((left, right) => left.occurrenceDate.localeCompare(right.occurrenceDate));
@@ -173,7 +162,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     }
   }
   async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
-    const date = parseDateOnly(occurrence.occurrenceDate);
+    const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
     Object.assign(this.#record(todoId), {
       occurrenceDate: date,
       startDate: date,
@@ -197,7 +186,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
           : [
               {
                 todoId: record.id,
-                startDate: toDateString(record.startDate),
+                startDate: record.startDate.toString(),
                 scheduledLocalTime: record.scheduledLocalTime,
                 scheduledTime: record.scheduledTime,
                 completed: record.completed,
@@ -215,7 +204,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     seriesId: string,
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void> {
-    const date = parseDateOnly(occurrence.occurrenceDate);
+    const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
     Object.assign(this.#record(todoId), {
       seriesId,
       occurrenceDate: date,
@@ -240,7 +229,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
           query.seriesIds.includes(record.seriesId) &&
           (query.includeCompleted || !record.completed) &&
           (fromDate == null ||
-            (record.occurrenceDate != null && toDateString(record.occurrenceDate) >= fromDate)),
+            (record.occurrenceDate != null && record.occurrenceDate.toString() >= fromDate)),
       )
       .map((record) => record.id);
     await this.deleteMany(ids);
@@ -259,28 +248,20 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
         ...item,
         sortOrder,
         completed: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       });
     }
   }
-  async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
-    Object.assign(this.#record(id), { completed, completedAt: structuredClone(completedAt) });
+  async updateCompletion(
+    id: number,
+    completed: boolean,
+    completedAt: Temporal.Instant | null,
+  ): Promise<void> {
+    Object.assign(this.#record(id), { completed, completedAt });
   }
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-    const { completedAt, ...values } = patch;
-    Object.assign(
-      this.#record(id),
-      structuredClone(
-        Object.fromEntries(
-          Object.entries(values).filter(([_fieldName, value]) => value !== undefined),
-        ),
-      ),
-      // nullish-strict: null은 완료 시각 지우기다
-      completedAt === undefined
-        ? {}
-        : { completedAt: completedAt == null ? null : instantToDate(completedAt) },
-    );
+    Object.assign(this.#record(id), omitBy(patch, isUndefined));
   }
   async updateTitle(id: number, title: string): Promise<void> {
     this.#record(id).title = title;
@@ -289,7 +270,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     this.#record(id).visibility = visibility;
   }
   async updateSchedule(id: number, schedule: TodoScheduleProps): Promise<void> {
-    Object.assign(this.#record(id), structuredClone(schedule));
+    Object.assign(this.#record(id), { ...schedule });
   }
   async updateCategory(id: number, categoryId: number): Promise<void> {
     this.#record(id).categoryId = categoryId;
@@ -345,18 +326,13 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
       id: (await this.nextItemId()).value,
       ...data,
       completed: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
   }
 
   async insertItem(todoId: number, item: TodoItem): Promise<void> {
-    const primitives = item.toPrimitives();
-    this.#record(todoId).items.push({
-      ...primitives,
-      createdAt: instantToDate(primitives.createdAt),
-      updatedAt: instantToDate(primitives.updatedAt),
-    });
+    this.#record(todoId).items.push(item.toPrimitives());
   }
   async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
     const item = [...this.records.values()]

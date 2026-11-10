@@ -14,6 +14,6 @@ export abstract class StreakPort {
    */
   abstract getStreakContext(userId: string): Promise<{
     currentStreak: number;
-    lastCompletedDate: Date | null;
+    lastCompletedDate: Temporal.PlainDate | null;
   }>;
 }

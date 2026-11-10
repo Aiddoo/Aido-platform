@@ -55,10 +55,10 @@ async function occurrencePlans(
             categoryId: context.categoryId,
             title: "물 마시기",
             visibility: "PUBLIC",
-            startDate: new Date(`${date}T00:00:00.000Z`),
+            startDate: Temporal.PlainDate.from(date),
             endDate: null,
             scheduledLocalTime: "09:00",
-            scheduledTime: new Date(`${date}T00:00:00.000Z`),
+            scheduledTime: Temporal.Instant.from(`${date}T00:00:00.000Z`),
             isAllDay: false,
             occurrenceDate: date,
             createdAt: TODO_FIXTURE_NOW,
@@ -101,9 +101,9 @@ export function describeTodoRepositoryContract(
       const todo = await insertTodo(context, {
         title: "치과 예약",
         scheduledLocalTime: "09:30",
-        scheduledTime: new Date("2026-11-10T00:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-10T00:30:00.000Z"),
         isAllDay: false,
-        endDate: new Date("2026-11-12T00:00:00.000Z"),
+        endDate: Temporal.PlainDate.from("2026-11-12"),
         visibility: "PRIVATE",
       });
 
@@ -126,7 +126,7 @@ export function describeTodoRepositoryContract(
       // Given
       const context = await createContext();
       const todo = await insertTodo(context, {
-        endDate: new Date("2026-11-12T00:00:00.000Z"),
+        endDate: Temporal.PlainDate.from("2026-11-12"),
         visibility: "PRIVATE",
       });
 
@@ -160,10 +160,10 @@ export function describeTodoRepositoryContract(
       const context = await createContext();
       const todo = await insertTodo(context);
       const schedule = {
-        startDate: new Date("2026-11-20T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-11-20"),
         endDate: null,
         scheduledLocalTime: "08:00",
-        scheduledTime: new Date("2026-11-19T23:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-19T23:00:00.000Z"),
         isAllDay: false,
       };
 
@@ -243,7 +243,9 @@ export function describeTodoRepositoryContract(
 
       // Then
       expect(created).toEqual([
-        expect.objectContaining({ scheduledTime: new Date("2026-11-11T00:00:00.000Z") }),
+        expect.objectContaining({
+          scheduledTime: Temporal.Instant.from("2026-11-11T00:00:00.000Z"),
+        }),
       ]);
       expect(rows.map((row) => [row.todoId, row.occurrenceDate])).toEqual([
         [existing?.todoId, "2026-11-10"],

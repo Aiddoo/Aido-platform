@@ -254,13 +254,13 @@ async function seed(client: TestDatabaseClient): Promise<void> {
       userId: OWNER_ID,
       categoryId: CATEGORY_ID,
       title: `특성 할 일 ${id}`,
-      startDate: new Date("2026-08-26T00:00:00.000Z"),
+      startDate: Temporal.PlainDate.from("2026-08-26"),
       sortOrder: id,
       visibility: "PUBLIC" as const,
       commentCount: id === TODO_ID ? 15 : 1,
       viewCount: 4,
-      createdAt: at(0),
-      updatedAt: at(0),
+      createdAt: instantAt(0),
+      updatedAt: instantAt(0),
     })),
   );
   await client.insert(todoItem).values([
@@ -269,10 +269,16 @@ async function seed(client: TestDatabaseClient): Promise<void> {
       title: "첫 항목",
       sortOrder: 1,
       completed: true,
-      createdAt: at(0),
-      updatedAt: at(0),
+      createdAt: instantAt(0),
+      updatedAt: instantAt(0),
     },
-    { todoId: TODO_ID, title: "둘째 항목", sortOrder: 0, createdAt: at(0), updatedAt: at(0) },
+    {
+      todoId: TODO_ID,
+      title: "둘째 항목",
+      sortOrder: 0,
+      createdAt: instantAt(0),
+      updatedAt: instantAt(0),
+    },
   ]);
   await client.insert(todoComment).values(
     COMMENTS.map((comment, index) => ({

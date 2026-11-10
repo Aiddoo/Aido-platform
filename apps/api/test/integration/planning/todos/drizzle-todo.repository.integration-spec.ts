@@ -5,6 +5,7 @@ import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructur
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todoCategory, user } from "#api/platform/database/schema/index";
 import { describeTodoRepositoryContract } from "#test/contracts/planning/todo-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import {
   TODO_FIXTURE_OTHER_USER_ID,
@@ -48,8 +49,8 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
   function createRepositories() {
     const { txHost } = createDatabaseTransactionFixture(client);
     return {
-      todoRepository: new DrizzleTodoRepository(txHost),
-      seriesRepository: new DrizzleTodoSeriesRepository(txHost),
+      todoRepository: new DrizzleTodoRepository(txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
     };
   }
 

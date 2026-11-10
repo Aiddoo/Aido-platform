@@ -5,6 +5,7 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
+  PLANNING_INSTANT,
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
@@ -56,7 +57,7 @@ describe("할 일 카테고리 이동", () => {
       throw new Error("Todo fixture missing");
     }
     saved.completed = true;
-    saved.completedAt = PLANNING_TIME;
+    saved.completedAt = PLANNING_INSTANT;
     const result = await useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 });
     expect(result).toMatchObject({
       completed: true,

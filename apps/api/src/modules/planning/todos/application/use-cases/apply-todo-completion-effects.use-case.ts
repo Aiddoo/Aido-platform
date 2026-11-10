@@ -1,8 +1,9 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
+import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
 import {
   isAllCompletedToday,
@@ -22,6 +23,7 @@ export interface ApplyTodoCompletionEffectsDependencies {
   readonly friendPort: Pick<FriendPort, "getMutualFriendIds" | "getUserDisplayName">;
   readonly todoNotification: TodoNotificationPort;
   readonly streakPort: Pick<StreakPort, "recordTodoToggle">;
+  readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
 
@@ -69,7 +71,7 @@ export class ApplyTodoCompletionEffectsUseCase {
     try {
       const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(
         userId,
-        todayInTimezone(timezone),
+        localDateAt(this.#dependencies.clock.now(), timezone),
       );
       if (!isAllCompletedToday(stats)) {
         return;

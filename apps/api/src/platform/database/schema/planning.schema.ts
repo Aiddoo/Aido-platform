@@ -5,11 +5,9 @@ import {
   jsonb,
   smallint,
   text,
-  timestamp,
   varchar,
   boolean,
   serial,
-  date,
   check,
   index,
   foreignKey,
@@ -18,7 +16,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { instant } from "../columns/temporal-columns.js";
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { todoRepeatFrequency, todoVisibility } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
@@ -28,25 +26,25 @@ export const todo = pgTable(
     categoryId: integer().notNull(),
     commentCount: integer().default(0).notNull(),
     completed: boolean().default(false).notNull(),
-    completedAt: timestamp({ precision: 3 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    endDate: date({ mode: "date" }),
+    completedAt: instant(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    endDate: plainDate(),
     id: serial().primaryKey(),
     isAllDay: boolean().default(true).notNull(),
-    occurrenceDate: date({ mode: "date" }),
+    occurrenceDate: plainDate(),
     // 코드 이름은 seriesId. 출시 앱·1.14.2 롤백 호환을 위해 DB 열 이름은 그대로 둔다.
     seriesId: varchar("recurrenceGroupId", { length: 36 }),
     // 벽시계(HH:mm)가 진실이고 scheduledTime은 startDate + 이 값 + 사용자 시간대로 만든 파생값이다.
     // 1.14.2 롤백 때 옛 서버가 채우지 않으므로 NOT NULL·CHECK를 걸지 않는다.
     scheduledLocalTime: varchar({ length: 5 }),
-    scheduledTime: timestamp({ precision: 3, withTimezone: true }),
+    scheduledTime: instant({ withTimezone: true }),
     sortOrder: integer().default(0).notNull(),
-    startDate: date({ mode: "date" }).notNull(),
+    startDate: plainDate().notNull(),
     title: varchar({ length: 200 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 할 일 저장소·조회·댓글 수 어댑터가 ClockPort 값으로 insert·update마다 명시한다(순서 밀기 포함)
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
     viewCount: integer().default(0).notNull(),
     visibility: todoVisibility().default("PUBLIC").notNull(),
@@ -103,15 +101,15 @@ export const todoItem = pgTable(
   "TodoItem",
   {
     completed: boolean().default(false).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     sortOrder: integer().default(0).notNull(),
     title: varchar({ length: 200 }).notNull(),
     todoId: integer().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 할 일 저장소가 ClockPort 값으로 insert·update마다 명시한다(순서 바꾸기 포함)
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({
@@ -165,27 +163,27 @@ export const todoSeries = pgTable(
   {
     categoryId: integer().notNull(),
     checklistTemplate: jsonb().$type<{ title: string }[]>().default([]).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     generatedCount: integer().default(0).notNull(),
     // 기존 recurrenceGroupId 값을 그대로 이어 쓰므로 Todo.recurrenceGroupId와 같은 형식이다.
     id: varchar({ length: 36 }).primaryKey(),
-    nextOccurrenceDate: date({ mode: "date" }),
+    nextOccurrenceDate: plainDate(),
     // 이후 수정으로 나뉜 구간을 재귀 없이 한 쿼리로 묶는다. 원본 행이 먼저 지워질 수 있어 FK를 걸지 않는다.
     originSeriesId: varchar({ length: 36 }).notNull(),
     repeatCount: smallint(),
     repeatFrequency: todoRepeatFrequency().notNull(),
     repeatInterval: smallint().default(1).notNull(),
     repeatMonthDay: smallint(),
-    repeatUntil: date({ mode: "date" }),
+    repeatUntil: plainDate(),
     repeatWeekdays: text().array(),
     scheduledLocalTime: varchar({ length: 5 }),
-    startDate: date({ mode: "date" }).notNull(),
+    startDate: plainDate().notNull(),
     timezone: varchar({ length: 50 }).notNull(),
     title: varchar({ length: 200 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 반복 저장소가 ClockPort 값으로 insert·update마다 명시한다(시간대 일괄 변경 포함)
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
     visibility: todoVisibility().default("PUBLIC").notNull(),
   },
@@ -233,7 +231,9 @@ export const todoSeries = pgTable(
 export const todoView = pgTable(
   "TodoView",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     todoId: integer().notNull(),
     viewerId: text().notNull(),
   },

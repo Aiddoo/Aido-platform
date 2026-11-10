@@ -74,7 +74,11 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
 
     const at = this.#clock.now();
     const atDate = instantToDate(at);
-    const recentFrom = instantToDate(at.subtract({ hours: RECENT_ACTIVITY_DAYS * 24 }));
+    // planning Todo.startDate는 달력 날짜 칸이라 지금처럼 그 순간의 UTC 날짜와 비교한다
+    const recentFrom = at
+      .subtract({ hours: RECENT_ACTIVITY_DAYS * 24 })
+      .toZonedDateTimeISO("UTC")
+      .toPlainDate();
     let totalEnqueued = 0;
 
     await forEachBatch({
