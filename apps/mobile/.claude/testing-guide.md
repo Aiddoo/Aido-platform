@@ -303,6 +303,27 @@ await renderUi(
 | 테마    | light/dark semantic color와 대비                                      |
 | 성능    | Release 실기기의 JS/UI frame time, keyboard animation, 긴 목록 메모리 |
 
+## Maestro E2E
+
+`apps/mobile/.maestro/`의 Maestro 흐름이 개발 서버에 붙은 개발 빌드에서 기능별 핵심 경로를 실제로 누른다. 구조·환경·흐름 목록은 [.maestro/README](../.maestro/README.md)에 있다.
+
+- **언제**: 출시 빌드마다 `e2e:smoke`, 출시 전 회귀 확인에 `e2e` 전체, 기능을 고친 PR은 `e2e:feature <기능>`. 서버 계약이나 화면 동작을 바꿨으면 그 기능 흐름을 함께 고친다.
+- **무엇을**: 사용자 목표 하나(로그인, 할 일 추가·완료·삭제, 카테고리 삭제, 메모, 알림함, 친구 초대, 페이월, 오프라인 복구). 업무 규칙의 분기·오류 코드는 단위 테스트로 지키고 Maestro로 옮기지 않는다.
+- **이름**: `flows/<기능>/<사용자-목표>.yaml`(kebab-case), 기능 폴더 이름을 태그로 단다. 동작은 `subflows/<기능>/<동작>.yaml`이고 입력은 UPPER_SNAKE env다.
+- **태그**: `smoke`(몇 분 안의 핵심), `regression`(지난 버그·정책 경계), 기능 태그, `needs-second-account`(두 번째 계정), `android-only`(비행기 모드처럼 iOS 시뮬레이터에 없는 기능).
+- **선택자**: React Native `testID`(`<feature>-<element>[-<action>]`)를 `id:`로 찾고 이름은 `.maestro/scripts/selectors.js` 한 곳에만 둔다. 화면이 바뀌면 그 파일이나 해당 subflow만 고친다.
+- **데이터**: 계정 비밀번호·토큰은 흐름에 쓰지 않는다. `pnpm e2e:accounts create`가 git이 무시하는 `.maestro/.env.maestro`에 쓰고, 흐름은 `onFlowStart`에서 개발 API로 `E2E ` 접두 데이터를 만들고 `onFlowComplete`에서 지운다.
+- **흐름 추가**: testID를 달고 → `selectors.js`에 더하고 → 필요하면 subflow → 흐름(Given/When/Then 한국어 주석) → `maestro check-syntax <파일>` → `pnpm e2e:feature <태그>`. 상세 순서는 README의 "흐름 추가하기"다.
+- **못 하는 것**: 실제 푸시 도착(APNs·FCM), 앱이 꺼진 상태의 푸시 열기, iOS 오프라인, 외부 공유 시트, 스토어 결제, 위젯은 README의 수동 확인 목록으로 실기기에서 본다.
+
+```bash
+pnpm --filter @aido/mobile e2e:accounts create      # 처음 한 번: main·second 개발 테스트 계정
+pnpm --filter @aido/mobile e2e:smoke                # smoke 태그
+pnpm --filter @aido/mobile e2e                      # 전체 (시작할 때 초대 수락 기록을 되돌린다)
+pnpm --filter @aido/mobile e2e:feature category     # 한 기능 태그만
+maestro check-syntax apps/mobile/.maestro/flows/category/delete-move-todos.yaml
+```
+
 ## 실행 명령
 
 ```bash
