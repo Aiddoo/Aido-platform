@@ -1,5 +1,6 @@
-import type { ReorderPosition, Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { ReorderPosition } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -74,10 +75,10 @@ export class ReorderTodoUseCase {
             targetTodoId,
           });
         }
-        plan = planReorderRelativeTo(todo.getSortOrder(), targetTodo.getSortOrder(), position);
+        plan = planReorderRelativeTo(todo.sortOrder, targetTodo.sortOrder, position);
       } else {
         const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(userId);
-        plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
+        plan = planReorderToEdge(todo.sortOrder, position, maxSortOrder);
       }
 
       await this.#dependencies.todoRepository.shiftSortOrders(

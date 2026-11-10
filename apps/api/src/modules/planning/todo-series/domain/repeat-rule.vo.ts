@@ -9,7 +9,8 @@ import {
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { DomainException, ValueObject } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
 
@@ -57,12 +58,12 @@ function assertEnd(end: RepeatEnd): void {
 
 /** 반복 규칙. 날짜는 시간대 없는 달력 값이라 모두 YYYY-MM-DD key로 계산한다. */
 export class RepeatRule extends ValueObject<RepeatRuleProps> {
-  static daily(end: RepeatEnd): RepeatRule {
+  static #daily(end: RepeatEnd): RepeatRule {
     assertEnd(end);
     return new RepeatRule({ frequency: "DAILY", interval: 1, weekdays: null, monthDay: null, end });
   }
 
-  static weekly(
+  static #weekly(
     weekdays: readonly DayOfWeek[],
     interval: TodoRepeatInterval,
     end: RepeatEnd,
@@ -79,19 +80,19 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
     });
   }
 
-  static monthly(monthDay: number, end: RepeatEnd): RepeatRule {
+  static #monthly(monthDay: number, end: RepeatEnd): RepeatRule {
     assertRule(Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31, "monthDay");
     assertEnd(end);
     return new RepeatRule({ frequency: "MONTHLY", interval: 1, weekdays: null, monthDay, end });
   }
 
-  static from(spec: RepeatSpec): RepeatRule {
+  static create(spec: RepeatSpec): RepeatRule {
     return match(spec)
-      .with({ frequency: "DAILY" }, ({ end }) => RepeatRule.daily(end))
+      .with({ frequency: "DAILY" }, ({ end }) => RepeatRule.#daily(end))
       .with({ frequency: "WEEKLY" }, ({ weekdays, interval, end }) =>
-        RepeatRule.weekly(weekdays, interval, end),
+        RepeatRule.#weekly(weekdays, interval, end),
       )
-      .with({ frequency: "MONTHLY" }, ({ monthDay, end }) => RepeatRule.monthly(monthDay, end))
+      .with({ frequency: "MONTHLY" }, ({ monthDay, end }) => RepeatRule.#monthly(monthDay, end))
       .exhaustive();
   }
 
@@ -100,6 +101,11 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
       ...props,
       weekdays: props.weekdays == null ? null : [...props.weekdays],
     });
+  }
+
+  toPrimitives(): RepeatRuleProps {
+    const { weekdays } = this.value;
+    return { ...this.value, weekdays: weekdays == null ? null : [...weekdays] };
   }
 
   toSpec(): RepeatSpec {

@@ -46,7 +46,7 @@ describe("하위 항목 수정", () => {
   });
   it("다른 부모의 항목과 없는 할 일은 거부하고 상태를 보존한다", async () => {
     // Given
-    await fixture.todoRepository.createItem(1, { title: "기존 항목", sortOrder: 0 });
+    await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
     const before = structuredClone(fixture.records.get(1));
     // When / Then
     await expect(

@@ -56,8 +56,7 @@ export class StopTodoSeriesUseCase {
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
-    const seriesId = todo.getSeriesId();
-    const occurrenceDate = todo.getOccurrenceDate();
+    const { seriesId, occurrenceDate } = todo;
     if (seriesId == null || occurrenceDate == null) {
       throw new ApplicationException(ErrorCode.TODO_0844, {
         todoId,
@@ -65,7 +64,7 @@ export class StopTodoSeriesUseCase {
       });
     }
     const series = await seriesRepository.lockForUpdate(seriesId);
-    if (series == null || series.getUserId() !== userId) {
+    if (series == null || series.userId.value !== userId) {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
     }
     const lastDate = dateKeyOf(occurrenceDate);
@@ -79,7 +78,7 @@ export class StopTodoSeriesUseCase {
     }
     const deletedTodoIds = await todoRepository.deleteOccurrences({
       userId,
-      seriesIds: [seriesId, ...following.map((segment) => segment.getId())],
+      seriesIds: [seriesId, ...following.map((segment) => segment.id.value)],
       fromDate: addDaysToKey(lastDate, 1),
       includeCompleted: false,
     });
@@ -93,12 +92,12 @@ export class StopTodoSeriesUseCase {
   async publish(stopped: StoppedSeries): Promise<void> {
     const { series, userId, deletedTodoIds } = stopped;
     await this.#dependencies.effects.execute({
-      seriesId: series.getId(),
+      seriesId: series.id.value,
       userId,
     });
     this.#dependencies.logger.log({
       event: TodoSeriesLogEvent.STOPPED,
-      seriesId: series.getId(),
+      seriesId: series.id.value,
       userId,
       deletedCount: deletedTodoIds.length,
     });

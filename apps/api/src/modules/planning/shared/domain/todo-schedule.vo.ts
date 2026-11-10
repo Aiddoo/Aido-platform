@@ -1,62 +1,76 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { DomainException, ValueObject } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { dateKeyOf, localTimeIn, resolveScheduledInstant } from "./todo-calendar.domain-service.js";
 
 export interface TodoScheduleProps {
-  startDate: Date;
-  endDate: Date | null;
+  readonly startDate: Date;
+  readonly endDate: Date | null;
   /** 벽시계(HH:mm). 어디서든 그 시각이며 진실은 이 값이다. */
-  scheduledLocalTime: string | null;
+  readonly scheduledLocalTime: string | null;
   /** startDate + 벽시계 + 사용자 시간대로 만든 파생값. 알림과 출시 앱 호환에 쓴다. */
-  scheduledTime: Date | null;
-  isAllDay: boolean;
+  readonly scheduledTime: Date | null;
+  readonly isAllDay: boolean;
 }
 
 export interface TodoScheduleInput {
-  startDate: Date;
-  endDate: Date | null;
-  scheduledLocalTime: string | null;
-  isAllDay: boolean;
-  timezone: string;
+  readonly startDate: Date;
+  readonly endDate: Date | null;
+  readonly scheduledLocalTime: string | null;
+  readonly isAllDay: boolean;
+  readonly timezone: string;
 }
 
 export type TodoSchedulePatch = Partial<
   Pick<TodoScheduleProps, "startDate" | "endDate" | "scheduledLocalTime" | "isAllDay">
 >;
 
-export class TodoSchedule extends ValueObject<TodoScheduleProps> {
-  constructor(props: TodoScheduleProps) {
-    super({
-      startDate: new Date(props.startDate),
-      endDate: props.endDate == null ? null : new Date(props.endDate),
-      scheduledLocalTime: props.scheduledLocalTime,
-      scheduledTime: props.scheduledTime == null ? null : new Date(props.scheduledTime),
-      isAllDay: props.isAllDay,
-    });
-  }
+function copyOf(props: TodoScheduleProps): TodoScheduleProps {
+  return {
+    startDate: new Date(props.startDate),
+    endDate: props.endDate == null ? null : new Date(props.endDate),
+    scheduledLocalTime: props.scheduledLocalTime,
+    scheduledTime: props.scheduledTime == null ? null : new Date(props.scheduledTime),
+    isAllDay: props.isAllDay,
+  };
+}
 
+// 날짜 칸이 Date라 얕은 동결로는 막지 못한다. 들어오고 나갈 때 복사해 바깥 변경이 새지 않게 한다
+export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   static create(input: TodoScheduleInput): TodoSchedule {
     TodoSchedule.#assertDateOrder(input);
-    return new TodoSchedule({
-      startDate: input.startDate,
-      endDate: input.endDate,
-      scheduledLocalTime: input.scheduledLocalTime,
-      scheduledTime: resolveScheduledInstant(
-        dateKeyOf(input.startDate),
-        input.scheduledLocalTime,
-        input.timezone,
-      ),
-      // 출시 앱은 isAllDay 기본값(true)과 함께 시간을 보내므로 시간이 있으면 시간 일정으로 맞춘다.
-      isAllDay: input.scheduledLocalTime == null,
-    });
+    return new TodoSchedule(
+      copyOf({
+        startDate: input.startDate,
+        endDate: input.endDate,
+        scheduledLocalTime: input.scheduledLocalTime,
+        scheduledTime: resolveScheduledInstant(
+          dateKeyOf(input.startDate),
+          input.scheduledLocalTime,
+          input.timezone,
+        ),
+        // 출시 앱은 isAllDay 기본값(true)과 함께 시간을 보내므로 시간이 있으면 시간 일정으로 맞춘다.
+        isAllDay: input.scheduledLocalTime == null,
+      }),
+    );
+  }
+
+  /** 옛 서버가 시간을 지운 행은 칸이 낡아 있을 수 있어 순간이 없으면 벽시계도 없는 것으로 읽는다. */
+  static reconstitute(props: TodoScheduleProps): TodoSchedule {
+    return new TodoSchedule(
+      copyOf({
+        ...props,
+        scheduledLocalTime: props.scheduledTime == null ? null : props.scheduledLocalTime,
+      }),
+    );
   }
 
   static #assertDateOrder({
     startDate,
     endDate,
-  }: Pick<TodoScheduleProps, "startDate" | "endDate">) {
+  }: Pick<TodoScheduleProps, "startDate" | "endDate">): void {
     if (endDate != null && endDate < startDate) {
       throw new DomainException(
         ErrorCode.SYS_0002,
@@ -64,14 +78,6 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
         "종료 날짜는 시작 날짜보다 빠를 수 없습니다.",
       );
     }
-  }
-
-  /** 옛 서버가 시간을 지운 행은 칸이 낡아 있을 수 있어 순간이 없으면 벽시계도 없는 것으로 읽는다. */
-  static reconstitute(props: TodoScheduleProps): TodoSchedule {
-    return new TodoSchedule({
-      ...props,
-      scheduledLocalTime: props.scheduledTime == null ? null : props.scheduledLocalTime,
-    });
   }
 
   /** 날짜나 시각을 건드리면 벽시계에서 순간을 다시 만든다. 다른 값만 고치면 순간은 그대로다. */
@@ -83,17 +89,17 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
       ? (partial.scheduledLocalTime ?? null)
       : clearsTime
         ? null
-        : this.getLocalTimeIn(timezone);
-    const startDate = partial.startDate ?? this.getStartDate();
+        : this.localTimeIn(timezone);
+    const startDate = partial.startDate ?? this.startDate;
     const rederives = !keepsTime || clearsTime || partial.startDate != null;
     const merged: TodoScheduleProps = {
       startDate,
       // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
-      endDate: partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
+      endDate: partial.endDate !== undefined ? partial.endDate : this.endDate,
       scheduledLocalTime: rederives ? scheduledLocalTime : this.value.scheduledLocalTime,
       scheduledTime: rederives
         ? resolveScheduledInstant(dateKeyOf(startDate), scheduledLocalTime, timezone)
-        : this.getScheduledTime(),
+        : this.scheduledTime,
       // 시간을 건드린 PATCH만 맞춘다. 저장된 옛 행은 사용자가 고칠 때까지 그대로 읽는다.
       isAllDay:
         keepsTime && partial.isAllDay == null ? this.value.isAllDay : scheduledLocalTime == null,
@@ -103,11 +109,11 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     if (partial.startDate != null || partial.endDate !== undefined) {
       TodoSchedule.#assertDateOrder(merged);
     }
-    return new TodoSchedule(merged);
+    return new TodoSchedule(copyOf(merged));
   }
 
   /** 칸이 빈 옛 행은 사용자가 보던 그대로 순간을 지금 시간대로 읽는다. */
-  getLocalTimeIn(timezone: string): string | null {
+  localTimeIn(timezone: string): string | null {
     const { scheduledLocalTime, scheduledTime } = this.value;
     if (scheduledTime == null) {
       return null;
@@ -115,33 +121,27 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     return scheduledLocalTime ?? localTimeIn(scheduledTime, timezone);
   }
 
-  getStartDate(): Date {
+  get startDate(): Date {
     return new Date(this.value.startDate);
   }
 
-  getEndDate(): Date | null {
-    return this.value.endDate ? new Date(this.value.endDate) : null;
+  get endDate(): Date | null {
+    return this.value.endDate == null ? null : new Date(this.value.endDate);
   }
 
-  getScheduledLocalTime(): string | null {
+  get scheduledLocalTime(): string | null {
     return this.value.scheduledLocalTime;
   }
 
-  getScheduledTime(): Date | null {
-    return this.value.scheduledTime ? new Date(this.value.scheduledTime) : null;
+  get scheduledTime(): Date | null {
+    return this.value.scheduledTime == null ? null : new Date(this.value.scheduledTime);
   }
 
-  isAllDay(): boolean {
+  get isAllDay(): boolean {
     return this.value.isAllDay;
   }
 
-  override getValue(): TodoScheduleProps {
-    return {
-      startDate: this.getStartDate(),
-      endDate: this.getEndDate(),
-      scheduledLocalTime: this.value.scheduledLocalTime,
-      scheduledTime: this.getScheduledTime(),
-      isAllDay: this.value.isAllDay,
-    };
+  toPrimitives(): TodoScheduleProps {
+    return copyOf(this.value);
   }
 }

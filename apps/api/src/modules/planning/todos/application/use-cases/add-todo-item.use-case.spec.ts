@@ -28,7 +28,7 @@ describe("하위 항목 추가", () => {
 
   it("항목 제목과 다음 순서를 저장하고 실제 항목 통계를 반환한다", async () => {
     // Given
-    await fixture.todoRepository.createItem(1, { title: "기존 항목", sortOrder: 0 });
+    await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
     // When
     const result = await useCase.execute({
       todoId: 1,
@@ -79,7 +79,7 @@ describe("하위 항목 추가", () => {
   it("20개 항목 한도와 잘못된 제목은 상태를 바꾸지 않는다", async () => {
     // Given
     for (let sortOrder = 0; sortOrder < TODO_ITEM_LIMITS.MAX_PER_TODO; sortOrder++) {
-      await fixture.todoRepository.createItem(1, { title: `항목 ${sortOrder}`, sortOrder });
+      await fixture.todoRepository.seedItem(1, { title: `항목 ${sortOrder}`, sortOrder });
     }
     const before = structuredClone(fixture.records.get(1));
     // When / Then

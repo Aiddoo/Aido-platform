@@ -12,13 +12,8 @@ import {
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import type { DomainEvent } from "#api/shared/domain/aggregate-root";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  TodoDetailsPatch,
-  TodoPersistenceSnapshot,
-} from "../../../shared/domain/todo.aggregate.js";
+import type { Todo, TodoDetailsPatch, TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -52,7 +47,7 @@ export interface AppliedTodoUpdate {
   readonly id: number;
   readonly userId: string;
   readonly hasCategoryChanged: boolean;
-  readonly events: readonly DomainEvent[];
+  readonly events: readonly TodoEvent[];
 }
 
 interface UpdateTodoDependencies {
@@ -107,46 +102,19 @@ export class UpdateTodoUseCase {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
 
-    if (input.scope != null && todo.getSeriesId() == null) {
+    if (input.scope != null && todo.seriesId == null) {
       throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope: input.scope });
     }
 
-    const wasCompleted = todo.isCompleted();
+    const wasCompleted = todo.completed;
     const { scheduledTime: scheduledLocalTime, ...details } = data;
     const patchDetails: TodoDetailsPatch = { ...details, scheduledLocalTime };
-    todo.updateDetails(patchDetails, timezone, instantToDate(this.#dependencies.clock.now()));
-    const snapshot = todo.toPersistence();
-
-    const patch: TodoUpdatePatch = {};
-    const copyField = <
-      K extends keyof UpdateTodoData & keyof TodoPersistenceSnapshot & keyof TodoUpdatePatch,
-    >(
-      key: K,
-    ): void => {
-      // nullish-strict: null로 비운 필드도 저장할 변경이다
-      if (data[key] !== undefined) {
-        patch[key] = snapshot[key];
-      }
-    };
-    copyField("title");
-    copyField("categoryId");
-    copyField("startDate");
-    copyField("endDate");
-    // nullish-strict: scheduledTime null은 시간 지우기다
-    if (data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null) {
-      // 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다.
-      patch.scheduledLocalTime = snapshot.scheduledLocalTime;
-      patch.scheduledTime = snapshot.scheduledTime;
-      patch.isAllDay = snapshot.isAllDay;
+    if (todo.updateDetails(patchDetails, timezone, this.#dependencies.clock.now())) {
+      await this.#dependencies.todoRepository.updateDetails(
+        id,
+        toUpdatePatch(data, todo, wasCompleted),
+      );
     }
-    copyField("visibility");
-    if (data.completed != null) {
-      patch.completed = snapshot.completed;
-      if (snapshot.completed !== wasCompleted) {
-        patch.completedAt = snapshot.completedAt;
-      }
-    }
-    await this.#dependencies.todoRepository.updateDetails(id, patch);
 
     return {
       id,
@@ -167,4 +135,31 @@ export class UpdateTodoUseCase {
 
     await this.#dependencies.eventPublisher.publishAll(events);
   }
+}
+
+/** 요청이 보낸 칸만 쓴다. 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다. */
+function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean): TodoUpdatePatch {
+  const { schedule } = todo;
+  // nullish-strict: scheduledTime null은 시간 지우기다
+  const touchesTime =
+    data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null;
+  return {
+    ...(data.title == null ? {} : { title: todo.title.value }),
+    ...(data.categoryId == null ? {} : { categoryId: todo.categoryId }),
+    ...(data.startDate == null ? {} : { startDate: schedule.startDate }),
+    // nullish-strict: endDate null은 종료일 지우기다
+    ...(data.endDate === undefined ? {} : { endDate: schedule.endDate }),
+    ...(touchesTime
+      ? {
+          scheduledLocalTime: schedule.scheduledLocalTime,
+          scheduledTime: schedule.scheduledTime,
+          isAllDay: schedule.isAllDay,
+        }
+      : {}),
+    ...(data.visibility == null ? {} : { visibility: todo.visibility }),
+    ...(data.completed == null ? {} : { completed: todo.completed }),
+    ...(data.completed == null || todo.completed === wasCompleted
+      ? {}
+      : { completedAt: todo.completedAt }),
+  };
 }

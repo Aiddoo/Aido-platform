@@ -1,23 +1,19 @@
-import type { todo, todoCategory } from "#api/platform/database/schema/index";
+import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import { TodoItem } from "../../../shared/domain/todo-item.entity.js";
-import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
+import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { RepeatRuleRow } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
 
 type TodoCategoryRow = typeof todoCategory.$inferSelect;
+type TodoRow = typeof todo.$inferSelect;
 
-export type TodoAggregateRow = typeof todo.$inferSelect & { items: TodoItemData[] };
+export type TodoItemRow = Pick<
+  typeof todoItem.$inferSelect,
+  "id" | "title" | "completed" | "sortOrder" | "createdAt" | "updatedAt"
+>;
 
-export interface TodoItemData {
-  id: number;
-  title: string;
-  completed: boolean;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type TodoAggregateRow = TodoRow & { items: TodoItemRow[] };
 
 export type TodoWithCategory = TodoAggregateRow & {
   category: Pick<TodoCategoryRow, "id" | "name" | "color" | "sortOrder"> | null;
@@ -27,25 +23,34 @@ export type TodoWithSeries = TodoWithCategory & { series: RepeatRuleRow | null }
 
 export function toTodo(row: TodoAggregateRow): Todo {
   return Todo.reconstitute({
-    id: TodoId.create(row.id),
-    userId: row.userId,
-    title: row.title,
-    categoryId: row.categoryId,
-    sortOrder: row.sortOrder,
-    completed: row.completed,
-    completedAt: row.completedAt,
-    schedule: TodoSchedule.reconstitute({
-      startDate: row.startDate,
-      endDate: row.endDate,
-      scheduledLocalTime: row.scheduledLocalTime,
-      scheduledTime: row.scheduledTime,
-      isAllDay: row.isAllDay,
-    }),
-    visibility: row.visibility,
-    seriesId: row.seriesId,
-    occurrenceDate: row.occurrenceDate,
-    items: row.items.map((item) => TodoItem.reconstitute(item)),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    ...row,
+    completedAt: row.completedAt == null ? null : instantFromDate(row.completedAt),
+    items: row.items.map((item) => ({
+      ...item,
+      createdAt: instantFromDate(item.createdAt),
+      updatedAt: instantFromDate(item.updatedAt),
+    })),
+    createdAt: instantFromDate(row.createdAt),
+    updatedAt: instantFromDate(row.updatedAt),
   });
+}
+
+export function toTodoRow(entity: Todo): typeof todo.$inferInsert {
+  const { items: _items, completedAt, createdAt, updatedAt, ...primitives } = entity.toPrimitives();
+  return {
+    ...primitives,
+    completedAt: completedAt == null ? null : instantToDate(completedAt),
+    createdAt: instantToDate(createdAt),
+    updatedAt: instantToDate(updatedAt),
+  };
+}
+
+export function toTodoItemRow(todoId: number, item: TodoItem): typeof todoItem.$inferInsert {
+  const { createdAt, updatedAt, ...primitives } = item.toPrimitives();
+  return {
+    ...primitives,
+    todoId,
+    createdAt: instantToDate(createdAt),
+    updatedAt: instantToDate(updatedAt),
+  };
 }

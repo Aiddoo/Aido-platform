@@ -4,6 +4,7 @@ import { TODO_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -33,6 +34,7 @@ interface ChangeTodoCategoryDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -61,11 +63,10 @@ export class ChangeTodoCategoryUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.changeCategory(categoryId);
-      const targetCategoryId = todo.toPersistence().categoryId;
+      const changed = todo.changeCategory(categoryId, this.#dependencies.clock.now());
 
-      // 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
-      if (!todo.isCompleted() && todo.getSeriesId() == null) {
+      // 같은 카테고리여도 한도를 먼저 본다. 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
+      if (!todo.completed && todo.seriesId == null) {
         const activeInTarget = await this.#dependencies.todoRepository.countCategoryUsage(
           userId,
           categoryId,
@@ -77,7 +78,10 @@ export class ChangeTodoCategoryUseCase {
           });
         }
       }
-      await this.#dependencies.todoRepository.updateCategory(id, targetCategoryId);
+      if (!changed) {
+        return [];
+      }
+      await this.#dependencies.todoRepository.updateCategory(id, todo.categoryId);
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
       return events;

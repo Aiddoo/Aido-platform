@@ -4,7 +4,7 @@ import { todoRepeatSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { z } from "zod";
 
-import { DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import { RepeatRule, type RepeatEnd, type RepeatSpec } from "./repeat-rule.vo.js";
 
@@ -38,7 +38,7 @@ describe("RepeatRule — 반복 규칙", () => {
     "앱과 같은 회차 표: $name",
     ({ startDate, repeat, through, expected }) => {
       // Given
-      const rule = RepeatRule.from(repeat);
+      const rule = RepeatRule.create(repeat);
       // When
       const occurrences = rule.occurrencesBetween(startDate, startDate, through);
       // Then
@@ -135,7 +135,7 @@ describe("RepeatRule — 반복 규칙", () => {
       },
     ])("$name", ({ spec, start, from, through, expected }) => {
       // Given
-      const rule = RepeatRule.from(spec);
+      const rule = RepeatRule.create(spec);
       // When
       const dates = rule.occurrencesBetween(start, from ?? start, through);
       // Then
@@ -144,7 +144,7 @@ describe("RepeatRule — 반복 규칙", () => {
 
     it("횟수 종료는 이미 만든 회차 수만큼 덜어낸다", () => {
       // Given
-      const rule = RepeatRule.daily({ type: "COUNT", count: 3 });
+      const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
       // When
       const dates = rule.occurrencesBetween("2026-11-05", "2026-11-07", "2026-12-01", 2);
       // Then
@@ -153,7 +153,7 @@ describe("RepeatRule — 반복 규칙", () => {
 
     it("다음 회차를 찾을 때 끝난 규칙은 null이다", () => {
       // Given
-      const rule = RepeatRule.daily({ type: "COUNT", count: 3 });
+      const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
       // When
       const next = rule.firstOnOrAfter("2026-11-05", "2026-11-08", 3);
       // Then
@@ -168,7 +168,7 @@ describe("RepeatRule — 반복 규칙", () => {
       { spec: { frequency: "MONTHLY", monthDay: 31, end: NEVER }, expected: "2026-11-30" },
     ])("가장 먼 다음 회차도 찾는다 ($spec.frequency)", ({ spec, expected }) => {
       // Given
-      const rule = RepeatRule.from(spec);
+      const rule = RepeatRule.create(spec);
       // When
       const next = rule.firstOnOrAfter("2026-11-02", "2026-11-03");
       // Then
@@ -178,10 +178,23 @@ describe("RepeatRule — 반복 규칙", () => {
 
   describe("입력 검증", () => {
     it.each<{ field: string; build: () => RepeatRule }>([
-      { field: "weekdays", build: () => RepeatRule.weekly([], 1, NEVER) },
-      { field: "monthDay", build: () => RepeatRule.monthly(32, NEVER) },
-      { field: "end.count", build: () => RepeatRule.daily({ type: "COUNT", count: 366 }) },
-      { field: "end.count", build: () => RepeatRule.daily({ type: "COUNT", count: 0 }) },
+      {
+        field: "weekdays",
+        build: () =>
+          RepeatRule.create({ frequency: "WEEKLY", weekdays: [], interval: 1, end: NEVER }),
+      },
+      {
+        field: "monthDay",
+        build: () => RepeatRule.create({ frequency: "MONTHLY", monthDay: 32, end: NEVER }),
+      },
+      {
+        field: "end.count",
+        build: () => RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 366 } }),
+      },
+      {
+        field: "end.count",
+        build: () => RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 0 } }),
+      },
     ])("$field가 맞지 않으면 TODO_0845다", ({ field, build }) => {
       // When / Then
       expect(build).toThrow(DomainException);
@@ -192,19 +205,47 @@ describe("RepeatRule — 반복 규칙", () => {
 
     it("요일은 중복을 없애고 월요일부터 순서대로 저장한다", () => {
       // When
-      const rule = RepeatRule.weekly(["FRI", "MON", "FRI"], 1, NEVER);
+      const rule = RepeatRule.create({
+        frequency: "WEEKLY",
+        weekdays: ["FRI", "MON", "FRI"],
+        interval: 1,
+        end: NEVER,
+      });
       // Then
-      expect(rule.getValue().weekdays).toEqual(["MON", "FRI"]);
+      expect(rule.toPrimitives().weekdays).toEqual(["MON", "FRI"]);
     });
   });
 
   describe("변환·동등성", () => {
     it("요일 순서가 달라도 같은 규칙이고 간격이 다르면 다른 규칙이다", () => {
       // Given
-      const rule = RepeatRule.weekly(["MON", "FRI"], 1, NEVER);
+      const rule = RepeatRule.create({
+        frequency: "WEEKLY",
+        weekdays: ["MON", "FRI"],
+        interval: 1,
+        end: NEVER,
+      });
       // When / Then
-      expect(rule.equals(RepeatRule.weekly(["FRI", "MON"], 1, NEVER))).toBe(true);
-      expect(rule.equals(RepeatRule.weekly(["MON", "FRI"], 2, NEVER))).toBe(false);
+      expect(
+        rule.equals(
+          RepeatRule.create({
+            frequency: "WEEKLY",
+            weekdays: ["FRI", "MON"],
+            interval: 1,
+            end: NEVER,
+          }),
+        ),
+      ).toBe(true);
+      expect(
+        rule.equals(
+          RepeatRule.create({
+            frequency: "WEEKLY",
+            weekdays: ["MON", "FRI"],
+            interval: 2,
+            end: NEVER,
+          }),
+        ),
+      ).toBe(false);
     });
 
     it("toSpec은 from의 역변환이다", () => {
@@ -216,12 +257,12 @@ describe("RepeatRule — 반복 규칙", () => {
         end: { type: "UNTIL", date: "2027-01-01" },
       };
       // When / Then
-      expect(RepeatRule.from(spec).toSpec()).toEqual(spec);
+      expect(RepeatRule.create(spec).toSpec()).toEqual(spec);
     });
 
     it("분할 뒤 횟수 종료는 앞쪽에서 쓴 만큼 줄어든다", () => {
       // Given
-      const rule = RepeatRule.daily({ type: "COUNT", count: 10 });
+      const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 10 } });
       // When
       const next = rule.continuingFrom("2026-11-05", "2026-11-08");
       // Then
@@ -233,7 +274,7 @@ describe("RepeatRule — 반복 규칙", () => {
 describe("RepeatRule — Temporal 달력 경계", () => {
   it("매월 31일은 짧은 달과 윤년 2월의 말일로 맞춘다", () => {
     // Given
-    const rule = RepeatRule.monthly(31, { type: "NEVER" });
+    const rule = RepeatRule.create({ frequency: "MONTHLY", monthDay: 31, end: { type: "NEVER" } });
 
     // When
     const dates = rule.occurrencesBetween("2028-01-01", "2028-01-01", "2028-04-30");
@@ -244,7 +285,7 @@ describe("RepeatRule — Temporal 달력 경계", () => {
 
   it("매월 29일은 평년 2월의 말일(28일)로 맞춘다", () => {
     // Given
-    const rule = RepeatRule.monthly(29, { type: "NEVER" });
+    const rule = RepeatRule.create({ frequency: "MONTHLY", monthDay: 29, end: { type: "NEVER" } });
 
     // When
     const dates = rule.occurrencesBetween("2027-01-01", "2027-02-01", "2027-03-31");
@@ -255,7 +296,12 @@ describe("RepeatRule — Temporal 달력 경계", () => {
 
   it("격주는 ISO 53주(2026-12-28 주)를 기준 주로 세고 해를 넘겨도 간격을 지킨다", () => {
     // Given
-    const rule = RepeatRule.weekly(["MON"], 2, { type: "NEVER" });
+    const rule = RepeatRule.create({
+      frequency: "WEEKLY",
+      weekdays: ["MON"],
+      interval: 2,
+      end: { type: "NEVER" },
+    });
 
     // When
     const dates = rule.occurrencesBetween("2026-12-28", "2026-12-28", "2027-01-31");
@@ -266,7 +312,12 @@ describe("RepeatRule — Temporal 달력 경계", () => {
 
   it("53주 일요일에 시작한 격주 일요일은 그 주 월요일을 기준으로 센다", () => {
     // Given
-    const rule = RepeatRule.weekly(["SUN"], 2, { type: "NEVER" });
+    const rule = RepeatRule.create({
+      frequency: "WEEKLY",
+      weekdays: ["SUN"],
+      interval: 2,
+      end: { type: "NEVER" },
+    });
 
     // When
     const dates = rule.occurrencesBetween("2027-01-03", "2027-01-03", "2027-01-31");
@@ -277,7 +328,7 @@ describe("RepeatRule — Temporal 달력 경계", () => {
 
   it("횟수 종료는 이미 만든 회차를 빼고 남은 날짜만 준다", () => {
     // Given
-    const rule = RepeatRule.daily({ type: "COUNT", count: 3 });
+    const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
 
     // When
     const dates = rule.occurrencesBetween("2026-12-30", "2027-01-01", "2027-01-10", 1);

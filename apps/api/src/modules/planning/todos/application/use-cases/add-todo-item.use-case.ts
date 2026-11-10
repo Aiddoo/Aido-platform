@@ -10,8 +10,8 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
@@ -29,7 +29,7 @@ export interface AddTodoItemInput {
 interface AddTodoItemDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
-    "findByIdAndUserId" | "createItem" | "updateDetails"
+    "findByIdAndUserId" | "nextItemId" | "insertItem" | "updateDetails"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -58,22 +58,24 @@ export class AddTodoItemUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
 
-      const plan = todo.planItemAddition(title);
-      await this.#dependencies.todoRepository.createItem(todoId, plan);
+      const { todoRepository, clock } = this.#dependencies;
+      const itemTitle = TodoTitle.create(title);
+      const now = clock.now();
+      const item = todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, now });
+      await todoRepository.insertItem(todoId, item);
 
-      if (!todo.reopenForAddedItem(timezone, instantToDate(this.#dependencies.clock.now()))) {
+      if (!todo.reopenForAddedItem(timezone, now)) {
         return [];
       }
-      const snapshot = todo.toPersistence();
-      await this.#dependencies.todoRepository.updateDetails(todoId, {
-        completed: snapshot.completed,
-        completedAt: snapshot.completedAt,
+      await todoRepository.updateDetails(todoId, {
+        completed: todo.completed,
+        completedAt: todo.completedAt,
       });
       this.#dependencies.logger.log({
         event: TodoLogEvent.COMPLETION_CHANGED,
         todoId,
         userId,
-        completed: snapshot.completed,
+        completed: todo.completed,
       });
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);

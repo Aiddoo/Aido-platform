@@ -4,7 +4,9 @@ import { join } from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -20,6 +22,7 @@ import {
   DEFAULT_DELIVERY_TIMEZONE,
   parseLocalDateTime,
 } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -520,28 +523,43 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     }
 
     function plan(id: string, rule: RepeatRule) {
-      return TodoSeries.planCreation({
-        id,
-        userId,
+      return TodoSeries.create({
+        id: TodoSeriesId.reconstitute(id),
+        userId: UserId.reconstitute(userId),
         categoryId,
-        title: "규칙",
+        title: TodoTitle.create("규칙"),
         visibility: "PUBLIC",
         scheduledLocalTime: "09:00",
         timezone: "Asia/Seoul",
         rule,
         startDate: "2026-11-02",
         checklistTemplate: [{ title: "항목" }],
-        at: new Date("2026-11-01T00:00:00.000Z"),
+        now: Temporal.Instant.fromEpochMilliseconds(new Date("2026-11-01T00:00:00.000Z").getTime()),
       });
     }
 
     it.each([
-      { name: "매일·계속", rule: RepeatRule.daily({ type: "NEVER" }) },
+      {
+        name: "매일·계속",
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
+      },
       {
         name: "격주·날짜까지",
-        rule: RepeatRule.weekly(["MON", "WED"], 2, { type: "UNTIL", date: "2027-01-01" }),
+        rule: RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["MON", "WED"],
+          interval: 2,
+          end: { type: "UNTIL", date: "2027-01-01" },
+        }),
       },
-      { name: "매월·횟수", rule: RepeatRule.monthly(31, { type: "COUNT", count: 10 }) },
+      {
+        name: "매월·횟수",
+        rule: RepeatRule.create({
+          frequency: "MONTHLY",
+          monthDay: 31,
+          end: { type: "COUNT", count: 10 },
+        }),
+      },
     ])("$name 규칙을 저장하고 그대로 복원한다", async ({ rule }) => {
       // Given
       const id = createEntityId();
@@ -550,16 +568,22 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await repository().insert(series);
       const restored = await repository().findByIdAndUserId(id, userId);
       // Then
-      expect(restored?.getRule().equals(rule)).toBe(true);
-      expect(restored?.getChecklistTemplate()).toEqual([{ title: "항목" }]);
-      expect(restored?.getScheduledLocalTime()).toBe("09:00");
-      expect(restored?.getNextOccurrenceDate()).toBe(series.getNextOccurrenceDate());
+      expect(restored?.rule.equals(rule)).toBe(true);
+      expect(restored?.checklistTemplate).toEqual([{ title: "항목" }]);
+      expect(restored?.scheduledLocalTime).toBe("09:00");
+      expect(restored?.nextOccurrenceDate).toBe(series.nextOccurrenceDate);
     });
 
     it("커서를 옮긴 규칙을 저장하면 끝난 규칙은 진행 중 개수에서 빠진다", async () => {
       // Given
-      const active = plan(createEntityId(), RepeatRule.daily({ type: "NEVER" }));
-      const finished = plan(createEntityId(), RepeatRule.daily({ type: "COUNT", count: 1 }));
+      const active = plan(
+        createEntityId(),
+        RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
+      );
+      const finished = plan(
+        createEntityId(),
+        RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 1 } }),
+      );
       await repository().insert(active);
       await repository().insert(finished);
       // When
@@ -573,22 +597,26 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       // Given
       const ids = ["a", "b", "c"].map((prefix) => `${prefix}-${createEntityId()}`);
       for (const id of ids) {
-        await repository().insert(plan(id, RepeatRule.daily({ type: "NEVER" })));
+        await repository().insert(
+          plan(id, RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } })),
+        );
       }
       const future = `d-${createEntityId()}`;
       await repository().insert(
-        TodoSeries.planCreation({
-          id: future,
-          userId,
+        TodoSeries.create({
+          id: TodoSeriesId.reconstitute(future),
+          userId: UserId.reconstitute(userId),
           categoryId,
-          title: "먼 규칙",
+          title: TodoTitle.create("먼 규칙"),
           visibility: "PUBLIC",
           scheduledLocalTime: null,
           timezone: "UTC",
-          rule: RepeatRule.daily({ type: "NEVER" }),
+          rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
           startDate: "2027-06-01",
           checklistTemplate: [],
-          at: new Date("2026-11-01T00:00:00.000Z"),
+          now: Temporal.Instant.fromEpochMilliseconds(
+            new Date("2026-11-01T00:00:00.000Z").getTime(),
+          ),
         }),
       );
       // When
@@ -610,7 +638,9 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     it("다른 트랜잭션이 잡고 있으면 SKIP LOCKED는 건너뛴다", async () => {
       // Given
       const id = createEntityId();
-      await repository().insert(plan(id, RepeatRule.daily({ type: "NEVER" })));
+      await repository().insert(
+        plan(id, RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } })),
+      );
       const { txHost, uow } = createDatabaseTransactionFixture(client);
       const locking = new DrizzleTodoSeriesRepository(txHost);
       const held = Promise.withResolvers<void>();

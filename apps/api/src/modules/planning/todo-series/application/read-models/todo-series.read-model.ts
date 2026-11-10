@@ -1,6 +1,8 @@
 import type { TodoRepeat, TodoSeriesResponse } from "@aido/api";
 import { match } from "ts-pattern";
 
+import { toIsoString } from "#api/shared/domain/time/instant";
+
 import type { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 
@@ -14,20 +16,19 @@ export function toTodoRepeat(rule: RepeatRule): TodoRepeat {
 }
 
 export function toTodoSeriesResponse(series: TodoSeries): TodoSeriesResponse {
-  const snapshot = series.toPersistence();
   return {
-    id: snapshot.id,
-    title: snapshot.title,
-    categoryId: snapshot.categoryId,
-    visibility: snapshot.visibility,
-    scheduledTime: snapshot.scheduledLocalTime,
-    timezone: snapshot.timezone,
-    repeat: toTodoRepeat(snapshot.rule),
-    startDate: snapshot.startDate,
-    nextOccurrenceDate: snapshot.nextOccurrenceDate,
-    isActive: series.isActive(),
-    checklist: series.getChecklistTemplate(),
-    createdAt: snapshot.createdAt.toISOString(),
-    updatedAt: snapshot.updatedAt.toISOString(),
+    id: series.id.value,
+    title: series.title.value,
+    categoryId: series.categoryId,
+    visibility: series.visibility,
+    scheduledTime: series.scheduledLocalTime,
+    timezone: series.timezone,
+    repeat: toTodoRepeat(series.rule),
+    startDate: series.startDate,
+    nextOccurrenceDate: series.nextOccurrenceDate,
+    isActive: series.isActive,
+    checklist: series.checklistTemplate,
+    createdAt: toIsoString(series.createdAt),
+    updatedAt: toIsoString(series.updatedAt),
   };
 }

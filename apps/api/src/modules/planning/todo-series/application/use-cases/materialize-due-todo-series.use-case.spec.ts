@@ -1,7 +1,10 @@
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
 
@@ -48,18 +51,18 @@ describe("회차 채우기", () => {
   }
 
   async function seed(id: string, startDate = "2026-11-05") {
-    const series = TodoSeries.planCreation({
-      id,
-      userId: fixture.userId,
+    const series = TodoSeries.create({
+      id: TodoSeriesId.reconstitute(id),
+      userId: UserId.reconstitute(fixture.userId),
       categoryId: 1,
-      title: "물 마시기",
+      title: TodoTitle.create("물 마시기"),
       visibility: "PUBLIC",
       scheduledLocalTime: null,
       timezone: "UTC",
-      rule: RepeatRule.daily({ type: "COUNT", count: 3 }),
+      rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } }),
       startDate,
       checklistTemplate: [],
-      at: AT,
+      now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
     await fixture.todoSeriesRepository.insert(series);
   }
@@ -139,7 +142,7 @@ describe("회차 채우기", () => {
     // Then
     expect(result).toMatchObject({ processedCount: 0, createdCount: 0, dormantCount: 1 });
     expect(fixture.records.size).toBe(0);
-    expect(fixture.seriesStore.get("series-1")?.getNextOccurrenceDate()).toBe("2026-11-05");
+    expect(fixture.seriesStore.get("series-1")?.nextOccurrenceDate).toBe("2026-11-05");
     expect(alert.raise).not.toHaveBeenCalled();
     expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ dormantCount: 1 }));
   });

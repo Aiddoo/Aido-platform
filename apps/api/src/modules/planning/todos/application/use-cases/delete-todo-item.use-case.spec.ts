@@ -38,7 +38,7 @@ describe("하위 항목 삭제", () => {
   });
   it("없는 항목과 다른 소유자의 할 일은 상태를 바꾸지 않는다", async () => {
     // Given
-    await fixture.todoRepository.createItem(1, { title: "기존 항목", sortOrder: 0 });
+    await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
     const before = structuredClone(fixture.records.get(1));
     // When / Then
     await expect(

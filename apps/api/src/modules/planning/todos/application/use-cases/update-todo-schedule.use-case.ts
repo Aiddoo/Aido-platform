@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -38,6 +39,7 @@ interface UpdateTodoScheduleDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
@@ -62,7 +64,7 @@ export class UpdateTodoScheduleUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.reschedule(
+      const rescheduled = todo.reschedule(
         TodoSchedule.create({
           startDate: schedule.startDate,
           endDate: schedule.endDate,
@@ -70,16 +72,12 @@ export class UpdateTodoScheduleUseCase {
           isAllDay: schedule.isAllDay,
           timezone,
         }),
+        this.#dependencies.clock.now(),
       );
-
-      const snapshot = todo.toPersistence();
-      await this.#dependencies.todoRepository.updateSchedule(id, {
-        startDate: snapshot.startDate,
-        endDate: snapshot.endDate,
-        scheduledLocalTime: snapshot.scheduledLocalTime,
-        scheduledTime: snapshot.scheduledTime,
-        isAllDay: snapshot.isAllDay,
-      });
+      if (!rescheduled) {
+        return [];
+      }
+      await this.#dependencies.todoRepository.updateSchedule(id, todo.schedule.toPrimitives());
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
       return events;

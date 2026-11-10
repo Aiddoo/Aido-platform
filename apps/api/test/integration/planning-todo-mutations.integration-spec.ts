@@ -5,6 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoToggledEvent } from "#api/modules/planning/shared/domain/todo-toggled.event";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
@@ -30,6 +31,7 @@ import {
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -300,7 +302,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       repository.updateDetails(todoId, {
         title: "기존 제목",
         completed: true,
-        completedAt: AT,
+        completedAt: instantFromDate(AT),
         endDate: new Date("2027-01-05"),
       }),
     );
@@ -544,10 +546,11 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
 
     // When
-    const result = unitOfWork.run(() =>
+    const result = unitOfWork.run(async () =>
       repository.insertOccurrences(
         [
           {
+            id: (await repository.nextIds(1))[0] ?? TodoId.reconstitute(0),
             userId,
             categoryId,
             title: "rollback 대상",
@@ -559,7 +562,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             isAllDay: true,
             visibility: "PUBLIC",
             occurrenceDate: "2027-01-04",
-            createdAt: AT,
+            createdAt: instantFromDate(AT),
           },
         ],
         "00000000-0000-4000-8000-000000000701",

@@ -11,7 +11,7 @@ import type {
 } from "../ports/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
-import { planTodoCreation, type WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
+import { toSingleTodoSpec, type WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
 
 interface StagedTodoCreatorDependencies {
   readonly writer: Pick<WriteTodoCreationUseCase, "createSingle" | "startSeries">;
@@ -43,20 +43,21 @@ export class StageTodoCreationUseCase {
 
   async #stageSingle(input: ResolvedCreateTodoData): Promise<StagedTodoCreation> {
     const created = await this.#dependencies.writer.createSingle(
-      planTodoCreation(input),
+      toSingleTodoSpec(input),
       input.items,
     );
+    const todoId = created.todo.id.value;
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
-      created.getId().getValue(),
+      todoId,
       input.userId,
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: created.getId().getValue() });
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     return {
       todos: [response],
       series: null,
-      afterCommit: () => this.#dependencies.effects.publishSingle(created, input.userId),
+      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo, created.events),
     };
   }
 
@@ -67,7 +68,7 @@ export class StageTodoCreationUseCase {
     const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
     const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      series.getId(),
+      series.id.value,
     );
     return {
       todos,

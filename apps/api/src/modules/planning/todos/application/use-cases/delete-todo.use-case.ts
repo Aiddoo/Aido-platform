@@ -70,7 +70,7 @@ export class DeleteTodoUseCase {
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
-      if (input.scope != null && todo.getSeriesId() == null) {
+      if (input.scope != null && todo.seriesId == null) {
         throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope: input.scope });
       }
 
@@ -104,12 +104,12 @@ export class DeleteTodoUseCase {
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
-      const seriesId = todo.getSeriesId();
+      const { seriesId } = todo;
       if (seriesId == null) {
         throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
       }
       const series = await seriesRepository.lockForUpdate(seriesId);
-      if (series != null && series.getUserId() !== userId) {
+      if (series != null && series.userId.value !== userId) {
         throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
       }
       const deletedTodoIds = await match(scope)
@@ -119,7 +119,7 @@ export class DeleteTodoUseCase {
           const seriesIds =
             series == null
               ? [seriesId]
-              : await seriesRepository.lockFamilyIds(userId, series.getOriginSeriesId());
+              : await seriesRepository.lockFamilyIds(userId, series.originSeriesId.value);
           const ids = await todoRepository.deleteOccurrences({
             userId,
             seriesIds,
@@ -130,7 +130,7 @@ export class DeleteTodoUseCase {
         })
         .with("THIS_AND_FOLLOWING", async () => {
           // 규칙이 없는 묶음은 회차 날짜도 없어 "이후"의 기준이 없다.
-          const occurrenceDate = todo.getOccurrenceDate();
+          const { occurrenceDate } = todo;
           if (occurrenceDate == null) {
             throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
           }
@@ -139,7 +139,7 @@ export class DeleteTodoUseCase {
             series == null ? [] : await seriesRepository.lockFollowingSegments(series);
           const ids = await todoRepository.deleteOccurrences({
             userId,
-            seriesIds: [seriesId, ...following.map((segment) => segment.getId())],
+            seriesIds: [seriesId, ...following.map((segment) => segment.id.value)],
             fromDate: pivot,
             includeCompleted: false,
           });

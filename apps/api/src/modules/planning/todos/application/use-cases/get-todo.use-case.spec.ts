@@ -25,7 +25,7 @@ describe("할 일 상세 조회", () => {
 
   it("소유한 할 일의 실제 저장 상태를 응답한다", async () => {
     // Given
-    await fixture.todoRepository.createItem(1, { title: "하위 항목", sortOrder: 0 });
+    await fixture.todoRepository.seedItem(1, { title: "하위 항목", sortOrder: 0 });
     // When
     const result = await useCase.execute({ id: 1, userId: fixture.userId });
     // Then

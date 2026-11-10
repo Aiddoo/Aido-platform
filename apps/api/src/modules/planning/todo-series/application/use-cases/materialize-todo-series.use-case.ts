@@ -4,7 +4,6 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   TodoSeriesRef,
@@ -41,9 +40,9 @@ export class MaterializeTodoSeriesUseCase {
       if (series == null) {
         return null;
       }
-      const cursorBefore = series.getNextOccurrenceDate();
-      const drafts = materializer.planDueRun(series, instantToDate(this.#dependencies.clock.now()));
-      if (series.getNextOccurrenceDate() === cursorBefore) {
+      const cursorBefore = series.nextOccurrenceDate;
+      const drafts = materializer.planDueRun(series, this.#dependencies.clock.now());
+      if (series.nextOccurrenceDate === cursorBefore) {
         return null;
       }
       const occurrences = await materializer.persist(series, drafts);

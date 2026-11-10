@@ -10,7 +10,6 @@ import {
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -55,19 +54,14 @@ export class SetTodoCompletedUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      const changed = todo.toggleComplete(
-        completed,
-        timezone,
-        instantToDate(this.#dependencies.clock.now()),
-      );
+      const changed = todo.toggleComplete(completed, timezone, this.#dependencies.clock.now());
       if (!changed) {
         return [];
       }
 
-      const snapshot = todo.toPersistence();
       await this.#dependencies.todoRepository.updateDetails(id, {
-        completed: snapshot.completed,
-        completedAt: snapshot.completedAt,
+        completed: todo.completed,
+        completedAt: todo.completedAt,
       });
 
       this.#dependencies.logger.log({

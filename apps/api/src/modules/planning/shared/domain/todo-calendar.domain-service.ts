@@ -33,11 +33,12 @@ export function addDaysToKey(dateKey: string, days: number): string {
   return Temporal.PlainDate.from(dateKey).add({ days }).toString();
 }
 
+export function localDateKeyAt(at: Temporal.Instant, timezone: string): string {
+  return localDateOf(at, toTodoTimeZone(timezone)).toString();
+}
+
 export function localDateKeyIn(at: Date, timezone: string): string {
-  return localDateOf(
-    Temporal.Instant.fromEpochMilliseconds(at.getTime()),
-    toTodoTimeZone(timezone),
-  ).toString();
+  return localDateKeyAt(Temporal.Instant.fromEpochMilliseconds(at.getTime()), timezone);
 }
 
 /** 순간이 그 시간대에서 가리키는 벽시계(HH:mm). resolveScheduledInstant의 역변환이다. */

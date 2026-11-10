@@ -14,7 +14,7 @@
  * ```
  */
 import type {
-  TodoItemData,
+  TodoItemRow,
   TodoWithCategory,
 } from "#api/modules/planning/todos/infrastructure/persistence/todo-row.mapper";
 
@@ -180,7 +180,7 @@ export class TodoBuilder {
 
   // === 하위 항목 관련 ===
 
-  withItems(items: TodoItemData[]): TodoBuilder {
+  withItems(items: TodoItemRow[]): TodoBuilder {
     this.data.items = items;
     return this;
   }

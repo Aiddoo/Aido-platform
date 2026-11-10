@@ -2,17 +2,19 @@ import { ErrorCode } from "@aido/api/errors";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual } from "es-toolkit";
 
-import { AggregateRoot, DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import {
   addDaysToKey,
-  localDateKeyIn,
+  localDateKeyAt,
+  resolveScheduledInstant,
   utcMidnightOf,
 } from "../../shared/domain/todo-calendar.domain-service.js";
-import { resolveScheduledInstant } from "../../shared/domain/todo-calendar.domain-service.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
-import type { TodoCreationDraft } from "../../shared/domain/todo.aggregate.js";
-import type { RepeatRule } from "./repeat-rule.vo.js";
+import { RepeatRule, type RepeatRuleProps } from "./repeat-rule.vo.js";
+import { TodoSeriesId } from "./todo-series-id.vo.js";
 
 /**
  * 새 규칙이 만들 수 있는 지난 회차 상한. 아주 먼 과거에서 시작하면 요청 안에서 수백 행이 지난 미완료로
@@ -24,39 +26,56 @@ export interface ChecklistTemplateItem {
   readonly title: string;
 }
 
-export interface TodoSeriesProps {
-  id: string;
-  /** 분할 전 맨 처음 규칙의 id. 분할된 구간을 한 쿼리로 묶는다. 처음 규칙은 자기 id다. */
-  originSeriesId: string;
-  userId: string;
-  categoryId: number;
-  title: string;
-  visibility: TodoVisibility;
-  scheduledLocalTime: string | null;
-  timezone: string;
-  rule: RepeatRule;
-  startDate: string;
-  checklistTemplate: readonly ChecklistTemplateItem[];
-  nextOccurrenceDate: string | null;
-  generatedCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface TodoSeriesStartInput {
+export interface TodoSeriesPrimitives {
   readonly id: string;
-  /** 분할로 이어지는 규칙만 넘긴다. 없으면 이 규칙이 원본이다. */
-  readonly originSeriesId?: string;
+  /** 분할 전 맨 처음 규칙의 id. 분할된 구간을 한 쿼리로 묶는다. 처음 규칙은 자기 id다. */
+  readonly originSeriesId: string;
   readonly userId: string;
   readonly categoryId: number;
   readonly title: string;
   readonly visibility: TodoVisibility;
   readonly scheduledLocalTime: string | null;
   readonly timezone: string;
+  readonly rule: RepeatRuleProps;
+  readonly startDate: string;
+  readonly checklistTemplate: readonly ChecklistTemplateItem[];
+  readonly nextOccurrenceDate: string | null;
+  readonly generatedCount: number;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
+}
+
+interface TodoSeriesProps {
+  readonly originSeriesId: TodoSeriesId;
+  readonly userId: UserId;
+  categoryId: number;
+  title: TodoTitle;
+  visibility: TodoVisibility;
+  scheduledLocalTime: string | null;
+  timezone: string;
+  rule: RepeatRule;
+  readonly startDate: string;
+  checklistTemplate: readonly ChecklistTemplateItem[];
+  nextOccurrenceDate: string | null;
+  generatedCount: number;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
+}
+
+interface CreateTodoSeriesParams {
+  readonly id: TodoSeriesId;
+  /** 분할로 이어지는 규칙만 넘긴다. 없으면 이 규칙이 원본이다. */
+  readonly originSeriesId?: TodoSeriesId;
+  readonly userId: UserId;
+  readonly categoryId: number;
+  readonly title: TodoTitle;
+  readonly visibility: TodoVisibility;
+  readonly scheduledLocalTime: string | null;
+  readonly timezone: string;
   readonly rule: RepeatRule;
   readonly startDate: string;
   readonly checklistTemplate: readonly ChecklistTemplateItem[];
-  readonly at: Date;
+  readonly now: Temporal.Instant;
 }
 
 export interface TodoSeriesChanges {
@@ -70,66 +89,149 @@ export interface TodoSeriesChanges {
   readonly rule?: RepeatRule;
 }
 
-/** 회차 한 행의 초안. sortOrder는 저장 직전 사용자 최대값 뒤로 붙인다. */
-export interface TodoOccurrenceDraft extends TodoCreationDraft {
+/** 회차 한 행의 초안. id는 저장소 nextIds, sortOrder는 저장 직전 사용자 최대값 뒤로 붙인다. */
+export interface TodoOccurrenceDraft {
+  readonly userId: string;
+  readonly categoryId: number;
+  readonly title: string;
+  readonly visibility: TodoVisibility;
+  readonly startDate: Date;
+  readonly endDate: null;
+  readonly scheduledLocalTime: string | null;
+  readonly scheduledTime: Date | null;
+  readonly isAllDay: boolean;
   readonly occurrenceDate: string;
-  readonly createdAt: Date;
+  readonly createdAt: Temporal.Instant;
 }
 
-export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
-  static reconstitute(props: TodoSeriesProps): TodoSeries {
-    return new TodoSeries({
-      ...props,
-      checklistTemplate: props.checklistTemplate.map((item) => ({ title: item.title })),
-      createdAt: new Date(props.createdAt),
-      updatedAt: new Date(props.updatedAt),
+function assertChecklist(items: readonly ChecklistTemplateItem[]): void {
+  if (items.length > TODO_ITEM_LIMITS.MAX_PER_TODO) {
+    throw new DomainException(ErrorCode.TODO_0821, {
+      currentCount: items.length,
+      maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
+    });
+  }
+}
+
+function copyChecklist(items: readonly ChecklistTemplateItem[]): ChecklistTemplateItem[] {
+  return items.map((item) => ({ title: item.title }));
+}
+
+export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
+  /** 만들 수 있는 회차가 없으면 TODO_0843이다. */
+  static create(params: CreateTodoSeriesParams): TodoSeries {
+    assertChecklist(params.checklistTemplate);
+    const first = params.rule.firstOnOrAfter(params.startDate, params.startDate);
+    if (first == null) {
+      throw new DomainException(ErrorCode.TODO_0843, {
+        startDate: params.startDate,
+        repeat: params.rule.toSpec(),
+      });
+    }
+    return new TodoSeries(params.id, {
+      originSeriesId: params.originSeriesId ?? params.id,
+      userId: params.userId,
+      categoryId: params.categoryId,
+      title: params.title,
+      visibility: params.visibility,
+      scheduledLocalTime: params.scheduledLocalTime,
+      timezone: params.timezone,
+      rule: params.rule,
+      startDate: params.startDate,
+      checklistTemplate: copyChecklist(params.checklistTemplate),
+      nextOccurrenceDate: first,
+      generatedCount: 0,
+      createdAt: params.now,
+      updatedAt: params.now,
     });
   }
 
-  /** DB에 저장하기 전 새 규칙. 만들 수 있는 회차가 없으면 TODO_0843이다. */
-  static planCreation(input: TodoSeriesStartInput): TodoSeries {
-    TodoTitle.create(input.title);
-    TodoSeries.#assertChecklist(input.checklistTemplate);
-    const first = input.rule.firstOnOrAfter(input.startDate, input.startDate);
-    if (first == null) {
-      throw new DomainException(ErrorCode.TODO_0843, {
-        startDate: input.startDate,
-        repeat: input.rule.toSpec(),
-      });
-    }
-    return new TodoSeries({
-      id: input.id,
-      originSeriesId: input.originSeriesId ?? input.id,
-      userId: input.userId,
-      categoryId: input.categoryId,
-      title: input.title,
-      visibility: input.visibility,
-      scheduledLocalTime: input.scheduledLocalTime,
-      timezone: input.timezone,
-      rule: input.rule,
-      startDate: input.startDate,
-      checklistTemplate: input.checklistTemplate.map((item) => ({ title: item.title })),
-      nextOccurrenceDate: first,
-      generatedCount: 0,
-      createdAt: new Date(input.at),
-      updatedAt: new Date(input.at),
+  static reconstitute(primitives: TodoSeriesPrimitives): TodoSeries {
+    return new TodoSeries(TodoSeriesId.reconstitute(primitives.id), {
+      originSeriesId: TodoSeriesId.reconstitute(primitives.originSeriesId),
+      userId: UserId.reconstitute(primitives.userId),
+      categoryId: primitives.categoryId,
+      title: TodoTitle.reconstitute(primitives.title),
+      visibility: primitives.visibility,
+      scheduledLocalTime: primitives.scheduledLocalTime,
+      timezone: primitives.timezone,
+      rule: RepeatRule.reconstitute(primitives.rule),
+      startDate: primitives.startDate,
+      checklistTemplate: copyChecklist(primitives.checklistTemplate),
+      nextOccurrenceDate: primitives.nextOccurrenceDate,
+      generatedCount: primitives.generatedCount,
+      createdAt: primitives.createdAt,
+      updatedAt: primitives.updatedAt,
     });
+  }
+
+  get originSeriesId(): TodoSeriesId {
+    return this.props.originSeriesId;
+  }
+
+  get userId(): UserId {
+    return this.props.userId;
+  }
+
+  get categoryId(): number {
+    return this.props.categoryId;
+  }
+
+  get title(): TodoTitle {
+    return this.props.title;
+  }
+
+  get visibility(): TodoVisibility {
+    return this.props.visibility;
+  }
+
+  get scheduledLocalTime(): string | null {
+    return this.props.scheduledLocalTime;
+  }
+
+  get timezone(): string {
+    return this.props.timezone;
+  }
+
+  get rule(): RepeatRule {
+    return this.props.rule;
+  }
+
+  get startDate(): string {
+    return this.props.startDate;
+  }
+
+  get checklistTemplate(): ChecklistTemplateItem[] {
+    return copyChecklist(this.props.checklistTemplate);
+  }
+
+  get nextOccurrenceDate(): string | null {
+    return this.props.nextOccurrenceDate;
+  }
+
+  get generatedCount(): number {
+    return this.props.generatedCount;
+  }
+
+  get createdAt(): Temporal.Instant {
+    return this.props.createdAt;
+  }
+
+  get updatedAt(): Temporal.Instant {
+    return this.props.updatedAt;
+  }
+
+  get isActive(): boolean {
+    return this.props.nextOccurrenceDate != null;
   }
 
   /** 새로 시작하는 규칙만 확인한다. 분할은 이미 있던 규칙을 잇는 것이라 지난 회차 수와 상관없다. */
-  assertWithinPastLimit(at: Date): void {
+  assertWithinPastLimit(now: Temporal.Instant): void {
     const { rule, startDate, timezone } = this.props;
-    if (rule.countBefore(startDate, localDateKeyIn(at, timezone)) > MAX_PAST_OCCURRENCES_ON_START) {
+    if (
+      rule.countBefore(startDate, localDateKeyAt(now, timezone)) > MAX_PAST_OCCURRENCES_ON_START
+    ) {
       throw new DomainException(ErrorCode.TODO_0845, { field: "startDate" });
-    }
-  }
-
-  static #assertChecklist(items: readonly ChecklistTemplateItem[]): void {
-    if (items.length > TODO_ITEM_LIMITS.MAX_PER_TODO) {
-      throw new DomainException(ErrorCode.TODO_0821, {
-        currentCount: items.length,
-        maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
-      });
     }
   }
 
@@ -163,9 +265,9 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
    * 그 횟수의 날짜가 다 지났으면 끝난다. 채울 때마다 커서는 기간(90일)만큼 앞서므로 오늘보다 뒤처졌다면
    * 그만큼 채우지 못한 것이다. 규칙 행을 고쳤는지(updatedAt)는 채운 시점과 상관없어 보지 않는다.
    */
-  skipDormantGap(at: Date): boolean {
+  skipDormantGap(now: Temporal.Instant): boolean {
     const { nextOccurrenceDate, generatedCount, rule, startDate, timezone } = this.props;
-    const today = localDateKeyIn(at, timezone);
+    const today = localDateKeyAt(now, timezone);
     if (nextOccurrenceDate == null || nextOccurrenceDate >= today) {
       return false;
     }
@@ -181,9 +283,9 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   #draftOn(date: string): TodoOccurrenceDraft {
     const { userId, categoryId, title, scheduledLocalTime, timezone, visibility } = this.props;
     return {
-      userId,
+      userId: userId.value,
       categoryId,
-      title,
+      title: title.value,
       visibility,
       startDate: utcMidnightOf(date),
       endDate: null,
@@ -193,7 +295,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       isAllDay: scheduledLocalTime == null,
       occurrenceDate: date,
       // 리텐션·성장 지표가 createdAt을 사용자 행동으로 쓰므로 규칙을 만든 시각을 물려받는다.
-      createdAt: new Date(this.props.createdAt),
+      createdAt: this.props.createdAt,
     };
   }
 
@@ -222,24 +324,29 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   }
 
   /** pivotDate부터 새 규칙으로 잇고 이 규칙은 그 전날로 끝낸다. 만든 뒤의 회차 수는 0이다. */
-  splitFrom(pivotDate: string, changes: TodoSeriesChanges, newId: string, at: Date): TodoSeries {
+  splitFrom(params: {
+    readonly pivotDate: string;
+    readonly changes: TodoSeriesChanges;
+    readonly id: TodoSeriesId;
+    readonly now: Temporal.Instant;
+  }): TodoSeries {
+    const { pivotDate, changes } = params;
     const { title, categoryId, visibility, scheduledLocalTime, checklistTemplate } = this.props;
-    const rule = changes.rule ?? this.props.rule.continuingFrom(this.props.startDate, pivotDate);
-    const next = TodoSeries.planCreation({
-      id: newId,
+    const next = TodoSeries.create({
+      id: params.id,
       originSeriesId: this.props.originSeriesId,
       userId: this.props.userId,
       categoryId: changes.categoryId ?? categoryId,
-      title: changes.title ?? title,
+      title: changes.title == null ? title : TodoTitle.create(changes.title),
       visibility: changes.visibility ?? visibility,
       // nullish-strict: null은 시간 지우기, undefined는 유지다
       scheduledLocalTime:
         changes.scheduledLocalTime === undefined ? scheduledLocalTime : changes.scheduledLocalTime,
       timezone: changes.timezone ?? this.props.timezone,
-      rule,
+      rule: changes.rule ?? this.props.rule.continuingFrom(this.props.startDate, pivotDate),
       startDate: pivotDate,
       checklistTemplate: changes.checklistTemplate ?? checklistTemplate,
-      at,
+      now: params.now,
     });
     this.stopAfter(addDaysToKey(pivotDate, -1));
     return next;
@@ -248,9 +355,8 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   /** 규칙은 그대로 두고 제목·카테고리·공개·시간(과 그 시간대)만 바꾼다. 바뀐 게 있으면 true다. */
   applyDetails(changes: Omit<TodoSeriesChanges, "rule" | "checklistTemplate">): boolean {
     let changed = false;
-    if (changes.title != null && changes.title !== this.props.title) {
-      TodoTitle.create(changes.title);
-      this.props.title = changes.title;
+    if (changes.title != null && changes.title !== this.props.title.value) {
+      this.props.title = TodoTitle.create(changes.title);
       changed = true;
     }
     if (changes.categoryId != null && changes.categoryId !== this.props.categoryId) {
@@ -283,7 +389,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       scheduledLocalTime === this.props.scheduledLocalTime &&
       (scheduledLocalTime == null || timezone === this.props.timezone);
     return {
-      title: title === this.props.title ? undefined : title,
+      title: title.equals(this.props.title) ? undefined : title.value,
       categoryId: categoryId === this.props.categoryId ? undefined : categoryId,
       visibility: visibility === this.props.visibility ? undefined : visibility,
       scheduledLocalTime: isTimeSame ? undefined : scheduledLocalTime,
@@ -310,68 +416,31 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   }
 
   replaceChecklist(items: readonly ChecklistTemplateItem[]): boolean {
-    TodoSeries.#assertChecklist(items);
+    assertChecklist(items);
     if (isEqual(items, this.props.checklistTemplate)) {
       return false;
     }
-    this.props.checklistTemplate = items.map((item) => ({ title: item.title }));
+    this.props.checklistTemplate = copyChecklist(items);
     return true;
   }
 
-  getId(): string {
-    return this.props.id;
-  }
-
-  getUserId(): string {
-    return this.props.userId;
-  }
-
-  getOriginSeriesId(): string {
-    return this.props.originSeriesId;
-  }
-
-  getStartDate(): string {
-    return this.props.startDate;
-  }
-
-  getRule(): RepeatRule {
-    return this.props.rule;
-  }
-
-  getCategoryId(): number {
-    return this.props.categoryId;
-  }
-
-  getTitle(): string {
-    return this.props.title;
-  }
-
-  getTimezone(): string {
-    return this.props.timezone;
-  }
-
-  getScheduledLocalTime(): string | null {
-    return this.props.scheduledLocalTime;
-  }
-
-  getChecklistTemplate(): ChecklistTemplateItem[] {
-    return this.props.checklistTemplate.map((item) => ({ title: item.title }));
-  }
-
-  getNextOccurrenceDate(): string | null {
-    return this.props.nextOccurrenceDate;
-  }
-
-  isActive(): boolean {
-    return this.props.nextOccurrenceDate != null;
-  }
-
-  toPersistence(): Readonly<TodoSeriesProps> {
+  toPrimitives(): TodoSeriesPrimitives {
     return {
-      ...this.props,
-      checklistTemplate: this.getChecklistTemplate(),
-      createdAt: new Date(this.props.createdAt),
-      updatedAt: new Date(this.props.updatedAt),
+      id: this.id.value,
+      originSeriesId: this.props.originSeriesId.value,
+      userId: this.props.userId.value,
+      categoryId: this.props.categoryId,
+      title: this.props.title.value,
+      visibility: this.props.visibility,
+      scheduledLocalTime: this.props.scheduledLocalTime,
+      timezone: this.props.timezone,
+      rule: this.props.rule.toPrimitives(),
+      startDate: this.props.startDate,
+      checklistTemplate: copyChecklist(this.props.checklistTemplate),
+      nextOccurrenceDate: this.props.nextOccurrenceDate,
+      generatedCount: this.props.generatedCount,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
     };
   }
 }

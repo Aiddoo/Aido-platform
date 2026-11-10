@@ -15,7 +15,10 @@ import type { TodoSeries, TodoOccurrenceDraft } from "../../domain/todo-series.a
 export const MAX_OCCURRENCES_PER_RUN = 400;
 
 interface TodoOccurrenceMaterializerDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "getMaxSortOrder" | "insertOccurrences">;
+  readonly todoRepository: Pick<
+    TodoRepositoryPort,
+    "getMaxSortOrder" | "nextIds" | "insertOccurrences"
+  >;
   readonly todoReminder: Pick<TodoReminderSchedulerPort, "scheduleReminders">;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
 }
@@ -32,19 +35,16 @@ export class MaterializeTodoOccurrencesUseCase {
   }
 
   /** 기간 안의 회차를 계획한다. 먼 미래에 시작하는 새 규칙도 첫 회차는 바로 보여야 한다. */
-  planFirstRun(series: TodoSeries, at: Date): TodoOccurrenceDraft[] {
-    const horizon = occurrenceHorizon(series.getTimezone(), at);
-    const next = series.getNextOccurrenceDate();
+  planFirstRun(series: TodoSeries, now: Temporal.Instant): TodoOccurrenceDraft[] {
+    const horizon = occurrenceHorizon(series.timezone, now);
+    const next = series.nextOccurrenceDate;
     const through = next != null && next > horizon ? next : horizon;
     return series.planOccurrences(through, MAX_OCCURRENCES_PER_RUN);
   }
 
-  planDueRun(series: TodoSeries, at: Date): TodoOccurrenceDraft[] {
-    series.skipDormantGap(at);
-    return series.planOccurrences(
-      occurrenceHorizon(series.getTimezone(), at),
-      MAX_OCCURRENCES_PER_RUN,
-    );
+  planDueRun(series: TodoSeries, now: Temporal.Instant): TodoOccurrenceDraft[] {
+    series.skipDormantGap(now);
+    return series.planOccurrences(occurrenceHorizon(series.timezone, now), MAX_OCCURRENCES_PER_RUN);
   }
 
   async persist(
@@ -54,15 +54,19 @@ export class MaterializeTodoOccurrencesUseCase {
     if (drafts.length === 0) {
       return [];
     }
-    const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(
-      series.getUserId(),
+    const { todoRepository } = this.#dependencies;
+    const userId = series.userId.value;
+    const maxSortOrder = await todoRepository.getMaxSortOrder(userId);
+    // 회차 id를 한 문장으로 먼저 받는다
+    const ids = await todoRepository.nextIds(drafts.length);
+    const created = await todoRepository.insertOccurrences(
+      drafts.flatMap((draft, index) => {
+        const id = ids[index];
+        return id == null ? [] : [{ ...draft, id, sortOrder: maxSortOrder + 1 + index }];
+      }),
+      series.id.value,
+      series.checklistTemplate,
     );
-    const created = await this.#dependencies.todoRepository.insertOccurrences(
-      drafts.map((draft, index) => ({ ...draft, sortOrder: maxSortOrder + 1 + index })),
-      series.getId(),
-      series.getChecklistTemplate(),
-    );
-    const userId = series.getUserId();
     await this.#dependencies.todoReminder.scheduleReminders(
       created.flatMap(({ todoId, scheduledTime }) =>
         scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
@@ -70,7 +74,7 @@ export class MaterializeTodoOccurrencesUseCase {
     );
     if (created.length > 0) {
       await this.#dependencies.applyTodoEvents.execute([
-        new TodoOccurrencesCreatedEvent(series.getId(), userId, created.length),
+        new TodoOccurrencesCreatedEvent(series.id.value, userId, created.length),
       ]);
     }
     return created;

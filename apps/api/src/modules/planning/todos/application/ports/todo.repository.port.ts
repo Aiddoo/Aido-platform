@@ -1,15 +1,16 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
+import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
-import type {
-  Todo,
-  TodoCreationPlan,
-  TodoPersistenceSnapshot,
-} from "../../../shared/domain/todo.aggregate.js";
+import type { Todo } from "../../../shared/domain/todo.aggregate.js";
+import type { TodoOccurrenceDraft } from "../../../todo-series/domain/todo-series.aggregate.js";
 
-export interface TodoOccurrencePlan extends TodoCreationPlan {
-  readonly occurrenceDate: string;
-  readonly createdAt: Date;
+/** nextIds로 받은 id와 사용자 최대값 뒤 순서를 붙인 회차 */
+export interface TodoOccurrencePlan extends TodoOccurrenceDraft {
+  readonly id: TodoId;
+  readonly sortOrder: number;
 }
 
 export interface OccurrenceRow {
@@ -64,20 +65,36 @@ export interface CreatedOccurrence {
   readonly scheduledTime: Date | null;
 }
 
-/** Todo 부분 수정 영속화 패치. undefined 필드는 변경하지 않습니다(부분 수정 시맨틱). */
-export type TodoUpdatePatch = Partial<TodoPersistenceSnapshot>;
+/** 부분 수정 패치. undefined 필드는 바꾸지 않는다. */
+export interface TodoUpdatePatch {
+  readonly title?: string;
+  readonly categoryId?: number;
+  readonly startDate?: Date;
+  readonly endDate?: Date | null;
+  readonly scheduledLocalTime?: string | null;
+  readonly scheduledTime?: Date | null;
+  readonly isAllDay?: boolean;
+  readonly visibility?: TodoVisibility;
+  readonly completed?: boolean;
+  readonly completedAt?: Temporal.Instant | null;
+}
 
 /**
- * Todo 쓰기 리포지토리 포트 (애그리게잇 경계)
- *
- * 커맨드 핸들러가 영속 구현체에 의존하지 않도록 하는 쓰기 측 경계입니다.
- * 조회는 애그리게잇(Todo)을 반환하고, 응답 read model은 TodoReadRepositoryPort가 담당합니다.
- * 트랜잭션은 CLS(UnitOfWorkPort.run)로 전파되므로 tx 핸들을 전달하지 않습니다.
+ * 할 일 쓰기 저장소. 조회 응답은 TodoReadRepositoryPort가 맡는다.
+ * 수정은 고친 칸만 쓴다. 다른 잠금으로 sortOrder를 미는 순서 바꾸기와 겹쳐도 덮어쓰지 않게 하려는 것이다.
  */
 export abstract class TodoRepositoryPort {
+  abstract nextId(): Promise<TodoId>;
+
+  /** 한 문장으로 count개를 오름차순으로 받는다. */
+  abstract nextIds(count: number): Promise<TodoId[]>;
+
+  abstract nextItemId(): Promise<TodoItemId>;
+
   abstract findByIdAndUserId(id: number, userId: string): Promise<Todo | null>;
 
-  abstract create(data: TodoCreationPlan): Promise<Todo>;
+  /** 새 할 일 행만 쓴다. 생성 때의 하위 항목은 createInlineItems로 함께 쓴다. */
+  abstract insert(todo: Todo): Promise<void>;
 
   /** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
   abstract createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void>;
@@ -170,7 +187,7 @@ export abstract class TodoRepositoryPort {
 
   // ===== 하위 항목 (체크리스트) =====
 
-  abstract createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void>;
+  abstract insertItem(todoId: number, item: TodoItem): Promise<void>;
 
   abstract updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void>;
 

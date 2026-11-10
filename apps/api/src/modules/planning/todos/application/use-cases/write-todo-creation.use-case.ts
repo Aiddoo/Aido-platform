@@ -1,36 +1,53 @@
-import { randomUUID } from "node:crypto";
-
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
-import { Todo, type TodoCreationDraft } from "../../../shared/domain/todo.aggregate.js";
+import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
+import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
+import { Todo, type TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
 import type { MaterializeTodoOccurrencesUseCase } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
 import { RepeatRule, type RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
+import { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js";
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type { CreatedOccurrence, TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
-export function planTodoCreation(input: ResolvedCreateTodoData): TodoCreationDraft {
-  return Todo.planCreation({
+/** 잠금 전에 검증을 마친 단일 할 일 입력. 제목·일정 오류가 소유·한도 오류보다 먼저다. */
+export interface SingleTodoSpec {
+  readonly userId: string;
+  readonly categoryId: number;
+  readonly title: TodoTitle;
+  readonly schedule: TodoSchedule;
+  readonly visibility: TodoVisibility;
+}
+
+export function toSingleTodoSpec(input: ResolvedCreateTodoData): SingleTodoSpec {
+  return {
     userId: input.userId,
     categoryId: input.categoryId,
-    title: input.title,
-    startDate: input.startDate,
-    endDate: input.endDate ?? null,
-    scheduledLocalTime: input.scheduledTime ?? null,
-    timezone: input.timezone,
-    isAllDay: input.isAllDay,
-    visibility: input.visibility,
-  });
+    title: TodoTitle.create(input.title),
+    schedule: TodoSchedule.create({
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
+      scheduledLocalTime: input.scheduledTime ?? null,
+      isAllDay: input.isAllDay ?? true,
+      timezone: input.timezone,
+    }),
+    visibility: input.visibility ?? "PUBLIC",
+  };
+}
+
+export interface CreatedTodo {
+  readonly todo: Todo;
+  /** 트랜잭션 안에서 반영한 사실. 옛 todo.* 이벤트로 커밋 뒤 다시 낸다. */
+  readonly events: readonly TodoEvent[];
 }
 
 export interface StartedSeries {
@@ -41,7 +58,7 @@ export interface StartedSeries {
 interface TodoCreationWriterDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
-    "countCategoryUsage" | "getMaxSortOrder" | "create" | "createInlineItems"
+    "countCategoryUsage" | "getMaxSortOrder" | "nextId" | "insert" | "createInlineItems"
   >;
   readonly todoSeriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
   readonly occurrenceMaterializer: Pick<
@@ -61,33 +78,37 @@ export class WriteTodoCreationUseCase {
   }
 
   async createSingle(
-    draft: TodoCreationDraft,
+    spec: SingleTodoSpec,
     items?: readonly { title: string }[],
-  ): Promise<Todo> {
-    await this.#dependencies.categoryOwnership.validateOwnership(draft.categoryId, draft.userId);
-    const activeCount = await this.#dependencies.todoRepository.countCategoryUsage(
-      draft.userId,
-      draft.categoryId,
-    );
+  ): Promise<CreatedTodo> {
+    const { todoRepository } = this.#dependencies;
+    await this.#dependencies.categoryOwnership.validateOwnership(spec.categoryId, spec.userId);
+    const activeCount = await todoRepository.countCategoryUsage(spec.userId, spec.categoryId);
     if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
       throw new ApplicationException(ErrorCode.TODO_0811, {
         activeCount,
         maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
       });
     }
-    const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(draft.userId);
-    const created = await this.#dependencies.todoRepository.create({
-      ...draft,
+    const maxSortOrder = await todoRepository.getMaxSortOrder(spec.userId);
+    const todo = Todo.create({
+      id: await todoRepository.nextId(),
+      userId: UserId.reconstitute(spec.userId),
+      categoryId: spec.categoryId,
+      title: spec.title,
+      schedule: spec.schedule,
+      visibility: spec.visibility,
       sortOrder: maxSortOrder + 1,
+      now: this.#dependencies.clock.now(),
     });
+    await todoRepository.insert(todo);
     if (items != null && items.length > 0) {
-      await this.#dependencies.todoRepository.createInlineItems(created.getId().getValue(), items);
+      await todoRepository.createInlineItems(todo.id.value, items);
     }
     // 리마인더 예약과 planning.todo.created는 행과 함께 커밋한다. 옛 todo.created는 커밋 뒤 따로 나간다
-    await this.#dependencies.applyTodoEvents.execute([
-      new TodoCreatedEvent(created.getId().getValue(), draft.userId, draft.scheduledTime),
-    ]);
-    return created;
+    const events = todo.pullDomainEvents();
+    await this.#dependencies.applyTodoEvents.execute(events);
+    return { todo, events };
   }
 
   /** 상한 확인 → 규칙 저장 → 회차를 한 번에 만든다. 활성 UoW와 생성 잠금 안에서 호출한다. */
@@ -96,21 +117,24 @@ export class WriteTodoCreationUseCase {
     if (input.endDate != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });
     }
-    const at = instantToDate(this.#dependencies.clock.now());
-    const series = TodoSeries.planCreation({
-      id: randomUUID(),
-      userId,
+    const now = this.#dependencies.clock.now();
+    // 옛 순서 그대로 규칙 → 제목 → 체크리스트 순으로 검증한다
+    const rule = RepeatRule.create(repeat);
+    const title = TodoTitle.create(input.title);
+    const series = TodoSeries.create({
+      id: TodoSeriesId.generate(),
+      userId: UserId.reconstitute(userId),
       categoryId,
-      title: input.title,
+      title,
       visibility: input.visibility ?? "PUBLIC",
       scheduledLocalTime: input.scheduledTime ?? null,
       timezone: input.timezone,
-      rule: RepeatRule.from(repeat),
+      rule,
       startDate: dateKeyOf(input.startDate),
       checklistTemplate: input.items ?? [],
-      at,
+      now,
     });
-    series.assertWithinPastLimit(at);
+    series.assertWithinPastLimit(now);
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
     await this.#assertSeriesLimit(userId, input.usesLegacySeriesLimit === true);
     const activeInCategory = await this.#dependencies.todoRepository.countCategoryUsage(
@@ -124,7 +148,7 @@ export class WriteTodoCreationUseCase {
         maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
       });
     }
-    const drafts = this.#dependencies.occurrenceMaterializer.planFirstRun(series, at);
+    const drafts = this.#dependencies.occurrenceMaterializer.planFirstRun(series, now);
     await this.#dependencies.todoSeriesRepository.insert(series);
     const occurrences = await this.#dependencies.occurrenceMaterializer.persist(series, drafts);
     return { series, occurrences };

@@ -4,6 +4,7 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -29,6 +30,7 @@ interface UpdateTodoVisibilityDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
@@ -51,8 +53,10 @@ export class UpdateTodoVisibilityUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.changeVisibility(visibility);
-      await this.#dependencies.todoRepository.updateVisibility(id, todo.toPersistence().visibility);
+      if (!todo.changeVisibility(visibility, this.#dependencies.clock.now())) {
+        return [];
+      }
+      await this.#dependencies.todoRepository.updateVisibility(id, todo.visibility);
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
       return events;

@@ -1,6 +1,4 @@
-import { randomUUID } from "node:crypto";
-
-import type { TodoRepeat, Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
@@ -13,7 +11,6 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { addDaysToKey, dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
@@ -30,8 +27,9 @@ import type {
 } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
-import { RepeatRule } from "../../domain/repeat-rule.vo.js";
+import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries, TodoSeriesChanges } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -49,7 +47,7 @@ export interface UpdateFollowingTodosInput {
   /** HH:mm. null은 시간 지우기, 생략은 유지다. */
   readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
-  readonly repeat?: TodoRepeat;
+  readonly repeat?: RepeatSpec;
   readonly checklist?: readonly { readonly title: string }[];
 }
 
@@ -131,7 +129,7 @@ export class UpdateFollowingTodosUseCase {
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
-    const seriesId = todo.getSeriesId();
+    const { seriesId } = todo;
     if (seriesId == null) {
       throw new ApplicationException(ErrorCode.TODO_0844, {
         todoId: id,
@@ -139,13 +137,13 @@ export class UpdateFollowingTodosUseCase {
       });
     }
     const series = await seriesRepository.lockForUpdate(seriesId);
-    if (series == null || series.getUserId() !== userId) {
+    if (series == null || series.userId.value !== userId) {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
     }
     if (input.categoryId != null) {
       await this.#dependencies.categoryOwnership.validateOwnership(input.categoryId, userId);
     }
-    const occurrenceDate = todo.getOccurrenceDate();
+    const { occurrenceDate } = todo;
     if (occurrenceDate == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
@@ -154,14 +152,14 @@ export class UpdateFollowingTodosUseCase {
 
   async publish(edited: AppliedFollowingEdit, userId: string): Promise<void> {
     await this.#dependencies.effects.execute({
-      seriesId: edited.target.getId(),
+      seriesId: edited.target.id.value,
       userId,
     });
     if (edited.isSplit) {
       this.#dependencies.logger.log({
         event: TodoSeriesLogEvent.SPLIT,
-        seriesId: edited.source.getId(),
-        newSeriesId: edited.target.getId(),
+        seriesId: edited.source.id.value,
+        newSeriesId: edited.target.id.value,
         userId,
       });
     }
@@ -173,11 +171,11 @@ export class UpdateFollowingTodosUseCase {
     pivot: string,
   ): Promise<AppliedFollowingEdit> {
     const { todoRepository, seriesRepository, materializer, todoReminder } = this.#dependencies;
-    const at = instantToDate(this.#dependencies.clock.now());
-    const rule = input.repeat == null ? null : RepeatRule.from(input.repeat);
-    const ruleChanged = rule != null && !rule.equals(series.getRule());
+    const now = this.#dependencies.clock.now();
+    const rule = input.repeat == null ? null : RepeatRule.create(input.repeat);
+    const ruleChanged = rule != null && !rule.equals(series.rule);
     const checklistChanged =
-      input.checklist != null && !isEqual(input.checklist, series.getChecklistTemplate());
+      input.checklist != null && !isEqual(input.checklist, series.checklistTemplate);
     const scheduledLocalTime = resolveLocalTime(input);
     const details = {
       title: input.title,
@@ -188,28 +186,28 @@ export class UpdateFollowingTodosUseCase {
     };
 
     const following = await seriesRepository.lockFollowingSegments(series);
-    if (ruleChanged && ![series, ...following].some((segment) => segment.isActive())) {
+    if (ruleChanged && ![series, ...following].some((segment) => segment.isActive)) {
       // 끝난 규칙의 규칙을 바꾸면 다시 진행 중이 된다. 진행 중인 구간을 합치면 수가 늘지 않는다.
-      await this.#assertSeriesLimit(series.getUserId());
+      await this.#assertSeriesLimit(series.userId.value);
     }
     if (
       input.categoryId != null &&
-      [series, ...following].some((segment) => segment.getCategoryId() !== input.categoryId)
+      [series, ...following].some((segment) => segment.categoryId !== input.categoryId)
     ) {
-      await this.#assertCategoryLimit(series.getUserId(), input.categoryId);
+      await this.#assertCategoryLimit(series.userId.value, input.categoryId);
     }
 
     let target = series;
     let split = false;
     // 체크리스트는 새로 만드는 회차에만 복사하므로 규칙이 그대로면 나눌 이유가 없다.
     // 나누면 그 구간을 처음부터 다시 계산해 "이 할 일만" 지운 회차가 되살아난다.
-    if (ruleChanged && pivot !== series.getStartDate()) {
-      target = series.splitFrom(
-        pivot,
-        { ...details, rule, checklistTemplate: input.checklist },
-        randomUUID(),
-        at,
-      );
+    if (ruleChanged && pivot !== series.startDate) {
+      target = series.splitFrom({
+        pivotDate: pivot,
+        changes: { ...details, rule, checklistTemplate: input.checklist },
+        id: TodoSeriesId.generate(),
+        now,
+      });
       split = true;
     } else {
       series.applyDetails(details);
@@ -233,11 +231,11 @@ export class UpdateFollowingTodosUseCase {
         pivot,
       );
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId));
-      reminders.push(...toReminders(rescheduled, series.getUserId()));
+      reminders.push(...toReminders(rescheduled, series.userId.value));
     }
 
     if (ruleChanged || split) {
-      const remapped = await this.#remapRows(input.id, series, following, target, pivot, at);
+      const remapped = await this.#remapRows(input.id, series, following, target, pivot, now);
       cancelledTodoIds.push(...remapped.deletedTodoIds, ...remapped.movedTodoIds);
       const deleted = new Set(remapped.deletedTodoIds);
       reminders = [
@@ -247,7 +245,7 @@ export class UpdateFollowingTodosUseCase {
       responseTodoId = remapped.responseTodoId;
     }
 
-    await todoRepository.updateFollowingOccurrences(target.getId(), pivot, {
+    await todoRepository.updateFollowingOccurrences(target.id.value, pivot, {
       title: input.title,
       categoryId: input.categoryId,
       visibility: input.visibility,
@@ -257,10 +255,10 @@ export class UpdateFollowingTodosUseCase {
     if (details.scheduledLocalTime !== undefined) {
       const rescheduled = await this.#rescheduleRows(target, pivot, details.scheduledLocalTime);
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId));
-      reminders.push(...toReminders(rescheduled, series.getUserId()));
+      reminders.push(...toReminders(rescheduled, series.userId.value));
     }
 
-    const drafts = ruleChanged || split ? materializer.planFirstRun(target, at) : [];
+    const drafts = ruleChanged || split ? materializer.planFirstRun(target, now) : [];
     await seriesRepository.update(series);
     if (split) {
       await seriesRepository.insert(target);
@@ -278,7 +276,7 @@ export class UpdateFollowingTodosUseCase {
     await todoReminder.cancelReminders(uniq(cancelledTodoIds));
     await todoReminder.scheduleReminders(uniqBy(reminders, ({ todoId }) => todoId));
     await this.#dependencies.applyTodoEvents.execute([
-      new TodoOccurrencesChangedEvent(target.getId(), target.getUserId()),
+      new TodoOccurrencesChangedEvent(target.id.value, target.userId.value),
     ]);
 
     return { source: series, target, isSplit: split, responseTodoId };
@@ -291,7 +289,7 @@ export class UpdateFollowingTodosUseCase {
     pivot: string,
   ): Promise<readonly OccurrenceTime[]> {
     segment.applyDetails(changes);
-    await this.#dependencies.todoRepository.updateFollowingOccurrences(segment.getId(), pivot, {
+    await this.#dependencies.todoRepository.updateFollowingOccurrences(segment.id.value, pivot, {
       title: changes.title,
       categoryId: changes.categoryId,
       visibility: changes.visibility,
@@ -313,23 +311,23 @@ export class UpdateFollowingTodosUseCase {
     following: readonly TodoSeries[],
     target: TodoSeries,
     pivot: string,
-    at: Date,
+    now: Temporal.Instant,
   ) {
     const { todoRepository } = this.#dependencies;
     const rows = await todoRepository.findOccurrencesFrom(
-      [source, ...following].map((segment) => segment.getId()),
+      [source, ...following].map((segment) => segment.id.value),
       pivot,
     );
     const lastRowDate = rows.at(-1)?.occurrenceDate ?? pivot;
-    const horizon = occurrenceHorizon(target.getTimezone(), at);
+    const horizon = occurrenceHorizon(target.timezone, now);
     const through = lastRowDate > horizon ? lastRowDate : horizon;
-    const dates = target.getRule().occurrencesBetween(target.getStartDate(), pivot, through, 0);
+    const dates = target.rule.occurrencesBetween(target.startDate, pivot, through, 0);
     const dateSet = new Set(dates);
     const firstDate = dates.at(0);
 
     const keep = pickOccurrencePerDate(
       rows.filter((row) => dateSet.has(row.occurrenceDate)),
-      source.getId(),
+      source.id.value,
     );
     const keptTodoIds = new Set(keep.map((row) => row.todoId));
     const deletedTodoIds = new Set(
@@ -357,8 +355,8 @@ export class UpdateFollowingTodosUseCase {
     const movedTodoIds: number[] = [];
     const reminders: TodoReminderSchedule[] = [];
     if (pivotMoveDate != null) {
-      const localTime = target.getScheduledLocalTime();
-      const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.getTimezone());
+      const localTime = target.scheduledLocalTime;
+      const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.timezone);
       await todoRepository.moveOccurrence(pivotTodoId, {
         occurrenceDate: pivotMoveDate,
         scheduledLocalTime: localTime,
@@ -366,16 +364,16 @@ export class UpdateFollowingTodosUseCase {
       });
       movedTodoIds.push(pivotTodoId);
       if (scheduledTime != null) {
-        reminders.push({ todoId: pivotTodoId, scheduledTime, userId: target.getUserId() });
+        reminders.push({ todoId: pivotTodoId, scheduledTime, userId: target.userId.value });
       }
     }
 
     const reassigned = keep
-      .filter((row) => row.seriesId !== target.getId() && !deletedTodoIds.has(row.todoId))
+      .filter((row) => row.seriesId !== target.id.value && !deletedTodoIds.has(row.todoId))
       .map((row) => row.todoId);
     await todoRepository.reassignOccurrences(
       target === source ? reassigned : [...reassigned, ...movedTodoIds],
-      target.getId(),
+      target.id.value,
     );
     return { deletedTodoIds: [...deletedTodoIds], movedTodoIds, reminders, responseTodoId };
   }
@@ -387,13 +385,13 @@ export class UpdateFollowingTodosUseCase {
     localTime: string | null,
   ): Promise<readonly OccurrenceTime[]> {
     const { todoRepository } = this.#dependencies;
-    const rows = await todoRepository.findOccurrencesFrom([target.getId()], pivot);
+    const rows = await todoRepository.findOccurrencesFrom([target.id.value], pivot);
     const times = rows
       .filter((row) => !row.completed)
       .map((row) => ({
         todoId: row.todoId,
         scheduledLocalTime: localTime,
-        scheduledTime: resolveScheduledInstant(row.startDate, localTime, target.getTimezone()),
+        scheduledTime: resolveScheduledInstant(row.startDate, localTime, target.timezone),
       }));
     await todoRepository.updateOccurrenceTimes(times);
     return times;

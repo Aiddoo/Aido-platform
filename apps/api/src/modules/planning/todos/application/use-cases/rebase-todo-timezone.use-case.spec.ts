@@ -1,5 +1,8 @@
 import { vi } from "vitest";
 
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -273,18 +276,18 @@ describe("시간대 재계산", () => {
     const useCase = setUp([], NEW_YORK);
     fixture.seriesStore.set(
       "series-1",
-      TodoSeries.planCreation({
-        id: "series-1",
-        userId: fixture.userId,
+      TodoSeries.create({
+        id: TodoSeriesId.reconstitute("series-1"),
+        userId: UserId.reconstitute(fixture.userId),
         categoryId: 1,
-        title: "회차",
+        title: TodoTitle.create("회차"),
         visibility: "PUBLIC",
         scheduledLocalTime: "10:00",
         timezone: SEOUL,
-        rule: RepeatRule.from({ frequency: "DAILY", end: { type: "NEVER" } }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
         startDate: "2026-11-10",
         checklistTemplate: [],
-        at: NOW,
+        now: Temporal.Instant.fromEpochMilliseconds(NOW.getTime()),
       }),
     );
     // When

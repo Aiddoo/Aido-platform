@@ -4,12 +4,10 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 import { isUndefined, omitBy } from "es-toolkit";
 
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
-import {
-  TodoSchedule,
-  type TodoScheduleProps,
-} from "#api/modules/planning/shared/domain/todo-schedule.vo";
-import { Todo, type TodoCreationPlan } from "#api/modules/planning/shared/domain/todo.aggregate";
+import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
+import type { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
+import type { TodoScheduleProps } from "#api/modules/planning/shared/domain/todo-schedule.vo";
+import { Todo } from "#api/modules/planning/shared/domain/todo.aggregate";
 import type { TodoSeriesOwnerPort } from "#api/modules/planning/todo-series/application/ports/todo-series-owner.port";
 import type {
   TodoSeriesRef,
@@ -52,9 +50,10 @@ import type {
   MutationLockPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/index";
-import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import type { DomainEvent } from "#api/shared/domain/model/domain-event";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { TodoBuilder } from "#test/builders/index";
 import {
   createTodoResponseFixture,
@@ -74,35 +73,55 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     }
     const record = structuredClone(saved);
     return Todo.reconstitute({
-      id: TodoId.create(record.id),
-      userId: record.userId,
-      title: record.title,
-      categoryId: record.categoryId,
-      sortOrder: record.sortOrder,
-      completed: record.completed,
-      completedAt: record.completedAt,
-      schedule: TodoSchedule.reconstitute(record),
-      visibility: record.visibility,
-      seriesId: record.seriesId,
-      occurrenceDate: record.occurrenceDate,
-      items: record.items.map((item) => TodoItem.reconstitute(item)),
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      ...record,
+      completedAt: record.completedAt == null ? null : instantFromDate(record.completedAt),
+      items: record.items.map((item) => ({
+        ...item,
+        createdAt: instantFromDate(item.createdAt),
+        updatedAt: instantFromDate(item.updatedAt),
+      })),
+      createdAt: instantFromDate(record.createdAt),
+      updatedAt: instantFromDate(record.updatedAt),
     });
   }
 
-  async create(data: TodoCreationPlan): Promise<Todo> {
-    const id = Math.max(0, ...this.records.keys()) + 1;
-    const record = {
-      ...TodoBuilder.create(data.userId).withId(id).build(),
-      ...structuredClone(data),
-    };
-    this.records.set(id, record);
-    const todo = await this.findByIdAndUserId(id, data.userId);
-    if (todo === null) {
-      throw new Error("Created Todo fixture is missing");
+  #sequence = 0;
+  #itemSequence = 0;
+
+  async nextId(): Promise<TodoId> {
+    this.#sequence = Math.max(this.#sequence, ...this.records.keys()) + 1;
+    return TodoId.reconstitute(this.#sequence);
+  }
+
+  async nextIds(count: number): Promise<TodoId[]> {
+    const ids: TodoId[] = [];
+    for (let index = 0; index < count; index += 1) {
+      ids.push(await this.nextId());
     }
-    return todo;
+    return ids;
+  }
+
+  async nextItemId(): Promise<TodoItemId> {
+    this.#itemSequence =
+      Math.max(
+        this.#itemSequence,
+        ...[...this.records.values()].flatMap((record) => record.items.map((item) => item.id)),
+      ) + 1;
+    return TodoItemId.reconstitute(this.#itemSequence);
+  }
+
+  async insert(todo: Todo): Promise<void> {
+    const primitives = todo.toPrimitives();
+    this.records.set(primitives.id, {
+      ...TodoBuilder.create(primitives.userId).withId(primitives.id).build(),
+      ...structuredClone({
+        ...primitives,
+        completedAt: primitives.completedAt == null ? null : instantToDate(primitives.completedAt),
+        items: [],
+        createdAt: instantToDate(primitives.createdAt),
+        updatedAt: instantToDate(primitives.updatedAt),
+      }),
+    });
   }
 
   async insertOccurrences(
@@ -121,9 +140,13 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       if (exists) {
         continue;
       }
-      const todo = await this.create(plan);
-      const id = todo.getId().getValue();
-      Object.assign(this.#record(id), { seriesId, occurrenceDate });
+      const id = plan.id.value;
+      this.records.set(id, {
+        ...TodoBuilder.create(plan.userId).withId(id).build(),
+        ...structuredClone({ ...plan, id, createdAt: instantToDate(plan.createdAt) }),
+        seriesId,
+        occurrenceDate,
+      });
       await this.createInlineItems(id, checklist);
       created.push({ todoId: id, scheduledTime: plan.scheduledTime });
     }
@@ -257,20 +280,33 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
   }
   async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
-      await this.createItem(todoId, { ...item, sortOrder });
+      const id = (await this.nextItemId()).value;
+      this.#record(todoId).items.push({
+        id,
+        ...item,
+        sortOrder,
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     }
   }
   async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
     Object.assign(this.#record(id), { completed, completedAt: structuredClone(completedAt) });
   }
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
+    const { completedAt, ...values } = patch;
     Object.assign(
       this.#record(id),
       structuredClone(
         Object.fromEntries(
-          Object.entries(patch).filter(([_fieldName, value]) => value !== undefined),
+          Object.entries(values).filter(([_fieldName, value]) => value !== undefined),
         ),
       ),
+      // nullish-strict: null은 완료 시각 지우기다
+      completedAt === undefined
+        ? {}
+        : { completedAt: completedAt == null ? null : instantToDate(completedAt) },
     );
   }
   async updateTitle(id: number, title: string): Promise<void> {
@@ -310,7 +346,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
   async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
+        series.userId.value === userId && series.categoryId === categoryId && series.isActive,
     ).length;
     return (
       activeSeries +
@@ -331,18 +367,22 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
         .map((record) => record.sortOrder),
     );
   }
-  async createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void> {
-    const id =
-      Math.max(
-        0,
-        ...[...this.records.values()].flatMap((record) => record.items.map((item) => item.id)),
-      ) + 1;
+  async seedItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void> {
     this.#record(todoId).items.push({
-      id,
+      id: (await this.nextItemId()).value,
       ...data,
       completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
+    });
+  }
+
+  async insertItem(todoId: number, item: TodoItem): Promise<void> {
+    const primitives = item.toPrimitives();
+    this.#record(todoId).items.push({
+      ...primitives,
+      createdAt: instantToDate(primitives.createdAt),
+      updatedAt: instantToDate(primitives.updatedAt),
     });
   }
   async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
@@ -423,7 +463,7 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
   async updateTimezoneByUserId(userId: string, timezone: string): Promise<number> {
     const owned = [...this.store.values()].filter(
-      (series) => series.getUserId() === userId && series.getTimezone() !== timezone,
+      (series) => series.userId.value === userId && series.timezone !== timezone,
     );
     for (const series of owned) {
       series.applyDetails({ timezone });
@@ -432,33 +472,34 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   }
   async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
     const series = this.store.get(id);
-    return series === undefined || series.getUserId() !== userId ? null : this.#copy(series);
+    return series === undefined || series.userId.value !== userId ? null : this.#copy(series);
   }
   async lockForUpdate(id: string): Promise<TodoSeries | null> {
     const series = this.store.get(id);
     return series === undefined ? null : this.#copy(series);
   }
   async insert(series: TodoSeries): Promise<void> {
-    this.store.set(series.getId(), this.#copy(series));
+    this.store.set(series.id.value, this.#copy(series));
   }
   async update(series: TodoSeries): Promise<void> {
-    this.store.set(series.getId(), this.#copy(series));
+    this.store.set(series.id.value, this.#copy(series));
   }
   async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
     return [...this.store.values()]
       .filter(
-        (series) => series.getUserId() === userId && series.getOriginSeriesId() === originSeriesId,
+        (series) =>
+          series.userId.value === userId && series.originSeriesId.value === originSeriesId,
       )
-      .map((series) => series.getId());
+      .map((series) => series.id.value);
   }
   async lockFollowingSegments(series: TodoSeries): Promise<readonly TodoSeries[]> {
     return [...this.store.values()]
       .filter(
         (segment) =>
-          segment.getUserId() === series.getUserId() &&
-          segment.getOriginSeriesId() === series.getOriginSeriesId() &&
-          segment.getStartDate() >= series.getStartDate() &&
-          segment.getId() !== series.getId(),
+          segment.userId.value === series.userId.value &&
+          segment.originSeriesId.value === series.originSeriesId.value &&
+          segment.startDate >= series.startDate &&
+          segment.id.value !== series.id.value,
       )
       .map((segment) => this.#copy(segment));
   }
@@ -469,22 +510,22 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   }
   async countActiveByUserId(userId: string): Promise<number> {
     return [...this.store.values()].filter(
-      (series) => series.getUserId() === userId && series.isActive(),
+      (series) => series.userId.value === userId && series.isActive,
     ).length;
   }
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     return [...this.store.values()]
       .filter((series) => {
-        const next = series.getNextOccurrenceDate();
+        const next = series.nextOccurrenceDate;
         return (
           next !== null &&
           next <= query.through &&
-          (query.afterId === null || series.getId() > query.afterId)
+          (query.afterId === null || series.id.value > query.afterId)
         );
       })
       .map((series) => ({
-        id: series.getId(),
-        userId: series.getUserId(),
+        id: series.id.value,
+        userId: series.userId.value,
       }))
       .sort((left, right) => left.id.localeCompare(right.id))
       .slice(0, query.limit);
@@ -492,13 +533,13 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
     return [...this.store.values()]
       .filter((series) => {
-        const next = series.getNextOccurrenceDate();
-        return series.getUserId() === userId && next !== null && next <= through;
+        const next = series.nextOccurrenceDate;
+        return series.userId.value === userId && next !== null && next <= through;
       })
-      .map((series) => series.getId());
+      .map((series) => series.id.value);
   }
   #copy(series: TodoSeries): TodoSeries {
-    return TodoSeries.reconstitute({ ...series.toPersistence() });
+    return TodoSeries.reconstitute(series.toPrimitives());
   }
 }
 
@@ -560,7 +601,7 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
+        series.userId.value === userId && series.categoryId === categoryId && series.isActive,
     ).length;
     return (
       activeSeries +

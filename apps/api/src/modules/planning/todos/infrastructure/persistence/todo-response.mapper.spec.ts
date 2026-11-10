@@ -13,7 +13,7 @@ import { TodoBuilder } from "#test/builders/index";
 
 import type { RepeatRuleRow } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
 import { TodoMapper } from "./todo-response.mapper.js";
-import type { TodoItemData } from "./todo-row.mapper.js";
+import type { TodoItemRow } from "./todo-row.mapper.js";
 
 describe("TodoMapper — 할 일 매퍼", () => {
   beforeEach(() => {
@@ -171,7 +171,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 
       it("items가 있으면 올바르게 매핑하고 itemStats를 계산한다", () => {
         // Given - 하위 항목이 포함된 Todo 준비
-        const items: TodoItemData[] = [
+        const items: TodoItemRow[] = [
           {
             id: 1,
             title: "하위 항목 1",
@@ -217,7 +217,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 
       it("일부 완료된 items의 itemStats.completed가 정확하다", () => {
         // Given - 3개 중 1개만 완료된 하위 항목 준비
-        const items: TodoItemData[] = [
+        const items: TodoItemRow[] = [
           {
             id: 1,
             title: "항목 1",
@@ -254,7 +254,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 
       it("전부 완료된 items의 itemStats가 정확하다", () => {
         // Given - 모든 하위 항목이 완료된 Todo 준비
-        const items: TodoItemData[] = [
+        const items: TodoItemRow[] = [
           {
             id: 1,
             title: "항목 1",

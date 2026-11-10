@@ -140,6 +140,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(AddTodoItemUseCase),
   }),
   provideUseCase(ChangeTodoCategoryUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -181,6 +182,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(SetTodoCompletedUseCase),
   }),
   provideUseCase(UpdateTodoItemUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -188,6 +190,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(UpdateTodoItemUseCase),
   }),
   provideUseCase(UpdateTodoScheduleUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -198,6 +201,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(UpdateTodoScheduleUseCase),
   }),
   provideUseCase(UpdateTodoTitleUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -207,6 +211,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(UpdateTodoTitleUseCase),
   }),
   provideUseCase(UpdateTodoVisibilityUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,

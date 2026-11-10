@@ -1,128 +1,100 @@
-/**
- * TodoItem 자식 엔티티 단위 테스트
- *
- * GWT 패턴 — 제목 불변식(TodoTitle 공유)·완료 전이·저장 스냅샷 검증
- */
+import { createTodoItemFixture, TODO_FIXTURE_NOW } from "#test/fixtures/planning/todo.fixture";
 
-import { ErrorCode } from "@aido/api/errors";
+import { TodoItemId } from "./todo-item-id.vo.js";
+import { TodoItem } from "./todo-item.entity.js";
+import { TodoTitle } from "./todo-title.vo.js";
 
-import { DomainException } from "#api/shared/domain/index";
-
-import { TodoItem, type TodoItemProps } from "./todo-item.entity.js";
-
-function buildProps(overrides: Partial<TodoItemProps> = {}): TodoItemProps {
-  return {
-    id: 10,
-    title: "하위 항목",
-    completed: false,
-    sortOrder: 0,
-    createdAt: new Date("2026-02-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-    ...overrides,
-  };
-}
+const LATER = TODO_FIXTURE_NOW.add({ minutes: 1 });
 
 describe("TodoItem — 하위 항목 자식 엔티티", () => {
-  it("복원 입력 변경은 엔티티 제목·완료 상태를 변경하지 않는다", () => {
-    // Given
-    const props = buildProps();
-    const item = TodoItem.reconstitute(props);
+  it("새 항목은 미완료이고 생성 시각을 수정 시각으로도 쓴다", () => {
     // When
-    props.title = "";
-    props.completed = true;
+    const item = TodoItem.create({
+      id: TodoItemId.reconstitute(10),
+      title: TodoTitle.create("우유 사기"),
+      sortOrder: 2,
+      now: TODO_FIXTURE_NOW,
+    });
+
     // Then
-    expect(item.getTitle()).toBe("하위 항목");
-    expect(item.isCompleted()).toBe(false);
+    expect(item.toPrimitives()).toEqual(
+      createTodoItemFixture({ id: 10, title: "우유 사기", sortOrder: 2 }),
+    );
   });
 
-  describe("reconstitute", () => {
-    it("DB 행 프로퍼티를 그대로 복원한다", () => {
-      // Given & When
-      const item = TodoItem.reconstitute(buildProps({ sortOrder: 3 }));
+  it("저장값을 그대로 복원하고 다시 꺼내면 같은 값이다", () => {
+    // Given
+    const primitives = createTodoItemFixture({ sortOrder: 3, completed: true });
 
-      // Then
-      expect(item.getId()).toBe(10);
-      expect(item.getTitle()).toBe("하위 항목");
-      expect(item.isCompleted()).toBe(false);
-      expect(item.getSortOrder()).toBe(3);
-    });
+    // When
+    const item = TodoItem.reconstitute(primitives);
+
+    // Then
+    expect(item.toPrimitives()).toEqual(primitives);
   });
 
   describe("rename", () => {
-    it("제목을 변경한다", () => {
+    it("제목을 바꾸면 true이고 수정 시각을 옮긴다", () => {
       // Given
-      const item = TodoItem.reconstitute(buildProps());
+      const item = TodoItem.reconstitute(createTodoItemFixture());
 
       // When
-      item.rename("새 제목");
+      const changed = item.rename(TodoTitle.create("새 제목"), LATER);
 
       // Then
-      expect(item.getTitle()).toBe("새 제목");
+      expect(changed).toBe(true);
+      expect(item.title.value).toBe("새 제목");
+      expect(item.toPrimitives().updatedAt).toEqual(LATER);
     });
 
-    it("제목이 201자면 DomainException(SYS_0002)을 던지고 상태를 바꾸지 않는다 (TodoTitle 불변식)", () => {
+    it("같은 제목이면 false이고 수정 시각을 그대로 둔다", () => {
       // Given
-      const item = TodoItem.reconstitute(buildProps({ title: "이전 제목" }));
-      const rename = () => item.rename("가".repeat(201));
+      const item = TodoItem.reconstitute(createTodoItemFixture({ title: "우유 사기" }));
 
-      // When & Then
-      expect(rename).toThrow(DomainException);
-      expect(rename).toThrow("제목은 1~200자여야 합니다.");
-      try {
-        rename();
-      } catch (error) {
-        if (error instanceof DomainException) {
-          expect(error.errorCode).toBe(ErrorCode.SYS_0002);
-        }
-      }
-      expect(item.getTitle()).toBe("이전 제목");
-    });
+      // When
+      const changed = item.rename(TodoTitle.create("우유 사기"), LATER);
 
-    it("빈 제목이면 DomainException(SYS_0002)을 던진다", () => {
-      // Given
-      const item = TodoItem.reconstitute(buildProps());
-
-      // When & Then
-      expect(() => item.rename("")).toThrow(DomainException);
+      // Then
+      expect(changed).toBe(false);
+      expect(item.toPrimitives().updatedAt).toEqual(TODO_FIXTURE_NOW);
     });
   });
 
-  describe("setCompleted", () => {
-    it("완료 상태를 설정한다", () => {
+  describe("changeCompleted", () => {
+    it("완료로 바꾸면 true다", () => {
       // Given
-      const item = TodoItem.reconstitute(buildProps({ completed: false }));
+      const item = TodoItem.reconstitute(createTodoItemFixture({ completed: false }));
 
       // When
-      item.setCompleted(true);
+      const changed = item.changeCompleted(true, LATER);
 
       // Then
-      expect(item.isCompleted()).toBe(true);
+      expect(changed).toBe(true);
+      expect(item.completed).toBe(true);
     });
 
     it("미완료로 되돌릴 수 있다", () => {
       // Given
-      const item = TodoItem.reconstitute(buildProps({ completed: true }));
+      const item = TodoItem.reconstitute(createTodoItemFixture({ completed: true }));
 
       // When
-      item.setCompleted(false);
+      const changed = item.changeCompleted(false, LATER);
 
       // Then
-      expect(item.isCompleted()).toBe(false);
+      expect(changed).toBe(true);
+      expect(item.completed).toBe(false);
     });
-  });
 
-  describe("toPersistence", () => {
-    it("가변 필드(title, completed)만 담은 저장용 스냅샷을 반환한다", () => {
+    it("같은 완료 상태면 false다", () => {
       // Given
-      const item = TodoItem.reconstitute(buildProps());
-      item.rename("수정된 항목");
-      item.setCompleted(true);
+      const item = TodoItem.reconstitute(createTodoItemFixture({ completed: true }));
 
       // When
-      const snapshot = item.toPersistence();
+      const changed = item.changeCompleted(true, LATER);
 
-      // Then - id/sortOrder/타임스탬프는 미포함
-      expect(snapshot).toEqual({ title: "수정된 항목", completed: true });
+      // Then
+      expect(changed).toBe(false);
+      expect(item.toPrimitives().updatedAt).toEqual(TODO_FIXTURE_NOW);
     });
   });
 });

@@ -10,12 +10,14 @@ import type {
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
 import { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
@@ -30,6 +32,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
@@ -176,18 +179,18 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     } = {},
   ) {
     const id = overrides.id ?? createEntityId();
-    const series = TodoSeries.planCreation({
-      id,
-      userId: overrides.owner?.userId ?? userId,
+    const series = TodoSeries.create({
+      id: TodoSeriesId.reconstitute(id),
+      userId: UserId.reconstitute(overrides.owner?.userId ?? userId),
       categoryId: overrides.owner?.categoryId ?? categoryId,
-      title: "매일 반복",
+      title: TodoTitle.create("매일 반복"),
       visibility: "PUBLIC",
       scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       timezone: overrides.timezone ?? "UTC",
-      rule: overrides.rule ?? RepeatRule.daily({ type: "NEVER" }),
+      rule: overrides.rule ?? RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
       startDate: overrides.startDate ?? "2026-03-01",
       checklistTemplate: [{ title: "항목" }],
-      at: LAST_MOVED_AT,
+      now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
     });
     await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
     await client
@@ -350,10 +353,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     it("자리 비운 사이 끝난 규칙은 회차도 새 규칙도 만들지 않고 진행 중에서 빠진다", async () => {
       // Given
       const untilId = await seedStaleSeries({
-        rule: RepeatRule.daily({ type: "UNTIL", date: "2026-10-01" }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "UNTIL", date: "2026-10-01" } }),
       });
       const countId = await seedStaleSeries({
-        rule: RepeatRule.daily({ type: "COUNT", count: 100 }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 100 } }),
         nextOccurrenceDate: "2026-05-20",
       });
       const before = await client.$count(todoSeries);

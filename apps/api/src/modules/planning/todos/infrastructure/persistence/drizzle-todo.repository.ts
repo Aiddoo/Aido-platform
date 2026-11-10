@@ -10,11 +10,15 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
-import { nextSequenceValues } from "#api/platform/database/sequence";
+import { nextSequenceValue, nextSequenceValues } from "#api/platform/database/sequence";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { dateKeyOf, utcMidnightOf } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
+import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
-import type { Todo, TodoCreationPlan } from "../../../shared/domain/todo.aggregate.js";
+import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type {
   CreatedOccurrence,
   OccurrencePatch,
@@ -28,7 +32,7 @@ import type {
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "../../application/ports/todo.repository.port.js";
-import { toTodo } from "./todo-row.mapper.js";
+import { toTodo, toTodoItemRow, toTodoRow } from "./todo-row.mapper.js";
 
 type TodoPatch = Partial<typeof todo.$inferInsert>;
 
@@ -42,6 +46,22 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
 
   get #db() {
     return this.#txHost.tx;
+  }
+
+  async nextId(): Promise<TodoId> {
+    return TodoId.reconstitute(await nextSequenceValue(this.#db, todo.id));
+  }
+
+  async nextIds(count: number): Promise<TodoId[]> {
+    if (count === 0) {
+      return [];
+    }
+    const ids = await nextSequenceValues(this.#db, todo.id, count);
+    return ids.map((id) => TodoId.reconstitute(id));
+  }
+
+  async nextItemId(): Promise<TodoItemId> {
+    return TodoItemId.reconstitute(await nextSequenceValue(this.#db, todoItem.id));
   }
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
@@ -64,9 +84,8 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return row == null ? null : toTodo(row);
   }
 
-  async create(data: TodoCreationPlan): Promise<Todo> {
-    const [row] = await this.#db.insert(todo).values(data).returning();
-    return toTodo({ ...requireRecord(row), items: [] });
+  async insert(entity: Todo): Promise<void> {
+    await this.#db.insert(todo).values(toTodoRow(entity));
   }
 
   async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
@@ -86,16 +105,16 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     if (plans.length === 0) {
       return [];
     }
-    // 회차 id를 한 문장으로 먼저 받는다. 이미 있는 날짜는 건너뛰어 그 id는 쓰이지 않고 비어도 된다
-    const ids = await nextSequenceValues(this.#db, todo.id, plans.length);
+    // 이미 있는 날짜는 건너뛰어 그 id는 쓰이지 않고 비어도 된다
     const rows = await this.#db
       .insert(todo)
       .values(
-        plans.map((plan, index) => ({
+        plans.map((plan) => ({
           ...plan,
-          id: ids[index],
+          id: plan.id.value,
           seriesId,
           occurrenceDate: utcMidnightOf(plan.occurrenceDate),
+          createdAt: instantToDate(plan.createdAt),
         })),
       )
       .onConflictDoNothing({
@@ -318,7 +337,14 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
   }
 
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-    await this.#updateTodoRow(id, patch);
+    const { completedAt, ...values } = patch;
+    await this.#updateTodoRow(id, {
+      ...values,
+      // nullish-strict: null은 완료 시각 지우기이고 undefined는 그대로다
+      ...(completedAt === undefined
+        ? {}
+        : { completedAt: completedAt == null ? null : instantToDate(completedAt) }),
+    });
   }
 
   async updateTitle(id: number, title: string): Promise<void> {
@@ -407,8 +433,8 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       );
   }
 
-  async createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void> {
-    await this.#db.insert(todoItem).values({ todoId, ...data });
+  async insertItem(todoId: number, item: TodoItem): Promise<void> {
+    await this.#db.insert(todoItem).values(toTodoItemRow(todoId, item));
   }
 
   async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {

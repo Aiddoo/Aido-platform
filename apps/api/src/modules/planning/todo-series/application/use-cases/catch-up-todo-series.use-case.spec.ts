@@ -1,5 +1,8 @@
 import { vi } from "vitest";
 
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture";
 
@@ -50,19 +53,19 @@ describe("복귀 회차 채우기", () => {
 
   async function seedStale(id: string, nextOccurrenceDate = "2026-08-30") {
     const series = TodoSeries.reconstitute({
-      ...TodoSeries.planCreation({
-        id,
-        userId: fixture.userId,
+      ...TodoSeries.create({
+        id: TodoSeriesId.reconstitute(id),
+        userId: UserId.reconstitute(fixture.userId),
         categoryId: 1,
-        title: "물 마시기",
+        title: TodoTitle.create("물 마시기"),
         visibility: "PUBLIC",
         scheduledLocalTime: null,
         timezone: "UTC",
-        rule: RepeatRule.daily({ type: "NEVER" }),
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
         startDate: "2026-03-01",
         checklistTemplate: [],
-        at: LAST_MOVED_AT,
-      }).toPersistence(),
+        now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
+      }).toPrimitives(),
       nextOccurrenceDate,
     });
     await fixture.todoSeriesRepository.insert(series);

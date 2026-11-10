@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 
-import type { Todo } from "../../../shared/domain/todo.aggregate.js";
+import type { Todo, TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import type { CreatedOccurrence } from "../../../todos/application/ports/todo.repository.port.js";
 import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
@@ -22,15 +22,16 @@ export class PublishTodoCreationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async publishSingle(created: Todo, userId: string): Promise<void> {
+  /** events는 생성 트랜잭션에서 반영한 사실이다. 옛 todo.* 구독을 위해 커밋 뒤 다시 낸다. */
+  async publishSingle(created: Todo, events: readonly TodoEvent[]): Promise<void> {
+    const userId = created.userId.value;
     this.#dependencies.logger.log({
       event: TodoLogEvent.CREATED,
-      todoId: created.getId().getValue(),
+      todoId: created.id.value,
       userId,
     });
     await this.#invalidateCaches(userId);
-    created.markCreated();
-    await this.#dependencies.eventPublisher.publishAll(created.pullDomainEvents());
+    await this.#dependencies.eventPublisher.publishAll(events);
   }
 
   async publishSeriesStarted(
@@ -39,8 +40,8 @@ export class PublishTodoCreationUseCase {
   ): Promise<void> {
     this.#dependencies.logger.log({
       event: TodoSeriesLogEvent.STARTED,
-      seriesId: series.getId(),
-      userId: series.getUserId(),
+      seriesId: series.id.value,
+      userId: series.userId.value,
       createdCount: occurrences.length,
     });
     await this.publishOccurrences(series, occurrences);
@@ -51,10 +52,10 @@ export class PublishTodoCreationUseCase {
     series: TodoSeries,
     occurrences: readonly CreatedOccurrence[],
   ): Promise<void> {
-    const userId = series.getUserId();
+    const userId = series.userId.value;
     await this.#invalidateCaches(userId);
     await this.#dependencies.eventPublisher.publishAll([
-      new TodoOccurrencesCreatedEvent(series.getId(), userId, occurrences.length),
+      new TodoOccurrencesCreatedEvent(series.id.value, userId, occurrences.length),
     ]);
   }
 

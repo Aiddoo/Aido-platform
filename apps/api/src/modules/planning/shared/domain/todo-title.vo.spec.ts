@@ -6,7 +6,7 @@
 
 import { ErrorCode } from "@aido/api/errors";
 
-import { DomainException } from "#api/shared/domain/index";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import { TodoTitle } from "./todo-title.vo.js";
 
@@ -16,7 +16,7 @@ describe("TodoTitle — 제목 값 객체", () => {
     const title = TodoTitle.create("가");
 
     // Then
-    expect(title.getValue()).toBe("가");
+    expect(title.value).toBe("가");
   });
 
   it("200자 제목이면 생성된다 (상한 경계값)", () => {
@@ -24,7 +24,7 @@ describe("TodoTitle — 제목 값 객체", () => {
     const title = TodoTitle.create("가".repeat(200));
 
     // Then
-    expect(title.getValue()).toHaveLength(200);
+    expect(title.value).toHaveLength(200);
   });
 
   it("빈 문자열이면 DomainException(SYS_0002)을 던진다", () => {

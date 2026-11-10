@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -26,6 +27,7 @@ interface UpdateTodoItemDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -47,17 +49,10 @@ export class UpdateTodoItemUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
 
-      const item = todo.updateItem(itemId, data);
-
-      const snapshot = item.toPersistence();
-      const patch: { title?: string; completed?: boolean } = {};
-      if (data.title != null) {
-        patch.title = snapshot.title;
+      if (!todo.updateItem(itemId, data, this.#dependencies.clock.now())) {
+        return;
       }
-      if (data.completed != null) {
-        patch.completed = snapshot.completed;
-      }
-      await this.#dependencies.todoRepository.updateItem(itemId, patch);
+      await this.#dependencies.todoRepository.updateItem(itemId, data);
     });
 
     this.#dependencies.logger.log({

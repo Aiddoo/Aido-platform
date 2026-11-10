@@ -1,13 +1,9 @@
-import { randomUUID } from "node:crypto";
-
-import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
@@ -16,7 +12,8 @@ import type {
   CreatedOccurrence,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
-import { RepeatRule } from "../../domain/repeat-rule.vo.js";
+import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
@@ -25,7 +22,7 @@ import type { PublishTodoCreationUseCase } from "./publish-todo-creation.use-cas
 export interface StartSeriesFromTodoInput {
   readonly todoId: number;
   readonly userId: string;
-  readonly repeat: TodoRepeat;
+  readonly repeat: RepeatSpec;
   readonly timezone: string;
 }
 
@@ -62,7 +59,7 @@ export class StartSeriesFromTodoUseCase {
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
-    if (todo.getSeriesId() != null) {
+    if (todo.seriesId != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "scope" });
     }
     const activeCount = await seriesRepository.countActiveByUserId(userId);
@@ -89,25 +86,24 @@ export class StartSeriesFromTodoUseCase {
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
-    const snapshot = todo.toPersistence();
-    const scheduledLocalTime = todo.getLocalTimeIn(timezone);
-    const at = instantToDate(this.#dependencies.clock.now());
-    const startDate = dateKeyOf(snapshot.startDate);
-    const series = TodoSeries.planCreation({
-      id: randomUUID(),
-      userId,
-      categoryId: snapshot.categoryId,
-      title: snapshot.title,
-      visibility: snapshot.visibility,
+    const scheduledLocalTime = todo.localTimeIn(timezone);
+    const now = this.#dependencies.clock.now();
+    const startDate = dateKeyOf(todo.schedule.startDate);
+    const series = TodoSeries.create({
+      id: TodoSeriesId.generate(),
+      userId: todo.userId,
+      categoryId: todo.categoryId,
+      title: todo.title,
+      visibility: todo.visibility,
       scheduledLocalTime,
       timezone,
-      rule: RepeatRule.from(repeat),
+      rule: RepeatRule.create(repeat),
       startDate,
-      checklistTemplate: todo.getItemTitles(),
-      at,
+      checklistTemplate: todo.items.map((item) => ({ title: item.title.value })),
+      now,
     });
-    series.assertWithinPastLimit(at);
-    const drafts = materializer.planFirstRun(series, at);
+    series.assertWithinPastLimit(now);
+    const drafts = materializer.planFirstRun(series, now);
     const [first, ...following] = drafts;
     if (first == null) {
       throw new ApplicationException(ErrorCode.TODO_0843, { startDate, repeat });
@@ -115,14 +111,14 @@ export class StartSeriesFromTodoUseCase {
     await seriesRepository.insert(series);
     // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다.
     const firstTime = resolveScheduledInstant(first.occurrenceDate, scheduledLocalTime, timezone);
-    await todoRepository.attachToSeries(todoId, series.getId(), {
+    await todoRepository.attachToSeries(todoId, series.id.value, {
       occurrenceDate: first.occurrenceDate,
       scheduledLocalTime,
       scheduledTime: firstTime,
     });
     // 첫 회차 날짜가 옮겨졌을 수 있어 옛 시각의 예약을 지우고 새 시각으로 다시 잡는다.
     await todoReminder.cancelReminders([todoId]);
-    if (firstTime != null && !snapshot.completed) {
+    if (firstTime != null && !todo.completed) {
       await todoReminder.scheduleReminders([{ todoId, scheduledTime: firstTime, userId }]);
     }
     const occurrences = await materializer.persist(series, following);

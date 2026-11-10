@@ -134,6 +134,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       todoReadRepository: new DrizzleTodoReadRepository(txHost),
       unitOfWork: uow,
       mutationLock,
+      clock: new DateClock(),
       timezoneResolver: new ResolveTodoTimezoneUseCase({ ownerTimezone }),
       todoCache,
       applyTodoEvents: new ApplyTodoEventsUseCase({

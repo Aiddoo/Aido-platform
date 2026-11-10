@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -10,6 +11,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
+import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
@@ -28,6 +30,7 @@ interface UpdateTodoTitleDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLoggerPort;
@@ -50,8 +53,10 @@ export class UpdateTodoTitleUseCase {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
-      todo.rename(title);
-      await this.#dependencies.todoRepository.updateTitle(id, todo.toPersistence().title);
+      if (!todo.rename(TodoTitle.create(title), this.#dependencies.clock.now())) {
+        return [];
+      }
+      await this.#dependencies.todoRepository.updateTitle(id, todo.title.value);
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
       return events;

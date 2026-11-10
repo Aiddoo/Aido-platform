@@ -11,11 +11,13 @@ import type {
   EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
 import type { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
@@ -30,6 +32,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -90,7 +93,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const effects = mock<Pick<PublishTodoCreationUseCase, "publishOccurrences">>();
     effects.publishOccurrences.mockImplementation(async (series, occurrences) => {
       published.push({
-        seriesId: series.getId(),
+        seriesId: series.id.value,
         todoIds: occurrences.map((occurrence) => occurrence.todoId),
       });
     });
@@ -126,18 +129,18 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     id: string,
     overrides: { userId?: string; categoryId?: number; startDate?: string } = {},
   ) {
-    const series = TodoSeries.planCreation({
-      id,
-      userId: overrides.userId ?? userId,
+    const series = TodoSeries.create({
+      id: TodoSeriesId.reconstitute(id),
+      userId: UserId.reconstitute(overrides.userId ?? userId),
       categoryId: overrides.categoryId ?? categoryId,
-      title: "매일 반복",
+      title: TodoTitle.create("매일 반복"),
       visibility: "PUBLIC",
       scheduledLocalTime: "09:00",
       timezone: "UTC",
-      rule: RepeatRule.daily({ type: "NEVER" }),
+      rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
       startDate: overrides.startDate ?? "2026-11-05",
       checklistTemplate: [{ title: "항목" }],
-      at: AT,
+      now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
     await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
     return series;

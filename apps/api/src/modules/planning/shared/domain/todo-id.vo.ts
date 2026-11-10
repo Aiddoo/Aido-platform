@@ -1,17 +1,7 @@
-import { ErrorCode } from "@aido/api/errors";
+import { EntityId } from "#api/shared/domain/model/entity-id";
 
-import { DomainException, EntityId } from "#api/shared/domain/index";
-
-/**
- * Todo 식별자 VO
- *
- * autoincrement 정수 PK를 감쌉니다. 양의 정수만 허용합니다.
- */
 export class TodoId extends EntityId<number> {
-  static create(value: number): TodoId {
-    if (!Number.isInteger(value) || value <= 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { value }, "유효하지 않은 Todo ID입니다.");
-    }
+  static reconstitute(value: number): TodoId {
     return new TodoId(value);
   }
 }
