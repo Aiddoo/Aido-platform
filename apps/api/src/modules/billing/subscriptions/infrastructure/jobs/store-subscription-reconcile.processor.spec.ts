@@ -7,7 +7,7 @@ import type {
   OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 
-import { BillingLogEvent } from "../../application/subscriptions.log-events.js";
+import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import type { ReconcileStoreSubscriptionsResult } from "../../application/use-cases/reconcile-store-subscriptions.use-case.js";
 import { StoreSubscriptionReconcileProcessor } from "./store-subscription-reconcile.processor.js";
 import {
@@ -55,7 +55,7 @@ describe("StoreSubscriptionReconcileProcessor — 대조 잡 요약 로그", () 
 
     // Then
     expect(warn).toHaveBeenCalledExactlyOnceWith({
-      event: BillingLogEvent.RECONCILE_COMPLETED,
+      event: SubscriptionLogEvent.RECONCILE_COMPLETED,
       jobCount: 3,
       correctedUserCount: 1,
       correctedChainCount: 2,

@@ -4,7 +4,10 @@ import type {
   BillingNoticeSourcePort,
   FindDueBillingNoticesParams,
 } from "../ports/billing-notice.port.js";
-import { BILLING_NOTICE_SWEEP, BillingNoticeSweeper } from "./sweep-billing-notices.use-case.js";
+import {
+  BILLING_NOTICE_SWEEP,
+  SweepBillingNoticesUseCase,
+} from "./sweep-billing-notices.use-case.js";
 
 const NOW = new Date("2028-02-26T13:00:00.000Z");
 
@@ -50,7 +53,7 @@ class StubNoticeSource implements BillingNoticeSourcePort<TestNotice> {
 function createSweeper(candidates: readonly TestNotice[], quietUserIds = new Set<string>()) {
   const source = new StubNoticeSource(candidates);
   const sent: TestNotice[] = [];
-  const sweeper = new BillingNoticeSweeper({
+  const sweeper = new SweepBillingNoticesUseCase({
     quietHoursReader: {
       findUsersInQuietHours: async (userIds) =>
         new Set(userIds.filter((userId) => quietUserIds.has(userId))),
@@ -73,7 +76,7 @@ function createSweeper(candidates: readonly TestNotice[], quietUserIds = new Set
   return { sweep, source, sent, quietUserIds };
 }
 
-describe("BillingNoticeSweeper — 며칠 전 결제·보상 안내", () => {
+describe("SweepBillingNoticesUseCase — 며칠 전 결제·보상 안내", () => {
   it("두 sweep이 같은 후보를 함께 읽어도 표시를 먼저 얻은 실행만 보낸다", async () => {
     // Given
     const { sweep, sent } = createSweeper([notice(1)]);

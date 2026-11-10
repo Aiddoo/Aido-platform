@@ -1,27 +1,27 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS } from "@aido/api/vocabulary";
 
-import { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
 import type {
   PremiumGrantEndingNotice,
   PremiumGrantEndingNoticeSourcePort,
 } from "../ports/premium-grant-ending-notice.repository.port.js";
 import type { PremiumGrantNotifierPort } from "../ports/premium-grant-notifier.port.js";
+import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type {
   BillingNoticeSettings,
   BillingNoticeSweepInput,
   BillingNoticeSweepResult,
-  BillingNoticeSweeper,
+  SweepBillingNoticesUseCase,
 } from "./sweep-billing-notices.use-case.js";
 
 export const PREMIUM_GRANT_ENDING_NOTICE = {
   noticeDays: PREMIUM_GRANT_ENDING_NOTICE_DAYS,
   // 보상은 받은 날 시작하므로 하루짜리 보상도 끝나기 전에 알린다
   isNoticeable: () => true,
-  logEvent: BillingLogEvent.PREMIUM_GRANT_ENDING_NOTIFIED,
+  logEvent: PremiumGrantLogEvent.PREMIUM_GRANT_ENDING_NOTIFIED,
 } as const satisfies BillingNoticeSettings<PremiumGrantEndingNotice>;
 
 interface NotifyEndingPremiumGrantsDependencies {
-  readonly sweeper: Pick<BillingNoticeSweeper, "sweep">;
+  readonly sweeper: Pick<SweepBillingNoticesUseCase, "sweep">;
   readonly source: PremiumGrantEndingNoticeSourcePort;
   readonly notifier: PremiumGrantNotifierPort;
 }
@@ -31,7 +31,7 @@ interface NotifyEndingPremiumGrantsDependencies {
  * 이어지면 고르지 않는다. 거래 알림이라 광고성 동의는 보지 않고, 푸시 설정이 꺼져 발송 단계가 거르는
  * 사용자도 표시해 두어 매 실행 다시 고르지 않는다.
  */
-export class NotifyEndingPremiumGrants {
+export class NotifyEndingPremiumGrantsUseCase {
   readonly #dependencies: NotifyEndingPremiumGrantsDependencies;
 
   constructor(dependencies: NotifyEndingPremiumGrantsDependencies) {

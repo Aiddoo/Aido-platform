@@ -1,6 +1,7 @@
 import {
   type PremiumAccess,
-  PremiumAccessPolicy,
+  resolvePremiumAccess,
+  planPremiumReconciliation,
   type PremiumEntitlements,
   applyStoreEventChain,
   type StoreEventChainState,
@@ -53,7 +54,7 @@ interface PremiumAccessProjectorDependencies {
  * 사용자 한 명의 보상 기간을 정리하고 User의 구독 projection을 다시 계산한다.
  * 쓰기 경로는 호출자가 UoW와 사용자 잠금을 소유한다.
  */
-export class PremiumAccessProjector {
+export class ProjectPremiumAccessUseCase {
   readonly #dependencies: PremiumAccessProjectorDependencies;
 
   constructor(dependencies: PremiumAccessProjectorDependencies) {
@@ -81,7 +82,7 @@ export class PremiumAccessProjector {
   async project(input: ProjectPremiumAccessInput): Promise<PremiumAccessProjection> {
     const loaded = await this.loadEntitlements(input.userId, input);
 
-    const plan = PremiumAccessPolicy.planReconciliation(loaded.entitlements, input.now);
+    const plan = planPremiumReconciliation(loaded.entitlements, input.now);
     const grantsById = new Map(loaded.premiumGrants.map((grant) => [grant.id, grant]));
     const changed = new Set<PremiumGrant>();
     const remainders: PremiumGrantCreationPlan[] = [];
@@ -121,7 +122,7 @@ export class PremiumAccessProjector {
     // 기간을 시작·종료·분할한 뒤의 상태로 다시 판단한다. 새로 쌓은 기간은 저장소에서 다시 읽는다
     const { entitlements } =
       remainders.length === 0 ? loaded : await this.loadEntitlements(input.userId, input);
-    const access = PremiumAccessPolicy.resolve(entitlements, input.now);
+    const access = resolvePremiumAccess(entitlements, input.now);
     const userState: UpdateUserSubscriptionStatusData =
       access.endsAt == null
         ? (input.fallback ?? { subscriptionStatus: "FREE", subscriptionExpiresAt: null })

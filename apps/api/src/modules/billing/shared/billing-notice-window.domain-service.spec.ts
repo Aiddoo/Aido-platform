@@ -1,4 +1,4 @@
-import { BillingNoticeWindowPolicy } from "./billing-notice-window.domain-service.js";
+import { billingNoticeUntil, isBillingNoticeable } from "./billing-notice-window.domain-service.js";
 
 describe("BillingNoticeWindowPolicy", () => {
   it("안내 대상은 지금부터 정확히 며칠 뒤까지 끝나는 기간이다", () => {
@@ -6,7 +6,7 @@ describe("BillingNoticeWindowPolicy", () => {
     const now = new Date("2028-02-27T03:00:00.000Z");
 
     // When
-    const until = BillingNoticeWindowPolicy.noticeUntil(now, 3);
+    const until = billingNoticeUntil(now, 3);
 
     // Then
     expect(until).toEqual(new Date("2028-03-01T03:00:00.000Z"));
@@ -25,11 +25,7 @@ describe("BillingNoticeWindowPolicy", () => {
       const days = 3;
 
       // When
-      const noticeable = BillingNoticeWindowPolicy.isNoticeable(
-        new Date(startedAt),
-        new Date(endsAt),
-        days,
-      );
+      const noticeable = isBillingNoticeable(new Date(startedAt), new Date(endsAt), days);
 
       // Then
       expect(noticeable).toBe(expected);

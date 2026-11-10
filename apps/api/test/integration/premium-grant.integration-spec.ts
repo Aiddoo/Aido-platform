@@ -6,9 +6,9 @@ import {
   PREMIUM_GRANT_ENDING_NOTICE_SOURCE,
   type PremiumGrantEndingNoticeSourcePort,
 } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
-import { NotifyEndingPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
-import { RevokePremiumGrant } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
-import { SweepPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
+import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
@@ -176,8 +176,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("끝나기 24시간 전 마지막 기간만 한 번 안내하고 끝나면 sweep이 FREE로 돌린다", async () => {
     // Given
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:ending", durationDays: 1 });
-    const notify = context.module.get(NotifyEndingPremiumGrants);
-    const sweep = context.module.get(SweepPremiumGrants);
+    const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
     const first = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
@@ -209,7 +209,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("두 sweep이 동시에 돌아도 보상 종료 알림은 하나다", async () => {
     // Given
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:race", durationDays: 1 });
-    const notify = context.module.get(NotifyEndingPremiumGrants);
+    const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
     const at = new Date("2028-02-26T06:00:00.000Z");
 
     // When
@@ -234,7 +234,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 1,
     });
     await givenStoreSubscription();
-    const notify = context.module.get(NotifyEndingPremiumGrants);
+    const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
 
     // When
     const result = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
@@ -279,7 +279,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       sourceKey: "invite:covered",
       durationDays: 7,
     });
-    const sweep = context.module.get(SweepPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
     const swept = await sweep.execute({ now: new Date("2028-03-11T04:00:00.000Z") });
@@ -393,7 +393,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     vi.setSystemTime(grantEndsAt);
-    const swept = await context.module.get(SweepPremiumGrants).execute({ now: grantEndsAt });
+    const swept = await context.module.get(SweepPremiumGrantsUseCase).execute({ now: grantEndsAt });
 
     // Then
     expect(swept).toMatchObject({ userCount: 1, failedUserCount: 0 });
@@ -436,7 +436,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     const grantWouldEndAt = new Date("2028-03-04T04:00:00.000Z");
     vi.setSystemTime(grantWouldEndAt);
-    await context.module.get(SweepPremiumGrants).execute({ now: grantWouldEndAt });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: grantWouldEndAt });
 
     // Then
     expect(await grantsOf(userId)).toEqual([
@@ -483,7 +483,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // Given
     await givenStoreSubscription();
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:grace", durationDays: 7 });
-    const sweep = context.module.get(SweepPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const inGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS - 1);
     const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
 
@@ -607,7 +607,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const purchasedAt = new Date("2028-02-29T15:00:00.000Z");
     vi.setSystemTime(purchasedAt);
     const webhook = context.module.get(RevenueCatWebhookReceiver);
-    const sweep = context.module.get(SweepPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
     await Promise.all([
@@ -646,8 +646,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await webhook.receive({
       body: storeEvent(SubscriptionEventBuilder.cancellation(), "store-cancelled"),
     });
-    const notify = context.module.get(NotifyEndingPremiumGrants);
-    const sweep = context.module.get(SweepPremiumGrants);
+    const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const finalEndsAt = new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS);
 
     // When
@@ -729,7 +729,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:first", durationDays: 7 });
     const afterFirst = new Date("2028-03-05T04:00:00.000Z");
     vi.setSystemTime(afterFirst);
-    await context.module.get(SweepPremiumGrants).execute({ now: afterFirst });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterFirst });
 
     // When
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:second", durationDays: 7 });
@@ -761,7 +761,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
 
     // When
-    const swept = await context.module.get(SweepPremiumGrants).execute({ now: AT });
+    const swept = await context.module.get(SweepPremiumGrantsUseCase).execute({ now: AT });
 
     // Then
     expect(swept).toMatchObject({ userCount: 1, changedGrantCount: 1 });
@@ -778,8 +778,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("ADMIN도 보상 기간을 기록하고 종료 안내를 받지만 role과 무제한 한도는 그대로다", async () => {
     // Given
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
-    const notify = context.module.get(NotifyEndingPremiumGrants);
-    const sweep = context.module.get(SweepPremiumGrants);
+    const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
     const granted = await granter.grant({
@@ -828,7 +828,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await context.module
       .get(RevenueCatWebhookReceiver)
       .receive({ body: storeEvent(builder(), "admin-store") });
-    await context.module.get(SweepPremiumGrants).execute({ now: STORE_EXPIRY });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: STORE_EXPIRY });
 
     // Then
     expect(await roleOf(userId)).toBe("ADMIN");
@@ -866,7 +866,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("만료 웹훅을 잃은 자동 갱신 구독자는 유예 안에서는 그대로 두고 유예가 지나면 sweep이 FREE로 정리한다", async () => {
     // Given
     await givenStoreSubscription();
-    const sweep = context.module.get(SweepPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const inGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS - 1);
     const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
 
@@ -901,7 +901,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     vi.setSystemTime(afterGrace);
 
     // When
-    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
 
     // Then
     expect(await userProjection()).toEqual({
@@ -913,7 +913,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("잘못 준 보상을 취소하면 REVOKED로 남기고 프리미엄을 바로 끝내며 같은 취소는 바꾸지 않는다", async () => {
     // Given
     await granter.grant({ userId, source: "INVITE", sourceKey: "invite:wrong", durationDays: 7 });
-    const revoke = context.module.get(RevokePremiumGrant);
+    const revoke = context.module.get(RevokePremiumGrantUseCase);
 
     // When
     const first = await revoke.execute({ sourceKey: "invite:wrong", now: AT });

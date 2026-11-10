@@ -4,9 +4,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
 import type { Request } from "express";
 
-import { BillingLogEvent } from "#api/modules/billing/subscriptions/application/subscriptions.log-events";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
+
+import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
 
 /**
  * RevenueCat Webhook 서명 검증 가드
@@ -32,17 +33,20 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
 
     if (!webhookSecret) {
       if (this.#config.isProduction) {
-        this.#logger.error({ event: BillingLogEvent.WEBHOOK_SECRET_MISSING, action: "rejected" });
+        this.#logger.error({
+          event: SubscriptionLogEvent.WEBHOOK_SECRET_MISSING,
+          action: "rejected",
+        });
         throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
       }
-      this.#logger.warn({ event: BillingLogEvent.WEBHOOK_SECRET_MISSING, action: "skipped" });
+      this.#logger.warn({ event: SubscriptionLogEvent.WEBHOOK_SECRET_MISSING, action: "skipped" });
       return true;
     }
 
     const authHeader = request.headers.authorization;
     if (!authHeader) {
       this.#logger.warn({
-        event: BillingLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
+        event: SubscriptionLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
         reason: "missing",
       });
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
@@ -61,7 +65,7 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
 
     if (!isValid) {
       this.#logger.warn({
-        event: BillingLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
+        event: SubscriptionLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
         reason: "mismatch",
       });
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);

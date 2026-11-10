@@ -10,7 +10,7 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { SweepPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
@@ -159,7 +159,7 @@ describe("팔로우 리소스 제한 E2E", () => {
         const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
-          await ctx.module.get(SweepPremiumGrants).execute({ now: at });
+          await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: at });
           const { accessToken } = await ctx.helpers.loginUser(email, password);
           const response = await request(ctx.app.getHttpServer())
             .get("/v1/follows/resource-limit")

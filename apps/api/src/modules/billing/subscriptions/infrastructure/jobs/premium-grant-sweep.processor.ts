@@ -5,36 +5,36 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { NotifyEndingPremiumGrants } from "../../../premium-grants/application/use-cases/notify-ending-premium-grants.use-case.js";
-import { SweepPremiumGrants } from "../../../premium-grants/application/use-cases/sweep-premium-grants.use-case.js";
-import { BillingLogEvent } from "../../application/subscriptions.log-events.js";
-import { NotifyEndingTrials } from "../../application/use-cases/notify-ending-trials.use-case.js";
-import { NotifyUpcomingRenewals } from "../../application/use-cases/notify-upcoming-renewals.use-case.js";
+import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
+import { NotifyEndingPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/notify-ending-premium-grants.use-case.js";
+import { SweepPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/sweep-premium-grants.use-case.js";
+import { NotifyEndingTrialsUseCase } from "../../application/use-cases/notify-ending-trials.use-case.js";
+import { NotifyUpcomingRenewalsUseCase } from "../../application/use-cases/notify-upcoming-renewals.use-case.js";
 import {
   PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
   PREMIUM_GRANT_SWEEP_QUEUE,
 } from "./premium-grant-sweep.queue.js";
 
-type SweepStep = Pick<NotifyEndingPremiumGrants, "execute">;
+type SweepStep = Pick<NotifyEndingPremiumGrantsUseCase, "execute">;
 
 @Injectable()
 export class PremiumGrantSweepProcessor implements OnModuleInit {
   readonly #logger = new Logger(PremiumGrantSweepProcessor.name);
 
-  readonly #sweepPremiumGrants: Pick<SweepPremiumGrants, "execute">;
+  readonly #sweepPremiumGrants: Pick<SweepPremiumGrantsUseCase, "execute">;
   readonly #notifyEndingPremiumGrants: SweepStep;
   readonly #notifyEndingTrials: SweepStep;
   readonly #notifyUpcomingRenewals: SweepStep;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(SweepPremiumGrants)
-    sweepPremiumGrants: Pick<SweepPremiumGrants, "execute">,
-    @Inject(NotifyEndingPremiumGrants)
+    @Inject(SweepPremiumGrantsUseCase)
+    sweepPremiumGrants: Pick<SweepPremiumGrantsUseCase, "execute">,
+    @Inject(NotifyEndingPremiumGrantsUseCase)
     notifyEndingPremiumGrants: SweepStep,
-    @Inject(NotifyEndingTrials)
+    @Inject(NotifyEndingTrialsUseCase)
     notifyEndingTrials: SweepStep,
-    @Inject(NotifyUpcomingRenewals)
+    @Inject(NotifyUpcomingRenewalsUseCase)
     notifyUpcomingRenewals: SweepStep,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
@@ -60,7 +60,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
       await this.#sweepPremiumGrants.execute({ now: at });
     } catch (error) {
       this.#logger.error({
-        event: BillingLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
+        event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
         errorType: toErrorType(error),
       });
       throw error;
@@ -79,7 +79,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
         await useCase.execute({ now: at });
       } catch (error) {
         this.#logger.error({
-          event: BillingLogEvent.PREMIUM_GRANT_SWEEP_STEP_FAILED,
+          event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_STEP_FAILED,
           step,
           errorType: toErrorType(error),
         });

@@ -10,7 +10,7 @@ import { isSame } from "#api/shared/domain/date/utils/compare";
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot } from "#api/shared/domain/index";
 
-import { SubscriptionPlanPolicy } from "../../shared/subscription-plan.domain-service.js";
+import { planTypeOfProduct } from "../../shared/subscription-plan.domain-service.js";
 import type { StoreSubscriptionId } from "./store-subscription-id.vo.js";
 import type { SubscriptionProvider } from "./subscriptions.constants.js";
 
@@ -122,12 +122,12 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
 
   /** 지금 기간의 요금제. 모르는 상품이면 null이다. */
   planType(): SubscriptionPlanType | null {
-    return SubscriptionPlanPolicy.planTypeOf(this.props.productId);
+    return planTypeOfProduct(this.props.productId);
   }
 
   /** 다음 갱신에 결제될 요금제. 예약한 상품 변경이 있으면 그 상품이다. */
   renewingPlanType(): SubscriptionPlanType | null {
-    return SubscriptionPlanPolicy.planTypeOf(this.props.nextProductId ?? this.props.productId);
+    return planTypeOfProduct(this.props.nextProductId ?? this.props.productId);
   }
 
   isTrial(): boolean {

@@ -3,7 +3,7 @@ import { mock } from "vitest-mock-extended";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { PREMIUM_GRANT_SWEEP, SweepPremiumGrants } from "./sweep-premium-grants.use-case.js";
+import { PREMIUM_GRANT_SWEEP, SweepPremiumGrantsUseCase } from "./sweep-premium-grants.use-case.js";
 
 const NOW = new Date("2028-03-04T00:00:00.000Z");
 
@@ -16,7 +16,7 @@ function createSweep(
   const projectedUserIds: string[] = [];
   const invalidatedUserIds: string[] = [];
   const logger = mock<ApplicationLoggerPort>();
-  const sweep = new SweepPremiumGrants({
+  const sweep = new SweepPremiumGrantsUseCase({
     premiumGrantRepository: {
       findUserIdsToReconcile: async ({ afterUserId }) => {
         requestedCursors.push(afterUserId);
@@ -61,7 +61,7 @@ function createSweep(
   return { sweep, requestedCursors, projectedUserIds, invalidatedUserIds, logger };
 }
 
-describe("SweepPremiumGrants", () => {
+describe("SweepPremiumGrantsUseCase", () => {
   it("가득 찬 묶음 뒤에는 마지막 userId 다음부터 이어 읽고 덜 찬 묶음에서 멈춘다", async () => {
     // Given
     const firstPage = Array.from(

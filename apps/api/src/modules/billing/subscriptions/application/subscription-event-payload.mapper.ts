@@ -3,7 +3,7 @@ import type { StorePeriodType } from "@aido/api/vocabulary";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { PremiumAccess } from "../../shared/premium-access.domain-service.js";
-import { SubscriptionPlanPolicy } from "../../shared/subscription-plan.domain-service.js";
+import { planTypeOfProduct } from "../../shared/subscription-plan.domain-service.js";
 import type {
   StoreSubscriptionChainEvent,
   StoreSubscriptionPrice,
@@ -11,11 +11,12 @@ import type {
 } from "../domain/store-subscription.event.js";
 import {
   type StoreLifecycleEvent,
-  SubscriptionLifecyclePolicy,
+  classifySubscriptionLifecycle,
+  periodTypeAfterEvent,
 } from "../domain/subscription-lifecycle.domain-service.js";
 import type { SubscriptionUser } from "./ports/subscription.repository.port.js";
 import type {
-  PremiumSnapshot,
+  PremiumAccessSummary,
   SubscriptionEventPayload,
 } from "./read-models/subscription-event-payload.read-model.js";
 
@@ -33,7 +34,7 @@ export function lifecycleEventOf(event: StoreSubscriptionChainEvent): StoreLifec
 
 /** 이 이벤트 뒤 구독 행에 저장할 기간 유형. undefined면 저장값을 둔다. */
 export function periodTypeAfter(event: StoreSubscriptionChainEvent): StorePeriodType | undefined {
-  return SubscriptionLifecyclePolicy.periodTypeAfter(lifecycleEventOf(event));
+  return periodTypeAfterEvent(lifecycleEventOf(event));
 }
 
 function priceFields(
@@ -52,7 +53,7 @@ function planFields(
   productId: string | undefined,
   key: "planType" | "newPlanType",
 ): Pick<SubscriptionEventPayload, "planType" | "newPlanType"> {
-  const planType = productId == null ? null : SubscriptionPlanPolicy.planTypeOf(productId);
+  const planType = productId == null ? null : planTypeOfProduct(productId);
   return planType == null ? {} : { [key]: planType };
 }
 
@@ -65,7 +66,7 @@ export function baseEventPayload(
   event: NotifiableChainEvent,
   storeSubscriptionId?: string,
 ): SubscriptionEventPayload {
-  const lifecycle = SubscriptionLifecyclePolicy.classify(lifecycleEventOf(event));
+  const lifecycle = classifySubscriptionLifecycle(lifecycleEventOf(event));
   const purchasedAt =
     event.kind === "STARTED" || event.kind === "RENEWED" ? event.startedAt : undefined;
   return {
@@ -127,7 +128,7 @@ export function transferEventPayload(
 }
 
 /** 이벤트를 반영한 뒤의 프리미엄 출처·보상 일수 */
-export function premiumSnapshotOf(access: PremiumAccess): PremiumSnapshot {
+export function premiumAccessSummaryOf(access: PremiumAccess): PremiumAccessSummary {
   return {
     source: access.source,
     periodEndsAt: toISOStringOrNull(access.periodEndsAt),

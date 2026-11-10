@@ -4,7 +4,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import type { SubscriptionUserMutationLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
 import type { SubscriptionCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
-import type { PremiumAccessProjector } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
+import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
 import type { StoreSubscriptionStatusReaderPort } from "../ports/store-subscription-status.reader.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
@@ -28,7 +28,7 @@ interface ReconcileStoreSubscriptionsDependencies {
   readonly statusReader: StoreSubscriptionStatusReaderPort;
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
+  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
   readonly cache: SubscriptionCachePort;
 }
 
@@ -39,7 +39,7 @@ const UNCHANGED: ReconcileStoreSubscriptionsResult = { correctedCount: 0, fields
  * 실패하면 아무것도 바꾸지 않고 던져 잡이 다시 시도한다. 고친 것이 있을 때만 프리미엄을 다시 계산한다.
  * 결과 로그는 잡 처리기가 요약 한 건으로 남긴다.
  */
-export class ReconcileStoreSubscriptions {
+export class ReconcileStoreSubscriptionsUseCase {
   readonly #dependencies: ReconcileStoreSubscriptionsDependencies;
 
   constructor(dependencies: ReconcileStoreSubscriptionsDependencies) {

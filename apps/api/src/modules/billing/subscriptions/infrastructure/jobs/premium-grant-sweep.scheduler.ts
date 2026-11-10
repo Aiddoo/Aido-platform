@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { BillingLogEvent } from "../../application/subscriptions.log-events.js";
+import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
 import {
   PREMIUM_GRANT_SWEEP_JOB_NAME,
   PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
@@ -35,7 +35,7 @@ export class PremiumGrantSweepJob implements OnModuleInit {
           { name: PREMIUM_GRANT_SWEEP_JOB_NAME, data: {} },
           PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
         );
-        this.#logger.log({ event: BillingLogEvent.PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED });
       },
     );
   }

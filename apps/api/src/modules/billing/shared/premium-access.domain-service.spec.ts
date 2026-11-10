@@ -3,7 +3,9 @@ import {
   isPremiumGrantActive,
   isStoreEntitlementValid,
   isStoreSubscriptionRenewing,
-  PremiumAccessPolicy,
+  resolvePremiumAccess,
+  planNewGrantStart,
+  planPremiumReconciliation,
   type PremiumGrantTerm,
   premiumGrantDaysOf,
   premiumGrantEndsAt,
@@ -131,8 +133,8 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({
@@ -153,7 +155,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, afterGrace);
+      const plan = planPremiumReconciliation(entitlements, afterGrace);
 
       // Then
       expect(plan.activations).toEqual([{ grantId: "grant-banked", startsAt: GRACE_ENDS_AT }]);
@@ -218,7 +220,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -255,7 +257,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({
@@ -277,7 +279,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -300,7 +302,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -323,7 +325,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -349,7 +351,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -372,7 +374,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -396,7 +398,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toEqual({
@@ -421,7 +423,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, now);
+      const access = resolvePremiumAccess(entitlements, now);
 
       // Then
       expect(access).toMatchObject({
@@ -442,7 +444,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access.source).toBe(source);
@@ -461,7 +463,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({
@@ -486,7 +488,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, now);
+      const access = resolvePremiumAccess(entitlements, now);
 
       // Then
       expect(access.periodEndsAt).toEqual(ends);
@@ -501,7 +503,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({
@@ -523,7 +525,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({
@@ -545,8 +547,8 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, afterTrial);
-      const access = PremiumAccessPolicy.resolve(
+      const plan = planPremiumReconciliation(entitlements, afterTrial);
+      const access = resolvePremiumAccess(
         {
           ...entitlements,
           premiumGrants: [
@@ -575,7 +577,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access.isTrial).toBe(false);
@@ -597,7 +599,7 @@ describe("PremiumAccessPolicy", () => {
         };
 
         // When
-        const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+        const access = resolvePremiumAccess(entitlements, NOW);
 
         // Then
         expect(access.recentGrantEndedAt).toEqual(expected == null ? null : new Date(expected));
@@ -614,7 +616,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const access = resolvePremiumAccess(entitlements, NOW);
 
       // Then
       expect(access).toMatchObject({ source: null, recentGrantEndedAt: endedAt });
@@ -628,7 +630,7 @@ describe("PremiumAccessPolicy", () => {
 
       // When
       const accesses = [subscribed, granted].map((entitlements) =>
-        PremiumAccessPolicy.resolve(entitlements, NOW),
+        resolvePremiumAccess(entitlements, NOW),
       );
 
       // Then
@@ -673,7 +675,7 @@ describe("PremiumAccessPolicy", () => {
       const entitlements = { storeSubscriptions: [store()], premiumGrants: [] };
 
       // When
-      const start = PremiumAccessPolicy.planNewGrantStart(entitlements, NOW);
+      const start = planNewGrantStart(entitlements, NOW);
 
       // Then
       expect(start).toEqual({ kind: "bank" });
@@ -684,7 +686,7 @@ describe("PremiumAccessPolicy", () => {
       const entitlements = { storeSubscriptions: [], premiumGrants: [grant()] };
 
       // When
-      const start = PremiumAccessPolicy.planNewGrantStart(entitlements, NOW);
+      const start = planNewGrantStart(entitlements, NOW);
 
       // Then
       expect(start).toEqual({ kind: "bank" });
@@ -698,7 +700,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const start = PremiumAccessPolicy.planNewGrantStart(entitlements, NOW);
+      const start = planNewGrantStart(entitlements, NOW);
 
       // Then
       expect(start).toEqual({ kind: "activate", startsAt: NOW });
@@ -719,7 +721,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -742,7 +744,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -765,7 +767,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, previousEndsAt);
+      const plan = planPremiumReconciliation(entitlements, previousEndsAt);
       const endsAt = premiumGrantEndsAt(previousEndsAt, 7);
 
       // Then
@@ -786,7 +788,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan.activations).toEqual([{ grantId: "next", startsAt: storeLapsedAt }]);
@@ -825,7 +827,7 @@ describe("PremiumAccessPolicy", () => {
         };
 
         // When
-        const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+        const plan = planPremiumReconciliation(entitlements, NOW);
 
         // Then
         expect(plan.activations).toEqual([{ grantId: "banked", startsAt: new Date(startsAt) }]);
@@ -842,7 +844,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan.activations).toEqual([{ grantId: "banked", startsAt: NOW }]);
@@ -860,7 +862,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -882,7 +884,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -904,7 +906,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -923,7 +925,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan.activations).toEqual([]);
@@ -944,7 +946,7 @@ describe("PremiumAccessPolicy", () => {
       };
 
       // When
-      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+      const plan = planPremiumReconciliation(entitlements, NOW);
 
       // Then
       expect(plan).toEqual({
@@ -968,7 +970,7 @@ describe("PremiumAccessPolicy", () => {
         };
 
         // When
-        const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+        const plan = planPremiumReconciliation(entitlements, NOW);
 
         // Then
         expect(plan.splitGrantIds).toEqual(split);

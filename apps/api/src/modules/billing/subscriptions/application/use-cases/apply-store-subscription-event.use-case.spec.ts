@@ -12,26 +12,26 @@ import type {
   SubscriptionRenewedEvent,
   SubscriptionStartedEvent,
 } from "../../domain/store-subscription.event.js";
-import { ApplyStoreSubscriptionEvent } from "./apply-store-subscription-event.use-case.js";
+import { ApplyStoreSubscriptionEventUseCase } from "./apply-store-subscription-event.use-case.js";
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const NEXT_EXPIRY = new Date("2026-04-10T12:00:00.000Z");
 
-describe("ApplyStoreSubscriptionEvent — 스토어 구독 이벤트 반영", () => {
+describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반영", () => {
   let fixture: ReturnType<typeof createSubscriptionFixture>;
-  let useCase: ApplyStoreSubscriptionEvent;
+  let useCase: ApplyStoreSubscriptionEventUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(SUBSCRIPTION_TIME);
     fixture = createSubscriptionFixture();
-    useCase = new ApplyStoreSubscriptionEvent(fixture);
+    useCase = new ApplyStoreSubscriptionEventUseCase(fixture);
   });
   afterEach(() => vi.useRealTimers());
 
   function givenSubscription() {
     fixture = createSubscriptionFixture({ existing: true });
-    useCase = new ApplyStoreSubscriptionEvent(fixture);
+    useCase = new ApplyStoreSubscriptionEventUseCase(fixture);
   }
 
   function chain(providerEventId: string) {

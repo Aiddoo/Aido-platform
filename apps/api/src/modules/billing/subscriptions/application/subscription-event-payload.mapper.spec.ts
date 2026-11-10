@@ -1,6 +1,6 @@
 import type { StoreSubscriptionChainEvent } from "../domain/store-subscription.event.js";
 import type { SubscriptionUser } from "./ports/subscription.repository.port.js";
-import { baseEventPayload, premiumSnapshotOf } from "./subscription-event-payload.mapper.js";
+import { baseEventPayload, premiumAccessSummaryOf } from "./subscription-event-payload.mapper.js";
 
 type NotifiableEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
 
@@ -80,7 +80,7 @@ describe("baseEventPayload — 웹훅 값을 이벤트마다 같은 이름으로
   });
 });
 
-describe("premiumSnapshotOf — 이벤트 뒤 프리미엄 상태", () => {
+describe("premiumAccessSummaryOf — 이벤트 뒤 프리미엄 상태", () => {
   const none = {
     source: null,
     endsAt: null,
@@ -129,6 +129,6 @@ describe("premiumSnapshotOf — 이벤트 뒤 프리미엄 상태", () => {
     },
   ])("$label 출처와 보상 일수를 그대로 싣는다", ({ access, expected }) => {
     // When / Then
-    expect(premiumSnapshotOf(access)).toEqual(expected);
+    expect(premiumAccessSummaryOf(access)).toEqual(expected);
   });
 });

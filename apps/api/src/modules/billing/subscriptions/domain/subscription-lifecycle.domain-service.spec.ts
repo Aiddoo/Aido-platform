@@ -2,7 +2,8 @@ import { STORE_PERIOD_TYPES, type StorePeriodType } from "@aido/api/vocabulary";
 
 import {
   type StoreLifecycleEvent,
-  SubscriptionLifecyclePolicy,
+  classifySubscriptionLifecycle,
+  periodTypeAfterEvent,
   toStorePeriodType,
 } from "./subscription-lifecycle.domain-service.js";
 import type { StoreSubscriptionEventKind } from "./subscriptions.constants.js";
@@ -79,7 +80,7 @@ describe("SubscriptionLifecyclePolicy", () => {
         const input = event({ ...kindOf(type), periodType, isTrialConversion });
 
         // When
-        const lifecycle = SubscriptionLifecyclePolicy.classify(input);
+        const lifecycle = classifySubscriptionLifecycle(input);
 
         // Then
         expect(lifecycle).toBe(expected);
@@ -120,7 +121,7 @@ describe("SubscriptionLifecyclePolicy", () => {
         const input = event({ ...kindOf(type), periodType, isTrialConversion: conversion });
 
         // When
-        const periodTypeAfter = SubscriptionLifecyclePolicy.periodTypeAfter(input);
+        const periodTypeAfter = periodTypeAfterEvent(input);
 
         // Then
         expect(periodTypeAfter).toBe(expected);

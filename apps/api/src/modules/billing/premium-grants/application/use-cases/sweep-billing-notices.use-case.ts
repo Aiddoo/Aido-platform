@@ -3,8 +3,7 @@ import { chunk, sumBy } from "es-toolkit";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { BillingNoticeWindowPolicy } from "../../../shared/billing-notice-window.domain-service.js";
-import type { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
+import { billingNoticeUntil } from "../../../shared/billing-notice-window.domain-service.js";
 import type {
   BillingNotice,
   BillingNoticeNotifierPort,
@@ -28,7 +27,7 @@ export interface BillingNoticeSettings<TNotice extends BillingNotice> {
   /** 고른 후보 중 보낼 것 */
   readonly isNoticeable: (notice: TNotice) => boolean;
   /** sweep 한 번에 남기는 요약 로그 이벤트 */
-  readonly logEvent: (typeof BillingLogEvent)[keyof typeof BillingLogEvent];
+  readonly logEvent: string;
 }
 
 /** sweep 한 번의 대상. 설정과 그 안내의 저장소·발송을 함께 넘긴다. */
@@ -68,7 +67,7 @@ interface BillingNoticeSweeperDependencies {
  * 며칠 전 결제·보상 안내를 한 실행에서 묶음으로 보낸다. 후보는 트랜잭션 밖에서 읽고, 현지 야간인 사용자는
  * 표시하지 않아 다음 허용 시각의 실행이 보낸다. 표시는 조건부 UPDATE라 두 실행이 겹쳐도 한 실행만 보낸다.
  */
-export class BillingNoticeSweeper {
+export class SweepBillingNoticesUseCase {
   readonly #dependencies: BillingNoticeSweeperDependencies;
 
   constructor(dependencies: BillingNoticeSweeperDependencies) {
@@ -97,7 +96,7 @@ export class BillingNoticeSweeper {
     task: BillingNoticeTask<TNotice>,
     now: Date,
   ): AsyncGenerator<TNotice[]> {
-    const endsBefore = BillingNoticeWindowPolicy.noticeUntil(now, task.noticeDays);
+    const endsBefore = billingNoticeUntil(now, task.noticeDays);
     let after: TNotice | undefined;
     for (let batch = 0; batch < BILLING_NOTICE_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
       const candidates = await task.source.findDue({

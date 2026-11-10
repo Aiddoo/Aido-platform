@@ -2,12 +2,12 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
 import { bankedRemainderSourceKey } from "../../domain/premium-grant.aggregate.js";
 import type { SubscriptionUserMutationLockPort } from "../ports/billing-user-lock.port.js";
 import type { SubscriptionCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { PremiumAccessProjector } from "./project-premium-access.use-case.js";
+import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
+import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 export interface RevokePremiumGrantInput {
   /** 지급할 때 쓴 출처 키(예: invite:…) */
@@ -22,7 +22,7 @@ export type RevokePremiumGrantResult =
 
 interface RevokePremiumGrantDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findBySourceKey" | "saveAll">;
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
+  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: SubscriptionCachePort;
@@ -33,7 +33,7 @@ interface RevokePremiumGrantDependencies {
  * 잘못 준 보상 기간을 취소한다(운영 전용, 공개 HTTP 경로 없음). 데이터를 지우지 않고 REVOKED로 남긴다.
  * 진행 중에 끊어 다시 쌓아 둔 남은 기간도 함께 취소하고, 같은 요청을 다시 보내도 바꾸지 않는다.
  */
-export class RevokePremiumGrant {
+export class RevokePremiumGrantUseCase {
   readonly #dependencies: RevokePremiumGrantDependencies;
 
   constructor(dependencies: RevokePremiumGrantDependencies) {
@@ -78,13 +78,13 @@ export class RevokePremiumGrant {
       await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: BillingLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
+        event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
         userId,
         errorType: toErrorType(error),
       });
     }
     this.#dependencies.logger.log({
-      event: BillingLogEvent.PREMIUM_GRANT_REVOKED,
+      event: PremiumGrantLogEvent.PREMIUM_GRANT_REVOKED,
       userId,
       revokedGrantCount,
     });

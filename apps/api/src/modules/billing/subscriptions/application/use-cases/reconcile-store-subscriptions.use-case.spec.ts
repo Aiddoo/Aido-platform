@@ -8,7 +8,7 @@ import {
 import { StubStoreSubscriptionStatusReader } from "#test/mocks/ports/subscription.stub";
 
 import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
-import { ReconcileStoreSubscriptions } from "./reconcile-store-subscriptions.use-case.js";
+import { ReconcileStoreSubscriptionsUseCase } from "./reconcile-store-subscriptions.use-case.js";
 
 const NOW = new Date("2026-02-20T12:00:00.000Z");
 const NEXT_EXPIRY = new Date("2026-04-10T12:00:00.000Z");
@@ -28,14 +28,14 @@ function storeState(overrides: Partial<StoreSubscriptionState> = {}): StoreSubsc
 function createReconcile(subscription: Parameters<typeof createSubscriptionRecord>[1] = {}) {
   const fixture = createSubscriptionFixture({ existing: true, subscription });
   const statusReader = new StubStoreSubscriptionStatusReader();
-  const useCase = new ReconcileStoreSubscriptions({ ...fixture, statusReader });
+  const useCase = new ReconcileStoreSubscriptionsUseCase({ ...fixture, statusReader });
   const stored = (storeSubscriptionId = SUBSCRIPTION_TRANSACTION_ID) =>
     fixture.subscriptionRepository.subscriptions.get(storeSubscriptionId);
   const userState = () => fixture.subscriptionRepository.users.get(fixture.user.id);
   return { fixture, statusReader, useCase, stored, userState };
 }
 
-describe("ReconcileStoreSubscriptions — 웹훅 뒤 스토어 상태 대조", () => {
+describe("ReconcileStoreSubscriptionsUseCase — 웹훅 뒤 스토어 상태 대조", () => {
   it("갱신 웹훅을 놓쳐 스토어 기간이 더 길면 만료를 늘리고 프리미엄 끝도 맞춘다", async () => {
     // Given
     const { fixture, statusReader, useCase, stored, userState } = createReconcile();

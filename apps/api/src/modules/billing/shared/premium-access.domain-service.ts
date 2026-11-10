@@ -15,7 +15,7 @@ import {
 } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
-import { SubscriptionPlanPolicy } from "./subscription-plan.domain-service.js";
+import { planTypeOfProduct } from "./subscription-plan.domain-service.js";
 
 export type PremiumGrantStatusValue = "BANKED" | "ACTIVE" | "ENDED" | "REVOKED";
 
@@ -320,125 +320,126 @@ function recentGrantEndedAt(entitlements: PremiumEntitlements, now: Date): Date 
   return endedAt;
 }
 
-export const PremiumAccessPolicy = {
-  /**
-   * 프리미엄 = 유효한 스토어 구독 또는 진행 중인 보상 기간, 그 뒤에 쌓아 둔 기간.
-   * 스토어가 유효하면 출처는 STORE이고, 지금 기간은 스토어 만료까지다. 쌓아 둔 기간은 스토어가
-   * 자리를 넘기는 시각부터, 스토어가 없으면 진행 중인 기간 뒤부터 받은 순서대로 이어 붙인다.
-   */
-  resolve(entitlements: PremiumEntitlements, now: Date): PremiumAccess {
-    const validStores = entitlements.storeSubscriptions.filter((subscription) =>
-      isStoreEntitlementValid(subscription, now),
-    );
-    const activeGrantEndsAt = latestEndsAt(
-      entitlements.premiumGrants.filter((grant) => isPremiumGrantActive(grant, now)),
-    );
-    const banked = bankedInReceivedOrder(entitlements.premiumGrants);
-    const bankedDays = premiumGrantDaysOf(sumBy(banked, premiumGrantDurationMs));
+/**
+ * 프리미엄 = 유효한 스토어 구독 또는 진행 중인 보상 기간, 그 뒤에 쌓아 둔 기간.
+ * 스토어가 유효하면 출처는 STORE이고, 지금 기간은 스토어 만료까지다. 쌓아 둔 기간은 스토어가
+ * 자리를 넘기는 시각부터, 스토어가 없으면 진행 중인 기간 뒤부터 받은 순서대로 이어 붙인다.
+ */
+export function resolvePremiumAccess(entitlements: PremiumEntitlements, now: Date): PremiumAccess {
+  const validStores = entitlements.storeSubscriptions.filter((subscription) =>
+    isStoreEntitlementValid(subscription, now),
+  );
+  const activeGrantEndsAt = latestEndsAt(
+    entitlements.premiumGrants.filter((grant) => isPremiumGrantActive(grant, now)),
+  );
+  const banked = bankedInReceivedOrder(entitlements.premiumGrants);
+  const bankedDays = premiumGrantDaysOf(sumBy(banked, premiumGrantDurationMs));
 
-    const currentStore = currentStoreChainOf(validStores, now);
-    if (currentStore != null) {
-      const activeGrantEnds = activeGrantEndsAt == null ? [] : [activeGrantEndsAt];
-      // 지금 기간·갱신·요금제는 현재 체인으로 보여 주고, 프리미엄 끝과 보상 이어 붙이기는 아직 유효한 모든
-      // 체인의 끝까지 본다(결제한 기간을 앞당겨 빼앗지 않는다). 겹쳐 시작한 보상 기간이 남으면 그 끝까지다
-      const periodEndsAt = latestOf([storePeriodEndsAt(currentStore), ...activeGrantEnds]);
-      const premiumEndsAt = latestOf([...validStores.map(storePeriodEndsAt), ...activeGrantEnds]);
-      const handoffAt = latestOf([...validStores.map(storeHandoffAt), ...activeGrantEnds]);
-      return {
-        source: PREMIUM_SOURCE.STORE,
-        endsAt:
-          banked.length === 0 || handoffAt == null ? premiumEndsAt : chainBanked(handoffAt, banked),
-        periodEndsAt,
-        willRenew: isStoreSubscriptionRenewing(currentStore, now),
-        isTrial: currentStore.periodType === STORE_PERIOD_TYPE.TRIAL,
-        planType: SubscriptionPlanPolicy.planTypeOf(currentStore.productId),
-        bankedDays,
-        recentGrantEndedAt: null,
-      };
-    }
-    if (activeGrantEndsAt == null) {
-      // 스토어가 막 끝나 아직 시작하지 않은 기간은 다음 정리가 시작한다
-      return {
-        source: null,
-        endsAt: null,
-        periodEndsAt: null,
-        willRenew: false,
-        isTrial: false,
-        planType: null,
-        bankedDays,
-        recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
-      };
-    }
+  const currentStore = currentStoreChainOf(validStores, now);
+  if (currentStore != null) {
+    const activeGrantEnds = activeGrantEndsAt == null ? [] : [activeGrantEndsAt];
+    // 지금 기간·갱신·요금제는 현재 체인으로 보여 주고, 프리미엄 끝과 보상 이어 붙이기는 아직 유효한 모든
+    // 체인의 끝까지 본다(결제한 기간을 앞당겨 빼앗지 않는다). 겹쳐 시작한 보상 기간이 남으면 그 끝까지다
+    const periodEndsAt = latestOf([storePeriodEndsAt(currentStore), ...activeGrantEnds]);
+    const premiumEndsAt = latestOf([...validStores.map(storePeriodEndsAt), ...activeGrantEnds]);
+    const handoffAt = latestOf([...validStores.map(storeHandoffAt), ...activeGrantEnds]);
     return {
-      source: PREMIUM_SOURCE.GRANT,
-      endsAt: chainBanked(activeGrantEndsAt, banked),
-      periodEndsAt: activeGrantEndsAt,
+      source: PREMIUM_SOURCE.STORE,
+      endsAt:
+        banked.length === 0 || handoffAt == null ? premiumEndsAt : chainBanked(handoffAt, banked),
+      periodEndsAt,
+      willRenew: isStoreSubscriptionRenewing(currentStore, now),
+      isTrial: currentStore.periodType === STORE_PERIOD_TYPE.TRIAL,
+      planType: planTypeOfProduct(currentStore.productId),
+      bankedDays,
+      recentGrantEndedAt: null,
+    };
+  }
+  if (activeGrantEndsAt == null) {
+    // 스토어가 막 끝나 아직 시작하지 않은 기간은 다음 정리가 시작한다
+    return {
+      source: null,
+      endsAt: null,
+      periodEndsAt: null,
       willRenew: false,
       isTrial: false,
       planType: null,
       bankedDays,
-      recentGrantEndedAt: null,
+      recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
     };
-  },
+  }
+  return {
+    source: PREMIUM_SOURCE.GRANT,
+    endsAt: chainBanked(activeGrantEndsAt, banked),
+    periodEndsAt: activeGrantEndsAt,
+    willRenew: false,
+    isTrial: false,
+    planType: null,
+    bankedDays,
+    recentGrantEndedAt: null,
+  };
+}
 
-  /**
-   * 스토어 구독이나 진행 중인 기간이 있으면 쌓아 두고, 둘 다 없을 때만 바로 시작한다.
-   * 미래에 시작하는 ACTIVE 기간을 만들지 않아 나중에 산 구독과 겹쳐 소진되지 않는다.
-   */
-  planNewGrantStart(entitlements: PremiumEntitlements, now: Date): PremiumGrantStart {
-    if (
-      hasStoreEntitlement(entitlements, now) ||
-      entitlements.premiumGrants.some((grant) => isPremiumGrantActive(grant, now))
-    ) {
-      return { kind: "bank" };
-    }
-    return { kind: "activate", startsAt: new Date(now) };
-  },
+/**
+ * 스토어 구독이나 진행 중인 기간이 있으면 쌓아 두고, 둘 다 없을 때만 바로 시작한다.
+ * 미래에 시작하는 ACTIVE 기간을 만들지 않아 나중에 산 구독과 겹쳐 소진되지 않는다.
+ */
+export function planNewGrantStart(entitlements: PremiumEntitlements, now: Date): PremiumGrantStart {
+  if (
+    hasStoreEntitlement(entitlements, now) ||
+    entitlements.premiumGrants.some((grant) => isPremiumGrantActive(grant, now))
+  ) {
+    return { kind: "bank" };
+  }
+  return { kind: "activate", startsAt: new Date(now) };
+}
 
-  /**
-   * 끝난 기간을 닫는다. 스토어가 유효하면 아직 시작하지 않은 기간을 다시 쌓아 두고, 진행 중인 기간은
-   * 지금 끝내 남은 일수를 다시 쌓아 스토어 기간과 겹쳐 소진되지 않게 한다.
-   * 스토어도 진행 중인 기간도 없으면 쌓아 둔 기간을 받은 순서대로 하나씩 시작한다.
-   */
-  planReconciliation(entitlements: PremiumEntitlements, now: Date): PremiumGrantReconciliation {
-    const endedGrantIds = entitlements.premiumGrants
-      .filter((grant) => isPremiumGrantEnded(grant, now))
-      .map((grant) => grant.id);
-    if (hasStoreEntitlement(entitlements, now)) {
-      return {
-        rebankedGrantIds: entitlements.premiumGrants
-          .filter((grant) => hasNotStarted(grant, now))
-          .map((grant) => grant.id),
-        splitGrantIds: entitlements.premiumGrants
-          .filter((grant) => isInProgress(grant, now))
-          .map((grant) => grant.id),
-        activations: [],
-        endedGrantIds,
-      };
-    }
-    if (entitlements.premiumGrants.some((grant) => isPremiumGrantActive(grant, now))) {
-      return { rebankedGrantIds: [], splitGrantIds: [], activations: [], endedGrantIds };
-    }
-
-    // 정리가 오래 밀렸으면 그동안 끝났어야 할 기간도 이어 붙여 시작하고 바로 끝낸다
-    const banked = bankedInReceivedOrder(entitlements.premiumGrants);
-    const activations: { grantId: string; startsAt: Date }[] = [];
-    const endedAfterActivation: string[] = [];
-    let startsAt = chainStartsAt(entitlements, banked, now);
-    for (const grant of banked) {
-      activations.push({ grantId: grant.id, startsAt });
-      const endsAt = premiumGrantTermEndsAt(startsAt, grant);
-      if (endsAt.getTime() > now.getTime()) {
-        break;
-      }
-      endedAfterActivation.push(grant.id);
-      startsAt = endsAt;
-    }
+/**
+ * 끝난 기간을 닫는다. 스토어가 유효하면 아직 시작하지 않은 기간을 다시 쌓아 두고, 진행 중인 기간은
+ * 지금 끝내 남은 일수를 다시 쌓아 스토어 기간과 겹쳐 소진되지 않게 한다.
+ * 스토어도 진행 중인 기간도 없으면 쌓아 둔 기간을 받은 순서대로 하나씩 시작한다.
+ */
+export function planPremiumReconciliation(
+  entitlements: PremiumEntitlements,
+  now: Date,
+): PremiumGrantReconciliation {
+  const endedGrantIds = entitlements.premiumGrants
+    .filter((grant) => isPremiumGrantEnded(grant, now))
+    .map((grant) => grant.id);
+  if (hasStoreEntitlement(entitlements, now)) {
     return {
-      rebankedGrantIds: [],
-      splitGrantIds: [],
-      activations,
-      endedGrantIds: [...endedGrantIds, ...endedAfterActivation],
+      rebankedGrantIds: entitlements.premiumGrants
+        .filter((grant) => hasNotStarted(grant, now))
+        .map((grant) => grant.id),
+      splitGrantIds: entitlements.premiumGrants
+        .filter((grant) => isInProgress(grant, now))
+        .map((grant) => grant.id),
+      activations: [],
+      endedGrantIds,
     };
-  },
-};
+  }
+  if (entitlements.premiumGrants.some((grant) => isPremiumGrantActive(grant, now))) {
+    return { rebankedGrantIds: [], splitGrantIds: [], activations: [], endedGrantIds };
+  }
+
+  // 정리가 오래 밀렸으면 그동안 끝났어야 할 기간도 이어 붙여 시작하고 바로 끝낸다
+  const banked = bankedInReceivedOrder(entitlements.premiumGrants);
+  const activations: { grantId: string; startsAt: Date }[] = [];
+  const endedAfterActivation: string[] = [];
+  let startsAt = chainStartsAt(entitlements, banked, now);
+  for (const grant of banked) {
+    activations.push({ grantId: grant.id, startsAt });
+    const endsAt = premiumGrantTermEndsAt(startsAt, grant);
+    if (endsAt.getTime() > now.getTime()) {
+      break;
+    }
+    endedAfterActivation.push(grant.id);
+    startsAt = endsAt;
+  }
+  return {
+    rebankedGrantIds: [],
+    splitGrantIds: [],
+    activations,
+    endedGrantIds: [...endedGrantIds, ...endedAfterActivation],
+  };
+}

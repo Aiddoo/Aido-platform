@@ -50,41 +50,41 @@ export function toStorePeriodType(value: string | null | undefined): StorePeriod
   return STORE_PERIOD_TYPES.find((periodType) => periodType === value) ?? null;
 }
 
-export const SubscriptionLifecyclePolicy = {
-  /**
-   * 체험 시작 = 시작 + TRIAL, 체험 중 해지 = 해지·환불 + TRIAL,
-   * 결제 전환 = 체험 전환 갱신, 전환 없이 끝남 = 만료 + TRIAL.
-   */
-  classify(event: StoreLifecycleEvent): SubscriptionLifecycle | null {
-    return match({
-      kind: eventKindOf(event),
-      isTrial: event.periodType === STORE_PERIOD_TYPE.TRIAL,
-      isTrialConversion: event.isTrialConversion,
-    })
-      .returnType<SubscriptionLifecycle | null>()
-      .with({ kind: "PURCHASE", isTrial: true }, () => "trial_started")
-      .with({ kind: "CANCELLATION", isTrial: true }, () => "trial_cancelled")
-      .with({ kind: "EXPIRATION", isTrial: true }, () => "trial_expired")
-      .with({ kind: "RENEWAL", isTrialConversion: true }, () => "trial_converted")
-      .with({ kind: P.union("PURCHASE", "CANCELLATION", "EXPIRATION"), isTrial: false }, () => null)
-      .with({ kind: "RENEWAL", isTrialConversion: false }, () => null)
-      .with({ kind: "OTHER" }, () => null)
-      .exhaustive();
-  },
+/**
+ * 체험 시작 = 시작 + TRIAL, 체험 중 해지 = 해지·환불 + TRIAL,
+ * 결제 전환 = 체험 전환 갱신, 전환 없이 끝남 = 만료 + TRIAL.
+ */
+export function classifySubscriptionLifecycle(
+  event: StoreLifecycleEvent,
+): SubscriptionLifecycle | null {
+  return match({
+    kind: eventKindOf(event),
+    isTrial: event.periodType === STORE_PERIOD_TYPE.TRIAL,
+    isTrialConversion: event.isTrialConversion,
+  })
+    .returnType<SubscriptionLifecycle | null>()
+    .with({ kind: "PURCHASE", isTrial: true }, () => "trial_started")
+    .with({ kind: "CANCELLATION", isTrial: true }, () => "trial_cancelled")
+    .with({ kind: "EXPIRATION", isTrial: true }, () => "trial_expired")
+    .with({ kind: "RENEWAL", isTrialConversion: true }, () => "trial_converted")
+    .with({ kind: P.union("PURCHASE", "CANCELLATION", "EXPIRATION"), isTrial: false }, () => null)
+    .with({ kind: "RENEWAL", isTrialConversion: false }, () => null)
+    .with({ kind: "OTHER" }, () => null)
+    .exhaustive();
+}
 
-  /**
-   * 이 이벤트 뒤 저장할 기간 유형. 새 기간을 여는 구매·갱신만 바꾸고(undefined면 저장값 유지)
-   * 해지·만료 등은 지금 기간의 유형을 그대로 둔다. 체험 전환 갱신은 값이 없어도 NORMAL이다.
-   */
-  periodTypeAfter(event: StoreLifecycleEvent): StorePeriodType | undefined {
-    return match(eventKindOf(event))
-      .returnType<StorePeriodType | undefined>()
-      .with("PURCHASE", "RENEWAL", () =>
-        event.isTrialConversion
-          ? (event.periodType ?? STORE_PERIOD_TYPE.NORMAL)
-          : (event.periodType ?? undefined),
-      )
-      .with("CANCELLATION", "EXPIRATION", "OTHER", () => undefined)
-      .exhaustive();
-  },
-};
+/**
+ * 이 이벤트 뒤 저장할 기간 유형. 새 기간을 여는 구매·갱신만 바꾸고(undefined면 저장값 유지)
+ * 해지·만료 등은 지금 기간의 유형을 그대로 둔다. 체험 전환 갱신은 값이 없어도 NORMAL이다.
+ */
+export function periodTypeAfterEvent(event: StoreLifecycleEvent): StorePeriodType | undefined {
+  return match(eventKindOf(event))
+    .returnType<StorePeriodType | undefined>()
+    .with("PURCHASE", "RENEWAL", () =>
+      event.isTrialConversion
+        ? (event.periodType ?? STORE_PERIOD_TYPE.NORMAL)
+        : (event.periodType ?? undefined),
+    )
+    .with("CANCELLATION", "EXPIRATION", "OTHER", () => undefined)
+    .exhaustive();
+}

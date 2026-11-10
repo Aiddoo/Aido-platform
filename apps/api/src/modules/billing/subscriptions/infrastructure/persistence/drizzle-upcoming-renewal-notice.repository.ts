@@ -8,7 +8,7 @@ import { subscription } from "#api/platform/database/schema/index";
 
 import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
 import { currentStoreChainOf } from "../../../shared/premium-access.domain-service.js";
-import { SubscriptionPlanPolicy } from "../../../shared/subscription-plan.domain-service.js";
+import { storeProductIdsOfPlan } from "../../../shared/subscription-plan.domain-service.js";
 import type {
   UpcomingRenewalNotice,
   UpcomingRenewalNoticeSourcePort,
@@ -49,7 +49,7 @@ export class DrizzleUpcomingRenewalNoticeSource implements UpcomingRenewalNotice
           // 예약한 상품 변경이 있으면 다음 결제는 그 상품이다(Subscription.renewingPlanType과 같은 규칙)
           inArray(
             sql`split_part(coalesce(${subscription.nextProductId}, ${subscription.productId}), ':', 1)`,
-            SubscriptionPlanPolicy.storeProductIdsOf("ANNUAL"),
+            storeProductIdsOfPlan("ANNUAL"),
           ),
           params.after == null
             ? undefined

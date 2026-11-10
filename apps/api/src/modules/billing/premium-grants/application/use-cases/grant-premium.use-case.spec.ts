@@ -4,14 +4,14 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
 import { SUBSCRIPTION_TIME, createSubscriptionFixture } from "#test/fixtures/subscription.fixture";
 
-import { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
-import { PremiumGranter } from "./grant-premium.use-case.js";
+import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
+import { GrantPremiumUseCase } from "./grant-premium.use-case.js";
 
 function createGranter() {
   const fixture = createSubscriptionFixture();
   const afterCommit: AfterCommitTask[] = [];
   const logger = mock<ApplicationLoggerPort>();
-  const granter = new PremiumGranter({
+  const granter = new GrantPremiumUseCase({
     premiumGrantRepository: fixture.premiumGrantRepository,
     premiumAccessProjector: fixture.premiumAccessProjector,
     userMutationLock: fixture.userMutationLock,
@@ -23,7 +23,7 @@ function createGranter() {
   return { fixture, granter, afterCommit, logger };
 }
 
-describe("PremiumGranter", () => {
+describe("GrantPremiumUseCase", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(SUBSCRIPTION_TIME);
@@ -48,7 +48,10 @@ describe("PremiumGranter", () => {
     expect(result).toEqual({ status: "granted" });
     expect(loggedBeforeCommit).toBe(0);
     expect(logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ event: BillingLogEvent.PREMIUM_GRANT_RECORDED, reason: "granted" }),
+      expect.objectContaining({
+        event: PremiumGrantLogEvent.PREMIUM_GRANT_RECORDED,
+        reason: "granted",
+      }),
     );
   });
 

@@ -2,18 +2,18 @@ import { now } from "#api/shared/domain/date/utils/core";
 
 import {
   type PremiumAccess,
-  PremiumAccessPolicy,
+  resolvePremiumAccess,
 } from "../../../shared/premium-access.domain-service.js";
 import type { PremiumAccessReaderPort } from "../ports/premium-access.reader.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { PremiumAccessProjector } from "./project-premium-access.use-case.js";
+import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 interface PremiumAccessReaderDependencies {
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "loadEntitlements">;
+  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "loadEntitlements">;
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findLastEndedAt">;
 }
 
-export class PremiumAccessReader implements PremiumAccessReaderPort {
+export class GetPremiumAccessUseCase implements PremiumAccessReaderPort {
   readonly #dependencies: PremiumAccessReaderDependencies;
 
   constructor(dependencies: PremiumAccessReaderDependencies) {
@@ -25,6 +25,6 @@ export class PremiumAccessReader implements PremiumAccessReaderPort {
       this.#dependencies.premiumAccessProjector.loadEntitlements(userId),
       this.#dependencies.premiumGrantRepository.findLastEndedAt(userId),
     ]);
-    return PremiumAccessPolicy.resolve({ ...entitlements, lastEndedGrantAt }, now());
+    return resolvePremiumAccess({ ...entitlements, lastEndedGrantAt }, now());
   }
 }

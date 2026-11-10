@@ -67,7 +67,7 @@ export interface SubscriptionEventPayload {
   /** 이 사용자의 첫 스토어 구매인지(구매 이벤트만) */
   isFirstPurchase?: boolean;
   /** 이 이벤트를 반영한 뒤의 프리미엄 상태. 구독 행을 바꾸지 않은 이벤트는 비운다. */
-  premium?: PremiumSnapshot;
+  premium?: PremiumAccessSummary;
 }
 
 export interface SubscriptionTransfer {
@@ -75,7 +75,7 @@ export interface SubscriptionTransfer {
   readonly to: readonly string[];
 }
 
-export interface PremiumSnapshot {
+export interface PremiumAccessSummary {
   /** 지금 프리미엄의 출처. 프리미엄이 아니면 null이다. */
   readonly source: PremiumSource | null;
   /** 지금 출처 기간의 끝(ISO string). STORE면 스토어 만료, GRANT면 진행 중인 보상 기간의 끝이다. */

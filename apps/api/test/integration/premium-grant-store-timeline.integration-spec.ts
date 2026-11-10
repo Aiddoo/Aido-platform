@@ -1,6 +1,6 @@
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { SweepPremiumGrants } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
 import {
   PREMIUM_ACCESS_READER,
@@ -229,7 +229,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예 10일째 정리
     const insideGrace = new Date(STORE_EXPIRY.getTime() + 10 * DAY_MS);
     vi.setSystemTime(insideGrace);
-    await context.module.get(SweepPremiumGrants).execute({ now: insideGrace });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: insideGrace });
     const accessInsideGrace = await premiumAccess();
     const premiumInsideGrace = await isPremium();
     const grantsInsideGrace = await grantsOf();
@@ -286,7 +286,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When 유예가 끝난 뒤 정리, 이어서 늦은 만료 웹훅
     const afterGrace = new Date(graceEndsAt.getTime() + 10 * 60_000);
     vi.setSystemTime(afterGrace);
-    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
     await webhook(
       SubscriptionEventBuilder.expiration()
         .withAppUserId(userId)
@@ -296,7 +296,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
         .withExpirationAtMs(STORE_EXPIRY.getTime())
         .build(),
     );
-    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: afterGrace });
 
     // Then
     expect(await grantsOf()).toEqual([
@@ -464,7 +464,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When
     vi.setSystemTime(new Date(endsAt.getTime() + 60_000));
     const afterEnd = await getMe.execute(input);
-    await context.module.get(SweepPremiumGrants).execute({ now: new Date() });
+    await context.module.get(SweepPremiumGrantsUseCase).execute({ now: new Date() });
     const fresh = await getMe.execute(input);
 
     // Then

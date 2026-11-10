@@ -1,4 +1,4 @@
-import { SubscriptionPlanPolicy } from "./subscription-plan.domain-service.js";
+import { planTypeOfProduct } from "./subscription-plan.domain-service.js";
 
 describe("SubscriptionPlanPolicy", () => {
   it.each([
@@ -13,7 +13,7 @@ describe("SubscriptionPlanPolicy", () => {
     const storedProductId = productId;
 
     // When
-    const planType = SubscriptionPlanPolicy.planTypeOf(storedProductId);
+    const planType = planTypeOfProduct(storedProductId);
 
     // Then
     expect(planType).toBe(expected);

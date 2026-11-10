@@ -5,8 +5,7 @@ import type {
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { PremiumAccessPolicy } from "../../../shared/premium-access.domain-service.js";
-import { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
+import { planNewGrantStart } from "../../../shared/premium-access.domain-service.js";
 import { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import type { SubscriptionUserMutationLockPort } from "../ports/billing-user-lock.port.js";
 import type { SubscriptionCachePort } from "../ports/premium-access-cache.port.js";
@@ -16,11 +15,15 @@ import type {
   GrantPremiumResult,
   PremiumGranterPort,
 } from "../ports/premium-granter.port.js";
-import type { PremiumAccessProjector } from "./project-premium-access.use-case.js";
+import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
+import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 interface PremiumGranterDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "create">;
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "loadEntitlements" | "project">;
+  readonly premiumAccessProjector: Pick<
+    ProjectPremiumAccessUseCase,
+    "loadEntitlements" | "project"
+  >;
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly afterCommitTasks: Pick<AfterCommitTaskRegistryPort, "register">;
@@ -29,7 +32,7 @@ interface PremiumGranterDependencies {
 }
 
 /** 웹훅과 같은 사용자 잠금 아래에서 보상 기간을 저장하고 프리미엄 projection을 다시 계산한다. */
-export class PremiumGranter implements PremiumGranterPort {
+export class GrantPremiumUseCase implements PremiumGranterPort {
   readonly #dependencies: PremiumGranterDependencies;
 
   constructor(dependencies: PremiumGranterDependencies) {
@@ -42,7 +45,7 @@ export class PremiumGranter implements PremiumGranterPort {
       // 호출자 UoW에 Required로 참여하므로 바깥이 rollback되면 기록되지 않은 지급을 로그에 남기지 않는다
       this.#dependencies.afterCommitTasks.register(async () => {
         this.#dependencies.logger.log({
-          event: BillingLogEvent.PREMIUM_GRANT_RECORDED,
+          event: PremiumGrantLogEvent.PREMIUM_GRANT_RECORDED,
           userId: input.userId,
           source: input.source,
           durationDays: input.durationDays,
@@ -68,7 +71,7 @@ export class PremiumGranter implements PremiumGranterPort {
         source: input.source,
         sourceKey: input.sourceKey,
         durationDays: input.durationDays,
-        start: PremiumAccessPolicy.planNewGrantStart(entitlements, at),
+        start: planNewGrantStart(entitlements, at),
       }),
     );
     if (!created) {

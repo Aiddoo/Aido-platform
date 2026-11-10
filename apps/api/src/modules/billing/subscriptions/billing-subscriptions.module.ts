@@ -24,8 +24,8 @@ import {
   QUIET_HOURS_READER,
   type QuietHoursReaderPort,
 } from "../premium-grants/application/ports/quiet-hours.reader.port.js";
-import { PremiumAccessReader } from "../premium-grants/application/use-cases/get-premium-access.use-case.js";
-import { PremiumGranter } from "../premium-grants/application/use-cases/grant-premium.use-case.js";
+import { GetPremiumAccessUseCase } from "../premium-grants/application/use-cases/get-premium-access.use-case.js";
+import { GrantPremiumUseCase } from "../premium-grants/application/use-cases/grant-premium.use-case.js";
 import { SubscriptionCacheAdapter } from "../premium-grants/infrastructure/adapters/premium-access-cache.adapter.js";
 import { PremiumGrantNotifierAdapter } from "../premium-grants/infrastructure/adapters/premium-grant-notifier.adapter.js";
 import { DrizzlePremiumGrantEndingNoticeSource } from "../premium-grants/infrastructure/persistence/drizzle-premium-grant-ending-notice.repository.js";
@@ -135,8 +135,8 @@ import { RevenueCatWebhookController } from "./presentation/http/v1/revenuecat-w
     notifyEndingPremiumGrantsProvider,
     notifyEndingTrialsProvider,
     notifyUpcomingRenewalsProvider,
-    { provide: PREMIUM_GRANTER, useExisting: PremiumGranter },
-    { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },
+    { provide: PREMIUM_GRANTER, useExisting: GrantPremiumUseCase },
+    { provide: PREMIUM_ACCESS_READER, useExisting: GetPremiumAccessUseCase },
     PremiumGrantSweepJob,
     PremiumGrantSweepProcessor,
     {

@@ -5,7 +5,7 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 import type { StoreSubscriptionReconcileSchedulerPort } from "../../application/ports/store-subscription-reconcile-scheduler.port.js";
-import { BillingLogEvent } from "../../application/subscriptions.log-events.js";
+import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import {
   reconcileWindowStart,
   STORE_SUBSCRIPTION_RECONCILE_JOB_NAME,
@@ -36,7 +36,7 @@ export class StoreSubscriptionReconcileScheduler
 
   onModuleInit(): void {
     if (!this.#isEnabled()) {
-      this.#logger.log({ event: BillingLogEvent.RECONCILE_DISABLED });
+      this.#logger.log({ event: SubscriptionLogEvent.RECONCILE_DISABLED });
     }
   }
 

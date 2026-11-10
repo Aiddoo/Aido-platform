@@ -13,9 +13,9 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { BillingAlertKey } from "../../application/subscriptions.alerts.js";
-import { BillingLogEvent } from "../../application/subscriptions.log-events.js";
-import { ReconcileStoreSubscriptions } from "../../application/use-cases/reconcile-store-subscriptions.use-case.js";
+import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
+import { ReconcileStoreSubscriptionsUseCase } from "../../application/use-cases/reconcile-store-subscriptions.use-case.js";
 import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
 import {
   STORE_SUBSCRIPTION_RECONCILE_JOB_POLICY,
@@ -37,13 +37,13 @@ type ReconcileJobOutcome =
 export class StoreSubscriptionReconcileProcessor implements OnModuleInit {
   readonly #logger = new Logger(StoreSubscriptionReconcileProcessor.name);
 
-  readonly #reconcileStoreSubscriptions: Pick<ReconcileStoreSubscriptions, "execute">;
+  readonly #reconcileStoreSubscriptions: Pick<ReconcileStoreSubscriptionsUseCase, "execute">;
   readonly #alert: OperationalAlertPort;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(ReconcileStoreSubscriptions)
-    reconcileStoreSubscriptions: Pick<ReconcileStoreSubscriptions, "execute">,
+    @Inject(ReconcileStoreSubscriptionsUseCase)
+    reconcileStoreSubscriptions: Pick<ReconcileStoreSubscriptionsUseCase, "execute">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
@@ -72,7 +72,7 @@ export class StoreSubscriptionReconcileProcessor implements OnModuleInit {
     const failures = outcomes.flatMap((outcome) => (outcome.kind === "failed" ? [outcome] : []));
     const invalidCount = outcomes.filter((outcome) => outcome.kind === "invalid").length;
     const summary = {
-      event: BillingLogEvent.RECONCILE_COMPLETED,
+      event: SubscriptionLogEvent.RECONCILE_COMPLETED,
       jobCount: jobs.length,
       correctedUserCount: reconciled.filter((outcome) => outcome.correctedCount > 0).length,
       correctedChainCount: sumBy(reconciled, (outcome) => outcome.correctedCount),
@@ -106,7 +106,7 @@ export class StoreSubscriptionReconcileProcessor implements OnModuleInit {
       if (attempt > STORE_SUBSCRIPTION_RECONCILE_JOB_POLICY.retryLimit) {
         // 재시도가 끝났다. 키 권한·만료나 RevenueCat 장애면 모든 사용자의 대조가 멈추므로 사람이 봐야 한다
         this.#alert.raise({
-          key: BillingAlertKey.RECONCILE_FAILED,
+          key: SubscriptionAlertKey.RECONCILE_FAILED,
           severity: "error",
           message: "구독 스토어 상태 대조가 재시도 뒤에도 실패했습니다.",
           details: { userId, attempt, errorType: toErrorType(error) },

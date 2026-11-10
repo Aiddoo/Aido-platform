@@ -5,7 +5,7 @@ import { createSubscriptionFixture } from "#test/fixtures/subscription.fixture";
 import { StubPremiumGrantRepository } from "#test/mocks/ports/subscription.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { RevokePremiumGrant } from "./revoke-premium-grant.use-case.js";
+import { RevokePremiumGrantUseCase } from "./revoke-premium-grant.use-case.js";
 
 const AT = new Date("2028-02-26T09:00:00.000Z");
 
@@ -15,7 +15,7 @@ function given() {
   const invalidated: string[] = [];
   const projected: string[] = [];
   const logger = mock<ApplicationLoggerPort>();
-  const useCase = new RevokePremiumGrant({
+  const useCase = new RevokePremiumGrantUseCase({
     premiumGrantRepository,
     premiumAccessProjector: {
       project: async ({ userId }) => {
@@ -75,7 +75,7 @@ function given() {
   return { useCase, premiumGrantRepository, invalidated, projected, logger, userId };
 }
 
-describe("RevokePremiumGrant — 보상 기간 취소", () => {
+describe("RevokePremiumGrantUseCase — 보상 기간 취소", () => {
   it("기간과 다시 쌓아 둔 남은 기간을 함께 취소하고 다시 계산한 뒤 캐시를 비운다", async () => {
     // Given
     const { useCase, premiumGrantRepository, invalidated, projected, userId } = given();

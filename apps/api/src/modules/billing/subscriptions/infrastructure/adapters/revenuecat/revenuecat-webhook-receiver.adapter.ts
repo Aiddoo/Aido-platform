@@ -6,9 +6,9 @@ import {
   type OperationalAlertPort,
 } from "#api/shared/application/ports/operational-alert.port";
 
-import { BillingAlertKey } from "../../../application/subscriptions.alerts.js";
-import { BillingLogEvent } from "../../../application/subscriptions.log-events.js";
-import { ApplyStoreSubscriptionEvent } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
+import { SubscriptionAlertKey } from "../../../application/subscriptions.alerts.js";
+import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
+import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
 import { translateRevenueCatWebhook } from "./revenuecat-webhook-translator.adapter.js";
 
 export interface RevenueCatWebhookInput {
@@ -19,13 +19,13 @@ export interface RevenueCatWebhookInput {
 export class RevenueCatWebhookReceiver {
   readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
 
-  readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEvent, "execute">;
+  readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">;
   readonly #alert: OperationalAlertPort;
   readonly #config: Pick<TypedConfigService, "appEnv">;
 
   constructor(
-    @Inject(ApplyStoreSubscriptionEvent)
-    applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEvent, "execute">,
+    @Inject(ApplyStoreSubscriptionEventUseCase)
+    applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">,
     @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
     @Inject(TypedConfigService) config: Pick<TypedConfigService, "appEnv">,
   ) {
@@ -41,7 +41,7 @@ export class RevenueCatWebhookReceiver {
     });
     if (translation.status === "skipped") {
       this.#logger.log({
-        event: BillingLogEvent.WEBHOOK_SKIPPED,
+        event: SubscriptionLogEvent.WEBHOOK_SKIPPED,
         reason: translation.reason,
         eventType: translation.eventType,
         eventId: translation.eventId,
@@ -51,12 +51,12 @@ export class RevenueCatWebhookReceiver {
     // 계약과 다른 원문은 다시 보내도 같으므로 받은 것으로 닫고 사람이 보게 한다
     if (translation.status === "invalid") {
       this.#logger.warn({
-        event: BillingLogEvent.WEBHOOK_INVALID,
+        event: SubscriptionLogEvent.WEBHOOK_INVALID,
         eventType: translation.eventType,
         issueCount: translation.issueCount,
       });
       this.#alert.raise({
-        key: BillingAlertKey.WEBHOOK_INVALID,
+        key: SubscriptionAlertKey.WEBHOOK_INVALID,
         severity: "warning",
         message: "RevenueCat 웹훅 원문이 계약과 달라 처리하지 않았습니다",
         tags: { eventType: translation.eventType ?? "unknown" },

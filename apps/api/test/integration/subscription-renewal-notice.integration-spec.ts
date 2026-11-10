@@ -5,7 +5,7 @@ import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
 } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import { NotifyUpcomingRenewals } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
+import { NotifyUpcomingRenewalsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
 import {
   PREMIUM_ACCESS_READER,
   type PremiumAccessReaderPort,
@@ -50,7 +50,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let webhook: RevenueCatWebhookReceiver;
-  let notifyUpcomingRenewals: NotifyUpcomingRenewals;
+  let notifyUpcomingRenewals: NotifyUpcomingRenewalsUseCase;
   let premiumAccess: PremiumAccessReaderPort;
 
   beforeAll(async () => {
@@ -62,7 +62,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
         builder.overrideProvider(SUBSCRIPTION_EVENT_NOTIFIER).useValue(subscriptionEventNotifier),
     });
     webhook = context.module.get(RevenueCatWebhookReceiver);
-    notifyUpcomingRenewals = context.module.get(NotifyUpcomingRenewals);
+    notifyUpcomingRenewals = context.module.get(NotifyUpcomingRenewalsUseCase);
     premiumAccess = context.module.get(PREMIUM_ACCESS_READER);
   });
 

@@ -5,11 +5,11 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import type { SubscriptionRepositoryPort } from "../../../subscriptions/application/ports/subscription.repository.port.js";
-import { BillingLogEvent } from "../../../subscriptions/application/subscriptions.log-events.js";
 import type { SubscriptionUserMutationLockPort } from "../ports/billing-user-lock.port.js";
 import type { SubscriptionCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { PremiumAccessProjector } from "./project-premium-access.use-case.js";
+import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
+import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 export const PREMIUM_GRANT_SWEEP = {
   BATCH_SIZE: 500,
@@ -54,7 +54,7 @@ type FindUserIdsPage = (page: {
 interface SweepPremiumGrantsDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findUserIdsToReconcile">;
   readonly subscriptionRepository: Pick<SubscriptionRepositoryPort, "findLapsedPremiumUserIds">;
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
+  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: SubscriptionCachePort;
@@ -65,7 +65,7 @@ interface SweepPremiumGrantsDependencies {
  * 끝난 보상 기간을 닫고 스토어가 끝난 사용자의 쌓인 기간을 시작한다.
  * 만료 웹훅을 잃어 User projection만 ACTIVE로 남은 사용자도 같은 계산으로 다시 정리한다.
  */
-export class SweepPremiumGrants {
+export class SweepPremiumGrantsUseCase {
   readonly #dependencies: SweepPremiumGrantsDependencies;
 
   constructor(dependencies: SweepPremiumGrantsDependencies) {
@@ -78,7 +78,7 @@ export class SweepPremiumGrants {
       premiumGrantRepository.findUserIdsToReconcile(page),
     );
     logger.log({
-      event: BillingLogEvent.PREMIUM_GRANT_SWEPT,
+      event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEPT,
       userCount: grants.userCount,
       changedGrantCount: grants.changedGrantCount,
       failedUserCount: grants.failedUserCount,
@@ -90,7 +90,7 @@ export class SweepPremiumGrants {
       subscriptionRepository.findLapsedPremiumUserIds(page),
     );
     logger.log({
-      event: BillingLogEvent.LAPSED_PREMIUM_SWEPT,
+      event: PremiumGrantLogEvent.LAPSED_PREMIUM_SWEPT,
       userCount: lapsed.userCount,
       failedUserCount: lapsed.failedUserCount,
       hasRemaining: lapsed.hasRemaining,
@@ -150,7 +150,7 @@ export class SweepPremiumGrants {
       });
     } catch (error) {
       this.#dependencies.logger.error({
-        event: BillingLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
+        event: PremiumGrantLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -161,7 +161,7 @@ export class SweepPremiumGrants {
       await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: BillingLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
+        event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
         userId,
         errorType: toErrorType(error),
       });

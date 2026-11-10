@@ -1,6 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
-import { PremiumAccessProjector } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
+import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import type { SubscriptionUser } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import type { SubscriptionProps } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
@@ -99,7 +99,7 @@ export function createSubscriptionFixture(
     notifier: new StubSubscriptionNotifier(),
     webhookLock: new StubSubscriptionWebhookLock(),
     premiumGrantRepository,
-    premiumAccessProjector: new PremiumAccessProjector({
+    premiumAccessProjector: new ProjectPremiumAccessUseCase({
       subscriptionRepository,
       premiumGrantRepository,
     }),

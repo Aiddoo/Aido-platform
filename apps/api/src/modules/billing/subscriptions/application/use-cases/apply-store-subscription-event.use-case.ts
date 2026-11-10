@@ -12,7 +12,7 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 
 import type { SubscriptionUserMutationLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
 import type { SubscriptionCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
-import type { PremiumAccessProjector } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
+import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type {
   PremiumAccess,
   StoreEventChainState,
@@ -44,10 +44,10 @@ import type { SubscriptionEventPayload } from "../read-models/subscription-event
 import {
   baseEventPayload,
   periodTypeAfter,
-  premiumSnapshotOf,
+  premiumAccessSummaryOf,
   transferEventPayload,
 } from "../subscription-event-payload.mapper.js";
-import { BillingLogEvent } from "../subscriptions.log-events.js";
+import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
 type ProcessedChainEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
 
@@ -59,7 +59,7 @@ interface ApplyStoreSubscriptionEventDependencies {
   readonly cache: SubscriptionCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
   readonly webhookLock: SubscriptionWebhookLockPort;
-  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
+  readonly premiumAccessProjector: Pick<ProjectPremiumAccessUseCase, "project">;
   readonly reconcileScheduler: StoreSubscriptionReconcileSchedulerPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -90,7 +90,7 @@ function withPremium(
   payload: SubscriptionEventPayload,
   access: PremiumAccess,
 ): SubscriptionEventPayload {
-  return { ...payload, premium: premiumSnapshotOf(access) };
+  return { ...payload, premium: premiumAccessSummaryOf(access) };
 }
 
 /**
@@ -125,7 +125,7 @@ function failureContextOf(event: StoreSubscriptionEvent): StoreSubscriptionEvent
 }
 
 /** 공급자 번역기가 만든 스토어 구독 이벤트를 구독 행과 프리미엄에 반영한다. */
-export class ApplyStoreSubscriptionEvent {
+export class ApplyStoreSubscriptionEventUseCase {
   readonly #dependencies: ApplyStoreSubscriptionEventDependencies;
 
   constructor(dependencies: ApplyStoreSubscriptionEventDependencies) {
@@ -136,7 +136,7 @@ export class ApplyStoreSubscriptionEvent {
     // 처리하지 않는 이벤트(대시보드 TEST 등)는 우리 사용자가 아닐 수 있어 사용자를 찾기 전에 닫는다
     if (event.kind === "IGNORED") {
       this.#dependencies.logger.log({
-        event: BillingLogEvent.WEBHOOK_IGNORED,
+        event: SubscriptionLogEvent.WEBHOOK_IGNORED,
         eventType: event.providerEventType,
         eventId: event.providerEventId,
       });
@@ -159,12 +159,12 @@ export class ApplyStoreSubscriptionEvent {
         error instanceof ApplicationException &&
         error.errorCode === ErrorCode.SUBSCRIPTION_1605
       ) {
-        this.#dependencies.logger.warn({ event: BillingLogEvent.WEBHOOK_LOCK_CONTENDED });
+        this.#dependencies.logger.warn({ event: SubscriptionLogEvent.WEBHOOK_LOCK_CONTENDED });
         throw error;
       }
       const isRetryable = !isPermanentFailure(error);
       this.#dependencies.logger.error({
-        event: BillingLogEvent.WEBHOOK_FAILED,
+        event: SubscriptionLogEvent.WEBHOOK_FAILED,
         eventKind: context.kind,
         isRetryable,
         errorCode: error instanceof ErrorCodedException ? error.errorCode : undefined,
@@ -188,7 +188,7 @@ export class ApplyStoreSubscriptionEvent {
     } catch (error) {
       this.#dependencies.notifier.reportWebhookFailure(error, failureContextOf(event));
       this.#dependencies.logger.error({
-        event: BillingLogEvent.WEBHOOK_FAILED,
+        event: SubscriptionLogEvent.WEBHOOK_FAILED,
         eventKind: event.kind,
         isRetryable: false,
         errorType: toErrorType(error),
@@ -203,7 +203,7 @@ export class ApplyStoreSubscriptionEvent {
       await this.#dependencies.reconcileScheduler.schedule(userId, now());
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: BillingLogEvent.RECONCILE_FAILED,
+        event: SubscriptionLogEvent.RECONCILE_FAILED,
         userId,
         errorType: toErrorType(error),
       });
@@ -321,7 +321,7 @@ export class ApplyStoreSubscriptionEvent {
 
       if (eventPayload == null) {
         this.#dependencies.logger.debug({
-          event: BillingLogEvent.WEBHOOK_NO_CHANGE,
+          event: SubscriptionLogEvent.WEBHOOK_NO_CHANGE,
           eventKind: event.kind,
           userId: user.id,
         });
@@ -496,7 +496,7 @@ export class ApplyStoreSubscriptionEvent {
       periodType: periodTypeAfter(event) ?? null,
     });
     this.#dependencies.logger.log({
-      event: BillingLogEvent.SUBSCRIPTION_CHAIN_ADOPTED,
+      event: SubscriptionLogEvent.SUBSCRIPTION_CHAIN_ADOPTED,
       eventKind: event.kind,
       userId: user.id,
     });
@@ -662,7 +662,7 @@ export class ApplyStoreSubscriptionEvent {
 
   #logStarted(event: StoreSubscriptionEvent): void {
     this.#dependencies.logger.log({
-      event: BillingLogEvent.WEBHOOK_STARTED,
+      event: SubscriptionLogEvent.WEBHOOK_STARTED,
       eventKind: event.kind,
       eventId: event.providerEventId,
       environment: event.environment ?? "UNKNOWN",
@@ -671,7 +671,7 @@ export class ApplyStoreSubscriptionEvent {
 
   #logDuplicate(event: StoreSubscriptionEvent, userId: string): void {
     this.#dependencies.logger.debug({
-      event: BillingLogEvent.WEBHOOK_DUPLICATE,
+      event: SubscriptionLogEvent.WEBHOOK_DUPLICATE,
       eventKind: event.kind,
       userId,
       eventId: event.providerEventId,
@@ -680,7 +680,7 @@ export class ApplyStoreSubscriptionEvent {
 
   #logCompleted(event: StoreSubscriptionEvent, userId: string): void {
     this.#dependencies.logger.log({
-      event: BillingLogEvent.WEBHOOK_COMPLETED,
+      event: SubscriptionLogEvent.WEBHOOK_COMPLETED,
       eventKind: event.kind,
       userId,
       environment: event.environment ?? "UNKNOWN",

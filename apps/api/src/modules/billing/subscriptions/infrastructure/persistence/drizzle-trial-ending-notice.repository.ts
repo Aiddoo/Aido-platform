@@ -6,7 +6,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { subscription } from "#api/platform/database/schema/index";
 
 import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
-import { SubscriptionPlanPolicy } from "../../../shared/subscription-plan.domain-service.js";
+import { planTypeOfProduct } from "../../../shared/subscription-plan.domain-service.js";
 import type {
   TrialEndingNotice,
   TrialEndingNoticeSourcePort,
@@ -55,7 +55,7 @@ export class DrizzleTrialEndingNoticeSource implements TrialEndingNoticeSourcePo
     return rows.map(({ status, productId, ...row }) => ({
       ...row,
       willRenew: status === "ACTIVE",
-      planType: SubscriptionPlanPolicy.planTypeOf(productId),
+      planType: planTypeOfProduct(productId),
     }));
   }
 
