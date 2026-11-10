@@ -8,8 +8,8 @@ export interface WeatherBriefingTodoQuery {
   readonly date: Temporal.PlainDate;
   /** 알림 시간대(기기 시간대) */
   readonly timezone: string;
-  readonly from: Date;
-  readonly until: Date;
+  readonly from: Temporal.Instant;
+  readonly until: Temporal.Instant;
 }
 
 /** 아침 날씨 알림이 오늘 할 일을 읽는 포트. 할 일 규칙은 planning이 소유한다 */

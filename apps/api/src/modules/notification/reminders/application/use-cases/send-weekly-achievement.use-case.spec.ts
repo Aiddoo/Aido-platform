@@ -77,7 +77,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
           week: isoWeek,
           totalTodos: 3,
           completedTodos: 2,
-          achievedAt: new Date(`${ctx.today.toString()}T00:00:00.000Z`),
+          achievedAt: ctx.today,
         },
       ],
     ]);

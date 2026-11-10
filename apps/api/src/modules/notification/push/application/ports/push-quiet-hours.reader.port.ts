@@ -4,6 +4,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 export abstract class PushQuietHoursReaderPort {
   abstract findUsersInQuietHours(
     userIds: readonly UserId[],
-    at: Date,
+    at: Temporal.Instant,
   ): Promise<ReadonlySet<string>>;
 }

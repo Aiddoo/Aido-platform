@@ -44,7 +44,7 @@ describe("PushQuietHoursReader", () => {
       losAngeles: "America/Los_Angeles",
       legacyUtc: "UTC",
     });
-    const at = new Date("2028-02-26T17:00:00.000Z");
+    const at = Temporal.Instant.from("2028-02-26T17:00:00.000Z");
 
     // When
     const quiet = await reader.findUsersInQuietHours(
@@ -75,7 +75,7 @@ describe("PushQuietHoursReader", () => {
     // When
     const result = await reader.findUsersInQuietHours(
       [UserId.reconstitute("losAngeles")],
-      new Date(at),
+      Temporal.Instant.from(at),
     );
 
     // Then

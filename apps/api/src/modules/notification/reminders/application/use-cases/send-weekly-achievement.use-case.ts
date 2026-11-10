@@ -1,7 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/notification.messages.js";
@@ -66,8 +65,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       week: isoWeek,
       totalTodos: g.count,
       completedTodos: completedMap.get(g.userId) ?? 0,
-      // insights 주간 달성 기록은 아직 UTC 자정 Date로 받는다
-      achievedAt: plainDateToDate(today),
+      achievedAt: today,
     }));
 
     // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────

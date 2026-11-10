@@ -3,6 +3,7 @@ import { WeatherReportReader } from "#api/modules/weather/forecasts/application/
 import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
@@ -15,6 +16,7 @@ import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-re
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
 const HOUR_MS = 60 * 60_000;
@@ -132,8 +134,8 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       userIds: [UserId.reconstitute("u1")],
       date: Temporal.PlainDate.from("2026-11-02"),
       timezone: "Asia/Seoul",
-      from: NOW,
-      until: new Date("2026-11-02T15:00:00.000Z"),
+      from: Temporal.Instant.from(NOW.toISOString()),
+      until: Temporal.Instant.from("2026-11-02T15:00:00.000Z"),
     });
   });
 
@@ -211,6 +213,11 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 });
 
+// weather 조회 포트는 아직 Date를 받아 알림 경계(providers)와 같은 변환을 거친다
+function weatherReportReaderAt(reader: WeatherReportReader): ReminderWeatherReportReaderPort {
+  return { readReports: (requests, now) => reader.readReports(requests, instantToDate(now)) };
+}
+
 describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 예산", () => {
   let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
@@ -236,15 +243,17 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       todoReader,
       notificationPublisher: publisher,
       notificationHistoryReader: new StubNotificationHistoryReader(),
-      weatherReportReader: new WeatherReportReader({
-        weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCache(
-          memory,
-          new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
-        ),
-        timezoneResolver: new StubTimezoneResolver(),
-        logger: new SilentLogger(),
-      }),
+      weatherReportReader: weatherReportReaderAt(
+        new WeatherReportReader({
+          weatherReportProvider: provider,
+          weatherReportCache: new WeatherReportCache(
+            memory,
+            new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+          ),
+          timezoneResolver: new StubTimezoneResolver(),
+          logger: new SilentLogger(),
+        }),
+      ),
       clock,
       logger: new SilentLogger(),
     });

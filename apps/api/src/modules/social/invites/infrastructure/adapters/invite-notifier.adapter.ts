@@ -11,7 +11,6 @@ import {
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type InviteJoinedNotification,
@@ -132,10 +131,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
   }
 
   async isInQuietHours(userId: UserId, at: Temporal.Instant): Promise<boolean> {
-    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours(
-      [userId],
-      instantToDate(at),
-    );
+    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours([userId], at);
     return quietUserIds.has(userId.value);
   }
 }

@@ -94,7 +94,8 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0, unavailable: 0 };
     }
 
-    const at = instantToDate(this.#dependencies.clock.now());
+    const now = this.#dependencies.clock.now();
+    const at = instantToDate(now);
     const reports = await this.#dependencies.weatherReportReader.readReports(
       targets.map((user) => ({
         key: user.id,
@@ -102,7 +103,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
         longitude: user.location.longitude,
         language: weatherRecipientLocale(user),
       })),
-      at,
+      now,
     );
 
     let unavailable = 0;

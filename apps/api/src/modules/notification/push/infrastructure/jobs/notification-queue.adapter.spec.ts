@@ -145,7 +145,7 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     // When
     const recording = service.enqueueBillingIssue(
       { userId: "user-1" },
-      new Date("2026-11-03T00:00:00.000Z"),
+      Temporal.Instant.from("2026-11-03T00:00:00.000Z"),
     );
 
     // Then

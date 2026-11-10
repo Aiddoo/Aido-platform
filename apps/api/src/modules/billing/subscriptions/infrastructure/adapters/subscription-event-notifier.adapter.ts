@@ -9,7 +9,6 @@ import { OperationalAlertPort } from "#api/shared/application/ports/operational-
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type StoreSubscriptionEventFailureContext,
@@ -55,10 +54,7 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   }
 
   recordBillingIssue(userId: UserId, at: Temporal.Instant): Promise<void> {
-    return this.#notificationQueueService.enqueueBillingIssue(
-      { userId: userId.value },
-      instantToDate(at),
-    );
+    return this.#notificationQueueService.enqueueBillingIssue({ userId: userId.value }, at);
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {

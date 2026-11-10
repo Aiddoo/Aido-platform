@@ -1,5 +1,4 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
@@ -22,7 +21,10 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
     this.#dependencies = dependencies;
   }
 
-  async findUsersInQuietHours(users: readonly UserId[], at: Date): Promise<ReadonlySet<string>> {
+  async findUsersInQuietHours(
+    users: readonly UserId[],
+    instant: Temporal.Instant,
+  ): Promise<ReadonlySet<string>> {
     if (users.length === 0) {
       return new Set();
     }
@@ -32,7 +34,6 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
     const timezones = new Map(
       preferences.map((preference) => [preference.userId, preference.timezone]),
     );
-    const instant = instantFromDate(at);
     return new Set(
       userIds.filter((userId) =>
         isWithinQuietHours({

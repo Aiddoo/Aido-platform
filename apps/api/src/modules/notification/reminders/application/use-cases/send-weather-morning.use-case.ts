@@ -114,8 +114,8 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
         userIds: targets.map((u) => UserId.reconstitute(u.id)),
         date,
         timezone: ctx.tz,
-        from: at,
-        until: instantToDate(date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant()),
+        from: now,
+        until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
       }),
       this.#dependencies.weatherReportReader.readReports(
         targets.map((user) => ({
@@ -124,7 +124,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
           longitude: user.location.longitude,
           language: weatherRecipientLocale(user),
         })),
-        at,
+        now,
       ),
     ]);
     const todosByUser = groupBy(todos, (todo) => todo.userId);

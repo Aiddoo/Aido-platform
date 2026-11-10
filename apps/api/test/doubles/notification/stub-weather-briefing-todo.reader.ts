@@ -16,8 +16,8 @@ export class StubWeatherBriefingTodoReader extends WeatherBriefingTodoReaderPort
       .filter(
         (todo) =>
           userIds.has(todo.userId) &&
-          todo.scheduledTime.getTime() >= query.from.getTime() &&
-          todo.scheduledTime.getTime() < query.until.getTime(),
+          todo.scheduledTime.getTime() >= query.from.epochMilliseconds &&
+          todo.scheduledTime.getTime() < query.until.epochMilliseconds,
       )
       .toSorted(
         (left, right) =>

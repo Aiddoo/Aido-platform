@@ -79,7 +79,7 @@ export class ReconfirmMarketingConsentsUseCase {
       });
       const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
         targets.map((target) => UserId.reconstitute(target.userId)),
-        instantToDate(input.now),
+        input.now,
       );
       const daytimeUserIds = targets
         .map((target) => target.userId)

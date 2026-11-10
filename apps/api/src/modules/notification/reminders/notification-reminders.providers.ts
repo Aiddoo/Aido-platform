@@ -5,6 +5,8 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import { WeatherReportReaderPort } from "../../weather/forecasts/weather-forecasts.public.js";
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
@@ -61,7 +63,9 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
     inject: [WeatherReportReaderPort],
     useFactory: (
       reader: Pick<WeatherReportReaderPort, "readReports">,
-    ): ReminderWeatherReportReaderPort => reader,
+    ): ReminderWeatherReportReaderPort => ({
+      readReports: (requests, now) => reader.readReports(requests, instantToDate(now)),
+    }),
   },
   {
     provide: WeeklyAchievementWriterPort,
@@ -71,7 +75,11 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
     ): WeeklyAchievementWriterPort => ({
       execute: ({ records }) =>
         writer.execute({
-          records: records.map((record) => ({ ...record, userId: record.userId.value })),
+          records: records.map((record) => ({
+            ...record,
+            userId: record.userId.value,
+            achievedAt: plainDateToDate(record.achievedAt),
+          })),
         }),
     }),
   },

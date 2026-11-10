@@ -6,7 +6,7 @@ export interface WeeklyAchievementTally {
   readonly week: number;
   readonly totalTodos: number;
   readonly completedTodos: number;
-  readonly achievedAt: Date;
+  readonly achievedAt: Temporal.PlainDate;
 }
 
 // 주간 달성 기록은 insights가 소유한다. 이 slice는 집계한 값을 넘기기만 한다
