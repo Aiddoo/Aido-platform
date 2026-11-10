@@ -45,6 +45,12 @@ import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
+/** health가 읽는 큐 수만 받는다. */
+export type PgBossQueueCounts = Pick<
+  QueueResult,
+  "name" | "queuedCount" | "activeCount" | "failedCount"
+>;
+
 export interface PgBossClient {
   start(): Promise<unknown>;
   stop(options?: StopOptions): Promise<void>;
@@ -61,7 +67,7 @@ export interface PgBossClient {
     options: WorkOptions & { includeMetadata: true },
     handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string>;
-  getQueues(names?: string[]): Promise<QueueResult[]>;
+  getQueues(names?: string[]): Promise<PgBossQueueCounts[]>;
 }
 
 type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
@@ -134,7 +140,7 @@ export class LazyPgBossClient implements PgBossClient {
     return (await this.ensureStarted()).work(name, options, handler);
   }
 
-  async getQueues(names?: string[]): Promise<QueueResult[]> {
+  async getQueues(names?: string[]): Promise<PgBossQueueCounts[]> {
     return (await this.ensureStarted()).getQueues(names);
   }
 

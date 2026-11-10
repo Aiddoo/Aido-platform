@@ -64,10 +64,10 @@ import {
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserPreferenceBuilder } from "#test/builders/index";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -241,14 +241,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: PushProviderPort,
           useValue: mockPushProvider,
         },
+        { provide: NoCacheStore, useValue: new NoCacheStore() },
         {
           provide: CacheService,
-          useFactory: () => {
-            const cache = createMockCacheService();
-            cache.mget.mockImplementation(async (keys) => keys.map(() => undefined));
-            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-            return cache;
-          },
+          inject: [NoCacheStore],
+          useFactory: (store: NoCacheStore) => new CacheService(store),
         },
         {
           provide: LOCK_PROVIDER,
@@ -733,7 +730,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           createInboxNotificationFixture({ userId: mockUserId, type: "INVITE_JOINED" }),
         ),
       ]);
-      const cacheService = module.get(CacheService);
+      const cacheStore = module.get(NoCacheStore);
+      cacheStore.forgetRecords();
 
       // When
       const releasedUnreadCount = await facade.getUnreadCount(mockUserId, "1.10.1");
@@ -742,20 +740,10 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(releasedUnreadCount).toBe(3);
       expect(currentUnreadCount).toBe(5);
-      expect(cacheService.wrap).toHaveBeenNthCalledWith(
-        1,
-        `aido:v1:notification:unread-count:${mockUserId}:legacy`,
-        expect.anything(),
-        expect.any(Function),
-        120_000,
-      );
-      expect(cacheService.wrap).toHaveBeenNthCalledWith(
-        2,
-        `aido:v1:notification:unread-count:${mockUserId}`,
-        expect.anything(),
-        expect.any(Function),
-        120_000,
-      );
+      expect(cacheStore.wrapped).toEqual([
+        { key: `aido:v1:notification:unread-count:${mockUserId}:legacy`, ttlMs: 120_000 },
+        { key: `aido:v1:notification:unread-count:${mockUserId}`, ttlMs: 120_000 },
+      ]);
     });
   });
 
@@ -887,7 +875,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
         ),
       ]);
-      const cacheService = module.get(CacheService);
+      const cacheStore = module.get(NoCacheStore);
+      cacheStore.forgetRecords();
 
       // When
       const result = await facade.markAllAsRead(mockUserId, "1.13.0");
@@ -900,16 +889,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           and(eq(notification.userId, mockUserId), eq(notification.isRead, false)),
         ),
       ).toBe(0);
-      expect(cacheService.del).toHaveBeenCalledTimes(3);
-      expect(cacheService.del).toHaveBeenCalledWith(
+      expect([...cacheStore.deletedKeys].sort()).toEqual([
         `aido:v1:notification:unread-count:${mockUserId}`,
-      );
-      expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}:legacy`,
-      );
-      expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}:since-1.11.0`,
-      );
+      ]);
     });
   });
 

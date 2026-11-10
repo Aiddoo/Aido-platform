@@ -61,7 +61,7 @@ import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -218,11 +218,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         {
           provide: CacheService,
-          useFactory: () => {
-            const cache = createMockCacheService();
-            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-            return cache;
-          },
+          useValue: new CacheService(new NoCacheStore()),
         },
         {
           provide: CACHE_SERVICE,

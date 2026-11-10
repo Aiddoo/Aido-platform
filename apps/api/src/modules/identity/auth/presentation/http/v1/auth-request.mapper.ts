@@ -11,7 +11,7 @@ import { resolveRequestDevice } from "./request-device.mapper.js";
  * 본문 값이 RequestClient의 헤더 값보다 우선한다.
  */
 export function extractMetadata(
-  req: Request,
+  req: Pick<Request, "ip" | "headers">,
   client: RequestClient,
   body?: { deviceName?: string; deviceType?: string },
 ): RequestMetadata {

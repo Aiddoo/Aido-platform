@@ -4,4 +4,3 @@ export * from "./execution-context.mock.js";
 export * from "./fake-ai.generator.js";
 export * from "./fake-email.service.js";
 export * from "./ports/index.js";
-export * from "./typed-mock.js";

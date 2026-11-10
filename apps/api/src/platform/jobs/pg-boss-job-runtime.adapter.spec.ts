@@ -4,7 +4,6 @@ import type {
   JobInsert,
   JobWithMetadata,
   QueueOptions,
-  QueueResult,
   ScheduleOptions,
   SendOptions,
   StopOptions,
@@ -15,13 +14,13 @@ import { vi } from "vitest";
 
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { createFakeDatabase, type ExecutedStatement } from "#test/mocks/drizzle.mock";
-import { mockOf } from "#test/mocks/typed-mock";
 
 import {
   deterministicJobId,
   LazyPgBossClient,
   PgBossJobRuntimeAdapter,
   type PgBossClient,
+  type PgBossQueueCounts,
 } from "./pg-boss-job-runtime.adapter.js";
 
 const QUEUE = "document-generation";
@@ -77,7 +76,7 @@ class FakePgBossClient implements PgBossClient {
   }> = [];
   readonly stopCalls: StopOptions[] = [];
   readonly handlers = new Map<string, (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>>();
-  queues: QueueResult[] = [];
+  queues: PgBossQueueCounts[] = [];
   deleteError?: Error;
 
   async start(): Promise<unknown> {
@@ -139,21 +138,49 @@ class FakePgBossClient implements PgBossClient {
     return `worker:${name}`;
   }
 
-  async getQueues(_names?: string[]): Promise<QueueResult[]> {
+  async getQueues(_names?: string[]): Promise<PgBossQueueCounts[]> {
     return this.queues;
   }
 }
 
 function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata<JobData> {
-  return mockOf<JobWithMetadata<JobData>>({
+  const createdOn = new Date("2026-07-22T11:59:00.000Z");
+  return {
     id: "job-1",
     name: QUEUE,
     data: { documentId: 42 },
-    state: "created",
+    expireInSeconds: 900,
+    heartbeatSeconds: null,
     retryCount: 1,
-    createdOn: new Date("2026-07-22T11:59:00.000Z"),
+    signal: new AbortController().signal,
+    priority: 0,
+    state: "created",
+    retryLimit: 2,
+    retryDelay: 0,
+    retryBackoff: false,
+    startAfter: createdOn,
+    startedOn: createdOn,
+    singletonKey: null,
+    singletonOn: null,
+    deleteAfterSeconds: 0,
+    createdOn,
+    completedOn: null,
+    keepUntil: createdOn,
+    policy: "standard",
+    heartbeatOn: null,
+    blocked: false,
+    blocking: false,
+    pendingDependencies: 0,
+    deadLetter: "",
+    output: {},
+    sourceName: null,
+    sourceId: null,
+    sourceCreatedOn: null,
+    sourceRetryCount: null,
+    sourceOutput: null,
+    sourceRootId: null,
     ...overrides,
-  });
+  };
 }
 
 describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
@@ -371,14 +398,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
   });
 
   it("queue 상태를 공통 health 모델로 정규화한다", async () => {
-    boss.queues = [
-      mockOf<QueueResult>({
-        name: QUEUE,
-        queuedCount: 3,
-        activeCount: 1,
-        failedCount: 2,
-      }),
-    ];
+    boss.queues = [{ name: QUEUE, queuedCount: 3, activeCount: 1, failedCount: 2 }];
 
     await expect(runtime.health([QUEUE])).resolves.toEqual({
       backend: "postgres",

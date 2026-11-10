@@ -47,7 +47,7 @@ import { EncryptionService } from "#api/platform/encryption/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import {
   createDatabaseTransactionFixture,
   type TestDatabaseClient,
@@ -214,11 +214,7 @@ export async function createAuthTestModule(
       },
       {
         provide: CacheService,
-        useFactory: () => {
-          const cache = createMockCacheService();
-          cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-          return cache;
-        },
+        useValue: new CacheService(new NoCacheStore()),
       },
       {
         provide: CACHE_SERVICE,
