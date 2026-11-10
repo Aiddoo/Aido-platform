@@ -8,7 +8,7 @@ import { NudgeLockKeys } from "./nudges.lock-keys.js";
 const SENDER = UserId.reconstitute("sender");
 const RECEIVER = UserId.reconstitute("receiver");
 
-// 배포 중 옛 버전과 같은 잠금을 잡아야 해서 shared MutationLockKeys에서 옮긴 문자열을 바이트 단위로 고정한다
+// 배포 중 옛 버전과 같은 잠금을 잡아야 해서 공용 잠금 키에서 옮긴 문자열을 바이트 단위로 고정한다
 describe("social 잠금 키", () => {
   it("응원·찌르기·초대·신고 잠금 키는 옮기기 전 문자열과 같다", () => {
     // When
