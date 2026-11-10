@@ -53,6 +53,7 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 import type {
   DomainEventPublisherPort,
   MutationLockPort,
+  PublishedDomainEvent,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -636,8 +637,12 @@ export class StubPlanningTodoCache implements TodoCachePort {
 
 export class StubPlanningEventPublisher implements DomainEventPublisherPort {
   readonly events: DomainEvent[] = [];
+  readonly publishedEvents: PublishedDomainEvent[] = [];
   async publishAll(events: readonly DomainEvent[]): Promise<void> {
     this.events.push(...events);
+  }
+  async publish(events: readonly PublishedDomainEvent[]): Promise<void> {
+    this.publishedEvents.push(...events);
   }
 }
 

@@ -2,7 +2,10 @@ import { Logger } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
-import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
+import type {
+  DomainEventPublisherPort,
+  PublishedDomainEvent,
+} from "#api/shared/application/ports/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 
@@ -19,7 +22,15 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
   readonly #logger = new Logger(TrackingDomainEventPublisher.name);
   readonly #pending = new Set<Promise<unknown>>();
 
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly fanOut: Pick<DomainEventPublisherPort, "publish">,
+  ) {}
+
+  // 새 publish는 UoW 안에서 큐 작업·커밋 뒤 작업만 등록하므로 실제 fan-out에 그대로 맡긴다
+  async publish(events: readonly PublishedDomainEvent[]): Promise<void> {
+    await this.fanOut.publish(events);
+  }
 
   async publishAll(events: readonly DomainEvent[]): Promise<void> {
     for (const event of events) {

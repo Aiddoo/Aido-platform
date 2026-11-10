@@ -54,6 +54,7 @@ import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cac
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/index";
+import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -263,9 +264,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     // 도메인 이벤트 리스너의 잔류 작업을 reset이 drain할 수 있도록 추적 퍼블리셔로 교체
     .overrideProvider(DOMAIN_EVENT_PUBLISHER)
     .useFactory({
-      inject: [EventEmitter2],
-      factory: (eventEmitter: EventEmitter2) => {
-        trackingEventPublisher = new TrackingDomainEventPublisher(eventEmitter);
+      inject: [EventEmitter2, FanOutDomainEventPublisher],
+      factory: (eventEmitter: EventEmitter2, fanOut: FanOutDomainEventPublisher) => {
+        trackingEventPublisher = new TrackingDomainEventPublisher(eventEmitter, fanOut);
         return trackingEventPublisher;
       },
     });

@@ -17,7 +17,10 @@ import type { DomainEvent } from "#api/shared/domain/aggregate-root";
  * 재시도가 필수인 부수효과는 별도의 내구성 큐/아웃박스가 필요합니다.
  */
 @Injectable()
-export class EventEmitterDomainEventPublisher implements DomainEventPublisherPort {
+export class EventEmitterDomainEventPublisher implements Pick<
+  DomainEventPublisherPort,
+  "publishAll"
+> {
   readonly #logger = new Logger(EventEmitterDomainEventPublisher.name);
 
   constructor(private readonly eventEmitter: EventEmitter2) {}
