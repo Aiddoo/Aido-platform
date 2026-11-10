@@ -3,9 +3,7 @@ import {
   weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
   weeklyAchievementParamSchema,
-  weeklyAchievementSchema,
-  weeklyAchievementSummarySchema,
-} from "@aido/api";
+} from "@aido/api/contracts/weekly-achievement";
 import type { z } from "zod";
 
 export const GetWeeklyAchievementsQueryDto = getWeeklyAchievementsQuerySchema.meta({
@@ -19,14 +17,6 @@ export const WeeklyAchievementParamDto = weeklyAchievementParamSchema.meta({
   apiParameter: true,
 });
 export type WeeklyAchievementParamDto = z.infer<typeof WeeklyAchievementParamDto>;
-
-export const WeeklyAchievementDto = weeklyAchievementSchema.meta({ id: "WeeklyAchievementDto" });
-export type WeeklyAchievementDto = z.infer<typeof WeeklyAchievementDto>;
-
-export const WeeklyAchievementSummaryDto = weeklyAchievementSummarySchema.meta({
-  id: "WeeklyAchievementSummaryDto",
-});
-export type WeeklyAchievementSummaryDto = z.infer<typeof WeeklyAchievementSummaryDto>;
 
 export const WeeklyAchievementListResponseDto = weeklyAchievementListResponseSchema.meta({
   id: "WeeklyAchievementListResponseDto",
