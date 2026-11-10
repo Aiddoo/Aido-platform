@@ -46,6 +46,7 @@ import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-deliv
 import { PushDeviceRepositoryPort } from "./application/ports/push-device.repository.port.js";
 import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
 import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
+import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
 import { PushProviderPort } from "./application/ports/push-provider.port.js";
 import {
   PUSH_QUIET_HOURS_READER,
@@ -59,7 +60,6 @@ import {
   SessionPushDeviceReleasePort,
 } from "./application/ports/session-push-device-release.port.js";
 import { UserNotificationSettingsPort } from "./application/ports/user-notification-settings.port.js";
-import { PushNotificationPayloadMapper } from "./application/push-notification-payload.mapper.js";
 import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
 import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
 import { DispatchPushNotificationUseCase } from "./application/use-cases/dispatch-push-notification.use-case.js";
@@ -93,6 +93,7 @@ import { ExpoPushSenderAdapter } from "./infrastructure/adapters/expo-push-sende
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/hmac-marketing-push-opt-out-token.adapter.js";
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
+import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
 import { createPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
@@ -175,9 +176,12 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     notificationHistoryReader: NotificationHistoryReaderPort,
     logger: loggerFor(NotificationHistoryReader),
   }),
-  provideUseCase(PushNotificationPayloadMapper, {
-    marketingOptOutTokens: MarketingPushOptOutTokenPort,
-  }),
+  {
+    provide: PushNotificationPayloadPort,
+    useFactory: (marketingOptOutTokens: MarketingPushOptOutTokenPort) =>
+      new PushNotificationPayloadMapper({ marketingOptOutTokens }),
+    inject: [MarketingPushOptOutTokenPort],
+  },
   provideUseCase(EvaluatePushDeliveryEligibilityUseCase, {
     userSettings: UserNotificationSettingsPort,
     rateLimiter: PushRateLimiterPort,
@@ -197,7 +201,7 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     lifecycle: PushDeliveryLifecycleRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     eligibility: EvaluatePushDeliveryEligibilityUseCase,
-    payloadFactory: PushNotificationPayloadMapper,
+    payloadFactory: PushNotificationPayloadPort,
     delivery: DispatchPushNotificationUseCase,
     clock: ClockPort,
     logger: loggerFor(DeliverPushNotificationsUseCase),

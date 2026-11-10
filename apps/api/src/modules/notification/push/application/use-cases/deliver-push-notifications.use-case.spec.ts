@@ -12,15 +12,16 @@ import { createNotificationDraftFixture } from "#test/fixtures/notification/noti
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
+import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type {
+  BatchPushNotificationPayload,
+  PushNotificationPayloadPort,
+} from "../ports/push-notification-payload.port.js";
 import type { PushPayload } from "../ports/push-provider.port.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
 import type { PushRateLimiterPort } from "../ports/push-rate-limiter.port.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import {
-  type BatchPushNotificationPayload,
-  PushNotificationPayloadMapper,
-} from "../push-notification-payload.mapper.js";
 import type {
   DeliverPushNotificationsInput,
   PushDispatchSkipReason,
@@ -53,7 +54,7 @@ type BatchCandidate = {
   readonly data: CreateNotificationData;
   readonly rateLimitDispatchId: number;
 };
-type CreateSingleInput = Parameters<PushNotificationPayloadMapper["createSingle"]>[0];
+type CreateSingleInput = Parameters<PushNotificationPayloadPort["createSingle"]>[0];
 type DeliverSingleInput = Parameters<DispatchPushNotificationUseCase["deliverSingle"]>[0];
 
 function createClaimedDelivery(input: {
@@ -226,7 +227,7 @@ class StubDeliveryEligibility implements Pick<
 
 // 실제 payload mapper로 만들고 받은 입력만 남긴다
 class RecordingPayloadFactory implements Pick<
-  PushNotificationPayloadMapper,
+  PushNotificationPayloadPort,
   "createBatch" | "createSingle"
 > {
   readonly singleInputs: CreateSingleInput[] = [];

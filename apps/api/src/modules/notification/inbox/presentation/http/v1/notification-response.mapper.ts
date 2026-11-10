@@ -12,8 +12,8 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { renderNotificationCopy } from "../../../../push/application/messages/notification.messages.js";
 import { toWireNotificationType } from "../../../../push/domain/notification-client-capability.domain-service.js";
-import { toNotificationNavigation } from "../../../../push/domain/notification-navigation.domain-service.js";
-import { toNotificationRouting } from "../../../../push/domain/notification-routing.domain-service.js";
+import { toNotificationNavigation } from "../../../../push/infrastructure/adapters/notification-navigation.mapper.js";
+import { toNotificationRouting } from "../../../../push/infrastructure/adapters/notification-routing.mapper.js";
 import type { InboxNotification } from "../../../application/read-models/inbox-notification.read-model.js";
 
 // 출시 앱이 표시하지는 않지만 계약 필드라 문구를 그대로 둔다

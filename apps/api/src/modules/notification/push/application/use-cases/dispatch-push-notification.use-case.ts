@@ -1,4 +1,4 @@
-import { isSemanticVersionAtLeast } from "@aido/api";
+import { isSemanticVersionAtLeast } from "@aido/api/vocabulary";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -23,13 +23,13 @@ import { revokesPushToken } from "../../domain/push-failure-kind.constants.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import { type ActivePushTokenReaderPort } from "../ports/active-push-token.reader.port.js";
 import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
+import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
 import {
   type PushPayload,
   type PushProviderPort,
   type PushResult,
 } from "../ports/push-provider.port.js";
 import { type PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
-import type { BatchPushNotificationPayload } from "../push-notification-payload.mapper.js";
 import type { PushDispatchSkipReason } from "../read-models/push-delivery.read-model.js";
 
 function tokensToRevoke(results: readonly PushResult[]): string[] {

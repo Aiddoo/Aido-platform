@@ -1,4 +1,7 @@
-import { type NotificationRouting, notificationRoutingSchema } from "@aido/api";
+import {
+  type NotificationRouting,
+  notificationRoutingSchema,
+} from "@aido/api/contracts/notification";
 
 /**
  * 전용 컬럼이 없어 metadata에 실려 있는 이동 재료를 꺼낸다.

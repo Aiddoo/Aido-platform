@@ -1,5 +1,4 @@
-import type { NotificationActionType } from "@aido/api";
-import type { PushDevicePlatform } from "@aido/api/vocabulary";
+import type { NotificationActionType, PushDevicePlatform } from "@aido/api/vocabulary";
 
 import type { NotificationType } from "../../domain/notification-type.constants.js";
 

@@ -1,37 +1,102 @@
 import {
   NOTICE_DEEP_LINK_PATH,
   NOTIFICATION_ACTION_TYPE,
+  type NOTIFICATION_ACTIVITY_KIND,
   NOTIFICATION_NAVIGATION_KIND,
-  type NotificationNavigation,
-  type NotificationNavigationKind,
-  type NotificationNavigationOf,
-  notificationNavigationSchema,
-  type NotificationRouting,
+  type NotificationActionType,
   WEATHER_RESCHEDULE_DEEP_LINK,
   WEATHER_RESCHEDULE_MAX_TODO_IDS,
   WEATHER_RESCHEDULE_REASONS,
-} from "@aido/api";
+  type WeatherRescheduleReason,
+} from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { CreateNotificationData } from "../../inbox/application/ports/notification-draft.port.js";
+import type { NotificationType } from "../../inbox/domain/notification-type.constants.js";
 
-type NotificationNavigationSource = Pick<
-  CreateNotificationData,
-  "type" | "action" | "todoId" | "friendId" | "nudgeId" | "cheerId"
-> & {
-  readonly routing?: NotificationRouting;
-};
+type NavigationKinds = typeof NOTIFICATION_NAVIGATION_KIND;
+type NotificationNavigationKind = NavigationKinds[keyof NavigationKinds];
+type NotificationActivityKind =
+  (typeof NOTIFICATION_ACTIVITY_KIND)[keyof typeof NOTIFICATION_ACTIVITY_KIND];
+type ExternalUrlPresentation =
+  | typeof NOTIFICATION_ACTION_TYPE.BROWSER
+  | typeof NOTIFICATION_ACTION_TYPE.WEBVIEW;
+
+/** metadata에서 꺼낸 이동 재료. 계약 모양 검증은 매퍼가 먼저 한다. */
+export interface NotificationRoutingInput {
+  readonly commentId?: string;
+  readonly threadRootId?: string;
+  readonly activityKind?: NotificationActivityKind;
+  readonly todoOwnerId?: string;
+  readonly todoDate?: string;
+}
+
+export interface NotificationNavigationSource {
+  readonly type: NotificationType;
+  readonly action?: { readonly type: NotificationActionType; readonly url?: string };
+  readonly todoId?: number | null;
+  readonly friendId?: string | null;
+  readonly nudgeId?: number | null;
+  readonly cheerId?: number | null;
+  readonly routing?: NotificationRoutingInput;
+}
+
+interface TodoDestination {
+  readonly todoId: number;
+  readonly todoOwnerId?: string;
+  readonly todoDate?: string;
+}
+
+type ScreenKind = Exclude<
+  NotificationNavigationKind,
+  NavigationKinds[
+    | "EXTERNAL_URL"
+    | "FRIEND_FEED"
+    | "TODO"
+    | "TODO_COMMENT"
+    | "NUDGE"
+    | "CHEER"
+    | "WEATHER_RESCHEDULE"]
+>;
+
+/** 알림을 눌렀을 때 열 곳. 앱 계약(navigation)으로 검증·변환하는 일은 매퍼가 한다. */
+export type NotificationDestination =
+  | { readonly kind: ScreenKind }
+  | {
+      readonly kind: NavigationKinds["EXTERNAL_URL"];
+      readonly url: string;
+      readonly presentation: ExternalUrlPresentation;
+    }
+  | { readonly kind: NavigationKinds["FRIEND_FEED"]; readonly friendId: string }
+  | (TodoDestination & { readonly kind: NavigationKinds["TODO"] })
+  | (TodoDestination & {
+      readonly kind: NavigationKinds["TODO_COMMENT"];
+      readonly commentId: string;
+      readonly threadCommentId: string;
+      readonly activityKind: NotificationActivityKind;
+    })
+  | { readonly kind: NavigationKinds["NUDGE"]; readonly nudgeId: number }
+  | { readonly kind: NavigationKinds["CHEER"]; readonly cheerId: number; readonly friendId: string }
+  | {
+      readonly kind: NavigationKinds["WEATHER_RESCHEDULE"];
+      readonly todoIds: readonly number[];
+      readonly reason: WeatherRescheduleReason;
+    };
+
+type NotificationDestinationOf<Kind extends NotificationNavigationKind> = Extract<
+  NotificationDestination,
+  { readonly kind: Kind }
+>;
 
 const RELATIVE_URL_BASE = "aido://app";
 const HTTP_URL_PATTERN = /^https?:\/\//;
 
-function screen<const Kind extends NotificationNavigationKind>(kind: Kind) {
+function screen<const Kind extends ScreenKind>(kind: Kind) {
   return { kind };
 }
 
 function externalUrlNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"EXTERNAL_URL"> | null {
+): NotificationDestinationOf<"EXTERNAL_URL"> | null {
   const action = source.action;
   if (action == null || action.url == null) {
     return null;
@@ -54,7 +119,7 @@ function externalUrlNavigation(
 
 function todoNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"TODO"> | null {
+): NotificationDestinationOf<"TODO"> | null {
   if (source.todoId == null) {
     return null;
   }
@@ -68,7 +133,7 @@ function todoNavigation(
 
 function todoCommentNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"TODO_COMMENT"> | null {
+): NotificationDestinationOf<"TODO_COMMENT"> | null {
   const todo = todoNavigation(source);
   const routing = source.routing;
   if (
@@ -90,7 +155,7 @@ function todoCommentNavigation(
 
 function nudgeNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"NUDGE"> | null {
+): NotificationDestinationOf<"NUDGE"> | null {
   if (source.nudgeId == null) {
     return null;
   }
@@ -99,7 +164,7 @@ function nudgeNavigation(
 
 function cheerNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"CHEER"> | null {
+): NotificationDestinationOf<"CHEER"> | null {
   if (source.cheerId == null || source.friendId == null) {
     return null;
   }
@@ -112,7 +177,7 @@ function cheerNavigation(
 
 function friendFeedNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"FRIEND_FEED"> | null {
+): NotificationDestinationOf<"FRIEND_FEED"> | null {
   if (source.friendId == null) {
     return null;
   }
@@ -122,7 +187,7 @@ function friendFeedNavigation(
 /** 날씨 알림의 `/weather/reschedule?todoIds=…&reason=…` 링크. reason이 없으면 앱처럼 비를 피한다. */
 function weatherRescheduleNavigation(
   source: NotificationNavigationSource,
-): NotificationNavigationOf<"WEATHER_RESCHEDULE"> | null {
+): NotificationDestinationOf<"WEATHER_RESCHEDULE"> | null {
   const url = source.action?.url;
   if (url == null || !url.startsWith(WEATHER_RESCHEDULE_DEEP_LINK)) {
     return null;
@@ -144,7 +209,7 @@ function weatherRescheduleNavigation(
 }
 
 /** 공지는 종류만으로 갈 곳을 정할 수 없어 서버가 DEEP_LINK url에 고른 앱 경로를 따른다. 모르는 경로는 이동하지 않는다. */
-function noticeNavigation(source: NotificationNavigationSource): NotificationNavigation {
+function noticeNavigation(source: NotificationNavigationSource): NotificationDestination {
   return match(source.action?.url)
     .with(NOTICE_DEEP_LINK_PATH.FEED, () => screen(NOTIFICATION_NAVIGATION_KIND.FEED))
     .with(NOTICE_DEEP_LINK_PATH.ACHIEVEMENTS, () =>
@@ -162,7 +227,7 @@ function noticeNavigation(source: NotificationNavigationSource): NotificationNav
     .otherwise(() => screen(NOTIFICATION_NAVIGATION_KIND.NONE));
 }
 
-function navigationByType(source: NotificationNavigationSource): NotificationNavigation {
+function navigationByType(source: NotificationNavigationSource): NotificationDestination {
   const feed = screen(NOTIFICATION_NAVIGATION_KIND.FEED);
   const none = screen(NOTIFICATION_NAVIGATION_KIND.NONE);
   return match(source.type)
@@ -218,14 +283,11 @@ function navigationByType(source: NotificationNavigationSource): NotificationNav
     .exhaustive();
 }
 
-/**
- * 푸시 data의 navigation. 1.14.0 이하 앱이 type·action·context·routing으로 고르던 목적지와 같은 곳을 가리킨다.
- * 계약을 통과하지 못하는 값(잘못된 날짜·id 등)은 싣지 않아 새 앱도 기존 필드로 이동한다.
- */
-export function toNotificationNavigation(
+/** 1.14.0 이하 앱이 type·action·context·routing으로 고르던 목적지와 같은 곳을 가리킨다. */
+export function resolveNotificationDestination(
   source: NotificationNavigationSource,
-): NotificationNavigation | undefined {
-  const navigation = match(source.action?.type)
+): NotificationDestination {
+  return match(source.action?.type)
     .with(NOTIFICATION_ACTION_TYPE.NONE, () => screen(NOTIFICATION_NAVIGATION_KIND.NONE))
     .with(
       NOTIFICATION_ACTION_TYPE.BROWSER,
@@ -234,6 +296,4 @@ export function toNotificationNavigation(
     )
     .with(NOTIFICATION_ACTION_TYPE.DEEP_LINK, undefined, () => navigationByType(source))
     .exhaustive();
-  const parsed = notificationNavigationSchema.safeParse(navigation);
-  return parsed.success ? parsed.data : undefined;
 }

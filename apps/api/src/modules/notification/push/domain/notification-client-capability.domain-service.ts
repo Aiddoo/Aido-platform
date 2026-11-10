@@ -1,6 +1,6 @@
-import { isSemanticVersionAtLeast } from "@aido/api";
 import {
   CATEGORY_TYPE_MAP,
+  isSemanticVersionAtLeast,
   NOTIFICATION_TYPE,
   type NotificationCategory,
   type NotificationType as WireNotificationType,

@@ -14,10 +14,10 @@ import {
   type PushDeliveryContext,
   type PushDeliveryLifecycleRepositoryPort,
 } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushNotificationPayloadPort } from "../ports/push-notification-payload.port.js";
 import type { PushResult } from "../ports/push-provider.port.js";
 import { PushDeliveryClaimRecoveryConflictError } from "../push-delivery-claim-recovery-conflict.errors.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type { PushNotificationPayloadMapper } from "../push-notification-payload.mapper.js";
 import type {
   DeliverPushNotificationsInput,
   PushDispatchSkipReason,
@@ -84,7 +84,7 @@ interface DeliverPushNotificationsDependencies {
     | "loadSingleRecipient"
     | "reserveBatch"
   >;
-  readonly payloadFactory: Pick<PushNotificationPayloadMapper, "createBatch" | "createSingle">;
+  readonly payloadFactory: Pick<PushNotificationPayloadPort, "createBatch" | "createSingle">;
   readonly delivery: Pick<
     DispatchPushNotificationUseCase,
     "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"

@@ -12,8 +12,8 @@ import { createPushDeviceFixture } from "#test/fixtures/notification/push-device
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
 import type { PushDevice } from "../../domain/push-device.aggregate.js";
+import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
-import type { BatchPushNotificationPayload } from "../push-notification-payload.mapper.js";
 import type { PushTokenRecord } from "../read-models/push-token.read-model.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 

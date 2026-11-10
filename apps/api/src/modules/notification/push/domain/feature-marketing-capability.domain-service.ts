@@ -1,4 +1,4 @@
-import { isSemanticVersionAtLeast } from "@aido/api";
+import { isSemanticVersionAtLeast } from "@aido/api/vocabulary";
 
 export const FEATURE_DISCOVERY_CAMPAIGN_KEY = "feature-discovery-2026-08";
 export const FEATURE_DISCOVERY_MIN_APP_VERSION = "1.8.0";

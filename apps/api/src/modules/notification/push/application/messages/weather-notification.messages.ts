@@ -1,5 +1,8 @@
-import { NOTIFICATION_ACTION_TYPE } from "@aido/api";
-import { buildWeatherRescheduleDeepLink, type WeatherRescheduleReason } from "@aido/api/vocabulary";
+import {
+  buildWeatherRescheduleDeepLink,
+  NOTIFICATION_ACTION_TYPE,
+  type WeatherRescheduleReason,
+} from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";

@@ -1,4 +1,4 @@
-import { notificationContentSchema } from "@aido/api";
+import { NOTIFICATION_LIMITS } from "@aido/api/vocabulary";
 import { capitalize } from "es-toolkit";
 import type { z } from "zod";
 
@@ -58,6 +58,17 @@ export function createNotificationLabelPreview({
   }
 
   return `${graphemes.slice(0, maxGraphemes - 1).join("")}${ELLIPSIS}`;
+}
+
+// 앱 계약(notificationContentSchema)과 같은 한도다. 넘으면 저장·발송하지 않는다
+function toNotificationContent(copy: NotificationCopy): NotificationCopy | null {
+  if (
+    copy.title.length > NOTIFICATION_LIMITS.MAX_TITLE_LENGTH ||
+    copy.body.length > NOTIFICATION_LIMITS.MAX_BODY_LENGTH
+  ) {
+    return null;
+  }
+  return { title: copy.title, body: copy.body };
 }
 
 /** 이름을 모를 때 쓰는 그 언어의 대체 이름(ko `친구`, en `A friend`). */
@@ -180,8 +191,7 @@ export function defineNotificationCopy<TFacts extends NotificationCopyFacts, TVa
         return null;
       }
       const copy = render(variantName, parsedFacts.data, locale);
-      const parsedCopy = copy == null ? null : notificationContentSchema.safeParse(copy);
-      return parsedCopy?.success ? parsedCopy.data : null;
+      return copy == null ? null : toNotificationContent(copy);
     },
   };
 }
@@ -199,8 +209,14 @@ export function renderNotificationVariant<TFacts extends NotificationCopyFacts>(
   if (copy == null) {
     throw new Error(`Notification copy ${template.key}.${variantName} cannot render its facts`);
   }
+  const content = toNotificationContent(copy);
+  if (content == null) {
+    throw new RangeError(
+      `Notification copy ${template.key}.${variantName} exceeds the notification length limits`,
+    );
+  }
   return {
-    ...notificationContentSchema.parse(copy),
+    ...content,
     copyKey: `${template.key}.${variantName}`,
     copyFacts: facts,
   };

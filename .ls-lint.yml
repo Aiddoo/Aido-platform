@@ -43,9 +43,9 @@ ls:
     .integration-spec.ts: kebab-case
 
 ignore:
+  # vitest가 spec 옆에 만드는 스냅숏 폴더
+  - apps/api/src/modules/*/*/**/__snapshots__
   - apps/api/src/modules/*/domain
   - apps/api/src/modules/*/application
   - apps/api/src/modules/*/infrastructure
   - apps/api/src/modules/*/presentation
-  - apps/api/src/modules/notification/inbox
-  - apps/api/src/modules/notification/push

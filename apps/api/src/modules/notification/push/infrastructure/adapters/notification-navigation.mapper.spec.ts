@@ -9,8 +9,8 @@ import {
   type NotificationNavigation,
 } from "@aido/api";
 
-import type { NotificationType } from "../../inbox/domain/notification-type.constants.js";
-import { toNotificationNavigation } from "./notification-navigation.domain-service.js";
+import type { NotificationType } from "../../../inbox/domain/notification-type.constants.js";
+import { toNotificationNavigation } from "./notification-navigation.mapper.js";
 
 const COMMENT_ID = "cmt92zn3n000b7voxx9quc2th";
 const THREAD_COMMENT_ID = "cmt92zn3n000a7voxx9quc2th";
@@ -212,7 +212,7 @@ const NAVIGATION_CASES: readonly NavigationCase[] = JSON.parse(
   readFileSync(
     resolve(
       import.meta.dirname,
-      "../../../../../../../packages/api/test-fixtures/notification-navigation.cases.json",
+      "../../../../../../../../packages/api/test-fixtures/notification-navigation.cases.json",
     ),
     "utf8",
   ),

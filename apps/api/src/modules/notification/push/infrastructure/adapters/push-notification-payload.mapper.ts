@@ -1,35 +1,25 @@
-import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
+import type { PushNotificationData } from "@aido/api/contracts/notification";
+import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
 
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { CreateNotificationData } from "../../inbox/application/ports/notification-draft.port.js";
-import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../domain/feature-marketing-capability.domain-service.js";
+import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
+import { withMarketingPushLabel } from "../../application/messages/marketing-push-label.messages.js";
+import { type MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
+import {
+  type BatchPushNotificationPayload,
+  type CreatePushNotificationPayloadInput,
+  PushNotificationPayloadPort,
+} from "../../application/ports/push-notification-payload.port.js";
+import type { PushPayload } from "../../application/ports/push-provider.port.js";
+import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/feature-marketing-capability.domain-service.js";
 import {
   notificationMinAppVersion,
   toWireNotificationType,
-} from "../domain/notification-client-capability.domain-service.js";
-import { toNotificationNavigation } from "../domain/notification-navigation.domain-service.js";
-import { toNotificationRouting } from "../domain/notification-routing.domain-service.js";
-import { isMarketingNotification } from "../domain/push-eligibility.domain-service.js";
-import { withMarketingPushLabel } from "./messages/marketing-push-label.messages.js";
-import { type MarketingPushOptOutTokenPort } from "./ports/marketing-push-opt-out-token.port.js";
-import type { PushPayload } from "./ports/push-provider.port.js";
-
-interface CreatePushNotificationPayloadInput {
-  readonly data: CreateNotificationData;
-  readonly notificationId: number;
-  readonly dispatchId: number;
-  /** 받는 사람 언어. 광고성 표기 문구에 쓴다. */
-  readonly locale?: SupportedLocale;
-}
-
-export interface BatchPushNotificationPayload extends Omit<PushPayload, "token"> {
-  readonly userId: string;
-  readonly dispatchId: number;
-  readonly requiresFeatureCapability: boolean;
-  /** 이 버전 미만 기기에는 보내지 않는다. 없으면 모든 활성 기기 대상이다. */
-  readonly minAppVersion?: string;
-}
+} from "../../domain/notification-client-capability.domain-service.js";
+import { isMarketingNotification } from "../../domain/push-eligibility.domain-service.js";
+import { toNotificationNavigation } from "./notification-navigation.mapper.js";
+import { toNotificationRouting } from "./notification-routing.mapper.js";
 
 /** 광고성 동의가 필요한 푸시. 표기·카테고리·수신 거부 토큰이 모두 이 판단을 따른다. */
 function isMarketingPush(data: CreateNotificationData): boolean {
@@ -41,10 +31,11 @@ interface PushNotificationPayloadFactoryDependencies {
   readonly marketingOptOutTokens: Pick<MarketingPushOptOutTokenPort, "issue">;
 }
 
-export class PushNotificationPayloadMapper {
+export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
   readonly #dependencies: PushNotificationPayloadFactoryDependencies;
 
   constructor(dependencies: PushNotificationPayloadFactoryDependencies) {
+    super();
     this.#dependencies = dependencies;
   }
 
