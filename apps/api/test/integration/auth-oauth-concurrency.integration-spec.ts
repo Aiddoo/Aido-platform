@@ -5,6 +5,7 @@ import { vi } from "vitest";
 
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
 import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
+import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
@@ -35,6 +36,8 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   let exchange: ExchangeOAuthCodeUseCase;
   let link: LinkOAuthAccountWithCodeUseCase;
   let unlink: UnlinkOAuthAccountUseCase;
+  let oauthLogin: LoginWithOAuthTokenUseCase;
+  let provider: CountingOAuthIdentityProvider;
   let unitOfWork: UnitOfWorkPort;
   let userId: string;
   let sequence = 0;
@@ -42,7 +45,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
-    const provider = new CountingOAuthIdentityProvider();
+    provider = new CountingOAuthIdentityProvider();
     module = await createAuthTestModule(client, new FakeEmailService(), {
       oauthProviderRegistry: new Map([[provider.provider, provider]]),
     });
@@ -53,6 +56,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     exchange = module.get(ExchangeOAuthCodeUseCase);
     link = module.get(LinkOAuthAccountWithCodeUseCase);
     unlink = module.get(UnlinkOAuthAccountUseCase);
+    oauthLogin = module.get(LoginWithOAuthTokenUseCase);
     unitOfWork = module.get(UnitOfWorkPort);
   });
 
@@ -206,6 +210,39 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
     const audits = await client.query.securityLog.findMany();
     expect(audits.filter((audit) => audit.event === "OAUTH_UNLINKED")).toHaveLength(1);
+  });
+
+  it("같은 자동 연결 로그인이 동시에 와도 한 요청만 연결하고 다른 요청은 500 대신 이미 연결된 계정 오류를 받는다", async () => {
+    // Given
+    // 검증된 Google 이메일이 기존 사용자와 같아 두 요청 모두 자동 연결 경로로 간다
+    provider.profile = { ...provider.profile, id: "google-race", email: "oauth-owner@example.com" };
+    const lock = await holdRowLock(
+      sql`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR NO KEY UPDATE`,
+    );
+    const results = Promise.allSettled([
+      oauthLogin.execute({ provider: "GOOGLE", token: "same-token" }),
+      oauthLogin.execute({ provider: "GOOGLE", token: "same-token" }),
+    ]);
+
+    // When
+    try {
+      await observeTwoWaiters("%User%FOR NO KEY UPDATE%");
+    } finally {
+      await lock.release();
+      await results;
+    }
+    const outcomes = await results;
+
+    // Then
+    expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
+      reason: { errorCode: ErrorCode.GOOGLE_0405 },
+    });
+    expect(
+      (await accounts.findAllByUserId(userId)).map((account) => account.providerAccountId),
+    ).toEqual(["google-race"]);
+    const audits = await client.query.securityLog.findMany();
+    expect(audits.filter((audit) => audit.event === "OAUTH_AUTO_LINKED")).toHaveLength(1);
   });
 
   it("이미 이메일 로그인 수단이 있으면 저장소가 제약 위반을 필터의 옛 응답과 같은 USER_0604로 번역한다", async () => {

@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import {
+  AuthPersistenceConflict,
+  oauthAccountAlreadyLinked,
+} from "#api/modules/identity/auth/application/auth.errors";
+import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
   TRUSTED_EMAIL_PROVIDERS,
@@ -250,11 +254,22 @@ export class LoginWithOAuthTokenUseCase {
     options: { ip: string; userAgent: string },
   ): Promise<void> {
     await this.#dependencies.userRepository.findByIdForUpdate(userId);
-    await this.#dependencies.accountRepository.createOAuthAccount({
-      userId,
-      provider,
-      providerAccountId,
-    });
+    try {
+      await this.#dependencies.accountRepository.createOAuthAccount({
+        userId,
+        provider,
+        providerAccountId,
+      });
+    } catch (error) {
+      // 같은 자동 연결 요청이 동시에 오면 User 잠금 뒤 두 번째 INSERT가 제약에 걸린다
+      if (
+        error instanceof AuthPersistenceConflict &&
+        error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
+      ) {
+        throw oauthAccountAlreadyLinked(provider, providerAccountId);
+      }
+      throw error;
+    }
 
     await this.#dependencies.securityLogRepository.create({
       userId,
