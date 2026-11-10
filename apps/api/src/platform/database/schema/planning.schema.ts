@@ -18,6 +18,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { todoRepeatFrequency, todoVisibility } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
@@ -132,14 +133,14 @@ export const todoCategory = pgTable(
   "TodoCategory",
   {
     color: varchar({ length: 7 }).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     name: varchar({ length: 50 }).notNull(),
     sortOrder: integer().default(0).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 카테고리 저장소가 ClockPort 값으로 insert·update마다 명시한다(순서 밀기 포함)
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

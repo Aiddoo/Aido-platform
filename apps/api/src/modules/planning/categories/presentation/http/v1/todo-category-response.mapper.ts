@@ -6,7 +6,6 @@ import type {
   TodoCategoryWithCount as TodoCategoryWithCountDto,
 } from "@aido/api";
 
-import { toISOString } from "#api/shared/domain/date/utils/format";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { TodoCategoryWithCountReadModel } from "../../../application/read-models/todo-category-with-count.read-model.js";
@@ -33,8 +32,8 @@ export const TodoCategoryMapper = {
       name: view.name,
       color: view.color,
       sortOrder: view.sortOrder,
-      createdAt: toISOString(view.createdAt),
-      updatedAt: toISOString(view.updatedAt),
+      createdAt: view.createdAt,
+      updatedAt: view.updatedAt,
       todoCount: view.todoCount,
     };
   },

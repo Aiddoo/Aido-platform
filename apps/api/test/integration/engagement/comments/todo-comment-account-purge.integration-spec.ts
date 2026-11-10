@@ -125,7 +125,13 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
   }
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId: owner.id, name: "Account purge", color: "#112233", sortOrder: 0 })
+    .values({
+      userId: owner.id,
+      name: "Account purge",
+      color: "#112233",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      sortOrder: 0,
+    })
     .returning();
   if (category === undefined) {
     throw new Error("category fixture was not created");
@@ -395,7 +401,12 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     }
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: owner.id, name: "Collision", color: "#123456" })
+      .values({
+        userId: owner.id,
+        name: "Collision",
+        color: "#123456",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");

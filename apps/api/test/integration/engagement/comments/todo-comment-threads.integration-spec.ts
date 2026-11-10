@@ -107,7 +107,12 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
     ]);
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: OWNER_ID, name: "묶음", color: "#123456" })
+      .values({
+        userId: OWNER_ID,
+        name: "묶음",
+        color: "#123456",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");

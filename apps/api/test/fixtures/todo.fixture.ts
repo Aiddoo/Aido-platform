@@ -17,7 +17,7 @@ export const TodoCategoryFixture = {
    */
   create: (overrides: Partial<TodoCategory> = {}): TodoCategory => {
     const id = ++categoryCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,

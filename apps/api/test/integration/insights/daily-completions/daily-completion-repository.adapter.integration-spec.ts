@@ -52,6 +52,7 @@ describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () =
             userId: seedTodo.userId,
             name: `카테고리 ${categoryIds.size}`,
             color: seedTodo.categoryColor,
+            updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
             sortOrder: categoryIds.size,
           })
           .returning({ id: todoCategory.id });

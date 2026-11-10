@@ -160,6 +160,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
             userId: user.id,
             name: `category-${i}`,
             color: "#FF0000",
+            updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
             sortOrder: i,
           })),
         )

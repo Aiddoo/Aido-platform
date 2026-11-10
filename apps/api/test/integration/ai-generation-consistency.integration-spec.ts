@@ -126,7 +126,13 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "독서", color: "#3B82F6", sortOrder: 0 })
+      .values({
+        userId,
+        name: "독서",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     categoryId = requireRecord(category).id;
     await client.insert(todo).values(

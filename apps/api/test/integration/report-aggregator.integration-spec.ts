@@ -127,8 +127,20 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     testUserId = created.id;
 
     await client.insert(todoCategory).values([
-      { userId: testUserId, name: "업무", color: "#FF0000", sortOrder: 0 },
-      { userId: testUserId, name: "개인", color: "#00FF00", sortOrder: 1 },
+      {
+        userId: testUserId,
+        name: "업무",
+        color: "#FF0000",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      },
+      {
+        userId: testUserId,
+        name: "개인",
+        color: "#00FF00",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 1,
+      },
     ]);
   });
 
@@ -398,7 +410,13 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     }
     const [otherCategory] = await client
       .insert(todoCategory)
-      .values({ userId: otherUser.id, name: "다른 사용자", color: "#FF0000", sortOrder: 0 })
+      .values({
+        userId: otherUser.id,
+        name: "다른 사용자",
+        color: "#FF0000",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     if (otherCategory === undefined) {
       throw new Error("other category fixture 누락");

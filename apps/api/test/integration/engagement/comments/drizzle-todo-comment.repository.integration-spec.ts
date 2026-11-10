@@ -51,6 +51,7 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
       userId: TODO_COMMENT_FIXTURE_OWNER_ID,
       name: "댓글",
       color: "#123456",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
     await client.insert(todo).values(
       TODO_IDS.map((id) => ({

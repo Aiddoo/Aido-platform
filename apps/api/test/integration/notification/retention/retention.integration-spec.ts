@@ -146,11 +146,21 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const [[invalidCategory], [aliasCategory]] = await Promise.all([
       db
         .insert(todoCategory)
-        .values({ userId: invalidTimezoneUserId, name: "업무", color: "#FF6B43" })
+        .values({
+          userId: invalidTimezoneUserId,
+          name: "업무",
+          color: "#FF6B43",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        })
         .returning({ id: todoCategory.id }),
       db
         .insert(todoCategory)
-        .values({ userId: aliasTimezoneUserId, name: "업무", color: "#FF6B43" })
+        .values({
+          userId: aliasTimezoneUserId,
+          name: "업무",
+          color: "#FF6B43",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        })
         .returning({ id: todoCategory.id }),
     ]);
     if (invalidCategory === undefined || aliasCategory === undefined) {

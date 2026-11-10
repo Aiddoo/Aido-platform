@@ -73,7 +73,13 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   async function insertRecentTodo(userId: string, date: string): Promise<void> {
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "기록", color: "#3B82F6", sortOrder: 0 })
+      .values({
+        userId,
+        name: "기록",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .onConflictDoNothing()
       .returning();
     const categoryId =

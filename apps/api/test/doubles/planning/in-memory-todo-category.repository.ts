@@ -10,7 +10,7 @@ import { TodoCategory } from "#api/modules/planning/categories/domain/todo-categ
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
 // 할 일 개수·옮기기는 같은 planning 대역(InMemoryTodoRepository)의 기록을 함께 본다
@@ -170,8 +170,8 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     const { createdAt, updatedAt, ...primitives } = category.toPrimitives();
     return {
       ...primitives,
-      createdAt: instantToDate(createdAt),
-      updatedAt: instantToDate(updatedAt),
+      createdAt: toIsoString(createdAt),
+      updatedAt: toIsoString(updatedAt),
       todoCount: [...this.#stores.todoRecords.values()].filter(
         (record) => record.categoryId === category.id.value,
       ).length,

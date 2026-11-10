@@ -65,6 +65,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
           userId: ownerId,
           name: `카테고리 ${index}`,
           color: "#FFB3B3",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
           sortOrder: index,
         })),
       );

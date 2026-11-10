@@ -3,6 +3,7 @@ import { omit } from "es-toolkit";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { todo, user } from "#api/platform/database/schema/index";
 import { describeTodoCategoryRepositoryContract } from "#test/contracts/planning/todo-category-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 import {
   TODO_FIXTURE_OTHER_USER_ID,
@@ -37,6 +38,7 @@ describe("DrizzleTodoCategoryRepository (실제 PostgreSQL)", () => {
   describeTodoCategoryRepositoryContract(async () => ({
     categoryRepository: new DrizzleTodoCategoryRepository(
       createDatabaseTransactionFixture(client).txHost,
+      new DateClock(),
     ),
     async seedTodo(categoryId) {
       await client

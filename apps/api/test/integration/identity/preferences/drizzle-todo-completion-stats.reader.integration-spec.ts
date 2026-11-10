@@ -32,7 +32,13 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     );
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: user.id, name: "할 일", color: "#FF6B43", sortOrder: 0 })
+      .values({
+        userId: user.id,
+        name: "할 일",
+        color: "#FF6B43",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");

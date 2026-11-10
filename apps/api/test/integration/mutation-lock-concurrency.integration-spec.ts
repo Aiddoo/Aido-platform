@@ -606,7 +606,13 @@ async function createTodo(
 ): Promise<number> {
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId, name: "Mutation", color: "#112233", sortOrder: 0 })
+    .values({
+      userId,
+      name: "Mutation",
+      color: "#112233",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      sortOrder: 0,
+    })
     .onConflictDoUpdate({
       target: [todoCategory.userId, todoCategory.name],
       set: { userId },
@@ -1060,6 +1066,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         userId,
         name: `Reorder ${index.toString().padStart(2, "0")}`,
         color: "#112233",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         sortOrder: index,
       })),
     );

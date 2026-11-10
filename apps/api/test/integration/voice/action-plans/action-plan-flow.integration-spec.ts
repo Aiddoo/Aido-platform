@@ -81,7 +81,13 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "업무", color: "#000000", sortOrder: 0, updatedAt: AT })
+      .values({
+        userId,
+        name: "업무",
+        color: "#000000",
+        sortOrder: 0,
+        updatedAt: instantFromDate(AT),
+      })
       .returning({ id: todoCategory.id });
     if (category == null) {
       throw new Error("category insert failed");

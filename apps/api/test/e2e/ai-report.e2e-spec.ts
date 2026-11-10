@@ -181,7 +181,13 @@ describe("AI 리포트 E2E", () => {
     const client = ctx.testDatabase.getClient();
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "업무", color: "#3B82F6", sortOrder: 99 })
+      .values({
+        userId,
+        name: "업무",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 99,
+      })
       .returning();
     assert.exists(category);
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

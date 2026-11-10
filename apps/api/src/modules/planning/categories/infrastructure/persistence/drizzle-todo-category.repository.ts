@@ -24,6 +24,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   TodoCategoryRepositoryPort,
@@ -46,9 +47,11 @@ import {
 @Injectable()
 export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -92,7 +95,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       }
       const [row] = await this.#db
         .update(todoCategory)
-        .set(values)
+        .set({ ...values, updatedAt: this.#clock.now() })
         .where(eq(todoCategory.id, id))
         .returning();
       return toTodoCategory(requireRecord(row));
@@ -163,7 +166,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   ): Promise<number> {
     const updated = await this.#db
       .update(todoCategory)
-      .set({ sortOrder: sql`${todoCategory.sortOrder} + ${delta}` })
+      .set({ sortOrder: sql`${todoCategory.sortOrder} + ${delta}`, updatedAt: this.#clock.now() })
       .where(
         and(
           eq(todoCategory.userId, userId),

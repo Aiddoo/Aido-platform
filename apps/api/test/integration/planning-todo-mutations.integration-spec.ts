@@ -416,7 +416,13 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     async function createCategory(name: string) {
       const [category] = await client
         .insert(todoCategory)
-        .values({ userId, name, color: "#123456", sortOrder: 1 })
+        .values({
+          userId,
+          name,
+          color: "#123456",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+          sortOrder: 1,
+        })
         .returning();
       if (category === undefined) {
         throw new Error("category fixture 누락");

@@ -349,11 +349,14 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       activity("immature-d30", "2026-07-27", "UTC", "2026-07-27T10:00:00.000Z"),
     ]);
 
-  await client
-    .insert(todoCategory)
-    .values(
-      users.map((user) => ({ userId: user.id, name: `category-${user.id}`, color: "#000000" })),
-    );
+  await client.insert(todoCategory).values(
+    users.map((user) => ({
+      userId: user.id,
+      name: `category-${user.id}`,
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })),
+  );
   const categories = await client
     .select({ id: todoCategory.id, userId: todoCategory.userId })
     .from(todoCategory);
@@ -417,7 +420,12 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
   });
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId: "deleted-growth-user", name: "deleted-user-category", color: "#000000" })
+    .values({
+      userId: "deleted-growth-user",
+      name: "deleted-user-category",
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })
     .returning();
   const categoryId = requireRecord(category).id;
   await client.insert(todo).values([

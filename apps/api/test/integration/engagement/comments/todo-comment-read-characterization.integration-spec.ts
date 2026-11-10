@@ -245,8 +245,8 @@ async function seed(client: TestDatabaseClient): Promise<void> {
     name: "특성",
     color: "#123456",
     sortOrder: 0,
-    createdAt: at(0),
-    updatedAt: at(0),
+    createdAt: instantAt(0),
+    updatedAt: instantAt(0),
   });
   await client.insert(todo).values(
     [TODO_ID, OTHER_TODO_ID].map((id) => ({

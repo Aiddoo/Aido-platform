@@ -27,7 +27,7 @@ export class TodoCategoryBuilder {
   private static idCounter = 0;
 
   private constructor(userId: string) {
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     TodoCategoryBuilder.idCounter += 1;
     this.data = {
       id: TodoCategoryBuilder.idCounter,
@@ -77,12 +77,12 @@ export class TodoCategoryBuilder {
 
   // === 타임스탬프 관련 ===
 
-  withCreatedAt(date: Date): TodoCategoryBuilder {
+  withCreatedAt(date: Temporal.Instant): TodoCategoryBuilder {
     this.data.createdAt = date;
     return this;
   }
 
-  withUpdatedAt(date: Date): TodoCategoryBuilder {
+  withUpdatedAt(date: Temporal.Instant): TodoCategoryBuilder {
     this.data.updatedAt = date;
     return this;
   }

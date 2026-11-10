@@ -142,7 +142,12 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     ]);
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: "conversation-owner", name: "Conversation", color: "#123456" })
+      .values({
+        userId: "conversation-owner",
+        name: "Conversation",
+        color: "#123456",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");

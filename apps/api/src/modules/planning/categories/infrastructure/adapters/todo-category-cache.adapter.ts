@@ -10,7 +10,6 @@ import { CacheService } from "#api/platform/cache/cache.service";
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port.js";
 import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 
-/** Redis JSON에서 문자열이 된 생성·수정 시각을 Date로 복원한다. */
 const TODO_CATEGORY_LIST_SCHEMA = z.array(
   z.object({
     id: z.number(),
@@ -18,8 +17,8 @@ const TODO_CATEGORY_LIST_SCHEMA = z.array(
     name: z.string(),
     color: z.string(),
     sortOrder: z.number(),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
     todoCount: z.number(),
   }),
 ) satisfies z.ZodType<TodoCategoryWithCountReadModel[]>;
