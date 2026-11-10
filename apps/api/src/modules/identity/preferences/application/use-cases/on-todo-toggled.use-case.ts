@@ -1,6 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { addDays, subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -97,8 +97,7 @@ export class OnTodoToggledUseCase {
   }
 
   async #statsForDay(userId: string, date: Date) {
-    const dayStart = startOfDay(date);
-    return this.#dependencies.statsReader.countForDay(userId, dayStart, addDays(1, dayStart));
+    return this.#dependencies.statsReader.countForDay(userId, startOfDay(date));
   }
 
   async #planTransition(

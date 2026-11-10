@@ -252,7 +252,6 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
       {
         userId: fixture.userId,
         dayStart: expectedDay,
-        dayEnd: new Date(expectedDay.getTime() + 86_400_000),
       },
     ]);
   });

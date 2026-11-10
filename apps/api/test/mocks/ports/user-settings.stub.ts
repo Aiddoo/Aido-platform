@@ -297,9 +297,9 @@ export class StubStreakMilestoneNotifier implements StreakMilestoneNotifierPort 
 }
 export class StubTodoCompletionStatsReader implements TodoCompletionStatsReaderPort {
   readonly days = new Map<string, TodoCompletionStats>();
-  readonly queries: { userId: string; dayStart: Date; dayEnd: Date }[] = [];
-  async countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats> {
-    this.queries.push({ userId, dayStart: new Date(dayStart), dayEnd: new Date(dayEnd) });
+  readonly queries: { userId: string; dayStart: Date }[] = [];
+  async countForDay(userId: string, dayStart: Date): Promise<TodoCompletionStats> {
+    this.queries.push({ userId, dayStart: new Date(dayStart) });
     return (
       this.days.get(`${userId}/${dayStart.toISOString().slice(0, 10)}`) ?? {
         total: 0,

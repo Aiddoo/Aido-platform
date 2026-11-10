@@ -11,8 +11,8 @@ export interface TodoCompletionStats {
  * (todo 모듈 순환을 피하기 위해 어댑터가 직접 집계 쿼리로 위임)
  */
 export abstract class TodoCompletionStatsReaderPort {
-  /** [dayStart, dayEnd) 구간의 total/completed 카운트 */
-  abstract countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats>;
+  /** day(달력 날짜, UTC 자정)에 걸친 할 일의 total/completed. 여러 날 할 일은 기간의 모든 날에 센다 */
+  abstract countForDay(userId: string, day: Date): Promise<TodoCompletionStats>;
 }
 
 /** 옛 토큰. 아직 옮기지 않은 소비 Context가 쓴다(같은 인스턴스 별칭으로 바인딩) */

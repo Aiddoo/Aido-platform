@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, eq, gte, lt } from "drizzle-orm";
+import { and, count, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { type Database, DRIZZLE } from "#api/platform/database/database.client";
@@ -10,12 +10,7 @@ import type {
   TodoCompletionStatsReaderPort,
 } from "../../application/ports/todo-completion-stats.reader.port.js";
 
-/**
- * Drizzle 투두 완료 통계 리더.
- *
- * 스트릭 갱신용으로 특정 날짜의 투두 총계/완료 수를 직접 집계한다
- * (todo 모듈 순환 회피).
- */
+// 스트릭용 하루 완료 집계. planning 모듈과의 순환을 피해 Todo 테이블을 직접 읽는다
 @Injectable()
 export class DrizzleTodoCompletionStatsReader implements TodoCompletionStatsReaderPort {
   readonly #db: Database;
@@ -24,13 +19,16 @@ export class DrizzleTodoCompletionStatsReader implements TodoCompletionStatsRead
     this.#db = db;
   }
 
-  async countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats> {
+  async countForDay(userId: string, day: Date): Promise<TodoCompletionStats> {
+    // 여러 날 할 일은 시작일부터 종료일까지 모든 날에 센다(planning의 날짜 조회와 같은 겹침 규칙)
+    const spansDay = and(
+      lte(todo.startDate, day),
+      or(gte(todo.endDate, day), and(isNull(todo.endDate), gte(todo.startDate, day))),
+    );
     const groups = await this.#db
       .select({ completed: todo.completed, count: count() })
       .from(todo)
-      .where(
-        and(eq(todo.userId, userId), gte(todo.startDate, dayStart), lt(todo.startDate, dayEnd)),
-      )
+      .where(and(eq(todo.userId, userId), spansDay))
       .groupBy(todo.completed);
     return {
       total: sumBy(groups, (group) => group.count),
