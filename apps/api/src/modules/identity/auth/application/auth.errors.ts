@@ -8,7 +8,11 @@ export function accountDeleted(userId: string): ApplicationException {
   return new ApplicationException(ErrorCode.USER_0606, { userId });
 }
 
-export function sessionNotFound(sessionId?: string): ApplicationException {
+export function accountAlreadyExists(): ApplicationException {
+  return new ApplicationException(ErrorCode.USER_0604);
+}
+
+function sessionNotFound(sessionId?: string): ApplicationException {
   return new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
 }
 

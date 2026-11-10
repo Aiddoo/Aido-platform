@@ -201,6 +201,21 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(audits.filter((audit) => audit.event === "OAUTH_UNLINKED")).toHaveLength(1);
   });
 
+  it("이미 이메일 로그인 수단이 있으면 저장소가 제약 위반을 필터의 옛 응답과 같은 USER_0604로 번역한다", async () => {
+    // Given
+    await accounts.createCredentialAccount(userId, "first-hash");
+
+    // When
+    const duplicate = accounts.createCredentialAccount(userId, "second-hash");
+
+    // Then
+    await expect(duplicate).rejects.toMatchObject({ errorCode: ErrorCode.USER_0604 });
+    const credentials = (await accounts.findAllByUserId(userId)).filter(
+      (account) => account.provider === "CREDENTIAL",
+    );
+    expect(credentials.map((account) => account.password)).toEqual(["first-hash"]);
+  });
+
   it("감사 INSERT의 실제 FK 오류는 계정 생성과 link 코드 소비를 함께 rollback한다", async () => {
     // Given
     const state = await givenState({

@@ -3,14 +3,10 @@ import { createHash, randomBytes } from "node:crypto";
 import type { UserRole } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
-import { JwtService, TokenExpiredError } from "@nestjs/jwt";
+import { JwtService } from "@nestjs/jwt";
 
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import {
-  AUTH_DEFAULTS,
-  TOKEN_VERIFY_ERROR,
-  type TokenVerifyError,
-} from "#api/modules/identity/auth/domain/auth.constants";
+import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 
 export interface JwtPayload {
@@ -28,10 +24,6 @@ export interface TokenPair {
   refreshToken: string;
   expiresIn: number;
 }
-
-export type TokenVerifyResult<T> =
-  | { success: true; payload: T }
-  | { success: false; error: TokenVerifyError };
 
 export const JWT_ALGORITHM = "HS256";
 // 배포 전 토큰에는 iss·aud가 없어 검증 강제는 7일 refresh가 모두 바뀐 다음 릴리스부터다.
@@ -129,65 +121,6 @@ export class JwtTokenIssuerAdapter extends AuthTokenIssuerPort {
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
     });
-  }
-
-  async verifyAccessToken(token: string): Promise<JwtPayload | null> {
-    const result = await this.verifyAccessTokenWithError(token);
-    return result.success ? result.payload : null;
-  }
-
-  async verifyAccessTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
-    try {
-      const payload = await this.#jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.#jwt.secret,
-        algorithms: [JWT_ALGORITHM],
-      });
-
-      if (payload.type !== "access") {
-        return { success: false, error: TOKEN_VERIFY_ERROR.WRONG_TYPE };
-      }
-
-      return { success: true, payload };
-    } catch (error) {
-      return { success: false, error: this.#classifyJwtError(error) };
-    }
-  }
-
-  async verifyRefreshToken(token: string): Promise<JwtPayload | null> {
-    const result = await this.verifyRefreshTokenWithError(token);
-    return result.success ? result.payload : null;
-  }
-
-  async verifyRefreshTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
-    try {
-      const payload = await this.#jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.#jwt.refreshSecret,
-        algorithms: [JWT_ALGORITHM],
-      });
-
-      if (payload.type !== "refresh") {
-        return { success: false, error: TOKEN_VERIFY_ERROR.WRONG_TYPE };
-      }
-
-      return { success: true, payload };
-    } catch (error) {
-      return { success: false, error: this.#classifyJwtError(error) };
-    }
-  }
-
-  #classifyJwtError(error: unknown): TokenVerifyError {
-    if (error instanceof TokenExpiredError) {
-      return TOKEN_VERIFY_ERROR.EXPIRED;
-    }
-    if (error instanceof Error) {
-      if (error.name === "JsonWebTokenError") {
-        if (error.message.includes("signature")) {
-          return TOKEN_VERIFY_ERROR.INVALID_SIGNATURE;
-        }
-        return TOKEN_VERIFY_ERROR.MALFORMED;
-      }
-    }
-    return TOKEN_VERIFY_ERROR.MALFORMED;
   }
 
   // 새로운 로그인 시 생성되는 고유 식별자, Token Rotation 시 동일 패밀리 내에서 버전 증가

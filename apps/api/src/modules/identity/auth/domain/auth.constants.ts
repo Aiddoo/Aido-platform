@@ -29,16 +29,5 @@ export const LOGIN_FAILURE_REASON = {
   ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
 } as const;
 
-export type LoginFailureReason = (typeof LOGIN_FAILURE_REASON)[keyof typeof LOGIN_FAILURE_REASON];
-
-export const TOKEN_VERIFY_ERROR = {
-  EXPIRED: "expired",
-  INVALID_SIGNATURE: "invalid_signature",
-  WRONG_TYPE: "wrong_type",
-  MALFORMED: "malformed",
-} as const;
-
-export type TokenVerifyError = (typeof TOKEN_VERIFY_ERROR)[keyof typeof TOKEN_VERIFY_ERROR];
-
 /** 기기 이름 또는 User-Agent. 세션을 기기별로 보여 줄 때 쓴다 */
 export type DeviceFingerprint = string;

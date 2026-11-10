@@ -2,7 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 
-import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
+import {
+  accountAlreadyExists,
+  AuthPersistenceConflict,
+} from "#api/modules/identity/auth/application/auth.errors";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-persistence.port";
 import {
   isUniqueConstraintViolation,
@@ -53,16 +56,24 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   }
 
   async createCredentialAccount(userId: string, hashedPassword: string): Promise<AccountRow> {
-    const [row] = await this.#db
-      .insert(account)
-      .values({
-        userId,
-        provider: "CREDENTIAL",
-        providerAccountId: userId, // userId를 사용하여 unique constraint 보장
-        password: hashedPassword,
-      })
-      .returning();
-    return requireRecord(row);
+    try {
+      const [row] = await this.#db
+        .insert(account)
+        .values({
+          userId,
+          provider: "CREDENTIAL",
+          providerAccountId: userId, // userId를 사용하여 unique constraint 보장
+          password: hashedPassword,
+        })
+        .returning();
+      return requireRecord(row);
+    } catch (error) {
+      // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
+      if (isUniqueConstraintViolation(error)) {
+        throw accountAlreadyExists();
+      }
+      throw error;
+    }
   }
 
   async updatePassword(userId: string, hashedPassword: string): Promise<AccountRow> {

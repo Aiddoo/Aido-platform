@@ -145,10 +145,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it("알려진 옛 제약은 경보 없이 업무 오류로 바꾼다", () => {
       // When
-      filter.catch(sqlQueryError("23505", "Account_userId_provider_key"), mockHost);
+      filter.catch(sqlQueryError("23505", "User_email_key"), mockHost);
 
       // Then
-      expect(mockResponse.json.mock.calls[0]?.[0]?.error.code).toBe(ErrorCode.USER_0604);
+      expect(mockResponse.json.mock.calls[0]?.[0]?.error.code).toBe(ErrorCode.EMAIL_0501);
       expect(alerts.alerts).toEqual([]);
     });
 

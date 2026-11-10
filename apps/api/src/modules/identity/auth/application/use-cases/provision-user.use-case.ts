@@ -11,7 +11,7 @@ import { type RetentionEnrollerPort } from "../ports/retention-enroller.port.js"
 import { type UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port.js";
 
 /** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
-export type ProvisionAccount =
+type ProvisionAccount =
   | { kind: "credential"; hashedPassword: string }
   | {
       kind: "oauth";
