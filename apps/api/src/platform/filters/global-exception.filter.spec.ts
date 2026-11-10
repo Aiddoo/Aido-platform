@@ -41,10 +41,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let alerts: RecordingOperationalAlert;
 
   const createFilter = (exposeErrorDetails = true) => {
-    const devTools = resolveDevTools({
-      environment: exposeErrorDetails ? "development" : "production",
-      nodeEnv: "development",
-    });
+    const devTools = resolveDevTools({ isLocalRun: exposeErrorDetails, nodeEnv: "development" });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
     return new GlobalExceptionFilter(logger, { devTools }, messages, reporter, alerts);

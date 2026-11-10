@@ -64,7 +64,7 @@ describe("appConfig — 개발 도구 스위치", () => {
     {
       name: "배포된 개발서버",
       env: { NODE_ENV: "production", APP_ENV: "development" },
-      devTools: allOn,
+      devTools: allOff,
     },
     { name: "테스트 실행", env: { NODE_ENV: "test" }, devTools: allOff },
     { name: "스테이징", env: { NODE_ENV: "production", APP_ENV: "staging" }, devTools: allOff },
@@ -82,6 +82,51 @@ describe("appConfig — 개발 도구 스위치", () => {
     // Then
     expect(config.devTools).toEqual(devTools);
   });
+});
+
+describe("appConfig — 로컬 실행과 응답 계약 검사", () => {
+  it.each([
+    {
+      name: "로컬 개발",
+      env: { NODE_ENV: "development" },
+      isLocalRun: true,
+      responseContractCheck: true,
+    },
+    {
+      name: "테스트 실행",
+      env: { NODE_ENV: "test" },
+      isLocalRun: true,
+      responseContractCheck: true,
+    },
+    {
+      name: "배포된 개발서버",
+      env: { NODE_ENV: "production", APP_ENV: "development" },
+      isLocalRun: false,
+      responseContractCheck: true,
+    },
+    {
+      name: "스테이징",
+      env: { NODE_ENV: "production", APP_ENV: "staging" },
+      isLocalRun: false,
+      responseContractCheck: true,
+    },
+    {
+      name: "운영",
+      env: { NODE_ENV: "production", APP_ENV: "production" },
+      isLocalRun: false,
+      responseContractCheck: false,
+    },
+  ])(
+    "$name은 로컬 실행 $isLocalRun, 응답 계약 검사 $responseContractCheck다",
+    ({ env, isLocalRun, responseContractCheck }) => {
+      // When
+      const config = appConfig.parse(env);
+
+      // Then
+      expect(config.isLocalRun).toBe(isLocalRun);
+      expect(config.responseContractCheck).toBe(responseContractCheck);
+    },
+  );
 });
 
 describe("appConfig — 공개 health 상세", () => {

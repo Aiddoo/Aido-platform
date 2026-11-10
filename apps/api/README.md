@@ -53,7 +53,7 @@ test/                    # integration · e2e · architecture · performance
 
 ## API 문서
 
-개발 도구가 켜진 배포 환경(`APP_ENV=development`, 테스트 실행 제외)에서만 등록된다([설정](docs/configuration.md#배포-환경)).
+개발 도구가 켜진 로컬 실행(development + production 빌드가 아님, 테스트 실행 제외)에서만 등록된다. 배포된 개발서버는 열지 않는다([설정](docs/configuration.md#배포-환경)).
 
 - Swagger UI: `http://localhost:8080/api/docs`, JSON: `/api/docs-json`
 - 관리자 Swagger: `/api/admin/docs`

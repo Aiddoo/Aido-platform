@@ -29,7 +29,7 @@ export function configureApplication(
   app: INestApplication,
   config: ApplicationConfiguration,
 ): void {
-  const { devTools, nodeEnv } = app.get<AppSettings>(appConfig.KEY);
+  const { devTools, responseContractCheck } = app.get<AppSettings>(appConfig.KEY);
   configureRequestIdentity(app);
   app.use(helmet());
   app.enableCors(
@@ -51,7 +51,7 @@ export function configureApplication(
   );
   app.enableVersioning(API_VERSIONING_OPTIONS);
   // 운영은 등록하지 않아 요청마다 parse하는 비용이 없다. APP_INTERCEPTOR보다 안쪽이라 handler 반환값을 본다
-  if (nodeEnv !== "production") {
+  if (responseContractCheck) {
     app.useGlobalInterceptors(new ResponseContractInterceptor(app.get(Reflector)));
   }
 
