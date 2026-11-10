@@ -1,5 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
@@ -29,7 +30,8 @@ export class RefreshPushTimezoneUseCase {
   }
 
   async execute(input: RefreshPushTimezoneCommand): Promise<void> {
-    const { userId, timezone } = input;
+    const { timezone } = input;
+    const userId = UserId.reconstitute(input.userId);
     const changed = await this.#dependencies.unitOfWork.run(async () => {
       const count = await this.#dependencies.preferenceRepository.refreshTimezoneIfChanged(
         userId,

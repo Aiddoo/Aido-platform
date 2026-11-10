@@ -1,6 +1,7 @@
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { account, user } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeAuthAccountRepositoryContract } from "#test/contracts/identity/auth-account-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import {
@@ -58,7 +59,7 @@ describe("DrizzleAccountRepository (실제 PostgreSQL)", () => {
 
     // When
     await repository.createOAuthAccount({
-      userId: AUTH_FIXTURE_USER_ID,
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       provider: "APPLE",
       providerAccountId: "apple-account",
       refreshToken: "plain-refresh",

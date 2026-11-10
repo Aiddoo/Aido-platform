@@ -19,6 +19,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -189,7 +190,7 @@ export class LoginWithOAuthTokenUseCase {
     userId: string,
     request: { ip: string; userAgent: string; provider: AccountProvider },
   ): Promise<SocialLoginResult> {
-    const user = await this.#dependencies.userRepository.findById(userId);
+    const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
@@ -261,7 +262,7 @@ export class LoginWithOAuthTokenUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id,
+        userId: UserId.reconstitute(user.id),
         event: SECURITY_EVENT.REGISTRATION,
         ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -273,7 +274,7 @@ export class LoginWithOAuthTokenUseCase {
   }
 
   async #linkOAuthAccount(
-    userId: string,
+    userId: UserId,
     provider: AccountProvider,
     providerAccountId: string,
     options: { ip: string; userAgent: string },
@@ -310,7 +311,7 @@ export class LoginWithOAuthTokenUseCase {
   ): Promise<LoginResult> {
     const userId = user.id.value;
     // 복구와 발급 사이에 역할이 바뀌었을 수 있어 최신 행의 역할로 토큰을 만든다
-    const latest = await this.#dependencies.userRepository.findById(userId);
+    const latest = await this.#dependencies.userRepository.findById(user.id);
     if (latest == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
@@ -346,7 +347,7 @@ export class LoginWithOAuthTokenUseCase {
       };
     });
 
-    await this.#dependencies.cacheService.invalidateUserProfile(userId);
+    await this.#dependencies.cacheService.invalidateUserProfile(user.id);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_RESTORED,
       userId,
@@ -365,7 +366,7 @@ export class LoginWithOAuthTokenUseCase {
       provider: AccountProvider;
     },
   ): Promise<LoginResult> {
-    const user = await this.#dependencies.userRepository.findById(userId);
+    const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
 
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
@@ -434,7 +435,7 @@ export class LoginWithOAuthTokenUseCase {
           existingUser,
           { ip: options.ip, userAgent: options.userAgent, provider, restorationAt },
           () =>
-            this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
+            this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
               ip: options.ip,
               userAgent: options.userAgent,
             }),
@@ -444,7 +445,7 @@ export class LoginWithOAuthTokenUseCase {
       }
 
       const loginResult = await this.#dependencies.unitOfWork.run(async () => {
-        await this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
+        await this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
           ip: options.ip,
           userAgent: options.userAgent,
         });
@@ -455,7 +456,7 @@ export class LoginWithOAuthTokenUseCase {
           provider,
         });
       });
-      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id.value);
+      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id);
       return loginResult;
     }
 
@@ -466,7 +467,7 @@ export class LoginWithOAuthTokenUseCase {
     });
 
     await this.#dependencies.securityLogRepository.create({
-      userId: existingUser.id.value,
+      userId: existingUser.id,
       event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
       ipAddress: options.ip,
       userAgent: options.userAgent,

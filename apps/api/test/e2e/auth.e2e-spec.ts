@@ -15,6 +15,7 @@ import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastruc
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -818,7 +819,7 @@ describe("인증 E2E", () => {
         .get("/v1/auth/me")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-      expect(await authCache.getSession(session.id)).toBeDefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeDefined();
       await client
         .update(sessionTable)
         .set({
@@ -840,7 +841,7 @@ describe("인증 E2E", () => {
 
       // Then
       expect(reused.body.error.code).toBe("SESSION_0704");
-      expect(await authCache.getSession(session.id)).toBeUndefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeUndefined();
       expect(denied.body.error.code).toBe("AUTH_0101");
       const revoked = requireRecord(
         await client.query.session.findFirst({ where: { id: session.id } }),
@@ -2304,7 +2305,9 @@ describe("인증 E2E", () => {
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
         sessionIds.push(profile.body.data.sessionId);
-        expect(await authCache.getSession(profile.body.data.sessionId)).toBeDefined();
+        expect(
+          await authCache.getSession(SessionId.reconstitute(profile.body.data.sessionId)),
+        ).toBeDefined();
       }
       expect(new Set(sessionIds).size).toBe(3);
 
@@ -2318,7 +2321,7 @@ describe("인증 E2E", () => {
       // Then
       expect(deletion.body.data.gracePeriodDays).toBe(30);
       for (const sessionId of sessionIds) {
-        expect(await authCache.getSession(sessionId)).toBeUndefined();
+        expect(await authCache.getSession(SessionId.reconstitute(sessionId))).toBeUndefined();
       }
       for (const accessToken of accessTokens) {
         const denied = await request(ctx.app.getHttpServer())

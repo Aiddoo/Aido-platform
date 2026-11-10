@@ -15,7 +15,6 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthAccountRepositoryPort } from "../auth/application/ports/auth-account.repository.port.js";
 import { AuthCachePort } from "../auth/application/ports/auth-collaboration.port.js";
@@ -37,16 +36,17 @@ import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use
 export const accountNotificationCleanupProvider: FactoryProvider<AccountNotificationCleanupPort> = {
   provide: AccountNotificationCleanupPort,
   inject: [NotificationAccountCleanup],
-  useFactory: (cleanup: NotificationAccountCleanup): AccountNotificationCleanupPort => cleanup,
+  useFactory: (cleanup: NotificationAccountCleanup): AccountNotificationCleanupPort => ({
+    cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(userId.value),
+    settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
+  }),
 };
 
 export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoCommentCleanupPort> = {
   provide: AccountTodoCommentCleanupPort,
   inject: [TodoCommentAccountCleanupPort],
-  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => ({
-    cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(UserId.reconstitute(userId)),
-    settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
-  }),
+  // 두 포트가 같은 UserId 시그니처라 그대로 넘긴다. useExisting과 달리 반환 타입이 시그니처를 검사한다
+  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
 };
 
 export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPort> = {
@@ -54,7 +54,7 @@ export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPor
   inject: [USAGE_METER],
   useFactory: (meter: Pick<UsageMeterPort, "deleteSubject">): AccountUsageCleanupPort => ({
     cleanupInTransaction: async (userId) => {
-      await meter.deleteSubject(userId);
+      await meter.deleteSubject(userId.value);
     },
   }),
 };

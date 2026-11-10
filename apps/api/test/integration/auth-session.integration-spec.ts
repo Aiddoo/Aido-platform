@@ -3,9 +3,11 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -105,7 +107,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     await Promise.race([locked.promise, lockReady]);
     const rotations = ["first-hash", "second-hash"].map((hash) =>
       repository.rotateToken(
-        session.id,
+        UserId.reconstitute(session.id),
         {
           refreshTokenHash: hash,
           previousTokenHash: "current-hash",
@@ -149,11 +151,11 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   it("폐기한 세션은 버전이 일치해도 회전하거나 새 해시를 저장할 수 없다", async () => {
     // Given
     const session = await givenSession({ refreshTokenHash: "revoked-hash", tokenVersion: 1 });
-    await repository.revoke(session.id, REVOKE_REASON.USER_LOGOUT, now);
+    await repository.revoke(SessionId.reconstitute(session.id), REVOKE_REASON.USER_LOGOUT, now);
 
     // When
     const result = await repository.rotateToken(
-      session.id,
+      UserId.reconstitute(session.id),
       {
         refreshTokenHash: "unauthorized-hash",
         previousTokenHash: "revoked-hash",
@@ -199,7 +201,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     );
 
     // Then
-    expect(revokedIds.toSorted()).toEqual([first.id, second.id].toSorted());
+    expect(revokedIds.map((id) => id.value).toSorted()).toEqual([first.id, second.id].toSorted());
     expect(repeatedIds).toEqual([]);
     expect((await readSession(first.id))?.revokedReason).toBe(REVOKE_REASON.TOKEN_REUSE_DETECTED);
     expect((await readSession(second.id))?.revokedAt).toBeInstanceOf(Temporal.Instant);
@@ -234,16 +236,16 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
 
     // When
     const revokeAll = {
-      userId,
+      userId: UserId.reconstitute(userId),
       reason: REVOKE_REASON.PASSWORD_CHANGED,
       now,
-      exceptSessionId: current.id,
+      exceptSessionId: SessionId.reconstitute(current.id),
     };
     const ids = await repository.revokeAllByUserId(revokeAll);
     const repeated = await repository.revokeAllByUserId(revokeAll);
 
     // Then
-    expect(ids.toSorted()).toEqual([active.id, expired.id].toSorted());
+    expect(ids.map((id) => id.value).toSorted()).toEqual([active.id, expired.id].toSorted());
     expect(repeated).toEqual([]);
     expect((await readSession(current.id))?.revokedAt).toBeNull();
     expect((await readSession(otherSession.id))?.revokedAt).toBeNull();

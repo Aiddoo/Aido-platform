@@ -371,7 +371,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
-      await authCache.invalidateUserProfile(user.userId);
+      await authCache.invalidateUserProfile(UserId.reconstitute(user.userId));
       const { accessToken } = await context.helpers.loginUser(email, password);
       const response = await request(context.app.getHttpServer())
         .get("/v1/auth/me")

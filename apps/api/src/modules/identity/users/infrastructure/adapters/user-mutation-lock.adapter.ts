@@ -16,6 +16,6 @@ export class UserMutationLockAdapter extends UserMutationLockPort {
   }
 
   async lockById(userId: UserId): Promise<boolean> {
-    return (await this.#users.findByIdForUpdate(userId.value)) != null;
+    return (await this.#users.findByIdForUpdate(userId)) != null;
   }
 }

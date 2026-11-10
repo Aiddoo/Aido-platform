@@ -17,6 +17,7 @@ import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 export const LAST_ACTIVE_THROTTLE_TTL_MS = 60 * 60 * 1000;
@@ -86,7 +87,7 @@ export class LastActiveInterceptor implements NestInterceptor {
 
     // fire-and-forget — 응답을 블로킹하지 않음
     this.#userActivityWriter
-      .updateLastActiveAt({ userId, timezone, seenAt, appVersion })
+      .updateLastActiveAt({ userId: UserId.reconstitute(userId), timezone, seenAt, appVersion })
       .catch((error) => {
         if (this.#throttle.peek(throttleKey) === touchedAt) {
           this.#throttle.delete(throttleKey);

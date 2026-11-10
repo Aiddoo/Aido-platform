@@ -6,6 +6,7 @@ import {
   UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   notificationInboxScopes,
@@ -55,6 +56,6 @@ export class NotificationCacheAdapter implements NotificationCachePort {
   }
 
   invalidateUserPreference(userId: string): Promise<void> {
-    return this.#preferenceCache.invalidateUserPreference(userId);
+    return this.#preferenceCache.invalidateUserPreference(UserId.reconstitute(userId));
   }
 }

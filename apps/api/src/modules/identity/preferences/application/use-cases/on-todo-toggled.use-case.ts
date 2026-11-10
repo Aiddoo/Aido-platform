@@ -2,6 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
@@ -37,6 +38,7 @@ export class OnTodoToggledUseCase {
   }
 
   async execute(input: OnTodoToggledCommand): Promise<void> {
+    const userId = UserId.reconstitute(input.userId);
     try {
       const today = this.#dependencies.clock
         .now()
@@ -44,26 +46,24 @@ export class OnTodoToggledUseCase {
         .toPlainDate();
       // 충돌은 오류가 아니라 false로 오고 다 쓰면 경고만 남겨 es-toolkit retry(오류 재시도·시도 사이 타이머)를 쓰지 않는다
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
-        const stats = await this.#statsForDay(input.userId, today);
+        const stats = await this.#statsForDay(userId, today);
         if (stats.total === 0) {
           return;
         }
 
-        const preference = await this.#dependencies.preferenceRepository.findStreakByUserId(
-          input.userId,
-        );
+        const preference = await this.#dependencies.preferenceRepository.findStreakByUserId(userId);
         if (preference == null) {
           return;
         }
 
         const allCompleted = stats.total === stats.completed;
-        const plan = await this.#planTransition(input.userId, preference, today, allCompleted);
+        const plan = await this.#planTransition(userId, preference, today, allCompleted);
         if (plan == null) {
           return;
         }
 
         const updated = await this.#dependencies.preferenceRepository.updateStreakIfUnchanged(
-          input.userId,
+          userId,
           preference.streakState,
           plan.nextState,
         );
@@ -72,7 +72,7 @@ export class OnTodoToggledUseCase {
         }
 
         if (plan.reachedStreak3) {
-          this.#dependencies.milestoneNotifier.notifyStreak3Reached(input.userId);
+          this.#dependencies.milestoneNotifier.notifyStreak3Reached(userId);
         }
         this.#dependencies.logger.log({
           event: allCompleted
@@ -100,12 +100,12 @@ export class OnTodoToggledUseCase {
     }
   }
 
-  async #statsForDay(userId: string, date: Temporal.PlainDate) {
+  async #statsForDay(userId: UserId, date: Temporal.PlainDate) {
     return this.#dependencies.statsReader.countForDay(userId, date);
   }
 
   async #planTransition(
-    userId: string,
+    userId: UserId,
     preference: UserPreference,
     today: Temporal.PlainDate,
     allCompleted: boolean,

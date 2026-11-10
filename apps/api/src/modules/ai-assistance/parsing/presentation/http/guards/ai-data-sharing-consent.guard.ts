@@ -7,6 +7,7 @@ import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-s
 import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { canShareWithAi } from "../../../../shared/domain/ai-data-sharing-consent.domain-service.js";
 
@@ -42,7 +43,9 @@ export class AiDataSharingConsentGuard implements CanActivate {
     }
 
     const { appVersion } = this.#requestClientReader.current();
-    const consent = await this.#consentReader.findAiDataSharingConsent(user.userId);
+    const consent = await this.#consentReader.findAiDataSharingConsent(
+      UserId.reconstitute(user.userId),
+    );
     if (!canShareWithAi({ consent, appVersion, now: this.#clock.now() })) {
       throw new ApplicationException(ErrorCode.AI_1311, { decision: consent.status().decision });
     }

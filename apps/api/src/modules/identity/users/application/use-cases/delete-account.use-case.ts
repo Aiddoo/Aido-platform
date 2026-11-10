@@ -5,6 +5,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { accountDeleted } from "../../../auth/application/auth.errors.js";
@@ -50,7 +51,8 @@ export class DeleteAccountUseCase {
   }
 
   async execute(input: DeleteAccountCommand): Promise<DeleteAccountResult> {
-    const user = await this.#dependencies.userRepository.findById(input.userId);
+    const userId = UserId.reconstitute(input.userId);
+    const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
@@ -58,7 +60,7 @@ export class DeleteAccountUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const accounts = await this.#dependencies.accountRepository.findAllByUserId(input.userId);
+    const accounts = await this.#dependencies.accountRepository.findAllByUserId(userId);
     const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
     if (credentialAccount != null) {
       if (!input.password) {
@@ -82,12 +84,12 @@ export class DeleteAccountUseCase {
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.saveAccountStatus(identityUser);
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
-        userId: identityUser.id.value,
+        userId: identityUser.id,
         reason: REVOKE_REASON.ACCOUNT_DELETION,
         now: deletedAt,
       });
       await this.#dependencies.securityLogRepository.create({
-        userId: identityUser.id.value,
+        userId: identityUser.id,
         event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
         ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -106,7 +108,7 @@ export class DeleteAccountUseCase {
       ),
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
-    await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id.value);
+    await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED,
       userId: identityUser.id.value,

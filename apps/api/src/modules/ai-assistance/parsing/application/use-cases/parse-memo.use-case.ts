@@ -155,7 +155,9 @@ export class ParseMemoUseCase {
       userId,
     } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(
+      UserId.reconstitute(userId),
+    );
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(

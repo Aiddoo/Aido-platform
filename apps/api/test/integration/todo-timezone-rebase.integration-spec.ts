@@ -447,7 +447,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         preferenceRepository,
         cache: { invalidateUserPreference: async () => undefined },
         reminderTimezoneCache: { invalidateActiveTimezones: async () => undefined },
-        todoTimezoneRebase: { enqueueRebase: (user) => queue.enqueueRebase(user, at) },
+        todoTimezoneRebase: { enqueueRebase: (user) => queue.enqueueRebase(user.value, at) },
         unitOfWork: transaction.uow,
         clock: new SystemClock(),
       });

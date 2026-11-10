@@ -6,11 +6,16 @@ import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import type { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
   type AuthUserProfileRecord,
   AuthUserRepositoryPort,
 } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
-import type { UserActivity } from "#api/modules/identity/users/application/ports/user-activity.reader.port";
+import type {
+  UserActivity,
+  UserActivityReaderPort,
+} from "#api/modules/identity/users/application/ports/user-activity.reader.port";
+import type { UserAppVersionReaderPort } from "#api/modules/identity/users/application/ports/user-app-version.reader.port";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -22,6 +27,7 @@ import {
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserStatus } from "../../../auth/domain/auth.constants.js";
 import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
@@ -40,8 +46,12 @@ const PURGE_GRACE_PERIOD = Temporal.Duration.from({
   hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
 });
 
+// 같은 인스턴스가 활동 기록·앱 버전·활동 조회 포트로도 쓰여(useExisting) implements로 서명을 함께 검사한다
 @Injectable()
-export class DrizzleUserRepository extends AuthUserRepositoryPort {
+export class DrizzleUserRepository
+  extends AuthUserRepositoryPort
+  implements AuthUserActivityWriterPort, UserAppVersionReaderPort, UserActivityReaderPort
+{
   readonly #logger = new Logger(DrizzleUserRepository.name);
 
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -62,12 +72,12 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     return row == null ? null : toIdentityUser(row);
   }
 
-  async findById(id: string): Promise<IdentityUser | null> {
-    const row = await this.#db.query.user.findFirst({ where: { id } });
+  async findById(id: UserId): Promise<IdentityUser | null> {
+    const row = await this.#db.query.user.findFirst({ where: { id: id.value } });
     return row == null ? null : toIdentityUser(row);
   }
 
-  async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
+  async findByIdWithProfile(id: UserId): Promise<UserWithProfile | null> {
     const row = await this.#db.query.user.findFirst({
       columns: {
         id: true,
@@ -82,7 +92,7 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
         deletedAt: true,
         lastLoginAt: true,
       },
-      where: { id },
+      where: { id: id.value },
       with: {
         profile: { columns: { name: true, profileImage: true } },
         accounts: { columns: { provider: true } },
@@ -138,11 +148,11 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     });
   }
 
-  async markEmailVerified(id: string, now: Temporal.Instant): Promise<void> {
-    await this.#update(id, { emailVerifiedAt: now, status: "ACTIVE", updatedAt: now });
+  async markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void> {
+    await this.#update(id.value, { emailVerifiedAt: now, status: "ACTIVE", updatedAt: now });
   }
 
-  async findActiveAccounts(userIds: readonly string[]): Promise<readonly UserActivity[]> {
+  async findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
     if (userIds.length === 0) {
       return [];
     }
@@ -156,26 +166,31 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
       .from(user)
       .leftJoin(userPreference, eq(userPreference.userId, user.id))
       .where(
-        and(inArray(user.id, [...userIds]), isNull(user.deletedAt), ne(user.status, "SUSPENDED")),
+        and(
+          inArray(
+            user.id,
+            userIds.map((userId) => userId.value),
+          ),
+          isNull(user.deletedAt),
+          ne(user.status, "SUSPENDED"),
+        ),
       );
     return rows;
   }
 
-  async findLastSeenAppVersion(userId: string): Promise<string | null> {
+  async findLastSeenAppVersion(userId: UserId): Promise<string | null> {
     const row = await this.#db.query.user.findFirst({
       columns: { lastSeenAppVersion: true },
-      where: { id: userId },
+      where: { id: userId.value },
     });
     return row?.lastSeenAppVersion ?? null;
   }
 
-  async updateLastActiveAt(activity: {
-    readonly userId: string;
-    readonly timezone: string;
-    readonly seenAt: Temporal.Instant;
-    readonly appVersion?: string;
-  }): Promise<void> {
-    const { userId: id, timezone, appVersion, seenAt } = activity;
+  async updateLastActiveAt(
+    activity: Parameters<AuthUserActivityWriterPort["updateLastActiveAt"]>[0],
+  ): Promise<void> {
+    const { timezone, appVersion, seenAt } = activity;
+    const id = activity.userId.value;
     const localDate = seenAt.toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
 
     await this.#db.execute(sql`
@@ -228,32 +243,32 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
   }
 
   async createProfile(
-    userId: string,
+    userId: UserId,
     data: { name?: string; profileImage?: string },
   ): Promise<void> {
     await this.#db.insert(userProfile).values({
-      userId,
+      userId: userId.value,
       name: data.name ?? null,
       profileImage: data.profileImage ?? null,
     });
   }
 
   async updateProfile(
-    userId: string,
+    userId: UserId,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<{ name: string | null; profileImage: string | null }> {
     // upsert로 프로필이 없는 경우에도 생성
     const [profile] = await this.#db
       .insert(userProfile)
       .values({
-        userId,
+        userId: userId.value,
         name: data.name ?? null,
         profileImage: data.profileImage ?? null,
       })
       .onConflictDoUpdate({
         target: userProfile.userId,
         // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다. userId는 빈 set을 피하는 무변경 값이다.
-        set: { userId, name: data.name, profileImage: data.profileImage },
+        set: { userId: userId.value, name: data.name, profileImage: data.profileImage },
       })
       .returning({ name: userProfile.name, profileImage: userProfile.profileImage });
     return requireRecord(profile);
@@ -277,19 +292,22 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     return rows.map(toIdentityUser);
   }
 
-  async findByIdForUpdate(id: string): Promise<IdentityUser | null> {
+  async findByIdForUpdate(id: UserId): Promise<IdentityUser | null> {
     // FOR NO KEY UPDATE는 계정 변경을 직렬화하면서 이 User를 참조하는 FK 검사는 막지 않는다.
     const [row] = await this.#db
       .select()
       .from(user)
-      .where(eq(user.id, id))
+      .where(eq(user.id, id.value))
       .limit(1)
       .for("no key update");
     return row == null ? null : toIdentityUser(row);
   }
 
-  async hardDelete(id: string): Promise<void> {
-    const deleted = await this.#db.delete(user).where(eq(user.id, id)).returning({ id: user.id });
+  async hardDelete(id: UserId): Promise<void> {
+    const deleted = await this.#db
+      .delete(user)
+      .where(eq(user.id, id.value))
+      .returning({ id: user.id });
     requireRecord(deleted[0]);
   }
 

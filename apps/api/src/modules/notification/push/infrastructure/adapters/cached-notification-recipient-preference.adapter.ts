@@ -3,6 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
@@ -35,7 +36,7 @@ export class CachedNotificationRecipientPreferenceAdapter
   }
 
   async getPreference(userId: string): Promise<NotificationDeliveryPreference> {
-    const preference = await this.#preferenceReader.read(userId);
+    const preference = await this.#preferenceReader.read(UserId.reconstitute(userId));
     return {
       ...preference,
       locale: preference.locale ?? DEFAULT_LOCALE,
@@ -43,7 +44,7 @@ export class CachedNotificationRecipientPreferenceAdapter
   }
 
   async getLocale(userId: string): Promise<SupportedLocale> {
-    const preference = await this.#preferenceReader.read(userId);
+    const preference = await this.#preferenceReader.read(UserId.reconstitute(userId));
     // 마지막 요청 언어는 아직 어디에도 저장하지 않는다
     return resolveRecipientLocale({
       storedLocale: preference.locale ?? null,

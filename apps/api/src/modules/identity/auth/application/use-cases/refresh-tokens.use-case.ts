@@ -9,6 +9,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AUTH_DEFAULTS, TOKEN_REUSE_GRACE_PERIOD_MS } from "../../domain/auth.constants.js";
+import { SessionId } from "../../domain/session-id.vo.js";
 import { AuthAlerts } from "../auth.alerts.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -65,7 +66,9 @@ export class RefreshTokensUseCase {
       return this.#rotateSession(session, input, false);
     }
 
-    const authSession = await this.#dependencies.sessionRepository.findById(sessionId);
+    const authSession = await this.#dependencies.sessionRepository.findById(
+      SessionId.reconstitute(sessionId),
+    );
     if (authSession == null || !authSession.wasPreviouslyIssued(refreshTokenHash)) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
@@ -90,7 +93,7 @@ export class RefreshTokensUseCase {
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     await this.#dependencies.securityLogRepository.create({
-      userId: authSession.userId.value,
+      userId: authSession.userId,
       event: SECURITY_EVENT.SUSPICIOUS_ACTIVITY,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -136,9 +139,9 @@ export class RefreshTokensUseCase {
     }
 
     const tokens = await this.#dependencies.tokenService.generateTokenPair(
-      userId,
+      session.userId,
       email,
-      sessionId,
+      session.id,
       role,
       session.tokenFamily,
       session.tokenVersion + 1,
@@ -151,7 +154,7 @@ export class RefreshTokensUseCase {
       now.add({ seconds: refreshExpiresInSeconds }),
     );
     const isRotated = await this.#dependencies.sessionRepository.rotateToken(
-      sessionId,
+      session.id,
       rotation,
       now,
     );
@@ -164,9 +167,9 @@ export class RefreshTokensUseCase {
       throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId: undefined });
     }
 
-    await this.#dependencies.cacheService.invalidateSession(sessionId);
+    await this.#dependencies.cacheService.invalidateSession(session.id);
     await this.#dependencies.securityLogRepository.create({
-      userId,
+      userId: session.userId,
       event: SECURITY_EVENT.TOKEN_REFRESH,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

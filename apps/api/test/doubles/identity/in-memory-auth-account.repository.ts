@@ -9,6 +9,7 @@ import {
 } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
@@ -29,11 +30,13 @@ export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
   }
 
   async findByUserIdAndProvider(
-    userId: string,
+    userId: UserId,
     provider: AccountProvider,
   ): Promise<AuthAccountRecord | null> {
     return (
-      this.all.find((account) => account.userId === userId && account.provider === provider) ?? null
+      this.all.find(
+        (account) => account.userId === userId.value && account.provider === provider,
+      ) ?? null
     );
   }
 
@@ -49,13 +52,13 @@ export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
     );
   }
 
-  async findAllByUserId(userId: string): Promise<AuthAccountRecord[]> {
-    return this.all.filter((account) => account.userId === userId);
+  async findAllByUserId(userId: UserId): Promise<AuthAccountRecord[]> {
+    return this.all.filter((account) => account.userId === userId.value);
   }
 
-  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
+  async findIdentityAccounts(userId: UserId): Promise<IdentityAccounts> {
     return IdentityAccounts.reconstitute({
-      userId,
+      userId: userId.value,
       accounts: (await this.findAllByUserId(userId)).map((account) => ({
         id: account.id,
         provider: account.provider,
@@ -65,19 +68,19 @@ export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
     });
   }
 
-  async createCredentialAccount(userId: string, hashedPassword: string): Promise<void> {
-    if (this.#isTaken(userId, "CREDENTIAL", userId)) {
+  async createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void> {
+    if (this.#isTaken(userId.value, "CREDENTIAL", userId.value)) {
       throw accountAlreadyExists();
     }
     this.#insert({
-      userId,
+      userId: userId.value,
       provider: "CREDENTIAL",
-      providerAccountId: userId,
+      providerAccountId: userId.value,
       password: hashedPassword,
     });
   }
 
-  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+  async updatePassword(userId: UserId, hashedPassword: string): Promise<void> {
     const account = await this.findByUserIdAndProvider(userId, "CREDENTIAL");
     if (account != null) {
       this.#accounts.set(account.id, { ...account, password: hashedPassword });
@@ -85,7 +88,7 @@ export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
   }
 
   async updatePasswordIfUnchanged(
-    userId: string,
+    userId: UserId,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean> {
@@ -98,18 +101,18 @@ export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
   }
 
   async createOAuthAccount(account: NewOAuthAccount): Promise<void> {
-    if (this.#isTaken(account.userId, account.provider, account.providerAccountId)) {
+    if (this.#isTaken(account.userId.value, account.provider, account.providerAccountId)) {
       throw new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
     }
     this.#insert({
-      userId: account.userId,
+      userId: account.userId.value,
       provider: account.provider,
       providerAccountId: account.providerAccountId,
       password: null,
     });
   }
 
-  async deleteAccount(userId: string, provider: AccountProvider): Promise<void> {
+  async deleteAccount(userId: UserId, provider: AccountProvider): Promise<void> {
     const account = await this.findByUserIdAndProvider(userId, provider);
     if (account != null) {
       this.#accounts.delete(account.id);

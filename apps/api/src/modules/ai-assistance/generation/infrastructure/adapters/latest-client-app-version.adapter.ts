@@ -28,7 +28,7 @@ export class LatestClientAppVersionAdapter extends AiClientAppVersionReaderPort 
   async findLatestAppVersion(userId: UserId): Promise<string | null> {
     const [pushDeviceVersion, requestVersion] = await Promise.all([
       this.#pushDeviceVersions.findLatestAppVersion(userId.value),
-      this.#requestVersions.findLastSeenAppVersion(userId.value),
+      this.#requestVersions.findLastSeenAppVersion(userId),
     ]);
     if (pushDeviceVersion == null || requestVersion == null) {
       return pushDeviceVersion ?? requestVersion;

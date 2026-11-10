@@ -6,6 +6,7 @@ import {
   USER_SETTINGS_CACHE_TTL_MS,
 } from "#api/modules/identity/preferences/infrastructure/cache/user-settings-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserSettingsCachePort } from "../../application/ports/user-settings-cache.port.js";
 import type { PreferenceSnapshot } from "../../application/read-models/preference.read-model.js";
@@ -37,18 +38,18 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
   }
 
   wrapUserPreference(
-    userId: string,
+    userId: UserId,
     factory: () => Promise<PreferenceSnapshot>,
   ): Promise<PreferenceSnapshot> {
     return this.#cacheService.wrap(
-      UserSettingsCacheKey.preference(userId),
+      UserSettingsCacheKey.preference(userId.value),
       PREFERENCE_SNAPSHOT_SCHEMA,
       factory,
       USER_SETTINGS_CACHE_TTL_MS,
     );
   }
 
-  invalidateUserPreference(userId: string): Promise<void> {
-    return this.#cacheService.del(UserSettingsCacheKey.preference(userId));
+  invalidateUserPreference(userId: UserId): Promise<void> {
+    return this.#cacheService.del(UserSettingsCacheKey.preference(userId.value));
   }
 }

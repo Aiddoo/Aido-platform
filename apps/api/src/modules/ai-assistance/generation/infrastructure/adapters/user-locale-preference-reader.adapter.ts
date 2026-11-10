@@ -20,7 +20,7 @@ export class UserLocalePreferenceReaderAdapter extends UserLocalePreferenceReade
   }
 
   async read(userId: UserId): Promise<UserLocalePreference> {
-    const preference = await this.#preferenceReader.read(userId.value);
+    const preference = await this.#preferenceReader.read(userId);
     return {
       timezone: resolveTimezone(preference.timezone),
       locale: toSupportedLocale(preference.locale),

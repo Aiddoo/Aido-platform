@@ -43,7 +43,8 @@ export class GetCurrentUserUseCase {
   }
 
   async execute(input: GetCurrentUserQuery): Promise<CurrentUserResult> {
-    const { userId, sessionId } = input;
+    const { sessionId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
       userId,
       async () => {
@@ -52,9 +53,7 @@ export class GetCurrentUserUseCase {
           return undefined;
         }
         // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
-        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(
-          UserId.reconstitute(userId),
-        );
+        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
 
         return {
           id: user.id,
@@ -83,7 +82,7 @@ export class GetCurrentUserUseCase {
     );
 
     if (cachedProfile == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     // 만료 경계를 넘긴 프로필 캐시를 쓰지 않도록 권한은 기한을 함께 담은 Access 판단으로 매번 계산한다
     const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);
@@ -117,17 +116,16 @@ export class GetCurrentUserUseCase {
   }
 
   async #entitlements(
-    userId: string,
+    userId: UserId,
     timezone: string,
   ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
-    const owner = UserId.reconstitute(userId);
     const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
-      entitlementReader.getEntitlements(owner),
-      quotaLedger.read(owner, "AI_PARSE"),
-      cheerUsageReader.readDailyUsage(owner, timezone),
-      nudgeUsageReader.readDailyUsage(owner, timezone),
+      entitlementReader.getEntitlements(userId),
+      quotaLedger.read(userId, "AI_PARSE"),
+      cheerUsageReader.readDailyUsage(userId, timezone),
+      nudgeUsageReader.readDailyUsage(userId, timezone),
     ]);
     // 출시 앱 /me.entitlements 계약의 기능만 담는다. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다.
     const features = pick(userEntitlements.features, PREMIUM_FEATURE_KEYS);

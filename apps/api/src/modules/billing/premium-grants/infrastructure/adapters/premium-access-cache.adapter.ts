@@ -24,7 +24,7 @@ export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
   async invalidate(userId: UserId): Promise<void> {
     await Promise.all([
       this.#entitlementCache.invalidateEntitlements(userId),
-      this.#profileCache.invalidateUserProfile(userId.value),
+      this.#profileCache.invalidateUserProfile(userId),
     ]);
   }
 }

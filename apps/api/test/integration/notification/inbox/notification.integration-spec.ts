@@ -64,6 +64,7 @@ import {
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -219,18 +220,22 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             consentRepository: DrizzleUserConsentRepository,
           ) => ({
             upsertPushTimezone: (userId: string, timezone: string) =>
-              preferenceRepository.upsertTimezone(userId, timezone),
+              preferenceRepository.upsertTimezone(UserId.reconstitute(userId), timezone),
             upsertPushLocale: (userId: string, locale: string) =>
-              preferenceRepository.upsertLocale(userId, locale),
-            getPreferenceRecord: (userId: string) => preferenceRepository.findByUserId(userId),
+              preferenceRepository.upsertLocale(UserId.reconstitute(userId), locale),
+            getPreferenceRecord: (userId: string) =>
+              preferenceRepository.findByUserId(UserId.reconstitute(userId)),
             getPreferenceRecordsByUserIds: (userIds: string[]) =>
-              preferenceRepository.findByUserIds(userIds),
-            getConsentRecord: (userId: string) => consentRepository.findByUserId(userId),
+              preferenceRepository.findByUserIds(
+                userIds.map((userId) => UserId.reconstitute(userId)),
+              ),
+            getConsentRecord: (userId: string) =>
+              consentRepository.findByUserId(UserId.reconstitute(userId)),
             getConsentRecordsByUserIds: (userIds: string[]) =>
-              consentRepository.findByUserIds(userIds),
+              consentRepository.findByUserIds(userIds.map((userId) => UserId.reconstitute(userId))),
             updateMarketingPushConsent: (userId: string, agreed: boolean) =>
               consentRepository
-                .upsertMarketingPushConsent(userId, {
+                .upsertMarketingPushConsent(UserId.reconstitute(userId), {
                   agreedAt: agreed ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
                 })
                 .then(() => undefined),

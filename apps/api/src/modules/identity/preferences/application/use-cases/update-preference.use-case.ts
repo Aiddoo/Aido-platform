@@ -47,7 +47,7 @@ export class UpdatePreferenceUseCase {
   }
 
   async execute(input: UpdatePreferenceCommand): Promise<PreferenceView> {
-    const { userId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const changesReminder =
       input.morningReminderHour != null ||
       input.morningReminderMinute != null ||
@@ -55,11 +55,7 @@ export class UpdatePreferenceUseCase {
       input.eveningReminderMinute != null;
 
     if (changesReminder) {
-      await assertEntitled(
-        this.#dependencies.entitlement,
-        UserId.reconstitute(userId),
-        "CUSTOM_REMINDER_TIME",
-      );
+      await assertEntitled(this.#dependencies.entitlement, userId, "CUSTOM_REMINDER_TIME");
     }
 
     ReminderTime.create(input);
@@ -105,7 +101,7 @@ export class UpdatePreferenceUseCase {
 
     this.#dependencies.logger.log({
       event: PreferenceLogEvent.PREFERENCE_UPDATED,
-      userId,
+      userId: input.userId,
       pushEnabled: updated.pushEnabled,
       nightPushEnabled: updated.nightPushEnabled,
       timezone: updated.timezone,
@@ -114,7 +110,7 @@ export class UpdatePreferenceUseCase {
     // 변경한 시각의 cron이 이미 지난 경우에도 리마인더를 즉시 반영한다.
     if (changesReminder) {
       this.#dependencies.reminderEnqueuer.enqueueReminderHourChanged({
-        userId,
+        userId: input.userId,
         timezone: updated.timezone,
         morningReminderHour: input.morningReminderHour,
         morningReminderMinute: input.morningReminderMinute,

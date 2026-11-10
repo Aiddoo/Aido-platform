@@ -32,9 +32,10 @@ export class ScheduledAiConsentReader {
 
   async find(userId: string): Promise<ScheduledAiConsent> {
     const { consentReader, clientAppVersion, clock } = this.#dependencies;
+    const owner = UserId.reconstitute(userId);
     const [consent, appVersion] = await Promise.all([
-      consentReader.findAiDataSharingConsent(userId),
-      clientAppVersion.findLatestAppVersion(UserId.reconstitute(userId)),
+      consentReader.findAiDataSharingConsent(owner),
+      clientAppVersion.findLatestAppVersion(owner),
     ]);
     return {
       allowed: canShareWithAi({ consent, appVersion, now: clock.now() }),

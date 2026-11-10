@@ -1,5 +1,6 @@
 import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -68,7 +69,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     // When
     const counts = await Promise.all(
       ["2026-11-27", "2026-11-28", "2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03"].map(
-        (date) => reader.countForDay(userId, Temporal.PlainDate.from(date)),
+        (date) => reader.countForDay(UserId.reconstitute(userId), Temporal.PlainDate.from(date)),
       ),
     );
 
@@ -91,8 +92,8 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     // When
     const seoulToday = now.toZonedDateTimeISO("Asia/Seoul").toPlainDate();
     const laToday = now.toZonedDateTimeISO("America/Los_Angeles").toPlainDate();
-    const seoul = await reader.countForDay(userId, seoulToday);
-    const la = await reader.countForDay(userId, laToday);
+    const seoul = await reader.countForDay(UserId.reconstitute(userId), seoulToday);
+    const la = await reader.countForDay(UserId.reconstitute(userId), laToday);
 
     // Then
     expect([seoulToday.toString(), laToday.toString()]).toEqual(["2026-12-01", "2026-11-30"]);
@@ -118,8 +119,14 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     });
 
     // When
-    const onDay = await reader.countForDay(userId, Temporal.PlainDate.from("2026-12-01"));
-    const nextDay = await reader.countForDay(userId, Temporal.PlainDate.from("2026-12-02"));
+    const onDay = await reader.countForDay(
+      UserId.reconstitute(userId),
+      Temporal.PlainDate.from("2026-12-01"),
+    );
+    const nextDay = await reader.countForDay(
+      UserId.reconstitute(userId),
+      Temporal.PlainDate.from("2026-12-02"),
+    );
 
     // Then
     expect(onDay).toEqual({ total: 1, completed: 1 });

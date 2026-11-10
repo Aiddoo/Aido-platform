@@ -21,9 +21,10 @@ export class GetPreferenceUseCase {
   }
 
   async execute(input: GetPreferenceQuery): Promise<PreferenceView> {
+    const userId = UserId.reconstitute(input.userId);
     const [snapshot, canCustomizeReminder] = await Promise.all([
-      this.#dependencies.preferenceReader.read(input.userId),
-      this.#dependencies.entitlement.can(UserId.reconstitute(input.userId), "CUSTOM_REMINDER_TIME"),
+      this.#dependencies.preferenceReader.read(userId),
+      this.#dependencies.entitlement.can(userId, "CUSTOM_REMINDER_TIME"),
     ]);
     return buildPreferenceView(snapshot, canCustomizeReminder);
   }

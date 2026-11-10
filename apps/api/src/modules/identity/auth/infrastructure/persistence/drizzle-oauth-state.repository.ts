@@ -12,6 +12,7 @@ import {
   type NewAuthOAuthState,
 } from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
 import type { AuthOAuthState } from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
+import type { OAuthStateId } from "#api/modules/identity/auth/domain/oauth-state-id.vo";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { oAuthState } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
@@ -44,7 +45,7 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
       provider: input.provider,
       redirectUri: input.redirectUri,
       mode: input.mode,
-      initiatingUserId: input.initiatingUserId,
+      initiatingUserId: input.initiatingUserId?.value,
       expiresAt: input.expiresAt,
     });
   }
@@ -66,7 +67,10 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
     return row == null ? null : this.#toOAuthState(row);
   }
 
-  async saveExchangeData(oauthStateId: number, data: AuthOAuthLoginExchangeData): Promise<void> {
+  async saveExchangeData(
+    oauthStateId: OAuthStateId,
+    data: AuthOAuthLoginExchangeData,
+  ): Promise<void> {
     await this.#db
       .update(oAuthState)
       .set({
@@ -79,10 +83,10 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
         accountRestored: data.accountRestored,
         isNewUser: data.isNewUser,
       })
-      .where(eq(oAuthState.id, oauthStateId));
+      .where(eq(oAuthState.id, oauthStateId.value));
   }
 
-  async saveLinkingData(oauthStateId: number, data: AuthOAuthLinkingData): Promise<void> {
+  async saveLinkingData(oauthStateId: OAuthStateId, data: AuthOAuthLinkingData): Promise<void> {
     await this.#db
       .update(oAuthState)
       .set({
@@ -91,7 +95,7 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
         // 연결 교환은 공급자 계정 id를 userId 칸에 저장해 왔다
         userId: data.providerAccountId,
       })
-      .where(eq(oAuthState.id, oauthStateId));
+      .where(eq(oAuthState.id, oauthStateId.value));
   }
 
   async consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean> {
@@ -100,7 +104,7 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
       .set({ exchangedAt: input.at, accessToken: null, refreshToken: null })
       .where(
         and(
-          eq(oAuthState.id, input.id),
+          eq(oAuthState.id, input.id.value),
           eq(oAuthState.exchangeCode, input.exchangeCode),
           isNull(oAuthState.exchangedAt),
           gt(oAuthState.expiresAt, input.at),
@@ -110,7 +114,7 @@ export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
                 or(
                   isNull(oAuthState.initiatingUserId),
                   eq(oAuthState.initiatingUserId, ""),
-                  eq(oAuthState.initiatingUserId, input.actorUserId),
+                  eq(oAuthState.initiatingUserId, input.actorUserId.value),
                 ),
               )
             : undefined,

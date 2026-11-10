@@ -80,11 +80,11 @@ export class VerifyEmailUseCase {
       });
 
       await this.#dependencies.userRepository.markEmailVerified(
-        user.id.value,
+        user.id,
         this.#dependencies.clock.now(),
       );
 
-      await this.#dependencies.retentionEnroller.activateNewUser(user.id.value);
+      await this.#dependencies.retentionEnroller.activateNewUser(user.id);
 
       const { tokens } = await this.#dependencies.sessionService.execute({
         userId: user.id.value,
@@ -96,15 +96,13 @@ export class VerifyEmailUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id.value,
+        userId: user.id,
         event: SECURITY_EVENT.EMAIL_VERIFIED,
         ipAddress: ip,
         userAgent,
       });
 
-      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(
-        user.id.value,
-      );
+      const userWithProfile = await this.#dependencies.userRepository.findByIdWithProfile(user.id);
 
       return {
         tokens,

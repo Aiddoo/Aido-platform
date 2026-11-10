@@ -6,6 +6,7 @@ import type {
   AuthSessionPrimitives,
   AuthSessionRotation,
 } from "#api/modules/identity/auth/domain/auth-session.aggregate";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -51,7 +52,7 @@ function sessionWith(overrides: Partial<AuthSessionPrimitives> = {}): AuthSessio
 // 조회와 조건부 쓰기 사이에 같은 토큰으로 온 다른 요청이 먼저 회전한 경합을 만든다
 class RotationRaceSessionRepository extends InMemoryAuthSessionRepository {
   override async rotateToken(
-    id: string,
+    id: SessionId,
     rotation: AuthSessionRotation,
     now: Temporal.Instant,
   ): Promise<boolean> {

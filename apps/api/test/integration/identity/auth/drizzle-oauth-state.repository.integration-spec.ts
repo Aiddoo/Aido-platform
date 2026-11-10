@@ -50,7 +50,7 @@ describe("DrizzleOAuthStateRepository (실제 PostgreSQL)", () => {
     }
 
     // When
-    await repository.saveExchangeData(created.id.value, {
+    await repository.saveExchangeData(created.id, {
       exchangeCode: "exchange-code",
       accessToken: "plain-access",
       refreshToken: "plain-refresh",

@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -43,7 +44,7 @@ class CasObservingAccountRepository extends InMemoryAuthAccountRepository {
   readonly casSettled = Promise.withResolvers<boolean>();
 
   override async updatePasswordIfUnchanged(
-    userId: string,
+    userId: UserId,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean> {

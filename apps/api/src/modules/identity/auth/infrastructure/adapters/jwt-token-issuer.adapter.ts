@@ -8,6 +8,9 @@ import { JwtService } from "@nestjs/jwt";
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { jwtConfig } from "#api/platform/config/jwt.config";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { SessionId } from "../../domain/session-id.vo.js";
 
 const JWT_TOKEN_TYPES = ["access", "refresh"] as const;
 
@@ -49,20 +52,20 @@ export class JwtTokenIssuerAdapter extends AuthTokenIssuerPort {
    * @param tokenVersion - 토큰 버전 (Token Rotation 시 +1)
    */
   async generateTokenPair(
-    userId: string,
+    userId: UserId,
     email: string,
-    sessionId: string,
+    sessionId: SessionId,
     role: UserRole,
     tokenFamily?: string,
     tokenVersion = 1,
   ): Promise<TokenPair> {
     const family = tokenFamily ?? this.generateTokenFamily();
 
-    const accessToken = await this.#generateAccessToken(userId, email, sessionId, role);
+    const accessToken = await this.#generateAccessToken(userId.value, email, sessionId.value, role);
     const refreshToken = await this.#generateRefreshToken(
-      userId,
+      userId.value,
       email,
-      sessionId,
+      sessionId.value,
       role,
       family,
       tokenVersion,

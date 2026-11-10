@@ -1,5 +1,6 @@
 import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import {
@@ -114,7 +115,10 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   ])("저장 언어 %s를 지원 언어 %s로 읽는다", async (storedLocale, expectedLocale) => {
     // Given
     const fixture = createFixture();
-    await fixture.preferenceRepository.upsertLocale(fixture.userId, storedLocale);
+    await fixture.preferenceRepository.upsertLocale(
+      UserId.reconstitute(fixture.userId),
+      storedLocale,
+    );
 
     // When
     const locale = await fixture.reader.getLocale(fixture.userId);

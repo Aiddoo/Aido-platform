@@ -7,6 +7,7 @@ import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants"
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
@@ -46,13 +47,14 @@ export class SetPasswordUseCase {
   }
 
   async execute(input: SetPasswordCommand): Promise<{ message: string }> {
-    const { userId, code, newPassword, metadata } = input;
+    const { code, newPassword, metadata } = input;
+    const userId = UserId.reconstitute(input.userId);
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -63,7 +65,7 @@ export class SetPasswordUseCase {
       "CREDENTIAL",
     );
     if (existingAccount != null) {
-      throw new ApplicationException(ErrorCode.USER_0614, { userId });
+      throw new ApplicationException(ErrorCode.USER_0614, { userId: input.userId });
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
@@ -71,7 +73,7 @@ export class SetPasswordUseCase {
     await this.#dependencies.unitOfWork.run(async () => {
       const lockedUser = await this.#dependencies.userRepository.findByIdForUpdate(userId);
       if (lockedUser == null) {
-        throw new ApplicationException(ErrorCode.USER_0601, { userId });
+        throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
       }
       if (lockedUser.isDeleted) {
         throw accountDeleted(lockedUser.id.value);
@@ -81,10 +83,10 @@ export class SetPasswordUseCase {
         "CREDENTIAL",
       );
       if (currentAccount != null) {
-        throw new ApplicationException(ErrorCode.USER_0614, { userId });
+        throw new ApplicationException(ErrorCode.USER_0614, { userId: input.userId });
       }
       await this.#dependencies.consumeVerificationCode.execute({
-        userId: userId,
+        userId: input.userId,
         code,
         type: "PASSWORD_SETUP",
       });
@@ -100,7 +102,7 @@ export class SetPasswordUseCase {
     });
 
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
-    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_SET, userId });
+    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_SET, userId: input.userId });
 
     return {
       message: "비밀번호가 설정되었습니다. 이제 이메일로 로그인할 수 있습니다.",

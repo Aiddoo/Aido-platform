@@ -101,7 +101,7 @@ export class LoginWithPasswordUseCase {
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id.value,
+      user.id,
       "CREDENTIAL",
     );
     if (account == null || account.password == null || account.password === "") {
@@ -139,7 +139,7 @@ export class LoginWithPasswordUseCase {
         .hash(password)
         .then((passwordHash) =>
           this.#dependencies.accountRepository.updatePasswordIfUnchanged(
-            user.id.value,
+            user.id,
             expectedPasswordHash,
             passwordHash,
           ),
@@ -193,7 +193,7 @@ export class LoginWithPasswordUseCase {
     });
 
     if (needsRestore) {
-      await this.#dependencies.cacheService.invalidateUserProfile(user.id.value);
+      await this.#dependencies.cacheService.invalidateUserProfile(user.id);
       this.#dependencies.logger.log({
         event: AuthLogEvent.ACCOUNT_RESTORED,
         userId: user.id.value,

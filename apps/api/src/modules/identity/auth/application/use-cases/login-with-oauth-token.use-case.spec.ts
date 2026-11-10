@@ -10,6 +10,7 @@ import {
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
@@ -45,7 +46,7 @@ class PromotingUserRepository implements LoginUserReader {
     this.#promoteFromRead = promoteFromRead;
   }
 
-  async findById(id: string): Promise<IdentityUser | null> {
+  async findById(id: UserId): Promise<IdentityUser | null> {
     const user = await this.#source.findById(id);
     this.#reads += 1;
     if (user == null || this.#reads < this.#promoteFromRead) {
@@ -58,7 +59,7 @@ class PromotingUserRepository implements LoginUserReader {
     return this.#source.findByEmail(email);
   }
 
-  findByIdForUpdate(id: string): Promise<IdentityUser | null> {
+  findByIdForUpdate(id: UserId): Promise<IdentityUser | null> {
     return this.#source.findByIdForUpdate(id);
   }
 }
@@ -97,7 +98,7 @@ function daysBeforeNow(days: number): Temporal.Instant {
 describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", () => {
   async function linkExistingIdentity(fixture: OAuthFixture, provider: AccountProvider) {
     await fixture.accountRepository.createOAuthAccount({
-      userId: fixture.user.id,
+      userId: UserId.reconstitute(fixture.user.id),
       provider,
       providerAccountId: fixture.identityProvider.profile.id,
     });
@@ -295,7 +296,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
   it("신원에 연결된 사용자가 없으면 USER_0601이고 신규 가입·실패 시도를 만들지 않는다", async () => {
     // Given
     const fixture = await givenExisting();
-    await fixture.userRepository.hardDelete(fixture.user.id);
+    await fixture.userRepository.hardDelete(UserId.reconstitute(fixture.user.id));
     // When
     const pending = fixture.useCase.execute({ provider: "GOOGLE", token: "token" });
     // Then

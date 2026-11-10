@@ -59,7 +59,7 @@ export class ResetPasswordUseCase {
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id.value,
+      user.id,
       "CREDENTIAL",
     );
     if (account == null) {
@@ -75,16 +75,16 @@ export class ResetPasswordUseCase {
         type: "PASSWORD_RESET",
       });
 
-      await this.#dependencies.accountRepository.updatePassword(user.id.value, hashedPassword);
+      await this.#dependencies.accountRepository.updatePassword(user.id, hashedPassword);
 
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
-        userId: user.id.value,
+        userId: user.id,
         reason: REVOKE_REASON.PASSWORD_RESET,
         now: this.#dependencies.clock.now(),
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id.value,
+        userId: user.id,
         event: SECURITY_EVENT.PASSWORD_CHANGED,
         ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

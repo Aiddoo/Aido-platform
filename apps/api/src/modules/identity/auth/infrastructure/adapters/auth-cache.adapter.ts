@@ -9,14 +9,17 @@ import {
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
+import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { now } from "#api/shared/domain/date/utils/core";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   AuthCachedSession,
   AuthCachedUserProfile,
   AuthCachePort,
 } from "../../application/ports/auth-collaboration.port.js";
+import type { SessionId } from "../../domain/session-id.vo.js";
 import {
   IDENTITY_CACHE_TTL_MS,
   IdentityCacheKey,
@@ -58,39 +61,43 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
 }) satisfies z.ZodType<AuthCachedUserProfile>;
 
 @Injectable()
-export class AuthCacheAdapter implements AuthCachePort {
+// 사용자 프로필 무효화 포트로도 같은 인스턴스를 쓴다(useExisting)
+export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPort {
   readonly #cacheService: CacheService;
 
   constructor(cacheService: CacheService) {
     this.#cacheService = cacheService;
   }
 
-  getSession(sessionId: string): Promise<AuthCachedSession | undefined> {
-    return this.#cacheService.get(IdentityCacheKey.session(sessionId), AUTH_CACHED_SESSION_SCHEMA);
+  getSession(sessionId: SessionId): Promise<AuthCachedSession | undefined> {
+    return this.#cacheService.get(
+      IdentityCacheKey.session(sessionId.value),
+      AUTH_CACHED_SESSION_SCHEMA,
+    );
   }
 
-  setSession(sessionId: string, session: AuthCachedSession): Promise<void> {
+  setSession(sessionId: SessionId, session: AuthCachedSession): Promise<void> {
     return this.#cacheService.set(
-      IdentityCacheKey.session(sessionId),
+      IdentityCacheKey.session(sessionId.value),
       session,
       IDENTITY_CACHE_TTL_MS.SESSION,
     );
   }
 
-  invalidateSession(sessionId: string): Promise<void> {
-    return this.#cacheService.del(IdentityCacheKey.session(sessionId));
+  invalidateSession(sessionId: SessionId): Promise<void> {
+    return this.#cacheService.del(IdentityCacheKey.session(sessionId.value));
   }
 
-  invalidateUserProfile(userId: string): Promise<void> {
-    return this.#cacheService.del(IdentityCacheKey.userProfile(userId));
+  invalidateUserProfile(userId: UserId): Promise<void> {
+    return this.#cacheService.del(IdentityCacheKey.userProfile(userId.value));
   }
 
   wrapUserProfile(
-    userId: string,
+    userId: UserId,
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined> {
     return this.#cacheService.wrap(
-      IdentityCacheKey.userProfile(userId),
+      IdentityCacheKey.userProfile(userId.value),
       AUTH_CACHED_USER_PROFILE_SCHEMA.optional(),
       factory,
       (profile) => userProfileTtlMs(profile, now()),

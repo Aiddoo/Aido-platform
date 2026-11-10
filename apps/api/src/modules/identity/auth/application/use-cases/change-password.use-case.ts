@@ -8,7 +8,9 @@ import { ApplicationException } from "#api/shared/application/application.except
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { SessionId } from "../../domain/session-id.vo.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -50,13 +52,14 @@ export class ChangePasswordUseCase {
   }
 
   async execute(input: ChangePasswordCommand): Promise<{ message: string }> {
-    const { userId, currentPassword, newPassword, metadata, currentSessionId } = input;
+    const { currentPassword, newPassword, metadata, currentSessionId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -67,7 +70,7 @@ export class ChangePasswordUseCase {
       "CREDENTIAL",
     );
     if (account == null || account.password == null || account.password === "") {
-      throw new ApplicationException(ErrorCode.USER_0613, { userId });
+      throw new ApplicationException(ErrorCode.USER_0613, { userId: input.userId });
     }
 
     const isValid = await this.#dependencies.passwordService.verify(
@@ -87,7 +90,8 @@ export class ChangePasswordUseCase {
         userId,
         reason: REVOKE_REASON.PASSWORD_CHANGED,
         now: this.#dependencies.clock.now(),
-        exceptSessionId: currentSessionId,
+        exceptSessionId:
+          currentSessionId == null ? undefined : SessionId.reconstitute(currentSessionId),
       });
 
       await this.#dependencies.securityLogRepository.create({
@@ -105,7 +109,7 @@ export class ChangePasswordUseCase {
       ),
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
-    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_CHANGED, userId });
+    this.#dependencies.logger.log({ event: AuthLogEvent.PASSWORD_CHANGED, userId: input.userId });
 
     return { message: "비밀번호가 변경되었습니다." };
   }

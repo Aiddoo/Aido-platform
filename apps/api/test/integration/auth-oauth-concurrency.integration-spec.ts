@@ -8,6 +8,7 @@ import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application
 import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
+import { OAuthStateId } from "#api/modules/identity/auth/domain/oauth-state-id.vo";
 import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
@@ -15,6 +16,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { createEntityId } from "#api/platform/database/entity-id";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { CountingOAuthIdentityProvider } from "#test/mocks/ports/auth-oauth.stub";
@@ -225,8 +227,16 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
 
   it("서로 다른 로그인 수단 두 개를 동시에 해제하면 마지막 계정은 유지된다", async () => {
     // Given
-    await accounts.createOAuthAccount({ userId, provider: "GOOGLE", providerAccountId: "google" });
-    await accounts.createOAuthAccount({ userId, provider: "KAKAO", providerAccountId: "kakao" });
+    await accounts.createOAuthAccount({
+      userId: UserId.reconstitute(userId),
+      provider: "GOOGLE",
+      providerAccountId: "google",
+    });
+    await accounts.createOAuthAccount({
+      userId: UserId.reconstitute(userId),
+      provider: "KAKAO",
+      providerAccountId: "kakao",
+    });
     const lock = await holdRowLock(
       sql`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR NO KEY UPDATE`,
     );
@@ -249,7 +259,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
       reason: { errorCode: ErrorCode.USER_0610 },
     });
-    expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
+    expect(await accounts.findAllByUserId(UserId.reconstitute(userId))).toHaveLength(1);
     const audits = await client.query.securityLog.findMany();
     expect(audits.filter((audit) => audit.event === "OAUTH_UNLINKED")).toHaveLength(1);
   });
@@ -278,7 +288,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     // Then
     expect(loggedInUserIds(outcomes)).toEqual([userId, userId]);
     expect(
-      (await accounts.findAllByUserId(userId)).map((account) => account.providerAccountId),
+      (await accounts.findAllByUserId(UserId.reconstitute(userId))).map(
+        (account) => account.providerAccountId,
+      ),
     ).toEqual(["google-race"]);
     const audits = await client.query.securityLog.findMany();
     expect(audits.filter((audit) => audit.event === "OAUTH_AUTO_LINKED")).toHaveLength(1);
@@ -322,7 +334,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   it("이미 같은 공급자의 다른 계정이 연결된 사용자에게 자동 연결하면 공급자별 이미 연결된 계정 오류를 낸다", async () => {
     // Given
     await accounts.createOAuthAccount({
-      userId,
+      userId: UserId.reconstitute(userId),
       provider: "GOOGLE",
       providerAccountId: "google-old",
     });
@@ -337,20 +349,22 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       details: { googleId: "google-new" },
     });
     expect(
-      (await accounts.findAllByUserId(userId)).map((account) => account.providerAccountId),
+      (await accounts.findAllByUserId(UserId.reconstitute(userId))).map(
+        (account) => account.providerAccountId,
+      ),
     ).toEqual(["google-old"]);
   });
 
   it("이미 이메일 로그인 수단이 있으면 저장소가 제약 위반을 필터의 옛 응답과 같은 USER_0604로 번역한다", async () => {
     // Given
-    await accounts.createCredentialAccount(userId, "first-hash");
+    await accounts.createCredentialAccount(UserId.reconstitute(userId), "first-hash");
 
     // When
-    const duplicate = accounts.createCredentialAccount(userId, "second-hash");
+    const duplicate = accounts.createCredentialAccount(UserId.reconstitute(userId), "second-hash");
 
     // Then
     await expect(duplicate).rejects.toMatchObject({ errorCode: ErrorCode.USER_0604 });
-    const credentials = (await accounts.findAllByUserId(userId)).filter(
+    const credentials = (await accounts.findAllByUserId(UserId.reconstitute(userId))).filter(
       (account) => account.provider === "CREDENTIAL",
     );
     expect(credentials.map((account) => account.password)).toEqual(["first-hash"]);
@@ -369,7 +383,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     const createAudit = securityLogs.create.bind(securityLogs);
     const failure = vi
       .spyOn(securityLogs, "create")
-      .mockImplementationOnce((data) => createAudit({ ...data, userId: createEntityId() }));
+      .mockImplementationOnce((data) =>
+        createAudit({ ...data, userId: UserId.reconstitute(createEntityId()) }),
+      );
 
     // When
     try {
@@ -382,12 +398,12 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
 
     // Then
     expect(await savedState(state.id)).toMatchObject({ exchangedAt: null });
-    expect(await accounts.findAllByUserId(userId)).toEqual([]);
+    expect(await accounts.findAllByUserId(UserId.reconstitute(userId))).toEqual([]);
     expect(await client.query.securityLog.findMany()).toEqual([]);
     await expect(link.execute({ userId, code: state.exchangeCode ?? "" })).resolves.toMatchObject({
       message: "계정이 연결되었습니다.",
     });
-    expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
+    expect(await accounts.findAllByUserId(UserId.reconstitute(userId))).toHaveLength(1);
   });
 
   it("같은 link 코드를 동시에 교환하면 계정과 감사 기록을 한 번만 생성한다", async () => {
@@ -422,14 +438,22 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
       reason: { errorCode: ErrorCode.USER_0602 },
     });
-    expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
+    expect(await accounts.findAllByUserId(UserId.reconstitute(userId))).toHaveLength(1);
     expect(await client.query.securityLog.findMany()).toHaveLength(1);
   });
 
   it("계정 연결과 해제가 경합해도 같은 User 잠금으로 최신 로그인 수단을 유지한다", async () => {
     // Given
-    await accounts.createOAuthAccount({ userId, provider: "GOOGLE", providerAccountId: "google" });
-    await accounts.createOAuthAccount({ userId, provider: "KAKAO", providerAccountId: "kakao" });
+    await accounts.createOAuthAccount({
+      userId: UserId.reconstitute(userId),
+      provider: "GOOGLE",
+      providerAccountId: "google",
+    });
+    await accounts.createOAuthAccount({
+      userId: UserId.reconstitute(userId),
+      provider: "KAKAO",
+      providerAccountId: "kakao",
+    });
     const state = await givenState({
       mode: "link",
       initiatingUserId: userId,
@@ -457,7 +481,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     // Then
     expect((await results).map((result) => result.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(
-      (await accounts.findAllByUserId(userId)).map((account) => account.provider).sort(),
+      (await accounts.findAllByUserId(UserId.reconstitute(userId)))
+        .map((account) => account.provider)
+        .sort(),
     ).toEqual(["APPLE", "KAKAO"]);
     expect(await client.query.securityLog.findMany()).toHaveLength(2);
   });
@@ -477,22 +503,22 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
 
       // When
       const consumed = await states.consumeExchangeCode({
-        id: state.id,
+        id: OAuthStateId.reconstitute(state.id),
         exchangeCode: state.exchangeCode ?? "",
         at: atInstant,
         purpose: "link",
-        actorUserId: userId,
+        actorUserId: UserId.reconstitute(userId),
       });
 
       // Then
       expect(consumed).toBe(true);
       expect(
         await states.consumeExchangeCode({
-          id: state.id,
+          id: OAuthStateId.reconstitute(state.id),
           exchangeCode: state.exchangeCode ?? "",
           at: atInstant,
           purpose: "link",
-          actorUserId: userId,
+          actorUserId: UserId.reconstitute(userId),
         }),
       ).toBe(false);
     },
@@ -508,11 +534,11 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     for (const state of [actorMismatch, purposeMismatch, expired]) {
       expect(
         await states.consumeExchangeCode({
-          id: state.id,
+          id: OAuthStateId.reconstitute(state.id),
           exchangeCode: state.exchangeCode ?? "",
           at: atInstant,
           purpose: "link",
-          actorUserId: userId,
+          actorUserId: UserId.reconstitute(userId),
         }),
       ).toBe(false);
       expect(await savedState(state.id)).toMatchObject({ exchangedAt: null });
@@ -530,14 +556,19 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       locked = resolve;
     });
     const holder = unitOfWork.run(async () => {
-      await users.findByIdForUpdate(userId);
+      await users.findByIdForUpdate(UserId.reconstitute(userId));
       locked?.();
       await released;
     });
     await acquired;
     let inserted = false;
     const audit = securityLogs
-      .create({ userId, event: "OAUTH_LINKED", ipAddress: "192.0.2.1", userAgent: "pg-lock-test" })
+      .create({
+        userId: UserId.reconstitute(userId),
+        event: "OAUTH_LINKED",
+        ipAddress: "192.0.2.1",
+        userAgent: "pg-lock-test",
+      })
       .then(() => {
         inserted = true;
       });
