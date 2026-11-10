@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseSigningKeys } from "#api/platform/security/signing-key-ring";
+
 /**
  * CORS 설정 스키마
  */
@@ -26,6 +28,26 @@ export const encryptionSchema = z.object({
   TOKEN_ENCRYPTION_SALT: z.string().min(8).optional(),
 });
 
+const signingKeysSchema = z
+  .string()
+  .optional()
+  .check((context) => {
+    const value = context.value?.trim();
+    if (value == null || value === "") {
+      return;
+    }
+    const parsed = parseSigningKeys(value);
+    if (!parsed.success) {
+      context.issues.push({ code: "custom", input: context.value, message: parsed.reason });
+    }
+  });
+
+// 비우면 커서·광고 수신 거부 토큰을 지금처럼 JWT_SECRET으로 서명한다.
+export const tokenSigningSchema = z.object({
+  CURSOR_SIGNING_KEYS: signingKeysSchema,
+  OPT_OUT_TOKEN_SIGNING_KEYS: signingKeysSchema,
+});
+
 /**
  * 통합 보안 설정 스키마
  */
@@ -33,6 +55,7 @@ export const securitySchema = z.object({
   ...corsSchema.shape,
   ...throttleSchema.shape,
   ...encryptionSchema.shape,
+  ...tokenSigningSchema.shape,
 });
 
 export type CorsConfig = z.infer<typeof corsSchema>;

@@ -85,6 +85,14 @@ export class TypedConfigService {
     return this.#read(jwtConfig).refreshSecret;
   }
 
+  get cursorSigningKeys(): string | undefined {
+    return this.get("CURSOR_SIGNING_KEYS");
+  }
+
+  get optOutTokenSigningKeys(): string | undefined {
+    return this.get("OPT_OUT_TOKEN_SIGNING_KEYS");
+  }
+
   get jwtExpiresIn(): string {
     return this.#read(jwtConfig).expiresIn;
   }

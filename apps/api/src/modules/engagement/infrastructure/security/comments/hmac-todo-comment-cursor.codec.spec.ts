@@ -1,10 +1,9 @@
 import { createHmac } from "node:crypto";
 
 import { TODO_COMMENT_SORT, z } from "@aido/api";
-import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import type { TypedConfigService } from "#api/platform/config/services/config.service";
+import { asDep } from "#test/mocks/index";
 
 import type {
   TodoCommentThreadRecord,
@@ -58,17 +57,30 @@ function replacePayload(
   return `${tamperedPayload}.${signature}`;
 }
 
+const secret = "test-jwt-secret-at-least-32-characters";
+const currentKey = "current-cursor-key-at-least-32-characters";
+const previousKey = "previous-cursor-key-at-least-32-characters";
+
+function createCodec(config: {
+  readonly jwtSecret: string;
+  readonly cursorSigningKeys?: string;
+}): HmacTodoCommentCursorCodec {
+  return new HmacTodoCommentCursorCodec(
+    asDep<TypedConfigService>({ cursorSigningKeys: undefined, ...config }),
+  );
+}
+
+function signLegacy(payload: string): string {
+  return createHmac("sha256", secret)
+    .update(`todo-comment-cursor:v1:${payload}`)
+    .digest("base64url");
+}
+
 describe("HmacTodoCommentCursorCodec", () => {
   let codec: HmacTodoCommentCursorCodec;
-  let config: Mocked<TypedConfigService>;
-  let secret: string;
 
-  beforeEach(async () => {
-    const testBed = await TestBed.solitary(HmacTodoCommentCursorCodec).compile();
-    codec = testBed.unit;
-    config = testBed.unitRef.get(TypedConfigService);
-    secret = "test-jwt-secret-at-least-32-characters";
-    Object.defineProperty(config, "jwtSecret", { configurable: true, get: () => secret });
+  beforeEach(() => {
+    codec = createCodec({ jwtSecret: secret });
   });
 
   it.each([TODO_COMMENT_SORT.LATEST, TODO_COMMENT_SORT.POPULAR])(
@@ -125,8 +137,74 @@ describe("HmacTodoCommentCursorCodec", () => {
 
   it("다른 secret으로 만든 cursor를 거부한다", () => {
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
-    secret = "another-jwt-secret-at-least-32-characters";
+    const another = createCodec({ jwtSecret: "another-jwt-secret-at-least-32-characters" });
 
+    expect(() => another.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
+  });
+
+  it("새 서명 키가 없으면 배포 전과 바이트 단위로 같은 cursor를 만든다", () => {
+    // Given
+    const payload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        kind: "conversation",
+        sort: TODO_COMMENT_SORT.LATEST,
+        todoId: record.todoId,
+        commentId: record.id,
+        threadId: record.id,
+        scope: "TODO",
+        position: record.conversationPosition,
+      }),
+      "utf8",
+    ).toString("base64url");
+
+    // When
+    const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(cursor).toBe(`${payload}.${signLegacy(payload)}`);
+  });
+
+  it("새 서명 키를 넣으면 kid를 싣고, 배포 전 JWT_SECRET cursor와 이전 kid cursor도 읽는다", () => {
+    // Given
+    const legacyCursor = codec.encodeReplies(
+      { ...record, id: "cm1todoacomment00000000002", threadCommentId: record.id },
+      "AFTER",
+    );
+    const previousCursor = createCodec({
+      jwtSecret: secret,
+      cursorSigningKeys: `k1:${previousKey}`,
+    }).encodeReplies(
+      { ...record, id: "cm1todoacomment00000000003", threadCommentId: record.id },
+      "AFTER",
+    );
+    const rotated = createCodec({
+      jwtSecret: secret,
+      cursorSigningKeys: `k2:${currentKey},k1:${previousKey}`,
+    });
+
+    // When
+    const cursor = rotated.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(cursor.split(".")[0]).toBe("k2");
+    expect(rotated.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toMatchObject({
+      commentId: record.id,
+    });
+    expect(rotated.decodeReplies(legacyCursor).replyId).toBe("cm1todoacomment00000000002");
+    expect(rotated.decodeReplies(previousCursor).replyId).toBe("cm1todoacomment00000000003");
+  });
+
+  it("모르는 kid나 kid 없는 설정에서는 새 형식 cursor를 거부한다", () => {
+    // Given
+    const cursor = createCodec({
+      jwtSecret: secret,
+      cursorSigningKeys: `k1:${previousKey}`,
+    }).encodeConversation(record, TODO_COMMENT_SORT.LATEST);
+    const otherKid = createCodec({ jwtSecret: secret, cursorSigningKeys: `k2:${currentKey}` });
+
+    // When / Then
+    expect(() => otherKid.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
     expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
   });
 
@@ -179,12 +257,12 @@ describe("HmacTodoCommentCursorCodec", () => {
       }),
       "utf8",
     ).toString("base64url");
-    const signature = createHmac("sha256", secret)
-      .update(`todo-comment-cursor:v1:${payload}`)
-      .digest("base64url");
 
     // When
-    const decoded = codec.decodeThreads(`${payload}.${signature}`, TODO_COMMENT_SORT.LATEST);
+    const decoded = codec.decodeThreads(
+      `${payload}.${signLegacy(payload)}`,
+      TODO_COMMENT_SORT.LATEST,
+    );
 
     // Then
     expect(decoded).toMatchObject({ rootId: threadComment.id });

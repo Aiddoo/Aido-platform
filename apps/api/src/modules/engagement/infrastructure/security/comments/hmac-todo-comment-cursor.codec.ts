@@ -1,10 +1,10 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { TODO_COMMENT_SORT, z, type TodoCommentSort } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { Injectable } from "@nestjs/common";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
+import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import {
@@ -20,7 +20,10 @@ import {
 } from "../../../application/models/comments/todo-comment.types.js";
 import type { TodoCommentCursorCodecPort } from "../../../application/ports/comments/todo-comment-cursor-codec.port.js";
 
-const CURSOR_DOMAIN = "todo-comment-cursor:v1:";
+const CURSOR_DOMAIN = {
+  legacyPrefix: "todo-comment-cursor:v1:",
+  keyedPrefix: "todo-comment-cursor:v2:",
+};
 const postgresCountSchema = z.number().int().min(0).max(2_147_483_647);
 const cursorPositionSchema = z.strictObject({
   rootLikeCount: postgresCountSchema,
@@ -61,10 +64,18 @@ function invalidCursor(): ApplicationException {
 
 @Injectable()
 export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
-  constructor(private readonly config: TypedConfigService) {}
+  readonly #signer: HmacTokenSigner;
+
+  constructor(config: TypedConfigService) {
+    const ring = SigningKeyRing.fromEnv({
+      configured: config.cursorSigningKeys,
+      legacySecret: config.jwtSecret,
+    });
+    this.#signer = new HmacTokenSigner(ring, CURSOR_DOMAIN);
+  }
 
   decodeConversation(cursor: string, sort: TodoCommentSort): TodoConversationCursor {
-    const parsedCursor = conversationCursorSchema.safeParse(this.decode(cursor));
+    const parsedCursor = conversationCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success || parsedCursor.data.sort !== sort) {
       throw invalidCursor();
@@ -78,7 +89,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     sort: TodoCommentSort,
     scope: TodoConversationScope = "TODO",
   ): string {
-    return this.encodeParsed(conversationCursorSchema, {
+    return this.#encodeParsed(conversationCursorSchema, {
       v: 1,
       kind: "conversation",
       sort,
@@ -91,7 +102,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   decodeThreads(cursor: string, sort: TodoCommentSort): TodoCommentThreadCursor {
-    const parsedCursor = threadsCursorSchema.safeParse(this.decode(cursor));
+    const parsedCursor = threadsCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success || parsedCursor.data.sort !== sort) {
       throw invalidCursor();
@@ -109,7 +120,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
       throw invalidCursor();
     }
 
-    return this.encodeParsed(threadsCursorSchema, {
+    return this.#encodeParsed(threadsCursorSchema, {
       v: 1,
       kind: "overview",
       sort,
@@ -121,7 +132,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   decodeReplies(cursor: string): TodoCommentRepliesCursor {
-    const parsedCursor = repliesCursorSchema.safeParse(this.decode(cursor));
+    const parsedCursor = repliesCursorSchema.safeParse(this.#decode(cursor));
 
     if (!parsedCursor.success) {
       throw invalidCursor();
@@ -135,7 +146,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
       throw invalidCursor();
     }
 
-    return this.encodeParsed(repliesCursorSchema, {
+    return this.#encodeParsed(repliesCursorSchema, {
       v: 1,
       kind: "replies",
       todoId: record.todoId,
@@ -145,31 +156,20 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     });
   }
 
-  private encodeParsed<Schema extends z.ZodType>(schema: Schema, value: z.input<Schema>): string {
+  #encodeParsed<Schema extends z.ZodType>(schema: Schema, value: z.input<Schema>): string {
     const cursor = schema.safeParse(value);
 
     if (!cursor.success) {
       throw invalidCursor();
     }
 
-    return this.encode(cursor.data);
+    const payload = Buffer.from(JSON.stringify(cursor.data), "utf8").toString("base64url");
+    return this.#signer.sign(payload);
   }
 
-  private encode(value: unknown): string {
-    const payload = Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
-    return `${payload}.${this.sign(payload)}`;
-  }
-
-  private decode(cursor: string): unknown {
-    const [payload, signature, extra] = cursor.split(".");
-    if (
-      payload == null ||
-      payload.length === 0 ||
-      signature == null ||
-      signature.length === 0 ||
-      extra != null ||
-      !this.hasValidSignature(payload, signature)
-    ) {
+  #decode(cursor: string): unknown {
+    const payload = this.#signer.open(cursor);
+    if (payload == null) {
       throw invalidCursor();
     }
 
@@ -178,17 +178,5 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     } catch {
       throw invalidCursor();
     }
-  }
-
-  private hasValidSignature(payload: string, signature: string): boolean {
-    const actual = Buffer.from(signature, "base64url");
-    const expected = Buffer.from(this.sign(payload), "base64url");
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
-  }
-
-  private sign(payload: string): string {
-    return createHmac("sha256", this.config.jwtSecret)
-      .update(`${CURSOR_DOMAIN}${payload}`)
-      .digest("base64url");
   }
 }
