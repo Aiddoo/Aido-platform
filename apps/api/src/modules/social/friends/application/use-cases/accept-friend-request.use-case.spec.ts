@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { AcceptFriendRequest } from "./accept-friend-request.use-case.js";
+import { AcceptFriendRequestUseCase } from "./accept-friend-request.use-case.js";
 
 describe("친구 요청 수락", () => {
   beforeEach(() => {
@@ -24,7 +24,10 @@ describe("친구 요청 수락", () => {
       const before = structuredClone([...fixture.followRepository.follows.values()]);
       // When / Then
       await expect(
-        new AcceptFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" }),
+        new AcceptFriendRequestUseCase(fixture).execute({
+          userId: "me",
+          requesterUserId: "friend",
+        }),
       ).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
       expect([...fixture.followRepository.follows.values()]).toEqual(before);
       expect(fixture.notifier.mutual).toEqual([]);
@@ -45,7 +48,7 @@ describe("친구 요청 수락", () => {
         fixture.followRepository.seed({ followerId: "me", followingId: "friend" });
       }
       // When
-      const result = await new AcceptFriendRequest(fixture).execute({
+      const result = await new AcceptFriendRequestUseCase(fixture).execute({
         userId: "me",
         requesterUserId: "friend",
       });
@@ -83,7 +86,7 @@ describe("친구 요청 수락", () => {
       return result;
     };
     // When
-    const execution = new AcceptFriendRequest(fixture).execute({
+    const execution = new AcceptFriendRequestUseCase(fixture).execute({
       userId: "me",
       requesterUserId: "friend",
     });
@@ -106,7 +109,7 @@ describe("친구 요청 수락", () => {
     fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
     // When / Then
     await expect(
-      new AcceptFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" }),
+      new AcceptFriendRequestUseCase(fixture).execute({ userId: "me", requesterUserId: "friend" }),
     ).rejects.toMatchObject({ errorCode: "SYS_0001" });
     expect(fixture.notifier.mutual).toEqual([]);
   });

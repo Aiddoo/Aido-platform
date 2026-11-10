@@ -22,7 +22,7 @@ interface ResolveUserReportDependencies {
  * 운영자가 신고를 확인하고 한 조치를 남겨 처리 완료로 바꾼다.
  * 이미 처리한 신고는 첫 처리 기록을 그대로 돌려줘, 두 운영자가 동시에 처리해도 기록이 덮이지 않는다.
  */
-export class ResolveUserReport {
+export class ResolveUserReportUseCase {
   readonly #dependencies: ResolveUserReportDependencies;
 
   constructor(dependencies: ResolveUserReportDependencies) {

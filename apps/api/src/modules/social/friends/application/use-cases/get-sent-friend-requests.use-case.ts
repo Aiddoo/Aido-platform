@@ -19,7 +19,7 @@ interface GetSentFriendRequestsDependencies {
   readonly paginationService: PaginationService;
 }
 
-export class GetSentFriendRequests {
+export class GetSentFriendRequestsUseCase {
   readonly #dependencies: GetSentFriendRequestsDependencies;
 
   constructor(dependencies: GetSentFriendRequestsDependencies) {

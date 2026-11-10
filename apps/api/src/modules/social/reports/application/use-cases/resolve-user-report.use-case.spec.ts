@@ -6,7 +6,7 @@ import { UserReport } from "#api/modules/social/reports/domain/user-report.aggre
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { StubUserReportRepository } from "#test/mocks/ports/social-reports.stub";
 
-import { ResolveUserReport } from "./resolve-user-report.use-case.js";
+import { ResolveUserReportUseCase } from "./resolve-user-report.use-case.js";
 
 const RESOLVED_AT = new Date("2026-10-26T12:00:00.000Z");
 
@@ -28,13 +28,13 @@ function createOpenReport(id = "report-1") {
 
 describe("ResolveUserReport", () => {
   let userReportRepository: StubUserReportRepository;
-  let useCase: ResolveUserReport;
+  let useCase: ResolveUserReportUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(RESOLVED_AT);
     userReportRepository = new StubUserReportRepository();
-    useCase = new ResolveUserReport({
+    useCase = new ResolveUserReportUseCase({
       userReportRepository,
       unitOfWork: createUnitOfWorkMock(),
     });

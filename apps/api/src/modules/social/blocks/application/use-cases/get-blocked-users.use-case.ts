@@ -29,7 +29,7 @@ interface GetBlockedUsersDependencies {
   >;
 }
 
-export class GetBlockedUsers {
+export class GetBlockedUsersUseCase {
   readonly #dependencies: GetBlockedUsersDependencies;
 
   constructor(dependencies: GetBlockedUsersDependencies) {

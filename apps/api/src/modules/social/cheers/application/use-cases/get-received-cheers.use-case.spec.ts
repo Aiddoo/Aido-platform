@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetReceivedCheers } from "./get-received-cheers.use-case.js";
+import { GetReceivedCheersUseCase } from "./get-received-cheers.use-case.js";
 
 describe("받은 응원 목록 조회", () => {
   beforeEach(() => {
@@ -24,7 +24,10 @@ describe("받은 응원 목록 조회", () => {
       });
     }
     // When
-    const result = await new GetReceivedCheers(fixture).execute({ userId: "receiver", size: 2 });
+    const result = await new GetReceivedCheersUseCase(fixture).execute({
+      userId: "receiver",
+      size: 2,
+    });
     // Then
     expect(result).toMatchObject({ totalCount: 3, unreadCount: 2, hasMore: true });
     expect(result.items).toHaveLength(2);
@@ -35,7 +38,7 @@ describe("받은 응원 목록 조회", () => {
     const fixture = createSocialInteractionFixture();
     fixture.cheerRepository.seed({ senderId: "sender", receiverId: "receiver" });
     // When
-    const result = await new GetReceivedCheers(fixture).execute({ userId: "other" });
+    const result = await new GetReceivedCheersUseCase(fixture).execute({ userId: "other" });
     // Then
     expect(result).toEqual({ items: [], totalCount: 0, unreadCount: 0, hasMore: false });
   });

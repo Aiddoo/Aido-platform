@@ -6,8 +6,8 @@ import {
   CHEER_REPOSITORY,
   type CheerRepositoryPort,
 } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
-import { MarkCheerRead } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
-import { SendCheer } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
+import { MarkCheerReadUseCase } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
+import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import {
   FOLLOW_REPOSITORY,
   type FollowRepositoryPort,
@@ -17,7 +17,7 @@ import {
   NUDGE_REPOSITORY,
   type NudgeRepositoryPort,
 } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
-import { SendNudge } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
+import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   cheer,
@@ -201,8 +201,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
             throw new Error("요청 fixture 누락");
           }
           return kind === "Cheer"
-            ? context.module.get(SendCheer).execute({ senderId, receiverId, timezone: tz })
-            : context.module.get(SendNudge).execute({ senderId, receiverId, todoId, timezone: tz });
+            ? context.module.get(SendCheerUseCase).execute({ senderId, receiverId, timezone: tz })
+            : context.module
+                .get(SendNudgeUseCase)
+                .execute({ senderId, receiverId, todoId, timezone: tz });
         };
 
         // When
@@ -225,7 +227,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     if (receiverId === undefined) {
       throw new Error("receiver fixture 누락");
     }
-    const send = context.module.get(SendCheer);
+    const send = context.module.get(SendCheerUseCase);
 
     // When
     const results = await contend(
@@ -268,7 +270,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       throw new Error("list fixture 누락");
     }
     recording = readStatements;
-    await context.module.get(MarkCheerRead).execute({ userId: receiverId, cheerId: first.id });
+    await context.module
+      .get(MarkCheerReadUseCase)
+      .execute({ userId: receiverId, cheerId: first.id });
     recording = null;
 
     // Then

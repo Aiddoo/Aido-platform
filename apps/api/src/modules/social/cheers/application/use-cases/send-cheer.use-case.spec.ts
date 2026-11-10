@@ -4,7 +4,7 @@ import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { SendCheer } from "./send-cheer.use-case.js";
+import { SendCheerUseCase } from "./send-cheer.use-case.js";
 
 describe("친구에게 응원 보내기", () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe("친구에게 응원 보내기", () => {
     const fixture = createSocialInteractionFixture();
     // When / Then
     await expect(
-      new SendCheer({
+      new SendCheerUseCase({
         ...fixture,
         notifier: fixture.cheerNotifier,
         limitReader: fixture.cheerLimitReader,
@@ -40,7 +40,7 @@ describe("친구에게 응원 보내기", () => {
     }
     // When / Then
     await expect(
-      new SendCheer({
+      new SendCheerUseCase({
         ...fixture,
         notifier: fixture.cheerNotifier,
         limitReader: fixture.cheerLimitReader,
@@ -73,7 +73,7 @@ describe("친구에게 응원 보내기", () => {
       });
     }
     // When
-    const result = new SendCheer({
+    const result = new SendCheerUseCase({
       ...fixture,
       notifier: fixture.cheerNotifier,
       limitReader: fixture.cheerLimitReader,
@@ -94,7 +94,7 @@ describe("친구에게 응원 보내기", () => {
     });
     // When / Then
     await expect(
-      new SendCheer({
+      new SendCheerUseCase({
         ...fixture,
         notifier: fixture.cheerNotifier,
         limitReader: fixture.cheerLimitReader,
@@ -115,7 +115,7 @@ describe("친구에게 응원 보내기", () => {
         }
       }
       // When
-      const result = await new SendCheer({
+      const result = await new SendCheerUseCase({
         ...fixture,
         notifier: fixture.cheerNotifier,
         limitReader: fixture.cheerLimitReader,
@@ -153,7 +153,7 @@ describe("친구에게 응원 보내기", () => {
       vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
     };
     // When
-    const result = await new SendCheer({
+    const result = await new SendCheerUseCase({
       ...fixture,
       notifier: fixture.cheerNotifier,
       limitReader: fixture.cheerLimitReader,

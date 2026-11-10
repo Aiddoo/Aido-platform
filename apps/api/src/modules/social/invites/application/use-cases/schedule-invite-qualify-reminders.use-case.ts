@@ -5,7 +5,7 @@ import {
   nextQualifyReminderAt,
   qualifyReminderExpiresBefore,
 } from "../../domain/invite-qualify-reminder.domain-service.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type {
   InviteQualifyReminderSchedulerPort,
@@ -44,7 +44,7 @@ interface ScheduleInviteQualifyRemindersDependencies {
  * 하루 한 번 정비 작업에서 마감이 다가온 수락을 골라 초대받은 사람 시간대의 저녁에 보낼 작업을 만든다.
  * 정비 작업은 새벽(KST)에 돌아 바로 보내면 야간이라 걸러진다. 실제 자격·발송 표시는 보낼 때 다시 확인한다.
  */
-export class ScheduleInviteQualifyReminders {
+export class ScheduleInviteQualifyRemindersUseCase {
   readonly #dependencies: ScheduleInviteQualifyRemindersDependencies;
 
   constructor(dependencies: ScheduleInviteQualifyRemindersDependencies) {
@@ -81,7 +81,7 @@ export class ScheduleInviteQualifyReminders {
     }
 
     this.#dependencies.logger.log({
-      event: SocialInviteLogEvent.QUALIFY_REMINDERS_SCHEDULED,
+      event: InviteLogEvent.QUALIFY_REMINDERS_SCHEDULED,
       scheduledCount,
     });
     return { scheduledCount };

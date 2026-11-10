@@ -7,7 +7,7 @@ import {
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { assertInviteEnabled } from "../invites.errors.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { MyInviteReader } from "../my-invite.reader.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
@@ -30,7 +30,7 @@ interface RotateInviteCodeDependencies {
 }
 
 /** 지금 코드를 폐기하고 새 코드를 발급한다. 폐기한 코드로 들어오면 INVITE_2102가 된다. */
-export class RotateInviteCode {
+export class RotateInviteCodeUseCase {
   readonly #dependencies: RotateInviteCodeDependencies;
 
   constructor(dependencies: RotateInviteCodeDependencies) {
@@ -58,7 +58,7 @@ export class RotateInviteCode {
     });
 
     this.#dependencies.logger.log({
-      event: SocialInviteLogEvent.ROTATED,
+      event: InviteLogEvent.ROTATED,
       inviterId: input.inviterId,
       inviteId: invite.id,
       revokedInviteId,

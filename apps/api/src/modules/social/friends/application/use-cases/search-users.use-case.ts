@@ -2,7 +2,7 @@ import type { PaginationService } from "#api/shared/application/pagination/index
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { normalizeUserSearchQuery } from "../../domain/user-search-query.domain-service.js";
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import {
   type FollowRepositoryPort,
   type UserSearchResult,
@@ -29,7 +29,7 @@ interface SearchUsersDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SearchUsers {
+export class SearchUsersUseCase {
   readonly #dependencies: SearchUsersDependencies;
 
   constructor(dependencies: SearchUsersDependencies) {
@@ -67,7 +67,7 @@ export class SearchUsers {
       hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
 
     this.#dependencies.logger.debug({
-      event: SocialFriendLogEvent.SEARCHED,
+      event: FriendLogEvent.SEARCHED,
       viewerId: input.viewerId,
       resultCount: items.length,
     });

@@ -14,7 +14,7 @@ interface GetSentNudgesDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class GetSentNudges {
+export class GetSentNudgesUseCase {
   readonly #dependencies: GetSentNudgesDependencies;
 
   constructor(dependencies: GetSentNudgesDependencies) {

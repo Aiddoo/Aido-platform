@@ -34,16 +34,16 @@ import {
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
 
-import { AcceptFriendRequest } from "../../../application/use-cases/accept-friend-request.use-case.js";
-import { GetFriendResourceLimit } from "../../../application/use-cases/get-friend-resource-limit.use-case.js";
-import { GetFriends } from "../../../application/use-cases/get-friends.use-case.js";
-import { GetReceivedFriendRequests } from "../../../application/use-cases/get-received-friend-requests.use-case.js";
-import { GetSentFriendRequests } from "../../../application/use-cases/get-sent-friend-requests.use-case.js";
-import { RejectFriendRequest } from "../../../application/use-cases/reject-friend-request.use-case.js";
-import { RemoveFriend } from "../../../application/use-cases/remove-friend.use-case.js";
-import { ReorderFriend } from "../../../application/use-cases/reorder-friend.use-case.js";
-import { SearchUsers } from "../../../application/use-cases/search-users.use-case.js";
-import { SendFriendRequestByTag } from "../../../application/use-cases/send-friend-request-by-tag.use-case.js";
+import { AcceptFriendRequestUseCase } from "../../../application/use-cases/accept-friend-request.use-case.js";
+import { GetFriendResourceLimitUseCase } from "../../../application/use-cases/get-friend-resource-limit.use-case.js";
+import { GetFriendsUseCase } from "../../../application/use-cases/get-friends.use-case.js";
+import { GetReceivedFriendRequestsUseCase } from "../../../application/use-cases/get-received-friend-requests.use-case.js";
+import { GetSentFriendRequestsUseCase } from "../../../application/use-cases/get-sent-friend-requests.use-case.js";
+import { RejectFriendRequestUseCase } from "../../../application/use-cases/reject-friend-request.use-case.js";
+import { RemoveFriendUseCase } from "../../../application/use-cases/remove-friend.use-case.js";
+import { ReorderFriendUseCase } from "../../../application/use-cases/reorder-friend.use-case.js";
+import { SearchUsersUseCase } from "../../../application/use-cases/search-users.use-case.js";
+import { SendFriendRequestByTagUseCase } from "../../../application/use-cases/send-friend-request-by-tag.use-case.js";
 import { FollowMapper } from "./follow-response.mapper.js";
 import {
   AcceptFriendRequestResponseDto,
@@ -80,28 +80,28 @@ const FRIEND_REQUEST_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 @ApiBearerAuth()
 @Controller("follows")
 export class FollowController {
-  readonly #sendFriendRequestByTagUseCase: SendFriendRequestByTag;
-  readonly #acceptFriendRequestUseCase: AcceptFriendRequest;
-  readonly #rejectFriendRequestUseCase: RejectFriendRequest;
-  readonly #removeFriendUseCase: RemoveFriend;
-  readonly #reorderFriendUseCase: ReorderFriend;
-  readonly #searchUsersUseCase: SearchUsers;
-  readonly #getFriendsUseCase: GetFriends;
-  readonly #getReceivedFriendRequestsUseCase: GetReceivedFriendRequests;
-  readonly #getSentFriendRequestsUseCase: GetSentFriendRequests;
-  readonly #getFriendResourceLimitUseCase: GetFriendResourceLimit;
+  readonly #sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase;
+  readonly #acceptFriendRequestUseCase: AcceptFriendRequestUseCase;
+  readonly #rejectFriendRequestUseCase: RejectFriendRequestUseCase;
+  readonly #removeFriendUseCase: RemoveFriendUseCase;
+  readonly #reorderFriendUseCase: ReorderFriendUseCase;
+  readonly #searchUsersUseCase: SearchUsersUseCase;
+  readonly #getFriendsUseCase: GetFriendsUseCase;
+  readonly #getReceivedFriendRequestsUseCase: GetReceivedFriendRequestsUseCase;
+  readonly #getSentFriendRequestsUseCase: GetSentFriendRequestsUseCase;
+  readonly #getFriendResourceLimitUseCase: GetFriendResourceLimitUseCase;
 
   constructor(
-    sendFriendRequestByTagUseCase: SendFriendRequestByTag,
-    acceptFriendRequestUseCase: AcceptFriendRequest,
-    rejectFriendRequestUseCase: RejectFriendRequest,
-    removeFriendUseCase: RemoveFriend,
-    reorderFriendUseCase: ReorderFriend,
-    searchUsersUseCase: SearchUsers,
-    getFriendsUseCase: GetFriends,
-    getReceivedFriendRequestsUseCase: GetReceivedFriendRequests,
-    getSentFriendRequestsUseCase: GetSentFriendRequests,
-    getFriendResourceLimitUseCase: GetFriendResourceLimit,
+    sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase,
+    acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
+    rejectFriendRequestUseCase: RejectFriendRequestUseCase,
+    removeFriendUseCase: RemoveFriendUseCase,
+    reorderFriendUseCase: ReorderFriendUseCase,
+    searchUsersUseCase: SearchUsersUseCase,
+    getFriendsUseCase: GetFriendsUseCase,
+    getReceivedFriendRequestsUseCase: GetReceivedFriendRequestsUseCase,
+    getSentFriendRequestsUseCase: GetSentFriendRequestsUseCase,
+    getFriendResourceLimitUseCase: GetFriendResourceLimitUseCase,
   ) {
     this.#sendFriendRequestByTagUseCase = sendFriendRequestByTagUseCase;
     this.#acceptFriendRequestUseCase = acceptFriendRequestUseCase;

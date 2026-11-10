@@ -13,7 +13,7 @@ interface MarkManyCheersReadDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class MarkManyCheersRead {
+export class MarkManyCheersReadUseCase {
   readonly #dependencies: MarkManyCheersReadDependencies;
 
   constructor(dependencies: MarkManyCheersReadDependencies) {

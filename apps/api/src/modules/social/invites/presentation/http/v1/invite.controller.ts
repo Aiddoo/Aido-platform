@@ -24,12 +24,12 @@ import {
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
-import { GetInviteAvailability } from "../../../application/use-cases/get-invite-availability.use-case.js";
-import { GetInvitedFriends } from "../../../application/use-cases/get-invited-friends.use-case.js";
-import { GetMyInvite } from "../../../application/use-cases/get-my-invite.use-case.js";
-import { PreviewInvite } from "../../../application/use-cases/preview-invite.use-case.js";
-import { RedeemInvite } from "../../../application/use-cases/redeem-invite.use-case.js";
-import { RotateInviteCode } from "../../../application/use-cases/rotate-invite-code.use-case.js";
+import { GetInviteAvailabilityUseCase } from "../../../application/use-cases/get-invite-availability.use-case.js";
+import { GetInvitedFriendsUseCase } from "../../../application/use-cases/get-invited-friends.use-case.js";
+import { GetMyInviteUseCase } from "../../../application/use-cases/get-my-invite.use-case.js";
+import { PreviewInviteUseCase } from "../../../application/use-cases/preview-invite.use-case.js";
+import { RedeemInviteUseCase } from "../../../application/use-cases/redeem-invite.use-case.js";
+import { RotateInviteCodeUseCase } from "../../../application/use-cases/rotate-invite-code.use-case.js";
 import { InviteMapper } from "./invite-response.mapper.js";
 import {
   GetInvitedFriendsQueryDto,
@@ -52,20 +52,20 @@ const INVITE_THROTTLE = {
 @ApiTags(SWAGGER_TAGS.INVITES)
 @Controller("invites")
 export class InviteController {
-  readonly #getInviteAvailabilityUseCase: GetInviteAvailability;
-  readonly #getMyInviteUseCase: GetMyInvite;
-  readonly #rotateInviteCodeUseCase: RotateInviteCode;
-  readonly #getInvitedFriendsUseCase: GetInvitedFriends;
-  readonly #previewInviteUseCase: PreviewInvite;
-  readonly #redeemInviteUseCase: RedeemInvite;
+  readonly #getInviteAvailabilityUseCase: GetInviteAvailabilityUseCase;
+  readonly #getMyInviteUseCase: GetMyInviteUseCase;
+  readonly #rotateInviteCodeUseCase: RotateInviteCodeUseCase;
+  readonly #getInvitedFriendsUseCase: GetInvitedFriendsUseCase;
+  readonly #previewInviteUseCase: PreviewInviteUseCase;
+  readonly #redeemInviteUseCase: RedeemInviteUseCase;
 
   constructor(
-    getInviteAvailabilityUseCase: GetInviteAvailability,
-    getMyInviteUseCase: GetMyInvite,
-    rotateInviteCodeUseCase: RotateInviteCode,
-    getInvitedFriendsUseCase: GetInvitedFriends,
-    previewInviteUseCase: PreviewInvite,
-    redeemInviteUseCase: RedeemInvite,
+    getInviteAvailabilityUseCase: GetInviteAvailabilityUseCase,
+    getMyInviteUseCase: GetMyInviteUseCase,
+    rotateInviteCodeUseCase: RotateInviteCodeUseCase,
+    getInvitedFriendsUseCase: GetInvitedFriendsUseCase,
+    previewInviteUseCase: PreviewInviteUseCase,
+    redeemInviteUseCase: RedeemInviteUseCase,
   ) {
     this.#getInviteAvailabilityUseCase = getInviteAvailabilityUseCase;
     this.#getMyInviteUseCase = getMyInviteUseCase;

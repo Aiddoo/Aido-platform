@@ -34,14 +34,14 @@ import {
 } from "#api/platform/http/swagger/index";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import { GetNudgeCooldown } from "../../../application/use-cases/get-nudge-cooldown.use-case.js";
-import { GetNudgeLimit } from "../../../application/use-cases/get-nudge-limit.use-case.js";
-import { GetReceivedNudges } from "../../../application/use-cases/get-received-nudges.use-case.js";
-import { GetRemindNudgeCooldown } from "../../../application/use-cases/get-remind-nudge-cooldown.use-case.js";
-import { GetSentNudges } from "../../../application/use-cases/get-sent-nudges.use-case.js";
-import { MarkNudgeRead } from "../../../application/use-cases/mark-nudge-read.use-case.js";
-import { SendNudge } from "../../../application/use-cases/send-nudge.use-case.js";
-import { SendRemindNudge } from "../../../application/use-cases/send-remind-nudge.use-case.js";
+import { GetNudgeCooldownUseCase } from "../../../application/use-cases/get-nudge-cooldown.use-case.js";
+import { GetNudgeLimitUseCase } from "../../../application/use-cases/get-nudge-limit.use-case.js";
+import { GetReceivedNudgesUseCase } from "../../../application/use-cases/get-received-nudges.use-case.js";
+import { GetRemindNudgeCooldownUseCase } from "../../../application/use-cases/get-remind-nudge-cooldown.use-case.js";
+import { GetSentNudgesUseCase } from "../../../application/use-cases/get-sent-nudges.use-case.js";
+import { MarkNudgeReadUseCase } from "../../../application/use-cases/mark-nudge-read.use-case.js";
+import { SendNudgeUseCase } from "../../../application/use-cases/send-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "../../../application/use-cases/send-remind-nudge.use-case.js";
 import { NudgeMapper } from "./nudge-response.mapper.js";
 import {
   CreateNudgeResponseDto,
@@ -61,24 +61,24 @@ import {
 @ApiBearerAuth()
 @Controller("nudges")
 export class NudgeController {
-  readonly #getReceivedNudgesUseCase: GetReceivedNudges;
-  readonly #getSentNudgesUseCase: GetSentNudges;
-  readonly #getNudgeLimitUseCase: GetNudgeLimit;
-  readonly #getNudgeCooldownUseCase: GetNudgeCooldown;
-  readonly #getRemindNudgeCooldownUseCase: GetRemindNudgeCooldown;
-  readonly #sendNudgeUseCase: SendNudge;
-  readonly #sendRemindNudgeUseCase: SendRemindNudge;
-  readonly #markNudgeReadUseCase: MarkNudgeRead;
+  readonly #getReceivedNudgesUseCase: GetReceivedNudgesUseCase;
+  readonly #getSentNudgesUseCase: GetSentNudgesUseCase;
+  readonly #getNudgeLimitUseCase: GetNudgeLimitUseCase;
+  readonly #getNudgeCooldownUseCase: GetNudgeCooldownUseCase;
+  readonly #getRemindNudgeCooldownUseCase: GetRemindNudgeCooldownUseCase;
+  readonly #sendNudgeUseCase: SendNudgeUseCase;
+  readonly #sendRemindNudgeUseCase: SendRemindNudgeUseCase;
+  readonly #markNudgeReadUseCase: MarkNudgeReadUseCase;
 
   constructor(
-    getReceivedNudgesUseCase: GetReceivedNudges,
-    getSentNudgesUseCase: GetSentNudges,
-    getNudgeLimitUseCase: GetNudgeLimit,
-    getNudgeCooldownUseCase: GetNudgeCooldown,
-    getRemindNudgeCooldownUseCase: GetRemindNudgeCooldown,
-    sendNudgeUseCase: SendNudge,
-    sendRemindNudgeUseCase: SendRemindNudge,
-    markNudgeReadUseCase: MarkNudgeRead,
+    getReceivedNudgesUseCase: GetReceivedNudgesUseCase,
+    getSentNudgesUseCase: GetSentNudgesUseCase,
+    getNudgeLimitUseCase: GetNudgeLimitUseCase,
+    getNudgeCooldownUseCase: GetNudgeCooldownUseCase,
+    getRemindNudgeCooldownUseCase: GetRemindNudgeCooldownUseCase,
+    sendNudgeUseCase: SendNudgeUseCase,
+    sendRemindNudgeUseCase: SendRemindNudgeUseCase,
+    markNudgeReadUseCase: MarkNudgeReadUseCase,
   ) {
     this.#getReceivedNudgesUseCase = getReceivedNudgesUseCase;
     this.#getSentNudgesUseCase = getSentNudgesUseCase;

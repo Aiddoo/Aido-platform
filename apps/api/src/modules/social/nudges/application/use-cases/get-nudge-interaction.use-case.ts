@@ -19,7 +19,7 @@ interface GetNudgeInteractionDependencies {
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
-export class GetNudgeInteraction {
+export class GetNudgeInteractionUseCase {
   readonly #dependencies: GetNudgeInteractionDependencies;
 
   constructor(dependencies: GetNudgeInteractionDependencies) {

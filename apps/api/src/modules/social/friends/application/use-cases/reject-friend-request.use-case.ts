@@ -8,7 +8,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
 
 export interface RejectFriendRequestInput {
@@ -23,7 +23,7 @@ interface RejectFriendRequestDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class RejectFriendRequest {
+export class RejectFriendRequestUseCase {
   readonly #dependencies: RejectFriendRequestDependencies;
 
   constructor(dependencies: RejectFriendRequestDependencies) {
@@ -51,7 +51,7 @@ export class RejectFriendRequest {
     });
 
     this.#dependencies.logger.log({
-      event: SocialFriendLogEvent.REQUEST_REJECTED,
+      event: FriendLogEvent.REQUEST_REJECTED,
       userId,
       requesterUserId,
     });

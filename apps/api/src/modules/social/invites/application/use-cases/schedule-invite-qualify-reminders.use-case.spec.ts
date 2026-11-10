@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 
 import type { ScheduledQualifyReminder } from "../ports/invite-qualify-reminder-scheduler.port.js";
 import type { QualifyReminderCandidate } from "../ports/invite-redemption.repository.port.js";
-import { ScheduleInviteQualifyReminders } from "./schedule-invite-qualify-reminders.use-case.js";
+import { ScheduleInviteQualifyRemindersUseCase } from "./schedule-invite-qualify-reminders.use-case.js";
 
 // 정비 작업 실행 시각: 2028-03-02 03:30 KST
 const NOW = new Date("2028-03-01T18:30:00.000Z");
@@ -23,7 +23,7 @@ function candidate(overrides: Partial<QualifyReminderCandidate>): QualifyReminde
 
 function createScheduler(candidates: readonly QualifyReminderCandidate[], isEnabled = true) {
   const scheduled: ScheduledQualifyReminder[] = [];
-  const scheduler = new ScheduleInviteQualifyReminders({
+  const scheduler = new ScheduleInviteQualifyRemindersUseCase({
     inviteRedemptionRepository: { findQualifyReminderCandidates: async () => [...candidates] },
     reminderScheduler: {
       scheduleMany: async (reminders) => {

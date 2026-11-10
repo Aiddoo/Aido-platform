@@ -31,9 +31,9 @@ import {
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import { BlockUser } from "../../../application/use-cases/block-user.use-case.js";
-import { GetBlockedUsers } from "../../../application/use-cases/get-blocked-users.use-case.js";
-import { UnblockUser } from "../../../application/use-cases/unblock-user.use-case.js";
+import { BlockUserUseCase } from "../../../application/use-cases/block-user.use-case.js";
+import { GetBlockedUsersUseCase } from "../../../application/use-cases/get-blocked-users.use-case.js";
+import { UnblockUserUseCase } from "../../../application/use-cases/unblock-user.use-case.js";
 import { UserBlockMapper } from "./user-block-response.mapper.js";
 import {
   BlockedUsersResponseDto,
@@ -54,14 +54,14 @@ const BLOCK_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 @ApiBearerAuth()
 @Controller("blocks")
 export class UserBlockController {
-  readonly #blockUserUseCase: BlockUser;
-  readonly #unblockUserUseCase: UnblockUser;
-  readonly #getBlockedUsersUseCase: GetBlockedUsers;
+  readonly #blockUserUseCase: BlockUserUseCase;
+  readonly #unblockUserUseCase: UnblockUserUseCase;
+  readonly #getBlockedUsersUseCase: GetBlockedUsersUseCase;
 
   constructor(
-    blockUserUseCase: BlockUser,
-    unblockUserUseCase: UnblockUser,
-    getBlockedUsersUseCase: GetBlockedUsers,
+    blockUserUseCase: BlockUserUseCase,
+    unblockUserUseCase: UnblockUserUseCase,
+    getBlockedUsersUseCase: GetBlockedUsersUseCase,
   ) {
     this.#blockUserUseCase = blockUserUseCase;
     this.#unblockUserUseCase = unblockUserUseCase;

@@ -2,7 +2,7 @@ import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-fr
 
 import type { UserSearchResult } from "../ports/follow.repository.port.js";
 import { decodeSearchCursor, encodeSearchCursor } from "../user-search-cursor.mapper.js";
-import { SearchUsers } from "./search-users.use-case.js";
+import { SearchUsersUseCase } from "./search-users.use-case.js";
 
 function searchRow(id: string, rank: number): UserSearchResult {
   return {
@@ -35,7 +35,10 @@ describe("사용자 검색", () => {
     fixture.followRepository.searchTotal = 1;
     const query = vi.spyOn(fixture.followRepository, "searchUsers");
     // When
-    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "  John  " });
+    const result = await new SearchUsersUseCase(fixture).execute({
+      viewerId: "me",
+      query: "  John  ",
+    });
     // Then
     expect(query).toHaveBeenCalledWith(
       expect.objectContaining({ viewerId: "me", nfcQuery: "John", upperTag: "JOHN" }),
@@ -52,7 +55,11 @@ describe("사용자 검색", () => {
     ];
     fixture.followRepository.searchTotal = 3;
     // When
-    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "존", size: 2 });
+    const result = await new SearchUsersUseCase(fixture).execute({
+      viewerId: "me",
+      query: "존",
+      size: 2,
+    });
     // Then
     expect(result.items.map((item) => item.id)).toEqual(["first", "second"]);
     expect(result.hasMore).toBe(true);
@@ -64,7 +71,11 @@ describe("사용자 검색", () => {
     const cursor = encodeSearchCursor({ rank: 0, id: "first" });
     const query = vi.spyOn(fixture.followRepository, "searchUsers");
     // When
-    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "존", cursor });
+    const result = await new SearchUsersUseCase(fixture).execute({
+      viewerId: "me",
+      query: "존",
+      cursor,
+    });
     // Then
     expect(query).toHaveBeenCalledWith(
       expect.objectContaining({ cursor: decodeSearchCursor(cursor) }),
@@ -80,7 +91,7 @@ describe("사용자 검색", () => {
     const query = vi.spyOn(fixture.followRepository, "searchUsers");
     // When / Then
     await expect(
-      new SearchUsers(fixture).execute({
+      new SearchUsersUseCase(fixture).execute({
         viewerId: "me",
         query: input.query,
         cursor: input.cursor,

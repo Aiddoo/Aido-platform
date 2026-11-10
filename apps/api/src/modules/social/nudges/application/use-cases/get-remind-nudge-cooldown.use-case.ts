@@ -8,7 +8,7 @@ interface GetRemindNudgeCooldownDependencies {
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "findLastRemindNudge">;
 }
 
-export class GetRemindNudgeCooldown {
+export class GetRemindNudgeCooldownUseCase {
   readonly #dependencies: GetRemindNudgeCooldownDependencies;
 
   constructor(dependencies: GetRemindNudgeCooldownDependencies) {

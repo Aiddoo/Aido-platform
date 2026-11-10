@@ -3,7 +3,7 @@ import { assert } from "vitest";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { ReplyToNudge } from "./reply-to-nudge.use-case.js";
+import { ReplyToNudgeUseCase } from "./reply-to-nudge.use-case.js";
 
 function replyFixture() {
   const fixture = createSocialInteractionFixture();
@@ -17,8 +17,8 @@ function replyFixture() {
     userId: "receiver",
     nudgeId: nudge.id,
     replyKind: "STARTING",
-  } satisfies Parameters<ReplyToNudge["execute"]>[0];
-  return { ...fixture, todo, nudge, input, useCase: new ReplyToNudge(fixture) };
+  } satisfies Parameters<ReplyToNudgeUseCase["execute"]>[0];
+  return { ...fixture, todo, nudge, input, useCase: new ReplyToNudgeUseCase(fixture) };
 }
 
 describe("받은 콕에 답장", () => {

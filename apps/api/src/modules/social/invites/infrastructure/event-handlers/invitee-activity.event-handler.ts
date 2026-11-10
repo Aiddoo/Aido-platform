@@ -8,19 +8,19 @@ import {
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { SocialInviteLogEvent } from "../../application/invites.log-events.js";
-import { RecordInviteeActivity } from "../../application/use-cases/record-invitee-activity.use-case.js";
+import { InviteLogEvent } from "../../application/invites.log-events.js";
+import { RecordInviteeActivityUseCase } from "../../application/use-cases/record-invitee-activity.use-case.js";
 
 /** 할 일 완료를 초대 사용 시작 기록으로 넘긴다. 상태를 들고 있지 않고 실패는 할 일 흐름에 전파하지 않는다. */
 @Injectable()
 export class InviteeActivitySubscriber {
   readonly #logger = new Logger(InviteeActivitySubscriber.name);
 
-  readonly #recordInviteeActivity: Pick<RecordInviteeActivity, "execute">;
+  readonly #recordInviteeActivity: Pick<RecordInviteeActivityUseCase, "execute">;
 
   constructor(
-    @Inject(RecordInviteeActivity)
-    recordInviteeActivity: Pick<RecordInviteeActivity, "execute">,
+    @Inject(RecordInviteeActivityUseCase)
+    recordInviteeActivity: Pick<RecordInviteeActivityUseCase, "execute">,
   ) {
     this.#recordInviteeActivity = recordInviteeActivity;
   }
@@ -37,7 +37,7 @@ export class InviteeActivitySubscriber {
       });
     } catch (error) {
       this.#logger.warn({
-        event: SocialInviteLogEvent.ACTIVITY_RECORD_FAILED,
+        event: InviteLogEvent.ACTIVITY_RECORD_FAILED,
         userId: event.userId,
         errorType: toErrorType(error),
       });

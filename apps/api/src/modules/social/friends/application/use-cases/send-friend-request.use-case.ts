@@ -12,7 +12,7 @@ import {
 import { type UserBlockReaderPort } from "../../../blocks/application/ports/user-block.reader.port.js";
 import { hasReachedFriendLimit } from "../../domain/friend-limit.domain-service.js";
 import type { Friendship } from "../../domain/friendship.aggregate.js";
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import { type FollowNotifierPort } from "../ports/follow-notifier.port.js";
 import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
 import type { FriendshipEffects } from "./friendship-effects.use-case.js";
@@ -50,7 +50,7 @@ interface SendFriendRequestDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SendFriendRequest {
+export class SendFriendRequestUseCase {
   readonly #dependencies: SendFriendRequestDependencies;
 
   constructor(dependencies: SendFriendRequestDependencies) {
@@ -146,7 +146,7 @@ export class SendFriendRequest {
       await this.#notifyAutoAcceptance(userId, targetUserId);
     } else {
       this.#dependencies.logger.log({
-        event: SocialFriendLogEvent.REQUEST_SENT,
+        event: FriendLogEvent.REQUEST_SENT,
         userId,
         targetUserId,
       });
@@ -162,7 +162,7 @@ export class SendFriendRequest {
 
   async #notifyAutoAcceptance(userId: string, targetUserId: string): Promise<void> {
     this.#dependencies.logger.log({
-      event: SocialFriendLogEvent.REQUEST_AUTO_ACCEPTED,
+      event: FriendLogEvent.REQUEST_AUTO_ACCEPTED,
       userId,
       targetUserId,
     });

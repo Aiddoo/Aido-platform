@@ -17,7 +17,7 @@ interface MarkNudgeReadDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class MarkNudgeRead {
+export class MarkNudgeReadUseCase {
   readonly #dependencies: MarkNudgeReadDependencies;
 
   constructor(dependencies: MarkNudgeReadDependencies) {

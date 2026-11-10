@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { GetSentFriendRequests } from "./get-sent-friend-requests.use-case.js";
+import { GetSentFriendRequestsUseCase } from "./get-sent-friend-requests.use-case.js";
 
 describe("보낸 친구 요청 조회", () => {
   beforeEach(() => {
@@ -20,7 +20,10 @@ describe("보낸 친구 요청 조회", () => {
       fixture.followRepository.seed({ followerId: "me", followingId: userId });
     });
     // When
-    const result = await new GetSentFriendRequests(fixture).execute({ userId: "me", size: 2 });
+    const result = await new GetSentFriendRequestsUseCase(fixture).execute({
+      userId: "me",
+      size: 2,
+    });
     // Then
     expect(result).toMatchObject({ totalCount: 3, hasMore: true });
     expect(result.items).toHaveLength(2);
@@ -33,7 +36,7 @@ describe("보낸 친구 요청 조회", () => {
     fixture.addUser("friend");
     fixture.addMutual("other", "friend");
     // When
-    const result = await new GetSentFriendRequests(fixture).execute({ userId: "me" });
+    const result = await new GetSentFriendRequestsUseCase(fixture).execute({ userId: "me" });
     // Then
     expect(result).toEqual({ items: [], totalCount: 0, hasMore: false });
   });

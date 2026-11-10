@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { MarkManyCheersRead } from "./mark-many-cheers-read.use-case.js";
+import { MarkManyCheersReadUseCase } from "./mark-many-cheers-read.use-case.js";
 
 describe("응원 일괄 읽음 처리", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("응원 일괄 읽음 처리", () => {
       readAt: new Date(SOCIAL_TIME.getTime() - 10000),
     });
     const other = fixture.cheerRepository.seed({ senderId: "sender", receiverId: "other" });
-    const useCase = new MarkManyCheersRead(fixture);
+    const useCase = new MarkManyCheersReadUseCase(fixture);
     // When
     const count = await useCase.execute({
       userId: "receiver",

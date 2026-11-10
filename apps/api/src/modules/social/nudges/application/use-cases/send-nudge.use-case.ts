@@ -44,7 +44,7 @@ interface SendNudgeDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SendNudge {
+export class SendNudgeUseCase {
   readonly #dependencies: SendNudgeDependencies;
 
   constructor(dependencies: SendNudgeDependencies) {

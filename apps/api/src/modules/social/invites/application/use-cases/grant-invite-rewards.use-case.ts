@@ -10,8 +10,8 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/reward-grant.constants.js";
-import { SocialInviteAlertKey } from "../invites.alerts.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteAlertKey } from "../invites.alerts.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
@@ -70,7 +70,7 @@ interface GrantInviteRewardsDependencies {
  * 기능이 꺼져 있으면 아무것도 적용하지 않고 원장을 그대로 둔다. 다시 켜면 정비 작업이 PENDING을
  * 다시 골라 적용하므로 꺼진 동안 쌓인 지급도 잃지 않는다.
  */
-export class GrantInviteRewards {
+export class GrantInviteRewardsUseCase {
   readonly #dependencies: GrantInviteRewardsDependencies;
 
   constructor(dependencies: GrantInviteRewardsDependencies) {
@@ -80,7 +80,7 @@ export class GrantInviteRewards {
   async execute(input: GrantInviteRewardsInput): Promise<GrantInviteRewardsResult> {
     if (!this.#dependencies.inviteConfig.isEnabled) {
       this.#dependencies.logger.log({
-        event: SocialInviteLogEvent.REWARDS_SKIPPED_DISABLED,
+        event: InviteLogEvent.REWARDS_SKIPPED_DISABLED,
         redemptionId: input.redemptionId,
       });
       return { appliedCount: 0, failedCount: 0 };
@@ -114,7 +114,7 @@ export class GrantInviteRewards {
     }
 
     this.#dependencies.logger.log({
-      event: SocialInviteLogEvent.REWARDS_GRANTED,
+      event: InviteLogEvent.REWARDS_GRANTED,
       redemptionId: input.redemptionId,
       appliedCount,
       failedCount,
@@ -149,7 +149,7 @@ export class GrantInviteRewards {
         countsAttempt,
       });
       this.#dependencies.logger.warn({
-        event: SocialInviteLogEvent.REWARD_APPLY_FAILED,
+        event: InviteLogEvent.REWARD_APPLY_FAILED,
         grantId: grant.id,
         rewardType: grant.rewardType,
         attempts: attempts ?? grant.attempts,
@@ -165,7 +165,7 @@ export class GrantInviteRewards {
   // 정비 작업도 더는 고르지 않으므로 사람이 다시 적용할 수 있게 한 번만 알린다
   #reportExhausted(grant: RewardGrantRecord, attempts: number, errorCode: string): void {
     this.#dependencies.logger.error({
-      event: SocialInviteLogEvent.REWARD_RETRY_EXHAUSTED,
+      event: InviteLogEvent.REWARD_RETRY_EXHAUSTED,
       grantId: grant.id,
       redemptionId: grant.sourceId,
       rewardType: grant.rewardType,
@@ -173,7 +173,7 @@ export class GrantInviteRewards {
       ...(isErrorCode(errorCode) ? { errorCode } : { errorType: errorCode }),
     });
     this.#dependencies.alert.raise({
-      key: SocialInviteAlertKey.REWARD_RETRY_EXHAUSTED,
+      key: InviteAlertKey.REWARD_RETRY_EXHAUSTED,
       severity: "error",
       message: "Invite reward retries exhausted",
       tags: { errorCode },
@@ -244,7 +244,7 @@ export class GrantInviteRewards {
       });
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: SocialInviteLogEvent.REWARDED_NOTIFICATION_FAILED,
+        event: InviteLogEvent.REWARDED_NOTIFICATION_FAILED,
         redemptionId,
         errorType: toErrorType(error),
       });

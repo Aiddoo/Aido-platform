@@ -3,7 +3,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
 
 import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/reward-grant.constants.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../ports/invite-reward-scheduler.port.js";
@@ -38,7 +38,7 @@ interface ExpireStaleRedemptionsDependencies {
 }
 
 /** 사용 시작 마감이 지난 수락을 거절하고, 적용하지 못한 지급의 작업을 다시 만든다. */
-export class ExpireStaleRedemptions {
+export class ExpireStaleRedemptionsUseCase {
   readonly #dependencies: ExpireStaleRedemptionsDependencies;
 
   constructor(dependencies: ExpireStaleRedemptionsDependencies) {
@@ -51,7 +51,7 @@ export class ExpireStaleRedemptions {
     const retriedCount = this.#dependencies.inviteConfig.isEnabled ? await this.#retry(input) : 0;
 
     this.#dependencies.logger.log({
-      event: SocialInviteLogEvent.MAINTENANCE_COMPLETED,
+      event: InviteLogEvent.MAINTENANCE_COMPLETED,
       expiredCount,
       retriedCount,
     });

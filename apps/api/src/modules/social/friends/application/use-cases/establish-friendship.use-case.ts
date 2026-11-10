@@ -11,7 +11,7 @@ import {
 
 import { hasReachedFriendLimit } from "../../domain/friend-limit.domain-service.js";
 import type { Friendship } from "../../domain/friendship.aggregate.js";
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import type { FollowNotifierPort } from "../ports/follow-notifier.port.js";
 import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
 import type {
@@ -49,7 +49,7 @@ interface FriendshipEstablisherDependencies {
  * 친구 요청은 기존 요청이 있으면 오류로 거절하고 상대의 대기 요청만 자동 수락하며 알림을 커밋 뒤
  * 바로 보내지만, 초대는 두 방향의 대기 요청을 모두 수락하고 결과를 상태로 돌려주며 호출자 UoW에 참여한다.
  */
-export class FriendshipEstablisher implements FriendshipEstablisherPort {
+export class EstablishFriendshipUseCase implements FriendshipEstablisherPort {
   readonly #dependencies: FriendshipEstablisherDependencies;
 
   constructor(dependencies: FriendshipEstablisherDependencies) {
@@ -167,7 +167,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
     shouldNotifyFriends: boolean,
   ): Promise<void> {
     this.#dependencies.logger.log({
-      event: SocialFriendLogEvent.FRIENDSHIP_ESTABLISHED,
+      event: FriendLogEvent.FRIENDSHIP_ESTABLISHED,
       userId: requesterId,
       targetUserId,
     });

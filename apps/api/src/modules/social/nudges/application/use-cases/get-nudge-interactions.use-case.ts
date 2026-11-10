@@ -27,7 +27,7 @@ interface GetNudgeInteractionsDependencies {
   readonly paginationService: PaginationService;
 }
 
-export class GetNudgeInteractions {
+export class GetNudgeInteractionsUseCase {
   readonly #dependencies: GetNudgeInteractionsDependencies;
 
   constructor(dependencies: GetNudgeInteractionsDependencies) {

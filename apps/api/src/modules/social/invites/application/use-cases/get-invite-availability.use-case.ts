@@ -4,7 +4,7 @@ interface GetInviteAvailabilityDependencies {
   readonly inviteConfig: InviteConfigPort;
 }
 
-export class GetInviteAvailability {
+export class GetInviteAvailabilityUseCase {
   readonly #dependencies: GetInviteAvailabilityDependencies;
 
   constructor(dependencies: GetInviteAvailabilityDependencies) {

@@ -2,7 +2,7 @@ import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { SendRemindNudge } from "./send-remind-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "./send-remind-nudge.use-case.js";
 
 describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
     const fixture = createSocialInteractionFixture();
     // When / Then
     await expect(
-      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+      new SendRemindNudgeUseCase({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
         senderId: "sender",
         receiverId: input.receiverId,
         timezone: "UTC",
@@ -36,7 +36,7 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
     fixture.addTodo();
     // When / Then
     await expect(
-      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+      new SendRemindNudgeUseCase({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
         senderId: "sender",
         receiverId: "receiver",
         timezone: "UTC",
@@ -55,7 +55,7 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
     });
     // When / Then
     await expect(
-      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+      new SendRemindNudgeUseCase({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
         senderId: "sender",
         receiverId: "receiver",
         timezone: "UTC",
@@ -67,7 +67,7 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     // When
-    const result = await new SendRemindNudge({
+    const result = await new SendRemindNudgeUseCase({
       ...fixture,
       notifier: fixture.nudgeNotifier,
     }).execute({
@@ -106,7 +106,7 @@ describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
       return count(...input);
     });
     // When
-    await new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+    await new SendRemindNudgeUseCase({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
       senderId: "sender",
       receiverId: "receiver",
       timezone: "UTC",

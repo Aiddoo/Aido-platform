@@ -9,7 +9,7 @@ import {
 } from "#api/shared/application/ports/index";
 
 import type { ReorderPlan, ReorderPosition } from "../../domain/friend-reorder.domain-service.js";
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import { type FollowRepositoryPort, type FollowWithUser } from "../ports/follow.repository.port.js";
 
 export interface ReorderFriendInput {
@@ -33,7 +33,7 @@ interface ReorderFriendDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class ReorderFriend {
+export class ReorderFriendUseCase {
   readonly #dependencies: ReorderFriendDependencies;
 
   constructor(dependencies: ReorderFriendDependencies) {
@@ -95,7 +95,7 @@ export class ReorderFriend {
       );
 
       this.#dependencies.logger.log({
-        event: SocialFriendLogEvent.REORDERED,
+        event: FriendLogEvent.REORDERED,
         followId,
         userId,
         sortOrder: plan.newSortOrder,

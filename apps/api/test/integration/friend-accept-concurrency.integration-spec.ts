@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 
 import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
-import { AcceptFriendRequest } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
+import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
 import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
 import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -21,7 +21,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
   let firstSenderId: string;
   let secondSenderId: string;
   let requestId: string;
-  let acceptFriendRequest: AcceptFriendRequest;
+  let acceptFriendRequest: AcceptFriendRequestUseCase;
   let mutualNotifications: number;
   let milestoneNotifications: number;
 
@@ -74,7 +74,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
     const effects = new FriendshipEffects({ followRepository, cache, notifier, logger });
-    acceptFriendRequest = new AcceptFriendRequest({
+    acceptFriendRequest = new AcceptFriendRequestUseCase({
       followRepository,
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(txHost),

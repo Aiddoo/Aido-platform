@@ -1,4 +1,4 @@
-export const SocialInviteLogEvent = {
+export const InviteLogEvent = {
   ISSUED: "social.invite.issued",
   ROTATED: "social.invite.rotated",
   REDEEMED: "social.invite.redeemed",

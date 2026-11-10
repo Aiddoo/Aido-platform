@@ -5,10 +5,10 @@ import {
   INVITE_REDEMPTION_REPOSITORY,
   type InviteRedemptionRepositoryPort,
 } from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
-import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
-import { RecordInviteeActivity } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
-import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
-import { SendInviteQualifyReminder } from "#api/modules/social/invites/application/use-cases/send-invite-qualify-reminder.use-case";
+import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
+import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
+import { SendInviteQualifyReminderUseCase } from "#api/modules/social/invites/application/use-cases/send-invite-qualify-reminder.use-case";
 import { qualifyReminderExpiresBefore } from "#api/modules/social/invites/domain/invite-qualify-reminder.domain-service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/schema/index";
@@ -32,10 +32,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let redeemInvite: RedeemInvite;
-  let getMyInvite: GetMyInvite;
-  let recordActivity: RecordInviteeActivity;
-  let sendReminder: SendInviteQualifyReminder;
+  let redeemInvite: RedeemInviteUseCase;
+  let getMyInvite: GetMyInviteUseCase;
+  let recordActivity: RecordInviteeActivityUseCase;
+  let sendReminder: SendInviteQualifyReminderUseCase;
   let repository: InviteRedemptionRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
 
@@ -47,10 +47,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
       customizeBuilder: (builder) =>
         builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
     });
-    redeemInvite = context.module.get(RedeemInvite);
-    getMyInvite = context.module.get(GetMyInvite);
-    recordActivity = context.module.get(RecordInviteeActivity);
-    sendReminder = context.module.get(SendInviteQualifyReminder);
+    redeemInvite = context.module.get(RedeemInviteUseCase);
+    getMyInvite = context.module.get(GetMyInviteUseCase);
+    recordActivity = context.module.get(RecordInviteeActivityUseCase);
+    sendReminder = context.module.get(SendInviteQualifyReminderUseCase);
     repository = context.module.get<InviteRedemptionRepositoryPort>(INVITE_REDEMPTION_REPOSITORY);
     unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
   });

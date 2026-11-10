@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { MarkNudgeRead } from "./mark-nudge-read.use-case.js";
+import { MarkNudgeReadUseCase } from "./mark-nudge-read.use-case.js";
 
 describe("콕 읽음 처리", () => {
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe("콕 읽음 처리", () => {
       });
       // When / Then
       await expect(
-        new MarkNudgeRead(fixture).execute({
+        new MarkNudgeReadUseCase(fixture).execute({
           userId: state === "other" ? "other" : "receiver",
           nudgeId: state === "missing" ? record.id + 1 : record.id,
         }),
@@ -40,7 +40,7 @@ describe("콕 읽음 처리", () => {
       receiverId: "receiver",
       todoId: 1,
     });
-    const useCase = new MarkNudgeRead(fixture);
+    const useCase = new MarkNudgeReadUseCase(fixture);
     // When
     await useCase.execute({ userId: "receiver", nudgeId: record.id });
     vi.setSystemTime(new Date(SOCIAL_TIME.getTime() + 10000));

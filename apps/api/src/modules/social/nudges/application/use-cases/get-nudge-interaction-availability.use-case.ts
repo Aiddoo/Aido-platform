@@ -4,7 +4,7 @@ interface GetNudgeInteractionAvailabilityDependencies {
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
 }
 
-export class GetNudgeInteractionAvailability {
+export class GetNudgeInteractionAvailabilityUseCase {
   readonly #dependencies: GetNudgeInteractionAvailabilityDependencies;
 
   constructor(dependencies: GetNudgeInteractionAvailabilityDependencies) {

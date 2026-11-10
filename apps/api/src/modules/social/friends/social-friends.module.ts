@@ -11,7 +11,7 @@ import { FOLLOW_READER } from "./application/ports/follow.reader.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port.js";
 import { FRIEND_COUNT_READER } from "./application/ports/friend-count.reader.port.js";
 import { FRIENDSHIP_ESTABLISHER } from "./application/ports/friendship-establisher.port.js";
-import { FriendshipEstablisher } from "./application/use-cases/establish-friendship.use-case.js";
+import { EstablishFriendshipUseCase } from "./application/use-cases/establish-friendship.use-case.js";
 import { FollowCacheAdapter } from "./infrastructure/adapters/follow-cache.adapter.js";
 import { FollowNotifierAdapter } from "./infrastructure/adapters/follow-notifier.adapter.js";
 import { DrizzleFollowRepository } from "./infrastructure/persistence/drizzle-follow.repository.js";
@@ -45,7 +45,7 @@ import {
     { provide: FRIEND_COUNT_READER, useExisting: FollowReader },
     friendshipEffectsProvider,
     friendshipEstablisherProvider,
-    { provide: FRIENDSHIP_ESTABLISHER, useExisting: FriendshipEstablisher },
+    { provide: FRIENDSHIP_ESTABLISHER, useExisting: EstablishFriendshipUseCase },
     getFriendsProvider,
     getReceivedFriendRequestsProvider,
     getSentFriendRequestsProvider,

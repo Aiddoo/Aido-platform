@@ -31,7 +31,7 @@ interface GetInvitedFriendsDependencies {
 }
 
 /** 한 페이지를 한 문장으로 읽고 전체 수는 상태별 집계 한 번에서 고른다. */
-export class GetInvitedFriends {
+export class GetInvitedFriendsUseCase {
   readonly #dependencies: GetInvitedFriendsDependencies;
 
   constructor(dependencies: GetInvitedFriendsDependencies) {

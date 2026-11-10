@@ -2,7 +2,7 @@ import { assert } from "vitest";
 
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { ReorderFriend } from "./reorder-friend.use-case.js";
+import { ReorderFriendUseCase } from "./reorder-friend.use-case.js";
 
 describe("친구 목록 정렬", () => {
   beforeEach(() => {
@@ -30,14 +30,14 @@ describe("친구 목록 정렬", () => {
     const before = structuredClone([...fixture.followRepository.follows.values()]);
     // When / Then
     await expect(
-      new ReorderFriend(fixture).execute({
+      new ReorderFriendUseCase(fixture).execute({
         followId: first.id,
         userId: "other",
         position: "before",
       }),
     ).rejects.toMatchObject({ errorCode: "FOLLOW_0910" });
     await expect(
-      new ReorderFriend(fixture).execute({
+      new ReorderFriendUseCase(fixture).execute({
         followId: first.id,
         userId: "me",
         targetFollowId: "missing",
@@ -53,7 +53,7 @@ describe("친구 목록 정렬", () => {
     const update = vi.spyOn(fixture.followRepository, "updateFollowSortOrder");
     const shift = vi.spyOn(fixture.followRepository, "shiftFriendSortOrders");
     // When
-    const result = await new ReorderFriend(fixture).execute({
+    const result = await new ReorderFriendUseCase(fixture).execute({
       followId: first.id,
       targetFollowId: first.id,
       userId: "me",
@@ -91,7 +91,7 @@ describe("친구 목록 정렬", () => {
     const source = fixture.friends[input.source];
     assert.exists(source);
     // When
-    await new ReorderFriend(fixture).execute({
+    await new ReorderFriendUseCase(fixture).execute({
       followId: source.id,
       targetFollowId: input.target == null ? undefined : fixture.friends[input.target]?.id,
       userId: "me",

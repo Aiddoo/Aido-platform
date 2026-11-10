@@ -8,7 +8,7 @@ interface GetNudgeCooldownDependencies {
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "findLastNudgeToUser">;
 }
 
-export class GetNudgeCooldown {
+export class GetNudgeCooldownUseCase {
   readonly #dependencies: GetNudgeCooldownDependencies;
 
   constructor(dependencies: GetNudgeCooldownDependencies) {

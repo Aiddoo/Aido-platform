@@ -2,14 +2,14 @@ import { ErrorCode } from "@aido/api/errors";
 import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { BlockUser } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
+import { BlockUserUseCase } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
 import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
-import { AcceptFriendRequest } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
+import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
 import { FriendshipEffects } from "#api/modules/social/friends/application/use-cases/friendship-effects.use-case";
-import { SendFriendRequest } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
+import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
 import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -43,9 +43,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   let meId: string;
   let otherId: string;
   let otherTag: string;
-  let blockUser: BlockUser;
-  let acceptFriendRequest: AcceptFriendRequest;
-  let sendFriendRequest: SendFriendRequest;
+  let blockUser: BlockUserUseCase;
+  let acceptFriendRequest: AcceptFriendRequestUseCase;
+  let sendFriendRequest: SendFriendRequestUseCase;
   let followRepository: DrizzleFollowRepository;
   let blockRepository: DrizzleUserBlockRepository;
   let nudgeRepository: DrizzleNudgeRepository;
@@ -92,21 +92,21 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     nudgeRepository = new DrizzleNudgeRepository(txHost);
     cheerRepository = new DrizzleCheerRepository(txHost);
     const effects = new FriendshipEffects({ followRepository, cache, notifier, logger });
-    blockUser = new BlockUser({
+    blockUser = new BlockUserUseCase({
       userBlockRepository: blockRepository,
       unitOfWork: uow,
       mutationLock,
       friendshipCache: cache,
       logger,
     });
-    acceptFriendRequest = new AcceptFriendRequest({
+    acceptFriendRequest = new AcceptFriendRequestUseCase({
       followRepository,
       unitOfWork: uow,
       mutationLock,
       effects,
       logger,
     });
-    sendFriendRequest = new SendFriendRequest({
+    sendFriendRequest = new SendFriendRequestUseCase({
       followRepository,
       notifier,
       unitOfWork: uow,

@@ -41,7 +41,7 @@ interface SendCheerDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SendCheer {
+export class SendCheerUseCase {
   readonly #dependencies: SendCheerDependencies;
 
   constructor(dependencies: SendCheerDependencies) {

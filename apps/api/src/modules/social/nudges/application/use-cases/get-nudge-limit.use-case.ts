@@ -13,7 +13,7 @@ interface GetNudgeLimitDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
-export class GetNudgeLimit {
+export class GetNudgeLimitUseCase {
   readonly #dependencies: GetNudgeLimitDependencies;
 
   constructor(dependencies: GetNudgeLimitDependencies) {

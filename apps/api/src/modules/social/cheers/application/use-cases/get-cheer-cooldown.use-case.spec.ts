@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetCheerCooldown } from "./get-cheer-cooldown.use-case.js";
+import { GetCheerCooldownUseCase } from "./get-cheer-cooldown.use-case.js";
 
 describe("GetCheerCooldown 대상별 쿨다운 조회", () => {
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe("GetCheerCooldown 대상별 쿨다운 조회", () => {
       createdAt: SOCIAL_TIME,
     });
     // When
-    const result = await new GetCheerCooldown(fixture).execute({
+    const result = await new GetCheerCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });
@@ -39,7 +39,7 @@ describe("GetCheerCooldown 대상별 쿨다운 조회", () => {
     );
     fixture.cheerRepository.seed({ senderId: "sender", receiverId: "receiver", createdAt });
     // When
-    const result = await new GetCheerCooldown(fixture).execute({
+    const result = await new GetCheerCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });

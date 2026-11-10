@@ -8,7 +8,7 @@ import {
   TODO_CATEGORY_COUNT_READER,
   type TodoCategoryCountReaderPort,
 } from "#api/modules/planning/categories/planning-categories.public";
-import { SendFriendRequest } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
+import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
 import {
   FRIEND_COUNT_READER,
   type FriendCountReaderPort,
@@ -133,7 +133,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     const count = await friendCountReader.countCurrentFriends(userId);
     const { features } = await readSnapshot();
     const request = context.module
-      .get(SendFriendRequest)
+      .get(SendFriendRequestUseCase)
       .execute({ userId, targetUserId: target.id });
 
     // Then

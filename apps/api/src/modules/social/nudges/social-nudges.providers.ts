@@ -11,64 +11,68 @@ import { NUDGE_INTERACTION_CONFIG } from "./application/ports/nudge-interaction-
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit.reader.port.js";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port.js";
 import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port.js";
-import { GetNudgeCooldown } from "./application/use-cases/get-nudge-cooldown.use-case.js";
-import { GetNudgeInteractionAvailability } from "./application/use-cases/get-nudge-interaction-availability.use-case.js";
-import { GetNudgeInteraction } from "./application/use-cases/get-nudge-interaction.use-case.js";
-import { GetNudgeInteractions } from "./application/use-cases/get-nudge-interactions.use-case.js";
-import { GetNudgeLimit } from "./application/use-cases/get-nudge-limit.use-case.js";
-import { GetNudgeThanksPreview } from "./application/use-cases/get-nudge-thanks-preview.use-case.js";
-import { GetReceivedNudges } from "./application/use-cases/get-received-nudges.use-case.js";
-import { GetRemindNudgeCooldown } from "./application/use-cases/get-remind-nudge-cooldown.use-case.js";
-import { GetSentNudges } from "./application/use-cases/get-sent-nudges.use-case.js";
-import { MarkNudgeRead } from "./application/use-cases/mark-nudge-read.use-case.js";
-import { ReplyToNudge } from "./application/use-cases/reply-to-nudge.use-case.js";
-import { SendNudgeThanks } from "./application/use-cases/send-nudge-thanks.use-case.js";
-import { SendNudge } from "./application/use-cases/send-nudge.use-case.js";
-import { SendRemindNudge } from "./application/use-cases/send-remind-nudge.use-case.js";
+import { GetNudgeCooldownUseCase } from "./application/use-cases/get-nudge-cooldown.use-case.js";
+import { GetNudgeInteractionAvailabilityUseCase } from "./application/use-cases/get-nudge-interaction-availability.use-case.js";
+import { GetNudgeInteractionUseCase } from "./application/use-cases/get-nudge-interaction.use-case.js";
+import { GetNudgeInteractionsUseCase } from "./application/use-cases/get-nudge-interactions.use-case.js";
+import { GetNudgeLimitUseCase } from "./application/use-cases/get-nudge-limit.use-case.js";
+import { GetNudgeThanksPreviewUseCase } from "./application/use-cases/get-nudge-thanks-preview.use-case.js";
+import { GetReceivedNudgesUseCase } from "./application/use-cases/get-received-nudges.use-case.js";
+import { GetRemindNudgeCooldownUseCase } from "./application/use-cases/get-remind-nudge-cooldown.use-case.js";
+import { GetSentNudgesUseCase } from "./application/use-cases/get-sent-nudges.use-case.js";
+import { MarkNudgeReadUseCase } from "./application/use-cases/mark-nudge-read.use-case.js";
+import { ReplyToNudgeUseCase } from "./application/use-cases/reply-to-nudge.use-case.js";
+import { SendNudgeThanksUseCase } from "./application/use-cases/send-nudge-thanks.use-case.js";
+import { SendNudgeUseCase } from "./application/use-cases/send-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "./application/use-cases/send-remind-nudge.use-case.js";
 
-export const getNudgeInteractionProvider: FactoryProvider<GetNudgeInteraction> = {
-  provide: GetNudgeInteraction,
+export const getNudgeInteractionProvider: FactoryProvider<GetNudgeInteractionUseCase> = {
+  provide: GetNudgeInteractionUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_INTERACTION_CONFIG, FOLLOW_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetNudgeInteraction>[0]["nudgeRepository"],
+    nudgeRepository: ConstructorParameters<typeof GetNudgeInteractionUseCase>[0]["nudgeRepository"],
     nudgeInteractionConfig: ConstructorParameters<
-      typeof GetNudgeInteraction
+      typeof GetNudgeInteractionUseCase
     >[0]["nudgeInteractionConfig"],
-    followReader: ConstructorParameters<typeof GetNudgeInteraction>[0]["followReader"],
+    followReader: ConstructorParameters<typeof GetNudgeInteractionUseCase>[0]["followReader"],
   ) =>
-    new GetNudgeInteraction({
+    new GetNudgeInteractionUseCase({
       nudgeRepository,
       nudgeInteractionConfig,
       followReader,
     }),
 };
 
-export const getNudgeInteractionAvailabilityProvider: FactoryProvider<GetNudgeInteractionAvailability> =
+export const getNudgeInteractionAvailabilityProvider: FactoryProvider<GetNudgeInteractionAvailabilityUseCase> =
   {
-    provide: GetNudgeInteractionAvailability,
+    provide: GetNudgeInteractionAvailabilityUseCase,
     inject: [NUDGE_INTERACTION_CONFIG],
     useFactory: (
       nudgeInteractionConfig: ConstructorParameters<
-        typeof GetNudgeInteractionAvailability
+        typeof GetNudgeInteractionAvailabilityUseCase
       >[0]["nudgeInteractionConfig"],
     ) =>
-      new GetNudgeInteractionAvailability({
+      new GetNudgeInteractionAvailabilityUseCase({
         nudgeInteractionConfig,
       }),
   };
 
-export const getNudgeInteractionsProvider: FactoryProvider<GetNudgeInteractions> = {
-  provide: GetNudgeInteractions,
+export const getNudgeInteractionsProvider: FactoryProvider<GetNudgeInteractionsUseCase> = {
+  provide: GetNudgeInteractionsUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_INTERACTION_CONFIG, FOLLOW_READER, PaginationService],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetNudgeInteractions>[0]["nudgeRepository"],
+    nudgeRepository: ConstructorParameters<
+      typeof GetNudgeInteractionsUseCase
+    >[0]["nudgeRepository"],
     nudgeInteractionConfig: ConstructorParameters<
-      typeof GetNudgeInteractions
+      typeof GetNudgeInteractionsUseCase
     >[0]["nudgeInteractionConfig"],
-    followReader: ConstructorParameters<typeof GetNudgeInteractions>[0]["followReader"],
-    paginationService: ConstructorParameters<typeof GetNudgeInteractions>[0]["paginationService"],
+    followReader: ConstructorParameters<typeof GetNudgeInteractionsUseCase>[0]["followReader"],
+    paginationService: ConstructorParameters<
+      typeof GetNudgeInteractionsUseCase
+    >[0]["paginationService"],
   ) =>
-    new GetNudgeInteractions({
+    new GetNudgeInteractionsUseCase({
       nudgeRepository,
       nudgeInteractionConfig,
       followReader,
@@ -76,46 +80,50 @@ export const getNudgeInteractionsProvider: FactoryProvider<GetNudgeInteractions>
     }),
 };
 
-export const getNudgeThanksPreviewProvider: FactoryProvider<GetNudgeThanksPreview> = {
-  provide: GetNudgeThanksPreview,
+export const getNudgeThanksPreviewProvider: FactoryProvider<GetNudgeThanksPreviewUseCase> = {
+  provide: GetNudgeThanksPreviewUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_INTERACTION_CONFIG, FOLLOW_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetNudgeThanksPreview>[0]["nudgeRepository"],
+    nudgeRepository: ConstructorParameters<
+      typeof GetNudgeThanksPreviewUseCase
+    >[0]["nudgeRepository"],
     nudgeInteractionConfig: ConstructorParameters<
-      typeof GetNudgeThanksPreview
+      typeof GetNudgeThanksPreviewUseCase
     >[0]["nudgeInteractionConfig"],
-    followReader: ConstructorParameters<typeof GetNudgeThanksPreview>[0]["followReader"],
+    followReader: ConstructorParameters<typeof GetNudgeThanksPreviewUseCase>[0]["followReader"],
   ) =>
-    new GetNudgeThanksPreview({
+    new GetNudgeThanksPreviewUseCase({
       nudgeRepository,
       nudgeInteractionConfig,
       followReader,
     }),
 };
 
-export const markNudgeReadProvider: FactoryProvider<MarkNudgeRead> = {
-  provide: MarkNudgeRead,
+export const markNudgeReadProvider: FactoryProvider<MarkNudgeReadUseCase> = {
+  provide: MarkNudgeReadUseCase,
   inject: [NUDGE_REPOSITORY],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof MarkNudgeRead>[0]["nudgeRepository"],
+    nudgeRepository: ConstructorParameters<typeof MarkNudgeReadUseCase>[0]["nudgeRepository"],
   ) =>
-    new MarkNudgeRead({
+    new MarkNudgeReadUseCase({
       nudgeRepository,
-      logger: new Logger(MarkNudgeRead.name),
+      logger: new Logger(MarkNudgeReadUseCase.name),
     }),
 };
 
-export const replyToNudgeProvider: FactoryProvider<ReplyToNudge> = {
-  provide: ReplyToNudge,
+export const replyToNudgeProvider: FactoryProvider<ReplyToNudgeUseCase> = {
+  provide: ReplyToNudgeUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_INTERACTION_CONFIG, NUDGE_NOTIFIER, UNIT_OF_WORK, FOLLOW_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof ReplyToNudge>[0]["nudgeRepository"],
-    nudgeInteractionConfig: ConstructorParameters<typeof ReplyToNudge>[0]["nudgeInteractionConfig"],
-    nudgeNotifier: ConstructorParameters<typeof ReplyToNudge>[0]["nudgeNotifier"],
-    unitOfWork: ConstructorParameters<typeof ReplyToNudge>[0]["unitOfWork"],
-    followReader: ConstructorParameters<typeof ReplyToNudge>[0]["followReader"],
+    nudgeRepository: ConstructorParameters<typeof ReplyToNudgeUseCase>[0]["nudgeRepository"],
+    nudgeInteractionConfig: ConstructorParameters<
+      typeof ReplyToNudgeUseCase
+    >[0]["nudgeInteractionConfig"],
+    nudgeNotifier: ConstructorParameters<typeof ReplyToNudgeUseCase>[0]["nudgeNotifier"],
+    unitOfWork: ConstructorParameters<typeof ReplyToNudgeUseCase>[0]["unitOfWork"],
+    followReader: ConstructorParameters<typeof ReplyToNudgeUseCase>[0]["followReader"],
   ) =>
-    new ReplyToNudge({
+    new ReplyToNudgeUseCase({
       nudgeRepository,
       nudgeInteractionConfig,
       nudgeNotifier,
@@ -124,8 +132,8 @@ export const replyToNudgeProvider: FactoryProvider<ReplyToNudge> = {
     }),
 };
 
-export const sendNudgeProvider: FactoryProvider<SendNudge> = {
-  provide: SendNudge,
+export const sendNudgeProvider: FactoryProvider<SendNudgeUseCase> = {
+  provide: SendNudgeUseCase,
   inject: [
     NUDGE_REPOSITORY,
     NUDGE_NOTIFIER,
@@ -135,37 +143,37 @@ export const sendNudgeProvider: FactoryProvider<SendNudge> = {
     FOLLOW_READER,
   ],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof SendNudge>[0]["nudgeRepository"],
-    notifier: ConstructorParameters<typeof SendNudge>[0]["notifier"],
-    limitReader: ConstructorParameters<typeof SendNudge>[0]["limitReader"],
-    mutationLock: ConstructorParameters<typeof SendNudge>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof SendNudge>[0]["unitOfWork"],
-    followReader: ConstructorParameters<typeof SendNudge>[0]["followReader"],
+    nudgeRepository: ConstructorParameters<typeof SendNudgeUseCase>[0]["nudgeRepository"],
+    notifier: ConstructorParameters<typeof SendNudgeUseCase>[0]["notifier"],
+    limitReader: ConstructorParameters<typeof SendNudgeUseCase>[0]["limitReader"],
+    mutationLock: ConstructorParameters<typeof SendNudgeUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof SendNudgeUseCase>[0]["unitOfWork"],
+    followReader: ConstructorParameters<typeof SendNudgeUseCase>[0]["followReader"],
   ) =>
-    new SendNudge({
+    new SendNudgeUseCase({
       nudgeRepository,
       notifier,
       limitReader,
       mutationLock,
       unitOfWork,
       followReader,
-      logger: new Logger(SendNudge.name),
+      logger: new Logger(SendNudgeUseCase.name),
     }),
 };
 
-export const sendNudgeThanksProvider: FactoryProvider<SendNudgeThanks> = {
-  provide: SendNudgeThanks,
+export const sendNudgeThanksProvider: FactoryProvider<SendNudgeThanksUseCase> = {
+  provide: SendNudgeThanksUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_INTERACTION_CONFIG, NUDGE_NOTIFIER, UNIT_OF_WORK, FOLLOW_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof SendNudgeThanks>[0]["nudgeRepository"],
+    nudgeRepository: ConstructorParameters<typeof SendNudgeThanksUseCase>[0]["nudgeRepository"],
     nudgeInteractionConfig: ConstructorParameters<
-      typeof SendNudgeThanks
+      typeof SendNudgeThanksUseCase
     >[0]["nudgeInteractionConfig"],
-    nudgeNotifier: ConstructorParameters<typeof SendNudgeThanks>[0]["nudgeNotifier"],
-    unitOfWork: ConstructorParameters<typeof SendNudgeThanks>[0]["unitOfWork"],
-    followReader: ConstructorParameters<typeof SendNudgeThanks>[0]["followReader"],
+    nudgeNotifier: ConstructorParameters<typeof SendNudgeThanksUseCase>[0]["nudgeNotifier"],
+    unitOfWork: ConstructorParameters<typeof SendNudgeThanksUseCase>[0]["unitOfWork"],
+    followReader: ConstructorParameters<typeof SendNudgeThanksUseCase>[0]["followReader"],
   ) =>
-    new SendNudgeThanks({
+    new SendNudgeThanksUseCase({
       nudgeRepository,
       nudgeInteractionConfig,
       nudgeNotifier,
@@ -174,77 +182,81 @@ export const sendNudgeThanksProvider: FactoryProvider<SendNudgeThanks> = {
     }),
 };
 
-export const sendRemindNudgeProvider: FactoryProvider<SendRemindNudge> = {
-  provide: SendRemindNudge,
+export const sendRemindNudgeProvider: FactoryProvider<SendRemindNudgeUseCase> = {
+  provide: SendRemindNudgeUseCase,
   inject: [NUDGE_REPOSITORY, NUDGE_NOTIFIER, MUTATION_LOCK, UNIT_OF_WORK, FOLLOW_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof SendRemindNudge>[0]["nudgeRepository"],
-    notifier: ConstructorParameters<typeof SendRemindNudge>[0]["notifier"],
-    mutationLock: ConstructorParameters<typeof SendRemindNudge>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof SendRemindNudge>[0]["unitOfWork"],
-    followReader: ConstructorParameters<typeof SendRemindNudge>[0]["followReader"],
+    nudgeRepository: ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["nudgeRepository"],
+    notifier: ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["notifier"],
+    mutationLock: ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["unitOfWork"],
+    followReader: ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["followReader"],
   ) =>
-    new SendRemindNudge({
+    new SendRemindNudgeUseCase({
       nudgeRepository,
       notifier,
       mutationLock,
       unitOfWork,
       followReader,
-      logger: new Logger(SendRemindNudge.name),
+      logger: new Logger(SendRemindNudgeUseCase.name),
     }),
 };
 
-export const getReceivedNudgesProvider: FactoryProvider<GetReceivedNudges> = {
-  provide: GetReceivedNudges,
+export const getReceivedNudgesProvider: FactoryProvider<GetReceivedNudgesUseCase> = {
+  provide: GetReceivedNudgesUseCase,
   inject: [NUDGE_REPOSITORY, PaginationService],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetReceivedNudges>[0]["nudgeRepository"],
-    paginationService: ConstructorParameters<typeof GetReceivedNudges>[0]["paginationService"],
+    nudgeRepository: ConstructorParameters<typeof GetReceivedNudgesUseCase>[0]["nudgeRepository"],
+    paginationService: ConstructorParameters<
+      typeof GetReceivedNudgesUseCase
+    >[0]["paginationService"],
   ) =>
-    new GetReceivedNudges({
+    new GetReceivedNudgesUseCase({
       nudgeRepository,
       paginationService,
-      logger: new Logger(GetReceivedNudges.name),
+      logger: new Logger(GetReceivedNudgesUseCase.name),
     }),
 };
 
-export const getSentNudgesProvider: FactoryProvider<GetSentNudges> = {
-  provide: GetSentNudges,
+export const getSentNudgesProvider: FactoryProvider<GetSentNudgesUseCase> = {
+  provide: GetSentNudgesUseCase,
   inject: [NUDGE_REPOSITORY, PaginationService],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetSentNudges>[0]["nudgeRepository"],
-    paginationService: ConstructorParameters<typeof GetSentNudges>[0]["paginationService"],
+    nudgeRepository: ConstructorParameters<typeof GetSentNudgesUseCase>[0]["nudgeRepository"],
+    paginationService: ConstructorParameters<typeof GetSentNudgesUseCase>[0]["paginationService"],
   ) =>
-    new GetSentNudges({
+    new GetSentNudgesUseCase({
       nudgeRepository,
       paginationService,
-      logger: new Logger(GetSentNudges.name),
+      logger: new Logger(GetSentNudgesUseCase.name),
     }),
 };
 
-export const getNudgeLimitProvider: FactoryProvider<GetNudgeLimit> = {
-  provide: GetNudgeLimit,
+export const getNudgeLimitProvider: FactoryProvider<GetNudgeLimitUseCase> = {
+  provide: GetNudgeLimitUseCase,
   inject: [NUDGE_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetNudgeLimit>[0]["nudgeRepository"],
-    entitlementReader: ConstructorParameters<typeof GetNudgeLimit>[0]["entitlementReader"],
-  ) => new GetNudgeLimit({ nudgeRepository, entitlementReader }),
+    nudgeRepository: ConstructorParameters<typeof GetNudgeLimitUseCase>[0]["nudgeRepository"],
+    entitlementReader: ConstructorParameters<typeof GetNudgeLimitUseCase>[0]["entitlementReader"],
+  ) => new GetNudgeLimitUseCase({ nudgeRepository, entitlementReader }),
 };
 
-export const getNudgeCooldownProvider: FactoryProvider<GetNudgeCooldown> = {
-  provide: GetNudgeCooldown,
+export const getNudgeCooldownProvider: FactoryProvider<GetNudgeCooldownUseCase> = {
+  provide: GetNudgeCooldownUseCase,
   inject: [NUDGE_REPOSITORY],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetNudgeCooldown>[0]["nudgeRepository"],
-  ) => new GetNudgeCooldown({ nudgeRepository }),
+    nudgeRepository: ConstructorParameters<typeof GetNudgeCooldownUseCase>[0]["nudgeRepository"],
+  ) => new GetNudgeCooldownUseCase({ nudgeRepository }),
 };
 
-export const getRemindNudgeCooldownProvider: FactoryProvider<GetRemindNudgeCooldown> = {
-  provide: GetRemindNudgeCooldown,
+export const getRemindNudgeCooldownProvider: FactoryProvider<GetRemindNudgeCooldownUseCase> = {
+  provide: GetRemindNudgeCooldownUseCase,
   inject: [NUDGE_REPOSITORY],
   useFactory: (
-    nudgeRepository: ConstructorParameters<typeof GetRemindNudgeCooldown>[0]["nudgeRepository"],
-  ) => new GetRemindNudgeCooldown({ nudgeRepository }),
+    nudgeRepository: ConstructorParameters<
+      typeof GetRemindNudgeCooldownUseCase
+    >[0]["nudgeRepository"],
+  ) => new GetRemindNudgeCooldownUseCase({ nudgeRepository }),
 };
 
 export const nudgeUsageReaderProvider: FactoryProvider<DailySendUsageReader> = {

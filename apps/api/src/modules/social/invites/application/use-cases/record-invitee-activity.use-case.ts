@@ -17,7 +17,7 @@ import {
   qualifiedRedemptionCount,
   rewardCapWindowStart,
 } from "../../domain/invite-reward.domain-service.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
@@ -75,7 +75,7 @@ interface RecordInviteeActivityDependencies extends InvitePairReachabilityDepend
  * 날짜는 수락할 때 고정한 시간대로만 센다. 요청마다 오는 시간대를 믿으면 시간대만 바꿔 같은 날
  * 두 번 셀 수 있다.
  */
-export class RecordInviteeActivity {
+export class RecordInviteeActivityUseCase {
   readonly #dependencies: RecordInviteeActivityDependencies;
 
   constructor(dependencies: RecordInviteeActivityDependencies) {
@@ -120,7 +120,7 @@ export class RecordInviteeActivity {
 
     if (result.status === "qualified") {
       this.#dependencies.logger.log({
-        event: SocialInviteLogEvent.QUALIFIED,
+        event: InviteLogEvent.QUALIFIED,
         redemptionId: result.redemptionId,
         inviteeId: input.inviteeId,
         grantCount: result.grantCount,
@@ -143,7 +143,7 @@ export class RecordInviteeActivity {
       const skippedReason = await this.#progressSkipReason(inviteeId, inviterId);
       if (skippedReason != null) {
         this.#dependencies.logger.log({
-          event: SocialInviteLogEvent.PROGRESS_NOTIFICATION_SKIPPED,
+          event: InviteLogEvent.PROGRESS_NOTIFICATION_SKIPPED,
           redemptionId,
           reason: skippedReason,
         });
@@ -160,12 +160,12 @@ export class RecordInviteeActivity {
         redemptionId,
       });
       this.#dependencies.logger.log({
-        event: SocialInviteLogEvent.PROGRESS_NOTIFIED,
+        event: InviteLogEvent.PROGRESS_NOTIFIED,
         redemptionId,
       });
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: SocialInviteLogEvent.PROGRESS_NOTIFICATION_FAILED,
+        event: InviteLogEvent.PROGRESS_NOTIFICATION_FAILED,
         redemptionId,
         errorType: toErrorType(error),
       });

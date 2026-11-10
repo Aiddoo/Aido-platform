@@ -20,12 +20,12 @@ import {
 } from "#api/platform/http/swagger/index";
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
-import { GetNudgeInteractionAvailability } from "../../../application/use-cases/get-nudge-interaction-availability.use-case.js";
-import { GetNudgeInteraction } from "../../../application/use-cases/get-nudge-interaction.use-case.js";
-import { GetNudgeInteractions } from "../../../application/use-cases/get-nudge-interactions.use-case.js";
-import { GetNudgeThanksPreview } from "../../../application/use-cases/get-nudge-thanks-preview.use-case.js";
-import { ReplyToNudge } from "../../../application/use-cases/reply-to-nudge.use-case.js";
-import { SendNudgeThanks } from "../../../application/use-cases/send-nudge-thanks.use-case.js";
+import { GetNudgeInteractionAvailabilityUseCase } from "../../../application/use-cases/get-nudge-interaction-availability.use-case.js";
+import { GetNudgeInteractionUseCase } from "../../../application/use-cases/get-nudge-interaction.use-case.js";
+import { GetNudgeInteractionsUseCase } from "../../../application/use-cases/get-nudge-interactions.use-case.js";
+import { GetNudgeThanksPreviewUseCase } from "../../../application/use-cases/get-nudge-thanks-preview.use-case.js";
+import { ReplyToNudgeUseCase } from "../../../application/use-cases/reply-to-nudge.use-case.js";
+import { SendNudgeThanksUseCase } from "../../../application/use-cases/send-nudge-thanks.use-case.js";
 import { NudgeInteractionMapper } from "./nudge-interaction-response.mapper.js";
 import {
   GetNudgeInteractionsQueryDto,
@@ -55,20 +55,20 @@ const APP_VERSION_HEADER = {
 @ApiBearerAuth()
 @Controller("nudges")
 export class NudgeInteractionController {
-  readonly #getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailability;
-  readonly #getNudgeInteractionsUseCase: GetNudgeInteractions;
-  readonly #getNudgeInteractionUseCase: GetNudgeInteraction;
-  readonly #getNudgeThanksPreviewUseCase: GetNudgeThanksPreview;
-  readonly #replyToNudgeUseCase: ReplyToNudge;
-  readonly #sendNudgeThanksUseCase: SendNudgeThanks;
+  readonly #getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailabilityUseCase;
+  readonly #getNudgeInteractionsUseCase: GetNudgeInteractionsUseCase;
+  readonly #getNudgeInteractionUseCase: GetNudgeInteractionUseCase;
+  readonly #getNudgeThanksPreviewUseCase: GetNudgeThanksPreviewUseCase;
+  readonly #replyToNudgeUseCase: ReplyToNudgeUseCase;
+  readonly #sendNudgeThanksUseCase: SendNudgeThanksUseCase;
 
   constructor(
-    getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailability,
-    getNudgeInteractionsUseCase: GetNudgeInteractions,
-    getNudgeInteractionUseCase: GetNudgeInteraction,
-    getNudgeThanksPreviewUseCase: GetNudgeThanksPreview,
-    replyToNudgeUseCase: ReplyToNudge,
-    sendNudgeThanksUseCase: SendNudgeThanks,
+    getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailabilityUseCase,
+    getNudgeInteractionsUseCase: GetNudgeInteractionsUseCase,
+    getNudgeInteractionUseCase: GetNudgeInteractionUseCase,
+    getNudgeThanksPreviewUseCase: GetNudgeThanksPreviewUseCase,
+    replyToNudgeUseCase: ReplyToNudgeUseCase,
+    sendNudgeThanksUseCase: SendNudgeThanksUseCase,
   ) {
     this.#getNudgeInteractionAvailabilityUseCase = getNudgeInteractionAvailabilityUseCase;
     this.#getNudgeInteractionsUseCase = getNudgeInteractionsUseCase;

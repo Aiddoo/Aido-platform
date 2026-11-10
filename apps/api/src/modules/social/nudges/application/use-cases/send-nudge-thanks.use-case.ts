@@ -37,7 +37,7 @@ interface SendNudgeThanksDependencies {
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
-export class SendNudgeThanks {
+export class SendNudgeThanksUseCase {
   readonly #dependencies: SendNudgeThanksDependencies;
 
   constructor(dependencies: SendNudgeThanksDependencies) {

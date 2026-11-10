@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetNudgeLimit } from "./get-nudge-limit.use-case.js";
+import { GetNudgeLimitUseCase } from "./get-nudge-limit.use-case.js";
 
 describe("콕 일일 한도 조회", () => {
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("콕 일일 한도 조회", () => {
     }
     fixture.nudgeRepository.seed({ senderId: "other", receiverId: "receiver", todoId: 1 });
     // When
-    const result = await new GetNudgeLimit(fixture).execute({
+    const result = await new GetNudgeLimitUseCase(fixture).execute({
       userId: "sender",
       timezone: "Asia/Seoul",
     });

@@ -3,11 +3,11 @@ import { mock } from "vitest-mock-extended";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { ExpireStaleRedemptions } from "./expire-stale-redemptions.use-case.js";
+import { ExpireStaleRedemptionsUseCase } from "./expire-stale-redemptions.use-case.js";
 
 function createMaintenance(isEnabled: boolean) {
   const scheduled: string[] = [];
-  const maintenance = new ExpireStaleRedemptions({
+  const maintenance = new ExpireStaleRedemptionsUseCase({
     inviteRedemptionRepository: { expireJoinedBefore: async () => 2 },
     rewardGrantRepository: { findRetryableSourceIds: async () => ["redemption-1"] },
     rewardScheduler: {

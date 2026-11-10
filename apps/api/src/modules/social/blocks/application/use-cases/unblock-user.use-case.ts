@@ -5,7 +5,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
-import { SocialBlockLogEvent } from "../blocks.log-events.js";
+import { BlockLogEvent } from "../blocks.log-events.js";
 import { type UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
 
 export interface UnblockUserInput {
@@ -21,7 +21,7 @@ interface UnblockUserDependencies {
 }
 
 /** 차단을 해제한다. 끊긴 친구 관계는 되살리지 않는다. 없던 차단을 해제해도 성공으로 본다. */
-export class UnblockUser {
+export class UnblockUserUseCase {
   readonly #dependencies: UnblockUserDependencies;
 
   constructor(dependencies: UnblockUserDependencies) {
@@ -39,7 +39,7 @@ export class UnblockUser {
 
     if (isUnblocked) {
       this.#dependencies.logger.log({
-        event: SocialBlockLogEvent.UNBLOCKED,
+        event: BlockLogEvent.UNBLOCKED,
         userId: blockerId,
         targetUserId: blockedId,
       });

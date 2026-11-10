@@ -17,7 +17,7 @@ interface PreviewInviteDependencies {
 }
 
 /** 로그인 전에도 누가 초대했는지만 보여 준다. */
-export class PreviewInvite {
+export class PreviewInviteUseCase {
   readonly #dependencies: PreviewInviteDependencies;
 
   constructor(dependencies: PreviewInviteDependencies) {

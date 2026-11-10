@@ -2,13 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { Invite } from "../../domain/invite.aggregate.js";
 import type { InviteWithInviter } from "../ports/invite.repository.port.js";
-import { PreviewInvite } from "./preview-invite.use-case.js";
+import { PreviewInviteUseCase } from "./preview-invite.use-case.js";
 
 const INVITER = { userId: "inviter-1", name: "매튜", userTag: "MATT2025", profileImage: null };
 
 function createPreview(found: InviteWithInviter | null, isEnabled = true) {
   const requestedCodes: string[] = [];
-  const useCase = new PreviewInvite({
+  const useCase = new PreviewInviteUseCase({
     inviteRepository: {
       findByCodeWithInviter: async (code) => {
         requestedCodes.push(code.value);

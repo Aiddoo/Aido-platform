@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { RejectFriendRequest } from "./reject-friend-request.use-case.js";
+import { RejectFriendRequestUseCase } from "./reject-friend-request.use-case.js";
 
 describe("친구 요청 거절", () => {
   beforeEach(() => {
@@ -24,7 +24,10 @@ describe("친구 요청 거절", () => {
       const before = structuredClone([...fixture.followRepository.follows.values()]);
       // When / Then
       await expect(
-        new RejectFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" }),
+        new RejectFriendRequestUseCase(fixture).execute({
+          userId: "me",
+          requesterUserId: "friend",
+        }),
       ).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
       expect([...fixture.followRepository.follows.values()]).toEqual(before);
     },
@@ -35,7 +38,10 @@ describe("친구 요청 거절", () => {
     const request = fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
     const other = fixture.followRepository.seed({ followerId: "other", followingId: "me" });
     // When
-    await new RejectFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" });
+    await new RejectFriendRequestUseCase(fixture).execute({
+      userId: "me",
+      requesterUserId: "friend",
+    });
     // Then
     expect(fixture.followRepository.follows.has(request.id)).toBe(false);
     expect(fixture.followRepository.follows.get(other.id)).toEqual(other);

@@ -9,9 +9,9 @@ import {
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { ExpireStaleRedemptions } from "../../application/use-cases/expire-stale-redemptions.use-case.js";
-import { ScheduleInviteQualifyReminders } from "../../application/use-cases/schedule-invite-qualify-reminders.use-case.js";
-import { SendInviteQualifyReminder } from "../../application/use-cases/send-invite-qualify-reminder.use-case.js";
+import { ExpireStaleRedemptionsUseCase } from "../../application/use-cases/expire-stale-redemptions.use-case.js";
+import { ScheduleInviteQualifyRemindersUseCase } from "../../application/use-cases/schedule-invite-qualify-reminders.use-case.js";
+import { SendInviteQualifyReminderUseCase } from "../../application/use-cases/send-invite-qualify-reminder.use-case.js";
 import {
   INVITE_MAINTENANCE_JOB_OPTIONS,
   INVITE_MAINTENANCE_QUEUE,
@@ -22,18 +22,18 @@ import {
 
 @Injectable()
 export class InviteMaintenanceProcessor implements OnModuleInit {
-  readonly #expireStaleRedemptions: Pick<ExpireStaleRedemptions, "execute">;
-  readonly #scheduleQualifyReminders: Pick<ScheduleInviteQualifyReminders, "execute">;
-  readonly #sendQualifyReminder: Pick<SendInviteQualifyReminder, "execute">;
+  readonly #expireStaleRedemptions: Pick<ExpireStaleRedemptionsUseCase, "execute">;
+  readonly #scheduleQualifyReminders: Pick<ScheduleInviteQualifyRemindersUseCase, "execute">;
+  readonly #sendQualifyReminder: Pick<SendInviteQualifyReminderUseCase, "execute">;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(ExpireStaleRedemptions)
-    expireStaleRedemptions: Pick<ExpireStaleRedemptions, "execute">,
-    @Inject(ScheduleInviteQualifyReminders)
-    scheduleQualifyReminders: Pick<ScheduleInviteQualifyReminders, "execute">,
-    @Inject(SendInviteQualifyReminder)
-    sendQualifyReminder: Pick<SendInviteQualifyReminder, "execute">,
+    @Inject(ExpireStaleRedemptionsUseCase)
+    expireStaleRedemptions: Pick<ExpireStaleRedemptionsUseCase, "execute">,
+    @Inject(ScheduleInviteQualifyRemindersUseCase)
+    scheduleQualifyReminders: Pick<ScheduleInviteQualifyRemindersUseCase, "execute">,
+    @Inject(SendInviteQualifyReminderUseCase)
+    sendQualifyReminder: Pick<SendInviteQualifyReminderUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#expireStaleRedemptions = expireStaleRedemptions;

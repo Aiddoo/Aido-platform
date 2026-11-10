@@ -34,13 +34,13 @@ import {
 } from "#api/platform/http/swagger/index";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import { GetCheerCooldown } from "../../../application/use-cases/get-cheer-cooldown.use-case.js";
-import { GetCheerLimit } from "../../../application/use-cases/get-cheer-limit.use-case.js";
-import { GetReceivedCheers } from "../../../application/use-cases/get-received-cheers.use-case.js";
-import { GetSentCheers } from "../../../application/use-cases/get-sent-cheers.use-case.js";
-import { MarkCheerRead } from "../../../application/use-cases/mark-cheer-read.use-case.js";
-import { MarkManyCheersRead } from "../../../application/use-cases/mark-many-cheers-read.use-case.js";
-import { SendCheer } from "../../../application/use-cases/send-cheer.use-case.js";
+import { GetCheerCooldownUseCase } from "../../../application/use-cases/get-cheer-cooldown.use-case.js";
+import { GetCheerLimitUseCase } from "../../../application/use-cases/get-cheer-limit.use-case.js";
+import { GetReceivedCheersUseCase } from "../../../application/use-cases/get-received-cheers.use-case.js";
+import { GetSentCheersUseCase } from "../../../application/use-cases/get-sent-cheers.use-case.js";
+import { MarkCheerReadUseCase } from "../../../application/use-cases/mark-cheer-read.use-case.js";
+import { MarkManyCheersReadUseCase } from "../../../application/use-cases/mark-many-cheers-read.use-case.js";
+import { SendCheerUseCase } from "../../../application/use-cases/send-cheer.use-case.js";
 import { CheerMapper } from "./cheer-response.mapper.js";
 import {
   CheerCooldownResponseDto,
@@ -59,22 +59,22 @@ import {
 @ApiBearerAuth()
 @Controller("cheers")
 export class CheerController {
-  readonly #getReceivedCheersUseCase: GetReceivedCheers;
-  readonly #getSentCheersUseCase: GetSentCheers;
-  readonly #getCheerLimitUseCase: GetCheerLimit;
-  readonly #getCheerCooldownUseCase: GetCheerCooldown;
-  readonly #sendCheerUseCase: SendCheer;
-  readonly #markCheerReadUseCase: MarkCheerRead;
-  readonly #markManyCheersReadUseCase: MarkManyCheersRead;
+  readonly #getReceivedCheersUseCase: GetReceivedCheersUseCase;
+  readonly #getSentCheersUseCase: GetSentCheersUseCase;
+  readonly #getCheerLimitUseCase: GetCheerLimitUseCase;
+  readonly #getCheerCooldownUseCase: GetCheerCooldownUseCase;
+  readonly #sendCheerUseCase: SendCheerUseCase;
+  readonly #markCheerReadUseCase: MarkCheerReadUseCase;
+  readonly #markManyCheersReadUseCase: MarkManyCheersReadUseCase;
 
   constructor(
-    getReceivedCheersUseCase: GetReceivedCheers,
-    getSentCheersUseCase: GetSentCheers,
-    getCheerLimitUseCase: GetCheerLimit,
-    getCheerCooldownUseCase: GetCheerCooldown,
-    sendCheerUseCase: SendCheer,
-    markCheerReadUseCase: MarkCheerRead,
-    markManyCheersReadUseCase: MarkManyCheersRead,
+    getReceivedCheersUseCase: GetReceivedCheersUseCase,
+    getSentCheersUseCase: GetSentCheersUseCase,
+    getCheerLimitUseCase: GetCheerLimitUseCase,
+    getCheerCooldownUseCase: GetCheerCooldownUseCase,
+    sendCheerUseCase: SendCheerUseCase,
+    markCheerReadUseCase: MarkCheerReadUseCase,
+    markManyCheersReadUseCase: MarkManyCheersReadUseCase,
   ) {
     this.#getReceivedCheersUseCase = getReceivedCheersUseCase;
     this.#getSentCheersUseCase = getSentCheersUseCase;

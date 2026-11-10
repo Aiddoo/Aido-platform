@@ -1,7 +1,7 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { SendFriendRequestByTag } from "./send-friend-request-by-tag.use-case.js";
-import { SendFriendRequest } from "./send-friend-request.use-case.js";
+import { SendFriendRequestByTagUseCase } from "./send-friend-request-by-tag.use-case.js";
+import { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
 
 describe("사용자 태그로 친구 요청", () => {
   beforeEach(() => {
@@ -21,9 +21,9 @@ describe("사용자 태그로 친구 요청", () => {
       // Given
       const fixture = createSocialFriendFixture();
       fixture.addUser("me");
-      const useCase = new SendFriendRequestByTag({
+      const useCase = new SendFriendRequestByTagUseCase({
         followRepository: fixture.followRepository,
-        sendFriendRequest: new SendFriendRequest(fixture),
+        sendFriendRequest: new SendFriendRequestUseCase(fixture),
       });
       // When / Then
       await expect(
@@ -37,9 +37,9 @@ describe("사용자 태그로 친구 요청", () => {
     const fixture = createSocialFriendFixture();
     fixture.addUser("me");
     const friend = fixture.addUser("friend");
-    const useCase = new SendFriendRequestByTag({
+    const useCase = new SendFriendRequestByTagUseCase({
       followRepository: fixture.followRepository,
-      sendFriendRequest: new SendFriendRequest(fixture),
+      sendFriendRequest: new SendFriendRequestUseCase(fixture),
     });
     // When
     const result = await useCase.execute({ userId: "me", targetUserTag: friend.userTag });

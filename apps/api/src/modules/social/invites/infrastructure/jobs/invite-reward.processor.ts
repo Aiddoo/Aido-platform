@@ -7,8 +7,8 @@ import {
 } from "#api/shared/application/ports/job-runtime.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { SocialInviteLogEvent } from "../../application/invites.log-events.js";
-import { GrantInviteRewards } from "../../application/use-cases/grant-invite-rewards.use-case.js";
+import { InviteLogEvent } from "../../application/invites.log-events.js";
+import { GrantInviteRewardsUseCase } from "../../application/use-cases/grant-invite-rewards.use-case.js";
 import {
   INVITE_REWARD_QUEUE,
   INVITE_REWARD_WORKER_OPTIONS,
@@ -19,12 +19,12 @@ import {
 export class InviteRewardProcessor implements OnModuleInit {
   readonly #logger = new Logger(InviteRewardProcessor.name);
 
-  readonly #grantInviteRewards: Pick<GrantInviteRewards, "execute">;
+  readonly #grantInviteRewards: Pick<GrantInviteRewardsUseCase, "execute">;
   readonly #runtime: JobRuntimePort;
 
   constructor(
-    @Inject(GrantInviteRewards)
-    grantInviteRewards: Pick<GrantInviteRewards, "execute">,
+    @Inject(GrantInviteRewardsUseCase)
+    grantInviteRewards: Pick<GrantInviteRewardsUseCase, "execute">,
     @Inject(JOB_RUNTIME) runtime: JobRuntimePort,
   ) {
     this.#grantInviteRewards = grantInviteRewards;
@@ -46,7 +46,7 @@ export class InviteRewardProcessor implements OnModuleInit {
       if (!parsed.success) {
         // 형식이 틀린 payload는 재시도해도 같으므로 버린다
         this.#logger.error({
-          event: SocialInviteLogEvent.REWARD_JOB_FAILED,
+          event: InviteLogEvent.REWARD_JOB_FAILED,
           jobId: job.id,
           reason: "invalid-payload",
         });
@@ -60,7 +60,7 @@ export class InviteRewardProcessor implements OnModuleInit {
         });
       } catch (error) {
         this.#logger.error({
-          event: SocialInviteLogEvent.REWARD_JOB_FAILED,
+          event: InviteLogEvent.REWARD_JOB_FAILED,
           jobId: job.id,
           attempt: job.attempt,
           redemptionId: parsed.data.redemptionId,

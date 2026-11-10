@@ -9,9 +9,11 @@ import {
   type InviteRedemptionProps,
 } from "../../domain/invite-redemption.aggregate.js";
 import type { InviteProgressNotification } from "../ports/invite-notifier.port.js";
-import { RecordInviteeActivity } from "./record-invitee-activity.use-case.js";
+import { RecordInviteeActivityUseCase } from "./record-invitee-activity.use-case.js";
 
-type RecordInviteeActivityDependencies = ConstructorParameters<typeof RecordInviteeActivity>[0];
+type RecordInviteeActivityDependencies = ConstructorParameters<
+  typeof RecordInviteeActivityUseCase
+>[0];
 
 // 2028-03-02 12:00 KST
 const FIRST_DAY = new Date("2028-03-02T03:00:00.000Z");
@@ -82,7 +84,7 @@ function createRecorder({
 } = {}) {
   const notified: InviteProgressNotification[] = [];
   const repository = new StubRedemptionRepository(props);
-  const recorder = new RecordInviteeActivity({
+  const recorder = new RecordInviteeActivityUseCase({
     inviteRedemptionRepository: {
       hasJoinedByInviteeId: () => repository.hasJoinedByInviteeId(),
       findByInviteeIdForUpdate: () => repository.findByInviteeIdForUpdate(),

@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetCheerLimit } from "./get-cheer-limit.use-case.js";
+import { GetCheerLimitUseCase } from "./get-cheer-limit.use-case.js";
 
 describe("응원 일일 한도 조회", () => {
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe("응원 일일 한도 조회", () => {
     }
     fixture.cheerRepository.seed({ senderId: "other", receiverId: "receiver" });
     // When
-    const result = await new GetCheerLimit(fixture).execute({
+    const result = await new GetCheerLimitUseCase(fixture).execute({
       userId: "sender",
       timezone: "Asia/Seoul",
     });

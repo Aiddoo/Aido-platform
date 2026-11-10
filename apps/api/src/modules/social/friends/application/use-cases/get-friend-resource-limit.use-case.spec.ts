@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { GetFriendResourceLimit } from "./get-friend-resource-limit.use-case.js";
+import { GetFriendResourceLimitUseCase } from "./get-friend-resource-limit.use-case.js";
 
 describe("친구 보유 한도 조회", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("친구 보유 한도 조회", () => {
     fixture.addMutual("me", "friend");
     fixture.database.users.set("me", { role: input.role, subscriptionStatus: "FREE" });
     // When
-    const result = await new GetFriendResourceLimit(fixture).execute({ userId: "me" });
+    const result = await new GetFriendResourceLimitUseCase(fixture).execute({ userId: "me" });
     // Then
     expect(result).toEqual({ friendCount: 1, maxCount: input.expected });
   });

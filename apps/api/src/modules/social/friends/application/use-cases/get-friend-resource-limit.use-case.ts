@@ -16,7 +16,7 @@ interface GetFriendResourceLimitDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
-export class GetFriendResourceLimit {
+export class GetFriendResourceLimitUseCase {
   readonly #dependencies: GetFriendResourceLimitDependencies;
 
   constructor(dependencies: GetFriendResourceLimitDependencies) {

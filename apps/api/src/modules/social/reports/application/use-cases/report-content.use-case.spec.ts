@@ -9,7 +9,7 @@ import {
   StubUserReportRepository,
 } from "#test/mocks/ports/social-reports.stub";
 
-import { ReportContent } from "./report-content.use-case.js";
+import { ReportContentUseCase } from "./report-content.use-case.js";
 
 const NOW = new Date("2026-10-26T09:00:00.000Z");
 const HOUR_MS = 60 * 60 * 1000;
@@ -26,7 +26,7 @@ function createFixture() {
     userReportRepository,
     notifier,
     logger,
-    useCase: new ReportContent({
+    useCase: new ReportContentUseCase({
       userReportRepository,
       notifier,
       unitOfWork,

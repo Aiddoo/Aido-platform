@@ -8,7 +8,7 @@ interface GetCheerCooldownDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "findLastCheerToUser">;
 }
 
-export class GetCheerCooldown {
+export class GetCheerCooldownUseCase {
   readonly #dependencies: GetCheerCooldownDependencies;
 
   constructor(dependencies: GetCheerCooldownDependencies) {

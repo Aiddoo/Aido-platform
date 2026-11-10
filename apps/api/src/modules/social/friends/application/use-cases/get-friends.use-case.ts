@@ -22,7 +22,7 @@ interface GetFriendsDependencies {
   readonly reader: Pick<FollowReader, "countFriends">;
 }
 
-export class GetFriends {
+export class GetFriendsUseCase {
   readonly #dependencies: GetFriendsDependencies;
 
   constructor(dependencies: GetFriendsDependencies) {

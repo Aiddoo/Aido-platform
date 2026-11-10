@@ -9,7 +9,7 @@ import {
   type InviteRedemptionProps,
 } from "../../domain/invite-redemption.aggregate.js";
 import type { InviteQualifyReminderNotification } from "../ports/invite-notifier.port.js";
-import { SendInviteQualifyReminder } from "./send-invite-qualify-reminder.use-case.js";
+import { SendInviteQualifyReminderUseCase } from "./send-invite-qualify-reminder.use-case.js";
 
 // 2028-03-02 18:00 KST
 const NOW = new Date("2028-03-02T09:00:00.000Z");
@@ -51,7 +51,7 @@ function createSender({
 } = {}) {
   let stored = props;
   const notified: InviteQualifyReminderNotification[] = [];
-  const sender = new SendInviteQualifyReminder({
+  const sender = new SendInviteQualifyReminderUseCase({
     inviteRedemptionRepository: {
       findByIdForUpdate: async () =>
         stored == null ? null : InviteRedemption.reconstitute(stored),

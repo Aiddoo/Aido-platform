@@ -18,7 +18,7 @@ import {
 } from "#api/platform/http/swagger/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import { ResolveUserReport } from "../../../application/use-cases/resolve-user-report.use-case.js";
+import { ResolveUserReportUseCase } from "../../../application/use-cases/resolve-user-report.use-case.js";
 import { RESOLVE_USER_REPORT_OPERATION_ID } from "./admin-user-report.constants.js";
 import {
   ResolveUserReportDto,
@@ -30,9 +30,9 @@ import {
 @ApiBearerAuth()
 @Controller("admin/reports")
 export class AdminUserReportController {
-  readonly #resolveUserReportUseCase: ResolveUserReport;
+  readonly #resolveUserReportUseCase: ResolveUserReportUseCase;
 
-  constructor(resolveUserReportUseCase: ResolveUserReport) {
+  constructor(resolveUserReportUseCase: ResolveUserReportUseCase) {
     this.#resolveUserReportUseCase = resolveUserReportUseCase;
   }
 

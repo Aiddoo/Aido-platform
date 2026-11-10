@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetNudgeCooldown } from "./get-nudge-cooldown.use-case.js";
+import { GetNudgeCooldownUseCase } from "./get-nudge-cooldown.use-case.js";
 
 describe("GetNudgeCooldown 대상별 쿨다운 조회", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("GetNudgeCooldown 대상별 쿨다운 조회", () => {
       todoId: 1,
     });
     // When
-    const result = await new GetNudgeCooldown(fixture).execute({
+    const result = await new GetNudgeCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });
@@ -45,7 +45,7 @@ describe("GetNudgeCooldown 대상별 쿨다운 조회", () => {
       todoId: 1,
     });
     // When
-    const result = await new GetNudgeCooldown(fixture).execute({
+    const result = await new GetNudgeCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });

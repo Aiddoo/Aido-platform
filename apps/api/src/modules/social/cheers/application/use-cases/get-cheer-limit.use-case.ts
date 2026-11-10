@@ -13,7 +13,7 @@ interface GetCheerLimitDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
-export class GetCheerLimit {
+export class GetCheerLimitUseCase {
   readonly #dependencies: GetCheerLimitDependencies;
 
   constructor(dependencies: GetCheerLimitDependencies) {

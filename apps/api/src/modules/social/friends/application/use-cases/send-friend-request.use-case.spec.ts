@@ -2,7 +2,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { SendFriendRequest } from "./send-friend-request.use-case.js";
+import { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
 
 describe("친구 요청 보내기", () => {
   beforeEach(() => {
@@ -38,7 +38,10 @@ describe("친구 요청 보내기", () => {
     const before = structuredClone([...fixture.followRepository.follows.values()]);
     // When / Then
     await expect(
-      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: input.targetUserId }),
+      new SendFriendRequestUseCase(fixture).execute({
+        userId: "me",
+        targetUserId: input.targetUserId,
+      }),
     ).rejects.toMatchObject({ errorCode: input.code });
     expect([...fixture.followRepository.follows.values()]).toEqual(before);
     expect(fixture.notifier.newRequests).toEqual([]);
@@ -52,7 +55,7 @@ describe("친구 요청 보내기", () => {
     fixture.userBlockRepository.seed("me", "blocked");
     // When / Then
     await expect(
-      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "blocked" }),
+      new SendFriendRequestUseCase(fixture).execute({ userId: "me", targetUserId: "blocked" }),
     ).rejects.toMatchObject({ errorCode: "BLOCK_2203" });
     expect(fixture.followRepository.follows.size).toBe(0);
     expect(fixture.notifier.newRequests).toEqual([]);
@@ -66,7 +69,7 @@ describe("친구 요청 보내기", () => {
     fixture.userBlockRepository.seed("blocker", "me");
     // When / Then
     await expect(
-      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "blocker" }),
+      new SendFriendRequestUseCase(fixture).execute({ userId: "me", targetUserId: "blocker" }),
     ).rejects.toMatchObject({ errorCode: "FOLLOW_0905" });
     expect(fixture.followRepository.follows.size).toBe(0);
     expect(fixture.notifier.newRequests).toEqual([]);
@@ -84,7 +87,7 @@ describe("친구 요청 보내기", () => {
     const before = structuredClone([...fixture.followRepository.follows.values()]);
     // When / Then
     await expect(
-      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "missing" }),
+      new SendFriendRequestUseCase(fixture).execute({ userId: "me", targetUserId: "missing" }),
     ).rejects.toMatchObject({
       errorCode: "FOLLOW_0909",
       details: {
@@ -110,7 +113,7 @@ describe("친구 요청 보내기", () => {
     const sender = fixture.addUser("me", null);
     fixture.addUser("friend");
     // When
-    const result = await new SendFriendRequest(fixture).execute({
+    const result = await new SendFriendRequestUseCase(fixture).execute({
       userId: "me",
       targetUserId: "friend",
     });
@@ -136,7 +139,7 @@ describe("친구 요청 보내기", () => {
     await fixture.reader.countFriends("me");
     await fixture.reader.getMutualFriendIds("me");
     // When
-    const result = await new SendFriendRequest(fixture).execute({
+    const result = await new SendFriendRequestUseCase(fixture).execute({
       userId: "me",
       targetUserId: "friend",
     });

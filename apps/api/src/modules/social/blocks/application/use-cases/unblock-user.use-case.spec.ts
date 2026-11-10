@@ -1,6 +1,6 @@
 import { createSocialFriendFixture } from "#test/fixtures/social-friends.fixture";
 
-import { UnblockUser } from "./unblock-user.use-case.js";
+import { UnblockUserUseCase } from "./unblock-user.use-case.js";
 
 describe("차단 해제", () => {
   it("차단을 해제해도 끊긴 친구 관계는 되살리지 않는다", async () => {
@@ -11,7 +11,7 @@ describe("차단 해제", () => {
     fixture.userBlockRepository.seed("me", "blocked");
 
     // When
-    await new UnblockUser(fixture).execute({ blockerId: "me", blockedId: "blocked" });
+    await new UnblockUserUseCase(fixture).execute({ blockerId: "me", blockedId: "blocked" });
 
     // Then
     expect(fixture.userBlockRepository.blocks.size).toBe(0);
@@ -27,7 +27,7 @@ describe("차단 해제", () => {
     const log = vi.spyOn(fixture.logger, "log");
 
     // When
-    await new UnblockUser(fixture).execute({ blockerId: "me", blockedId: "blocker" });
+    await new UnblockUserUseCase(fixture).execute({ blockerId: "me", blockedId: "blocker" });
 
     // Then
     expect(fixture.userBlockRepository.blocks.size).toBe(1);

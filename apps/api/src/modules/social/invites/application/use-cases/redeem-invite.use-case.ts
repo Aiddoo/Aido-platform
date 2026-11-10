@@ -36,7 +36,7 @@ import { InviteRewardPolicy } from "../../domain/invite-reward.domain-service.js
 import type { Invite } from "../../domain/invite.aggregate.js";
 import { rewardGrantSourceKey } from "../../domain/reward-grant.constants.js";
 import { assertInviteEnabled } from "../invites.errors.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { ClaimHasherPort } from "../ports/claim-hasher.port.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
@@ -105,7 +105,7 @@ interface RedeemInviteDependencies {
 }
 
 /** 초대를 수락해 친구를 맺고, 새로 가입한 사람이면 보상 지급을 남긴다. */
-export class RedeemInvite {
+export class RedeemInviteUseCase {
   readonly #dependencies: RedeemInviteDependencies;
 
   constructor(dependencies: RedeemInviteDependencies) {
@@ -159,7 +159,7 @@ export class RedeemInvite {
 
     await this.#notifyJoined(result, identity);
     this.#dependencies.logger.log({
-      event: SocialInviteLogEvent.REDEEMED,
+      event: InviteLogEvent.REDEEMED,
       inviteeId: input.inviteeId,
       inviterId: result.inviter.userId,
       outcome: result.outcome,
@@ -411,7 +411,7 @@ export class RedeemInvite {
     } catch (error) {
       // 친구 맺기와 보상 기록은 이미 커밋됐으므로 알림 실패로 요청을 실패시키지 않는다
       this.#dependencies.logger.warn({
-        event: SocialInviteLogEvent.JOINED_NOTIFICATION_FAILED,
+        event: InviteLogEvent.JOINED_NOTIFICATION_FAILED,
         redemptionId: result.redemptionId,
         errorType: toErrorType(error),
       });

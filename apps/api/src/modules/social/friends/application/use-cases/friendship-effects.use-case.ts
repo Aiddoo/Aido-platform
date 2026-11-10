@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import {
   type FriendshipCacheInvalidator,
   invalidateFriendshipCaches,
@@ -48,7 +48,7 @@ export class FriendshipEffects {
       }
     } catch (error) {
       this.#dependencies.logger.error({
-        event: SocialFriendLogEvent.MILESTONE_CHECK_FAILED,
+        event: FriendLogEvent.MILESTONE_CHECK_FAILED,
         userId,
         errorType: toErrorType(error),
       });

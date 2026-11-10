@@ -14,7 +14,7 @@ import {
   invalidateFriendshipCaches,
 } from "../../../friends/application/ports/follow-cache.port.js";
 import { UserBlock, type UserBlockCreationPlan } from "../../domain/user-block.aggregate.js";
-import { SocialBlockLogEvent } from "../blocks.log-events.js";
+import { BlockLogEvent } from "../blocks.log-events.js";
 import { type UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
 
 export interface BlockUserInput {
@@ -39,7 +39,7 @@ interface BlockUserDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class BlockUser {
+export class BlockUserUseCase {
   readonly #dependencies: BlockUserDependencies;
 
   constructor(dependencies: BlockUserDependencies) {
@@ -60,7 +60,7 @@ export class BlockUser {
     }
     if (result.isNewlyBlocked) {
       this.#dependencies.logger.log({
-        event: SocialBlockLogEvent.BLOCKED,
+        event: BlockLogEvent.BLOCKED,
         userId: input.blockerId,
         targetUserId: input.blockedId,
         removedFriendshipCount: result.removedFriendshipCount,

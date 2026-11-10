@@ -8,7 +8,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
-import { SocialFriendLogEvent } from "../friends.log-events.js";
+import { FriendLogEvent } from "../friends.log-events.js";
 import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
 import type { FriendshipEffects } from "./friendship-effects.use-case.js";
 
@@ -25,7 +25,7 @@ interface RemoveFriendDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class RemoveFriend {
+export class RemoveFriendUseCase {
   readonly #dependencies: RemoveFriendDependencies;
 
   constructor(dependencies: RemoveFriendDependencies) {
@@ -62,6 +62,6 @@ export class RemoveFriend {
 
     await this.#dependencies.effects.invalidateFriendshipCaches(userId, targetUserId);
 
-    this.#dependencies.logger.log({ event: SocialFriendLogEvent.REMOVED, userId, targetUserId });
+    this.#dependencies.logger.log({ event: FriendLogEvent.REMOVED, userId, targetUserId });
   }
 }

@@ -7,9 +7,9 @@ import {
 } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { INVITE_CONFIG } from "#api/modules/social/invites/application/ports/invite-config.port";
-import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
-import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
-import { RotateInviteCode } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
+import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
+import { RotateInviteCodeUseCase } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   follow,
@@ -34,8 +34,8 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let redeemInvite: RedeemInvite;
-  let getMyInvite: GetMyInvite;
+  let redeemInvite: RedeemInviteUseCase;
+  let getMyInvite: GetMyInviteUseCase;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 10 }) });
@@ -45,8 +45,8 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
       customizeBuilder: (builder) =>
         builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
     });
-    redeemInvite = context.module.get(RedeemInvite);
-    getMyInvite = context.module.get(GetMyInvite);
+    redeemInvite = context.module.get(RedeemInviteUseCase);
+    getMyInvite = context.module.get(GetMyInviteUseCase);
   });
 
   beforeEach(async () => {
@@ -196,7 +196,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
         installationId: "rotate-device",
         timezone: "Asia/Seoul",
       }),
-      context.module.get(RotateInviteCode).execute({ inviterId }),
+      context.module.get(RotateInviteCodeUseCase).execute({ inviterId }),
     ]);
 
     // Then

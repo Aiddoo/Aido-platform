@@ -5,7 +5,7 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
-import { SocialInviteLogEvent } from "../../application/invites.log-events.js";
+import { InviteLogEvent } from "../../application/invites.log-events.js";
 import {
   INVITE_MAINTENANCE_JOB_NAME,
   INVITE_MAINTENANCE_JOB_OPTIONS,
@@ -38,7 +38,7 @@ export class InviteMaintenanceJob implements OnModuleInit {
           { name: INVITE_MAINTENANCE_JOB_NAME, data: {} },
           INVITE_MAINTENANCE_JOB_OPTIONS,
         );
-        this.#logger.log({ event: SocialInviteLogEvent.MAINTENANCE_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: InviteLogEvent.MAINTENANCE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
     );
@@ -61,6 +61,6 @@ export class InviteMaintenanceJob implements OnModuleInit {
         idempotencyKey: InviteMaintenanceJobKey.catchUp(localDate),
       },
     );
-    this.#logger.log({ event: SocialInviteLogEvent.MAINTENANCE_CATCH_UP_DISPATCHED, localDate });
+    this.#logger.log({ event: InviteLogEvent.MAINTENANCE_CATCH_UP_DISPATCHED, localDate });
   }
 }

@@ -1,4 +1,4 @@
-export const SocialReportLogEvent = {
+export const UserReportLogEvent = {
   SUBMITTED: "social.report.submitted",
   DUPLICATE_IGNORED: "social.report.duplicate.ignored",
   OPERATOR_NOTIFY_FAILED: "social.report.operator-notify.failed",

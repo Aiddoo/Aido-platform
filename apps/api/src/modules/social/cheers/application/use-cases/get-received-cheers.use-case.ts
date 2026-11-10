@@ -17,7 +17,7 @@ interface GetReceivedCheersDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class GetReceivedCheers {
+export class GetReceivedCheersUseCase {
   readonly #dependencies: GetReceivedCheersDependencies;
 
   constructor(dependencies: GetReceivedCheersDependencies) {

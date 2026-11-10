@@ -7,7 +7,7 @@ import {
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { assertInviteEnabled } from "../invites.errors.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { MyInviteReader } from "../my-invite.reader.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
@@ -27,7 +27,7 @@ interface GetMyInviteDependencies {
 }
 
 /** 처음 조회할 때 초대 코드를 발급하고 내 초대 요약을 반환한다. */
-export class GetMyInvite {
+export class GetMyInviteUseCase {
   readonly #dependencies: GetMyInviteDependencies;
 
   constructor(dependencies: GetMyInviteDependencies) {
@@ -56,7 +56,7 @@ export class GetMyInvite {
 
       const invite = await this.#dependencies.inviteRepository.issue({ inviterId, issuedAt });
       this.#dependencies.logger.log({
-        event: SocialInviteLogEvent.ISSUED,
+        event: InviteLogEvent.ISSUED,
         inviterId,
         inviteId: invite.id,
       });

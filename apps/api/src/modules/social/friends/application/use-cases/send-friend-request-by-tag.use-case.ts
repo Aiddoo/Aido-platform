@@ -4,7 +4,7 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import { UserTag } from "../../domain/user-tag.vo.js";
 import { type FollowRepositoryPort } from "../ports/follow.repository.port.js";
-import type { SendFriendRequest } from "./send-friend-request.use-case.js";
+import type { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
 import { type SendFriendRequestResult } from "./send-friend-request.use-case.js";
 
 export interface SendFriendRequestByTagInput {
@@ -14,10 +14,10 @@ export interface SendFriendRequestByTagInput {
 
 interface SendFriendRequestByTagDependencies {
   readonly followRepository: Pick<FollowRepositoryPort, "findUserByTag">;
-  readonly sendFriendRequest: Pick<SendFriendRequest, "execute">;
+  readonly sendFriendRequest: Pick<SendFriendRequestUseCase, "execute">;
 }
 
-export class SendFriendRequestByTag {
+export class SendFriendRequestByTagUseCase {
   readonly #dependencies: SendFriendRequestByTagDependencies;
 
   constructor(dependencies: SendFriendRequestByTagDependencies) {

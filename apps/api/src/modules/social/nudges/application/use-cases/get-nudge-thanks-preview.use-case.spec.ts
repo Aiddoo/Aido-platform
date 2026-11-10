@@ -1,6 +1,6 @@
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetNudgeThanksPreview } from "./get-nudge-thanks-preview.use-case.js";
+import { GetNudgeThanksPreviewUseCase } from "./get-nudge-thanks-preview.use-case.js";
 
 const FIRST_THANKED_AT = new Date("2026-07-26T01:00:00.000Z");
 const LAST_THANKED_AT = new Date("2026-07-26T03:12:00.000Z");
@@ -33,7 +33,7 @@ describe("감사 미리보기", () => {
       todoId: todo.id,
     });
     // When
-    const preview = await new GetNudgeThanksPreview(fixture).execute({
+    const preview = await new GetNudgeThanksPreviewUseCase(fixture).execute({
       userId: "receiver",
       todoId: todo.id,
       limit: 20,
@@ -51,7 +51,7 @@ describe("감사 미리보기", () => {
     const fixture = createSocialInteractionFixture();
     const todo = fixture.addTodo({ completed: true });
     // When
-    const preview = await new GetNudgeThanksPreview(fixture).execute({
+    const preview = await new GetNudgeThanksPreviewUseCase(fixture).execute({
       userId: "receiver",
       todoId: todo.id,
       limit: 20,

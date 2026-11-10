@@ -23,17 +23,17 @@ import { INVITE_REPOSITORY } from "./application/ports/invite.repository.port.js
 import { REWARD_APPLIERS } from "./application/ports/reward-applier.port.js";
 import { REWARD_CLAIM_REPOSITORY } from "./application/ports/reward-claim.repository.port.js";
 import { REWARD_GRANT_REPOSITORY } from "./application/ports/reward-grant.repository.port.js";
-import { ExpireStaleRedemptions } from "./application/use-cases/expire-stale-redemptions.use-case.js";
-import { GetInviteAvailability } from "./application/use-cases/get-invite-availability.use-case.js";
-import { GetInvitedFriends } from "./application/use-cases/get-invited-friends.use-case.js";
-import { GetMyInvite } from "./application/use-cases/get-my-invite.use-case.js";
-import { GrantInviteRewards } from "./application/use-cases/grant-invite-rewards.use-case.js";
-import { PreviewInvite } from "./application/use-cases/preview-invite.use-case.js";
-import { RecordInviteeActivity } from "./application/use-cases/record-invitee-activity.use-case.js";
-import { RedeemInvite } from "./application/use-cases/redeem-invite.use-case.js";
-import { RotateInviteCode } from "./application/use-cases/rotate-invite-code.use-case.js";
-import { ScheduleInviteQualifyReminders } from "./application/use-cases/schedule-invite-qualify-reminders.use-case.js";
-import { SendInviteQualifyReminder } from "./application/use-cases/send-invite-qualify-reminder.use-case.js";
+import { ExpireStaleRedemptionsUseCase } from "./application/use-cases/expire-stale-redemptions.use-case.js";
+import { GetInviteAvailabilityUseCase } from "./application/use-cases/get-invite-availability.use-case.js";
+import { GetInvitedFriendsUseCase } from "./application/use-cases/get-invited-friends.use-case.js";
+import { GetMyInviteUseCase } from "./application/use-cases/get-my-invite.use-case.js";
+import { GrantInviteRewardsUseCase } from "./application/use-cases/grant-invite-rewards.use-case.js";
+import { PreviewInviteUseCase } from "./application/use-cases/preview-invite.use-case.js";
+import { RecordInviteeActivityUseCase } from "./application/use-cases/record-invitee-activity.use-case.js";
+import { RedeemInviteUseCase } from "./application/use-cases/redeem-invite.use-case.js";
+import { RotateInviteCodeUseCase } from "./application/use-cases/rotate-invite-code.use-case.js";
+import { ScheduleInviteQualifyRemindersUseCase } from "./application/use-cases/schedule-invite-qualify-reminders.use-case.js";
+import { SendInviteQualifyReminderUseCase } from "./application/use-cases/send-invite-qualify-reminder.use-case.js";
 
 export const myInviteReaderProvider: FactoryProvider<MyInviteReader> = {
   provide: MyInviteReader,
@@ -46,76 +46,76 @@ export const myInviteReaderProvider: FactoryProvider<MyInviteReader> = {
   ) => new MyInviteReader({ inviteRedemptionRepository, rewardGrantRepository }),
 };
 
-export const getInviteAvailabilityProvider: FactoryProvider<GetInviteAvailability> = {
-  provide: GetInviteAvailability,
+export const getInviteAvailabilityProvider: FactoryProvider<GetInviteAvailabilityUseCase> = {
+  provide: GetInviteAvailabilityUseCase,
   inject: [INVITE_CONFIG],
   useFactory: (
-    inviteConfig: ConstructorParameters<typeof GetInviteAvailability>[0]["inviteConfig"],
-  ) => new GetInviteAvailability({ inviteConfig }),
+    inviteConfig: ConstructorParameters<typeof GetInviteAvailabilityUseCase>[0]["inviteConfig"],
+  ) => new GetInviteAvailabilityUseCase({ inviteConfig }),
 };
 
-export const getMyInviteProvider: FactoryProvider<GetMyInvite> = {
-  provide: GetMyInvite,
+export const getMyInviteProvider: FactoryProvider<GetMyInviteUseCase> = {
+  provide: GetMyInviteUseCase,
   inject: [INVITE_REPOSITORY, MyInviteReader, INVITE_CONFIG, MUTATION_LOCK, UNIT_OF_WORK],
   useFactory: (
-    inviteRepository: ConstructorParameters<typeof GetMyInvite>[0]["inviteRepository"],
-    myInviteReader: ConstructorParameters<typeof GetMyInvite>[0]["myInviteReader"],
-    inviteConfig: ConstructorParameters<typeof GetMyInvite>[0]["inviteConfig"],
-    mutationLock: ConstructorParameters<typeof GetMyInvite>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof GetMyInvite>[0]["unitOfWork"],
+    inviteRepository: ConstructorParameters<typeof GetMyInviteUseCase>[0]["inviteRepository"],
+    myInviteReader: ConstructorParameters<typeof GetMyInviteUseCase>[0]["myInviteReader"],
+    inviteConfig: ConstructorParameters<typeof GetMyInviteUseCase>[0]["inviteConfig"],
+    mutationLock: ConstructorParameters<typeof GetMyInviteUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof GetMyInviteUseCase>[0]["unitOfWork"],
   ) =>
-    new GetMyInvite({
+    new GetMyInviteUseCase({
       inviteRepository,
       myInviteReader,
       inviteConfig,
       mutationLock,
       unitOfWork,
-      logger: new Logger(GetMyInvite.name),
+      logger: new Logger(GetMyInviteUseCase.name),
     }),
 };
 
-export const rotateInviteCodeProvider: FactoryProvider<RotateInviteCode> = {
-  provide: RotateInviteCode,
+export const rotateInviteCodeProvider: FactoryProvider<RotateInviteCodeUseCase> = {
+  provide: RotateInviteCodeUseCase,
   inject: [INVITE_REPOSITORY, MyInviteReader, INVITE_CONFIG, MUTATION_LOCK, UNIT_OF_WORK],
   useFactory: (
-    inviteRepository: ConstructorParameters<typeof RotateInviteCode>[0]["inviteRepository"],
-    myInviteReader: ConstructorParameters<typeof RotateInviteCode>[0]["myInviteReader"],
-    inviteConfig: ConstructorParameters<typeof RotateInviteCode>[0]["inviteConfig"],
-    mutationLock: ConstructorParameters<typeof RotateInviteCode>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof RotateInviteCode>[0]["unitOfWork"],
+    inviteRepository: ConstructorParameters<typeof RotateInviteCodeUseCase>[0]["inviteRepository"],
+    myInviteReader: ConstructorParameters<typeof RotateInviteCodeUseCase>[0]["myInviteReader"],
+    inviteConfig: ConstructorParameters<typeof RotateInviteCodeUseCase>[0]["inviteConfig"],
+    mutationLock: ConstructorParameters<typeof RotateInviteCodeUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof RotateInviteCodeUseCase>[0]["unitOfWork"],
   ) =>
-    new RotateInviteCode({
+    new RotateInviteCodeUseCase({
       inviteRepository,
       myInviteReader,
       inviteConfig,
       mutationLock,
       unitOfWork,
-      logger: new Logger(RotateInviteCode.name),
+      logger: new Logger(RotateInviteCodeUseCase.name),
     }),
 };
 
-export const previewInviteProvider: FactoryProvider<PreviewInvite> = {
-  provide: PreviewInvite,
+export const previewInviteProvider: FactoryProvider<PreviewInviteUseCase> = {
+  provide: PreviewInviteUseCase,
   inject: [INVITE_REPOSITORY, INVITE_CONFIG],
   useFactory: (
-    inviteRepository: ConstructorParameters<typeof PreviewInvite>[0]["inviteRepository"],
-    inviteConfig: ConstructorParameters<typeof PreviewInvite>[0]["inviteConfig"],
-  ) => new PreviewInvite({ inviteRepository, inviteConfig }),
+    inviteRepository: ConstructorParameters<typeof PreviewInviteUseCase>[0]["inviteRepository"],
+    inviteConfig: ConstructorParameters<typeof PreviewInviteUseCase>[0]["inviteConfig"],
+  ) => new PreviewInviteUseCase({ inviteRepository, inviteConfig }),
 };
 
-export const getInvitedFriendsProvider: FactoryProvider<GetInvitedFriends> = {
-  provide: GetInvitedFriends,
+export const getInvitedFriendsProvider: FactoryProvider<GetInvitedFriendsUseCase> = {
+  provide: GetInvitedFriendsUseCase,
   inject: [INVITE_REDEMPTION_REPOSITORY, INVITE_CONFIG],
   useFactory: (
     inviteRedemptionRepository: ConstructorParameters<
-      typeof GetInvitedFriends
+      typeof GetInvitedFriendsUseCase
     >[0]["inviteRedemptionRepository"],
-    inviteConfig: ConstructorParameters<typeof GetInvitedFriends>[0]["inviteConfig"],
-  ) => new GetInvitedFriends({ inviteRedemptionRepository, inviteConfig }),
+    inviteConfig: ConstructorParameters<typeof GetInvitedFriendsUseCase>[0]["inviteConfig"],
+  ) => new GetInvitedFriendsUseCase({ inviteRedemptionRepository, inviteConfig }),
 };
 
-export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
-  provide: RedeemInvite,
+export const redeemInviteProvider: FactoryProvider<RedeemInviteUseCase> = {
+  provide: RedeemInviteUseCase,
   inject: [
     INVITE_REPOSITORY,
     INVITE_REDEMPTION_REPOSITORY,
@@ -133,24 +133,30 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     PREMIUM_GRANTER,
   ],
   useFactory: (
-    inviteRepository: ConstructorParameters<typeof RedeemInvite>[0]["inviteRepository"],
+    inviteRepository: ConstructorParameters<typeof RedeemInviteUseCase>[0]["inviteRepository"],
     inviteRedemptionRepository: ConstructorParameters<
-      typeof RedeemInvite
+      typeof RedeemInviteUseCase
     >[0]["inviteRedemptionRepository"],
-    rewardClaimRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardClaimRepository"],
-    rewardGrantRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardGrantRepository"],
-    followReader: ConstructorParameters<typeof RedeemInvite>[0]["followReader"],
-    blockReader: ConstructorParameters<typeof RedeemInvite>[0]["blockReader"],
-    friendshipEstablisher: ConstructorParameters<typeof RedeemInvite>[0]["friendshipEstablisher"],
-    claimHasher: ConstructorParameters<typeof RedeemInvite>[0]["claimHasher"],
-    notifier: ConstructorParameters<typeof RedeemInvite>[0]["notifier"],
-    rewardScheduler: ConstructorParameters<typeof RedeemInvite>[0]["rewardScheduler"],
-    inviteConfig: ConstructorParameters<typeof RedeemInvite>[0]["inviteConfig"],
-    mutationLock: ConstructorParameters<typeof RedeemInvite>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof RedeemInvite>[0]["unitOfWork"],
-    premiumGranter: ConstructorParameters<typeof RedeemInvite>[0]["premiumGranter"],
+    rewardClaimRepository: ConstructorParameters<
+      typeof RedeemInviteUseCase
+    >[0]["rewardClaimRepository"],
+    rewardGrantRepository: ConstructorParameters<
+      typeof RedeemInviteUseCase
+    >[0]["rewardGrantRepository"],
+    followReader: ConstructorParameters<typeof RedeemInviteUseCase>[0]["followReader"],
+    blockReader: ConstructorParameters<typeof RedeemInviteUseCase>[0]["blockReader"],
+    friendshipEstablisher: ConstructorParameters<
+      typeof RedeemInviteUseCase
+    >[0]["friendshipEstablisher"],
+    claimHasher: ConstructorParameters<typeof RedeemInviteUseCase>[0]["claimHasher"],
+    notifier: ConstructorParameters<typeof RedeemInviteUseCase>[0]["notifier"],
+    rewardScheduler: ConstructorParameters<typeof RedeemInviteUseCase>[0]["rewardScheduler"],
+    inviteConfig: ConstructorParameters<typeof RedeemInviteUseCase>[0]["inviteConfig"],
+    mutationLock: ConstructorParameters<typeof RedeemInviteUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof RedeemInviteUseCase>[0]["unitOfWork"],
+    premiumGranter: ConstructorParameters<typeof RedeemInviteUseCase>[0]["premiumGranter"],
   ) =>
-    new RedeemInvite({
+    new RedeemInviteUseCase({
       inviteRepository,
       inviteRedemptionRepository,
       rewardClaimRepository,
@@ -165,12 +171,12 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
       mutationLock,
       unitOfWork,
       premiumGranter,
-      logger: new Logger(RedeemInvite.name),
+      logger: new Logger(RedeemInviteUseCase.name),
     }),
 };
 
-export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivity> = {
-  provide: RecordInviteeActivity,
+export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivityUseCase> = {
+  provide: RecordInviteeActivityUseCase,
   inject: [
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
@@ -184,20 +190,22 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
   ],
   useFactory: (
     inviteRedemptionRepository: ConstructorParameters<
-      typeof RecordInviteeActivity
+      typeof RecordInviteeActivityUseCase
     >[0]["inviteRedemptionRepository"],
     rewardGrantRepository: ConstructorParameters<
-      typeof RecordInviteeActivity
+      typeof RecordInviteeActivityUseCase
     >[0]["rewardGrantRepository"],
-    rewardScheduler: ConstructorParameters<typeof RecordInviteeActivity>[0]["rewardScheduler"],
-    notifier: ConstructorParameters<typeof RecordInviteeActivity>[0]["notifier"],
-    followReader: ConstructorParameters<typeof RecordInviteeActivity>[0]["followReader"],
-    blockReader: ConstructorParameters<typeof RecordInviteeActivity>[0]["blockReader"],
-    inviteConfig: ConstructorParameters<typeof RecordInviteeActivity>[0]["inviteConfig"],
-    mutationLock: ConstructorParameters<typeof RecordInviteeActivity>[0]["mutationLock"],
-    unitOfWork: ConstructorParameters<typeof RecordInviteeActivity>[0]["unitOfWork"],
+    rewardScheduler: ConstructorParameters<
+      typeof RecordInviteeActivityUseCase
+    >[0]["rewardScheduler"],
+    notifier: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["notifier"],
+    followReader: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["followReader"],
+    blockReader: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["blockReader"],
+    inviteConfig: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["inviteConfig"],
+    mutationLock: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof RecordInviteeActivityUseCase>[0]["unitOfWork"],
   ) =>
-    new RecordInviteeActivity({
+    new RecordInviteeActivityUseCase({
       inviteRedemptionRepository,
       rewardGrantRepository,
       rewardScheduler,
@@ -207,12 +215,12 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
       inviteConfig,
       mutationLock,
       unitOfWork,
-      logger: new Logger(RecordInviteeActivity.name),
+      logger: new Logger(RecordInviteeActivityUseCase.name),
     }),
 };
 
-export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
-  provide: GrantInviteRewards,
+export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewardsUseCase> = {
+  provide: GrantInviteRewardsUseCase,
   inject: [
     REWARD_GRANT_REPOSITORY,
     INVITE_REDEMPTION_REPOSITORY,
@@ -224,18 +232,18 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
   ],
   useFactory: (
     rewardGrantRepository: ConstructorParameters<
-      typeof GrantInviteRewards
+      typeof GrantInviteRewardsUseCase
     >[0]["rewardGrantRepository"],
     inviteRedemptionRepository: ConstructorParameters<
-      typeof GrantInviteRewards
+      typeof GrantInviteRewardsUseCase
     >[0]["inviteRedemptionRepository"],
-    rewardAppliers: ConstructorParameters<typeof GrantInviteRewards>[0]["rewardAppliers"],
-    notifier: ConstructorParameters<typeof GrantInviteRewards>[0]["notifier"],
-    alert: ConstructorParameters<typeof GrantInviteRewards>[0]["alert"],
-    inviteConfig: ConstructorParameters<typeof GrantInviteRewards>[0]["inviteConfig"],
-    unitOfWork: ConstructorParameters<typeof GrantInviteRewards>[0]["unitOfWork"],
+    rewardAppliers: ConstructorParameters<typeof GrantInviteRewardsUseCase>[0]["rewardAppliers"],
+    notifier: ConstructorParameters<typeof GrantInviteRewardsUseCase>[0]["notifier"],
+    alert: ConstructorParameters<typeof GrantInviteRewardsUseCase>[0]["alert"],
+    inviteConfig: ConstructorParameters<typeof GrantInviteRewardsUseCase>[0]["inviteConfig"],
+    unitOfWork: ConstructorParameters<typeof GrantInviteRewardsUseCase>[0]["unitOfWork"],
   ) =>
-    new GrantInviteRewards({
+    new GrantInviteRewardsUseCase({
       rewardGrantRepository,
       inviteRedemptionRepository,
       rewardAppliers,
@@ -243,12 +251,12 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
       alert,
       inviteConfig,
       unitOfWork,
-      logger: new Logger(GrantInviteRewards.name),
+      logger: new Logger(GrantInviteRewardsUseCase.name),
     }),
 };
 
-export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedemptions> = {
-  provide: ExpireStaleRedemptions,
+export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedemptionsUseCase> = {
+  provide: ExpireStaleRedemptionsUseCase,
   inject: [
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
@@ -258,73 +266,82 @@ export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedempti
   ],
   useFactory: (
     inviteRedemptionRepository: ConstructorParameters<
-      typeof ExpireStaleRedemptions
+      typeof ExpireStaleRedemptionsUseCase
     >[0]["inviteRedemptionRepository"],
     rewardGrantRepository: ConstructorParameters<
-      typeof ExpireStaleRedemptions
+      typeof ExpireStaleRedemptionsUseCase
     >[0]["rewardGrantRepository"],
-    rewardScheduler: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["rewardScheduler"],
-    inviteConfig: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["inviteConfig"],
-    unitOfWork: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["unitOfWork"],
+    rewardScheduler: ConstructorParameters<
+      typeof ExpireStaleRedemptionsUseCase
+    >[0]["rewardScheduler"],
+    inviteConfig: ConstructorParameters<typeof ExpireStaleRedemptionsUseCase>[0]["inviteConfig"],
+    unitOfWork: ConstructorParameters<typeof ExpireStaleRedemptionsUseCase>[0]["unitOfWork"],
   ) =>
-    new ExpireStaleRedemptions({
+    new ExpireStaleRedemptionsUseCase({
       inviteRedemptionRepository,
       rewardGrantRepository,
       rewardScheduler,
       inviteConfig,
       unitOfWork,
-      logger: new Logger(ExpireStaleRedemptions.name),
+      logger: new Logger(ExpireStaleRedemptionsUseCase.name),
     }),
 };
 
-export const scheduleInviteQualifyRemindersProvider: FactoryProvider<ScheduleInviteQualifyReminders> =
+export const scheduleInviteQualifyRemindersProvider: FactoryProvider<ScheduleInviteQualifyRemindersUseCase> =
   {
-    provide: ScheduleInviteQualifyReminders,
+    provide: ScheduleInviteQualifyRemindersUseCase,
     inject: [INVITE_REDEMPTION_REPOSITORY, INVITE_QUALIFY_REMINDER_SCHEDULER, INVITE_CONFIG],
     useFactory: (
       inviteRedemptionRepository: ConstructorParameters<
-        typeof ScheduleInviteQualifyReminders
+        typeof ScheduleInviteQualifyRemindersUseCase
       >[0]["inviteRedemptionRepository"],
       reminderScheduler: ConstructorParameters<
-        typeof ScheduleInviteQualifyReminders
+        typeof ScheduleInviteQualifyRemindersUseCase
       >[0]["reminderScheduler"],
-      inviteConfig: ConstructorParameters<typeof ScheduleInviteQualifyReminders>[0]["inviteConfig"],
+      inviteConfig: ConstructorParameters<
+        typeof ScheduleInviteQualifyRemindersUseCase
+      >[0]["inviteConfig"],
     ) =>
-      new ScheduleInviteQualifyReminders({
+      new ScheduleInviteQualifyRemindersUseCase({
         inviteRedemptionRepository,
         reminderScheduler,
         inviteConfig,
-        logger: new Logger(ScheduleInviteQualifyReminders.name),
+        logger: new Logger(ScheduleInviteQualifyRemindersUseCase.name),
       }),
   };
 
-export const sendInviteQualifyReminderProvider: FactoryProvider<SendInviteQualifyReminder> = {
-  provide: SendInviteQualifyReminder,
-  inject: [
-    INVITE_REDEMPTION_REPOSITORY,
-    INVITE_NOTIFIER,
-    FOLLOW_READER,
-    USER_BLOCK_READER,
-    INVITE_CONFIG,
-    UNIT_OF_WORK,
-  ],
-  useFactory: (
-    inviteRedemptionRepository: ConstructorParameters<
-      typeof SendInviteQualifyReminder
-    >[0]["inviteRedemptionRepository"],
-    notifier: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["notifier"],
-    followReader: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["followReader"],
-    blockReader: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["blockReader"],
-    inviteConfig: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["inviteConfig"],
-    unitOfWork: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["unitOfWork"],
-  ) =>
-    new SendInviteQualifyReminder({
-      inviteRedemptionRepository,
-      notifier,
-      followReader,
-      blockReader,
-      inviteConfig,
-      unitOfWork,
-      logger: new Logger(SendInviteQualifyReminder.name),
-    }),
-};
+export const sendInviteQualifyReminderProvider: FactoryProvider<SendInviteQualifyReminderUseCase> =
+  {
+    provide: SendInviteQualifyReminderUseCase,
+    inject: [
+      INVITE_REDEMPTION_REPOSITORY,
+      INVITE_NOTIFIER,
+      FOLLOW_READER,
+      USER_BLOCK_READER,
+      INVITE_CONFIG,
+      UNIT_OF_WORK,
+    ],
+    useFactory: (
+      inviteRedemptionRepository: ConstructorParameters<
+        typeof SendInviteQualifyReminderUseCase
+      >[0]["inviteRedemptionRepository"],
+      notifier: ConstructorParameters<typeof SendInviteQualifyReminderUseCase>[0]["notifier"],
+      followReader: ConstructorParameters<
+        typeof SendInviteQualifyReminderUseCase
+      >[0]["followReader"],
+      blockReader: ConstructorParameters<typeof SendInviteQualifyReminderUseCase>[0]["blockReader"],
+      inviteConfig: ConstructorParameters<
+        typeof SendInviteQualifyReminderUseCase
+      >[0]["inviteConfig"],
+      unitOfWork: ConstructorParameters<typeof SendInviteQualifyReminderUseCase>[0]["unitOfWork"],
+    ) =>
+      new SendInviteQualifyReminderUseCase({
+        inviteRedemptionRepository,
+        notifier,
+        followReader,
+        blockReader,
+        inviteConfig,
+        unitOfWork,
+        logger: new Logger(SendInviteQualifyReminderUseCase.name),
+      }),
+  };

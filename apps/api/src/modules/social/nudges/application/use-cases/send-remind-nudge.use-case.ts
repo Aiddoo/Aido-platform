@@ -40,7 +40,7 @@ interface SendRemindNudgeDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
-export class SendRemindNudge {
+export class SendRemindNudgeUseCase {
   readonly #dependencies: SendRemindNudgeDependencies;
 
   constructor(dependencies: SendRemindNudgeDependencies) {

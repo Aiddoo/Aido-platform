@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { BlockUser } from "./block-user.use-case.js";
+import { BlockUserUseCase } from "./block-user.use-case.js";
 
 describe("사용자 차단", () => {
   beforeEach(() => {
@@ -22,7 +22,10 @@ describe("사용자 차단", () => {
     fixture.cache.friendCounts.set("friend", 1);
 
     // When
-    const result = await new BlockUser(fixture).execute({ blockerId: "me", blockedId: "friend" });
+    const result = await new BlockUserUseCase(fixture).execute({
+      blockerId: "me",
+      blockedId: "friend",
+    });
 
     // Then
     expect(result.isNewlyBlocked).toBe(true);
@@ -51,7 +54,7 @@ describe("사용자 차단", () => {
     });
 
     // When
-    await new BlockUser(fixture).execute({ blockerId: "me", blockedId: "requester" });
+    await new BlockUserUseCase(fixture).execute({ blockerId: "me", blockedId: "requester" });
 
     // Then
     expect(fixture.followRepository.follows.size).toBe(0);
@@ -67,7 +70,10 @@ describe("사용자 차단", () => {
     const log = vi.spyOn(fixture.logger, "log");
 
     // When
-    const result = await new BlockUser(fixture).execute({ blockerId: "me", blockedId: "blocked" });
+    const result = await new BlockUserUseCase(fixture).execute({
+      blockerId: "me",
+      blockedId: "blocked",
+    });
 
     // Then
     expect(result.isNewlyBlocked).toBe(false);
@@ -83,7 +89,7 @@ describe("사용자 차단", () => {
 
     // When / Then
     await expect(
-      new BlockUser(fixture).execute({ blockerId: "me", blockedId: "missing" }),
+      new BlockUserUseCase(fixture).execute({ blockerId: "me", blockedId: "missing" }),
     ).rejects.toMatchObject({ errorCode: "BLOCK_2202" });
     expect(fixture.userBlockRepository.blocks.size).toBe(0);
   });
@@ -95,7 +101,7 @@ describe("사용자 차단", () => {
 
     // When / Then
     await expect(
-      new BlockUser(fixture).execute({ blockerId: "me", blockedId: "me" }),
+      new BlockUserUseCase(fixture).execute({ blockerId: "me", blockedId: "me" }),
     ).rejects.toMatchObject({ errorCode: "BLOCK_2201" });
     expect(fixture.lockCalls).toEqual([]);
   });

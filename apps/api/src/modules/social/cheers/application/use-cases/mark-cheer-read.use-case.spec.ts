@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { MarkCheerRead } from "./mark-cheer-read.use-case.js";
+import { MarkCheerReadUseCase } from "./mark-cheer-read.use-case.js";
 
 describe("응원 읽음 처리", () => {
   beforeEach(() => {
@@ -20,7 +20,7 @@ describe("응원 읽음 처리", () => {
       const record = fixture.cheerRepository.seed({ senderId: "sender", receiverId: "receiver" });
       // When / Then
       await expect(
-        new MarkCheerRead(fixture).execute({
+        new MarkCheerReadUseCase(fixture).execute({
           userId: state === "other" ? "other" : "receiver",
           cheerId: state === "missing" ? record.id + 1 : record.id,
         }),
@@ -32,7 +32,7 @@ describe("응원 읽음 처리", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     const record = fixture.cheerRepository.seed({ senderId: "sender", receiverId: "receiver" });
-    const useCase = new MarkCheerRead(fixture);
+    const useCase = new MarkCheerReadUseCase(fixture);
     // When
     await useCase.execute({ userId: "receiver", cheerId: record.id });
     vi.setSystemTime(new Date(SOCIAL_TIME.getTime() + 10000));

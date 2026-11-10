@@ -1,6 +1,6 @@
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { RemoveFriend } from "./remove-friend.use-case.js";
+import { RemoveFriendUseCase } from "./remove-friend.use-case.js";
 
 describe("친구 관계 삭제", () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe("친구 관계 삭제", () => {
     const reverse = fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
     // When / Then
     await expect(
-      new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" }),
+      new RemoveFriendUseCase(fixture).execute({ userId: "me", targetUserId: "friend" }),
     ).rejects.toMatchObject({ errorCode: "FOLLOW_0907" });
     expect(fixture.followRepository.follows.get(reverse.id)).toEqual(reverse);
   });
@@ -44,7 +44,7 @@ describe("친구 관계 삭제", () => {
       await fixture.reader.countFriends("me");
       await fixture.reader.getMutualFriendIds("me");
       // When
-      await new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" });
+      await new RemoveFriendUseCase(fixture).execute({ userId: "me", targetUserId: "friend" });
       // Then
       expect(fixture.followRepository.follows.size).toBe(0);
       expect(fixture.cache.mutual.size).toBe(0);
@@ -68,7 +68,10 @@ describe("친구 관계 삭제", () => {
       return result;
     };
     // When
-    const execution = new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" });
+    const execution = new RemoveFriendUseCase(fixture).execute({
+      userId: "me",
+      targetUserId: "friend",
+    });
     try {
       await Promise.race([entered.promise, execution]);
       // Then

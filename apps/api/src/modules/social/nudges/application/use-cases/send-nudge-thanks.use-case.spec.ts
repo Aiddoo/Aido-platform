@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { SendNudgeThanks } from "./send-nudge-thanks.use-case.js";
+import { SendNudgeThanksUseCase } from "./send-nudge-thanks.use-case.js";
 
 describe("콕에 감사 일괄 전하기", () => {
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe("콕에 감사 일괄 전하기", () => {
     const followReader = { getCurrentMutualFriendIds: async () => [...friendIds] };
     const save = vi.spyOn(fixture.nudgeRepository, "saveThanksBatch");
     // When
-    const result = await new SendNudgeThanks({ ...fixture, followReader }).execute({
+    const result = await new SendNudgeThanksUseCase({ ...fixture, followReader }).execute({
       userId: "receiver",
       todoId: todo.id,
       throughNudgeId: 1000,
@@ -61,7 +61,7 @@ describe("콕에 감사 일괄 전하기", () => {
     });
     const save = vi.spyOn(fixture.nudgeRepository, "saveThanksBatch");
     // When
-    const result = await new SendNudgeThanks(fixture).execute({
+    const result = await new SendNudgeThanksUseCase(fixture).execute({
       userId: "receiver",
       todoId: todo.id,
       throughNudgeId: record.id,
@@ -84,7 +84,7 @@ describe("콕에 감사 일괄 전하기", () => {
     vi.spyOn(fixture.nudgeRepository, "saveThanksBatch").mockRejectedValueOnce(error);
     // When / Then
     await expect(
-      new SendNudgeThanks(fixture).execute({
+      new SendNudgeThanksUseCase(fixture).execute({
         userId: "receiver",
         todoId: todo.id,
         throughNudgeId: record.id,

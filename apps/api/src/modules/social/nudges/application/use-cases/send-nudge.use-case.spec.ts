@@ -5,7 +5,7 @@ import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { SendNudge } from "./send-nudge.use-case.js";
+import { SendNudgeUseCase } from "./send-nudge.use-case.js";
 
 describe("친구의 할 일에 콕 보내기", () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe("친구의 할 일에 콕 보내기", () => {
     }
     // When / Then
     await expect(
-      new SendNudge({
+      new SendNudgeUseCase({
         ...fixture,
         notifier: fixture.nudgeNotifier,
         limitReader: fixture.nudgeLimitReader,
@@ -92,7 +92,7 @@ describe("친구의 할 일에 콕 보내기", () => {
     const before = fixture.nudgeRepository.records.size;
     // When / Then
     await expect(
-      new SendNudge({
+      new SendNudgeUseCase({
         ...fixture,
         notifier: fixture.nudgeNotifier,
         limitReader: fixture.nudgeLimitReader,
@@ -118,7 +118,7 @@ describe("친구의 할 일에 콕 보내기", () => {
         }
       }
       // When
-      const result = await new SendNudge({
+      const result = await new SendNudgeUseCase({
         ...fixture,
         notifier: fixture.nudgeNotifier,
         limitReader: fixture.nudgeLimitReader,
@@ -168,7 +168,7 @@ describe("친구의 할 일에 콕 보내기", () => {
       vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
     };
     // When
-    const result = await new SendNudge({
+    const result = await new SendNudgeUseCase({
       ...fixture,
       notifier: fixture.nudgeNotifier,
       limitReader: fixture.nudgeLimitReader,

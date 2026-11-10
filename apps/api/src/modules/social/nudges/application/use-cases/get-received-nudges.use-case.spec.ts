@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetReceivedNudges } from "./get-received-nudges.use-case.js";
+import { GetReceivedNudgesUseCase } from "./get-received-nudges.use-case.js";
 
 describe("받은 콕 목록 조회", () => {
   beforeEach(() => {
@@ -25,7 +25,10 @@ describe("받은 콕 목록 조회", () => {
       });
     }
     // When
-    const result = await new GetReceivedNudges(fixture).execute({ userId: "receiver", size: 2 });
+    const result = await new GetReceivedNudgesUseCase(fixture).execute({
+      userId: "receiver",
+      size: 2,
+    });
     // Then
     expect(result).toMatchObject({ totalCount: 3, unreadCount: 2, hasMore: true });
     expect(result.items).toHaveLength(2);
@@ -36,7 +39,7 @@ describe("받은 콕 목록 조회", () => {
     const fixture = createSocialInteractionFixture();
     fixture.nudgeRepository.seed({ senderId: "sender", receiverId: "receiver", todoId: 1 });
     // When
-    const result = await new GetReceivedNudges(fixture).execute({ userId: "other" });
+    const result = await new GetReceivedNudgesUseCase(fixture).execute({ userId: "other" });
     // Then
     expect(result).toEqual({ items: [], totalCount: 0, unreadCount: 0, hasMore: false });
   });

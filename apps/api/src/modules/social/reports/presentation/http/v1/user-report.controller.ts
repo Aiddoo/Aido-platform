@@ -19,7 +19,7 @@ import {
 import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import { ReportContent } from "../../../application/use-cases/report-content.use-case.js";
+import { ReportContentUseCase } from "../../../application/use-cases/report-content.use-case.js";
 import { CreateUserReportDto, CreateUserReportResponseDto } from "./user-report.dto.js";
 
 const REPORT_THROTTLE = { ttl: 60_000, limit: 10 } as const;
@@ -28,9 +28,9 @@ const REPORT_THROTTLE = { ttl: 60_000, limit: 10 } as const;
 @ApiBearerAuth()
 @Controller("reports")
 export class UserReportController {
-  readonly #reportContentUseCase: ReportContent;
+  readonly #reportContentUseCase: ReportContentUseCase;
 
-  constructor(reportContentUseCase: ReportContent) {
+  constructor(reportContentUseCase: ReportContentUseCase) {
     this.#reportContentUseCase = reportContentUseCase;
   }
 

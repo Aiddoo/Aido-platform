@@ -26,11 +26,11 @@ import {
   REWARD_GRANT_REPOSITORY,
   type RewardGrantRepositoryPort,
 } from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
-import { ExpireStaleRedemptions } from "#api/modules/social/invites/application/use-cases/expire-stale-redemptions.use-case";
-import { GetMyInvite } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
-import { GrantInviteRewards } from "#api/modules/social/invites/application/use-cases/grant-invite-rewards.use-case";
-import { RecordInviteeActivity } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
-import { RedeemInvite } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
+import { ExpireStaleRedemptionsUseCase } from "#api/modules/social/invites/application/use-cases/expire-stale-redemptions.use-case";
+import { GetMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/get-my-invite.use-case";
+import { GrantInviteRewardsUseCase } from "#api/modules/social/invites/application/use-cases/grant-invite-rewards.use-case";
+import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/application/use-cases/record-invitee-activity.use-case";
+import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
 import {
   InviteRewardPolicy,
   remainingPremiumDays,
@@ -67,10 +67,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let redeemInvite: RedeemInvite;
-  let getMyInvite: GetMyInvite;
-  let grantInviteRewards: GrantInviteRewards;
-  let recordActivity: RecordInviteeActivity;
+  let redeemInvite: RedeemInviteUseCase;
+  let getMyInvite: GetMyInviteUseCase;
+  let grantInviteRewards: GrantInviteRewardsUseCase;
+  let recordActivity: RecordInviteeActivityUseCase;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 10 }) });
@@ -80,10 +80,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       customizeBuilder: (builder) =>
         builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
     });
-    redeemInvite = context.module.get(RedeemInvite);
-    getMyInvite = context.module.get(GetMyInvite);
-    grantInviteRewards = context.module.get(GrantInviteRewards);
-    recordActivity = context.module.get(RecordInviteeActivity);
+    redeemInvite = context.module.get(RedeemInviteUseCase);
+    getMyInvite = context.module.get(GetMyInviteUseCase);
+    grantInviteRewards = context.module.get(GrantInviteRewardsUseCase);
+    recordActivity = context.module.get(RecordInviteeActivityUseCase);
   });
 
   beforeEach(async () => {
@@ -137,7 +137,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     readonly exhausted?: string[];
   }) {
     const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
-    return new GrantInviteRewards({
+    return new GrantInviteRewardsUseCase({
       rewardGrantRepository: context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY),
       inviteRedemptionRepository: context.module.get<InviteRedemptionRepositoryPort>(
         INVITE_REDEMPTION_REPOSITORY,
@@ -290,7 +290,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const { inviterId, redemptionId } = await qualified("FAILINVR", "FAILINVE");
     const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
     let shouldFail = true;
-    const flaky = new GrantInviteRewards({
+    const flaky = new GrantInviteRewardsUseCase({
       rewardGrantRepository: context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY),
       inviteRedemptionRepository: context.module.get<InviteRedemptionRepositoryPort>(
         INVITE_REDEMPTION_REPOSITORY,
@@ -507,7 +507,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Given
     const stale = await redeemed("MNTINVR1", "MNTINVE1");
     const fresh = await qualified("MNTINVR2", "MNTINVE2");
-    const maintenance = context.module.get(ExpireStaleRedemptions);
+    const maintenance = context.module.get(ExpireStaleRedemptionsUseCase);
 
     // When
     const result = await maintenance.execute({
@@ -611,7 +611,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       .where(eq(rewardGrant.recipientId, inviterId));
 
     // When
-    const maintenance = await context.module.get(ExpireStaleRedemptions).execute({
+    const maintenance = await context.module.get(ExpireStaleRedemptionsUseCase).execute({
       now: new Date("2028-03-01T00:00:00.000Z"),
       runDate: "2028-03-01",
     });

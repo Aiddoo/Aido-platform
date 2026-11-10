@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { InviteQualifyReminderPolicy } from "../../domain/invite-qualify-reminder.domain-service.js";
-import { SocialInviteLogEvent } from "../invites.log-events.js";
+import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../ports/invite-redemption.repository.port.js";
@@ -38,7 +38,7 @@ interface SendInviteQualifyReminderDependencies extends InvitePairReachabilityDe
  * 같은 트랜잭션에 남겨, 작업이 다시 실행되거나 할 일 완료와 겹쳐도 두 번 보내지 않고 이미 사용 시작한
  * 사람에게도 보내지 않는다. 푸시는 커밋 뒤에 나간다.
  */
-export class SendInviteQualifyReminder {
+export class SendInviteQualifyReminderUseCase {
   readonly #dependencies: SendInviteQualifyReminderDependencies;
 
   constructor(dependencies: SendInviteQualifyReminderDependencies) {
@@ -49,9 +49,9 @@ export class SendInviteQualifyReminder {
     const result = await this.#send(input);
     this.#dependencies.logger.log(
       result.status === "sent"
-        ? { event: SocialInviteLogEvent.QUALIFY_REMINDER_SENT, redemptionId: input.redemptionId }
+        ? { event: InviteLogEvent.QUALIFY_REMINDER_SENT, redemptionId: input.redemptionId }
         : {
-            event: SocialInviteLogEvent.QUALIFY_REMINDER_SKIPPED,
+            event: InviteLogEvent.QUALIFY_REMINDER_SKIPPED,
             redemptionId: input.redemptionId,
             reason: result.reason,
           },

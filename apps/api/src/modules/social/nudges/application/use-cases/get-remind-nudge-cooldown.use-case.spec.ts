@@ -1,7 +1,7 @@
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { GetRemindNudgeCooldown } from "./get-remind-nudge-cooldown.use-case.js";
+import { GetRemindNudgeCooldownUseCase } from "./get-remind-nudge-cooldown.use-case.js";
 
 describe("GetRemindNudgeCooldown 대상별 쿨다운 조회", () => {
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("GetRemindNudgeCooldown 대상별 쿨다운 조회", () => {
       message: null,
     });
     // When
-    const result = await new GetRemindNudgeCooldown(fixture).execute({
+    const result = await new GetRemindNudgeCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });
@@ -43,7 +43,7 @@ describe("GetRemindNudgeCooldown 대상별 쿨다운 조회", () => {
       message: null,
     });
     // When
-    const result = await new GetRemindNudgeCooldown(fixture).execute({
+    const result = await new GetRemindNudgeCooldownUseCase(fixture).execute({
       senderId: "sender",
       receiverId: "receiver",
     });

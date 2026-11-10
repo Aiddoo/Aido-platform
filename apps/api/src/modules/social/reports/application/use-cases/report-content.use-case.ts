@@ -19,7 +19,7 @@ import { UserReportTarget } from "../../domain/user-report-target.vo.js";
 import { UserReport, type UserReportCreationPlan } from "../../domain/user-report.aggregate.js";
 import { type UserReportNotifierPort } from "../ports/user-report-notifier.port.js";
 import { type UserReportRepositoryPort } from "../ports/user-report.repository.port.js";
-import { SocialReportLogEvent } from "../reports.log-events.js";
+import { UserReportLogEvent } from "../reports.log-events.js";
 import { buildUserReportSubmission } from "../user-report-submission.mapper.js";
 
 export interface ReportContentInput {
@@ -54,7 +54,7 @@ interface ReportContentDependencies {
  * 같은 대상을 24시간 안에 다시 신고하면 기존 접수를 돌려줘 운영자 알림이 쌓이지 않게 한다.
  * 알림은 commit 뒤에 보내고, 실패해도 저장한 신고는 남겨 운영자가 DB에서 확인할 수 있게 한다.
  */
-export class ReportContent {
+export class ReportContentUseCase {
   readonly #dependencies: ReportContentDependencies;
 
   constructor(dependencies: ReportContentDependencies) {
@@ -76,7 +76,7 @@ export class ReportContent {
 
     if (result.isDuplicate) {
       this.#dependencies.logger.log({
-        event: SocialReportLogEvent.DUPLICATE_IGNORED,
+        event: UserReportLogEvent.DUPLICATE_IGNORED,
         userId: input.reporterId,
         reportId: result.report.id,
       });
@@ -84,7 +84,7 @@ export class ReportContent {
     }
 
     this.#dependencies.logger.log({
-      event: SocialReportLogEvent.SUBMITTED,
+      event: UserReportLogEvent.SUBMITTED,
       userId: input.reporterId,
       targetUserId: input.targetUserId,
       reportId: result.report.id,
@@ -139,7 +139,7 @@ export class ReportContent {
       );
       if (delivery.status === "rejected") {
         this.#dependencies.logger.warn({
-          event: SocialReportLogEvent.OPERATOR_NOTIFY_FAILED,
+          event: UserReportLogEvent.OPERATOR_NOTIFY_FAILED,
           reportId: report.id,
           errorType: "delivery-rejected",
           reason: delivery.reason,
@@ -147,7 +147,7 @@ export class ReportContent {
       }
     } catch {
       this.#dependencies.logger.warn({
-        event: SocialReportLogEvent.OPERATOR_NOTIFY_FAILED,
+        event: UserReportLogEvent.OPERATOR_NOTIFY_FAILED,
         reportId: report.id,
         errorType: "delivery-error",
       });

@@ -5,49 +5,51 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 
 import { FOLLOW_CACHE } from "../friends/application/ports/follow-cache.port.js";
 import { USER_BLOCK_REPOSITORY } from "./application/ports/user-block.repository.port.js";
-import { BlockUser } from "./application/use-cases/block-user.use-case.js";
-import { GetBlockedUsers } from "./application/use-cases/get-blocked-users.use-case.js";
-import { UnblockUser } from "./application/use-cases/unblock-user.use-case.js";
+import { BlockUserUseCase } from "./application/use-cases/block-user.use-case.js";
+import { GetBlockedUsersUseCase } from "./application/use-cases/get-blocked-users.use-case.js";
+import { UnblockUserUseCase } from "./application/use-cases/unblock-user.use-case.js";
 
-export const blockUserProvider: FactoryProvider<BlockUser> = {
-  provide: BlockUser,
+export const blockUserProvider: FactoryProvider<BlockUserUseCase> = {
+  provide: BlockUserUseCase,
   inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, FOLLOW_CACHE],
   useFactory: (
-    userBlockRepository: ConstructorParameters<typeof BlockUser>[0]["userBlockRepository"],
-    unitOfWork: ConstructorParameters<typeof BlockUser>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof BlockUser>[0]["mutationLock"],
-    friendshipCache: ConstructorParameters<typeof BlockUser>[0]["friendshipCache"],
+    userBlockRepository: ConstructorParameters<typeof BlockUserUseCase>[0]["userBlockRepository"],
+    unitOfWork: ConstructorParameters<typeof BlockUserUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof BlockUserUseCase>[0]["mutationLock"],
+    friendshipCache: ConstructorParameters<typeof BlockUserUseCase>[0]["friendshipCache"],
   ) =>
-    new BlockUser({
+    new BlockUserUseCase({
       userBlockRepository,
       unitOfWork,
       mutationLock,
       friendshipCache,
-      logger: new Logger(BlockUser.name),
+      logger: new Logger(BlockUserUseCase.name),
     }),
 };
 
-export const unblockUserProvider: FactoryProvider<UnblockUser> = {
-  provide: UnblockUser,
+export const unblockUserProvider: FactoryProvider<UnblockUserUseCase> = {
+  provide: UnblockUserUseCase,
   inject: [USER_BLOCK_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK],
   useFactory: (
-    userBlockRepository: ConstructorParameters<typeof UnblockUser>[0]["userBlockRepository"],
-    unitOfWork: ConstructorParameters<typeof UnblockUser>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof UnblockUser>[0]["mutationLock"],
+    userBlockRepository: ConstructorParameters<typeof UnblockUserUseCase>[0]["userBlockRepository"],
+    unitOfWork: ConstructorParameters<typeof UnblockUserUseCase>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UnblockUserUseCase>[0]["mutationLock"],
   ) =>
-    new UnblockUser({
+    new UnblockUserUseCase({
       userBlockRepository,
       unitOfWork,
       mutationLock,
-      logger: new Logger(UnblockUser.name),
+      logger: new Logger(UnblockUserUseCase.name),
     }),
 };
 
-export const getBlockedUsersProvider: FactoryProvider<GetBlockedUsers> = {
-  provide: GetBlockedUsers,
+export const getBlockedUsersProvider: FactoryProvider<GetBlockedUsersUseCase> = {
+  provide: GetBlockedUsersUseCase,
   inject: [USER_BLOCK_REPOSITORY, PaginationService],
   useFactory: (
-    userBlockRepository: ConstructorParameters<typeof GetBlockedUsers>[0]["userBlockRepository"],
-    paginationService: ConstructorParameters<typeof GetBlockedUsers>[0]["paginationService"],
-  ) => new GetBlockedUsers({ userBlockRepository, paginationService }),
+    userBlockRepository: ConstructorParameters<
+      typeof GetBlockedUsersUseCase
+    >[0]["userBlockRepository"],
+    paginationService: ConstructorParameters<typeof GetBlockedUsersUseCase>[0]["paginationService"],
+  ) => new GetBlockedUsersUseCase({ userBlockRepository, paginationService }),
 };

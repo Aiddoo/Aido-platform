@@ -27,15 +27,15 @@ import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/
 import { type CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
 import type { DailySendUsage } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
-import { GetCheerLimit } from "#api/modules/social/cheers/application/use-cases/get-cheer-limit.use-case";
-import { SendCheer } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
+import { GetCheerLimitUseCase } from "#api/modules/social/cheers/application/use-cases/get-cheer-limit.use-case";
+import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
 import type { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
-import { GetNudgeLimit } from "#api/modules/social/nudges/application/use-cases/get-nudge-limit.use-case";
-import { SendNudge } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
-import { SendRemindNudge } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
+import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use-cases/get-nudge-limit.use-case";
+import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
+import { SendRemindNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
@@ -852,14 +852,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     );
     const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-    const useCase = new SendCheer({
+    const useCase = new SendCheerUseCase({
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -885,14 +885,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendCheer({
+    const useCase = new SendCheerUseCase({
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -925,14 +925,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     }
     const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-    const useCase = new SendNudge({
+    const useCase = new SendNudgeUseCase({
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -959,14 +959,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendNudge({
+    const useCase = new SendNudgeUseCase({
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendNudgeUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -997,13 +997,13 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendRemindNudge({
+    const useCase = new SendRemindNudgeUseCase({
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendRemindNudge>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendRemindNudgeUseCase>[0]["logger"]>(),
     });
 
     // When
@@ -1169,7 +1169,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       },
     ]);
     const { txHost } = createTransactionHarness(client);
-    const reader = new GetCheerLimit({
+    const reader = new GetCheerLimitUseCase({
       cheerRepository: new DrizzleCheerRepository(txHost),
       entitlementReader: createReaderEntitlement(3),
     });
@@ -1201,7 +1201,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       },
     ]);
     const { txHost } = createTransactionHarness(client);
-    const reader = new GetNudgeLimit({
+    const reader = new GetNudgeLimitUseCase({
       nudgeRepository: new DrizzleNudgeRepository(txHost),
       entitlementReader: createReaderEntitlement(3),
     });
@@ -1252,14 +1252,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         await realLock.acquire(keys);
       },
     };
-    const useCase = new SendCheer({
+    const useCase = new SendCheerUseCase({
       cheerRepository: new DrizzleCheerRepository(txHost),
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(1),
       mutationLock: mutationLock,
       unitOfWork: uow,
       followReader: createFollowReaderStub(),
-      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+      logger: mock<ConstructorParameters<typeof SendCheerUseCase>[0]["logger"]>(),
     });
 
     // When
