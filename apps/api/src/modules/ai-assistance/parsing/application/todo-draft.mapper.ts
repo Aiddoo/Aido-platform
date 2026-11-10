@@ -19,7 +19,10 @@ import type {
   ScheduleDraft,
   TodoDraft,
 } from "../../shared/domain/todo-draft.constants.js";
-import { resolveTodoSchedule } from "../../shared/domain/todo-schedule.domain-service.js";
+import {
+  isSingleWeekendRepeat,
+  resolveTodoSchedule,
+} from "../../shared/domain/todo-schedule.domain-service.js";
 
 /** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
 export const TITLE_MAX_LENGTH = 200;
@@ -185,6 +188,7 @@ export function normalizeMemoDraft(
   const parsed = drafts.map((draft) => {
     const normalized = normalizeTodoDraft(draft, context);
     warnings.push(...normalized.warnings);
+    const todo = withSingleWeekendAsOnce(normalized.todo);
     const items = normalizeItems(
       draft.items.map((item) => cleanTitle(item.title)),
       normalized.todo.title,
@@ -197,8 +201,8 @@ export function normalizeMemoDraft(
       warnings.push("UNKNOWN_DUPLICATE");
     }
     return {
-      ...normalized.todo,
-      categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,
+      ...todo,
+      categoryId: todo.categoryId ?? context.defaultCategoryId,
       items: items.titles.map((itemTitle) => ({ title: itemTitle })),
       duplicateOfTodoId: hasNoAction
         ? null
@@ -219,6 +223,16 @@ export function normalizeMemoDraft(
     warnings,
     dateRefs: kept.map(({ date: { kind, weekOffset } }) => ({ kind, weekOffset })),
   };
+}
+
+/**
+ * 메모의 "이번 주말 X"는 새 앱이 읽는 repeat에서 토요일 한 번으로 준다. 출시 앱이 읽는 isRecurring·recurrence는
+ * 그대로 두어 출시 앱의 변환 결과(토·일 각 한 번)가 바뀌지 않는다.
+ */
+function withSingleWeekendAsOnce(todo: ParsedTodoData): ParsedTodoData {
+  return todo.repeat != null && isSingleWeekendRepeat(todo.repeat, todo.startDate)
+    ? { ...todo, endDate: null, repeat: null }
+    : todo;
 }
 
 function noActionDraft(): TodoDraft {
