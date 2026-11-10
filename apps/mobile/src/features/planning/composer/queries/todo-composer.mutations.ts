@@ -1,4 +1,3 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import {
   useActivationService,
   useHaptics,
@@ -18,6 +17,7 @@ import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-m
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   findTodoSeriesFailure,
+  getTodoSeriesLimit,
   shouldRefreshTodos,
 } from '@src/features/planning/todo/domains/todo-series.error';
 import {
@@ -308,7 +308,7 @@ export function useCreateRecurringTodoMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
@@ -449,7 +449,7 @@ export function useUpdateTodoMutationOptions() {
         }
         toast.error(
           t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+            limit: getTodoSeriesLimit(error),
           }),
           { description: t(`todo:toast.series.${seriesFailure}.description`) },
         );
