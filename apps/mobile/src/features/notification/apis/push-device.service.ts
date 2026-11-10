@@ -107,9 +107,12 @@ export class PushDeviceService {
     const epoch = this.#sessionEpoch.current();
     const unregisterCount = this.#unregisterCount;
     const permission = await this.getPermission();
-    const token = PushPermissionPolicy.isPushDeliverable(permission)
-      ? await this.#issueToken()
-      : null;
+    const isDeliverable = PushPermissionPolicy.isPushDeliverable(permission);
+    const token = isDeliverable ? await this.#issueToken() : null;
+    // 허용된 기기의 token null은 1.15.0 서버가 등록된 토큰을 지운다. 보내지 않고 다음 복귀·토큰 변경 때 다시 받는다
+    if (isDeliverable && token == null) {
+      return ok(null);
+    }
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
@@ -199,7 +202,7 @@ export class PushDeviceService {
     return ok(undefined);
   };
 
-  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */
+  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다 */
   #issueToken = async (): Promise<string | null> => {
     try {
       return await this.#gateway.getToken();

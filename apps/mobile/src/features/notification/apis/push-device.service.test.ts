@@ -1,8 +1,11 @@
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import {
   createHttpClientStub,
+  createIdGeneratorStub,
   createLoggerStub,
+  createMemoryDeviceIdStore,
   createPushNotificationGatewayStub,
+  createVendorIdGatewayStub,
 } from '@src/shared/__tests__';
 
 import {
@@ -11,6 +14,7 @@ import {
   createPushPermissionResponse,
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
+import { DeviceIdService } from './device-id.service';
 import { PushDeviceService } from './push-device.service';
 
 const DEVICE_ID = 'ios_device-123';
@@ -150,27 +154,66 @@ describe('PushDeviceService.report', () => {
     );
   });
 
-  it('토큰 발급이 실패하면(오프라인·APNs 없는 시뮬레이터) token null로 권한만 보고하고 경고로 남긴다', async () => {
+  it('허용된 기기에서 토큰 발급이 실패하면 서버 토큰을 지우는 token null을 보내지 않고 다음 보고에서 다시 받는다', async () => {
     // Given
-    const { service, httpClient, logger } = setup(
-      createPushNotificationGatewayStub({
-        getToken: jest.fn(async () => {
-          throw new Error('offline');
-        }),
-      }),
-    );
+    const gateway = createPushNotificationGatewayStub();
+    gateway.getToken.mockRejectedValueOnce(new Error('offline'));
+    const { service, httpClient, logger } = setup(gateway);
 
     // When
+    const skipped = await service.report();
     await service.report();
 
     // Then
-    expect(httpClient.put).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ token: null }),
-    );
+    expect(skipped).toEqual({ ok: true, value: null });
     expect(logger.warn).toHaveBeenCalledWith('notification.push-token.issue-failed', {
       error: 'offline',
     });
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+    expect(httpClient.put).toHaveBeenCalledWith(
+      `v1/notifications/push-devices/${DEVICE_ID}`,
+      expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
+    );
+  });
+
+  it('업데이트 뒤 첫 실행에 토큰이 늦어도 저장된 기기 id로 같은 토큰을 다시 보고하고 등록을 지우는 요청은 보내지 않는다', async () => {
+    // Given
+    // 이전 버전이 저장한 기기 id가 있고, 새 플랫폼 식별자는 다르다
+    const deviceIdStore = createMemoryDeviceIdStore('ios_installed-before-upgrade');
+    const vendorIdGateway = createVendorIdGatewayStub();
+    vendorIdGateway.get.mockResolvedValue('vendor-after-upgrade');
+    const gateway = createPushNotificationGatewayStub();
+    gateway.getToken.mockRejectedValueOnce(new Error('timeout'));
+    const httpClient = createHttpClientStub();
+    httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
+    const service = new PushDeviceService({
+      gateway,
+      deviceIdService: new DeviceIdService({
+        store: deviceIdStore,
+        vendorIdGateway,
+        idGenerator: createIdGeneratorStub(),
+        platform: 'ios',
+      }),
+      httpClient,
+      logger: createLoggerStub(),
+      getTimeZone: () => 'Asia/Seoul',
+      sessionEpoch: createSessionEpoch(),
+    });
+
+    // When
+    await service.report({ force: true });
+    await service.report();
+
+    // Then
+    expect(httpClient.put.mock.calls).toEqual([
+      [
+        'v1/notifications/push-devices/ios_installed-before-upgrade',
+        expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
+      ],
+    ]);
+    expect(httpClient.delete).not.toHaveBeenCalled();
+    expect(deviceIdStore.save).not.toHaveBeenCalled();
+    expect(deviceIdStore.clear).not.toHaveBeenCalled();
   });
 
   it('이번 세션에 같은 값을 이미 보냈으면 다시 요청하지 않고, 토큰이 바뀌면 다시 보낸다', async () => {

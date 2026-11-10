@@ -27,7 +27,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 1. OS 권한을 읽는다. iOS 임시 허용(`PROVISIONAL`·`EPHEMERAL`)은 모두 `PROVISIONAL`로 바꾼다. 알림이 조용히 도착하므로 허용으로 본다.
 2. Android 알림 채널은 어댑터가 권한 창을 띄우기 전과 토큰을 받기 전에 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
-3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음으로 실패하면 토큰 없이 권한만 보고한다.
+3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 이번 보고를 보내지 않는다. 허용된 기기의 `token: null`은 1.15.0 서버가 등록된 토큰을 지워 기존 사용자의 푸시가 끊기기 때문이다. 다음 복귀·토큰 변경·권한 요청 때 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다.
 4. `PUT /v1/notifications/push-devices/{deviceId}`로 `{ permission, token, payloadVersion }`을 보낸다. 같은 값을 이번 세션에 이미 보냈으면 요청하지 않는다(`force`로 무시). 웹은 보내지 않는다.
 
 ## 보고 시점
