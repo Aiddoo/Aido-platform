@@ -18,6 +18,11 @@ import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "../setup/test-database.js";
 
+// 테스트가 vi.setSystemTime으로 고정한 시각을 그대로 활동 시각으로 쓴다
+function seenNow(): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(Date.now());
+}
+
 describe("성장 지표 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
@@ -50,7 +55,11 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     });
 
     // When
-    await activityWriter.updateLastActiveAt("activity-user", "Asia/Seoul");
+    await activityWriter.updateLastActiveAt({
+      userId: "activity-user",
+      timezone: "Asia/Seoul",
+      seenAt: seenNow(),
+    });
     const first = await client.query.userActivityDay.findFirst({
       where: { userId: "activity-user" },
     });
@@ -61,7 +70,11 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       .where(eq(userActivityDay.id, requireRecord(first).id));
     await Promise.all(
       Array.from({ length: 6 }, () =>
-        activityWriter.updateLastActiveAt("activity-user", "Asia/Seoul"),
+        activityWriter.updateLastActiveAt({
+          userId: "activity-user",
+          timezone: "Asia/Seoul",
+          seenAt: seenNow(),
+        }),
       ),
     );
 
@@ -109,9 +122,17 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     try {
       // When
       vi.setSystemTime(later);
-      await activityWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
+      await activityWriter.updateLastActiveAt({
+        userId: "out-of-order-user",
+        timezone: "Asia/Seoul",
+        seenAt: seenNow(),
+      });
       vi.setSystemTime(earlier);
-      await otherWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
+      await otherWriter.updateLastActiveAt({
+        userId: "out-of-order-user",
+        timezone: "Asia/Seoul",
+        seenAt: seenNow(),
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -146,9 +167,17 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     try {
       // When
       vi.setSystemTime(earlier);
-      const earlierWrite = activityWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
+      const earlierWrite = activityWriter.updateLastActiveAt({
+        userId: "parallel-insert-user",
+        timezone: "Asia/Seoul",
+        seenAt: seenNow(),
+      });
       vi.setSystemTime(later);
-      const laterWrite = otherWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
+      const laterWrite = otherWriter.updateLastActiveAt({
+        userId: "parallel-insert-user",
+        timezone: "Asia/Seoul",
+        seenAt: seenNow(),
+      });
       await Promise.all([earlierWrite, laterWrite]);
     } finally {
       vi.useRealTimers();

@@ -14,8 +14,10 @@ import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-ev
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt과 요청한 앱 버전(X-App-Version)을 갱신하는 인터셉터
@@ -39,14 +41,17 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 
   readonly #userActivityWriter: AuthUserActivityWriterPort;
   readonly #requestClientReader: RequestClientReader;
+  readonly #clock: ClockPort;
 
   constructor(
     @Inject(AuthUserActivityWriterPort)
     userActivityWriter: AuthUserActivityWriterPort,
     requestClientReader: RequestClientReader,
+    clock: ClockPort,
   ) {
     this.#userActivityWriter = userActivityWriter;
     this.#requestClientReader = requestClientReader;
+    this.#clock = clock;
     this.#cleanupInterval = setInterval(() => this.#cleanup(), LastActiveInterceptor.THROTTLE_MS);
   }
 
@@ -67,10 +72,9 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
   }
 
   #touchLastActive(userId: string, timezone: string, appVersion: string | undefined): void {
-    const touchedAt = Date.now();
-    const localDate = startOfDayInTimezone(new Date(touchedAt), timezone)
-      .toISOString()
-      .slice(0, 10);
+    const seenAt = this.#clock.now();
+    const touchedAt = seenAt.epochMilliseconds;
+    const localDate = localDateInTimezone(instantToDate(seenAt), timezone);
     const throttleKey = `${userId}:${localDate}:${appVersion ?? ""}`;
     const lastUpdated = this.#throttleMap.get(throttleKey);
 
@@ -81,20 +85,22 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
     this.#throttleMap.set(throttleKey, touchedAt);
 
     // fire-and-forget — 응답을 블로킹하지 않음
-    this.#userActivityWriter.updateLastActiveAt(userId, timezone, appVersion).catch((error) => {
-      if (this.#throttleMap.get(throttleKey) === touchedAt) {
-        this.#throttleMap.delete(throttleKey);
-      }
-      this.#logger.error({
-        event: AuthLogEvent.LAST_ACTIVE_UPDATE_FAILED,
-        userId,
-        errorType: toErrorType(error),
+    this.#userActivityWriter
+      .updateLastActiveAt({ userId, timezone, seenAt, appVersion })
+      .catch((error) => {
+        if (this.#throttleMap.get(throttleKey) === touchedAt) {
+          this.#throttleMap.delete(throttleKey);
+        }
+        this.#logger.error({
+          event: AuthLogEvent.LAST_ACTIVE_UPDATE_FAILED,
+          userId,
+          errorType: toErrorType(error),
+        });
       });
-    });
   }
 
   #cleanup(): void {
-    const cutoff = Date.now() - LastActiveInterceptor.THROTTLE_MS;
+    const cutoff = this.#clock.now().epochMilliseconds - LastActiveInterceptor.THROTTLE_MS;
     let cleaned = 0;
 
     for (const [throttleKey, timestamp] of this.#throttleMap.entries()) {

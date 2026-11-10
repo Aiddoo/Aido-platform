@@ -4,9 +4,9 @@ import type { CurrentUserPayload } from "@aido/api";
 import { Logger } from "@nestjs/common";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 import { of } from "rxjs";
-import { vi } from "vitest";
 
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
 import { LastActiveInterceptor } from "./last-active.interceptor.js";
@@ -20,16 +20,15 @@ class RecordingActivityWriter extends AuthUserActivityWriterPort {
   }
 
   // 인터셉터가 붙이는 catch가 바로 다음 tick에 돌도록 async로 감싸지 않는다
-  updateLastActiveAt(userId: string, timezone: string, appVersion?: string): Promise<void> {
-    this.writes.push([userId, timezone, appVersion]);
+  updateLastActiveAt(activity: {
+    readonly userId: string;
+    readonly timezone: string;
+    readonly seenAt: Temporal.Instant;
+    readonly appVersion?: string;
+  }): Promise<void> {
+    this.writes.push([activity.userId, activity.timezone, activity.appVersion]);
     return this.#outcomes.shift()?.() ?? Promise.resolve();
   }
-}
-
-// LastActiveInterceptor는 ClockPort 없이 Date.now()로 현지 날짜를 정해 Date만 고정한다(vitest.setup이 테스트마다 되돌린다)
-function freezeDateAt(at: string): void {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date(at));
 }
 
 function userOf(name: string): CurrentUserPayload {
@@ -43,6 +42,7 @@ function userOf(name: string): CurrentUserPayload {
 
 describe("LastActiveInterceptor — 사용자 활동 기록", () => {
   let activityWriter: RecordingActivityWriter;
+  let clock: FixedClock;
   let interceptor: LastActiveInterceptor;
 
   beforeAll(() => {
@@ -52,7 +52,8 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
   beforeEach(() => {
     activityWriter = new RecordingActivityWriter();
-    interceptor = new LastActiveInterceptor(activityWriter, createRequestClientReader());
+    clock = new FixedClock(Temporal.Instant.from("2026-07-26T03:00:00Z"));
+    interceptor = new LastActiveInterceptor(activityWriter, createRequestClientReader(), clock);
   });
 
   afterEach(() => {
@@ -119,11 +120,11 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
   it("한 시간 이내라도 사용자 현지 날짜가 바뀌면 새 활동일을 기록한다", () => {
     // Given
     const user = userOf("midnight");
-    freezeDateAt("2026-07-26T14:59:00.000Z");
+    clock.advanceBy(Temporal.Instant.from("2026-07-26T14:59:00.000Z").since(clock.now()));
 
     // When
     intercept(user, { "x-timezone": "Asia/Seoul" });
-    vi.setSystemTime(new Date("2026-07-26T15:01:00.000Z"));
+    clock.advanceBy({ minutes: 2 });
     intercept(user, { "x-timezone": "Asia/Seoul" });
 
     // Then
@@ -153,16 +154,16 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       rejectFirst = reject;
     });
     activityWriter.thenSettle(() => firstWrite);
-    freezeDateAt("2026-07-26T14:59:00.000Z");
+    clock.advanceBy(Temporal.Instant.from("2026-07-26T14:59:00.000Z").since(clock.now()));
 
     // When
     intercept(user, { "x-timezone": "Asia/Seoul" });
-    vi.setSystemTime(new Date("2026-07-26T15:01:00.000Z"));
+    clock.advanceBy({ minutes: 2 });
     intercept(user, { "x-timezone": "Asia/Seoul" });
     rejectFirst(new Error("late failure"));
     await Promise.resolve();
     await Promise.resolve();
-    vi.setSystemTime(new Date("2026-07-26T15:02:00.000Z"));
+    clock.advanceBy({ minutes: 1 });
     intercept(user, { "x-timezone": "Asia/Seoul" });
 
     // Then

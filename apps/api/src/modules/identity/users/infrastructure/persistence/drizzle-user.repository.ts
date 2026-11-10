@@ -21,7 +21,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -165,8 +164,14 @@ export class DrizzleUserRepository extends AuthUserRepositoryPort {
     return row?.lastSeenAppVersion ?? null;
   }
 
-  async updateLastActiveAt(id: string, timezone: string, appVersion?: string): Promise<void> {
-    const seenAt = now();
+  async updateLastActiveAt(activity: {
+    readonly userId: string;
+    readonly timezone: string;
+    readonly seenAt: Temporal.Instant;
+    readonly appVersion?: string;
+  }): Promise<void> {
+    const { userId: id, timezone, appVersion } = activity;
+    const seenAt = instantToDate(activity.seenAt);
     const localDate = startOfDayInTimezone(seenAt, timezone);
 
     await this.#db.execute(sql`

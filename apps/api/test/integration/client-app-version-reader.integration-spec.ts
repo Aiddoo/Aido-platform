@@ -6,6 +6,11 @@ import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
+// 테스트가 vi.setSystemTime으로 고정한 시각을 그대로 활동 시각으로 쓴다
+function seenNow(): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(Date.now());
+}
+
 describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
@@ -68,10 +73,15 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
 
   it("인증 요청의 앱 버전은 버전이 없을 때 기존 기록을 지우지 않는다", async () => {
     // Given
-    await users.updateLastActiveAt(userId, "Asia/Seoul", "1.13.0");
+    await users.updateLastActiveAt({
+      userId: userId,
+      timezone: "Asia/Seoul",
+      seenAt: seenNow(),
+      appVersion: "1.13.0",
+    });
 
     // When
-    await users.updateLastActiveAt(userId, "Asia/Seoul");
+    await users.updateLastActiveAt({ userId: userId, timezone: "Asia/Seoul", seenAt: seenNow() });
 
     // Then
     await expect(users.findLastSeenAppVersion(userId)).resolves.toBe("1.13.0");
@@ -80,7 +90,12 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   it("푸시 권한이 없어도 인증 요청의 앱 버전으로 사용자의 최신 앱 버전을 안다", async () => {
     // Given
     await addToken("old-phone", "1.12.1");
-    await users.updateLastActiveAt(userId, "Asia/Seoul", "1.13.0");
+    await users.updateLastActiveAt({
+      userId: userId,
+      timezone: "Asia/Seoul",
+      seenAt: seenNow(),
+      appVersion: "1.13.0",
+    });
     const latest = new LatestClientAppVersionAdapter(reader, users);
 
     // When
