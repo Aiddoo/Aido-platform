@@ -12,19 +12,3 @@ export abstract class MutationLockPort {
 }
 
 export const MUTATION_KEY_PREFIX = "mutation:v1";
-
-// voice·ai가 slice 잠금 키로 옮기면 지운다. 문자열은 TodoLockKeys·TodoCategoryLockKeys·MemoLockKeys와 같다
-export const MutationLockKeys = {
-  todoCategory(userId: string): string {
-    return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
-  },
-  todoSortOrder(userId: string): string {
-    return `${MUTATION_KEY_PREFIX}:todo-sort-order:${userId}`;
-  },
-  memo(memoId: number): string {
-    return `${MUTATION_KEY_PREFIX}:memo:${memoId}`;
-  },
-  memoSortOrder(userId: string): string {
-    return `${MUTATION_KEY_PREFIX}:memo-sort-order:${userId}`;
-  },
-};

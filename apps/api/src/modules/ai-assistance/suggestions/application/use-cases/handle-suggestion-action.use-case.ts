@@ -7,15 +7,16 @@ import {
   premiumFeatureDenied,
 } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import {
+  type StagedTodoCreatorPort,
+  TodoLockKeys,
+} from "#api/modules/planning/todos/planning-todos.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-} from "#api/shared/application/ports/mutation-lock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
@@ -137,8 +138,8 @@ export class HandleSuggestionActionUseCase {
       toDateString(localToday.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate());
     await this.#dependencies.repository.save(suggestion);
     await this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.todoCategory(command.userId),
-      MutationLockKeys.todoSortOrder(command.userId),
+      TodoCategoryLockKeys.userCategories(command.userId),
+      TodoLockKeys.sortOrder(command.userId),
     ]);
     // 같은 UoW에 참여하므로 생성이 실패하면 상태 갱신도 함께 rollback된다.
     const staged = await this.#dependencies.todoCreator.stage({

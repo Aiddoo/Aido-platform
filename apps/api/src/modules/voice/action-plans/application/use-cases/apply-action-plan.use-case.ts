@@ -7,18 +7,17 @@ import {
   type PlanMemo,
   type PlanMemoWriterPort,
 } from "#api/modules/notes/memos/notes-memos.public";
-import type {
-  StagedTodoCreatorPort,
-  TodoPlanReaderPort,
-  TodoReadModel,
+import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import {
+  type StagedTodoCreatorPort,
+  TodoLockKeys,
+  type TodoPlanReaderPort,
+  type TodoReadModel,
 } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-} from "#api/shared/application/ports/mutation-lock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -88,8 +87,8 @@ export class ApplyActionPlanUseCase {
       await this.#dependencies.mutationLock.acquire([
         ...(sourceMemoId == null ? [] : [MemoLockKeys.memo(MemoId.reconstitute(sourceMemoId))]),
         MemoLockKeys.sortOrder(owner),
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
+        TodoCategoryLockKeys.userCategories(userId),
+        TodoLockKeys.sortOrder(userId),
       ]);
       const existing = await this.#dependencies.repository.findByIdempotencyKey(
         owner,
