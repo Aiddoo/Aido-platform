@@ -379,9 +379,12 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         })
         .returning();
       const user = requireRecord(created);
-      await client
-        .insert(account)
-        .values({ userId: user.id, provider: "GOOGLE", providerAccountId: "google-123" });
+      await client.insert(account).values({
+        userId: user.id,
+        provider: "GOOGLE",
+        providerAccountId: "google-123",
+        updatedAt: Temporal.Now.instant(),
+      });
 
       // When
       const result = await deleteAccount.execute({ userId: user.id });

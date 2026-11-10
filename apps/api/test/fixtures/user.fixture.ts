@@ -126,7 +126,10 @@ export const AccountFixture = {
    */
   create: (overrides: Partial<Account> = {}): Account => {
     const id = ++accountCounter;
-    const now = new Date();
+    const now = Temporal.Now.instant().round({
+      smallestUnit: "millisecond",
+      roundingMode: "floor",
+    });
 
     return {
       id: overrides.id ?? id,

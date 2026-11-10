@@ -5,7 +5,7 @@ import type {
   user as userTable,
   verification as verificationTable,
 } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { IdentityUser } from "../../../users/domain/identity-user.aggregate.js";
 import type { AuthAccountRecord } from "../../application/ports/auth-account.repository.port.js";
@@ -14,7 +14,7 @@ import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import { IdentityAccounts } from "../../domain/identity-accounts.aggregate.js";
 
-// Session·User·Account는 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
+// User는 아직 timestamp(mode: date)라 행의 Date를 여기서 Temporal로 바꾼다
 function instantOrNull(date: Date | null): Temporal.Instant | null {
   return date == null ? null : instantFromDate(date);
 }
@@ -51,10 +51,11 @@ export function toAuthSession(row: SessionRow): AuthSession {
     deviceFingerprint: row.deviceFingerprint,
     ipAddress: row.ipAddress,
     userAgent: row.userAgent,
-    lastUsedAt: instantFromDate(row.lastUsedAt),
-    createdAt: instantFromDate(row.createdAt),
-    expiresAt: instantFromDate(row.expiresAt),
-    revokedAt: instantOrNull(row.revokedAt),
+    lastUsedAt: row.lastUsedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    expiresAt: row.expiresAt,
+    revokedAt: row.revokedAt,
   });
 }
 
@@ -93,14 +94,7 @@ export function toAuthOAuthState(row: OAuthStateRow): AuthOAuthState {
 }
 
 export function toAuthSessionRow(session: AuthSession): typeof sessionTable.$inferInsert {
-  const primitives = session.toPrimitives();
-  return {
-    ...primitives,
-    lastUsedAt: instantToDate(primitives.lastUsedAt),
-    createdAt: instantToDate(primitives.createdAt),
-    expiresAt: instantToDate(primitives.expiresAt),
-    revokedAt: primitives.revokedAt == null ? null : instantToDate(primitives.revokedAt),
-  };
+  return session.toPrimitives();
 }
 
 export function toVerificationRow(
@@ -137,7 +131,7 @@ export function toAuthAccountRecord(
     provider: row.provider,
     providerAccountId: row.providerAccountId,
     password: row.password,
-    createdAt: instantFromDate(row.createdAt),
+    createdAt: row.createdAt,
   };
 }
 
@@ -148,7 +142,7 @@ export function toIdentityAccounts(userId: string, rows: readonly AccountRow[]):
       id: row.id,
       provider: row.provider,
       providerAccountId: row.providerAccountId,
-      createdAt: instantFromDate(row.createdAt),
+      createdAt: row.createdAt,
     })),
   });
 }

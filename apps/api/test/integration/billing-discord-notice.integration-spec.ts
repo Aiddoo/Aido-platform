@@ -16,6 +16,7 @@ import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-noti
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
@@ -76,12 +77,18 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
     // 가입 방식은 처음 만든 계정이다. 나중에 연결한 Google 계정이 아니다
-    await client
-      .insert(account)
-      .values([
-        AccountFixture.create({ userId: owner.id, provider: "APPLE", createdAt: JOINED_AT }),
-        AccountFixture.create({ userId: owner.id, provider: "GOOGLE", createdAt: AT }),
-      ]);
+    await client.insert(account).values([
+      AccountFixture.create({
+        userId: owner.id,
+        provider: "APPLE",
+        createdAt: instantFromDate(JOINED_AT),
+      }),
+      AccountFixture.create({
+        userId: owner.id,
+        provider: "GOOGLE",
+        createdAt: instantFromDate(AT),
+      }),
+    ]);
     userId = owner.id;
   });
 

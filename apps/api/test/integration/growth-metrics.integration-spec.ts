@@ -324,6 +324,7 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       userId: user.id,
       provider: "CREDENTIAL" as const,
       providerAccountId: `growth-${user.id}`,
+      updatedAt: Temporal.Now.instant(),
     })),
   );
   await client
@@ -402,6 +403,7 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
     userId: "deleted-growth-user",
     provider: "CREDENTIAL",
     providerAccountId: "growth-deleted-growth-user",
+    updatedAt: Temporal.Now.instant(),
   });
   const [category] = await client
     .insert(todoCategory)

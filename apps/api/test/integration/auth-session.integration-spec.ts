@@ -6,12 +6,12 @@ import { z } from "zod";
 import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-const currentTime = new Date("2026-12-31T23:59:00.000Z");
+const now = Temporal.Instant.from("2026-12-31T23:59:00.000Z");
+const currentTime = new Date(now.epochMilliseconds);
 const expiresAt = Temporal.Instant.from("2027-01-08T00:00:00Z");
 const rotatedAt = Temporal.Instant.from("2026-12-31T23:59:00Z");
 
@@ -75,10 +75,10 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
       id: createEntityId(),
       userId,
       tokenFamily: "session-family",
-      createdAt: currentTime,
-      updatedAt: currentTime,
-      lastUsedAt: currentTime,
-      expiresAt: new Date(expiresAt.epochMilliseconds),
+      createdAt: now,
+      updatedAt: now,
+      lastUsedAt: now,
+      expiresAt,
       ...overrides,
     });
     const [created] = await client.insert(sessionTable).values(fixture).returning();
@@ -150,7 +150,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   it("폐기한 세션은 버전이 일치해도 회전하거나 새 해시를 저장할 수 없다", async () => {
     // Given
     const session = await givenSession({ refreshTokenHash: "revoked-hash", tokenVersion: 1 });
-    await repository.revoke(session.id, REVOKE_REASON.USER_LOGOUT, instantFromDate(currentTime));
+    await repository.revoke(session.id, REVOKE_REASON.USER_LOGOUT, now);
 
     // When
     const result = await repository.rotateToken(
@@ -179,7 +179,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const second = await givenSession({ refreshTokenHash: "family-second" });
     const alreadyRevoked = await givenSession({
       refreshTokenHash: "family-revoked",
-      revokedAt: currentTime,
+      revokedAt: now,
       revokedReason: REVOKE_REASON.USER_LOGOUT,
     });
     const otherFamily = await givenSession({
@@ -191,19 +191,19 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const revokedIds = await repository.revokeByTokenFamily(
       "session-family",
       REVOKE_REASON.TOKEN_REUSE_DETECTED,
-      instantFromDate(currentTime),
+      now,
     );
     const repeatedIds = await repository.revokeByTokenFamily(
       "session-family",
       REVOKE_REASON.TOKEN_REUSE_DETECTED,
-      instantFromDate(currentTime),
+      now,
     );
 
     // Then
     expect(revokedIds.toSorted()).toEqual([first.id, second.id].toSorted());
     expect(repeatedIds).toEqual([]);
     expect((await readSession(first.id))?.revokedReason).toBe(REVOKE_REASON.TOKEN_REUSE_DETECTED);
-    expect((await readSession(second.id))?.revokedAt).toBeInstanceOf(Date);
+    expect((await readSession(second.id))?.revokedAt).toBeInstanceOf(Temporal.Instant);
     expect((await readSession(alreadyRevoked.id))?.revokedReason).toBe(REVOKE_REASON.USER_LOGOUT);
     expect((await readSession(otherFamily.id))?.revokedAt).toBeNull();
   });
@@ -214,11 +214,11 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const active = await givenSession({ refreshTokenHash: "other-device" });
     const expired = await givenSession({
       refreshTokenHash: "expired-device",
-      expiresAt: currentTime,
+      expiresAt: now,
     });
     const revoked = await givenSession({
       refreshTokenHash: "already-revoked",
-      revokedAt: currentTime,
+      revokedAt: now,
       revokedReason: REVOKE_REASON.USER_LOGOUT,
     });
     const [otherUser] = await client
@@ -237,7 +237,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const revokeAll = {
       userId,
       reason: REVOKE_REASON.PASSWORD_CHANGED,
-      now: instantFromDate(currentTime),
+      now,
       exceptSessionId: current.id,
     };
     const ids = await repository.revokeAllByUserId(revokeAll);

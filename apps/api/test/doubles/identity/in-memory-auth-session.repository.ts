@@ -72,6 +72,7 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
             lastUsedAt: saved.lastUsedAt,
             expiresAt: saved.expiresAt,
             revokedAt: saved.revokedAt,
+            updatedAt: saved.updatedAt,
           },
     );
   }
@@ -96,6 +97,7 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
       tokenVersion: rotation.tokenVersion,
       expiresAt: rotation.expiresAt,
       lastUsedAt: now,
+      updatedAt: now,
     });
     return true;
   }
@@ -105,7 +107,7 @@ export class InMemoryAuthSessionRepository extends AuthSessionRepositoryPort {
     if (session == null) {
       return;
     }
-    this.#sessions.set(sessionId, { ...session, revokedAt: now });
+    this.#sessions.set(sessionId, { ...session, revokedAt: now, updatedAt: now });
     this.revocationReasons.set(sessionId, reason);
   }
 

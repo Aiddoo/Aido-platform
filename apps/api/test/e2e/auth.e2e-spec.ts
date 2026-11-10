@@ -821,7 +821,11 @@ describe("인증 E2E", () => {
       expect(await authCache.getSession(session.id)).toBeDefined();
       await client
         .update(sessionTable)
-        .set({ lastUsedAt: new Date(Date.now() - TOKEN_REUSE_GRACE_PERIOD_MS - 1_000) })
+        .set({
+          lastUsedAt: Temporal.Now.instant().subtract({
+            milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1_000,
+          }),
+        })
         .where(eq(sessionTable.id, session.id));
 
       // When

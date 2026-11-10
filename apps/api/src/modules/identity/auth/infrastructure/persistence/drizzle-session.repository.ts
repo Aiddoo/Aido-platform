@@ -12,7 +12,6 @@ import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { session } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { toAuthSession, toAuthSessionRow } from "./auth-row.mapper.js";
 
@@ -45,7 +44,7 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
 
   async listActiveByUserId(userId: string, now: Temporal.Instant): Promise<AuthSession[]> {
     const rows = await this.#db.query.session.findMany({
-      where: { userId, revokedAt: { isNull: true }, expiresAt: { gt: instantToDate(now) } },
+      where: { userId, revokedAt: { isNull: true }, expiresAt: { gt: now } },
       orderBy: { lastUsedAt: "desc" },
     });
     return rows.map(toAuthSession);
@@ -65,6 +64,7 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
           lastUsedAt: row.lastUsedAt,
           expiresAt: row.expiresAt,
           revokedAt: row.revokedAt,
+          updatedAt: row.updatedAt,
         },
       });
   }
@@ -81,8 +81,9 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
         refreshTokenHash: rotation.refreshTokenHash,
         tokenVersion: rotation.tokenVersion,
         previousTokenHash: rotation.previousTokenHash,
-        expiresAt: instantToDate(rotation.expiresAt),
-        lastUsedAt: instantToDate(now),
+        expiresAt: rotation.expiresAt,
+        lastUsedAt: now,
+        updatedAt: now,
       })
       .where(
         and(
@@ -99,7 +100,7 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
   async revoke(sessionId: string, reason: RevokeReason, now: Temporal.Instant): Promise<void> {
     await this.#db
       .update(session)
-      .set({ revokedAt: instantToDate(now), revokedReason: reason })
+      .set({ revokedAt: now, revokedReason: reason, updatedAt: now })
       .where(eq(session.id, sessionId));
   }
 
@@ -110,7 +111,7 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
   ): Promise<readonly string[]> {
     const revoked = await this.#db
       .update(session)
-      .set({ revokedAt: instantToDate(now), revokedReason: reason })
+      .set({ revokedAt: now, revokedReason: reason, updatedAt: now })
       .where(and(eq(session.tokenFamily, tokenFamily), isNull(session.revokedAt)))
       .returning({ id: session.id });
     return revoked.map((row) => row.id);
@@ -125,7 +126,7 @@ export class DrizzleSessionRepository extends AuthSessionRepositoryPort {
     const { userId, reason, now, exceptSessionId } = params;
     const revoked = await this.#db
       .update(session)
-      .set({ revokedAt: instantToDate(now), revokedReason: reason })
+      .set({ revokedAt: now, revokedReason: reason, updatedAt: now })
       .where(
         and(
           eq(session.userId, userId),

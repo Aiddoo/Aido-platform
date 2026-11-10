@@ -85,18 +85,18 @@ export const account = pgTable(
   "Account",
   {
     accessToken: text(),
-    accessTokenExpiresAt: timestamp({ precision: 3 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    accessTokenExpiresAt: instant(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     password: varchar({ length: 128 }),
     provider: accountProvider().notNull(),
     providerAccountId: varchar({ length: 255 }).notNull(),
     refreshToken: text(),
     scope: varchar({ length: 500 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 저장소가 ClockPort 값으로 insert·update마다 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -115,22 +115,24 @@ export const account = pgTable(
 export const session = pgTable(
   "Session",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     deviceFingerprint: varchar({ length: 64 }).notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    expiresAt: instant().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     ipAddress: varchar({ length: 45 }).notNull(),
-    lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    lastUsedAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     previousTokenHash: varchar({ length: 64 }),
     refreshTokenHash: varchar({ length: 64 }).notNull(),
-    revokedAt: timestamp({ precision: 3 }),
+    revokedAt: instant(),
     revokedReason: varchar({ length: 200 }),
     tokenFamily: varchar({ length: 36 }).notNull(),
     tokenVersion: integer().default(1).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 회전·폐기 같은 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userAgent: varchar({ length: 500 }).notNull(),
     userId: text().notNull(),
   },

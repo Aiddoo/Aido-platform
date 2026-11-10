@@ -17,6 +17,7 @@ import { isUniqueConstraintViolation } from "#api/platform/database/database-err
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { toAuthAccountRecord, toIdentityAccounts } from "./auth-row.mapper.js";
 
@@ -24,14 +25,17 @@ import { toAuthAccountRecord, toIdentityAccounts } from "./auth-row.mapper.js";
 export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #encryptionService: EncryptionService;
+  readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     encryptionService: EncryptionService,
+    clock: ClockPort,
   ) {
     super();
     this.#txHost = txHost;
     this.#encryptionService = encryptionService;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -79,6 +83,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
         // 이메일 계정은 공급자 계정 id가 없어 userId로 유일 제약을 채운다
         providerAccountId: userId,
         password: hashedPassword,
+        updatedAt: this.#clock.now(),
       });
     } catch (error) {
       // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
@@ -92,7 +97,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   async updatePassword(userId: string, hashedPassword: string): Promise<void> {
     await this.#db
       .update(account)
-      .set({ password: hashedPassword })
+      .set({ password: hashedPassword, updatedAt: this.#clock.now() })
       .where(and(eq(account.userId, userId), eq(account.provider, "CREDENTIAL")));
   }
 
@@ -103,7 +108,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   ): Promise<boolean> {
     const updated = await this.#db
       .update(account)
-      .set({ password: passwordHash })
+      .set({ password: passwordHash, updatedAt: this.#clock.now() })
       .where(
         and(
           eq(account.userId, userId),
@@ -125,6 +130,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
           newAccount.refreshToken == null || newAccount.refreshToken === ""
             ? undefined
             : this.#encryptionService.encrypt(newAccount.refreshToken),
+        updatedAt: this.#clock.now(),
       });
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
