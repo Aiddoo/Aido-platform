@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { ErrorCode } from "@aido/api/errors";
+import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import {
   Header,
   Body,
@@ -26,6 +27,7 @@ import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/appl
 import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
 import { LoginWithMobileOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-mobile-oauth-token.use-case";
 import { StartOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/start-oauth-authorization.use-case";
+import type { OAuthMode } from "#api/modules/identity/auth/domain/auth.constants";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -106,7 +108,10 @@ export class OAuthController {
     }
   }
 
-  #logCallbackFailed(provider: "GOOGLE" | "KAKAO" | "NAVER", error: unknown): void {
+  #logCallbackFailed(
+    provider: Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">,
+    error: unknown,
+  ): void {
     if (error instanceof ErrorCodedException) {
       this.#logger.warn({
         event: AuthLogEvent.OAUTH_CALLBACK_FAILED,
@@ -356,7 +361,7 @@ export class OAuthController {
   async googleOAuthStart(
     @Query("state") state: string | undefined,
     @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: "login" | "link" | undefined,
+    @Query("mode") mode: OAuthMode | undefined,
     @Query("user_hint") userHint: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
@@ -558,7 +563,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async kakaoOAuthStart(
     @Query("state") state: string | undefined,
     @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: "login" | "link" | undefined,
+    @Query("mode") mode: OAuthMode | undefined,
     @Query("user_hint") userHint: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
@@ -752,7 +757,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async naverOAuthStart(
     @Query("state") state: string | undefined,
     @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: "login" | "link" | undefined,
+    @Query("mode") mode: OAuthMode | undefined,
     @Query("user_hint") userHint: string | undefined,
     @Res() res: Response,
   ): Promise<void> {

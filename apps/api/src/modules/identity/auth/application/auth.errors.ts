@@ -33,7 +33,11 @@ export function sessionRejection(
   }
 }
 
-export type AuthPersistenceConflictKind = "EMAIL_ALREADY_EXISTS" | "OAUTH_ACCOUNT_ALREADY_LINKED";
+const AUTH_PERSISTENCE_CONFLICT_KINDS = [
+  "EMAIL_ALREADY_EXISTS",
+  "OAUTH_ACCOUNT_ALREADY_LINKED",
+] as const;
+export type AuthPersistenceConflictKind = (typeof AUTH_PERSISTENCE_CONFLICT_KINDS)[number];
 
 /** 저장소가 자기 unique 제약 위반을 번역해 던지고 UseCase가 업무 오류로 바꾼다 */
 export class AuthPersistenceConflict extends Error {

@@ -1,3 +1,4 @@
+import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import type { Logger } from "@nestjs/common";
 
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -22,7 +23,7 @@ export async function readOAuthProviderError(response: Response): Promise<string
 // 공급자 오류 원문에는 토큰 payload가 섞일 수 있어 오류 종류·코드만 남긴다
 export function logOAuthTokenVerifyFailed(
   logger: Pick<Logger, "error">,
-  provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+  provider: (typeof OAUTH_PROVIDERS)[number],
   error: unknown,
   reason?: "expired" | "invalid",
 ): void {

@@ -9,11 +9,13 @@ import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/port
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 
+const JWT_TOKEN_TYPES = ["access", "refresh"] as const;
+
 export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
-  type: "access" | "refresh";
+  type: (typeof JWT_TOKEN_TYPES)[number];
   sessionId?: string;
   tokenFamily?: string;
   tokenVersion?: number;

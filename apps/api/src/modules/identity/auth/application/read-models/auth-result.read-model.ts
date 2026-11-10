@@ -1,5 +1,5 @@
 import type { PremiumEntitlements } from "@aido/api/contracts/auth";
-import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
+import type { DeviceType, SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type { AccountProvider, UserStatus } from "#api/modules/identity/auth/domain/auth.constants";
@@ -60,7 +60,7 @@ export interface RefreshTokensResult {
 /**
  * 요청 메타데이터
  */
-export type RequestDevicePlatform = "IOS" | "ANDROID" | "WEB";
+export type RequestDevicePlatform = DeviceType;
 
 /**
  * 요청 경계에서 정규화한 기기 정보. 관리자 알림 표시용이며 신뢰 판단에 쓰지 않는다.

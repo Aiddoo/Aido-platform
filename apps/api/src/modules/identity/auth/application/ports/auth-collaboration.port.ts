@@ -1,4 +1,4 @@
-import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
+import type { DeviceType, SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type { AccountProvider, UserStatus } from "../../domain/auth.constants.js";
@@ -70,10 +70,10 @@ export abstract class AuthEmailSenderPort {
 export interface AuthUserRegisteredNotification {
   userId: string;
   email: string;
-  provider: "credential" | "apple" | "google" | "kakao" | "naver";
+  provider: Lowercase<AccountProvider>;
   registeredAt: string;
   name?: string;
-  devicePlatform?: "IOS" | "ANDROID" | "WEB";
+  devicePlatform?: DeviceType;
   deviceModel?: string;
   osVersion?: string;
   appVersion?: string;
