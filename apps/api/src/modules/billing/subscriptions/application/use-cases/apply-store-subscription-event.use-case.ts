@@ -37,11 +37,12 @@ import type {
   SubscriptionEventNotifierPort,
 } from "../ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventReceiptRepositoryPort } from "../ports/subscription-event-receipt.repository.port.js";
-import type { SubscriptionWebhookLockPort } from "../ports/subscription-webhook-lock.port.js";
 import type {
-  SubscriptionRepositoryPort,
   SubscriptionUser,
-} from "../ports/subscription.repository.port.js";
+  SubscriptionUserReaderPort,
+} from "../ports/subscription-user.reader.port.js";
+import type { SubscriptionWebhookLockPort } from "../ports/subscription-webhook-lock.port.js";
+import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
 import type { SubscriptionEventPayload } from "../read-models/subscription-event-payload.read-model.js";
 import {
   baseEventPayload,
@@ -63,6 +64,7 @@ export type ApplyStoreSubscriptionEventCommand = StoreSubscriptionEvent;
 
 export interface ApplyStoreSubscriptionEventDependencies {
   readonly subscriptionRepository: SubscriptionRepositoryPort;
+  readonly subscriptionUserReader: Pick<SubscriptionUserReaderPort, "findByAppUserId">;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
   readonly userLock: BillingUserLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -227,7 +229,14 @@ export class ApplyStoreSubscriptionEventUseCase {
    * 행이 없으면(탈퇴로 지워짐) 다음 갱신이 체인을 이어 받는다.
    */
   async #processTransfer(event: SubscriptionTransferredEvent): Promise<void> {
-    const { subscriptionRepository, webhookLock, unitOfWork, userLock, clock } = this.#dependencies;
+    const {
+      subscriptionRepository,
+      subscriptionUserReader,
+      webhookLock,
+      unitOfWork,
+      userLock,
+      clock,
+    } = this.#dependencies;
     const receiverAppUserIds = uniq(event.receivers);
     const lockKey = receiverAppUserIds[0] ?? "";
     this.#logStarted(event);
@@ -245,7 +254,7 @@ export class ApplyStoreSubscriptionEventUseCase {
         (
           await Promise.all(
             uniq(event.transferredFrom).map((appUserId) =>
-              subscriptionRepository.findUserByAppUserId(appUserId),
+              subscriptionUserReader.findByAppUserId(appUserId),
             ),
           )
         ).flatMap((owner) => (owner == null || owner.id === receiver.id ? [] : [owner])),
@@ -305,7 +314,7 @@ export class ApplyStoreSubscriptionEventUseCase {
 
   async #findFirstUser(appUserIds: readonly string[]): Promise<SubscriptionUser | null> {
     for (const appUserId of appUserIds) {
-      const user = await this.#dependencies.subscriptionRepository.findUserByAppUserId(appUserId);
+      const user = await this.#dependencies.subscriptionUserReader.findByAppUserId(appUserId);
       if (user != null) {
         return user;
       }
@@ -314,7 +323,7 @@ export class ApplyStoreSubscriptionEventUseCase {
   }
 
   async #process(event: ProcessedChainEvent): Promise<void> {
-    const { subscriptionRepository, webhookLock } = this.#dependencies;
+    const { subscriptionUserReader, webhookLock } = this.#dependencies;
     this.#logStarted(event);
     const release = await webhookLock.acquire(event.appUserId);
     if (release == null) {
@@ -322,7 +331,7 @@ export class ApplyStoreSubscriptionEventUseCase {
     }
 
     try {
-      const user = await subscriptionRepository.findUserByAppUserId(event.appUserId);
+      const user = await subscriptionUserReader.findByAppUserId(event.appUserId);
       if (user == null) {
         throw subscriptionUserNotFound(event.appUserId);
       }

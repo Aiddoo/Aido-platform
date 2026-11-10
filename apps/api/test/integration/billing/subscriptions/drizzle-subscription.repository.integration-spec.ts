@@ -47,23 +47,6 @@ describe("DrizzleSubscriptionRepository (실제 PostgreSQL)", () => {
 
   describeSubscriptionRepositoryContract(async () => createRepository());
 
-  it("앱 사용자 ID는 User.id와 RevenueCat 별칭으로 모두 찾는다", async () => {
-    // Given
-    const repository = createRepository();
-
-    // When
-    const byId = await repository.findUserByAppUserId(SUBSCRIPTION_FIXTURE_USER_ID);
-    const byAlias = await repository.findUserByAppUserId("owner-alias");
-    const missing = await repository.findUserByAppUserId("unknown-app-user");
-
-    // Then
-    expect({ byId: byId?.id, byAlias: byAlias?.id, missing }).toEqual({
-      byId: SUBSCRIPTION_FIXTURE_USER_ID,
-      byAlias: SUBSCRIPTION_FIXTURE_USER_ID,
-      missing: null,
-    });
-  });
-
   it("시각은 ms 3자리로 저장하고 같은 Instant로 읽는다", async () => {
     // Given
     const repository = createRepository();

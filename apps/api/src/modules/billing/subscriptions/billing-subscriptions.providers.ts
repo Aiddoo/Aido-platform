@@ -12,6 +12,7 @@ import { StoreSubscriptionReconcileSchedulerPort } from "./application/ports/sto
 import { StoreSubscriptionStatusReaderPort } from "./application/ports/store-subscription-status.reader.port.js";
 import { SubscriptionEventNotifierPort } from "./application/ports/subscription-event-notifier.port.js";
 import { SubscriptionEventReceiptRepositoryPort } from "./application/ports/subscription-event-receipt.repository.port.js";
+import { SubscriptionUserReaderPort } from "./application/ports/subscription-user.reader.port.js";
 import { SubscriptionWebhookLockPort } from "./application/ports/subscription-webhook-lock.port.js";
 import { SubscriptionRepositoryPort } from "./application/ports/subscription.repository.port.js";
 import { TrialEndingNoticeRepositoryPort } from "./application/ports/trial-ending-notice.repository.port.js";
@@ -34,12 +35,14 @@ import { PremiumGrantSweepScheduler } from "./infrastructure/jobs/premium-grant-
 import { StoreSubscriptionReconcileProcessor } from "./infrastructure/jobs/store-subscription-reconcile.processor.js";
 import { StoreSubscriptionReconcileScheduler } from "./infrastructure/jobs/store-subscription-reconcile.scheduler.js";
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/drizzle-subscription-event-receipt.repository.js";
+import { DrizzleSubscriptionUserReader } from "./infrastructure/persistence/drizzle-subscription-user.reader.js";
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeRepository } from "./infrastructure/persistence/drizzle-trial-ending-notice.repository.js";
 import { DrizzleUpcomingRenewalNoticeRepository } from "./infrastructure/persistence/drizzle-upcoming-renewal-notice.repository.js";
 
 export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
   { provide: SubscriptionRepositoryPort, useClass: DrizzleSubscriptionRepository },
+  { provide: SubscriptionUserReaderPort, useClass: DrizzleSubscriptionUserReader },
   {
     provide: SubscriptionEventReceiptRepositoryPort,
     useClass: DrizzleSubscriptionEventReceiptRepository,
@@ -63,6 +66,7 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
   { provide: UpcomingRenewalNotifierPort, useClass: UpcomingRenewalNotifierAdapter },
   provideUseCase(ApplyStoreSubscriptionEventUseCase, {
     subscriptionRepository: SubscriptionRepositoryPort,
+    subscriptionUserReader: SubscriptionUserReaderPort,
     receiptRepository: SubscriptionEventReceiptRepositoryPort,
     userLock: BillingUserLockPort,
     unitOfWork: UnitOfWorkPort,

@@ -1,6 +1,6 @@
 import type { PremiumAccess } from "../../shared/premium-access.domain-service.js";
 import type { StoreSubscriptionChainEvent } from "../domain/store-subscription.event.js";
-import type { SubscriptionUser } from "./ports/subscription.repository.port.js";
+import type { SubscriptionUser } from "./ports/subscription-user.reader.port.js";
 import { baseEventPayload, premiumAccessSummaryOf } from "./subscription-event-payload.mapper.js";
 
 type NotifiableEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;

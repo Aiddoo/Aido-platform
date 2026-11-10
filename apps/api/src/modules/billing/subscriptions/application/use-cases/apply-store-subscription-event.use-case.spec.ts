@@ -8,6 +8,7 @@ import { FakeSubscriptionWebhookLock } from "#test/doubles/billing/fake-subscrip
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionEventReceiptRepository } from "#test/doubles/billing/in-memory-subscription-event-receipt.repository";
+import { InMemorySubscriptionUserReader } from "#test/doubles/billing/in-memory-subscription-user.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
 import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
@@ -137,10 +138,7 @@ function setup(
   } = {},
 ) {
   const users = [USER, ...(options.extraUsers ?? [])];
-  const subscriptionRepository = new InMemorySubscriptionRepository(
-    options.subscriptions ?? [],
-    users,
-  );
+  const subscriptionRepository = new InMemorySubscriptionRepository(options.subscriptions ?? []);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(options.grants ?? []);
   const userSubscriptionProjection = new InMemoryUserSubscriptionProjectionRepository(
     users.map((user) => user.id),
@@ -161,6 +159,7 @@ function setup(
   const userLock = new FakeBillingUserLock(users.map((user) => user.id));
   const useCase = new ApplyStoreSubscriptionEventUseCase({
     subscriptionRepository,
+    subscriptionUserReader: new InMemorySubscriptionUserReader(users),
     receiptRepository,
     userLock,
     unitOfWork: new ImmediateUnitOfWork(),

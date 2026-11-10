@@ -4,13 +4,6 @@ import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.
 import type { SubscriptionId } from "../../domain/subscription-id.vo.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
 
-/** 스토어 이벤트의 앱 사용자 ID(User.id 또는 별칭)로 찾은 사용자. 알림에 싣는 값만 읽는다. */
-export interface SubscriptionUser {
-  readonly id: string;
-  readonly email: string;
-  readonly profile: { readonly name: string | null } | null;
-}
-
 /**
  * 구독 저장소 포트. 스토어 구독 이벤트와 상태 대조를 구독 행에 반영한다. 트랜잭션은 CLS로 전파된다.
  * 프리미엄 판단에 쓰는 읽기와 User projection 쓰기는 premium-grants slice의 포트가 맡는다.
@@ -22,7 +15,6 @@ export abstract class SubscriptionRepositoryPort {
   ): Promise<Subscription | null>;
   /** 이 사용자가 소유한, 아직 엔타이틀먼트 상태(ACTIVE·CANCELLED)인 삭제되지 않은 체인 행 */
   abstract listReconcilableByUserId(userId: UserId): Promise<Subscription[]>;
-  abstract findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
   /** 이 사용자가 소유한 삭제되지 않은 스토어 구독 행이 하나라도 있는지 */
   abstract existsByUserId(userId: UserId): Promise<boolean>;
   /** 이 체인의 이벤트가 온 사용자를 행의 소유자로 정한다. 다른 사용자 행이었으면 옮기고 true를 반환한다. */

@@ -7,10 +7,7 @@ import { subscription } from "#api/platform/database/schema/billing.schema";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  SubscriptionRepositoryPort,
-  type SubscriptionUser,
-} from "../../application/ports/subscription.repository.port.js";
+import { SubscriptionRepositoryPort } from "../../application/ports/subscription.repository.port.js";
 import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import { SubscriptionId } from "../../domain/subscription-id.vo.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
@@ -52,16 +49,6 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
       orderBy: { id: "asc" },
     });
     return rows.map(toSubscription);
-  }
-
-  // RevenueCat은 처음에 User.id를 appUserId로 쓰고, 별칭이 생기면 revenueCatUserId가 달라진다
-  async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
-    const row = await this.#db.query.user.findFirst({
-      columns: { id: true, email: true },
-      where: { OR: [{ revenueCatUserId: appUserId }, { id: appUserId }] },
-      with: { profile: { columns: { name: true } } },
-    });
-    return row ?? null;
   }
 
   async existsByUserId(userId: UserId): Promise<boolean> {

@@ -1,7 +1,4 @@
-import {
-  SubscriptionRepositoryPort,
-  type SubscriptionUser,
-} from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import type { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { SubscriptionId } from "#api/modules/billing/subscriptions/domain/subscription-id.vo";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
@@ -12,25 +9,15 @@ function copyOf(subscription: Subscription): Subscription {
   return Subscription.reconstitute(subscription.toPrimitives());
 }
 
-export interface InMemorySubscriptionUser extends SubscriptionUser {
-  /** 처음 User.id가 아닌 RevenueCat 별칭 */
-  readonly appUserAlias?: string;
-}
-
 export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
   readonly #subscriptions = new Map<number, Subscription>();
-  readonly #users: readonly InMemorySubscriptionUser[];
   #sequence: number;
 
-  constructor(
-    subscriptions: readonly Subscription[] = [],
-    users: readonly InMemorySubscriptionUser[] = [],
-  ) {
+  constructor(subscriptions: readonly Subscription[] = []) {
     super();
     for (const subscription of subscriptions) {
       this.#subscriptions.set(subscription.id.value, copyOf(subscription));
     }
-    this.#users = users;
     this.#sequence = Math.max(0, ...this.#subscriptions.keys());
   }
 
@@ -61,13 +48,6 @@ export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
       )
       .toSorted((left, right) => left.id.value - right.id.value)
       .map(copyOf);
-  }
-
-  async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
-    const found = this.#users.find(
-      (user) => user.id === appUserId || user.appUserAlias === appUserId,
-    );
-    return found == null ? null : { id: found.id, email: found.email, profile: found.profile };
   }
 
   async existsByUserId(userId: UserId): Promise<boolean> {

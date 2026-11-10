@@ -14,7 +14,7 @@ import {
   classifySubscriptionLifecycle,
   periodTypeAfterEvent,
 } from "../domain/subscription-lifecycle.domain-service.js";
-import type { SubscriptionUser } from "./ports/subscription.repository.port.js";
+import type { SubscriptionUser } from "./ports/subscription-user.reader.port.js";
 import type {
   PremiumAccessSummary,
   SubscriptionEventPayload,
